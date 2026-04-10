@@ -19,26 +19,26 @@ const buttonVariants = cva(
           "hover:brightness-110 hover:shadow-[0_0_18px_rgba(0,188,212,0.40)] hover:-translate-y-px " +
           "active:brightness-95 active:translate-y-0 active:shadow-none",
         destructive:
-          "bg-destructive text-destructive-foreground border border-destructive-border shadow-sm " +
-          "hover:brightness-110 hover:shadow-[0_0_14px_rgba(239,68,68,0.35)] hover:-translate-y-px " +
-          "active:brightness-95 active:translate-y-0",
+          "bg-[#e53535] text-white border border-[rgba(255,100,100,0.25)] shadow-[0_2px_8px_rgba(229,53,53,0.4)] " +
+          "hover:bg-[#f03030] hover:shadow-[0_0_20px_rgba(229,53,53,0.55)] hover:-translate-y-px " +
+          "active:bg-[#c52b2b] active:translate-y-0 active:shadow-none",
         outline:
           "border [border-color:var(--button-outline)] bg-background/30 backdrop-blur-sm shadow-xs " +
           "hover:bg-background/60 hover:border-primary/35 hover:[border-color:rgba(0,188,212,0.28)] hover:-translate-y-px " +
           "active:translate-y-0 active:shadow-none",
         secondary:
-          "border bg-secondary text-secondary-foreground border-secondary-border shadow-sm " +
-          "hover:brightness-110 hover:-translate-y-px " +
-          "active:brightness-95 active:translate-y-0",
+          "bg-[#252525] text-[#e8e8e8] border border-[rgba(255,255,255,0.07)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_2px_4px_rgba(0,0,0,0.5)] " +
+          "hover:bg-[#2e2e2e] hover:border-[rgba(255,255,255,0.12)] hover:-translate-y-px hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_4px_8px_rgba(0,0,0,0.6)] " +
+          "active:bg-[#1e1e1e] active:translate-y-0 active:shadow-none",
         ghost:
-          "border border-transparent " +
-          "hover:bg-accent hover:text-accent-foreground",
+          "border border-transparent text-muted-foreground " +
+          "hover:bg-[rgba(255,255,255,0.06)] hover:text-foreground hover:border-[rgba(255,255,255,0.06)]",
       },
       size: {
         default: "min-h-9 px-4 py-2",
         sm: "min-h-8 rounded-md px-3 text-xs",
-        lg: "min-h-10 rounded-md px-8",
-        icon: "h-9 w-9",
+        lg: "min-h-11 rounded-md px-8 text-base",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {
