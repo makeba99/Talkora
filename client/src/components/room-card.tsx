@@ -41,6 +41,10 @@ const ROOM_THEMES = [
   { id: "cherry", label: "Cherry", from: "from-pink-400", to: "to-rose-500", preview: "from-pink-400 to-rose-500" },
   { id: "gold", label: "Gold", from: "from-yellow-300", to: "to-amber-500", preview: "from-yellow-300 to-amber-500" },
   { id: "violet", label: "Violet", from: "from-violet-400", to: "to-fuchsia-600", preview: "from-violet-400 to-fuchsia-600" },
+  { id: "aurora", label: "Aurora", from: "from-teal-400", to: "to-green-400", preview: "from-teal-400 to-green-400" },
+  { id: "matrix", label: "Matrix", from: "from-green-400", to: "to-green-700", preview: "from-green-400 to-green-700" },
+  { id: "storm", label: "Storm", from: "from-blue-500", to: "to-slate-600", preview: "from-blue-500 to-slate-600" },
+  { id: "volcanic", label: "Volcanic", from: "from-red-500", to: "to-orange-400", preview: "from-red-500 to-orange-400" },
 ];
 
 function getAvatarSizeClass(maxUsers: number): string {

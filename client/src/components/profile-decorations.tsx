@@ -620,6 +620,10 @@ export const ROOM_THEMES = [
   { id: "cyberpunk", label: "🤖 Cyberpunk", description: "Yellow & cyan grid", bg: "cyberpunk" },
   { id: "ocean", label: "🌊 Ocean", description: "Deep blue waves", bg: "ocean" },
   { id: "cherry", label: "🌸 Cherry Blossom", description: "Pink floral dream", bg: "cherry" },
+  { id: "aurora", label: "🌌 Aurora", description: "Northern lights", bg: "aurora" },
+  { id: "matrix", label: "💻 Matrix", description: "Digital rain", bg: "matrix" },
+  { id: "storm", label: "⛈️ Thunderstorm", description: "Rain & lightning", bg: "storm" },
+  { id: "volcanic", label: "🌋 Volcanic", description: "Lava & embers", bg: "volcanic" },
 ] as const;
 
 export type RoomThemeId = typeof ROOM_THEMES[number]["id"];
@@ -710,6 +714,60 @@ const ROOM_THEME_KEYFRAMES = `
     0%,100% { transform: rotate(0deg) translateX(0); }
     50%      { transform: rotate(8deg) translateX(10px); }
   }
+  @keyframes rt-aurora-wave {
+    0%,100% { transform: translateX(0%) scaleY(1) skewX(0deg); opacity: var(--ao,0.35); }
+    20%     { transform: translateX(4%) scaleY(1.15) skewX(2deg); opacity: calc(var(--ao,0.35)*1.5); }
+    50%     { transform: translateX(-6%) scaleY(0.88) skewX(-3deg); opacity: calc(var(--ao,0.35)*0.7); }
+    75%     { transform: translateX(3%) scaleY(1.08) skewX(1deg); opacity: calc(var(--ao,0.35)*1.3); }
+  }
+  @keyframes rt-aurora-float {
+    0%,100% { transform: translateY(0) scaleX(1); }
+    50%     { transform: translateY(-12px) scaleX(1.04); }
+  }
+  @keyframes rt-matrix-drop {
+    0%   { transform: translateY(-120px); opacity: 0; }
+    4%   { opacity: 1; }
+    88%  { opacity: 0.85; }
+    100% { transform: translateY(110vh); opacity: 0; }
+  }
+  @keyframes rt-matrix-head {
+    0%,100% { text-shadow: 0 0 8px #00ff41, 0 0 16px #00ff41; opacity: 1; }
+    50%     { text-shadow: 0 0 14px #00ff41, 0 0 28px #00ff41, 0 0 40px #00ff41; opacity: 1; }
+  }
+  @keyframes rt-rain-fall {
+    0%   { transform: translate(0, -80px) rotate(12deg); opacity: 0; }
+    6%   { opacity: var(--ro,0.55); }
+    92%  { opacity: var(--ro,0.55); }
+    100% { transform: translate(var(--rx,30px), 110vh) rotate(12deg); opacity: 0; }
+  }
+  @keyframes rt-lightning-flash {
+    0%,88%,100% { opacity: 0; }
+    89%  { opacity: 0.55; }
+    90%  { opacity: 0.02; }
+    92%  { opacity: 0.38; }
+    93%  { opacity: 0; }
+  }
+  @keyframes rt-lightning-bolt {
+    0%,85%,100% { opacity: 0; }
+    86%  { opacity: 1; }
+    88%  { opacity: 0; }
+    90%  { opacity: 0.6; }
+    91%  { opacity: 0; }
+  }
+  @keyframes rt-ember-rise {
+    0%   { transform: translate(0,0) scale(1); opacity: 0; }
+    6%   { opacity: 1; }
+    50%  { transform: translate(var(--ex,8px),-45vh) scale(0.65); opacity: 0.8; }
+    100% { transform: translate(var(--ex2,-12px),-95vh) scale(0.2); opacity: 0; }
+  }
+  @keyframes rt-lava-glow {
+    0%,100% { opacity: 0.18; transform: scaleY(1) scaleX(1); }
+    50%     { opacity: 0.28; transform: scaleY(1.08) scaleX(1.03); }
+  }
+  @keyframes rt-heat-shimmer {
+    0%,100% { filter: blur(22px) brightness(1); transform: translateY(0); }
+    50%     { filter: blur(28px) brightness(1.15); transform: translateY(-4px); }
+  }
 `;
 
 export function getChatPanelStyle(themeId: string | null | undefined): React.CSSProperties {
@@ -728,6 +786,14 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
       return { background: "rgba(0,3,18,0.74)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(20,80,200,0.22)" };
     case "cherry":
       return { background: "rgba(10,0,8,0.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(180,20,100,0.22)" };
+    case "aurora":
+      return { background: "rgba(0,10,12,0.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(0,180,100,0.22)" };
+    case "matrix":
+      return { background: "rgba(0,5,0,0.82)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(0,200,60,0.25)" };
+    case "storm":
+      return { background: "rgba(4,8,18,0.78)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(40,80,200,0.22)" };
+    case "volcanic":
+      return { background: "rgba(14,2,0,0.76)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(200,40,0,0.22)" };
     default:
       return { background: "rgba(8,8,8,0.78)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(255,255,255,0.06)" };
   }
@@ -749,6 +815,14 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
       return { background: "radial-gradient(ellipse at 50% 80%, #000b28 0%, #000618 55%, #000310 100%)" };
     case "cherry":
       return { background: "radial-gradient(ellipse at 50% 0%, #1c0018 0%, #0d000d 55%, #060006 100%)" };
+    case "aurora":
+      return { background: "radial-gradient(ellipse at 50% 80%, #001512 0%, #000c0a 55%, #00080a 100%)" };
+    case "matrix":
+      return { background: "#000300" };
+    case "storm":
+      return { background: "radial-gradient(ellipse at 50% 0%, #060c1c 0%, #030710 55%, #020510 100%)" };
+    case "volcanic":
+      return { background: "radial-gradient(ellipse at 50% 100%, #1c0400 0%, #0e0200 55%, #080100 100%)" };
     default:
       return { background: "radial-gradient(ellipse at 50% 45%, #111111 0%, #0a0a0a 50%, #080808 100%)" };
   }
@@ -1050,6 +1124,162 @@ export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefin
         </div>
       );
 
+    case "aurora": {
+      const auroraLayers = [
+        { color: "0,220,120", top: 25, h: 18, dur: 14, del: 0, ao: 0.22 },
+        { color: "0,180,255", top: 38, h: 14, dur: 18, del: 2, ao: 0.18 },
+        { color: "80,40,255", top: 48, h: 10, dur: 22, del: 5, ao: 0.14 },
+        { color: "0,255,180", top: 18, h: 20, dur: 16, del: 8, ao: 0.16 },
+        { color: "140,0,255", top: 56, h: 12, dur: 20, del: 3, ao: 0.12 },
+        { color: "0,240,200", top: 30, h: 8,  dur: 25, del: 11, ao: 0.10 },
+      ];
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 50% 100%, rgba(0,40,30,0.30) 0%, transparent 55%)" }} />
+          {auroraLayers.map((l,i) => (
+            <div key={i} style={{
+              position:"absolute", left:"-20%", right:"-20%",
+              top:`${l.top}%`, height:`${l.h}%`,
+              background:`radial-gradient(ellipse at 50% 50%, rgba(${l.color},0.88) 0%, rgba(${l.color},0.28) 55%, transparent 100%)`,
+              borderRadius:"50%",
+              filter:"blur(28px)",
+              ["--ao" as any]: l.ao,
+              animation:`rt-aurora-wave ${l.dur}s ease-in-out infinite ${l.del}s, rt-aurora-float ${l.dur*0.6}s ease-in-out infinite ${l.del*0.5}s`,
+            }} />
+          ))}
+          {Array.from({length:40}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%", width:1+(i%3), height:1+(i%3),
+              background:`rgba(${i%3===0?"200,255,240":i%3===1?"180,220,255":"220,180,255"},0.9)`,
+              top:`${(i*11+3)%100}%`, left:`${(i*17+7)%100}%`,
+              animation:`rt-star-twinkle ${1.5+(i%6)*0.45}s ease-in-out infinite ${(i%9)*0.35}s`,
+              opacity:0.1+(i%5)*0.09 }} />
+          ))}
+        </div>
+      );
+    }
+
+    case "matrix": {
+      const CHARS = "01アイウエオカキクケコサシスセソタチツテトナニヌネノABCDEF0110∑∏Ω∞∂".split("");
+      const cols = Array.from({length:36},(_,i)=>({
+        left: (i/36)*100,
+        chars: Array.from({length:18},(_,j)=>CHARS[(i*7+j*3)%CHARS.length]).join("\n"),
+        dur: 1.8+(i%8)*0.35,
+        del: (i*0.28)%8,
+        opacity: 0.55+(i%5)*0.09,
+      }));
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 50% 50%, rgba(0,40,0,0.15) 0%, transparent 65%)" }} />
+          {cols.map((c,i)=>(
+            <div key={i} style={{
+              position:"absolute",
+              left:`${c.left}%`, top:0,
+              width:"2%", minWidth:"14px",
+              fontFamily:"'Courier New',monospace",
+              fontSize:"11px",
+              lineHeight:"1.4",
+              whiteSpace:"pre",
+              color:`rgba(0,${180+Math.round((i%8)*9)},${40+(i%4)*10},${c.opacity})`,
+              textShadow:`0 0 6px rgba(0,255,65,${c.opacity*0.6})`,
+              animation:`rt-matrix-drop ${c.dur}s linear infinite ${c.del}s`,
+              userSelect:"none",
+            }}>
+              {c.chars}
+            </div>
+          ))}
+          <div style={{ position:"absolute", inset:0,
+            background:"radial-gradient(ellipse at 50% 50%, rgba(0,60,0,0.08) 0%, transparent 70%)" }} />
+        </div>
+      );
+    }
+
+    case "storm": {
+      const rainDrops = Array.from({length:70},(_,i)=>({
+        left: (i*1.44)%100,
+        height: 28+(i%5)*12,
+        dur: 0.45+(i%5)*0.12,
+        del: (i*0.11)%3,
+        opacity: 0.25+(i%4)*0.10,
+        rx: 20+(i%4)*15,
+      }));
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 30% 0%, rgba(40,60,180,0.12) 0%, transparent 55%)" }} />
+          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 70% 0%, rgba(20,40,140,0.09) 0%, transparent 55%)" }} />
+          {[0,1,2].map(li=>(
+            <div key={li} style={{ position:"absolute", inset:0,
+              background:"rgba(200,220,255,0.04)",
+              animation:`rt-lightning-flash ${8+li*5}s step-end infinite ${li*3.5}s` }} />
+          ))}
+          {[0,1].map(li=>(
+            <div key={li} style={{
+              position:"absolute",
+              left:`${25+li*45}%`, top:0, width:"2px", bottom:"30%",
+              background:"linear-gradient(to bottom, rgba(200,220,255,0.95), rgba(200,220,255,0.2), transparent)",
+              clipPath:"polygon(0 0,100% 0,100% 55%,40% 55%,40% 100%,60% 100%,60% 70%,100% 70%,100% 100%,0 100%)",
+              filter:"blur(1px)",
+              animation:`rt-lightning-bolt ${9+li*6}s step-end infinite ${li*4+1}s`,
+            }} />
+          ))}
+          {rainDrops.map((d,i)=>(
+            <div key={i} style={{
+              position:"absolute",
+              left:`${d.left}%`, top:0,
+              width:"1px", height:`${d.height}px`,
+              background:"linear-gradient(to bottom, transparent, rgba(180,210,255,0.75), rgba(140,180,255,0.4), transparent)",
+              ["--rx" as any]:`${d.rx}px`,
+              ["--ro" as any]: d.opacity,
+              animation:`rt-rain-fall ${d.dur}s linear infinite ${d.del}s`,
+            }} />
+          ))}
+        </div>
+      );
+    }
+
+    case "volcanic": {
+      const embers = Array.from({length:45},(_,i)=>({
+        left: 5+(i*2.1)%90,
+        size: 2+(i%4)*1.5,
+        dur: 2.5+(i%8)*0.55,
+        del: (i*0.22)%6,
+        ex: -20+(i%5)*10,
+        ex2: -15+(i%6)*8,
+        col: i%5===0?"255,200,0":i%5===1?"255,120,0":i%5===2?"255,60,20":i%5===3?"255,160,0":"255,80,30",
+      }));
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", bottom:"-5%", left:"-10%", right:"-10%", height:"35%",
+            background:"radial-gradient(ellipse at 50% 100%, rgba(255,80,0,0.22) 0%, rgba(200,30,0,0.12) 50%, transparent 80%)",
+            animation:"rt-lava-glow 4s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"18%",
+            background:"linear-gradient(to top, rgba(255,60,0,0.18), rgba(200,20,0,0.10), transparent)",
+            animation:"rt-heat-shimmer 3s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", bottom:"-5%", left:"-10%", right:"-10%", height:"25%",
+            background:"radial-gradient(ellipse at 30% 100%, rgba(255,120,0,0.15) 0%, transparent 55%)",
+            animation:"rt-lava-glow 6s ease-in-out infinite 2s" }} />
+          <div style={{ position:"absolute", bottom:"-5%", left:"-10%", right:"-10%", height:"25%",
+            background:"radial-gradient(ellipse at 75% 100%, rgba(220,40,0,0.12) 0%, transparent 55%)",
+            animation:"rt-lava-glow 5s ease-in-out infinite 1s" }} />
+          {embers.map((e,i)=>(
+            <div key={i} style={{
+              position:"absolute", borderRadius:"50%",
+              width:e.size, height:e.size,
+              left:`${e.left}%`, bottom:"0%",
+              background:`radial-gradient(circle, rgba(${e.col},1) 0%, rgba(${e.col},0.4) 60%, transparent 100%)`,
+              boxShadow:`0 0 ${e.size*2}px rgba(${e.col},0.6)`,
+              ["--ex" as any]:`${e.ex}px`,
+              ["--ex2" as any]:`${e.ex2}px`,
+              animation:`rt-ember-rise ${e.dur}s ease-out infinite ${e.del}s`,
+            }} />
+          ))}
+        </div>
+      );
+    }
+
     default:
       return null;
   }
@@ -1066,6 +1296,10 @@ export function getRoomThemeBorderClass(themeId: string | null | undefined): str
     case "cherry": return "from-pink-400 to-rose-500";
     case "gold": return "from-yellow-300 to-amber-500";
     case "violet": return "from-violet-400 to-fuchsia-600";
+    case "aurora": return "from-teal-400 to-green-400";
+    case "matrix": return "from-green-400 to-green-700";
+    case "storm": return "from-blue-500 to-slate-600";
+    case "volcanic": return "from-red-500 to-orange-400";
     default: return "from-cyan-500 to-purple-500";
   }
 }
