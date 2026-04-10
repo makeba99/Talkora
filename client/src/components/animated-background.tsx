@@ -99,10 +99,10 @@ function drawGalaxy(ctx: Ctx, W: number, H: number, t: number, arms: GalaxyDot[]
     ctx.fillRect(0, 0, W, H);
   };
 
-  nebula(0,    0,    W*0.28, "rgba(100,20,160", 0.22);
-  nebula(W*0.18, -H*0.12, W*0.20, "rgba(160,30,220", 0.14);
-  nebula(-W*0.22, H*0.15, W*0.22, "rgba(60,10,130",  0.18);
-  nebula(0, 0, W*0.10, "rgba(220,180,255", 0.25);
+  nebula(0,    0,    W*0.28, "rgb(100,20,160", 0.22);
+  nebula(W*0.18, -H*0.12, W*0.20, "rgb(160,30,220", 0.14);
+  nebula(-W*0.22, H*0.15, W*0.22, "rgb(60,10,130",  0.18);
+  nebula(0, 0, W*0.10, "rgb(220,180,255", 0.25);
 
   arms.forEach(d => {
     const a   = d.angle + rotation;
