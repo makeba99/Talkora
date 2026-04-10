@@ -694,31 +694,31 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     </div>
                   </div>
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
                     <Input
                       placeholder="Or search YouTube..."
                       value={ytSearchQuery}
                       onChange={(e) => handleYtSearchInput(e.target.value)}
                       className="pl-8 text-sm h-8"
                     />
-                    {ytSearching && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" />}
+                    {ytSearching && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin z-10" />}
+                    {ytSearchResults.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-popover border border-border rounded-md shadow-lg max-h-44 overflow-y-auto">
+                        {ytSearchResults.map((v: any) => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => { setSelectedYtId(v.id); setYtSearchQuery(""); setYtSearchResults([]); }}
+                            className={`w-full flex items-center gap-2 p-1.5 text-left text-xs transition-colors hover:bg-muted ${selectedYtId === v.id ? "bg-red-500/10" : ""}`}
+                          >
+                            <img src={v.thumbnail?.url || `https://img.youtube.com/vi/${v.id}/default.jpg`} className="w-10 h-7 object-cover rounded flex-shrink-0" />
+                            <span className="truncate">{v.title}</span>
+                            {selectedYtId === v.id && <Youtube className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {ytSearchResults.length > 0 && (
-                    <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
-                      {ytSearchResults.map((v: any) => (
-                        <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => { setSelectedYtId(v.id); setYtSearchQuery(""); setYtSearchResults([]); }}
-                          className={`w-full flex items-center gap-2 p-1.5 rounded-md text-left transition-colors hover:bg-muted text-xs border ${selectedYtId === v.id ? "border-red-500 bg-red-500/10" : "border-transparent"}`}
-                        >
-                          <img src={v.thumbnail?.url || `https://img.youtube.com/vi/${v.id}/default.jpg`} className="w-10 h-7 object-cover rounded flex-shrink-0" />
-                          <span className="truncate">{v.title}</span>
-                          {selectedYtId === v.id && <Youtube className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                   {selectedYtId && (
                     <div className="flex items-center gap-2 p-2 bg-red-500/10 rounded-md border border-red-500/30">
                       <img src={`https://img.youtube.com/vi/${selectedYtId}/default.jpg`} className="w-10 h-7 object-cover rounded" />
