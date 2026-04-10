@@ -10,7 +10,12 @@ export type Theme =
   | "ocean-deep"
   | "forest-dark"
   | "rose-gold"
-  | "aurora";
+  | "aurora"
+  | "starfield"
+  | "galaxy"
+  | "synthwave"
+  | "blood-moon"
+  | "slate-noir";
 
 export interface ThemeDefinition {
   id: Theme;
@@ -18,7 +23,7 @@ export interface ThemeDefinition {
   description: string;
   swatchColors: string[];
   isDark: boolean;
-  animationClass: string;
+  animated?: boolean;
 }
 
 export const THEMES: ThemeDefinition[] = [
@@ -28,7 +33,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Classic dark mode",
     swatchColors: ["#0f1117", "#17193a", "#00c8ff"],
     isDark: true,
-    animationClass: "animate-theme-default",
   },
   {
     id: "light",
@@ -36,7 +40,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Clean bright mode",
     swatchColors: ["#f4f6fb", "#edf0f7", "#00acd9"],
     isDark: false,
-    animationClass: "animate-theme-default",
   },
   {
     id: "midnight-purple",
@@ -44,7 +47,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Deep violet nights",
     swatchColors: ["#0d0a1a", "#160d2b", "#a855f7"],
     isDark: true,
-    animationClass: "animate-theme-purple",
   },
   {
     id: "warm-sepia",
@@ -52,7 +54,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Vintage golden warmth",
     swatchColors: ["#faf3e0", "#f5e6c8", "#c2813a"],
     isDark: false,
-    animationClass: "animate-theme-sepia",
   },
   {
     id: "neon-cyberpunk",
@@ -60,7 +61,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Electric neon on black",
     swatchColors: ["#050505", "#0f0f14", "#00ff9f"],
     isDark: true,
-    animationClass: "animate-theme-neon",
   },
   {
     id: "frosted-glass",
@@ -68,7 +68,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Icy translucent clarity",
     swatchColors: ["#e8f0fe", "#dce8fb", "#3b82f6"],
     isDark: false,
-    animationClass: "animate-theme-frost",
   },
   {
     id: "ocean-deep",
@@ -76,7 +75,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Dark abyssal teal",
     swatchColors: ["#071820", "#091f2c", "#06b6d4"],
     isDark: true,
-    animationClass: "animate-theme-ocean",
   },
   {
     id: "forest-dark",
@@ -84,7 +82,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Deep woodland greens",
     swatchColors: ["#0a120a", "#0f1a0f", "#4ade80"],
     isDark: true,
-    animationClass: "animate-theme-forest",
   },
   {
     id: "rose-gold",
@@ -92,7 +89,6 @@ export const THEMES: ThemeDefinition[] = [
     description: "Warm pink sophistication",
     swatchColors: ["#fdf2f4", "#fae6ea", "#e8657d"],
     isDark: false,
-    animationClass: "animate-theme-rose",
   },
   {
     id: "aurora",
@@ -100,7 +96,45 @@ export const THEMES: ThemeDefinition[] = [
     description: "Northern lights ambiance",
     swatchColors: ["#050e12", "#071522", "#10d9a0"],
     isDark: true,
-    animationClass: "animate-theme-aurora",
+    animated: true,
+  },
+  {
+    id: "starfield",
+    label: "Starfield",
+    description: "Animated star canvas",
+    swatchColors: ["#080c18", "#0d1120", "#93c5fd"],
+    isDark: true,
+    animated: true,
+  },
+  {
+    id: "galaxy",
+    label: "Galaxy",
+    description: "Swirling nebula cosmos",
+    swatchColors: ["#0b0814", "#120c1e", "#c084fc"],
+    isDark: true,
+    animated: true,
+  },
+  {
+    id: "synthwave",
+    label: "Synthwave",
+    description: "Retro 80s neon grid",
+    swatchColors: ["#0e080f", "#170b18", "#ff3cb4"],
+    isDark: true,
+    animated: true,
+  },
+  {
+    id: "blood-moon",
+    label: "Blood Moon",
+    description: "Crimson atmospheric dark",
+    swatchColors: ["#0d0404", "#160707", "#dc2626"],
+    isDark: true,
+  },
+  {
+    id: "slate-noir",
+    label: "Slate Noir",
+    description: "Desaturated film noir",
+    swatchColors: ["#0b0d10", "#10131a", "#6b9fd4"],
+    isDark: true,
   },
 ];
 
@@ -128,8 +162,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    const allThemeClasses = THEMES.map((t) => t.id);
-    root.classList.remove(...allThemeClasses, "dark");
+    const allThemeIds = THEMES.map((t) => t.id);
+    root.classList.remove(...allThemeIds, "dark");
 
     const def = THEMES.find((t) => t.id === theme);
     root.classList.add(theme);
