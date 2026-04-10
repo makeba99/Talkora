@@ -1007,66 +1007,16 @@ html.slate-noir {
 }
 
 html.starfield #animated-bg-canvas,
-html.galaxy #animated-bg-canvas {
+html.galaxy #animated-bg-canvas,
+html.synthwave #animated-bg-canvas,
+html.aurora #animated-bg-canvas,
+html.neon-cyberpunk #animated-bg-canvas,
+html.midnight-purple #animated-bg-canvas,
+html.blood-moon #animated-bg-canvas {
   opacity: 1;
-}
-
-/* synthwave grid floor */
-@keyframes synthwave-scroll {
-  from { background-position: 0 0; }
-  to   { background-position: 0 80px; }
-}
-
-html.synthwave body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    linear-gradient(transparent 95%, hsl(325 100% 60% / 0.08) 100%),
-    repeating-linear-gradient(90deg, hsl(325 100% 60% / 0.06) 0px, transparent 1px, transparent 80px),
-    repeating-linear-gradient(0deg, hsl(325 100% 60% / 0.06) 0px, transparent 1px, transparent 80px);
-  background-size: 80px 80px, 80px 80px, 80px 80px;
-  animation: synthwave-scroll 3s linear infinite;
-}
-
-/* blood moon atmospheric glow */
-html.blood-moon body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: radial-gradient(ellipse 80% 50% at 50% 0%, hsl(0 80% 20% / 0.25), transparent 70%);
-  pointer-events: none;
 }
 
 /* synthwave neon text glow */
 html.synthwave .neon-text {
   text-shadow: 0 0 12px hsl(325 100% 60% / 0.7), 0 0 30px hsl(325 100% 60% / 0.35), 0 0 60px hsl(325 100% 60% / 0.15);
-}
-
-/* galaxy slow nebula rotation */
-@keyframes nebula-drift {
-  0%   { transform: rotate(0deg) scale(1.0); opacity: 0.18; }
-  50%  { transform: rotate(180deg) scale(1.15); opacity: 0.25; }
-  100% { transform: rotate(360deg) scale(1.0); opacity: 0.18; }
-}
-
-html.galaxy body::before {
-  content: "";
-  position: fixed;
-  top: -20%;
-  left: -20%;
-  width: 140%;
-  height: 140%;
-  z-index: -1;
-  background: conic-gradient(
-    from 0deg,
-    hsl(285 75% 30% / 0.0),
-    hsl(320 65% 25% / 0.3),
-    hsl(250 60% 20% / 0.4),
-    hsl(285 75% 30% / 0.0)
-  );
-  animation: nebula-drift 30s linear infinite;
-  pointer-events: none;
 }

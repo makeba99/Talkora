@@ -44,9 +44,10 @@ export const THEMES: ThemeDefinition[] = [
   {
     id: "midnight-purple",
     label: "Midnight Purple",
-    description: "Deep violet nights",
+    description: "Particle nebula cosmos",
     swatchColors: ["#0d0a1a", "#160d2b", "#a855f7"],
     isDark: true,
+    animated: true,
   },
   {
     id: "warm-sepia",
@@ -125,9 +126,10 @@ export const THEMES: ThemeDefinition[] = [
   {
     id: "blood-moon",
     label: "Blood Moon",
-    description: "Crimson atmospheric dark",
+    description: "Crimson moon atmospheric",
     swatchColors: ["#0d0404", "#160707", "#dc2626"],
     isDark: true,
+    animated: true,
   },
   {
     id: "slate-noir",
