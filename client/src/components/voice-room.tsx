@@ -3095,27 +3095,27 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               {videoTabVR === "youtube" && (
                 <div className="space-y-2">
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
                     <Input placeholder="Paste YouTube link or search..." value={ytLinkVR || ytQueryVR} onChange={(e) => {
                       const val = e.target.value;
                       if (val.includes("youtube.com") || val.includes("youtu.be")) { setYtLinkVR(val); setYtQueryVR(""); }
                       else { setYtQueryVR(val); setYtLinkVR(""); handleYtQueryVR(val); }
                     }} className="pl-8 text-sm h-8" />
                     {ytSearchingVR && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />}
+                    {ytResultsVR.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-popover border border-border rounded-md shadow-lg max-h-44 overflow-y-auto">
+                        {ytResultsVR.map((v: any) => (
+                          <button key={v.id} type="button"
+                            onClick={() => { setSelectedYtVR(v.id); setYtResultsVR([]); setYtQueryVR(""); }}
+                            className={`w-full flex items-center gap-2 p-1.5 text-left text-xs transition-colors hover:bg-muted ${selectedYtVR === v.id ? "bg-red-500/10" : ""}`}
+                          >
+                            <img src={v.thumbnail?.url || `https://img.youtube.com/vi/${v.id}/default.jpg`} className="w-10 h-7 object-cover rounded flex-shrink-0" />
+                            <span className="truncate">{v.title}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {ytResultsVR.length > 0 && (
-                    <div className="space-y-1 max-h-36 overflow-y-auto">
-                      {ytResultsVR.map((v: any) => (
-                        <button key={v.id} type="button"
-                          onClick={() => { setSelectedYtVR(v.id); setYtResultsVR([]); setYtQueryVR(""); }}
-                          className={`w-full flex items-center gap-2 p-1.5 rounded-md text-left text-xs border transition-colors hover:bg-muted ${selectedYtVR === v.id ? "border-red-500 bg-red-500/10" : "border-transparent"}`}
-                        >
-                          <img src={v.thumbnail?.url || `https://img.youtube.com/vi/${v.id}/default.jpg`} className="w-10 h-7 object-cover rounded flex-shrink-0" />
-                          <span className="truncate">{v.title}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                   {selectedYtVR && (
                     <div className="flex items-center gap-2 p-2 bg-red-500/10 rounded-md border border-red-500/30">
                       <img src={`https://img.youtube.com/vi/${selectedYtVR}/default.jpg`} className="w-10 h-7 object-cover rounded" />
