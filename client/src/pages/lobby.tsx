@@ -12,7 +12,7 @@ import { MessagesDropdown } from "@/components/messages-dropdown";
 import { SocialPanel } from "@/components/social-panel";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemePicker } from "@/components/theme-picker";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -232,12 +232,12 @@ export default function Lobby() {
                 <SocialPanel onlineUsers={onlineUsers} onOpenDm={(userId) => setDmUserId(userId)} />
                 <MessagesDropdown onOpenDm={(userId) => setDmUserId(userId)} />
                 <NotificationsDropdown />
-                <ThemeToggle />
+                <ThemePicker />
                 <ProfileDropdown />
               </>
             ) : (
               <>
-                <ThemeToggle />
+                <ThemePicker />
                 <Button asChild data-testid="button-sign-in">
                   <a href="/api/login">
                     <LogIn className="w-4 h-4 mr-2" />
@@ -251,7 +251,7 @@ export default function Lobby() {
       </header>
 
       <div className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto p-4 space-y-5">
+        <div className="max-w-6xl mx-auto p-4 space-y-5 animate-fade-in">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
