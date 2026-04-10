@@ -995,6 +995,51 @@ html.slate-noir {
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+/* ─── NEURAL PULSE ────────────────────────────────────────────── */
+html.neural-pulse {
+  --button-outline: rgba(0, 212, 255, .12);
+  --badge-outline: rgba(0, 212, 255, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(0, 212, 255, .05);
+  --elevate-2: rgba(0, 212, 255, .10);
+  --background: 215 60% 3%;
+  --foreground: 195 80% 90%;
+  --border: 210 50% 14%;
+  --card: 215 55% 6%;
+  --card-foreground: 195 80% 90%;
+  --card-border: 210 45% 11%;
+  --sidebar: 215 58% 4%;
+  --sidebar-foreground: 195 80% 90%;
+  --sidebar-border: 210 48% 10%;
+  --sidebar-primary: 192 100% 50%;
+  --sidebar-primary-foreground: 215 60% 3%;
+  --sidebar-accent: 210 45% 9%;
+  --sidebar-accent-foreground: 195 80% 90%;
+  --sidebar-ring: 192 100% 50%;
+  --popover: 215 55% 7%;
+  --popover-foreground: 195 80% 90%;
+  --popover-border: 210 50% 14%;
+  --primary: 192 100% 50%;
+  --primary-foreground: 215 60% 3%;
+  --secondary: 200 80% 45%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 210 45% 10%;
+  --muted-foreground: 200 30% 55%;
+  --accent: 210 45% 8%;
+  --accent-foreground: 195 80% 90%;
+  --destructive: 0 80% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 210 45% 16%;
+  --ring: 192 100% 50%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
 /* ─── ANIMATED BACKGROUND CANVAS ─────────────────────────────── */
 #animated-bg-canvas {
   position: fixed;
@@ -1012,7 +1057,8 @@ html.synthwave #animated-bg-canvas,
 html.aurora #animated-bg-canvas,
 html.neon-cyberpunk #animated-bg-canvas,
 html.midnight-purple #animated-bg-canvas,
-html.blood-moon #animated-bg-canvas {
+html.blood-moon #animated-bg-canvas,
+html.neural-pulse #animated-bg-canvas {
   opacity: 1;
 }
 

@@ -15,7 +15,8 @@ export type Theme =
   | "galaxy"
   | "synthwave"
   | "blood-moon"
-  | "slate-noir";
+  | "slate-noir"
+  | "neural-pulse";
 
 export interface ThemeDefinition {
   id: Theme;
@@ -138,6 +139,14 @@ export const THEMES: ThemeDefinition[] = [
     swatchColors: ["#0b0d10", "#10131a", "#6b9fd4"],
     isDark: true,
   },
+  {
+    id: "neural-pulse",
+    label: "Neural Pulse",
+    description: "AI network live connections",
+    swatchColors: ["#03050e", "#080f1f", "#00d4ff"],
+    isDark: true,
+    animated: true,
+  },
 ];
 
 interface ThemeContextType {
@@ -148,10 +157,10 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "galaxy",
+  theme: "neural-pulse",
   setTheme: () => {},
   toggleTheme: () => {},
-  currentThemeDef: THEMES.find(t => t.id === "galaxy") ?? THEMES[0],
+  currentThemeDef: THEMES.find(t => t.id === "neural-pulse") ?? THEMES[0],
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -160,9 +169,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem("theme") as Theme | null;
       const hasExplicitChoice = localStorage.getItem("theme-chosen") === "1";
       if (saved && hasExplicitChoice) return saved;
-      return "galaxy";
+      return "neural-pulse";
     }
-    return "galaxy";
+    return "neural-pulse";
   });
 
   useEffect(() => {

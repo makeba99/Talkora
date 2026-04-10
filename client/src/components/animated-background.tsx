@@ -536,10 +536,158 @@ function drawBloodMoon(ctx: Ctx, W: number, H: number, t: number) {
 }
 
 /* ─────────────────────────────────────────────
+   NEURAL PULSE – drifting nodes + live connections + energy packets
+───────────────────────────────────────────── */
+interface NeuralNode {
+  x: number; y: number;
+  vx: number; vy: number;
+  r: number; color: string;
+  pulsePhase: number; pulseSpeed: number;
+}
+interface NeuralPacket {
+  fromIdx: number; toIdx: number;
+  progress: number; speed: number; color: string;
+}
+interface NeuralWave {
+  x: number; y: number;
+  radius: number; maxRadius: number; color: string;
+}
+interface NeuralState {
+  nodes: NeuralNode[]; packets: NeuralPacket[]; waves: NeuralWave[];
+}
+
+const NP_COLORS   = ["#00d4ff","#00e5ff","#40c4ff","#00bcd4","#80deea","#4dd0e1","#26c6da","#00acc1"];
+const NP_COUNT    = 110;
+const NP_THRESH   = 195;
+
+function buildNeuralPulse(W: number, H: number): NeuralState {
+  const nodes: NeuralNode[] = Array.from({ length: NP_COUNT }, () => {
+    const speed = 0.12 + Math.random() * 0.32;
+    const angle = Math.random() * Math.PI * 2;
+    return {
+      x: Math.random() * W, y: Math.random() * H,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      r: 1.3 + Math.random() * 2.0,
+      color: NP_COLORS[Math.floor(Math.random() * NP_COLORS.length)],
+      pulsePhase: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.7 + Math.random() * 0.7,
+    };
+  });
+  return { nodes, packets: [], waves: [] };
+}
+
+function drawNeuralPulse(ctx: Ctx, W: number, H: number, t: number, state: NeuralState) {
+  ctx.clearRect(0, 0, W, H);
+  const { nodes, packets, waves } = state;
+
+  // Move nodes
+  for (const n of nodes) {
+    n.x += n.vx; n.y += n.vy;
+    if (n.x < 0) { n.x = 0; n.vx *= -1; }
+    if (n.x > W) { n.x = W; n.vx *= -1; }
+    if (n.y < 0) { n.y = 0; n.vy *= -1; }
+    if (n.y > H) { n.y = H; n.vy *= -1; }
+  }
+
+  // Connections
+  ctx.save();
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      const dx = a.x - b.x, dy = a.y - b.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < NP_THRESH) {
+        const alpha = (1 - dist / NP_THRESH) * 0.5;
+        const aHex = Math.round(alpha * 255).toString(16).padStart(2, "0");
+        const grd = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+        grd.addColorStop(0, a.color + aHex);
+        grd.addColorStop(1, b.color + aHex);
+        ctx.beginPath();
+        ctx.strokeStyle = grd;
+        ctx.lineWidth   = (1 - dist / NP_THRESH) * 1.4;
+        ctx.globalAlpha = 1;
+        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+
+  // Nodes
+  for (const n of nodes) {
+    const pulse = 0.65 + 0.35 * Math.sin(t * n.pulseSpeed + n.pulsePhase);
+    const glowR = n.r * 5;
+    const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+    grd.addColorStop(0, n.color + "99");
+    grd.addColorStop(1, n.color + "00");
+    ctx.globalAlpha = pulse * 0.75;
+    ctx.fillStyle   = grd;
+    ctx.beginPath(); ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle   = "#ffffff";
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 0.55, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle   = n.color;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Spawn packets
+  if (Math.random() < 0.05 && packets.length < 55) {
+    const i = Math.floor(Math.random() * nodes.length);
+    const j = Math.floor(Math.random() * nodes.length);
+    if (i !== j) {
+      const a = nodes[i], b = nodes[j];
+      const dx = a.x - b.x, dy = a.y - b.y;
+      if (Math.sqrt(dx * dx + dy * dy) < NP_THRESH) {
+        packets.push({ fromIdx: i, toIdx: j, progress: 0, speed: 0.010 + Math.random() * 0.016, color: nodes[i].color });
+      }
+    }
+  }
+
+  // Draw packets
+  for (let pi = packets.length - 1; pi >= 0; pi--) {
+    const p = packets[pi];
+    p.progress += p.speed;
+    if (p.progress >= 1) { packets.splice(pi, 1); continue; }
+    const a = nodes[p.fromIdx], b = nodes[p.toIdx];
+    const px = a.x + (b.x - a.x) * p.progress;
+    const py = a.y + (b.y - a.y) * p.progress;
+    const gAlpha = Math.sin(p.progress * Math.PI);
+    const grd = ctx.createRadialGradient(px, py, 0, px, py, 6);
+    grd.addColorStop(0, "#ffffff");
+    grd.addColorStop(0.3, p.color);
+    grd.addColorStop(1,   p.color + "00");
+    ctx.globalAlpha = gAlpha;
+    ctx.fillStyle   = grd;
+    ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Spawn pulse waves
+  if (Math.random() < 0.009 && waves.length < 10) {
+    const n = nodes[Math.floor(Math.random() * nodes.length)];
+    waves.push({ x: n.x, y: n.y, radius: 0, maxRadius: 110 + Math.random() * 60, color: n.color });
+  }
+
+  // Draw waves
+  for (let wi = waves.length - 1; wi >= 0; wi--) {
+    const w = waves[wi];
+    w.radius += 1.6;
+    if (w.radius > w.maxRadius) { waves.splice(wi, 1); continue; }
+    const alpha = (1 - w.radius / w.maxRadius) * 0.55;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = w.color;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath(); ctx.arc(w.x, w.y, w.radius, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const ANIMATED_THEMES = new Set([
-  "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon",
+  "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon","neural-pulse",
 ]);
 
 export function AnimatedBackground() {
@@ -554,6 +702,7 @@ export function AnimatedBackground() {
     galaxyArms?:  GalaxyDot[];
     rain?:        RainColumn[];
     nebula?:      NebParticle[];
+    neural?:      NeuralState;
   }>({});
 
   const active = ANIMATED_THEMES.has(theme);
@@ -588,6 +737,9 @@ export function AnimatedBackground() {
       }
       if (theme === "midnight-purple") {
         dataRef.current.nebula = buildNebula(W, H);
+      }
+      if (theme === "neural-pulse") {
+        dataRef.current.neural = buildNeuralPulse(W, H);
       }
     };
 
@@ -642,6 +794,10 @@ export function AnimatedBackground() {
       }
       else if (theme === "blood-moon") {
         drawBloodMoon(ctx, W, H, t);
+      }
+      else if (theme === "neural-pulse") {
+        if (!dataRef.current.neural) return;
+        drawNeuralPulse(ctx, W, H, t, dataRef.current.neural);
       }
 
       rafRef.current = requestAnimationFrame(draw);
