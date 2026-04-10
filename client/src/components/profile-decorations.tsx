@@ -624,22 +624,95 @@ export const ROOM_THEMES = [
 
 export type RoomThemeId = typeof ROOM_THEMES[number]["id"];
 
+const ROOM_THEME_KEYFRAMES = `
+  @keyframes rt-orb-drift {
+    0%,100% { transform: translate(0,0) scale(1); opacity: 0.55; }
+    33%  { transform: translate(22px,-28px) scale(1.08); opacity: 0.75; }
+    66%  { transform: translate(-18px,16px) scale(0.94); opacity: 0.45; }
+  }
+  @keyframes rt-orb-drift2 {
+    0%,100% { transform: translate(0,0) scale(1); opacity: 0.45; }
+    40%  { transform: translate(-30px,20px) scale(1.12); opacity: 0.65; }
+    75%  { transform: translate(18px,-12px) scale(0.9); opacity: 0.35; }
+  }
+  @keyframes rt-scanline {
+    0%   { transform: translateY(-100%); opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 0.6; }
+    100% { transform: translateY(120vh); opacity: 0; }
+  }
+  @keyframes rt-grid-pulse {
+    0%,100% { opacity: 0.10; }
+    50%      { opacity: 0.22; }
+  }
+  @keyframes rt-star-twinkle {
+    0%,100% { opacity: 0.15; transform: scale(0.7); }
+    50%      { opacity: 1;    transform: scale(1.3); }
+  }
+  @keyframes rt-shooting-star {
+    0%   { transform: translate(0,0) rotate(-30deg); opacity: 1; width: 0px; }
+    50%  { opacity: 0.8; width: 120px; }
+    100% { transform: translate(300px, 120px) rotate(-30deg); opacity: 0; width: 0px; }
+  }
+  @keyframes rt-aurora {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes rt-firefly {
+    0%,100% { opacity: 0; transform: translate(0,0) scale(0.4); }
+    25%      { opacity: 0.9; transform: translate(var(--fx1,8px),var(--fy1,-12px)) scale(1.1); }
+    75%      { opacity: 0.4; transform: translate(var(--fx2,-6px),var(--fy2,6px)) scale(0.7); }
+  }
+  @keyframes rt-bubble {
+    0%   { opacity: 0; transform: translateY(0) scale(0.4); }
+    15%  { opacity: 0.7; }
+    85%  { opacity: 0.3; }
+    100% { opacity: 0; transform: translateY(-90px) scale(1.15); }
+  }
+  @keyframes rt-ocean-wave {
+    0%,100% { transform: translateX(0) scaleY(1); }
+    50%      { transform: translateX(-28px) scaleY(1.06); }
+  }
+  @keyframes rt-cherry-fall {
+    0%   { opacity: 0; transform: translate(0,-10px) rotate(0deg); }
+    8%   { opacity: 1; }
+    90%  { opacity: 0.7; }
+    100% { opacity: 0; transform: translate(var(--cx,40px),110vh) rotate(var(--cr,220deg)); }
+  }
+  @keyframes rt-glitch {
+    0%,92%,100% { clip-path: none; transform: none; opacity: 0; }
+    93%          { clip-path: inset(30% 0 40% 0); transform: translateX(-4px); opacity: 0.7; }
+    95%          { clip-path: inset(60% 0 10% 0); transform: translateX(4px);  opacity: 0.5; }
+    97%          { clip-path: inset(10% 0 70% 0); transform: translateX(-2px); opacity: 0.6; }
+  }
+  @keyframes rt-nebula-spin {
+    from { transform: rotate(0deg) scale(1);   opacity: 0.08; }
+    50%  { transform: rotate(180deg) scale(1.1); opacity: 0.14; }
+    to   { transform: rotate(360deg) scale(1);   opacity: 0.08; }
+  }
+  @keyframes rt-petal-drift {
+    0%,100% { transform: rotate(0deg) translateX(0); }
+    50%      { transform: rotate(8deg) translateX(10px); }
+  }
+`;
+
 export function getRoomThemeStyle(themeId: string | null | undefined): React.CSSProperties {
   switch (themeId) {
     case "neon":
-      return { background: "linear-gradient(135deg, #0a0a1a 0%, #0d1b2a 50%, #0a0a1a 100%)", boxShadow: "inset 0 0 60px rgba(0,255,255,0.05)" };
+      return { background: "radial-gradient(ellipse at 30% 40%, #07091c 0%, #060612 55%, #08060e 100%)" };
     case "galaxy":
-      return { background: "linear-gradient(135deg, #0b0c10 0%, #1f2041 40%, #0d0d2b 100%)" };
+      return { background: "radial-gradient(ellipse at 20% 25%, #151535 0%, #0b0c12 50%, #090b1e 100%)" };
     case "sunset":
-      return { background: "linear-gradient(135deg, #1a0a00 0%, #2d1200 40%, #1a0500 100%)" };
+      return { background: "radial-gradient(ellipse at 50% 20%, #1c0800 0%, #0f0400 50%, #070200 100%)" };
     case "forest":
-      return { background: "linear-gradient(135deg, #021a0a 0%, #042a12 40%, #021508 100%)" };
+      return { background: "radial-gradient(ellipse at 50% 100%, #041608 0%, #020e05 55%, #010604 100%)" };
     case "cyberpunk":
-      return { background: "linear-gradient(135deg, #0a0a00 0%, #141400 40%, #0a0800 100%)" };
+      return { background: "radial-gradient(ellipse at 50% 50%, #0d0c00 0%, #070600 55%, #040400 100%)" };
     case "ocean":
-      return { background: "linear-gradient(135deg, #00071a 0%, #001240 40%, #00071a 100%)" };
+      return { background: "radial-gradient(ellipse at 50% 80%, #000b28 0%, #000618 55%, #000310 100%)" };
     case "cherry":
-      return { background: "linear-gradient(135deg, #1a0010 0%, #2a0018 40%, #1a000e 100%)" };
+      return { background: "radial-gradient(ellipse at 50% 0%, #1c0018 0%, #0d000d 55%, #060006 100%)" };
     default:
       return {};
   }
@@ -647,58 +720,189 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
 
 export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefined }) {
   if (!themeId || themeId === "none") return null;
+
+  const base: React.CSSProperties = { position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 };
+
   switch (themeId) {
     case "neon":
       return (
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
-          <div style={{ position: "absolute", top: -100, left: -100, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,255,255,0.06) 0%, transparent 70%)", animation: "dec-pulse 4s ease-in-out infinite" }} />
-          <div style={{ position: "absolute", bottom: -80, right: -80, width: 250, height: 250, borderRadius: "50%", background: "radial-gradient(circle, rgba(150,0,255,0.06) 0%, transparent 70%)", animation: "dec-pulse 4s ease-in-out infinite 2s" }} />
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", top:"-15%", left:"-10%", width:"55%", height:"55%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 65%)",
+            animation:"rt-orb-drift 8s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", bottom:"-10%", right:"-8%", width:"50%", height:"50%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(180,0,255,0.10) 0%, transparent 65%)",
+            animation:"rt-orb-drift2 11s ease-in-out infinite 2s" }} />
+          <div style={{ position:"absolute", top:"40%", right:"20%", width:"30%", height:"30%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(0,180,255,0.07) 0%, transparent 70%)",
+            animation:"rt-orb-drift 13s ease-in-out infinite 5s" }} />
+          <div style={{ position:"absolute", top:0, left:"45%", width:"1px", height:"100%",
+            background:"linear-gradient(to bottom, transparent, rgba(0,212,255,0.18), transparent)",
+            animation:"rt-scanline 7s linear infinite" }} />
+          <div style={{ position:"absolute", top:0, left:"72%", width:"1px", height:"100%",
+            background:"linear-gradient(to bottom, transparent, rgba(180,0,255,0.12), transparent)",
+            animation:"rt-scanline 9s linear infinite 3s" }} />
+          {Array.from({length:18}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%",
+              width: 1.5+(i%3)*1, height: 1.5+(i%3)*1,
+              background: i%2===0 ? "#00d4ff" : "#b400ff",
+              top:`${(i*19+7)%100}%`, left:`${(i*23+11)%100}%`,
+              opacity: 0.2+(i%4)*0.12,
+              animation:`rt-star-twinkle ${1.8+(i%5)*0.5}s ease-in-out infinite ${(i%7)*0.4}s` }} />
+          ))}
         </div>
       );
+
     case "galaxy":
       return (
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div key={i} style={{
-              position: "absolute",
-              width: 2 + (i % 3),
-              height: 2 + (i % 3),
-              borderRadius: "50%",
-              background: "#fff",
-              top: `${(i * 17 + 5) % 100}%`,
-              left: `${(i * 23 + 3) % 100}%`,
-              opacity: 0.3 + (i % 5) * 0.1,
-              animation: `dec-pulse ${2 + (i % 4)}s ease-in-out infinite ${(i % 3)}s`,
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", inset:0,
+            background:"radial-gradient(ellipse at 25% 35%, rgba(80,0,180,0.10) 0%, transparent 60%)",
+            animation:"rt-nebula-spin 60s linear infinite" }} />
+          <div style={{ position:"absolute", inset:0,
+            background:"radial-gradient(ellipse at 75% 65%, rgba(0,60,180,0.08) 0%, transparent 55%)",
+            animation:"rt-nebula-spin 80s linear infinite reverse" }} />
+          {Array.from({length:55}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%",
+              width: 1+(i%4)*1, height: 1+(i%4)*1,
+              background:"#fff",
+              top:`${(i*13+3)%100}%`, left:`${(i*19+7)%100}%`,
+              animation:`rt-star-twinkle ${1.5+(i%7)*0.4}s ease-in-out infinite ${(i%11)*0.3}s`,
+              opacity: 0.1+(i%6)*0.12 }} />
+          ))}
+          {Array.from({length:3}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute",
+              top:`${10+i*28}%`, left:`${5+i*30}%`,
+              height:"1.5px", background:"linear-gradient(to right, transparent, rgba(255,255,255,0.9), transparent)",
+              animation:`rt-shooting-star ${5+i*3}s ease-out infinite ${i*4}s`,
+              borderRadius:"9999px" }} />
+          ))}
+        </div>
+      );
+
+    case "sunset":
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", inset:0,
+            background:"linear-gradient(160deg, rgba(255,80,0,0.14) 0%, rgba(220,40,0,0.09) 40%, rgba(180,0,20,0.06) 80%, transparent 100%)",
+            backgroundSize:"200% 200%", animation:"rt-aurora 12s ease infinite" }} />
+          <div style={{ position:"absolute", top:"-20%", left:"-10%", width:"60%", height:"60%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(255,100,0,0.12) 0%, transparent 65%)",
+            animation:"rt-orb-drift 10s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", bottom:"-15%", right:"-5%", width:"45%", height:"45%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(200,20,0,0.10) 0%, transparent 65%)",
+            animation:"rt-orb-drift2 14s ease-in-out infinite 3s" }} />
+          {Array.from({length:14}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%",
+              width: 2+(i%3)*1.5, height: 2+(i%3)*1.5,
+              background: i%2===0 ? "rgba(255,140,0,0.7)" : "rgba(255,60,0,0.6)",
+              top:`${(i*17+5)%100}%`, left:`${(i*21+9)%100}%`,
+              animation:`rt-star-twinkle ${2+(i%5)*0.6}s ease-in-out infinite ${(i%6)*0.5}s` }} />
+          ))}
+        </div>
+      );
+
+    case "forest":
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"50%",
+            background:"radial-gradient(ellipse at 50% 100%, rgba(20,180,60,0.08) 0%, transparent 70%)",
+            animation:"rt-orb-drift 10s ease-in-out infinite" }} />
+          {Array.from({length:22}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%",
+              width: 3+(i%3)*2, height: 3+(i%3)*2,
+              background:`radial-gradient(circle, rgba(${80+i*5},255,${100+i*3},0.85) 0%, rgba(0,200,60,0.1) 100%)`,
+              top:`${(i*13+20)%100}%`, left:`${(i*17+5)%100}%`,
+              animation:`rt-firefly ${3+(i%5)*0.8}s ease-in-out infinite ${(i%9)*0.4}s`,
+              ["--fx1" as any]:`${-8+(i%3)*8}px`,
+              ["--fy1" as any]:`${-10-(i%4)*5}px`,
+              ["--fx2" as any]:`${6-(i%3)*5}px`,
+              ["--fy2" as any]:`${8+(i%3)*4}px`,
             }} />
           ))}
+          <div style={{ position:"absolute", inset:0,
+            background:"radial-gradient(ellipse at 20% 80%, rgba(0,100,30,0.08) 0%, transparent 50%)" }} />
         </div>
       );
+
     case "cyberpunk":
       return (
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0, opacity: 0.15 }}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} style={{ position: "absolute", top: 0, bottom: 0, left: `${i * 12.5}%`, borderLeft: "1px solid #ffd700", opacity: 0.3 }} />
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          {Array.from({length:10}).map((_,i)=>(
+            <div key={`v${i}`} style={{ position:"absolute", top:0, bottom:0, left:`${i*10}%`,
+              borderLeft:`1px solid rgba(255,${i%2===0?220:0},${i%2===0?0:220},0.18)`,
+              animation:`rt-grid-pulse ${2+i*0.3}s ease-in-out infinite ${i*0.2}s` }} />
           ))}
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ position: "absolute", left: 0, right: 0, top: `${i * 16.7}%`, borderTop: "1px solid #00ffff", opacity: 0.2 }} />
+          {Array.from({length:8}).map((_,i)=>(
+            <div key={`h${i}`} style={{ position:"absolute", left:0, right:0, top:`${i*12.5}%`,
+              borderTop:`1px solid rgba(0,220,255,0.12)`,
+              animation:`rt-grid-pulse ${2.5+i*0.4}s ease-in-out infinite ${i*0.3}s` }} />
+          ))}
+          <div style={{ position:"absolute", inset:0,
+            background:"radial-gradient(ellipse at 50% 50%, rgba(255,220,0,0.05) 0%, transparent 60%)",
+            animation:"rt-orb-drift 8s ease-in-out infinite" }} />
+          {Array.from({length:8}).map((_,i)=>(
+            <div key={`p${i}`} style={{ position:"absolute", borderRadius:"50%",
+              width:2, height:2, background: i%2===0 ? "#ffd700":"#00ffff",
+              top:`${(i*23+10)%100}%`, left:`${(i*31+5)%100}%`,
+              animation:`rt-glitch 6s linear infinite ${i*0.7}s`, opacity:0.8 }} />
           ))}
         </div>
       );
+
+    case "ocean":
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          {Array.from({length:3}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", bottom:`${i*8}%`, left:"-10%", right:"-10%",
+              height:`${20+i*6}%`,
+              background:`radial-gradient(ellipse at 50% 80%, rgba(0,${80+i*20},${180+i*20},${0.06+i*0.02}) 0%, transparent 70%)`,
+              borderRadius:"60%",
+              animation:`rt-ocean-wave ${6+i*2}s ease-in-out infinite ${i*1.5}s` }} />
+          ))}
+          {Array.from({length:20}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%",
+              width: 3+(i%4)*2, height: 3+(i%4)*2,
+              background:`radial-gradient(circle, rgba(100,220,255,0.7) 0%, rgba(0,180,255,0.1) 100%)`,
+              top:`${(i*17+10)%85+10}%`, left:`${(i*23+5)%100}%`,
+              animation:`rt-bubble ${3+(i%5)*0.7}s ease-out infinite ${(i%8)*0.5}s` }} />
+          ))}
+          <div style={{ position:"absolute", top:"-20%", left:"-10%", width:"55%", height:"55%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(0,60,200,0.08) 0%, transparent 65%)",
+            animation:"rt-orb-drift 14s ease-in-out infinite" }} />
+        </div>
+      );
+
     case "cherry":
       return (
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} style={{
-              position: "absolute",
-              fontSize: 16 + (i % 4) * 4,
-              top: `${(i * 13) % 20 - 10}%`,
-              left: `${(i * 17 + 5) % 100}%`,
-              opacity: 0.6,
-              animation: `dec-petal ${3 + (i % 4)}s ease-in-out infinite ${(i % 3)}s`,
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", top:"-20%", left:"20%", width:"60%", height:"60%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(255,80,180,0.10) 0%, transparent 65%)",
+            animation:"rt-orb-drift 12s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", bottom:"-10%", right:"-5%", width:"40%", height:"40%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(200,0,120,0.08) 0%, transparent 65%)",
+            animation:"rt-orb-drift2 15s ease-in-out infinite 4s" }} />
+          {Array.from({length:20}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute",
+              fontSize: 12+(i%4)*5,
+              top:`${(i*7)%15-5}%`,
+              left:`${(i*17+3)%100}%`,
+              animation:`rt-cherry-fall ${5+(i%6)*1.2}s ease-in cubic-bezier(.4,0,.6,1) infinite ${(i%8)*0.7}s`,
+              ["--cx" as any]:`${-50+(i%5)*25}px`,
+              ["--cr" as any]:`${160+(i%4)*30}deg`,
+              userSelect:"none", opacity:0,
             }}>🌸</div>
           ))}
         </div>
       );
+
     default:
       return null;
   }
