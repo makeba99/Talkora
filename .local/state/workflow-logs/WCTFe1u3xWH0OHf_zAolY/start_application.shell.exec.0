@@ -1,0 +1,653 @@
+
+> rest-express@1.0.0 dev
+> cross-env NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 1 empty rooms for deletion
+8:59:22 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+8:59:31 PM [express] GET /api/auth/user 200 in 10ms :: {"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}
+8:59:31 PM [express] GET /api/users 200 in 6ms :: [{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]
+8:59:31 PM [express] GET /api/follows/followers/57512235 304 in 8ms :: []
+8:59:31 PM [express] GET /api/follows/following/57512235 304 in 10ms :: []
+8:59:31 PM [express] GET /api/users/rooms 304 in 18ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+8:59:31 PM [express] GET /api/messages/conversations 304 in 17ms :: []
+8:59:31 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+8:59:31 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+8:59:31 PM [express] GET /api/notifications 304 in 9ms :: []
+8:59:31 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+8:59:31 PM [express] POST /api/follows/counts 200 in 7ms :: {"57512235":0}
+8:59:31 PM [express] POST /api/rooms/votes/batch 200 in 9ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+8:59:36 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+8:59:36 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+8:59:36 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+8:59:41 PM [express] GET /api/messages/conversations 304 in 22ms :: []
+8:59:41 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+8:59:41 PM [express] GET /api/notifications 304 in 6ms :: []
+8:59:41 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+8:59:41 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+8:59:42 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+8:59:47 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+8:59:47 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+8:59:47 PM [express] GET /api/rooms/participants 200 in 0ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+8:59:47 PM [express] GET /api/rooms 200 in 2ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+8:59:47 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+8:59:47 PM [express] POST /api/rooms/votes/batch 200 in 4ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{}}
+8:59:47 PM [express] POST /api/follows/counts 200 in 2ms :: {"57512235":0}
+8:59:47 PM [express] GET /api/users/rooms 304 in 6ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+8:59:51 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+8:59:51 PM [express] GET /api/notifications 304 in 15ms :: []
+8:59:52 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+8:59:52 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+8:59:52 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+8:59:52 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+8:59:57 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+8:59:57 PM [express] GET /api/users/rooms 304 in 6ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+8:59:57 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:02 PM [express] POST /api/rooms/votes/batch 200 in 11ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:00:02 PM [express] GET /api/rooms/participants 304 in 7ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:00:02 PM [express] GET /api/notifications 304 in 4ms :: []
+9:00:02 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:00:02 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:00:02 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:03 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:07 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:00:08 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:08 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:12 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:00:12 PM [express] GET /api/notifications 304 in 6ms :: []
+9:00:12 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:00:13 PM [express] GET /api/users/rooms 304 in 37ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:13 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:13 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:00:18 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:18 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:19 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:00:22 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:00:22 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:00:22 PM [express] GET /api/notifications 304 in 7ms :: []
+9:00:23 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:23 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:24 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:00:29 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:29 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:29 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:00:32 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:00:32 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:00:32 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:00:33 PM [express] GET /api/notifications 304 in 5ms :: []
+9:00:39 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:39 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:39 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:00:43 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:00:43 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:00:43 PM [express] GET /api/notifications 304 in 4ms :: []
+9:00:44 PM [express] GET /api/users/rooms 304 in 3ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:44 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:45 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:00:47 PM [express] GET /api/auth/user 304 in 5ms :: {"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}
+9:00:47 PM [express] GET /api/rooms/7a62f5ed-5649-4316-b5a4-8f604e8aa200 200 in 5ms :: {"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}
+9:00:47 PM [express] GET /api/follows/following/57512235 304 in 5ms :: []
+9:00:47 PM [express] GET /api/blocks 304 in 4ms :: []
+9:00:49 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:49 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:50 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+9:00:53 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:00:53 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:00:53 PM [express] GET /api/notifications 304 in 10ms :: []
+9:00:55 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:00:55 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:00:56 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:01:00 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:00 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:01 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:01:02 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:01:03 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:01:03 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:01:03 PM [express] GET /api/notifications 304 in 5ms :: []
+9:01:05 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:05 PM [express] GET /api/rooms 304 in 15ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:07 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:01:10 PM [express] GET /api/users/rooms 304 in 6ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:10 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:12 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:01:13 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:01:13 PM [express] GET /api/messages/conversations 304 in 8ms :: []
+9:01:14 PM [express] GET /api/notifications 304 in 6ms :: []
+9:01:16 PM [express] GET /api/users/rooms 304 in 60ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:16 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:17 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+9:01:21 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:21 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:23 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:01:23 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:01:24 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:01:24 PM [express] GET /api/notifications 304 in 5ms :: []
+9:01:26 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:27 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:28 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:01:31 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:32 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:32 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:01:33 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:01:34 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:01:34 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+9:01:34 PM [express] GET /api/notifications 304 in 5ms :: []
+9:01:36 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:37 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:38 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:01:42 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:43 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:44 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:01:44 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:01:44 PM [express] GET /api/messages/conversations 304 in 13ms :: []
+9:01:44 PM [express] GET /api/notifications 304 in 6ms :: []
+9:01:47 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:48 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:49 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:01:52 PM [express] GET /api/youtube/search 200 in 744ms :: [{"id":"yUwGxNUKtW8","title":"NICE","thumbnail":"https://i.ytimg.com/vi/yUwGxNUKtW8/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCPz0jlt3RI3lsbpapLijMHYcpjuQ","channelTitle":"The Carters - Topic","duration":"3:54"},{"id":"lg5WKsVnEA4","title":"Michael Rosen - Nice","thumbnail":"https://i.ytimg.com/vi/lg5WKsVnEA4/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYWiBgKGUwDw==&rs=AOn4CLADNqm9ov7lc0zDv2Oku-SQpPNI1g","channelTitle":"kieran","duration":"0:08"},{"id":"KS3CEWvJOMI","title":"How to Spend 1 Day in NICE France | Travel Itinerary","thumbnail":"https://i.ytimg.com/vi/KS3CEWvJOMI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCQdKYA6XcyxmMi9KEQggPExzyobQ","channelTitle":"Exotic Vacation","duration":"11:36"},{"id":"mqmLInEI8hQ","title":"Why You Should Visit Nice, France (French Riviera)","thumbnail":"https://i.ytimg.com/vi/mqmLInEI8hQ/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCqAvjx5Rycy0wcdUcf4D1Yup783w","channelTitle":"Les Frenchies","duration":"19:01"},{"id":"IYYZFBpcN8Y","title":"Nice France Travel Guide: 20 BEST Things To Do In Nice","thumbnail":"https://i.ytimg.com/vi/IYYZFBpcN8Y/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCHU4hwydw5v8UbJlgwRnR0iqj-YQ","channelTitle":"Taylor & Jordan Travel","duration":"13:22"},{"id":"TbZl5CvcS6M","title":"TOP 10 Best Things to Do in Nice, France | French Riviera Insider Travel Tips","thumbnail":"https://i.ytimg.com/vi/TbZl5CvcS6M/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAiF5CNjflDnPLiwkS3ZDqvno9RDQ","channelTitle":"Riviera Go!","duration":"13:39"},{"id":"cQXPfDpbxAw","title":"NICE - THE MOST BEAUTIFUL MEDITERRANEAN CITY IN THE WORLD - A MEDITERRANEAN PARADISE","thumbnail":"https://i.ytimg.com/vi/cQXPfDpbxAw/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDHw8SUgaOPhRBF4QqKLQb3yfSVSA","channelTitle":"Tourist Channel","duration":"1:53:01"},{"id":"z7o8tWhcFlE","title":"How to Use Public Transport in Nice France & on the French Riviera | Trams, Buses, Trains Explained","thumbnail":"https://i.ytimg.com/vi/z7o8tWhcFlE/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDkrByLh0p4YUBcX3V6g5RgsRFVPA","channelTitle":"Riviera Go!","duration":"14:37"},{"id":"E9lJZ6Zk5oc","title":"Nice France 🇫🇷 — The Nicest City in France — 4K HDR Walking Tour","thumbnail":"https://i.ytimg.com/vi/E9lJZ6Zk5oc/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBumbWqMQm-XSmsj3hKba4_V-Wt7g","channelTitle":"Tourister","duration":"6:32:34"},{"id":"Y68kYOdXW9A","title":"52 Tips I Wish I Knew Before Visiting Nice, France","thumbnail":"https://i.ytimg.com/vi/Y68kYOdXW9A/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDs9JPGEbcHwZjEt-xNrxANFcjHhA","channelTitle":"Camden David","duration":"21:01"},{"id":"XgN2Zd721QY","title":"Nice, France 4K Walking Tour 🇫🇷 French Riviera Night Walk | Beach & Old Town","thumbnail":"https://i.ytimg.com/vi/XgN2Zd721QY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCSC0PSp2aP18KQtn_JuMZW5LLCtw","channelTitle":"Duslin Travels","duration":"56:17"},{"id":"2teag5QC7NA","title":"Nice Life: Episode 1 - It's A Wonderful Life","thumbnail":"https://i.ytimg.com/vi/2teag5QC7NA/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDQMzQgdX-Mm2ika1t1p8FzVSSd0A","channelTitle":"Grian","duration":"45:51"},{"id":"8g50TLYu9hw","title":"A Cute Christmas Cottage! Nice Life: Episode 1","thumbnail":"https://i.ytimg.com/vi/8g50TLYu9hw/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAHaSrZgaHomArAbIcLQVxmKzciEw","channelTitle":"GeminiTay","duration":"45:32"},{"id":"0cvzztYZXYs","title":"Indie / Bedroom / Pop / Surf Rock - 24/7 Radio  - Nice Guys Chill FM","thumbnail":"https://i.ytimg.com/vi/0cvzztYZXYs/hq720.jpg?v=67d7eaf4&sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBX_buShOGH5WR521WV0bZ4sWQCeQ","channelTitle":"Nice Guys","duration":""},{"id":"tTVazXcPGEs","title":"The French Riviera is INCREDIBLE 🇫🇷 First Time in Nice, France","thumbnail":"https://i.ytimg.com/vi/tTVazXcPGEs/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDFb7EEVaMvk4fibPvNsttcxxuybg","channelTitle":"2Passports 1Dream","duration":"18:09"},{"id":"xPJF5jPvYSo","title":"Nice","thumbnail":"https://i.ytimg.com/vi/xPJF5jPvYSo/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBj44lBUYpX4TSK0fcixFsYJvvCzQ","channelTitle":"BigGucci Sosa","duration":"2:25"},{"id":"m_D0KVzslOQ","title":"Nice Life: Episode 2 - NETHER ESCAPE!","thumbnail":"https://i.ytimg.com/vi/m_D0KVzslOQ/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCPKcGkQL6nRmOCVg8YMAp9cZDfkQ","channelTitle":"Grian","duration":"51:09"},{"id":"KUquTwZW1XA","title":"Top 10 Day Trips from Nice, France | French Riviera - Côte d’Azur Insider Tips","thumbnail":"https://i.ytimg.com/vi/KUquTwZW1XA/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDhn1yCOmjQ2n5T7Ok-f2cUBuqItg","channelTitle":"Riviera Go!","duration":"14:20"},{"id":"JfBVJSm2qFg","title":"The Nice (feat. Keith Emerson) - America (1968)","thumbnail":"https://i.ytimg.com/vi/JfBVJSm2qFg/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLANBDN2xLAtBEIiwQFIXeADqnL9Jg","channelTitle":"Beat-Club","duration":"4:46"},{"id":"l_yImWYGWZY","title":"Nice France Walking Tour 4K The Heart of the French Riviera 2025","thumbnail":"https://i.ytimg.com/vi/l_yImWYGWZY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBMyIbzCrLUon5IsquzstmzBRfl9A","channelTitle":"Walking Man - Sightseeing","duration":"1:04:47"}]
+9:01:53 PM [express] GET /api/users/rooms 304 in 9ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:53 PM [express] GET /api/youtube/search 200 in 682ms :: [{"id":"QF-kUzLr33w","title":"Explore our exceptional campus in Nice | EDHEC Business School","thumbnail":"https://i.ytimg.com/vi/QF-kUzLr33w/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLD7lyG6slS63QPFt2HhJQwd8rdWxg","channelTitle":"EDHEC Business School","duration":"1:47"},{"id":"bHoQGznwE7o","title":"WELCOME CENTER UCA","thumbnail":"https://i.ytimg.com/vi/bHoQGznwE7o/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAM650iddUKFxFNlLqhqiK9nkF69g","channelTitle":"Université Côte d'Azur","duration":"1:19"},{"id":"aNjZwJpKbF4","title":"Introducing IMREDD Nice - UCA","thumbnail":"https://i.ytimg.com/vi/aNjZwJpKbF4/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAHuXPpH6gAQ4wyDJH0sv_RwmAZkQ","channelTitle":"Université Côte d'Azur","duration":"2:26"},{"id":"9ik6hRSYeUY","title":"Nice diaries e.p. : First day of university in Nice France☺️","thumbnail":"https://i.ytimg.com/vi/9ik6hRSYeUY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBDmVeQShL9l9Mrprks1gjAAitWXw","channelTitle":"Nicole","duration":"9:50"},{"id":"8KkKuTCFvzI","title":"What Makes a Good Life? Lessons from the Longest Study on Happiness | Robert Waldinger | TED","thumbnail":"https://i.ytimg.com/vi/8KkKuTCFvzI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCeubIG8Fw6p9LB75yGzhflhLsLOA","channelTitle":"TED","duration":"12:47"},{"id":"HHRzpbrQWb0","title":"nice university","thumbnail":"https://i.ytimg.com/vi/HHRzpbrQWb0/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDUHKcVGATf8sBGjaSVheLcwadSzQ","channelTitle":"Imagine University","duration":"0:17"},{"id":"IIs0xMnWCHY","title":"WORLD MOST NICE UNIVERSITY","thumbnail":"https://i.ytimg.com/vi/IIs0xMnWCHY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLB_apZV5ehh2mTHSd_i599JZ9rP2A","channelTitle":"Important Information","duration":"0:31"},{"id":"RYL2mKe8c54","title":"Harvard University admission interviews tricks | A nice math olympiad algebra problems (x,y)=?","thumbnail":"https://i.ytimg.com/vi/RYL2mKe8c54/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAkrD9dwcGujbB-xolwqxEkaPI7KQ","channelTitle":"Rashel's Classroom","duration":"21:58"},{"id":"M6RTLkLV9Bw","title":"NICE Actimize University","thumbnail":"https://i.ytimg.com/vi/M6RTLkLV9Bw/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAucUBnltaPFlyWA7V9_Y2ic74TRg","channelTitle":"NiCE","duration":"1:42"},{"id":"8gscjAIbxfk","title":"Nice University games tour competition between 2 different classes in Milan, Italy. It was fun","thumbnail":"https://i.ytimg.com/vi/8gscjAIbxfk/hqdefault.jpg?sqp=-oaymwE9COADEI4CSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Ac4GgALeA4oCDAgAEAEYZSBaKFEwDw==&rs=AOn4CLCA7VM8lHoE1DJI81C0uYeJY5Lvog","channelTitle":"HOLIDAY_LIFESTYLE_TOUR","duration":"0:24"},{"id":"-NhseA8MBJg","title":"Harvard University admission interviews tricks | A nice math olympiad algebra problems |","thumbnail":"https://i.ytimg.com/vi/-NhseA8MBJg/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLB8TeUjfYq7GNzpq6jSQgYjTBwbFQ","channelTitle":"Rashel's Classroom","duration":"9:35"},{"id":"VyY8Kn2tGaM","title":"Nice university nice environment","thumbnail":"https://i.ytimg.com/vi/VyY8Kn2tGaM/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBEh1xoVtRqUaKyrC57kSvkWpO49A","channelTitle":"Education Help","duration":"0:17"},{"id":"aJC03mKG_SM","title":"university nice","thumbnail":"https://i.ytimg.com/vi/aJC03mKG_SM/hqdefault.jpg?sqp=-oaymwE9COADEI4CSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4AewFgAKmA4oCDAgAEAEYFSBDKH8wDw==&rs=AOn4CLAoHD_OdpkOq1iwZcVRJetNMvuUVw","channelTitle":"Fadi All In One","duration":"0:51"},{"id":"Ld-FK8iSyO4","title":"DAY 7: THE BEST ROCK BEACH IN NICE (The University Dream Series) France Trip 2022","thumbnail":"https://i.ytimg.com/vi/Ld-FK8iSyO4/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCEcS5HcbYIteet3lcmhRsuKU_vEg","channelTitle":"Michael Speciale","duration":"9:56"},{"id":"oXJc9MnmRZw","title":"University of Ljubljana – WOODn’t It Be Nice? (2025)","thumbnail":"https://i.ytimg.com/vi/oXJc9MnmRZw/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYYCBlKFIwDw==&rs=AOn4CLCWMYdqSsX9nTUoxDEj0UY5ajWBHw","channelTitle":"Biodesign Challenge","duration":"3:30"},{"id":"o5_-FbcZxV8","title":"A NICE DOCUMENTARY  FOUNTAIN UNIVERSITY","thumbnail":"https://i.ytimg.com/vi/o5_-FbcZxV8/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAjAMBRr67Wrj4yPOdQKYj8dYOqmg","channelTitle":"Bamim8or Media","duration":"11:04"},{"id":"-8E2SOBaPkI","title":"Nice University","thumbnail":"https://i.ytimg.com/vi/-8E2SOBaPkI/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLC30oBs6TopgWqOyIy0dguGOaqjWw","channelTitle":"arwa","duration":"0:59"},{"id":"7y_5M9QpeCU","title":"\"Not so nice in Nice\". T.U.O. (The Stranglers) Nice University. Live.","thumbnail":"https://i.ytimg.com/vi/7y_5M9QpeCU/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLC5Lyb6JCFz4jQoyWGgq29RWlIA4g","channelTitle":"TheUkuleleOne","duration":"4:09"},{"id":"w8HJmtvzdRg","title":"Dirty Nice – Another Life | University of Hertfordshire Propeller Sessions","thumbnail":"https://i.ytimg.com/vi/w8HJmtvzdRg/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBIP78Y0bMspaJyw3bnpgFOAbaRUQ","channelTitle":"Propeller Music Live","duration":"3:35"}]
+9:01:53 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/zF_AH9YEkC8?autoplay=1&mute=1&loop=1&playlist=zF_AH9YEkC8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:54 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:01:54 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:01:54 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:01:54 PM [express] GET /api/notifications 304 in 5ms :: []
+9:01:54 PM [express] GET /api/youtube/search 200 in 619ms :: [{"id":"UUXdwtmQqo8","title":"The Most Beautiful Objects in the Universe | Space Documentary 2025","thumbnail":"https://i.ytimg.com/vi/UUXdwtmQqo8/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLANKFv0KC-hPYeW_RlCjgch3-b7Jw","channelTitle":"Actual Space","duration":"1:31:09"},{"id":"srTs9gvIs9I","title":"How many galaxy in the universe?","thumbnail":"https://i.ytimg.com/vi/srTs9gvIs9I/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYZSBbKEMwDw==&rs=AOn4CLAQ3EAJvNMEvB9IGehb-iV3JWYUog","channelTitle":"From Worlds Beyond ","duration":"0:06"},{"id":"abjdv2AExG0","title":"The 5 Most Insane Planets In The Universe","thumbnail":"https://i.ytimg.com/vi/abjdv2AExG0/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAO8k-mdHQJ9_-NnUOautaizCBKzw","channelTitle":"AstroKobi","duration":"6:39"},{"id":"ztVV54sPOns","title":"Travel the Universe While Relaxation ★ Space Ambient Music","thumbnail":"https://i.ytimg.com/vi/ztVV54sPOns/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBBbtsiwccdXIilbaP_VGBkQJ6jWg","channelTitle":"Relaxation Ambient Music","duration":"2:56:32"},{"id":"tRaMUeBkJmU","title":"UNIVERSE in 8K HDR: Earth, Space & Beyond","thumbnail":"https://i.ytimg.com/vi/tRaMUeBkJmU/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCcFzgKandW__mRUTUTpau3Yxbf3g","channelTitle":"8K VIDEOS HDR","duration":"12:05"},{"id":"kOlBkVxLmZE","title":"No One Knows I’m a Famous Gamer | Alan’s Universe","thumbnail":"https://i.ytimg.com/vi/kOlBkVxLmZE/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLA22nj5VcYGKuEFKAiTGKCIhmqB2w","channelTitle":"Alan's Universe","duration":"25:32"},{"id":"tmNfFNR7ogE","title":"The Biggest planet in the Universe 😨 #space #astronomy #universe","thumbnail":"https://i.ytimg.com/vi/tmNfFNR7ogE/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYfyA5KBMwDw==&rs=AOn4CLCOp0Z-MwzuqJ5lxTUWjJFMImgmNA","channelTitle":"Universe","duration":"0:54"},{"id":"fLvN2vGbWfs","title":"Earth in the place of Jupiter's moon 😱 #astronomy #universe #space","thumbnail":"https://i.ytimg.com/vi/fLvN2vGbWfs/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYciBNKD8wDw==&rs=AOn4CLAc5GJrf0JH5lpmAuwrirbrWjWjSg","channelTitle":"Universe","duration":"0:53"},{"id":"dtZpjTaEHRM","title":"Goodnight Universe – Launch Trailer – Nintendo Switch 2","thumbnail":"https://i.ytimg.com/vi/dtZpjTaEHRM/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAto_KnXTO7Jq6xkOgUSJ7ZNhdDbg","channelTitle":"Nintendo of America","duration":"2:04"},{"id":"-Gnlxm-MP4Q","title":"Is Epic Universe good for kids? My honest take. 🤔 #epicuniverse","thumbnail":"https://i.ytimg.com/vi/-Gnlxm-MP4Q/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYZSBOKEMwDw==&rs=AOn4CLCPDqek74fndnKoRvdXmuZDGNZnkQ","channelTitle":"Guide2WDW","duration":"2:10"},{"id":"U5GdEk3kOfg","title":"The Most Terrifying Things in Our Universe","thumbnail":"https://i.ytimg.com/vi/U5GdEk3kOfg/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLALeiRZBLAFHrK-x0vggZZymwopRA","channelTitle":"Good Enough","duration":"12:56"},{"id":"pXzD871cyEw","title":"The Most Relaxing Facts About The Universe to Fall Asleep To","thumbnail":"https://i.ytimg.com/vi/pXzD871cyEw/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLC-WqhSdnlz0kf3RLJtIFo5mLR9Kg","channelTitle":"Sleepy Science Channel","duration":"2:00:01"},{"id":"w8X37-MZtok","title":"NUMBER 1 WIDE RECIEVER ON UF!! (NFL UNIVERSE FOOTBALL ROBLOX)","thumbnail":"https://i.ytimg.com/vi/w8X37-MZtok/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYICBlKB4wDw==&rs=AOn4CLB0uDor9ZeMjgGSiXQeI5nr-q93CQ","channelTitle":"Kudaro","duration":"0:24"},{"id":"-BAYrTu3-lY","title":"Powerful and Positive Affirmations for a Good Morning | Powerful Thank you Universe Affirmations","thumbnail":"https://i.ytimg.com/vi/-BAYrTu3-lY/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYfyBPKBMwDw==&rs=AOn4CLBIXwF1W5tLat4_XflCUybVdDTyNA","channelTitle":"Bosque Neuroscience","duration":"0:56"},{"id":"S05WQuV-gj4","title":"Alternate Universe Snacks Taste Test","thumbnail":"https://i.ytimg.com/vi/S05WQuV-gj4/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCGG0ShRI1-D4tCnv_OlnRPwvXzdQ","channelTitle":"Good Mythical Morning","duration":"19:33"},{"id":"M1ceQMF_xUo","title":"Mean vs Nice Lapis 💎 | Key Homeworld Lore | Steven Universe | Cartoon Network","thumbnail":"https://i.ytimg.com/vi/M1ceQMF_xUo/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLD7zeHulXsAZk_EZBqyC4PJvx404g","channelTitle":"Steven Universe","duration":"2:31:59"},{"id":"iuK2tOw98iA","title":"How The Universe Began - Good Omens | Prime Video","thumbnail":"https://i.ytimg.com/vi/iuK2tOw98iA/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBIC1sH9o2mIJFr3CF_pNx2jGIoaA","channelTitle":"Prime Video Canada","duration":"4:45"},{"id":"lB551SNmuRU","title":"The Universe Is Obsessed with Making You Happy and Giving You What You Want (Subliminal)","thumbnail":"https://i.ytimg.com/vi/lB551SNmuRU/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAecALBhlHeWbTIsm-1aNBe54lPuA","channelTitle":"High Frequency Guru","duration":"4:10:13"}]
+9:01:58 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:01:58 PM [express] PATCH /api/rooms/7a62f5ed-5649-4316-b5a4-8f604e8aa200 200 in 10ms :: {"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}
+9:01:58 PM [express] PATCH /api/rooms/7a62f5ed-5649-4316-b5a4-8f604e8aa200 200 in 7ms :: {"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}
+9:01:58 PM [express] GET /api/rooms 200 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:58 PM [express] PATCH /api/rooms/7a62f5ed-5649-4316-b5a4-8f604e8aa200 200 in 9ms :: {"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}
+9:01:59 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:59 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:01:59 PM [express] PATCH /api/rooms/7a62f5ed-5649-4316-b5a4-8f604e8aa200 200 in 9ms :: {"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}
+9:01:59 PM [express] GET /api/messages/unread/count 304 in 15ms :: {"count":0}
+9:01:59 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:02 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:02:03 PM [express] GET /api/users/rooms 304 in 6ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:04 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:02:04 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+9:02:04 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:02:05 PM [express] GET /api/notifications 304 in 5ms :: []
+9:02:05 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:08 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:10 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:02:10 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:14 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:15 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:02:15 PM [express] GET /api/notifications 304 in 5ms :: []
+9:02:15 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:02:15 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:02:15 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:19 PM [express] GET /api/users/rooms 304 in 51ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:19 PM [express] GET /api/auth/user 401 in 0ms :: {"message":"Unauthorized"}
+9:02:19 PM [express] GET /api/rooms/participants 304 in 1ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:02:19 PM [express] GET /api/rooms 200 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:19 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{}}
+9:02:19 PM [express] POST /api/follows/counts 200 in 2ms :: {"57512235":0}
+9:02:20 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+9:02:20 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:24 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:25 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:02:25 PM [express] GET /api/notifications 304 in 5ms :: []
+9:02:25 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:02:26 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:26 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:02:30 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:31 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:02:31 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:33 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:02:35 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:02:35 PM [express] GET /api/users/rooms 304 in 8ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:35 PM [express] GET /api/notifications 304 in 5ms :: []
+9:02:35 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:02:36 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+9:02:36 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:40 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:41 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+9:02:42 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:45 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:02:45 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:45 PM [express] GET /api/notifications 304 in 7ms :: []
+9:02:46 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:02:47 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:02:47 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:51 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:52 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+9:02:52 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:02:56 PM [express] GET /api/notifications 304 in 4ms :: []
+9:02:56 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:02:56 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:02:56 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:02:57 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+9:02:58 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:01 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:02 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:03:03 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:03 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:03:06 PM [express] GET /api/notifications 304 in 5ms :: []
+9:03:06 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:03:06 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:03:06 PM [express] GET /api/users/rooms 304 in 8ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:07 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+9:03:08 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:11 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:13 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:03:13 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:16 PM [express] GET /api/notifications 304 in 5ms :: []
+9:03:16 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:03:16 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+9:03:17 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:18 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:03:18 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:22 PM [express] GET /api/users/rooms 304 in 61ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:23 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:03:24 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:26 PM [express] GET /api/notifications 304 in 5ms :: []
+9:03:26 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:03:27 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:03:27 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:28 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:03:29 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:32 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:33 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:03:34 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:03:34 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:37 PM [express] GET /api/notifications 304 in 10ms :: []
+9:03:37 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:03:37 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+9:03:37 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:03:38 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:39 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+9:03:39 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:03:42 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+9:03:43 PM [express] GET /api/users/rooms 304 in 6ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:44 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:03:45 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:03:46 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x3)[39m
+9:03:47 PM [express] GET /api/notifications 304 in 5ms :: []
+9:03:47 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:03:47 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+9:03:48 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:49 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:03:50 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:03:50 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x4)[39m
+9:03:53 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:03:54 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:03:55 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x5)[39m
+9:03:55 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:03:57 PM [express] GET /api/notifications 304 in 6ms :: []
+9:03:57 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:03:57 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:03:58 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:00 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:04:00 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:03 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:04:04 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:05 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:04:05 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:07 PM [express] GET /api/notifications 304 in 6ms :: []
+9:04:07 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:04:07 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:04:09 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:10 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+9:04:11 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:14 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:15 PM [express] GET /api/messages/unread/count 304 in 16ms :: {"count":0}
+9:04:16 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:17 PM [express] GET /api/notifications 304 in 5ms :: []
+9:04:17 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:04:18 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:04:19 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:20 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:04:21 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:25 PM [express] GET /api/users/rooms 304 in 48ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:26 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:04:26 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:28 PM [express] GET /api/notifications 304 in 5ms :: []
+9:04:28 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:04:28 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:04:30 PM [express] GET /api/users/rooms 304 in 6ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:31 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:04:31 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:34 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:04:35 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:36 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+9:04:37 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:38 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:04:38 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:04:38 PM [express] GET /api/notifications 304 in 5ms :: []
+9:04:40 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:42 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:04:42 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:45 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:47 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+9:04:47 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:48 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:04:48 PM [express] GET /api/notifications 304 in 6ms :: []
+9:04:48 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:04:51 PM [express] GET /api/users/rooms 304 in 6ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:52 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:04:52 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:56 PM [express] GET /api/users/rooms 304 in 6ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:04:57 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+9:04:57 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:04:59 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+9:04:59 PM [express] GET /api/notifications 304 in 6ms :: []
+9:04:59 PM [express] GET /api/rooms/participants 304 in 6ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:05:01 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:05:01 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x6)[39m
+9:05:03 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:05:03 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:04 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":0},"userVotes":{"7a62f5ed-5649-4316-b5a4-8f604e8aa200":false}}
+9:05:06 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:08 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:05:08 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:09 PM [express] GET /api/notifications 304 in 4ms :: []
+9:05:09 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:05:09 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+9:05:11 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:13 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:13 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:05:17 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:19 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:05:19 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:19 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:05:19 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:05:20 PM [express] GET /api/notifications 304 in 5ms :: []
+9:05:22 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:24 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:05:24 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:05:27 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/lib/theme.tsx, /src/index.css[22m
+9:05:27 PM [express] GET /api/users/rooms 304 in 47ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+[2m9:05:29 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/lib/theme.tsx[22m Could not Fast Refresh ("THEMES" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m9:05:29 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/components/theme-picker.tsx, /src/components/chat-picker.tsx[22m
+9:05:29 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+9:05:29 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:30 PM [express] GET /api/rooms/participants 304 in 8ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:05:30 PM [express] GET /api/messages/conversations 304 in 10ms :: []
+9:05:30 PM [express] GET /api/notifications 304 in 6ms :: []
+[2m9:05:30 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/chat-picker.tsx[22m Could not Fast Refresh ("renderMessageContent" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m9:05:30 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/dm-view.tsx, /src/components/voice-room.tsx[22m
+9:05:31 PM [express] GET /api/auth/user 304 in 5ms :: {"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}
+9:05:31 PM [express] POST /api/follows/counts 200 in 7ms :: {"57512235":0}
+9:05:36 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:36 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:05:36 PM [express] GET /api/rooms 304 in 15ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:41 PM [express] GET /api/rooms/participants 304 in 4ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:05:41 PM [express] GET /api/notifications 304 in 8ms :: []
+9:05:41 PM [express] GET /api/messages/conversations 304 in 9ms :: []
+9:05:41 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:41 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:41 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:05:46 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:46 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:46 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:05:51 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:05:51 PM [express] GET /api/notifications 304 in 16ms :: []
+9:05:51 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:05:51 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:51 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:51 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:05:54 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+9:05:56 PM [express] GET /api/auth/user 304 in 6ms :: {"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}
+9:05:56 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:05:56 PM [express] GET /api/rooms 304 in 9ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:05:57 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:05:58 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m [33m(x2)[39m
+9:06:04 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:06:04 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:06:05 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:06:09 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+9:06:09 PM [express] GET /api/notifications 304 in 8ms :: []
+9:06:09 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:06:10 PM [express] GET /api/users/rooms 304 in 3ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:06:10 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:06:10 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:06:15 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:06:15 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+9:06:15 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+9:06:20 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+9:06:20 PM [express] GET /api/notifications 304 in 4ms :: []
+9:06:20 PM [express] GET /api/rooms/participants 304 in 5ms :: {"7a62f5ed-5649-4316-b5a4-8f604e8aa200":[{"id":"57512235","email":"knowwnlovvw@gmail.com","firstName":"Knowwnlovvw","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLwbK6_tvUoxpcRe3NSGKVCrkIxXmiY_gqhaxkz0YQAckYmXQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-10T20:54:28.117Z","updatedAt":"2026-04-10T20:54:28.117Z"}]}
+9:06:20 PM [express] GET /api/users/rooms 304 in 4ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:06:20 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+9:06:20 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:06:22 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/theme-picker.tsx, /src/index.css[22m
+9:06:25 PM [express] GET /api/users/rooms 304 in 5ms :: {"57512235":"7a62f5ed-5649-4316-b5a4-8f604e8aa200"}
+9:06:25 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+9:06:26 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"7a62f5ed-5649-4316-b5a4-8f604e8aa200","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57512235","isPublic":true,"activeUsers":1,"roomTheme":"violet","hologramVideoUrl":"https://www.youtube.com/embed/UUXdwtmQqo8?autoplay=1&mute=1&loop=1&playlist=UUXdwtmQqo8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-10T20:54:48.575Z"}]
