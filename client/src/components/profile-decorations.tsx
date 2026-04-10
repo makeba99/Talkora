@@ -712,6 +712,27 @@ const ROOM_THEME_KEYFRAMES = `
   }
 `;
 
+export function getChatPanelStyle(themeId: string | null | undefined): React.CSSProperties {
+  switch (themeId) {
+    case "neon":
+      return { background: "rgba(5,3,14,0.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(80,40,180,0.22)" };
+    case "galaxy":
+      return { background: "rgba(6,7,18,0.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(60,80,200,0.20)" };
+    case "sunset":
+      return { background: "rgba(12,3,0,0.74)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(180,60,20,0.22)" };
+    case "forest":
+      return { background: "rgba(2,8,2,0.74)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(30,130,50,0.18)" };
+    case "cyberpunk":
+      return { background: "rgba(6,6,0,0.76)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(160,150,0,0.22)" };
+    case "ocean":
+      return { background: "rgba(0,3,18,0.74)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(20,80,200,0.22)" };
+    case "cherry":
+      return { background: "rgba(10,0,8,0.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(180,20,100,0.22)" };
+    default:
+      return { background: "rgba(8,8,8,0.78)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(255,255,255,0.06)" };
+  }
+}
+
 export function getRoomThemeStyle(themeId: string | null | undefined): React.CSSProperties {
   switch (themeId) {
     case "neon":

@@ -28,7 +28,7 @@ import { LANGUAGES, LEVELS } from "@shared/schema";
 import { DmDialog } from "@/components/dm-dialog";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent } from "@/components/chat-picker";
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
-import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay } from "@/components/profile-decorations";
+import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import type { Room, User, Follow } from "@shared/schema";
 
 interface VoiceRoomProps {
@@ -2235,6 +2235,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
   };
 
+  const currentTheme = (room as any).roomTheme || "none";
+
   const sidePanelContent = (
     <Tabs value={sidePanelTab} onValueChange={setSidePanelTab} className="flex flex-col h-full">
       <TabsList className="w-full border-b bg-transparent h-auto p-0 flex">
@@ -2453,7 +2455,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 handleChatKeyDown(e as any);
               }}
               placeholder="Type a message... (@ to mention)"
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2.5 pr-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2.5 pr-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
               rows={3}
               data-testid="input-room-chat"
             />
@@ -2811,8 +2813,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       </TabsContent>
     </Tabs>
   );
-
-  const currentTheme = (room as any).roomTheme || "none";
 
   return (
     <div className="flex h-full relative overflow-hidden" style={getRoomThemeStyle(currentTheme)}>
@@ -3930,7 +3930,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       </Sheet>
 
       {sidePanelOpen && (
-        <div className="w-80 border-l flex-col bg-background hidden md:flex h-full overflow-hidden">
+        <div className="w-80 border-l flex-col hidden md:flex h-full overflow-hidden relative z-10" style={getChatPanelStyle(currentTheme)}>
           {sidePanelContent}
         </div>
       )}
