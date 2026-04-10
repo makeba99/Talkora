@@ -1,0 +1,3 @@
+﻿client/src/components/voice-room.tsx(707,28): error TS2802: Type 'Set<string>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.
+client/src/components/voice-room.tsx(2301,38): error TS7006: Parameter 'userId' implicitly has an 'any' type.
+client/src/components/voice-room.tsx(2315,38): error TS7006: Parameter 'role' implicitly has an 'any' type.

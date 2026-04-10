@@ -1,0 +1,379 @@
+is a browser-based, real-time voice chat platform focused on language practice.
+
+Key idea:
+
+Users join public or private voice rooms
+
+No video by default, voice-first
+
+Rooms are organized by language(s) + skill level
+
+Lightweight social layer (friends, followers, DMs)
+
+Think:
+Discord voice rooms + Omegle simplicity + language learning UX
+
+2. High-level architecture (important for Replit)
+Frontend
+
+SPA (React-style)
+
+Dark UI, card-based layout
+
+WebRTC for voice
+
+WebSockets for real-time state
+
+Backend
+
+Auth + user profiles
+
+Room orchestration
+
+Presence & signaling
+
+Messaging (lightweight)
+
+Moderation + room settings
+
+For Replit:
+
+Node.js + Express
+
+Socket.IO (or native WebSocket)
+
+WebRTC signaling server
+
+Simple DB (Postgres / SQLite / Supabase / Firebase)
+
+3. Main pages & UI structure
+A. Home / Lobby Page
+
+Purpose: discover rooms + enter conversations fast
+
+Visible elements:
+
+Top header:
+
+Logo
+
+App title: Language Practice Community
+
+User profile dropdown (avatar + name)
+
+Primary actions:
+
+Create a new group
+
+Donation / support button
+
+Privacy / Contact / Community links
+
+Filters:
+
+Language tabs:
+
+All
+
+English
+
+Hindi
+
+Indonesian
+
+Arabic, etc.
+
+Each tab shows room count
+
+Search input (rooms + users)
+
+Room cards (core UI element):
+
+Each room card contains:
+
+Room title (e.g. English Beginner)
+
+Language(s)
+
+Skill level
+
+Circular participant slots (avatars or empty rings)
+
+Active user count
+
+“Join and talk now!” button
+
+Settings icon (for room owner/mods)
+
+Behavior
+
+Clicking join:
+
+Does NOT reload page
+
+Opens voice session instantly
+
+User is placed into WebRTC audio room
+
+B. Voice Room (inferred behavior)
+
+Even though not fully shown, behavior is clear:
+
+Inside a room:
+
+Voice-only communication
+
+Participant list with speaking indicators
+
+Mute / unmute
+
+Leave room
+
+Possibly:
+
+Raise hand
+
+Kick / mute (mods)
+
+Lock room
+
+Important
+Rooms are ephemeral:
+
+No message history required
+
+When users leave, audio state is destroyed
+
+C. Direct Messages (left screenshot)
+
+This is a 1-to-1 text chat system, separate from rooms.
+
+UI:
+
+Left panel:
+
+User avatar + name
+
+Message area
+
+Input box
+
+Status text:
+
+“No messages yet”
+
+Send button
+
+Purpose:
+
+Follow-up conversations
+
+Social connection outside rooms
+
+NOT the core feature, but supportive
+
+D. Social Panel (right side drawer)
+
+This is a floating panel, toggled via an icon.
+
+Features:
+
+Tabs:
+
+All
+
+Friends
+
+Following
+
+Followers
+
+Search users
+
+Each user row:
+
+Avatar
+
+Username
+
+Online status
+
+Actions:
+
+Call (voice)
+
+Like / favorite
+
+Follow
+
+This panel stays usable without leaving the lobby.
+
+4. Core functional systems (important for Replit build)
+1️⃣ Authentication
+
+Guest OR account-based
+
+Username + avatar
+
+No heavy onboarding
+
+Minimal schema:
+
+User {
+  id
+  username
+  avatar
+  status (online/offline)
+}
+
+2️⃣ Room system
+
+Room attributes:
+
+Room {
+  id
+  title
+  languages: []
+  level
+  maxUsers
+  ownerId
+  isPublic
+  activeUsers
+}
+
+
+Room behavior:
+
+Created dynamically
+
+Listed in lobby
+
+Destroyed when empty (optional)
+
+3️⃣ Real-time voice (critical)
+
+WebRTC audio only
+
+Flow:
+
+User clicks “Join”
+
+Client requests room token
+
+WebSocket signaling:
+
+Offer / Answer
+
+ICE candidates
+
+Peer connections established
+
+Audio streams shared
+
+Replit note:
+
+WebRTC requires a signaling server
+
+Use:
+
+Socket.IO
+
+STUN (Google STUN is enough initially)
+
+4️⃣ Presence & live updates
+
+Real-time updates needed for:
+
+User joins/leaves room
+
+Speaking indicators
+
+Online/offline status
+
+Room participant count
+
+Implementation:
+
+Socket events:
+
+user:join
+user:leave
+room:update
+presence:update
+
+5️⃣ Messaging (DMs only)
+
+Simple text messages
+
+No rooms chat needed
+
+Persist messages (optional)
+
+Schema:
+
+Message {
+  from
+  to
+  text
+  timestamp
+}
+
+5. UX principles Free4Talk follows
+
+This matters if you’re rebuilding it:
+
+Zero friction: join in 1 click
+
+Voice-first: no clutter
+
+No reloads
+
+Always responsive
+
+Rooms are central, social is secondary
+
+Nothing blocks joining a room
+
+6. What NOT to overbuild
+
+Free4Talk intentionally avoids:
+
+Video
+
+Heavy moderation tools
+
+Complex profiles
+
+Long onboarding
+
+Persistent room history
+
+This keeps it fast and scalable.
+
+7. Replit-ready tech stack (recommended)
+
+Frontend
+
+React + Vite
+
+Tailwind (dark UI)
+
+WebRTC APIs
+
+Socket.IO client
+
+Backend
+
+Node.js
+
+Express
+
+Socket.IO
+
+Simple DB (SQLite / Supabase)
+
+In-memory room state (Map)
+
+8. One-sentence summary (for Replit project description)
+
+A real-time, voice-only language practice platform where users instantly join public audio rooms by language and level, built with WebRTC, WebSockets, and a lightweight social layer.

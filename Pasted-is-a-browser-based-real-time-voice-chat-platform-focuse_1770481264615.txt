@@ -1,0 +1,194 @@
+
+
+wonderful-solace
+
+production
+
+
+
+30 days or $5.00 left
+
+
+Agent
+
+
+
+
+connect2talk
+Deployments
+Variables
+Metrics
+Settings
+Unexposed service
+asia-southeast1-eqsg3a
+1 Replica
+
+
+
+
+
+
+
+
+
+
+
+
+
+connect2talk
+/
+a4d802e9
+Failed
+
+Mar 16, 2026, 7:57 AM GMT+4
+Get Help
+Details
+Build Logs
+Deploy Logs
+Network Flow Logs
+Search build logs
+
+You reached the start of the range
+Mar 16, 2026, 7:52 AM
+ 
+[Region: asia-southeast1]
+==============
+Using Nixpacks
+==============
+
+context: 2wcv-GZ66
+╔═════════════════════ Nixpacks v1.38.0 ═════════════════════╗
+║ setup      │ nodejs_18, bun, openssl                       ║
+║────────────────────────────────────────────────────────────║
+║ caddy      │ pkgs: caddy                                   ║
+║            │ cmds: caddy fmt --overwrite /assets/Caddyfile ║
+║────────────────────────────────────────────────────────────║
+║ install    │ npm ci                                        ║
+║────────────────────────────────────────────────────────────║
+║ build      │ npm run build                                 ║
+║────────────────────────────────────────────────────────────║
+║ start      │ npm run start                                 ║
+╚════════════════════════════════════════════════════════════╝
+
+internal
+load build definition from Dockerfile
+0ms
+
+internal
+load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+535ms
+
+internal
+load .dockerignore
+0ms
+
+stage-0
+FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+7ms
+
+internal
+load build context
+0ms
+
+stage-0
+WORKDIR /app/ cached
+0ms
+
+stage-0
+COPY .nixpacks/nixpkgs-ba913eda2df8eb72147259189d55932012df6301.nix .nixpacks/nixpkgs-ba913eda2df8eb72147259189d55932012df6301.nix
+17ms
+
+stage-0
+RUN nix-env -if .nixpacks/nixpkgs-ba913eda2df8eb72147259189d55932012df6301.nix && nix-collect-garbage -d
+29s
+36 store paths deleted, 243.63 MiB freed
+
+stage-0
+COPY .nixpacks/nixpkgs-f69ae4816bc1b501460ad2c0c63ed0cc4a9b876e.nix .nixpacks/nixpkgs-f69ae4816bc1b501460ad2c0c63ed0cc4a9b876e.nix
+31ms
+
+stage-0
+RUN nix-env -if .nixpacks/nixpkgs-f69ae4816bc1b501460ad2c0c63ed0cc4a9b876e.nix && nix-collect-garbage -d
+36s
+30 store paths deleted, 240.05 MiB freed
+
+stage-0
+COPY .nixpacks/assets /assets/
+118ms
+
+stage-0
+COPY . /app/.
+52ms
+
+stage-0
+RUN  caddy fmt --overwrite /assets/Caddyfile
+170ms
+
+stage-0
+COPY . /app/.
+85ms
+
+stage-0
+RUN npm ci
+1s
+npm warn config production Use `--omit=dev` instead.
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'vite@7.3.0',
+npm warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm error code EUSAGE
+npm error
+npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+
+npm error
+npm error Missing: @types/passport-github2@1.2.9 from lock file
+
+npm error Missing: passport-github2@0.1.12 from lock file
+
+npm error Missing: @types/passport-oauth2@1.8.0 from lock file
+
+npm error Missing: @types/oauth@0.9.6 from lock file
+
+npm error Missing: passport-oauth2@1.8.0 from lock file
+
+npm error Missing: base64url@3.0.1 from lock file
+
+npm error Missing: oauth@0.10.2 from lock file
+
+npm error Missing: uid2@0.0.4 from lock file
+
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /root/.npm/_logs/2026-03-16T03_58_19_897Z-debug-0.log
+Dockerfile:26
+-------------------
+24 |     ENV NIXPACKS_PATH=/app/node_modules/.bin:$NIXPACKS_PATH
+25 |     COPY . /app/.
+26 | >>> RUN --mount=type=cache,id=s/debf1429-f533-4b7a-b76f-688059079b1a-/root/bun,target=/root/.bun npm ci
+27 |
+28 |     # build phase
+-------------------
+ERROR: failed to build: failed to solve: process "/bin/bash -ol pipefail -c npm ci" did not complete successfully: exit code: 1
+Error: Docker build failed
+You reached the end of the range
+Mar 16, 2026, 8:03 AM
+
+
+connect2talk
