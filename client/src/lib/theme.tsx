@@ -148,18 +148,21 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "dark",
+  theme: "galaxy",
   setTheme: () => {},
   toggleTheme: () => {},
-  currentThemeDef: THEMES[0],
+  currentThemeDef: THEMES.find(t => t.id === "galaxy") ?? THEMES[0],
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("theme") as Theme) || "dark";
+      const saved = localStorage.getItem("theme") as Theme | null;
+      const hasExplicitChoice = localStorage.getItem("theme-chosen") === "1";
+      if (saved && hasExplicitChoice) return saved;
+      return "galaxy";
     }
-    return "dark";
+    return "galaxy";
   });
 
   useEffect(() => {
@@ -176,7 +179,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const setTheme = (t: Theme) => setThemeState(t);
+  const setTheme = (t: Theme) => {
+    localStorage.setItem("theme-chosen", "1");
+    setThemeState(t);
+  };
 
   const toggleTheme = () => {
     setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
