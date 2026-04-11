@@ -1,0 +1,96 @@
+🚀 Ultimate Prompt: Advanced Admin System + Styled UI + Role Hierarchy
+
+Design and implement a modern, secure, and visually premium Admin System for a platform with role hierarchy, moderation tools, notifications, and custom UI styling.
+
+🧑‍⚖️ Role Hierarchy & Permissions
+👑 Super Admin (Platform Owner)
+Hardcoded primary owner:
+Email: dj55jggg@gmail.com
+This user is the highest authority:
+Can assign/remove Admins
+Can override all permissions
+Can access all panels across all platform spaces
+Always display a unique premium badge:
+Example: 🔥 “Platform Owner”
+Gold / glowing animated badge
+🛡️ Platform Admins
+Assigned only by Super Admin
+Permissions:
+View and manage reports
+Warn users
+Access locked/private rooms (bypass restrictions)
+Moderate content and users
+Restrictions:
+Cannot assign other admins
+Must obey Super Admin authority
+🧑‍🔧 Moderators (Optional Extension)
+Limited moderation:
+Can review reports
+Cannot warn or assign roles unless extended
+🔔 Notification System
+When promoted to Admin:
+Real-time + stored notification
+
+Example:
+
+🎉 You are now a Platform Admin! You can manage reports and moderate users.
+
+When warned:
+
+User receives warning notification:
+
+⚠️ You’ve received a warning from Admin. Continued violations may lead to restrictions.
+
+🚨 Reports & Warning System
+Reports include:
+Reporter info
+Reported user
+Category (spam, abuse, etc.)
+Message / description
+Status (pending / reviewed)
+⚠️ Warning Logic
+Admins can issue warnings
+Each user has:
+warningCount
+If many reports:
+Flag user visually in system
+Suggest admin action
+🏷️ Badges & Visual Identity
+Super Admin:
+Animated glowing badge (gold/fire effect)
+Admins:
+Clean “Admin” badge
+Users with warnings:
+Subtle red indicator or warning icon
+🧩 Admin Panel Visibility Logic
+Admin Panel should:
+ONLY be visible if:
+User is Admin or Super Admin
+Super Admin:
+Sees global panel across all platform spaces
+Admin:
+Sees platform-specific panels only
+🔓 Locked Room Bypass
+Admins & Super Admin:
+Can enter locked/private rooms
+Ignore:
+Capacity limits
+Access restrictions
+🎨 UI/UX – Premium Admin Panel Design
+🖥️ Layout
+Clean dashboard with:
+User management
+Reports panel
+Warnings panel
+Dark modern theme (glassmorphism or soft shadows)
+🧵 Styled Scrollbar (Important)
+
+Create a custom modern scrollbar for reports/admin panels:
+
+Thin, smooth, rounded
+Colors:
+Track: transparent / dark blur
+Thumb: gradient (purple → blue or gold for admin)
+Effects:
+Hover → brighter glow
+Smooth scrolling behavior
