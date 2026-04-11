@@ -1955,6 +1955,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [showMentionsOnly, setShowMentionsOnly] = useState(false);
+
+  const isMentionedInMessage = useCallback((text: string) => {
+    if (!user) return false;
+    const names = [
+      user.firstName,
+      user.lastName,
+      user.displayName,
+      user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : null,
+    ].filter(Boolean) as string[];
+    return names.some(name =>
+      text.includes(`@[${name}]`) || text.toLowerCase().includes(`@${name.toLowerCase().replace(/\s+/g, "")}`)
+    );
+  }, [user]);
 
   const handleScroll = useCallback(() => {
     if (chatScrollRef.current) {
@@ -1971,16 +1985,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   }, []);
 
   useEffect(() => {
-    if (isAtBottom && chatMessages.length > 0) {
-      const viewport = chatScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-      if (viewport) {
-        viewport.scrollTop = viewport.scrollHeight;
-      }
-    } else if (!isAtBottom && chatMessages.length > 0) {
-      const lastMsg = chatMessages[chatMessages.length - 1];
-      if (lastMsg.userId !== user?.id && lastMsg.type !== "system") {
-        setUnreadCount(prev => prev + 1);
-      }
+    if (chatMessages.length === 0) return;
+    const lastMsg = chatMessages[chatMessages.length - 1];
+    const isOwnMessage = lastMsg.userId === user?.id;
+    const viewport = chatScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (!viewport) return;
+    if (isAtBottom || isOwnMessage) {
+      viewport.scrollTop = viewport.scrollHeight;
+      setUnreadCount(0);
+      if (!isAtBottom && isOwnMessage) setIsAtBottom(true);
+    } else if (lastMsg.type !== "system") {
+      setUnreadCount(prev => prev + 1);
     }
   }, [chatMessages, isAtBottom, user?.id]);
 
@@ -2223,15 +2238,35 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       </TabsList>
 
       <TabsContent value="chat" className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" forceMount style={{ display: sidePanelTab === "chat" ? "flex" : "none" }}>
+        <div className="flex items-center gap-1 px-2 py-1 border-b">
+          <button
+            onClick={() => setShowMentionsOnly(false)}
+            className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${!showMentionsOnly ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+            data-testid="filter-all-messages"
+          >
+            All
+          </button>
+          <button
+            onClick={() => setShowMentionsOnly(true)}
+            className={`text-[11px] px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${showMentionsOnly ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+            data-testid="filter-mentions"
+          >
+            @ Mentions
+          </button>
+        </div>
         <ScrollArea className="flex-1 min-h-0" ref={chatScrollRef} onScroll={handleScroll}>
           <div className="p-3 space-y-3 min-h-full flex flex-col justify-end">
-            {chatMessages.length === 0 ? (
+            {(() => {
+              const displayedMessages = showMentionsOnly
+                ? chatMessages.filter(msg => msg.type !== "system" && (msg as any).type !== "deleted" && isMentionedInMessage(msg.text))
+                : chatMessages;
+              return displayedMessages.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-8 mt-auto">
-                No messages yet. Start the conversation!
+                {showMentionsOnly ? "No messages mentioning you." : "No messages yet. Start the conversation!"}
               </p>
             ) : (
-              chatMessages.map((msg) => {
-                if (msg.type === "system") {
+              displayedMessages.map((msg) => {
+                if (msg.type === "system" && !showMentionsOnly) {
                   return (
                     <div key={msg.id} className="flex items-center justify-center gap-2 py-1" data-testid={`room-chat-${msg.id}`}>
                       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -2355,7 +2390,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 );
               })
-            )}
+            );
+            })()}
           </div>
         </ScrollArea>
         <form onSubmit={handleSendChat} className="p-3 border-t flex flex-col gap-2 relative flex-shrink-0 mt-auto">
