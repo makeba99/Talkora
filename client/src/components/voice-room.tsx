@@ -2258,9 +2258,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     setWordInfo(null);
     setBookLoading(true);
     setShowEReader(true);
-    if (!fromShared && isHost) {
+    if (!fromShared) {
       socket?.emit("room:book", { roomId: room.id, book });
       setBookReaders(prev => { const n = new Set(prev); n.add(user?.id || ""); return n; });
+      setBookHostId(user?.id || null);
     }
     try {
       const formats = book.formats || {};
@@ -2289,9 +2290,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     setBookText("");
     setWordInfo(null);
     setShowEReader(false);
-    if (isHost) {
+    const amIBookHost = bookHostId === user?.id;
+    if (amIBookHost) {
       socket?.emit("room:book", { roomId: room.id, book: null });
       setBookReaders(new Set());
+      setBookHostId(null);
     } else if (isFollowingBook) {
       setIsFollowingBook(false);
       socket?.emit("room:book-watching", { roomId: room.id, watching: false });
