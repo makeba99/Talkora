@@ -90,6 +90,8 @@ export default function Lobby() {
       level: string;
       maxUsers: number;
       isPublic: boolean;
+      roomTheme?: string | null;
+      hologramVideoUrl?: string | null;
     }) => {
       const res = await apiRequest("POST", "/api/rooms", {
         ...roomData,

@@ -25,6 +25,8 @@ export const insertRoomSchema = createInsertSchema(rooms).pick({
   level: true,
   maxUsers: true,
   isPublic: true,
+  roomTheme: true,
+  hologramVideoUrl: true,
 });
 
 export type InsertRoom = z.infer<typeof insertRoomSchema>;

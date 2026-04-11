@@ -428,6 +428,8 @@ export async function registerRoutes(
         level: parsed.data.level,
         maxUsers: parsed.data.maxUsers ?? 8,
         isPublic: parsed.data.isPublic ?? true,
+        roomTheme: parsed.data.roomTheme || "default",
+        hologramVideoUrl: parsed.data.hologramVideoUrl || null,
         ownerId,
       });
 
