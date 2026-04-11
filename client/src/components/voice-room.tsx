@@ -15,7 +15,7 @@ import {
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, Maximize2, Palette,
-  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye
+  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -3428,16 +3428,71 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </Button>
                 </>
               )}
-              {!isHost && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-white hover:bg-white/10"
-                  disabled
-                >
-                  <Settings className="w-4 h-4" />
-                </Button>
-              )}
+              {!isHost && (() => {
+                const ownerUser = participants.find(p => p.id === room.ownerId);
+                const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
+                const ownerAvatar = ownerUser?.profileImageUrl || undefined;
+                const ownerInitials = ownerUser ? getUserInitials(ownerUser) : "?";
+                const createdAtStr = room.createdAt
+                  ? new Date(room.createdAt).toLocaleString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })
+                  : "—";
+                return (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-white hover:bg-white/10"
+                        data-testid="button-non-host-settings"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-60 p-0 border-0 shadow-2xl overflow-hidden"
+                      style={{ background: "#1a1f2e" }}
+                      align="end"
+                    >
+                      <div className="flex flex-col">
+                        <div className="pt-4 pb-1 text-center">
+                          <p className="text-sm font-semibold text-white">Group Owner</p>
+                        </div>
+                        <div className="flex flex-col items-center gap-1.5 pb-3">
+                          <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
+                            <AvatarImage src={ownerAvatar} />
+                            <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
+                          </Avatar>
+                          <p className="text-sm font-medium text-white">{ownerName}</p>
+                        </div>
+                        <div className="border-t border-white/10" />
+                        <button
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+                          onClick={() => {
+                            navigator.clipboard.writeText(room.ownerId);
+                            toast({ description: "Owner ID copied!" });
+                          }}
+                          data-testid="button-copy-owner-id"
+                        >
+                          <Copy className="w-4 h-4 text-white/50" />
+                          Copy Owner ID
+                        </button>
+                        <button
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+                          data-testid="button-report-bad-topic"
+                        >
+                          <Bell className="w-4 h-4 text-white/50" />
+                          Report Bad Topic
+                        </button>
+                        <div className="border-t border-white/10" />
+                        <div className="px-4 py-3 text-center">
+                          <p className="text-xs text-white/40 mb-0.5">Created At</p>
+                          <p className="text-sm font-medium text-white">{createdAtStr}</p>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                );
+              })()}
             </div>
           </div>
 
