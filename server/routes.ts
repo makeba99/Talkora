@@ -208,6 +208,86 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/link-preview", isAuthenticated, async (req: any, res) => {
+    const rawUrl = req.query.url as string;
+    if (!rawUrl) return res.status(400).json({ message: "Missing url" });
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(rawUrl);
+    } catch {
+      return res.status(400).json({ message: "Invalid url" });
+    }
+
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      return res.status(400).json({ message: "Unsupported url" });
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname.endsWith(".local") ||
+      /^10\./.test(hostname) ||
+      /^192\.168\./.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+    ) {
+      return res.status(403).json({ message: "URL not allowed" });
+    }
+
+    const directImage = /\.(gif|webp|png|jpe?g|avif)(\?.*)?$/i.test(parsedUrl.pathname + parsedUrl.search);
+    if (directImage) {
+      return res.json({ imageUrl: parsedUrl.toString(), url: parsedUrl.toString() });
+    }
+
+    const decodeHtml = (value: string) =>
+      value
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, "\"")
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">");
+
+    try {
+      const response = await fetch(parsedUrl.toString(), {
+        headers: {
+          "User-Agent": "Connect2Talk/1.0 link preview",
+          Accept: "text/html,application/xhtml+xml,image/*",
+        },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!response.ok) return res.status(response.status).json({ message: "Preview unavailable" });
+
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.startsWith("image/")) {
+        return res.json({ imageUrl: parsedUrl.toString(), url: parsedUrl.toString() });
+      }
+
+      const html = (await response.text()).slice(0, 250000);
+      const patterns = [
+        /<meta[^>]+(?:property|name)=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+        /<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image(?::secure_url)?["'][^>]*>/i,
+        /<meta[^>]+(?:property|name)=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+        /<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']twitter:image(?::src)?["'][^>]*>/i,
+        /<meta[^>]+itemprop=["']image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+        /<meta[^>]+content=["']([^"']+)["'][^>]+itemprop=["']image["'][^>]*>/i,
+      ];
+
+      for (const pattern of patterns) {
+        const match = html.match(pattern);
+        if (match?.[1]) {
+          const imageUrl = new URL(decodeHtml(match[1]), parsedUrl).toString();
+          return res.json({ imageUrl, url: parsedUrl.toString() });
+        }
+      }
+
+      res.status(404).json({ message: "No preview image found" });
+    } catch (err: any) {
+      res.status(500).json({ message: "Failed to load preview" });
+    }
+  });
+
   app.get("/api/book/text", isAuthenticated, async (req: any, res) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ message: "Missing url" });

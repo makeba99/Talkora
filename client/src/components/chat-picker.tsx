@@ -318,14 +318,87 @@ export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
   );
 }
 
-function renderTextWithMentions(text: string): JSX.Element {
+const URL_REGEX = /https?:\/\/[^\s<>"']+/gi;
+const DIRECT_IMAGE_REGEX = /\.(gif|webp|png|jpe?g|avif)(\?.*)?$/i;
+
+function trimUrl(url: string) {
+  const trailing = url.match(/[),.!?;:]+$/)?.[0] || "";
+  return {
+    cleanUrl: trailing ? url.slice(0, -trailing.length) : url,
+    trailing,
+  };
+}
+
+function GifOrImagePreview({ url, onImageClick }: { url: string; onImageClick?: (url: string) => void }) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(DIRECT_IMAGE_REGEX.test(url) ? url : null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (DIRECT_IMAGE_REGEX.test(url)) {
+      setPreviewUrl(url);
+      setFailed(false);
+      return;
+    }
+
+    let cancelled = false;
+    setPreviewUrl(null);
+    setFailed(false);
+
+    fetch(`/api/link-preview?url=${encodeURIComponent(url)}`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => {
+        if (!cancelled && data?.imageUrl) setPreviewUrl(data.imageUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  if (!previewUrl && failed) return null;
+
+  if (!previewUrl) {
+    return (
+      <div className="mt-2 w-full max-w-[280px] h-28 rounded-lg border border-border bg-muted/40 animate-pulse" data-testid="message-gif-loading" />
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-2 block w-fit max-w-full"
+      onClick={(e) => e.stopPropagation()}
+      data-testid="message-gif-link-preview"
+    >
+      <img
+        src={previewUrl}
+        alt="GIF preview"
+        className="max-w-full rounded-md cursor-pointer hover:opacity-90 transition-opacity border border-border/60"
+        style={{ maxHeight: 240 }}
+        loading="lazy"
+        data-testid="message-gif-url-preview"
+        onClick={(e) => {
+          e.preventDefault();
+          onImageClick?.(previewUrl);
+        }}
+      />
+    </a>
+  );
+}
+
+function renderTextWithMentionsOnly(text: string): JSX.Element {
   const mentionRegex = /@\[([^\]]+)\]|@(\w+)/g;
   const parts: JSX.Element[] = [];
   let lastIndex = 0;
   let match;
   while ((match = mentionRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-    parts.push(<span key={`t-${lastIndex}`} className="break-words [overflow-wrap:anywhere]">{text.slice(lastIndex, match.index)}</span>);
+      parts.push(<span key={`t-${lastIndex}`} className="break-words [overflow-wrap:anywhere]">{text.slice(lastIndex, match.index)}</span>);
     }
     const name = match[1] || match[2];
     parts.push(
@@ -342,6 +415,58 @@ function renderTextWithMentions(text: string): JSX.Element {
     return <>{parts}</>;
   }
   return <span className="break-words [overflow-wrap:anywhere]">{text}</span>;
+}
+
+function renderTextWithMentions(text: string, onImageClick?: (url: string) => void): JSX.Element {
+  const parts: JSX.Element[] = [];
+  let lastIndex = 0;
+  let match;
+  URL_REGEX.lastIndex = 0;
+
+  while ((match = URL_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(
+        <span key={`text-${lastIndex}`} className="break-words [overflow-wrap:anywhere]">
+          {renderTextWithMentionsOnly(text.slice(lastIndex, match.index))}
+        </span>
+      );
+    }
+
+    const { cleanUrl, trailing } = trimUrl(match[0]);
+    parts.push(
+      <span key={`url-${match.index}`} className="inline-flex flex-col max-w-full align-top">
+        <a
+          href={cleanUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2 break-words [overflow-wrap:anywhere] hover:text-primary/80"
+          data-testid="message-clickable-link"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {cleanUrl}
+        </a>
+        <GifOrImagePreview url={cleanUrl} onImageClick={onImageClick} />
+      </span>
+    );
+
+    if (trailing) {
+      parts.push(<span key={`trail-${match.index}`}>{trailing}</span>);
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (parts.length === 0) return renderTextWithMentionsOnly(text);
+
+  if (lastIndex < text.length) {
+    parts.push(
+      <span key={`text-${lastIndex}`} className="break-words [overflow-wrap:anywhere]">
+        {renderTextWithMentionsOnly(text.slice(lastIndex))}
+      </span>
+    );
+  }
+
+  return <>{parts}</>;
 }
 
 const YT_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s]*)?/;
@@ -449,7 +574,7 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
         data-testid="message-youtube-embed"
         onClick={e => e.stopPropagation()}
       >
-        {cleanText && <span className="leading-snug break-words [overflow-wrap:anywhere]">{renderTextWithMentions(cleanText)}</span>}
+          {cleanText && <span className="leading-snug break-words [overflow-wrap:anywhere]">{renderTextWithMentions(cleanText, onImageClick)}</span>}
         <div
           className="relative w-full rounded-lg overflow-hidden bg-black cursor-pointer group"
           style={{ paddingBottom: "56.25%", height: 0 }}
@@ -490,7 +615,7 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
         data-testid={isLive ? "message-tiktok-live" : "message-tiktok-embed"}
         onClick={e => e.stopPropagation()}
       >
-        {cleanText && <span className="leading-snug break-words [overflow-wrap:anywhere]">{renderTextWithMentions(cleanText)}</span>}
+        {cleanText && <span className="leading-snug break-words [overflow-wrap:anywhere]">{renderTextWithMentions(cleanText, onImageClick)}</span>}
         {isLive && (
           <div className="flex items-center gap-1.5 text-[11px] text-red-400 font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
@@ -513,5 +638,5 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
     );
   }
 
-  return renderTextWithMentions(text);
+  return renderTextWithMentions(text, onImageClick);
 }
