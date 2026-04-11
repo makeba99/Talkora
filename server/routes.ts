@@ -16,7 +16,7 @@ const roomParticipants = new Map<string, Map<string, User>>();
 const roomVideoStatus = new Map<string, Set<string>>();
 const roomScreenShareStatus = new Map<string, string | null>();
 const roomYoutubeState = new Map<string, { videoId: string; startedBy: string }>();
-const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number }>();
+const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
 const roomRoles = new Map<string, Map<string, string>>();
 const roomMuteStatus = new Map<string, Map<string, boolean>>();
 const userSockets = new Map<string, string>();
@@ -901,7 +901,7 @@ export async function registerRoutes(
 
       const bookState = roomBookState.get(roomId);
       if (bookState) {
-        socket.emit("room:book", { book: bookState.book, hostId: bookState.hostId, scrollPct: bookState.scrollPct });
+        socket.emit("room:book", { book: bookState.book, hostId: bookState.hostId, scrollPct: bookState.scrollPct, watchers: Array.from(bookState.watchers) });
       }
 
       const screenSharer = roomScreenShareStatus.get(roomId);
@@ -930,9 +930,14 @@ export async function registerRoutes(
       }
 
       const bkState = roomBookState.get(roomId);
-      if (bkState && bkState.hostId === userId) {
-        roomBookState.delete(roomId);
-        io.to(roomId).emit("room:book", { book: null, hostId: null, scrollPct: 0 });
+      if (bkState) {
+        bkState.watchers.delete(userId);
+        if (bkState.hostId === userId) {
+          roomBookState.delete(roomId);
+          io.to(roomId).emit("room:book", { book: null, hostId: null, scrollPct: 0, watchers: [] });
+        } else {
+          io.to(roomId).emit("room:book-watchers-update", { userId, watching: false });
+        }
       }
 
       if (roomParticipants.has(roomId)) {
@@ -1185,7 +1190,7 @@ export async function registerRoutes(
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
       if (data.book) {
-        roomBookState.set(data.roomId, { book: data.book, hostId: currentUserId, scrollPct: 0 });
+        roomBookState.set(data.roomId, { book: data.book, hostId: currentUserId, scrollPct: 0, watchers: new Set([currentUserId]) });
       } else {
         if (roomBookState.get(data.roomId)?.hostId === currentUserId) {
           roomBookState.delete(data.roomId);
@@ -1204,7 +1209,12 @@ export async function registerRoutes(
 
     socket.on("room:book-watching", (data: { roomId: string; watching: boolean }) => {
       if (!currentUserId) return;
-      socket.to(data.roomId).emit("room:book-watchers-update", {
+      const bkState = roomBookState.get(data.roomId);
+      if (bkState) {
+        if (data.watching) bkState.watchers.add(currentUserId);
+        else bkState.watchers.delete(currentUserId);
+      }
+      io.to(data.roomId).emit("room:book-watchers-update", {
         userId: currentUserId,
         watching: data.watching,
       });

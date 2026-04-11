@@ -1208,11 +1208,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
     });
 
-    socket.on("room:book", (data: { book: any | null; hostId: string | null; scrollPct: number }) => {
-      if (data.book && data.hostId && data.hostId !== user.id) {
-        setBookHostId(data.hostId);
-        setSharedBook(data.book);
-        setBookReaders(prev => { const n = new Set(prev); n.add(data.hostId!); return n; });
+    socket.on("room:book", (data: { book: any | null; hostId: string | null; scrollPct: number; watchers?: string[] }) => {
+      if (data.book && data.hostId) {
+        if (data.hostId !== user.id) {
+          setBookHostId(data.hostId);
+          setSharedBook(data.book);
+        }
+        // Populate bookReaders from the authoritative watcher list when available
+        if (data.watchers && data.watchers.length > 0) {
+          setBookReaders(new Set(data.watchers));
+        } else if (data.hostId !== user.id) {
+          setBookReaders(prev => { const n = new Set(prev); n.add(data.hostId!); return n; });
+        }
       } else if (!data.book) {
         setBookHostId(null);
         setSharedBook(null);
@@ -3768,37 +3775,46 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </div>
                     )}
 
-                    {p.id === bookHostId && bookReaders.size > 0 && (
+                    {bookReaders.has(p.id) && (
                       <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`book-readers-card-${p.id}`}>
-                        <div className="flex items-center">
-                          {Array.from(bookReaders).slice(0, 4).map((readerId, ri) => {
-                            const reader = participants.find(rp => rp.id === readerId);
-                            const rIndex = participants.findIndex(rp => rp.id === readerId);
-                            const rGrad = getAvatarGradient(rIndex >= 0 ? rIndex : ri);
-                            return (
-                              <div
-                                key={readerId}
-                                className="w-5 h-5 rounded-full border border-background overflow-hidden flex items-center justify-center shadow-sm"
-                                style={{ marginLeft: ri === 0 ? 0 : -6, zIndex: 4 - ri }}
-                                title={reader ? getUserDisplayName(reader) : readerId}
-                              >
-                                {reader?.profileImageUrl ? (
-                                  <img src={reader.profileImageUrl} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className={`w-full h-full bg-gradient-to-br ${rGrad} flex items-center justify-center`}>
-                                    <span className="text-[7px] font-bold text-white">{reader ? getUserInitials(reader) : "?"}</span>
+                        {p.id === bookHostId ? (
+                          <>
+                            <div className="flex items-center">
+                              {Array.from(bookReaders).slice(0, 4).map((readerId, ri) => {
+                                const reader = participants.find(rp => rp.id === readerId);
+                                const rIndex = participants.findIndex(rp => rp.id === readerId);
+                                const rGrad = getAvatarGradient(rIndex >= 0 ? rIndex : ri);
+                                return (
+                                  <div
+                                    key={readerId}
+                                    className="w-5 h-5 rounded-full border border-background overflow-hidden flex items-center justify-center shadow-sm"
+                                    style={{ marginLeft: ri === 0 ? 0 : -6, zIndex: 4 - ri }}
+                                    title={reader ? getUserDisplayName(reader) : readerId}
+                                  >
+                                    {reader?.profileImageUrl ? (
+                                      <img src={reader.profileImageUrl} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className={`w-full h-full bg-gradient-to-br ${rGrad} flex items-center justify-center`}>
+                                        <span className="text-[7px] font-bold text-white">{reader ? getUserInitials(reader) : "?"}</span>
+                                      </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                          {bookReaders.size > 4 && (
-                            <div className="w-5 h-5 rounded-full border border-background bg-amber-700 flex items-center justify-center shadow-sm text-[7px] font-bold text-white" style={{ marginLeft: -6, zIndex: 0 }}>
-                              +{bookReaders.size - 4}
+                                );
+                              })}
+                              {bookReaders.size > 4 && (
+                                <div className="w-5 h-5 rounded-full border border-background bg-amber-700 flex items-center justify-center shadow-sm text-[7px] font-bold text-white" style={{ marginLeft: -6, zIndex: 0 }}>
+                                  +{bookReaders.size - 4}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <span className="text-[8px] text-amber-400/80">{bookReaders.size} reading</span>
+                            <span className="text-[8px] text-amber-400/80">{bookReaders.size} reading</span>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-0.5 bg-amber-900/60 border border-amber-700/50 rounded-full px-1.5 py-0.5">
+                            <BookOpen className="w-2.5 h-2.5 text-amber-400" />
+                            <span className="text-[8px] text-amber-300 font-medium">reading</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
