@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Lobby from "@/pages/lobby";
 import RoomPage from "@/pages/room";
 import DmPage from "@/pages/dm";
+import AdminPage from "@/pages/admin";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -31,6 +32,7 @@ function AppContent() {
     <div className="h-screen flex flex-col overflow-hidden">
       <Switch>
         <Route path="/" component={Lobby} />
+        <Route path="/admin" component={AdminPage} />
         <Route path="/room/:id" component={RoomPage} />
         <Route path="/messages/:userId" component={DmPage} />
         <Route>

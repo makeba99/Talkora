@@ -626,6 +626,10 @@ export async function registerRoutes(
   const isAdmin = async (req: any, res: any, next: any) => {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
     const user = await storage.getUser((req.user as any).id);
+    if (user?.email === SUPER_ADMIN_EMAIL && user.role !== "superadmin") {
+      await storage.setUserRole(user.id, "superadmin");
+      return next();
+    }
     if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
       return res.status(403).json({ message: "Admin access required" });
     }
@@ -635,6 +639,10 @@ export async function registerRoutes(
   const isSuperAdmin = async (req: any, res: any, next: any) => {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
     const user = await storage.getUser((req.user as any).id);
+    if (user?.email === SUPER_ADMIN_EMAIL && user.role !== "superadmin") {
+      await storage.setUserRole(user.id, "superadmin");
+      return next();
+    }
     if (!user || user.role !== "superadmin") {
       return res.status(403).json({ message: "Super admin access required" });
     }
@@ -693,6 +701,9 @@ export async function registerRoutes(
   app.patch("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { status } = req.body;
+      if (!["pending", "reviewed", "dismissed"].includes(status)) {
+        return res.status(400).json({ message: "Invalid report status" });
+      }
       const updated = await storage.updateReport(req.params.id, { status });
       res.json(updated);
     } catch (err: any) {
@@ -703,13 +714,27 @@ export async function registerRoutes(
   app.post("/api/admin/warn/:userId", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { userId } = req.params;
+      const admin = await storage.getUser((req.user as any).id);
+      const target = await storage.getUser(userId);
+      if (!target) return res.status(404).json({ message: "User not found" });
+      if (target.role === "superadmin") {
+        return res.status(403).json({ message: "Platform Owner cannot be warned" });
+      }
+      if (target.role === "admin" && admin?.role !== "superadmin") {
+        return res.status(403).json({ message: "Only the Platform Owner can warn admins" });
+      }
       const warned = await storage.warnUser(userId);
-      if (!warned) return res.status(404).json({ message: "User not found" });
+      await storage.createNotification({
+        userId,
+        fromUserId: (req.user as any).id,
+        type: "admin_warning",
+      });
       const socketId = userSockets.get(userId);
       if (socketId) {
         io.to(socketId).emit("admin:warning", {
-          message: req.body.message || "You have received a warning from the platform admins.",
+          message: req.body.message || "You’ve received a warning from Admin. Continued violations may lead to restrictions.",
         });
+        io.to(socketId).emit("admin:notification", { type: "admin_warning" });
       }
       res.json(warned);
     } catch (err: any) {
@@ -723,8 +748,24 @@ export async function registerRoutes(
       if (!["user", "admin"].includes(role)) {
         return res.status(400).json({ message: "Invalid role. Use 'admin' or 'user'." });
       }
+      const target = await storage.getUser(userId);
+      if (!target) return res.status(404).json({ message: "User not found" });
+      if (target.email === SUPER_ADMIN_EMAIL && role !== "superadmin") {
+        return res.status(403).json({ message: "Platform Owner role cannot be removed" });
+      }
       const updated = await storage.setUserRole(userId, role);
-      if (!updated) return res.status(404).json({ message: "User not found" });
+      await storage.createNotification({
+        userId,
+        fromUserId: (req.user as any).id,
+        type: role === "admin" ? "admin_promotion" : "admin_removed",
+      });
+      const socketId = userSockets.get(userId);
+      if (socketId) {
+        io.to(socketId).emit("admin:role-updated", { role });
+        io.to(socketId).emit("admin:notification", {
+          type: role === "admin" ? "admin_promotion" : "admin_removed",
+        });
+      }
       res.json(updated);
     } catch (err: any) {
       res.status(500).json({ message: err.message });

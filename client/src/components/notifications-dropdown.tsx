@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -6,15 +7,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, Check } from "lucide-react";
+import { AlertTriangle, Bell, Check, Crown, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Notification, User } from "@shared/schema";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
+import { useSocket } from "@/lib/socket";
+import { useToast } from "@/hooks/use-toast";
 
 export function NotificationsDropdown() {
   const { user } = useAuth();
+  const { socket } = useSocket();
+  const { toast } = useToast();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
@@ -39,6 +44,52 @@ export function NotificationsDropdown() {
   const unreadCount = notifications.filter((n) => !n.read).length;
   const usersMap = new Map(allUsers.map((u) => [u.id, u]));
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const refreshNotifications = (event?: { type?: string }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      if (event?.type === "admin_promotion") {
+        toast({
+          title: "You are now a Platform Admin",
+          description: "You can manage reports and moderate users.",
+        });
+      }
+      if (event?.type === "admin_removed") {
+        toast({
+          title: "Admin access removed",
+          description: "Your platform moderation access has been updated.",
+        });
+      }
+      if (event?.type === "admin_warning") {
+        toast({
+          title: "Warning received",
+          description: "Continued violations may lead to restrictions.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    const handleWarning = (event: { message?: string }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Warning received",
+        description: event?.message || "Continued violations may lead to restrictions.",
+        variant: "destructive",
+      });
+    };
+
+    socket.on("admin:notification", refreshNotifications);
+    socket.on("admin:warning", handleWarning);
+
+    return () => {
+      socket.off("admin:notification", refreshNotifications);
+      socket.off("admin:warning", handleWarning);
+    };
+  }, [socket, toast]);
+
   const formatTime = (date: string | Date) => {
     const d = new Date(date);
     const now = new Date();
@@ -50,6 +101,21 @@ export function NotificationsDropdown() {
     if (diffHrs < 24) return `${diffHrs}h`;
     const diffDays = Math.floor(diffHrs / 24);
     return `${diffDays}d`;
+  };
+
+  const getNotificationLabel = (notif: Notification, fromUser?: User) => {
+    if (notif.type === "follow") return `${getUserDisplayName(fromUser)} followed you`;
+    if (notif.type === "admin_promotion") return "You are now a Platform Admin! You can manage reports and moderate users.";
+    if (notif.type === "admin_warning") return "You’ve received a warning from Admin. Continued violations may lead to restrictions.";
+    if (notif.type === "admin_removed") return "Your Admin access was removed by the Platform Owner.";
+    return notif.type;
+  };
+
+  const getNotificationIcon = (notif: Notification, fromUser?: User) => {
+    if (notif.type === "admin_promotion") return <ShieldCheck className="w-4 h-4 text-blue-300" />;
+    if (notif.type === "admin_warning") return <AlertTriangle className="w-4 h-4 text-destructive" />;
+    if (notif.type === "admin_removed") return <Crown className="w-4 h-4 text-amber-300" />;
+    return null;
   };
 
   return (
@@ -89,6 +155,7 @@ export function NotificationsDropdown() {
             <div className="p-1">
               {notifications.slice(0, 20).map((notif) => {
                 const fromUser = usersMap.get(notif.fromUserId);
+                const icon = getNotificationIcon(notif, fromUser);
                 return (
                   <div
                     key={notif.id}
@@ -97,16 +164,21 @@ export function NotificationsDropdown() {
                     }`}
                     data-testid={`notification-${notif.id}`}
                   >
-                    <Avatar className="w-8 h-8 flex-shrink-0">
-                      <AvatarImage src={fromUser?.profileImageUrl || undefined} />
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                        {getUserInitials(fromUser)}
-                      </AvatarFallback>
-                    </Avatar>
+                    {icon ? (
+                      <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                        {icon}
+                      </div>
+                    ) : (
+                      <Avatar className="w-8 h-8 flex-shrink-0">
+                        <AvatarImage src={fromUser?.profileImageUrl || undefined} />
+                        <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                          {getUserInitials(fromUser)}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm">
-                        <span className="font-medium">{getUserDisplayName(fromUser)}</span>{" "}
-                        {notif.type === "follow" ? "followed you" : notif.type}
+                        {getNotificationLabel(notif, fromUser)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatTime(notif.createdAt)}

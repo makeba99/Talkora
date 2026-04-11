@@ -98,6 +98,14 @@ shared/
 45. Deleted message placeholder — instead of removing deleted messages, shows "This message was deleted." inline with Trash icon
 46. YouTube time-sync on profile click — viewers who click broadcaster's profile and open the video sync to the broadcaster's current playback time via socket round-trip
 47. Activity mutual exclusivity — opening book reader stops active YouTube; turning on camera stops YouTube and closes book reader
+48. Advanced Admin System — Super Admin is hardcoded to dj55jggg@gmail.com, Platform Admins can moderate reports/warn users/bypass room capacity, and the Admin Command Center is visible only to admins/owner
+
+## Admin System
+- Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.
+- Platform Admins: assigned only by the Super Admin from `/admin`; can view users, review/dismiss reports, issue warnings, and bypass room capacity checks.
+- Warnings: increment `users.warningCount`, create stored notifications, emit real-time warning events, and visually flag warned users in the admin UI.
+- Reports: stored in `reports` with reporter/reported metadata, category, reason, and status (`pending`, `reviewed`, `dismissed`).
+- UI: `/admin` dashboard uses gated visibility, role badges, warning indicators, premium owner badge styling, and custom gradient scrollbars.
 
 ## User Model
 Users table (shared/models/auth.ts):

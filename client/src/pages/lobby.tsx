@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Mic, MessageSquare, ChevronUp, ChevronDown, LogIn } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
@@ -26,6 +26,7 @@ export default function Lobby() {
   const { socket } = useSocket();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const isAdminUser = user?.role === "admin" || user?.role === "superadmin" || user?.email === "dj55jggg@gmail.com";
   const [selectedLanguage, setSelectedLanguage] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
@@ -229,6 +230,22 @@ export default function Lobby() {
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {user ? (
               <>
+                {isAdminUser && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/admin")}
+                    className="border-primary/30 bg-primary/5"
+                    data-testid="button-admin-panel"
+                  >
+                    {user.role === "superadmin" || user.email === "dj55jggg@gmail.com" ? (
+                      <Crown className="w-4 h-4 mr-2 text-amber-300" />
+                    ) : (
+                      <ShieldCheck className="w-4 h-4 mr-2 text-primary" />
+                    )}
+                    <span className="hidden sm:inline">Admin</span>
+                  </Button>
+                )}
                 <SocialPanel onlineUsers={onlineUsers} onOpenDm={(userId) => setDmUserId(userId)} />
                 <MessagesDropdown onOpenDm={(userId) => setDmUserId(userId)} />
                 <NotificationsDropdown />
