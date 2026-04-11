@@ -6,3 +6,11 @@ cmds = ["bun run build"]
 
 [start]
 cmd = "npx drizzle-kit push && npm run start"
+[phases.setup]
+nixPkgs = ["nodejs"]
+
+[phases.install]
+cmds = ["npm install"]
+
+[phases.build]
+cmds = ["npm run build"]
