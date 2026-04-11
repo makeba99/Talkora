@@ -327,7 +327,7 @@ function renderTextWithMentions(text: string): JSX.Element {
 }
 
 const YT_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s]*)?/;
-const TT_REGEX = /https?:\/\/(?:www\.)?tiktok\.com\/@[\w.]+\/video\/(\d+)(?:[^\s]*)?/;
+const TT_REGEX = /https?:\/\/(?:www\.)?tiktok\.com\/@([\w.]+)(?:\/video\/(\d+)|\/live)(?:[^\s]*)?/;
 
 export function renderMessageContent(text: string, onImageClick?: (url: string) => void): JSX.Element {
   if (text.startsWith("[gif:") && text.endsWith("]")) {
@@ -362,46 +362,65 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
   const ytMatch = text.match(YT_REGEX);
   const ttMatch = !ytMatch ? text.match(TT_REGEX) : null;
 
-  if (ytMatch || ttMatch) {
-    const isYoutube = !!ytMatch;
-    const matchedUrl = isYoutube ? ytMatch![0] : ttMatch![0];
-    const videoId = isYoutube ? ytMatch![1] : ttMatch![1];
-    const embedUrl = isYoutube
-      ? `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`
-      : `https://www.tiktok.com/embed/v2/${videoId}`;
-    const cleanText = text.replace(matchedUrl, "").trim();
-
+  if (ytMatch) {
+    const videoId = ytMatch[1];
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&enablejsapi=0`;
+    const cleanText = text.replace(ytMatch[0], "").trim();
     return (
-      <div className="flex flex-col gap-2 w-full" data-testid={isYoutube ? "message-youtube-embed" : "message-tiktok-embed"}>
-        {cleanText && (
-          <span className="leading-snug">{renderTextWithMentions(cleanText)}</span>
-        )}
-        {isYoutube ? (
-          <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
-            <iframe
-              src={embedUrl}
-              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title="YouTube video"
-              loading="lazy"
-              data-testid="iframe-youtube"
-            />
+      <div
+        className="flex flex-col gap-2 w-full"
+        data-testid="message-youtube-embed"
+        onClick={e => e.stopPropagation()}
+      >
+        {cleanText && <span className="leading-snug">{renderTextWithMentions(cleanText)}</span>}
+        <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
+          <iframe
+            src={embedUrl}
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title="YouTube video"
+            loading="lazy"
+            data-testid="iframe-youtube"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (ttMatch) {
+    const username = ttMatch[1];
+    const videoId = ttMatch[2];
+    const isLive = !videoId;
+    const embedUrl = isLive
+      ? `https://www.tiktok.com/embed/live/@${username}`
+      : `https://www.tiktok.com/embed/v2/${videoId}`;
+    const cleanText = text.replace(ttMatch[0], "").trim();
+    return (
+      <div
+        className="flex flex-col gap-2 w-full"
+        data-testid={isLive ? "message-tiktok-live" : "message-tiktok-embed"}
+        onClick={e => e.stopPropagation()}
+      >
+        {cleanText && <span className="leading-snug">{renderTextWithMentions(cleanText)}</span>}
+        {isLive && (
+          <div className="flex items-center gap-1.5 text-[11px] text-red-400 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+            LIVE · @{username}
           </div>
-        ) : (
-          <div className="rounded-lg overflow-hidden">
-            <iframe
-              src={embedUrl}
-              style={{ width: "100%", height: "480px", border: "none" }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title="TikTok video"
-              loading="lazy"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-              data-testid="iframe-tiktok"
-            />
-          </div>
         )}
+        <div className="rounded-lg overflow-hidden">
+          <iframe
+            src={embedUrl}
+            style={{ width: "100%", height: isLive ? "560px" : "480px", border: "none" }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={isLive ? `@${username} TikTok Live` : "TikTok video"}
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+            data-testid={isLive ? "iframe-tiktok-live" : "iframe-tiktok"}
+          />
+        </div>
       </div>
     );
   }

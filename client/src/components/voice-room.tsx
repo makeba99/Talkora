@@ -499,6 +499,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [roomData, setRoomData] = useState(roomProp);
   const room = roomData;
   const [isMuted, setIsMuted] = useState(true);
+  const isMutedRef = useRef(true);
   const [handRaised, setHandRaised] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
@@ -628,6 +629,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   useEffect(() => {
     youtubeStartedByRef.current = youtubeStartedBy;
   }, [youtubeStartedBy]);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   const { data: following = [] } = useQuery<Follow[]>({
     queryKey: ["/api/follows/following", user?.id],
@@ -943,7 +948,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           }
           const average = sum / dataArray.length;
           if (average > 10) {
-             if (peerId === user?.id && isMuted) {
+             if (peerId === user?.id && isMutedRef.current) {
                 // skip local muted
              } else {
                 currentlySpeaking.add(peerId);
