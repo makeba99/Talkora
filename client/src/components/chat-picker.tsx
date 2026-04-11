@@ -239,6 +239,24 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
   );
 }
 
+export async function uploadChatImage(file: File): Promise<string> {
+  const allowed = /\.(jpg|jpeg|png|gif|webp)$/i;
+  if (!allowed.test(file.name) && !file.type.startsWith("image/")) {
+    throw new Error("Invalid file type");
+  }
+  if (file.size > 5 * 1024 * 1024) throw new Error("File too large");
+  const formData = new FormData();
+  formData.append("image", file);
+  const res = await fetch("/api/upload/chat-image", {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Upload failed");
+  const data = await res.json();
+  return data.url as string;
+}
+
 export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

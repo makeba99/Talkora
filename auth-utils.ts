@@ -26,7 +26,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { DmDialog } from "@/components/dm-dialog";
-import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent } from "@/components/chat-picker";
+import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, uploadChatImage } from "@/components/chat-picker";
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay } from "@/components/profile-decorations";
 import type { Room, User, Follow } from "@shared/schema";
@@ -443,6 +443,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
   const [chatText, setChatText] = useState("");
+  const [pasteUploading, setPasteUploading] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
@@ -2416,8 +2417,27 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 }
                 handleChatKeyDown(e as any);
               }}
-              placeholder="Type a message... (@ to mention)"
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2.5 pr-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+              onPaste={async (e) => {
+                const items = Array.from(e.clipboardData.items);
+                const imageItem = items.find(item => item.type.startsWith("image/"));
+                if (imageItem) {
+                  e.preventDefault();
+                  const file = imageItem.getAsFile();
+                  if (!file || !socket || !user) return;
+                  setPasteUploading(true);
+                  try {
+                    const imgUrl = await uploadChatImage(file);
+                    socket.emit("room:chat", { roomId: room.id, userId: user.id, text: `[img:${imgUrl}]` });
+                  } catch (err) {
+                    console.error("Paste image upload failed:", err);
+                  } finally {
+                    setPasteUploading(false);
+                  }
+                }
+              }}
+              placeholder={pasteUploading ? "Uploading image..." : "Type a message... (@ to mention)"}
+              disabled={pasteUploading}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2.5 pr-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none disabled:opacity-60"
               rows={3}
               data-testid="input-room-chat"
             />

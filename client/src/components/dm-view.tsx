@@ -9,7 +9,7 @@ import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useSocket } from "@/lib/socket";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent } from "@/components/chat-picker";
+import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, uploadChatImage } from "@/components/chat-picker";
 import type { Message, User } from "@shared/schema";
 
 interface DmViewProps {
@@ -21,6 +21,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   const { user } = useAuth();
   const { socket } = useSocket();
   const [text, setText] = useState("");
+  const [pasteUploading, setPasteUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: otherUser } = useQuery<User>({
@@ -219,7 +220,26 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message..."
+          onPaste={async (e) => {
+            const items = Array.from(e.clipboardData.items);
+            const imageItem = items.find(item => item.type.startsWith("image/"));
+            if (imageItem) {
+              e.preventDefault();
+              const file = imageItem.getAsFile();
+              if (!file) return;
+              setPasteUploading(true);
+              try {
+                const imgUrl = await uploadChatImage(file);
+                sendMutation.mutate(`[img:${imgUrl}]`);
+              } catch (err) {
+                console.error("Paste image upload failed:", err);
+              } finally {
+                setPasteUploading(false);
+              }
+            }
+          }}
+          placeholder={pasteUploading ? "Uploading image..." : "Type a message..."}
+          disabled={pasteUploading}
           className="flex-1"
           data-testid="input-dm-message"
         />
