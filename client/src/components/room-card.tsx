@@ -31,6 +31,15 @@ interface RoomCardProps {
   onVote?: () => void;
 }
 
+const REPORT_CATEGORIES = [
+  { value: "inappropriate_topic", label: "Inappropriate room topic" },
+  { value: "hate_speech", label: "Hate speech or harassment" },
+  { value: "spam", label: "Spam or scam" },
+  { value: "explicit_content", label: "Explicit or adult content" },
+  { value: "impersonation", label: "Impersonation" },
+  { value: "other", label: "Other reason" },
+];
+
 const ROOM_THEMES = [
   { id: "default", label: "Default", from: "from-cyan-500", to: "to-purple-500", preview: "from-cyan-500 to-purple-500" },
   { id: "neon", label: "Neon", from: "from-cyan-400", to: "to-purple-500", preview: "from-cyan-400 to-purple-500" },
@@ -265,6 +274,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     staleTime: 30000,
   });
 
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportCategory, setReportCategory] = useState("inappropriate_topic");
+  const [reportReason, setReportReason] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(room.title);
   const [editLanguage, setEditLanguage] = useState(room.language);
@@ -282,6 +296,31 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const [selectedYtId, setSelectedYtId] = useState<string | null>(null);
   const ytSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleReportSubmit = async () => {
+    if (!user) return;
+    const ownerUser = participants.find(p => p.id === room.ownerId);
+    const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId;
+    setReportSubmitting(true);
+    try {
+      await apiRequest("POST", "/api/reports", {
+        reporterId: user.id,
+        reportedId: room.ownerId,
+        reason: reportReason || reportCategory,
+        reporterName: getUserDisplayName(user),
+        reportedName: ownerName,
+        category: REPORT_CATEGORIES.find(c => c.value === reportCategory)?.label || reportCategory,
+      });
+      toast({ description: "Report submitted. Thank you for helping keep the community safe." });
+      setReportOpen(false);
+      setReportCategory("inappropriate_topic");
+      setReportReason("");
+    } catch {
+      toast({ description: "Failed to submit report. Please try again.", variant: "destructive" });
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
 
   const editMutation = useMutation({
     mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme: string }) => {
@@ -485,7 +524,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                       </button>
                       <button
                         className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReportOpen(true);
+                        }}
                         data-testid={`button-report-bad-topic-${room.id}`}
                       >
                         <Bell className="w-4 h-4 text-white/50" />
@@ -626,6 +668,118 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
         </div>
       </Card>
+
+      {/* Report Dialog */}
+      <Dialog open={reportOpen} onOpenChange={(open) => { setReportOpen(open); if (!open) { setReportCategory("inappropriate_topic"); setReportReason(""); } }}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0" aria-describedby={undefined} style={{ background: "#12151f" }}>
+          {(() => {
+            const ownerUser = participants.find(p => p.id === room.ownerId);
+            const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
+            const ownerAvatar = ownerUser?.profileImageUrl || undefined;
+            const ownerInitials = ownerUser ? getUserInitials(ownerUser) : "?";
+            return (
+              <div className="flex flex-col">
+                {/* Header */}
+                <div className="px-6 pt-6 pb-4 border-b border-white/10">
+                  <p className="text-xs text-white/40 mb-0.5">
+                    {user ? `My name is ${getUserDisplayName(user)}` : ""}
+                  </p>
+                  <p className="text-xs text-white/60">
+                    I want to report <span className="text-cyan-400 font-medium italic">{ownerName}</span>
+                  </p>
+                  <h2 className="text-lg font-bold text-white mt-3">who used a bad room topic</h2>
+                </div>
+
+                {/* Owner preview */}
+                <div className="px-6 py-4 flex items-center gap-3">
+                  <Avatar className="w-14 h-14 border-2 border-white/10 flex-shrink-0" style={{ filter: "grayscale(60%)" }}>
+                    <AvatarImage src={ownerAvatar} />
+                    <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-base font-semibold italic" style={{ color: "#f0a84e" }}>{ownerName}</p>
+                    <p className="text-xs text-white/50 mt-0.5">Room: {room.title}</p>
+                  </div>
+                </div>
+
+                {/* Reason selector */}
+                <div className="px-6 pb-2">
+                  <p className="text-sm text-white/70 mb-3 font-medium">Because</p>
+                  <div className="flex flex-col gap-2.5">
+                    {REPORT_CATEGORIES.map((cat) => (
+                      <label key={cat.value} className="flex items-center gap-3 cursor-pointer group" data-testid={`radio-report-${cat.value}-${room.id}`}>
+                        <div
+                          className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                          style={{
+                            borderColor: reportCategory === cat.value ? "#0ea5e9" : "rgba(255,255,255,0.2)",
+                            background: reportCategory === cat.value ? "#0ea5e9" : "transparent",
+                          }}
+                          onClick={() => setReportCategory(cat.value)}
+                        >
+                          {reportCategory === cat.value && <div className="w-2 h-2 rounded-full bg-white" />}
+                        </div>
+                        <span
+                          className="text-sm transition-colors"
+                          style={{ color: reportCategory === cat.value ? "#fff" : "rgba(255,255,255,0.55)" }}
+                          onClick={() => setReportCategory(cat.value)}
+                        >
+                          {cat.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reason text area */}
+                <div className="px-6 py-4">
+                  <textarea
+                    className="w-full rounded-md px-3 py-2.5 text-sm resize-none outline-none transition-colors"
+                    style={{
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      color: "#fff",
+                      minHeight: 72,
+                    }}
+                    placeholder="Write down your reason here..."
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    maxLength={500}
+                    data-testid={`textarea-report-reason-${room.id}`}
+                  />
+                </div>
+
+                {/* Warning */}
+                <div className="px-6 pb-4">
+                  <p className="text-sm font-semibold" style={{ color: "#f0a84e" }}>
+                    If I report wrongly, I will get banned.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="grid grid-cols-2 border-t border-white/10">
+                  <button
+                    className="py-4 text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                    onClick={() => setReportOpen(false)}
+                    data-testid={`button-report-cancel-${room.id}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="py-4 text-sm font-bold text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                    style={{ background: "#0ea5e9" }}
+                    onClick={handleReportSubmit}
+                    disabled={reportSubmitting}
+                    data-testid={`button-report-send-${room.id}`}
+                  >
+                    {reportSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    Send
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
