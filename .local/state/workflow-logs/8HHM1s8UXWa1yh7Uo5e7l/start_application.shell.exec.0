@@ -1,0 +1,795 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0KStartup cleanup: scheduled 1 empty rooms for deletion
+7:30:48 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+7:30:59 PM [express] GET /api/auth/user 200 in 6ms :: {"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}
+7:31:00 PM [express] GET /api/users/rooms 304 in 9ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:00 PM [express] GET /api/messages/unread/count 304 in 12ms :: {"count":0}
+7:31:00 PM [express] GET /api/follows/followers/57244447 304 in 8ms :: []
+7:31:00 PM [express] GET /api/messages/conversations 304 in 20ms :: []
+7:31:00 PM [express] GET /api/users 200 in 19ms :: [{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"},{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]
+7:31:00 PM [express] GET /api/follows/following/57244447 304 in 20ms :: []
+7:31:00 PM [express] GET /api/notifications 304 in 5ms :: []
+7:31:00 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:31:00 PM [express] GET /api/rooms/participants 304 in 3ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:31:00 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:31:00 PM [express] POST /api/follows/counts 200 in 5ms :: {"57244447":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:31:03 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m
+7:31:05 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:05 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:31:05 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:31:07 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x2)[39m
+7:31:10 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:31:10 PM [express] GET /api/notifications 304 in 5ms :: []
+7:31:10 PM [express] GET /api/rooms/participants 304 in 3ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:31:10 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:31:10 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:10 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:31:15 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:15 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:31:15 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:31:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x3)[39m
+7:31:20 PM [express] GET /api/messages/conversations 304 in 61ms :: []
+7:31:20 PM [express] GET /api/notifications 304 in 6ms :: []
+7:31:20 PM [express] GET /api/rooms/participants 304 in 7ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:31:21 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:21 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+7:31:21 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:31:23 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x4)[39m
+7:31:26 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:26 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:31:26 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:31:29 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x5)[39m
+7:31:30 PM [express] POST /api/rooms/votes/batch 200 in 12ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:31:30 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:31:30 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:31:30 PM [express] GET /api/notifications 304 in 5ms :: []
+7:31:31 PM [express] POST /api/follows/counts 200 in 7ms :: {"57244447":0}
+7:31:31 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:31 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:31:31 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:31:36 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:36 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:31:36 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:31:41 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:31:41 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:31:41 PM [express] GET /api/notifications 304 in 5ms :: []
+7:31:42 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:42 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:31:42 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:31:49 PM [express] GET /api/auth/user 304 in 5ms :: {"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}
+7:31:49 PM [express] GET /api/users 304 in 5ms :: [{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"},{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]
+7:31:49 PM [express] GET /api/follows/following/57244447 304 in 5ms :: []
+7:31:49 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:49 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:31:49 PM [express] GET /api/messages/unread/count 304 in 14ms :: {"count":0}
+7:31:49 PM [express] GET /api/follows/followers/57244447 304 in 27ms :: []
+7:31:49 PM [express] GET /api/notifications 304 in 5ms :: []
+7:31:49 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:31:49 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:31:50 PM [express] POST /api/follows/counts 200 in 5ms :: {"57244447":0}
+7:31:50 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:31:54 PM [express] GET /api/users/rooms 304 in 13ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:31:54 PM [express] GET /api/messages/unread/count 304 in 10ms :: {"count":0}
+7:31:55 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:31:59 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:32:00 PM [express] GET /api/notifications 304 in 4ms :: []
+7:32:00 PM [express] GET /api/rooms/participants 304 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:32:00 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:00 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:32:00 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m7:32:03 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x6)[39m
+7:32:05 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:05 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:32:05 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:10 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:32:10 PM [express] GET /api/notifications 304 in 6ms :: []
+7:32:10 PM [express] GET /api/rooms/participants 304 in 3ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:32:10 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:32:10 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:10 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:15 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:15 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:32:16 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:20 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:32:20 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:32:20 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:32:20 PM [express] GET /api/notifications 304 in 8ms :: []
+7:32:21 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:21 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+7:32:21 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:26 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:26 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+7:32:26 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:27 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:32:27 PM [express] GET /api/rooms/participants 304 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:32:27 PM [express] POST /api/rooms/votes/batch 200 in 8ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:32:27 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:27 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:27 PM [express] GET /api/notifications 304 in 17ms :: []
+7:32:27 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:32:30 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:32:30 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:32:30 PM [express] GET /api/notifications 304 in 5ms :: []
+7:32:31 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:31 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:32:31 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:36 PM [express] GET /api/auth/user 304 in 5ms :: {"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}
+7:32:36 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+7:32:36 PM [express] GET /api/follows/followers/57120491 304 in 8ms :: []
+7:32:36 PM [express] GET /api/users/rooms 304 in 6ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:36 PM [express] GET /api/follows/following/57120491 304 in 11ms :: []
+7:32:36 PM [express] GET /api/users 304 in 16ms :: [{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]
+7:32:36 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:32:36 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:36 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:32:36 PM [express] GET /api/rooms 304 in 13ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:36 PM [express] GET /api/notifications 304 in 5ms :: []
+7:32:36 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:32:36 PM [express] GET /api/rooms 304 in 3ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:37 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:32:37 PM [express] POST /api/follows/counts 200 in 5ms :: {"57244447":0}
+7:32:39 PM [express] GET /api/follows/followers/57244447 304 in 4ms :: []
+7:32:39 PM [express] GET /api/follows/following/57244447 304 in 4ms :: []
+7:32:40 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:32:41 PM [express] GET /api/notifications 304 in 5ms :: []
+7:32:41 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:32:41 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:42 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:32:42 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:42 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:32:42 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:42 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:46 PM [express] GET /api/auth/user 200 in 7ms :: {"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}
+7:32:47 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:32:47 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:32:47 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:32:47 PM [express] GET /api/notifications 304 in 6ms :: []
+7:32:47 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:47 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:47 PM [express] GET /api/rooms/f6012074-53d9-435a-b374-10e108f2c1ea 304 in 8ms :: {"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}
+7:32:47 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:47 PM [express] GET /api/messages/unread/count 304 in 11ms :: {"count":0}
+7:32:47 PM [express] GET /api/rooms 304 in 27ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:47 PM [express] GET /api/follows/following/57120491 304 in 6ms :: []
+7:32:47 PM [express] GET /api/blocks 200 in 5ms :: []
+7:32:48 PM [express] POST /api/follows/counts 200 in 5ms :: {"57120491":0,"57244447":0}
+7:32:48 PM [express] POST /api/follows/counts 200 in 5ms :: {"57120491":0,"57244447":0}
+7:32:50 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:32:51 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:32:51 PM [express] GET /api/notifications 304 in 5ms :: []
+7:32:51 PM [express] GET /api/rooms/participants 200 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:32:52 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:32:52 PM [express] GET /api/users/rooms 200 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:52 PM [express] GET /api/users/rooms 200 in 5ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:52 PM [express] GET /api/rooms 200 in 8ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:52 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:32:52 PM [express] GET /api/rooms 200 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:57 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:32:57 PM [express] GET /api/notifications 304 in 5ms :: []
+7:32:57 PM [express] GET /api/rooms/participants 200 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:32:57 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:32:57 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:57 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:57 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:32:58 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:32:58 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:33:01 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:33:01 PM [express] GET /api/notifications 304 in 5ms :: []
+7:33:01 PM [express] GET /api/rooms/participants 304 in 3ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:33:01 PM [express] POST /api/reports 200 in 3443ms :: {"id":"351f2970-fa50-4171-b739-2191feacfcf2","reporterId":"57120491","reportedId":"57244447","reason":"zz","createdAt":"2026-04-11T19:32:58.064Z"}
+7:33:02 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:33:03 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:03 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:03 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:03 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:03 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:33:07 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:33:07 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:33:07 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:33:07 PM [express] GET /api/notifications 304 in 4ms :: []
+7:33:08 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:33:08 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:08 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:08 PM [express] GET /api/users/rooms 304 in 3ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:08 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:08 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:33:11 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:33:11 PM [express] GET /api/notifications 304 in 6ms :: []
+7:33:11 PM [express] GET /api/rooms/participants 304 in 14ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:33:13 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:33:13 PM [express] GET /api/users/rooms 304 in 8ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:13 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:18 PM [express] GET /api/messages/unread/count 304 in 22ms :: {"count":0}
+7:33:18 PM [express] GET /api/users/rooms 304 in 5ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:18 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:20 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:33:21 PM [express] POST /api/reports 200 in 2867ms :: {"id":"055e071c-2f4a-4a06-aad0-1e66c7d1bcaf","reporterId":"57120491","reportedId":"57244447","reason":"Reported from room","createdAt":"2026-04-11T19:33:18.174Z"}
+7:33:21 PM [express] POST /api/reports 200 in 1933ms :: {"id":"fc92dea0-98e9-4717-bcaf-5339ced7a299","reporterId":"57120491","reportedId":"57244447","reason":"Reported from room","createdAt":"2026-04-11T19:33:19.544Z"}
+7:33:21 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:33:21 PM [express] GET /api/notifications 304 in 5ms :: []
+7:33:21 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:33:23 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:33:23 PM [express] GET /api/users/rooms 304 in 5ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:24 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:26 PM [express] POST /api/reports 200 in 3036ms :: {"id":"659f20e6-518d-4eb0-a582-425fbf685937","reporterId":"57120491","reportedId":"57244447","reason":"Reported from room","createdAt":"2026-04-11T19:33:23.541Z"}
+7:33:29 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:33:29 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:29 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:31 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:33:32 PM [express] GET /api/notifications 304 in 5ms :: []
+7:33:32 PM [express] GET /api/rooms/participants 304 in 15ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:33:34 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:33:34 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:34 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:39 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:33:39 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:39 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:42 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:33:42 PM [express] GET /api/notifications 304 in 5ms :: []
+7:33:42 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:33:44 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:33:44 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:44 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:50 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:33:50 PM [express] GET /api/users/rooms 304 in 3ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:50 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:33:51 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:33:52 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:33:52 PM [express] GET /api/notifications 304 in 4ms :: []
+7:33:52 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:33:55 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:33:55 PM [express] GET /api/users/rooms 304 in 6ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:33:55 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:00 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:00 PM [express] GET /api/messages/unread/count 304 in 16ms :: {"count":0}
+7:34:00 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:02 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:34:02 PM [express] GET /api/notifications 304 in 5ms :: []
+7:34:02 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:34:05 PM [express] GET /api/users/rooms 304 in 7ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:05 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+7:34:05 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:11 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:11 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+7:34:11 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:12 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:34:13 PM [express] GET /api/notifications 304 in 5ms :: []
+7:34:13 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:34:16 PM [express] GET /api/users/rooms 304 in 5ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:16 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:34:16 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:21 PM [express] POST /api/rooms/votes/batch 200 in 46ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:34:21 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:21 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:34:21 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:23 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:34:23 PM [express] GET /api/notifications 304 in 5ms :: []
+7:34:23 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:34:26 PM [express] GET /api/users/rooms 304 in 5ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:26 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:34:26 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:28 PM [express] GET /api/users/rooms 304 in 5ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:28 PM [express] GET /api/rooms 304 in 9ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:28 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:34:28 PM [express] GET /api/rooms/participants 304 in 15ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:34:28 PM [express] GET /api/messages/unread/count 304 in 23ms :: {"count":0}
+7:34:28 PM [express] GET /api/notifications 304 in 30ms :: []
+7:34:32 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:32 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:34:32 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:33 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:34:33 PM [express] GET /api/notifications 304 in 4ms :: []
+7:34:33 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:34:37 PM [express] GET /api/users/rooms 304 in 5ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:37 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+7:34:37 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:42 PM [express] GET /api/users/rooms 304 in 6ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:42 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:34:42 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:43 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:34:43 PM [express] GET /api/notifications 304 in 5ms :: []
+7:34:43 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:34:47 PM [express] GET /api/users/rooms 304 in 5ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:47 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:34:47 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:51 PM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:34:52 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:52 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:34:52 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:34:53 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:34:53 PM [express] GET /api/notifications 304 in 5ms :: []
+7:34:54 PM [express] GET /api/rooms/participants 304 in 11ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"},{"id":"57120491","email":"leo509421@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKJJGWzTOx297Ngwht2ZtrbcSZy1sYWIbqSPk4X29GEKBcfwKb1=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:23:17.919Z","updatedAt":"2026-04-11T19:23:17.919Z"}]}
+7:34:58 PM [express] GET /api/users/rooms 304 in 4ms :: {"57120491":"f6012074-53d9-435a-b374-10e108f2c1ea","57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:34:58 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:34:58 PM [express] GET /api/rooms 304 in 14ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":2,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:35:02 PM [express] POST /api/follows/counts 200 in 6ms :: {"57244447":0}
+7:35:03 PM [express] GET /api/users/rooms 200 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:35:03 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:35:03 PM [express] GET /api/rooms 200 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:35:03 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:35:04 PM [express] GET /api/notifications 304 in 4ms :: []
+7:35:04 PM [express] GET /api/rooms/participants 200 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:35:08 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:35:08 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:35:08 PM [express] GET /api/rooms 304 in 18ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:35:13 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:35:13 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:35:13 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:35:14 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:35:14 PM [express] GET /api/notifications 304 in 4ms :: []
+7:35:14 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:41:43 PM [express] GET /api/rooms/participants 304 in 19ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:41:43 PM [express] GET /api/messages/unread/count 304 in 21ms :: {"count":0}
+7:41:43 PM [express] GET /api/notifications 304 in 25ms :: []
+7:41:43 PM [express] GET /api/users/rooms 304 in 25ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:41:43 PM [express] GET /api/rooms 304 in 24ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:41:43 PM [express] POST /api/rooms/votes/batch 200 in 29ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:41:43 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:41:48 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:41:48 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:41:48 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:41:53 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:41:53 PM [express] GET /api/notifications 304 in 4ms :: []
+7:41:54 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:41:54 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:41:54 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+7:41:54 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:41:59 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:41:59 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:41:59 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:42:04 PM [express] GET /api/rooms/participants 304 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:42:04 PM [express] GET /api/notifications 304 in 5ms :: []
+7:42:04 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:42:04 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:04 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:04 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:42:09 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:09 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:42:09 PM [express] GET /api/rooms 304 in 14ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:13 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:42:14 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:42:14 PM [express] GET /api/notifications 304 in 4ms :: []
+7:42:14 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:42:14 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:15 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:15 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:42:20 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:20 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:20 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:42:24 PM [express] GET /api/notifications 304 in 4ms :: []
+7:42:24 PM [express] GET /api/rooms/participants 304 in 3ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:42:24 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:42:25 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:25 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:42:25 PM [express] GET /api/rooms 304 in 13ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:30 PM [express] GET /api/users/rooms 304 in 7ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:30 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:42:30 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:34 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:42:34 PM [express] GET /api/notifications 304 in 7ms :: []
+7:42:34 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:42:35 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:35 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:42:35 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:41 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:41 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:42:41 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:44 PM [express] POST /api/rooms/votes/batch 200 in 44ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:42:45 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:42:45 PM [express] GET /api/notifications 304 in 15ms :: []
+7:42:45 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:42:46 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:46 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:42:46 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:51 PM [express] GET /api/users/rooms 304 in 6ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:51 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:51 PM [express] GET /api/messages/unread/count 304 in 17ms :: {"count":0}
+7:42:55 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:42:55 PM [express] GET /api/notifications 304 in 5ms :: []
+7:42:55 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:42:56 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:42:56 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:42:56 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:43:02 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:02 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:02 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:43:05 PM [express] GET /api/notifications 304 in 6ms :: []
+7:43:05 PM [express] GET /api/rooms/participants 304 in 13ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:43:05 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:43:07 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:07 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:07 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:43:12 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:12 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:12 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+7:43:14 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:43:15 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:43:15 PM [express] GET /api/notifications 304 in 16ms :: []
+7:43:15 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:43:17 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:17 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:17 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:43:22 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:22 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:43:22 PM [express] GET /api/rooms 304 in 17ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:26 PM [express] GET /api/rooms/participants 304 in 3ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:43:26 PM [express] GET /api/notifications 304 in 5ms :: []
+7:43:26 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:43:28 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:28 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:43:28 PM [express] GET /api/rooms 304 in 3ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:33 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:33 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:43:33 PM [express] GET /api/rooms 304 in 15ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:36 PM [express] GET /api/rooms/participants 304 in 101ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:43:36 PM [express] GET /api/notifications 304 in 95ms :: []
+7:43:36 PM [express] GET /api/messages/conversations 304 in 16ms :: []
+7:43:38 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:38 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:43:38 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:43 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:43 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:43:43 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:44 PM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:43:46 PM [express] GET /api/notifications 304 in 52ms :: []
+7:43:46 PM [express] GET /api/rooms/participants 304 in 51ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:43:46 PM [express] GET /api/messages/conversations 304 in 53ms :: []
+7:43:49 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:49 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:43:49 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:54 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:54 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:43:54 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:43:56 PM [express] GET /api/notifications 304 in 5ms :: []
+7:43:56 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:43:56 PM [express] GET /api/messages/conversations 304 in 15ms :: []
+7:43:59 PM [express] GET /api/users/rooms 304 in 6ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:43:59 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:43:59 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:04 PM [express] GET /api/users/rooms 304 in 7ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:04 PM [express] GET /api/rooms 304 in 10ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:05 PM [express] GET /api/messages/unread/count 304 in 15ms :: {"count":0}
+7:44:07 PM [express] GET /api/notifications 304 in 5ms :: []
+7:44:07 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:44:07 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:44:10 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:10 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:10 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:44:14 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:44:15 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:15 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:15 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:44:17 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:44:17 PM [express] GET /api/rooms/participants 304 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:44:17 PM [express] GET /api/notifications 304 in 16ms :: []
+7:44:20 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:20 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:20 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:44:25 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:25 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:44:26 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:27 PM [express] GET /api/rooms/participants 304 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:44:27 PM [express] GET /api/messages/conversations 304 in 19ms :: []
+7:44:27 PM [express] GET /api/notifications 304 in 19ms :: []
+7:44:31 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:31 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:44:31 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:36 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:36 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:44:36 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:37 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:44:37 PM [express] GET /api/notifications 304 in 6ms :: []
+7:44:37 PM [express] GET /api/messages/conversations 304 in 15ms :: []
+7:44:41 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:41 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:44:42 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:45 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:44:46 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:46 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:44:47 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:48 PM [express] GET /api/rooms/participants 304 in 43ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:44:48 PM [express] GET /api/notifications 304 in 37ms :: []
+7:44:48 PM [express] GET /api/messages/conversations 304 in 22ms :: []
+7:44:52 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:52 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:44:52 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:57 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:44:57 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:44:57 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:44:58 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:44:58 PM [express] GET /api/notifications 304 in 6ms :: []
+7:44:58 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:45:02 PM [express] GET /api/users/rooms 304 in 9ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:02 PM [express] GET /api/messages/unread/count 304 in 18ms :: {"count":0}
+7:45:02 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:07 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:07 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:45:08 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:08 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:45:08 PM [express] GET /api/notifications 304 in 6ms :: []
+7:45:08 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:45:13 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:13 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:45:13 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:15 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:45:18 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:18 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:45:18 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:18 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:45:18 PM [express] GET /api/rooms/participants 304 in 16ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:45:18 PM [express] GET /api/notifications 304 in 16ms :: []
+7:45:23 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:23 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:45:23 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:28 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:28 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:45:29 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:29 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:45:29 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:45:29 PM [express] GET /api/notifications 304 in 6ms :: []
+7:45:33 PM [express] GET /api/users/rooms 304 in 14ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:33 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:45:34 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:39 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:39 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:45:39 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:45:39 PM [express] GET /api/notifications 304 in 5ms :: []
+7:45:39 PM [express] GET /api/rooms/participants 304 in 14ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:45:39 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:44 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:44 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:45:44 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:45 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:45:49 PM [express] GET /api/notifications 304 in 51ms :: []
+7:45:49 PM [express] GET /api/messages/conversations 304 in 51ms :: []
+7:45:49 PM [express] GET /api/rooms/participants 304 in 52ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:45:49 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:45:49 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:49 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:54 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:45:54 PM [express] GET /api/messages/unread/count 304 in 3ms :: {"count":0}
+7:45:55 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:45:59 PM [express] GET /api/notifications 304 in 6ms :: []
+7:45:59 PM [express] GET /api/rooms/participants 304 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:45:59 PM [express] GET /api/messages/conversations 304 in 15ms :: []
+7:46:00 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:00 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+7:46:00 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:05 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:05 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:46:05 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:10 PM [express] GET /api/rooms/participants 304 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:46:10 PM [express] GET /api/notifications 304 in 8ms :: []
+7:46:10 PM [express] GET /api/messages/conversations 304 in 14ms :: []
+7:46:10 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:10 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:46:10 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:15 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:46:15 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:15 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:46:16 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:20 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:46:20 PM [express] GET /api/notifications 304 in 6ms :: []
+7:46:20 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:46:21 PM [express] GET /api/users/rooms 304 in 6ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:21 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+7:46:21 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:26 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:26 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+7:46:26 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:30 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:46:30 PM [express] GET /api/notifications 304 in 4ms :: []
+7:46:30 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:46:31 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:46:31 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:31 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:36 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:46:36 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:37 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:40 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:46:40 PM [express] GET /api/notifications 304 in 5ms :: []
+7:46:40 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+7:46:42 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:46:42 PM [express] GET /api/users/rooms 304 in 14ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:42 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:45 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:46:47 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:47 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:46:47 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:46:51 PM [express] GET /api/rooms/participants 304 in 46ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:46:51 PM [express] GET /api/messages/conversations 304 in 48ms :: []
+7:46:51 PM [express] GET /api/notifications 304 in 49ms :: []
+7:46:52 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:46:52 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:48:18 PM [express] GET /api/users/rooms 304 in 20ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:48:18 PM [express] GET /api/rooms 304 in 28ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:48:18 PM [express] GET /api/messages/unread/count 304 in 24ms :: {"count":0}
+7:48:21 PM [express] GET /api/rooms/participants 304 in 3ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:48:21 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:48:21 PM [express] GET /api/notifications 304 in 6ms :: []
+7:48:23 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+7:48:23 PM [express] GET /api/users/rooms 304 in 6ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:48:23 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:48:28 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+7:48:28 PM [express] GET /api/users/rooms 304 in 5ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:48:28 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:48:31 PM [express] GET /api/rooms/participants 304 in 6ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:48:31 PM [express] GET /api/notifications 304 in 7ms :: []
+7:48:31 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:48:34 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:48:34 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:48:34 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:48:39 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+7:48:39 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:48:39 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:48:41 PM [express] GET /api/notifications 304 in 5ms :: []
+7:48:41 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+7:48:41 PM [express] GET /api/rooms/participants 304 in 14ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:48:44 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:48:44 PM [express] GET /api/users/rooms 304 in 14ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:48:44 PM [express] GET /api/rooms 304 in 37ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:48:46 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"f6012074-53d9-435a-b374-10e108f2c1ea":0},"userVotes":{"f6012074-53d9-435a-b374-10e108f2c1ea":false}}
+7:48:49 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:48:49 PM [express] GET /api/users/rooms 304 in 3ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:48:49 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:48:52 PM [express] GET /api/notifications 304 in 6ms :: []
+7:48:52 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+7:48:52 PM [express] GET /api/rooms/participants 304 in 5ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:48:55 PM [express] GET /api/users/rooms 304 in 4ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:48:55 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:48:55 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:49:00 PM [express] GET /api/users/rooms 304 in 8ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:49:00 PM [express] GET /api/messages/unread/count 304 in 10ms :: {"count":0}
+7:49:00 PM [express] GET /api/rooms 304 in 21ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
+7:49:02 PM [express] GET /api/notifications 304 in 11ms :: []
+7:49:02 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+7:49:02 PM [express] GET /api/rooms/participants 304 in 4ms :: {"f6012074-53d9-435a-b374-10e108f2c1ea":[{"id":"57244447","email":"kevchess777@gmail.com","firstName":"Kevchess777","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocIESQmkADWEsvuxPu3eF74FOxhhd5YBOG9uCNaq2usG24XsRkQ=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","createdAt":"2026-04-11T19:18:48.859Z","updatedAt":"2026-04-11T19:18:48.859Z"}]}
+7:49:05 PM [express] GET /api/users/rooms 304 in 6ms :: {"57244447":"f6012074-53d9-435a-b374-10e108f2c1ea"}
+7:49:05 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+7:49:05 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"f6012074-53d9-435a-b374-10e108f2c1ea","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57244447","isPublic":true,"activeUsers":1,"roomTheme":null,"hologramVideoUrl":null,"createdAt":"2026-04-11T19:22:39.154Z"}]
