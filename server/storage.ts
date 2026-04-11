@@ -65,7 +65,13 @@ export interface IStorage {
   getBlockedIds(userId: string): Promise<string[]>;
   getBlocksByBlocker(blockerId: string): Promise<{ blockedId: string }[]>;
   
-  createReport(report: InsertReport): Promise<Report>;
+  createReport(report: InsertReport & { reporterName?: string; reportedName?: string; category?: string }): Promise<Report>;
+  getAllReports(): Promise<Report[]>;
+  updateReport(id: string, data: Partial<Report>): Promise<Report | undefined>;
+  getUserReportCount(userId: string): Promise<number>;
+  warnUser(userId: string): Promise<User | undefined>;
+  setUserRole(userId: string, role: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
 
   addVote(roomId: string, userId: string): Promise<void>;
   removeVote(roomId: string, userId: string): Promise<void>;
@@ -298,9 +304,57 @@ export class DatabaseStorage implements IStorage {
     return rows;
   }
 
-  async createReport(report: InsertReport): Promise<Report> {
-    const [result] = await db.insert(reports).values(report).returning();
+  async createReport(report: InsertReport & { reporterName?: string; reportedName?: string; category?: string }): Promise<Report> {
+    const [result] = await db.insert(reports).values({
+      reporterId: report.reporterId,
+      reportedId: report.reportedId,
+      reason: report.reason,
+      reporterName: report.reporterName,
+      reportedName: report.reportedName,
+      category: report.category,
+      status: "pending",
+    }).returning();
     return result;
+  }
+
+  async getAllReports(): Promise<Report[]> {
+    return db.select().from(reports).orderBy(desc(reports.createdAt));
+  }
+
+  async updateReport(id: string, data: Partial<Report>): Promise<Report | undefined> {
+    const [result] = await db.update(reports).set(data).where(eq(reports.id, id)).returning();
+    return result;
+  }
+
+  async getUserReportCount(userId: string): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(reports)
+      .where(eq(reports.reportedId, userId));
+    return row?.count ?? 0;
+  }
+
+  async warnUser(userId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ warningCount: sql`${users.warningCount} + 1`, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async setUserRole(userId: string, role: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async addVote(roomId: string, userId: string): Promise<void> {

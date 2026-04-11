@@ -110,7 +110,11 @@ export const reports = pgTable("reports", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   reporterId: varchar("reporter_id", { length: 36 }).notNull(),
   reportedId: varchar("reported_id", { length: 36 }).notNull(),
+  reporterName: varchar("reporter_name", { length: 100 }),
+  reportedName: varchar("reported_name", { length: 100 }),
+  category: varchar("category", { length: 100 }),
   reason: text("reason"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

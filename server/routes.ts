@@ -621,14 +621,34 @@ export async function registerRoutes(
     }
   });
 
+  const SUPER_ADMIN_EMAIL = "dj55jggg@gmail.com";
+
+  const isAdmin = async (req: any, res: any, next: any) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    const user = await storage.getUser((req.user as any).id);
+    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    next();
+  };
+
+  const isSuperAdmin = async (req: any, res: any, next: any) => {
+    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    const user = await storage.getUser((req.user as any).id);
+    if (!user || user.role !== "superadmin") {
+      return res.status(403).json({ message: "Super admin access required" });
+    }
+    next();
+  };
+
   app.post("/api/reports", isAuthenticated, async (req: any, res) => {
     try {
       const parsed = insertReportSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid report data" });
       }
-      const report = await storage.createReport(parsed.data);
       const { reporterName, reportedName, category, reason } = req.body;
+      const report = await storage.createReport({ ...parsed.data, reporterName, reportedName, category });
       try {
         const smtpUser = process.env.SMTP_USER;
         const smtpPass = process.env.SMTP_PASS;
@@ -656,6 +676,78 @@ export async function registerRoutes(
         console.error("Failed to send report email:", mailErr);
       }
       res.json(report);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/reports", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const allReports = await storage.getAllReports();
+      res.json(allReports);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { status } = req.body;
+      const updated = await storage.updateReport(req.params.id, { status });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/warn/:userId", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const warned = await storage.warnUser(userId);
+      if (!warned) return res.status(404).json({ message: "User not found" });
+      const socketId = userSockets.get(userId);
+      if (socketId) {
+        io.to(socketId).emit("admin:warning", {
+          message: req.body.message || "You have received a warning from the platform admins.",
+        });
+      }
+      res.json(warned);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/grant", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { userId, role } = req.body;
+      if (!["user", "admin"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role. Use 'admin' or 'user'." });
+      }
+      const updated = await storage.setUserRole(userId, role);
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/elevate-super", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser((req.user as any).id);
+      if (!user || user.email !== SUPER_ADMIN_EMAIL) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const elevated = await storage.setUserRole(user.id, "superadmin");
+      res.json(elevated);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -846,7 +938,8 @@ export async function registerRoutes(
       }
 
       const currentParticipants = roomParticipants.get(roomId)!;
-      if (currentParticipants.size >= room.maxUsers && !currentParticipants.has(userId)) {
+      const isAdminUser = user.role === "admin" || user.role === "superadmin";
+      if (currentParticipants.size >= room.maxUsers && !currentParticipants.has(userId) && !isAdminUser) {
         socket.emit("room:full", { roomId });
         return;
       }
