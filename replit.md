@@ -99,6 +99,7 @@ shared/
 46. YouTube time-sync on profile click — viewers who click broadcaster's profile and open the video sync to the broadcaster's current playback time via socket round-trip
 47. Activity mutual exclusivity — opening book reader stops active YouTube; turning on camera stops YouTube and closes book reader
 48. Advanced Admin System — Super Admin is hardcoded to dj55jggg@gmail.com, Platform Admins can moderate reports/warn users/bypass room capacity, and the Admin Command Center is visible only to admins/owner
+49. Room chat improvements — long messages wrap correctly, users can choose a chat message color, and temporary private in-room messages can be sent to one selected participant without storing them in room history
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.

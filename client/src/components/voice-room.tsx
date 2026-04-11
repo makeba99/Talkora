@@ -15,7 +15,7 @@ import {
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, Maximize2, Palette,
-  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell
+  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell, LockKeyhole
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -53,6 +53,10 @@ interface ChatMessage {
   type?: "message" | "system";
   reactions?: Record<string, string[]>;
   replyTo?: { id: string; userId: string; userName: string; text: string } | null;
+  messageColor?: string;
+  privateToId?: string | null;
+  privateToName?: string;
+  isPrivate?: boolean;
 }
 
 function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
@@ -511,6 +515,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
   const [chatText, setChatText] = useState("");
+  const [chatMessageColor, setChatMessageColor] = useState(() => localStorage.getItem("connect2talk-chat-color") || "#e5e7eb");
+  const [privateChatToId, setPrivateChatToId] = useState<string>("public");
   const [pasteUploading, setPasteUploading] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -628,6 +634,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     sidePanelTabRef.current = sidePanelTab;
     if (sidePanelTab === "chat") setUnreadChatBadge(0);
   }, [sidePanelTab]);
+
+  useEffect(() => {
+    localStorage.setItem("connect2talk-chat-color", chatMessageColor);
+  }, [chatMessageColor]);
 
   useEffect(() => {
     youtubeStartedByRef.current = youtubeStartedBy;
@@ -2121,7 +2131,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       return;
     }
     if (!chatText.trim() || !socket || !user) return;
-    socket.emit("room:chat", { roomId: room.id, userId: user.id, text: chatText.trim(), replyTo: replyingTo || undefined });
+    socket.emit("room:chat", {
+      roomId: room.id,
+      userId: user.id,
+      text: chatText.trim(),
+      messageColor: chatMessageColor,
+      privateToId: privateChatToId === "public" ? null : privateChatToId,
+      replyTo: replyingTo || undefined,
+    });
     setChatText("");
     setMentionQuery(null);
     setReplyingTo(null);
@@ -2435,14 +2452,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </Avatar>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xs font-semibold">{getUserDisplayName(msgUser)}</span>
+                      <div className="flex items-baseline gap-2 flex-wrap min-w-0">
+                        <span className="text-xs font-semibold min-w-0 break-words [overflow-wrap:anywhere]">{getUserDisplayName(msgUser)}</span>
                         <span className="text-[10px] text-muted-foreground">{formatTime(msg.createdAt)}</span>
+                        {msg.isPrivate && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
+                            <LockKeyhole className="w-2.5 h-2.5 mr-1" />
+                            Private to {msg.privateToId === user?.id ? "you" : msg.privateToName}
+                          </Badge>
+                        )}
                       </div>
                       {msg.replyTo && (
                         <div className="mt-0.5 mb-1.5 pl-2 border-l-2 border-primary/40 rounded-r-md" style={{ background: "rgba(255,255,255,0.04)" }}>
                           <span className="text-[10px] font-semibold text-primary/70 block px-1.5 pt-1">{msg.replyTo.userName}</span>
-                          <div className="px-1.5 pb-1 text-xs opacity-80 pointer-events-auto">
+                          <div className="px-1.5 pb-1 text-xs opacity-80 pointer-events-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                             {renderMessageContent(
                               msg.replyTo.text,
                               (url) => setLightboxMedia({ url, msgId: msg.id }),
@@ -2451,7 +2474,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           </div>
                         </div>
                       )}
-                      <div className="text-sm break-words mt-0.5">{renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}</div>
+                      <div
+                        className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] mt-0.5 max-w-full"
+                        style={{ color: msg.messageColor || undefined }}
+                        data-testid={`text-room-chat-${msg.id}`}
+                      >
+                        {renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}
+                      </div>
                       {hasReactions && (
                         <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`reactions-${msg.id}`}>
                           {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => (
@@ -2529,6 +2558,49 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </button>
             </div>
           )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={privateChatToId} onValueChange={setPrivateChatToId}>
+              <SelectTrigger className="h-8 flex-1 min-w-[150px] text-xs" data-testid="select-private-chat-recipient">
+                <SelectValue placeholder="Public chat" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="public">Public chat</SelectItem>
+                {participants
+                  .filter((p) => p.id !== user?.id)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      Private to {getUserDisplayName(p)}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" size="sm" className="h-8 px-2" data-testid="button-chat-color-picker">
+                  <Palette className="w-3.5 h-3.5 mr-1.5" />
+                  <span className="w-3.5 h-3.5 rounded-full border" style={{ backgroundColor: chatMessageColor }} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-3" side="top" align="end">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium">Message color</p>
+                  <div className="grid grid-cols-6 gap-2">
+                    {["#e5e7eb", "#22d3ee", "#a78bfa", "#facc15", "#fb7185", "#4ade80", "#f97316", "#60a5fa", "#f0abfc", "#ffffff", "#c084fc", "#2dd4bf"].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setChatMessageColor(color)}
+                        className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${chatMessageColor === color ? "border-primary ring-2 ring-primary/40" : "border-border"}`}
+                        style={{ backgroundColor: color }}
+                        data-testid={`button-chat-color-${color.replace("#", "")}`}
+                        aria-label={`Set chat color ${color}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           {mentionQuery !== null && mentionFilteredParticipants.length > 0 && (
             <div className="absolute bottom-full left-0 right-0 mx-3 mb-1 bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto z-50" data-testid="mention-dropdown">
               {mentionFilteredParticipants.map((p, i) => (
@@ -2586,7 +2658,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   setPasteUploading(true);
                   try {
                     const imgUrl = await uploadChatImage(file);
-                    socket.emit("room:chat", { roomId: room.id, userId: user.id, text: `[img:${imgUrl}]` });
+                    socket.emit("room:chat", {
+                      roomId: room.id,
+                      userId: user.id,
+                      text: `[img:${imgUrl}]`,
+                      messageColor: chatMessageColor,
+                      privateToId: privateChatToId === "public" ? null : privateChatToId,
+                    });
                   } catch (err) {
                     console.error("Paste image upload failed:", err);
                   } finally {
@@ -2594,7 +2672,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   }
                 }
               }}
-              placeholder={pasteUploading ? "Uploading image..." : "Type a message... (@ to mention)"}
+              placeholder={pasteUploading ? "Uploading image..." : privateChatToId === "public" ? "Type a message... (@ to mention)" : "Type a temporary private message..."}
               disabled={pasteUploading}
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2.5 pr-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none disabled:opacity-60"
               rows={3}
@@ -2605,12 +2683,24 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             <div className="flex items-center gap-1">
               <GifPickerButton onGifSelect={(gifUrl) => {
                 if (socket && user) {
-                  socket.emit("room:chat", { roomId: room.id, userId: user.id, text: `[gif:${gifUrl}]` });
+                  socket.emit("room:chat", {
+                    roomId: room.id,
+                    userId: user.id,
+                    text: `[gif:${gifUrl}]`,
+                    messageColor: chatMessageColor,
+                    privateToId: privateChatToId === "public" ? null : privateChatToId,
+                  });
                 }
               }} />
               <ImageUploadButton onImageSelect={(imgUrl) => {
                 if (socket && user) {
-                  socket.emit("room:chat", { roomId: room.id, userId: user.id, text: `[img:${imgUrl}]` });
+                  socket.emit("room:chat", {
+                    roomId: room.id,
+                    userId: user.id,
+                    text: `[img:${imgUrl}]`,
+                    messageColor: chatMessageColor,
+                    privateToId: privateChatToId === "public" ? null : privateChatToId,
+                  });
                 }
               }} />
             </div>

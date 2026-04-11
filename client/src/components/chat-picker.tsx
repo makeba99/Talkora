@@ -325,7 +325,7 @@ function renderTextWithMentions(text: string): JSX.Element {
   let match;
   while ((match = mentionRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(<span key={`t-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>);
+    parts.push(<span key={`t-${lastIndex}`} className="break-words [overflow-wrap:anywhere]">{text.slice(lastIndex, match.index)}</span>);
     }
     const name = match[1] || match[2];
     parts.push(
@@ -337,11 +337,11 @@ function renderTextWithMentions(text: string): JSX.Element {
   }
   if (parts.length > 0) {
     if (lastIndex < text.length) {
-      parts.push(<span key={`t-${lastIndex}`}>{text.slice(lastIndex)}</span>);
+      parts.push(<span key={`t-${lastIndex}`} className="break-words [overflow-wrap:anywhere]">{text.slice(lastIndex)}</span>);
     }
     return <>{parts}</>;
   }
-  return <>{text}</>;
+  return <span className="break-words [overflow-wrap:anywhere]">{text}</span>;
 }
 
 const YT_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s]*)?/;
@@ -449,7 +449,7 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
         data-testid="message-youtube-embed"
         onClick={e => e.stopPropagation()}
       >
-        {cleanText && <span className="leading-snug">{renderTextWithMentions(cleanText)}</span>}
+        {cleanText && <span className="leading-snug break-words [overflow-wrap:anywhere]">{renderTextWithMentions(cleanText)}</span>}
         <div
           className="relative w-full rounded-lg overflow-hidden bg-black cursor-pointer group"
           style={{ paddingBottom: "56.25%", height: 0 }}
@@ -490,7 +490,7 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
         data-testid={isLive ? "message-tiktok-live" : "message-tiktok-embed"}
         onClick={e => e.stopPropagation()}
       >
-        {cleanText && <span className="leading-snug">{renderTextWithMentions(cleanText)}</span>}
+        {cleanText && <span className="leading-snug break-words [overflow-wrap:anywhere]">{renderTextWithMentions(cleanText)}</span>}
         {isLive && (
           <div className="flex items-center gap-1.5 text-[11px] text-red-400 font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
