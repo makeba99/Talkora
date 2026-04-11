@@ -509,6 +509,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
+  const [youtubeModalId, setYoutubeModalId] = useState<string | null>(null);
   const [chatText, setChatText] = useState("");
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -2409,7 +2410,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           <span>{msg.replyTo.text.replace(/\[gif:.*?\]|\[img:.*?\]/g, "[media]")}</span>
                         </div>
                       )}
-                      <div className="text-sm break-words mt-0.5">{renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }))}</div>
+                      <div className="text-sm break-words mt-0.5">{renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => setYoutubeModalId(id))}</div>
                       {hasReactions && (
                         <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`reactions-${msg.id}`}>
                           {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => (
@@ -4018,6 +4019,37 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           </div>
         );
       })()}
+
+      {youtubeModalId && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setYoutubeModalId(null)}
+          data-testid="youtube-modal-overlay"
+        >
+          <div
+            className="relative w-full max-w-4xl mx-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              className="absolute -top-10 right-0 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+              onClick={() => setYoutubeModalId(null)}
+              data-testid="button-youtube-modal-close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="relative w-full rounded-xl overflow-hidden shadow-2xl bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${youtubeModalId}?autoplay=1&rel=0&modestbranding=1`}
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allowFullScreen
+                title="YouTube video"
+                data-testid="iframe-youtube-modal"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {miniCameraMode && isVideoOn && localVideoStreamObj && (
         <div

@@ -329,7 +329,7 @@ function renderTextWithMentions(text: string): JSX.Element {
 const YT_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s]*)?/;
 const TT_REGEX = /https?:\/\/(?:www\.)?tiktok\.com\/@([\w.]+)(?:\/video\/(\d+)|\/live)(?:[^\s]*)?/;
 
-export function renderMessageContent(text: string, onImageClick?: (url: string) => void): JSX.Element {
+export function renderMessageContent(text: string, onImageClick?: (url: string) => void, onVideoClick?: (videoId: string) => void): JSX.Element {
   if (text.startsWith("[gif:") && text.endsWith("]")) {
     const gifUrl = text.slice(5, -1);
     return (
@@ -364,7 +364,7 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
 
   if (ytMatch) {
     const videoId = ytMatch[1];
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&enablejsapi=0`;
+    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
     const cleanText = text.replace(ytMatch[0], "").trim();
     return (
       <div
@@ -373,16 +373,27 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
         onClick={e => e.stopPropagation()}
       >
         {cleanText && <span className="leading-snug">{renderTextWithMentions(cleanText)}</span>}
-        <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
-          <iframe
-            src={embedUrl}
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title="YouTube video"
+        <div
+          className="relative w-full rounded-lg overflow-hidden bg-black cursor-pointer group"
+          style={{ paddingBottom: "56.25%", height: 0 }}
+          onClick={() => onVideoClick?.(videoId)}
+          data-testid="youtube-thumbnail-click"
+        >
+          <img
+            src={thumbnailUrl}
+            alt="YouTube video"
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
             loading="lazy"
-            data-testid="iframe-youtube"
           />
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors"
+          >
+            <div className="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+              <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white ml-1" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
     );
