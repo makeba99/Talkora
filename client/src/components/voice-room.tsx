@@ -26,6 +26,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { DmDialog } from "@/components/dm-dialog";
+import { ReportDialog } from "@/components/report-dialog";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, uploadChatImage } from "@/components/chat-picker";
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
@@ -545,6 +546,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
   const [dmUserId, setDmUserId] = useState<string | null>(null);
+  const [reportTargetUserId, setReportTargetUserId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [participantRoles, setParticipantRoles] = useState<Record<string, string>>({});
@@ -1654,13 +1656,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
   };
 
-  const handleReport = async (targetUserId: string) => {
-    try {
-      await apiRequest("POST", "/api/reports", { reporterId: user?.id, reportedId: targetUserId, reason: "Reported from room" });
-      toast({ title: "User reported." });
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Failed to report user" });
-    }
+  const handleReport = (targetUserId: string) => {
+    setReportTargetUserId(targetUserId);
   };
 
   const handleClearChat = (global: boolean) => {
@@ -4207,6 +4204,26 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {sidePanelContent}
         </div>
       )}
+
+      {/* Report Dialog */}
+      {reportTargetUserId && (() => {
+        const target = participants.find(p => p.id === reportTargetUserId);
+        return (
+          <ReportDialog
+            open={!!reportTargetUserId}
+            onOpenChange={(open) => { if (!open) setReportTargetUserId(null); }}
+            reportedUser={{
+              id: reportTargetUserId,
+              displayName: target ? getUserDisplayName(target) : undefined,
+              profileImageUrl: target?.profileImageUrl || null,
+              initials: target ? getUserInitials(target) : undefined,
+            }}
+            context="user"
+            contextLabel={`In room: ${room.title}`}
+            testIdSuffix={reportTargetUserId}
+          />
+        );
+      })()}
     </div>
   );
 }
