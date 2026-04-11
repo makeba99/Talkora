@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass } from "@/components/profile-decorations";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
@@ -246,6 +247,7 @@ function CardHologramVideo({ src }: { src: string }) {
 
 export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote }: RoomCardProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const isFull = participants.length >= room.maxUsers;
   const slots = Array.from({ length: Math.min(room.maxUsers, 12) });
   const avatarSize = getAvatarSizeClass(room.maxUsers);
@@ -431,16 +433,74 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 <Settings className="w-4 h-4" />
               </Button>
             )}
-            {!isOwner && isLoggedIn && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="flex-shrink-0 text-white hover:bg-white/10"
-                disabled
-              >
-                <Settings className="w-4 h-4" />
-              </Button>
-            )}
+            {!isOwner && (() => {
+              const ownerUser = participants.find(p => p.id === room.ownerId);
+              const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
+              const ownerAvatar = ownerUser?.profileImageUrl || undefined;
+              const ownerInitials = ownerUser ? getUserInitials(ownerUser) : "?";
+              const createdAtStr = (room as any).createdAt
+                ? new Date((room as any).createdAt).toLocaleString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })
+                : "—";
+              return (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      onClick={(e) => e.stopPropagation()}
+                      data-testid={`button-room-info-${room.id}`}
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-60 p-0 border-0 shadow-2xl overflow-hidden"
+                    style={{ background: "#1a1f2e" }}
+                    align="end"
+                  >
+                    <div className="flex flex-col">
+                      <div className="pt-4 pb-1 text-center">
+                        <p className="text-sm font-semibold text-white">Group Owner</p>
+                      </div>
+                      <div className="flex flex-col items-center gap-1.5 pb-3">
+                        <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
+                          <AvatarImage src={ownerAvatar} />
+                          <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
+                        </Avatar>
+                        <p className="text-sm font-medium text-white">{ownerName}</p>
+                      </div>
+                      <div className="border-t border-white/10" />
+                      <button
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(room.ownerId);
+                          toast({ description: "Owner ID copied!" });
+                        }}
+                        data-testid={`button-copy-owner-id-${room.id}`}
+                      >
+                        <Copy className="w-4 h-4 text-white/50" />
+                        Copy Owner ID
+                      </button>
+                      <button
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                        data-testid={`button-report-bad-topic-${room.id}`}
+                      >
+                        <Bell className="w-4 h-4 text-white/50" />
+                        Report Bad Topic
+                      </button>
+                      <div className="border-t border-white/10" />
+                      <div className="px-4 py-3 text-center">
+                        <p className="text-xs text-white/40 mb-0.5">Created At</p>
+                        <p className="text-sm font-medium text-white">{createdAtStr}</p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              );
+            })()}
           </div>
 
           {/* Participant avatars — fills remaining height, clips overflow */}
