@@ -54,6 +54,80 @@ interface ChatMessage {
   replyTo?: { id: string; userId: string; userName: string; text: string } | null;
 }
 
+function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+  const smoothedRef = useRef<number[]>(new Array(14).fill(0));
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !analyserNode) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const NUM_BARS = 14;
+    const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+    const binStep = Math.max(1, Math.floor(analyserNode.frequencyBinCount / NUM_BARS));
+    const smoothed = smoothedRef.current;
+
+    const draw = () => {
+      analyserNode.getByteFrequencyData(dataArray);
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      const barW = Math.floor(W / NUM_BARS) - 1;
+      for (let i = 0; i < NUM_BARS; i++) {
+        const raw = dataArray[i * binStep] / 255;
+        smoothed[i] = smoothed[i] * 0.65 + raw * 0.35;
+        const barH = Math.max(2, smoothed[i] * H * 0.92);
+        const x = i * (barW + 1);
+        const y = H - barH;
+        const grad = ctx.createLinearGradient(0, y, 0, H);
+        grad.addColorStop(0, "rgba(255,255,255,0.95)");
+        grad.addColorStop(1, "rgba(0,224,255,0.9)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        if ((ctx as any).roundRect) {
+          (ctx as any).roundRect(x, y, barW, barH, [2, 2, 0, 0]);
+        } else {
+          ctx.rect(x, y, barW, barH);
+        }
+        ctx.fill();
+      }
+      animRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+    return () => cancelAnimationFrame(animRef.current);
+  }, [analyserNode]);
+
+  if (!analyserNode) {
+    return (
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center items-end gap-[2px] h-5 z-20 pointer-events-none px-2">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div
+            key={i}
+            className="w-1.5 bg-cyan-400/80 rounded-t-sm animate-sound-wave origin-bottom"
+            style={{ animationDelay: `${i * 0.13}s`, height: "70%" }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute bottom-5 left-0 right-0 flex justify-center z-20 pointer-events-none px-1.5">
+      <canvas
+        ref={canvasRef}
+        width={88}
+        height={22}
+        className="opacity-95 drop-shadow-md"
+        data-testid="waveform-canvas"
+      />
+    </div>
+  );
+}
+
 function RemoteVideoPreview({ stream, className }: { stream: MediaStream; className?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -117,7 +191,8 @@ function ParticipantCard({
   hasActiveBook,
   isYoutubeWatcher,
   isBlocked,
-  onUnblock
+  onUnblock,
+  analyserNode
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -370,15 +445,7 @@ function ParticipantCard({
         {gearPopover}
 
         {isSpeaking && (
-          <div className="absolute bottom-6 left-0 right-0 flex justify-center items-end gap-[2px] h-6 z-20 pointer-events-none px-2">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="w-1.5 bg-green-500 rounded-t-sm animate-sound-wave origin-bottom"
-                style={{ animationDelay: `${i * 0.15}s`, height: "80%" }}
-              />
-            ))}
-          </div>
+          <WaveformCanvas analyserNode={analyserNode} />
         )}
 
         {isRoomOwner ? (
@@ -3445,6 +3512,42 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <option value="sv">→ Swedish</option>
                     <option value="en">→ English</option>
                   </select>
+
+                  {bookReaders.size > 0 && (
+                    <div className="flex items-center gap-1 ml-1.5 pl-1.5 border-l border-current/20 flex-shrink-0" data-testid="ereader-readers-pill">
+                      <div className="flex items-center">
+                        {Array.from(bookReaders).slice(0, 3).map((readerId, ri) => {
+                          const reader = participants.find(rp => rp.id === readerId);
+                          const rIndex = participants.findIndex(rp => rp.id === readerId);
+                          const rGrad = getAvatarGradient(rIndex >= 0 ? rIndex : ri);
+                          return (
+                            <div
+                              key={readerId}
+                              className="w-4 h-4 rounded-full border border-background/60 overflow-hidden flex items-center justify-center flex-shrink-0"
+                              style={{ marginLeft: ri === 0 ? 0 : -4, zIndex: 3 - ri }}
+                              title={reader ? getUserDisplayName(reader) : readerId}
+                            >
+                              {reader?.profileImageUrl ? (
+                                <img src={reader.profileImageUrl} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className={`w-full h-full bg-gradient-to-br ${rGrad} flex items-center justify-center`}>
+                                  <span className="text-[6px] font-bold text-white">{reader ? getUserInitials(reader) : "?"}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {bookReaders.size > 3 && (
+                          <div className="w-4 h-4 rounded-full border border-background/60 bg-amber-700 flex items-center justify-center flex-shrink-0 text-[6px] font-bold text-white" style={{ marginLeft: -4 }}>
+                            +{bookReaders.size - 3}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[9px] opacity-60 ml-1 whitespace-nowrap">
+                        {bookReaders.size === 1 ? "1 reading" : `${bookReaders.size} reading`}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -3660,6 +3763,40 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </div>
                     )}
 
+                    {p.id === bookHostId && bookReaders.size > 0 && (
+                      <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`book-readers-card-${p.id}`}>
+                        <div className="flex items-center">
+                          {Array.from(bookReaders).slice(0, 4).map((readerId, ri) => {
+                            const reader = participants.find(rp => rp.id === readerId);
+                            const rIndex = participants.findIndex(rp => rp.id === readerId);
+                            const rGrad = getAvatarGradient(rIndex >= 0 ? rIndex : ri);
+                            return (
+                              <div
+                                key={readerId}
+                                className="w-5 h-5 rounded-full border border-background overflow-hidden flex items-center justify-center shadow-sm"
+                                style={{ marginLeft: ri === 0 ? 0 : -6, zIndex: 4 - ri }}
+                                title={reader ? getUserDisplayName(reader) : readerId}
+                              >
+                                {reader?.profileImageUrl ? (
+                                  <img src={reader.profileImageUrl} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className={`w-full h-full bg-gradient-to-br ${rGrad} flex items-center justify-center`}>
+                                    <span className="text-[7px] font-bold text-white">{reader ? getUserInitials(reader) : "?"}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {bookReaders.size > 4 && (
+                            <div className="w-5 h-5 rounded-full border border-background bg-amber-700 flex items-center justify-center shadow-sm text-[7px] font-bold text-white" style={{ marginLeft: -6, zIndex: 0 }}>
+                              +{bookReaders.size - 4}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[8px] text-amber-400/80">{bookReaders.size} reading</span>
+                      </div>
+                    )}
+
                     {isHost && !isMe && (
                       <div className="absolute -top-2 right-0 flex gap-0.5 invisible group-hover:visible z-10">
                         <Button
@@ -3731,6 +3868,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       localVideoFlipped={isMe ? videoFlipped : false}
                       isBlocked={isBlockedUser}
                       onUnblock={handleUnblock}
+                      analyserNode={analysersRef.current.get(p.id)}
                     />
                   </div>
                 );

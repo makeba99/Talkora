@@ -300,6 +300,35 @@ export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
   );
 }
 
+function renderTextWithMentions(text: string): JSX.Element {
+  const mentionRegex = /@\[([^\]]+)\]|@(\w+)/g;
+  const parts: JSX.Element[] = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = mentionRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(<span key={`t-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>);
+    }
+    const name = match[1] || match[2];
+    parts.push(
+      <span key={`m-${match.index}`} className="text-primary font-semibold" data-testid="mention-highlight">
+        @{name}
+      </span>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (parts.length > 0) {
+    if (lastIndex < text.length) {
+      parts.push(<span key={`t-${lastIndex}`}>{text.slice(lastIndex)}</span>);
+    }
+    return <>{parts}</>;
+  }
+  return <>{text}</>;
+}
+
+const YT_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s]*)?/;
+const TT_REGEX = /https?:\/\/(?:www\.)?tiktok\.com\/@[\w.]+\/video\/(\d+)(?:[^\s]*)?/;
+
 export function renderMessageContent(text: string, onImageClick?: (url: string) => void): JSX.Element {
   if (text.startsWith("[gif:") && text.endsWith("]")) {
     const gifUrl = text.slice(5, -1);
@@ -329,27 +358,53 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
       />
     );
   }
-  const mentionRegex = /@\[([^\]]+)\]|@(\w+)/g;
-  const parts: JSX.Element[] = [];
-  let lastIndex = 0;
-  let match;
-  while ((match = mentionRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(<span key={`t-${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>);
-    }
-    const name = match[1] || match[2];
-    parts.push(
-      <span key={`m-${match.index}`} className="text-primary font-semibold" data-testid="mention-highlight">
-        @{name}
-      </span>
+
+  const ytMatch = text.match(YT_REGEX);
+  const ttMatch = !ytMatch ? text.match(TT_REGEX) : null;
+
+  if (ytMatch || ttMatch) {
+    const isYoutube = !!ytMatch;
+    const matchedUrl = isYoutube ? ytMatch![0] : ttMatch![0];
+    const videoId = isYoutube ? ytMatch![1] : ttMatch![1];
+    const embedUrl = isYoutube
+      ? `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`
+      : `https://www.tiktok.com/embed/v2/${videoId}`;
+    const cleanText = text.replace(matchedUrl, "").trim();
+
+    return (
+      <div className="flex flex-col gap-2 w-full" data-testid={isYoutube ? "message-youtube-embed" : "message-tiktok-embed"}>
+        {cleanText && (
+          <span className="leading-snug">{renderTextWithMentions(cleanText)}</span>
+        )}
+        {isYoutube ? (
+          <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
+            <iframe
+              src={embedUrl}
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="YouTube video"
+              loading="lazy"
+              data-testid="iframe-youtube"
+            />
+          </div>
+        ) : (
+          <div className="rounded-lg overflow-hidden">
+            <iframe
+              src={embedUrl}
+              style={{ width: "100%", height: "480px", border: "none" }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="TikTok video"
+              loading="lazy"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+              data-testid="iframe-tiktok"
+            />
+          </div>
+        )}
+      </div>
     );
-    lastIndex = match.index + match[0].length;
   }
-  if (parts.length > 0) {
-    if (lastIndex < text.length) {
-      parts.push(<span key={`t-${lastIndex}`}>{text.slice(lastIndex)}</span>);
-    }
-    return <>{parts}</>;
-  }
-  return <>{text}</>;
+
+  return renderTextWithMentions(text);
 }
