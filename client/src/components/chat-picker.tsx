@@ -347,6 +347,65 @@ function renderTextWithMentions(text: string): JSX.Element {
 const YT_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[^\s]*)?/;
 const TT_REGEX = /https?:\/\/(?:www\.)?tiktok\.com\/@([\w.]+)(?:\/video\/(\d+)|\/live)(?:[^\s]*)?/;
 
+export function renderReplyPreview(text: string): JSX.Element {
+  if (text.startsWith("[gif:") && text.endsWith("]")) {
+    const gifUrl = text.slice(5, -1);
+    return (
+      <div className="flex items-center gap-1.5">
+        <img
+          src={gifUrl}
+          alt="GIF"
+          className="rounded flex-shrink-0 object-cover"
+          style={{ width: 36, height: 28 }}
+        />
+        <span className="text-[10px] text-muted-foreground italic">GIF</span>
+      </div>
+    );
+  }
+  if (text.startsWith("[img:") && text.endsWith("]")) {
+    const imgUrl = text.slice(5, -1);
+    return (
+      <div className="flex items-center gap-1.5">
+        <img
+          src={imgUrl}
+          alt="Image"
+          className="rounded flex-shrink-0 object-cover"
+          style={{ width: 36, height: 28 }}
+        />
+        <span className="text-[10px] text-muted-foreground italic">Photo</span>
+      </div>
+    );
+  }
+  const ytMatch = text.match(YT_REGEX);
+  if (ytMatch) {
+    const videoId = ytMatch[1];
+    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+    const cleanText = text.replace(ytMatch[0], "").trim();
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="relative flex-shrink-0 rounded overflow-hidden" style={{ width: 48, height: 28 }}>
+          <img
+            src={thumbnailUrl}
+            alt="YouTube"
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+            <div className="w-4 h-4 rounded-full bg-red-600 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-white ml-0.5" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <span className="text-[10px] text-muted-foreground truncate">
+          {cleanText || "YouTube video"}
+        </span>
+      </div>
+    );
+  }
+  return <span className="text-[10px] text-muted-foreground truncate">{text}</span>;
+}
+
 export function renderMessageContent(text: string, onImageClick?: (url: string) => void, onVideoClick?: (videoId: string) => void): JSX.Element {
   if (text.startsWith("[gif:") && text.endsWith("]")) {
     const gifUrl = text.slice(5, -1);

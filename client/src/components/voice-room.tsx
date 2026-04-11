@@ -27,7 +27,7 @@ import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { DmDialog } from "@/components/dm-dialog";
 import { ReportDialog } from "@/components/report-dialog";
-import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, uploadChatImage } from "@/components/chat-picker";
+import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, renderReplyPreview, uploadChatImage } from "@/components/chat-picker";
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import type { Room, User, Follow } from "@shared/schema";
@@ -2440,9 +2440,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         <span className="text-[10px] text-muted-foreground">{formatTime(msg.createdAt)}</span>
                       </div>
                       {msg.replyTo && (
-                        <div className="mt-0.5 mb-1 pl-2 border-l-2 border-primary/40 text-[10px] text-muted-foreground truncate">
-                          <span className="font-medium text-primary/70">{msg.replyTo.userName}: </span>
-                          <span>{msg.replyTo.text.replace(/\[gif:.*?\]|\[img:.*?\]/g, "[media]")}</span>
+                        <div className="mt-0.5 mb-1 pl-2 border-l-2 border-primary/40 text-[10px] text-muted-foreground">
+                          <span className="font-medium text-primary/70 block mb-0.5">{msg.replyTo.userName}</span>
+                          {renderReplyPreview(msg.replyTo.text)}
                         </div>
                       )}
                       <div className="text-sm break-words mt-0.5">{renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}</div>
@@ -2513,10 +2513,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </ScrollArea>
         <form onSubmit={handleSendChat} className="p-3 border-t flex flex-col gap-2 relative flex-shrink-0 mt-auto">
           {replyingTo && (
-            <div className="flex items-start gap-2 px-2 py-1.5 bg-muted/60 rounded-md border-l-2 border-primary/50" data-testid="reply-preview">
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/60 rounded-md border-l-2 border-primary/50" data-testid="reply-preview">
               <div className="flex-1 min-w-0">
-                <span className="text-[10px] text-primary font-medium">Replying to {replyingTo.userName}</span>
-                <p className="text-[10px] text-muted-foreground truncate">{replyingTo.text.replace(/\[gif:.*?\]|\[img:.*?\]/g, "[media]")}</p>
+                <span className="text-[10px] text-primary font-medium block mb-0.5">Replying to {replyingTo.userName}</span>
+                {renderReplyPreview(replyingTo.text)}
               </div>
               <button type="button" onClick={() => setReplyingTo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0" data-testid="button-cancel-reply">
                 <X className="w-3 h-3" />
