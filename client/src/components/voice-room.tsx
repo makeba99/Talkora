@@ -2440,9 +2440,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         <span className="text-[10px] text-muted-foreground">{formatTime(msg.createdAt)}</span>
                       </div>
                       {msg.replyTo && (
-                        <div className="mt-0.5 mb-1 pl-2 border-l-2 border-primary/40 text-[10px] text-muted-foreground">
-                          <span className="font-medium text-primary/70 block mb-0.5">{msg.replyTo.userName}</span>
-                          {renderReplyPreview(msg.replyTo.text)}
+                        <div className="mt-0.5 mb-1.5 pl-2 border-l-2 border-primary/40 rounded-r-md" style={{ background: "rgba(255,255,255,0.04)" }}>
+                          <span className="text-[10px] font-semibold text-primary/70 block px-1.5 pt-1">{msg.replyTo.userName}</span>
+                          <div className="px-1.5 pb-1 text-xs opacity-80 pointer-events-auto">
+                            {renderMessageContent(
+                              msg.replyTo.text,
+                              (url) => setLightboxMedia({ url, msgId: msg.id }),
+                              (id) => handleSelectYoutubeVideo(id)
+                            )}
+                          </div>
                         </div>
                       )}
                       <div className="text-sm break-words mt-0.5">{renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}</div>
