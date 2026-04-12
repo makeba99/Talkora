@@ -9,7 +9,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass } from "@/components/profile-decorations";
@@ -32,6 +32,31 @@ interface RoomCardProps {
   onVote?: () => void;
 }
 
+
+const LANGUAGE_FLAGS: Record<string, string> = {
+  English: "🇬🇧", Spanish: "🇪🇸", French: "🇫🇷", German: "🇩🇪",
+  Japanese: "🇯🇵", Chinese: "🇨🇳", Korean: "🇰🇷", Portuguese: "🇧🇷",
+  Italian: "🇮🇹", Russian: "🇷🇺", Arabic: "🇸🇦", Hindi: "🇮🇳",
+  Turkish: "🇹🇷", Dutch: "🇳🇱", Polish: "🇵🇱", Swedish: "🇸🇪",
+};
+
+function getThemeGlowColor(themeId: string | null | undefined): string {
+  switch (themeId) {
+    case "neon": return "rgba(0,220,255,0.55), rgba(168,85,247,0.4)";
+    case "galaxy": return "rgba(99,102,241,0.5), rgba(168,85,247,0.5)";
+    case "sunset": return "rgba(251,146,60,0.5), rgba(239,68,68,0.45)";
+    case "forest": return "rgba(52,211,153,0.45), rgba(16,185,129,0.4)";
+    case "cyberpunk": return "rgba(250,204,21,0.45), rgba(0,220,255,0.4)";
+    case "ocean": return "rgba(59,130,246,0.5), rgba(6,182,212,0.5)";
+    case "cherry": return "rgba(244,114,182,0.5), rgba(251,113,133,0.5)";
+    case "gold": return "rgba(253,224,71,0.45), rgba(245,158,11,0.4)";
+    case "violet": return "rgba(167,139,250,0.5), rgba(232,121,249,0.5)";
+    case "aurora": return "rgba(45,212,191,0.5), rgba(74,222,128,0.45)";
+    case "storm": return "rgba(59,130,246,0.5), rgba(100,116,139,0.4)";
+    case "volcanic": return "rgba(239,68,68,0.5), rgba(251,146,60,0.45)";
+    default: return "rgba(0,220,255,0.5), rgba(168,85,247,0.4)";
+  }
+}
 
 const ROOM_THEMES = [
   { id: "default", label: "Default", from: "from-cyan-500", to: "to-purple-500", preview: "from-cyan-500 to-purple-500" },
@@ -383,40 +408,47 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const themeBorderClass = getRoomThemeBorderClass((room as any).roomTheme);
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
-  const speakerSlots = slots.slice(0, 2);
-  const remainingSlots = slots.slice(2);
-  const maxRightSlots = Math.min(remainingSlots.length, 6);
+  const speakerCount = Math.min(participants.length, 2);
+  const extraSpeakers = Math.max(0, participants.length - 2);
+  const openSlots = Math.max(0, room.maxUsers - participants.length);
+  const glowColors = getThemeGlowColor((room as any).roomTheme);
+  const flagEmoji = LANGUAGE_FLAGS[room.language] || "🌐";
 
-  const renderParticipantAvatar = (participant: User, i: number, size: string = "w-14 h-14") => {
+  const renderSpeakerAvatar = (participant: User, i: number) => {
     const count = followerCounts[participant.id] || 0;
     const ringClass = getAvatarRingClass(participant.avatarRing);
     const hasRing = !!ringClass;
 
-    const avatarContent = (
-      <div className={`rounded-full p-[3px] ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 to-purple-500"}`}>
-        <Avatar className={`${size} border-2 border-background`}>
+    const avatarEl = (
+      <div className={`rounded-full p-[3px] flex-shrink-0 ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600"}`}
+        style={{ boxShadow: hasRing ? undefined : "0 0 12px rgba(0,200,255,0.4)" }}>
+        <Avatar className="w-[72px] h-[72px] border-2 border-[#0a1228]">
           <AvatarImage src={participant.profileImageUrl || undefined} alt={getUserDisplayName(participant)} />
-          <AvatarFallback className="text-sm bg-primary/10 text-primary">
+          <AvatarFallback className="text-lg font-bold bg-[#0d1a3a] text-cyan-300">
             {getUserInitials(participant)}
           </AvatarFallback>
         </Avatar>
       </div>
     );
 
-    const wrappedAvatar = (
-      <ProfileDecoration decorationId={(participant as any).profileDecoration} size={56}>
-        {avatarContent}
+    const decorated = (
+      <ProfileDecoration decorationId={(participant as any).profileDecoration} size={72}>
+        {avatarEl}
       </ProfileDecoration>
+    );
+
+    const heartRow = (
+      <div className="flex items-center justify-center gap-0.5 mt-1" data-testid={`text-follower-count-card-${participant.id}`}>
+        <Heart className="w-3 h-3 text-red-400 fill-red-400" />
+        <span className="text-[11px] text-white/70 font-medium">{count}</span>
+      </div>
     );
 
     if (!isLoggedIn) {
       return (
-        <div className="flex flex-col items-center gap-1">
-          {wrappedAvatar}
-          <div className="flex items-center gap-0.5" data-testid={`text-follower-count-card-${participant.id}`}>
-            <Heart className="w-3 h-3 text-pink-400" />
-            <span className="text-[10px] text-white/70">{count}</span>
-          </div>
+        <div key={i} className="flex flex-col items-center">
+          {decorated}
+          {heartRow}
         </div>
       );
     }
@@ -424,20 +456,13 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     return (
       <Popover key={i}>
         <PopoverTrigger asChild>
-          <button className="flex flex-col items-center gap-1 cursor-pointer" data-testid={`button-card-participant-${participant.id}`}>
-            {wrappedAvatar}
-            <div className="flex items-center gap-0.5" data-testid={`text-follower-count-card-${participant.id}`}>
-              <Heart className="w-3 h-3 text-pink-400" />
-              <span className="text-[10px] text-white/70">{count}</span>
-            </div>
+          <button className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform" data-testid={`button-card-participant-${participant.id}`}>
+            {decorated}
+            {heartRow}
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-60 p-2" align="center">
-          <ParticipantPopover
-            participant={participant}
-            currentUserId={user?.id}
-            onOpenDm={onOpenDm}
-          />
+          <ParticipantPopover participant={participant} currentUserId={user?.id} onOpenDm={onOpenDm} />
         </PopoverContent>
       </Popover>
     );
@@ -542,204 +567,206 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
   return (
     <div
-      className={`p-[1.5px] rounded-xl bg-gradient-to-br ${themeBorderClass}`}
-      style={{ width: "100%", height: 260 }}
+      className={`p-[1.5px] rounded-2xl bg-gradient-to-br ${themeBorderClass}`}
+      style={{
+        width: "100%",
+        height: 280,
+        filter: `drop-shadow(0 0 10px ${glowColors.split(",")[0]}) drop-shadow(0 0 20px ${glowColors.split(",")[1] || glowColors.split(",")[0]})`,
+      }}
       data-testid={`card-room-${room.id}`}
     >
       <div
-        className="rounded-xl flex flex-col relative overflow-hidden h-full"
+        className="rounded-2xl flex flex-col relative overflow-hidden h-full"
         style={{
-          background: "linear-gradient(135deg, rgba(10,18,40,0.97) 0%, rgba(14,24,55,0.97) 60%, rgba(20,10,45,0.97) 100%)",
-          boxShadow: "inset 0 0 40px rgba(0,200,255,0.04)",
+          background: "linear-gradient(145deg, #07102a 0%, #0c1740 55%, #110929 100%)",
         }}
       >
         {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} />}
 
         <div className="relative z-[2] flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2 px-3 pt-3 pb-1.5">
+
+          {/* ── Header ── */}
+          <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-1">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-bold text-sm text-white truncate" data-testid={`text-room-title-${room.id}`}>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h3 className="font-extrabold text-base text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
                   {room.title}
                 </h3>
-                {!room.isPublic && <Lock className="w-3 h-3 text-white/40 flex-shrink-0" />}
+                {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />}
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                <span className={`text-[10px] font-semibold ${levelColor[room.level] || "text-white/50"}`}>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-sm">{flagEmoji}</span>
+                <span className="text-[11px] text-white/60 font-medium">{room.language}</span>
+                <span className="text-white/30 text-[11px]">•</span>
+                <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-cyan-400"}`}>
                   {room.level}
                 </span>
-                <span className="text-white/30 text-[10px]">•</span>
-                {voteCount > 0 && (
-                  <span className="text-[10px] text-amber-400 font-medium">Trending room</span>
-                )}
-                {voteCount === 0 && (
-                  <span className="text-[10px] text-white/40">{room.language}</span>
-                )}
               </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Badge
-                className="text-[9px] px-1.5 py-0 h-5 border border-amber-400/40 text-amber-300 bg-amber-400/10"
-                style={{ fontWeight: 600 }}
-              >
-                <Globe className="w-2.5 h-2.5 mr-0.5" />
-                {room.language}
-              </Badge>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {participants.length > 0 && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)" }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-[10px] text-green-400 font-semibold">Live</span>
+                </div>
+              )}
+              <Mic className="w-3.5 h-3.5 text-white/30" />
               {settingsButton}
             </div>
           </div>
 
-          {/* Body: left speakers + right slots */}
-          <div className="flex flex-1 gap-2 px-3 pb-2 overflow-hidden min-h-0">
+          {/* ── Body ── */}
+          <div className="flex flex-1 gap-3 px-4 pb-1 overflow-hidden min-h-0">
+
             {/* Left: speaker avatars */}
-            <div className="flex flex-col justify-between" style={{ minWidth: 80, maxWidth: 90 }}>
-              <div className="flex gap-2 flex-wrap">
-                {speakerSlots.map((_, i) => {
-                  const participant = participants[i];
-                  if (!participant) {
+            <div className="flex flex-col justify-between flex-shrink-0">
+              <div className="flex gap-3">
+                {[0, 1].map((i) => {
+                  const p = participants[i];
+                  if (!p) {
                     return (
-                      <div
-                        key={i}
-                        className="w-14 h-14 rounded-full flex-shrink-0"
-                        style={{ border: "1.5px dashed rgba(100,200,255,0.2)", background: "rgba(0,180,255,0.03)" }}
-                      />
+                      <div key={i} className="flex flex-col items-center gap-1">
+                        <div className="w-[72px] h-[72px] rounded-full flex-shrink-0"
+                          style={{ border: "2px dashed rgba(100,200,255,0.2)", background: "rgba(0,150,255,0.04)" }} />
+                        <div className="h-4" />
+                      </div>
                     );
                   }
-                  return <div key={i}>{renderParticipantAvatar(participant, i)}</div>;
+                  return renderSpeakerAvatar(p, i);
                 })}
               </div>
-              <div className="mt-1 space-y-1">
+              <div className="mt-2 space-y-1.5">
                 {participants.length > 0 && (
-                  <p className="text-[9px] text-cyan-400/80 font-medium tracking-wide uppercase">Live speaking</p>
-                )}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-0.5 text-white/50">
-                    <Users className="w-3 h-3" />
-                    <span className="text-[10px]">{participants.length}/{room.maxUsers}</span>
+                  <div className="flex items-center gap-1">
+                    <Mic className="w-3 h-3 text-cyan-400/70" />
+                    <span className="text-[10px] text-cyan-400/80 font-semibold">{participants.length} Live speaking</span>
                   </div>
-                  {isLoggedIn && onVote && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onVote(); }}
-                      className={`flex items-center gap-0.5 text-[10px] transition-colors ${hasVoted ? "text-primary" : "text-white/40 hover:text-primary"}`}
-                      data-testid={`button-vote-room-${room.id}`}
-                      title={hasVoted ? "Remove vote" : "Vote for this room"}
-                    >
-                      <ChevronUp className="w-3 h-3" />
-                      <span>{voteCount}</span>
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Right: remaining slots grid */}
-            <div className="flex-1 grid grid-cols-3 gap-1.5 content-start overflow-hidden">
-              {Array.from({ length: maxRightSlots }).map((_, i) => {
-                const participantIndex = i + 2;
-                const participant = participants[participantIndex];
-                if (participant) {
-                  const count = followerCounts[participant.id] || 0;
-                  const ringClass = getAvatarRingClass(participant.avatarRing);
-                  const hasRing = !!ringClass;
-                  const slotContent = (
-                    <div className="flex flex-col items-center gap-1 p-1">
-                      <div className={`rounded-full p-[2px] ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 to-purple-500"}`}>
-                        <Avatar className="w-9 h-9 border border-background">
-                          <AvatarImage src={participant.profileImageUrl || undefined} />
-                          <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                            {getUserInitials(participant)}
-                          </AvatarFallback>
+            {/* Right: frosted glass panel with remaining slots */}
+            <div
+              className="flex-1 rounded-xl flex flex-col justify-center items-center gap-2 p-3 relative overflow-hidden"
+              style={{
+                background: "rgba(10,40,90,0.35)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(100,200,255,0.12)",
+                boxShadow: "inset 0 0 20px rgba(0,180,255,0.04)",
+              }}
+            >
+              {/* Ambient glow spot */}
+              <div className="absolute w-16 h-16 rounded-full opacity-20 blur-2xl"
+                style={{ background: "radial-gradient(circle, rgba(0,200,255,0.8), transparent)", top: "20%", left: "30%" }} />
+
+              {/* Remaining participant slots as icons */}
+              <div className="flex gap-3 justify-center">
+                {participants.slice(2, 5).map((p, i) => {
+                  const rk = getAvatarRingClass(p.avatarRing);
+                  const cnt = followerCounts[p.id] || 0;
+                  const slot = (
+                    <div className="flex flex-col items-center gap-0.5">
+                      <div className={`rounded-full p-[2px] ${rk || "bg-gradient-to-br from-cyan-400 to-purple-500"}`}>
+                        <Avatar className="w-9 h-9 border border-[#0a1228]">
+                          <AvatarImage src={p.profileImageUrl || undefined} />
+                          <AvatarFallback className="text-[10px] bg-[#0d1a3a] text-cyan-300">{getUserInitials(p)}</AvatarFallback>
                         </Avatar>
                       </div>
-                      <span className="text-[8px] text-white/60 truncate w-full text-center leading-tight">
-                        {getUserDisplayName(participant).split(" ")[0]}
-                      </span>
                       <div className="flex items-center gap-0.5">
-                        <Heart className="w-2.5 h-2.5 text-pink-400" />
-                        <span className="text-[8px] text-white/50">{count}</span>
+                        <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" />
+                        <span className="text-[8px] text-white/50">{cnt}</span>
                       </div>
                     </div>
                   );
-                  if (!isLoggedIn) {
-                    return (
-                      <div
-                        key={i}
-                        className="rounded-lg overflow-hidden"
-                        style={{ border: "1px solid rgba(100,200,255,0.18)", background: "rgba(0,180,255,0.05)" }}
-                      >
-                        {slotContent}
-                      </div>
-                    );
-                  }
+                  if (!isLoggedIn) return <div key={i}>{slot}</div>;
                   return (
                     <Popover key={i}>
                       <PopoverTrigger asChild>
-                        <button
-                          className="rounded-lg overflow-hidden w-full cursor-pointer hover:border-cyan-400/40 transition-colors"
-                          style={{ border: "1px solid rgba(100,200,255,0.18)", background: "rgba(0,180,255,0.05)" }}
-                          data-testid={`button-card-participant-${participant.id}`}
-                        >
-                          {slotContent}
+                        <button className="hover:scale-105 transition-transform" data-testid={`button-card-participant-${p.id}`}>
+                          {slot}
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-60 p-2" align="center">
-                        <ParticipantPopover
-                          participant={participant}
-                          currentUserId={user?.id}
-                          onOpenDm={onOpenDm}
-                        />
+                        <ParticipantPopover participant={p} currentUserId={user?.id} onOpenDm={onOpenDm} />
                       </PopoverContent>
                     </Popover>
                   );
-                }
-                return (
-                  <div
-                    key={i}
-                    className="rounded-lg flex flex-col items-center justify-center gap-1 p-1"
-                    style={{ border: "1.5px dashed rgba(100,200,255,0.2)", background: "rgba(0,180,255,0.03)" }}
-                  >
-                    <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center"
-                      style={{ border: "1.5px dashed rgba(100,200,255,0.3)", background: "rgba(0,180,255,0.06)" }}
-                    >
-                      <UserPlus className="w-3.5 h-3.5 text-cyan-400/60" />
+                })}
+                {/* Empty join-spot slots */}
+                {Array.from({ length: Math.min(openSlots, Math.max(0, 3 - Math.max(0, participants.length - 2))) }).map((_, i) => (
+                  <div key={`empty-${i}`} className="flex flex-col items-center gap-0.5">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{ border: "1.5px dashed rgba(100,200,255,0.3)", background: "rgba(0,150,255,0.06)" }}>
+                      <UserPlus className="w-4 h-4 text-cyan-400/50" />
                     </div>
-                    <span className="text-[8px] text-white/30 leading-tight text-center">Join spot</span>
+                    <span className="text-[8px] text-white/25">open</span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+
+              {extraSpeakers > 0 || openSlots > 0 ? (
+                <div className="flex items-center gap-1">
+                  <Mic className="w-3 h-3 text-cyan-400/60" />
+                  <span className="text-[10px] text-white/50 font-medium">
+                    {extraSpeakers > 0
+                      ? `+${extraSpeakers} speaking`
+                      : `${openSlots} spot${openSlots !== 1 ? "s" : ""} open`}
+                  </span>
+                </div>
+              ) : null}
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
-            <div className="flex items-center gap-2">
+          {/* ── Footer ── */}
+          <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-2">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1 text-white/50">
+                <Users className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-medium">{participants.length}/{room.maxUsers}</span>
+              </div>
+              {isLoggedIn && onOpenDm && (
+                <button className="text-white/40 hover:text-white/70 transition-colors" title="Messages" data-testid={`button-messages-${room.id}`}>
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {isLoggedIn && onVote && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onVote(); }}
+                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-primary" : "text-white/35 hover:text-primary"}`}
+                  data-testid={`button-vote-room-${room.id}`}
+                  title={hasVoted ? "Remove vote" : "Vote"}
+                >
+                  <ChevronUp className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-medium">{voteCount}</span>
+                </button>
+              )}
               {isFull && (
-                <div className="flex items-center gap-1 text-white/40">
-                  <Ban className="w-3 h-3" />
-                  <span className="text-[10px]">Full</span>
+                <div className="flex items-center gap-1 text-red-400/70">
+                  <Ban className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-medium">Full</span>
                 </div>
               )}
             </div>
+
             {isFull ? null : !isLoggedIn ? (
               <a
                 href="/api/login"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95 ml-auto"
-                style={{ background: "linear-gradient(90deg, #0ea5e9 0%, #7c3aed 100%)", boxShadow: "0 2px 16px rgba(124,58,237,0.35)" }}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95"
+                style={{ background: "linear-gradient(90deg, #2563eb 0%, #7c3aed 100%)", boxShadow: "0 2px 14px rgba(124,58,237,0.4)" }}
                 data-testid={`button-signin-room-${room.id}`}
               >
-                <LogIn className="w-3.5 h-3.5" />
-                Sign in to Join
+                <MonitorPlay className="w-3.5 h-3.5" />
+                Enter Room
               </a>
             ) : (
               <button
-                className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95 ml-auto"
-                style={{ background: "linear-gradient(90deg, #0ea5e9 0%, #7c3aed 100%)", boxShadow: "0 2px 16px rgba(124,58,237,0.35)" }}
+                className="flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95"
+                style={{ background: "linear-gradient(90deg, #2563eb 0%, #7c3aed 100%)", boxShadow: "0 2px 14px rgba(124,58,237,0.4)" }}
                 onClick={() => onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
               >
-                <LogIn className="w-3.5 h-3.5" />
+                <MonitorPlay className="w-3.5 h-3.5" />
                 Enter Room
               </button>
             )}
