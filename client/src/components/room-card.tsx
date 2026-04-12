@@ -383,257 +383,369 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const themeBorderClass = getRoomThemeBorderClass((room as any).roomTheme);
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
+  const speakerSlots = slots.slice(0, 2);
+  const remainingSlots = slots.slice(2);
+  const maxRightSlots = Math.min(remainingSlots.length, 6);
+
+  const renderParticipantAvatar = (participant: User, i: number, size: string = "w-14 h-14") => {
+    const count = followerCounts[participant.id] || 0;
+    const ringClass = getAvatarRingClass(participant.avatarRing);
+    const hasRing = !!ringClass;
+
+    const avatarContent = (
+      <div className={`rounded-full p-[3px] ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 to-purple-500"}`}>
+        <Avatar className={`${size} border-2 border-background`}>
+          <AvatarImage src={participant.profileImageUrl || undefined} alt={getUserDisplayName(participant)} />
+          <AvatarFallback className="text-sm bg-primary/10 text-primary">
+            {getUserInitials(participant)}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+    );
+
+    const wrappedAvatar = (
+      <ProfileDecoration decorationId={(participant as any).profileDecoration} size={56}>
+        {avatarContent}
+      </ProfileDecoration>
+    );
+
+    if (!isLoggedIn) {
+      return (
+        <div className="flex flex-col items-center gap-1">
+          {wrappedAvatar}
+          <div className="flex items-center gap-0.5" data-testid={`text-follower-count-card-${participant.id}`}>
+            <Heart className="w-3 h-3 text-pink-400" />
+            <span className="text-[10px] text-white/70">{count}</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Popover key={i}>
+        <PopoverTrigger asChild>
+          <button className="flex flex-col items-center gap-1 cursor-pointer" data-testid={`button-card-participant-${participant.id}`}>
+            {wrappedAvatar}
+            <div className="flex items-center gap-0.5" data-testid={`text-follower-count-card-${participant.id}`}>
+              <Heart className="w-3 h-3 text-pink-400" />
+              <span className="text-[10px] text-white/70">{count}</span>
+            </div>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-60 p-2" align="center">
+          <ParticipantPopover
+            participant={participant}
+            currentUserId={user?.id}
+            onOpenDm={onOpenDm}
+          />
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
+  const settingsButton = isOwner ? (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="flex-shrink-0 w-7 h-7 text-white/50 hover:text-white hover:bg-white/10"
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditTitle(room.title);
+        setEditLanguage(room.language);
+        setEditLevel(room.level);
+        setEditMaxUsers(room.maxUsers);
+        setEditTheme((room as any).roomTheme || "default");
+        setHologramPreview(null);
+        setHologramFile(null);
+        setVideoTab("upload");
+        setYtLinkInput("");
+        setYtSearchQuery("");
+        setYtSearchResults([]);
+        setSelectedYtId(null);
+        setEditOpen(true);
+      }}
+      data-testid={`button-room-settings-${room.id}`}
+    >
+      <Settings className="w-3.5 h-3.5" />
+    </Button>
+  ) : (() => {
+    const ownerUser = participants.find(p => p.id === room.ownerId);
+    const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
+    const ownerAvatar = ownerUser?.profileImageUrl || undefined;
+    const ownerInitials = ownerUser ? getUserInitials(ownerUser) : "?";
+    const createdAtStr = (room as any).createdAt
+      ? new Date((room as any).createdAt).toLocaleString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })
+      : "—";
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="flex-shrink-0 w-7 h-7 text-white/50 hover:text-white hover:bg-white/10"
+            onClick={(e) => e.stopPropagation()}
+            data-testid={`button-room-info-${room.id}`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-60 p-0 border-0 shadow-2xl overflow-hidden"
+          style={{ background: "#1a1f2e" }}
+          align="end"
+        >
+          <div className="flex flex-col">
+            <div className="pt-4 pb-1 text-center">
+              <p className="text-sm font-semibold text-white">Group Owner</p>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 pb-3">
+              <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
+                <AvatarImage src={ownerAvatar} />
+                <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
+              </Avatar>
+              <p className="text-sm font-medium text-white">{ownerName}</p>
+            </div>
+            <div className="border-t border-white/10" />
+            <button
+              className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(room.ownerId);
+                toast({ description: "Owner ID copied!" });
+              }}
+              data-testid={`button-copy-owner-id-${room.id}`}
+            >
+              <Copy className="w-4 h-4 text-white/50" />
+              Copy Owner ID
+            </button>
+            <button
+              className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setReportOpen(true);
+              }}
+              data-testid={`button-report-bad-topic-${room.id}`}
+            >
+              <Bell className="w-4 h-4 text-white/50" />
+              Report Bad Topic
+            </button>
+            <div className="border-t border-white/10" />
+            <div className="px-4 py-3 text-center">
+              <p className="text-xs text-white/40 mb-0.5">Created At</p>
+              <p className="text-sm font-medium text-white">{createdAtStr}</p>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  })();
+
   return (
     <div
-      className={`p-[2px] rounded-md bg-gradient-to-br ${themeBorderClass}`}
+      className={`p-[1.5px] rounded-xl bg-gradient-to-br ${themeBorderClass}`}
       style={{ width: "100%", height: 260 }}
       data-testid={`card-room-${room.id}`}
     >
-      <Card className="p-4 rounded-md border-0 flex flex-col relative overflow-hidden h-full">
+      <div
+        className="rounded-xl flex flex-col relative overflow-hidden h-full"
+        style={{
+          background: "linear-gradient(135deg, rgba(10,18,40,0.97) 0%, rgba(14,24,55,0.97) 60%, rgba(20,10,45,0.97) 100%)",
+          boxShadow: "inset 0 0 40px rgba(0,200,255,0.04)",
+        }}
+      >
         {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} />}
-        <div className="relative z-[2] flex flex-col h-full gap-2">
 
-          {/* Header: title + settings */}
-          <div className="flex items-start justify-between gap-2">
+        <div className="relative z-[2] flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2 px-3 pt-3 pb-1.5">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-base truncate" data-testid={`text-room-title-${room.id}`}>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-bold text-sm text-white truncate" data-testid={`text-room-title-${room.id}`}>
                   {room.title}
                 </h3>
-                {!room.isPublic && <Lock className="w-3 h-3 text-muted-foreground flex-shrink-0" />}
+                {!room.isPublic && <Lock className="w-3 h-3 text-white/40 flex-shrink-0" />}
               </div>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Badge variant="secondary" className="text-xs">
-                  <Globe className="w-3 h-3 mr-1" />
-                  {room.language}
-                </Badge>
-                <span className={`text-xs font-medium ${levelColor[room.level] || "text-muted-foreground"}`}>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <span className={`text-[10px] font-semibold ${levelColor[room.level] || "text-white/50"}`}>
                   {room.level}
                 </span>
+                <span className="text-white/30 text-[10px]">•</span>
+                {voteCount > 0 && (
+                  <span className="text-[10px] text-amber-400 font-medium">Trending room</span>
+                )}
+                {voteCount === 0 && (
+                  <span className="text-[10px] text-white/40">{room.language}</span>
+                )}
               </div>
             </div>
-            {isOwner && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditTitle(room.title);
-                  setEditLanguage(room.language);
-                  setEditLevel(room.level);
-                  setEditMaxUsers(room.maxUsers);
-                  setEditTheme((room as any).roomTheme || "default");
-                  setHologramPreview(null);
-                  setHologramFile(null);
-                  setVideoTab("upload");
-                  setYtLinkInput("");
-                  setYtSearchQuery("");
-                  setYtSearchResults([]);
-                  setSelectedYtId(null);
-                  setEditOpen(true);
-                }}
-                data-testid={`button-room-settings-${room.id}`}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Badge
+                className="text-[9px] px-1.5 py-0 h-5 border border-amber-400/40 text-amber-300 bg-amber-400/10"
+                style={{ fontWeight: 600 }}
               >
-                <Settings className="w-4 h-4" />
-              </Button>
-            )}
-            {!isOwner && (() => {
-              const ownerUser = participants.find(p => p.id === room.ownerId);
-              const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
-              const ownerAvatar = ownerUser?.profileImageUrl || undefined;
-              const ownerInitials = ownerUser ? getUserInitials(ownerUser) : "?";
-              const createdAtStr = (room as any).createdAt
-                ? new Date((room as any).createdAt).toLocaleString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })
-                : "—";
-              return (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      onClick={(e) => e.stopPropagation()}
-                      data-testid={`button-room-info-${room.id}`}
-                    >
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-60 p-0 border-0 shadow-2xl overflow-hidden"
-                    style={{ background: "#1a1f2e" }}
-                    align="end"
-                  >
-                    <div className="flex flex-col">
-                      <div className="pt-4 pb-1 text-center">
-                        <p className="text-sm font-semibold text-white">Group Owner</p>
-                      </div>
-                      <div className="flex flex-col items-center gap-1.5 pb-3">
-                        <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
-                          <AvatarImage src={ownerAvatar} />
-                          <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
-                        </Avatar>
-                        <p className="text-sm font-medium text-white">{ownerName}</p>
-                      </div>
-                      <div className="border-t border-white/10" />
-                      <button
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigator.clipboard.writeText(room.ownerId);
-                          toast({ description: "Owner ID copied!" });
-                        }}
-                        data-testid={`button-copy-owner-id-${room.id}`}
-                      >
-                        <Copy className="w-4 h-4 text-white/50" />
-                        Copy Owner ID
-                      </button>
-                      <button
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setReportOpen(true);
-                        }}
-                        data-testid={`button-report-bad-topic-${room.id}`}
-                      >
-                        <Bell className="w-4 h-4 text-white/50" />
-                        Report Bad Topic
-                      </button>
-                      <div className="border-t border-white/10" />
-                      <div className="px-4 py-3 text-center">
-                        <p className="text-xs text-white/40 mb-0.5">Created At</p>
-                        <p className="text-sm font-medium text-white">{createdAtStr}</p>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              );
-            })()}
+                <Globe className="w-2.5 h-2.5 mr-0.5" />
+                {room.language}
+              </Badge>
+              {settingsButton}
+            </div>
           </div>
 
-          {/* Participant avatars — fills remaining height, clips overflow */}
-          <div className="flex items-start gap-1.5 flex-wrap flex-1 overflow-hidden content-start">
-            {slots.map((_, i) => {
-              const participant = participants[i];
-              if (!participant) {
+          {/* Body: left speakers + right slots */}
+          <div className="flex flex-1 gap-2 px-3 pb-2 overflow-hidden min-h-0">
+            {/* Left: speaker avatars */}
+            <div className="flex flex-col justify-between" style={{ minWidth: 80, maxWidth: 90 }}>
+              <div className="flex gap-2 flex-wrap">
+                {speakerSlots.map((_, i) => {
+                  const participant = participants[i];
+                  if (!participant) {
+                    return (
+                      <div
+                        key={i}
+                        className="w-14 h-14 rounded-full flex-shrink-0"
+                        style={{ border: "1.5px dashed rgba(100,200,255,0.2)", background: "rgba(0,180,255,0.03)" }}
+                      />
+                    );
+                  }
+                  return <div key={i}>{renderParticipantAvatar(participant, i)}</div>;
+                })}
+              </div>
+              <div className="mt-1 space-y-1">
+                {participants.length > 0 && (
+                  <p className="text-[9px] text-cyan-400/80 font-medium tracking-wide uppercase">Live speaking</p>
+                )}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-0.5 text-white/50">
+                    <Users className="w-3 h-3" />
+                    <span className="text-[10px]">{participants.length}/{room.maxUsers}</span>
+                  </div>
+                  {isLoggedIn && onVote && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onVote(); }}
+                      className={`flex items-center gap-0.5 text-[10px] transition-colors ${hasVoted ? "text-primary" : "text-white/40 hover:text-primary"}`}
+                      data-testid={`button-vote-room-${room.id}`}
+                      title={hasVoted ? "Remove vote" : "Vote for this room"}
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                      <span>{voteCount}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: remaining slots grid */}
+            <div className="flex-1 grid grid-cols-3 gap-1.5 content-start overflow-hidden">
+              {Array.from({ length: maxRightSlots }).map((_, i) => {
+                const participantIndex = i + 2;
+                const participant = participants[participantIndex];
+                if (participant) {
+                  const count = followerCounts[participant.id] || 0;
+                  const ringClass = getAvatarRingClass(participant.avatarRing);
+                  const hasRing = !!ringClass;
+                  const slotContent = (
+                    <div className="flex flex-col items-center gap-1 p-1">
+                      <div className={`rounded-full p-[2px] ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 to-purple-500"}`}>
+                        <Avatar className="w-9 h-9 border border-background">
+                          <AvatarImage src={participant.profileImageUrl || undefined} />
+                          <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                            {getUserInitials(participant)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <span className="text-[8px] text-white/60 truncate w-full text-center leading-tight">
+                        {getUserDisplayName(participant).split(" ")[0]}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        <Heart className="w-2.5 h-2.5 text-pink-400" />
+                        <span className="text-[8px] text-white/50">{count}</span>
+                      </div>
+                    </div>
+                  );
+                  if (!isLoggedIn) {
+                    return (
+                      <div
+                        key={i}
+                        className="rounded-lg overflow-hidden"
+                        style={{ border: "1px solid rgba(100,200,255,0.18)", background: "rgba(0,180,255,0.05)" }}
+                      >
+                        {slotContent}
+                      </div>
+                    );
+                  }
+                  return (
+                    <Popover key={i}>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="rounded-lg overflow-hidden w-full cursor-pointer hover:border-cyan-400/40 transition-colors"
+                          style={{ border: "1px solid rgba(100,200,255,0.18)", background: "rgba(0,180,255,0.05)" }}
+                          data-testid={`button-card-participant-${participant.id}`}
+                        >
+                          {slotContent}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-60 p-2" align="center">
+                        <ParticipantPopover
+                          participant={participant}
+                          currentUserId={user?.id}
+                          onOpenDm={onOpenDm}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  );
+                }
                 return (
                   <div
                     key={i}
-                    className={`${avatarSize} rounded-full border-2 border-dashed border-muted-foreground/20 flex-shrink-0`}
-                  />
-                );
-              }
-
-              const count = followerCounts[participant.id] || 0;
-              const ringClass = getAvatarRingClass(participant.avatarRing);
-              const hasRing = !!ringClass;
-
-              const avatarContent = (
-                <div className={`rounded-full p-[3px] ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 to-purple-500"}`}>
-                  <Avatar className={`${avatarSize} border-2 border-background`}>
-                    <AvatarImage src={participant.profileImageUrl || undefined} alt={getUserDisplayName(participant)} />
-                    <AvatarFallback className={`${fallbackText} bg-primary/10 text-primary`}>
-                      {getUserInitials(participant)}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-              );
-
-              const wrappedAvatar = (
-                <ProfileDecoration decorationId={(participant as any).profileDecoration} size={40}>
-                  {avatarContent}
-                </ProfileDecoration>
-              );
-
-              if (!isLoggedIn) {
-                return (
-                  <div key={i} className="flex flex-col items-center gap-0.5 flex-shrink-0">
-                    {wrappedAvatar}
-                    <div className="flex items-center gap-0.5 text-muted-foreground" data-testid={`text-follower-count-card-${participant.id}`}>
-                      <Heart className="w-3 h-3 text-pink-500" />
-                      <span className="text-[10px]">{count}</span>
+                    className="rounded-lg flex flex-col items-center justify-center gap-1 p-1"
+                    style={{ border: "1.5px dashed rgba(100,200,255,0.2)", background: "rgba(0,180,255,0.03)" }}
+                  >
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center"
+                      style={{ border: "1.5px dashed rgba(100,200,255,0.3)", background: "rgba(0,180,255,0.06)" }}
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-cyan-400/60" />
                     </div>
+                    <span className="text-[8px] text-white/30 leading-tight text-center">Join spot</span>
                   </div>
                 );
-              }
-
-              return (
-                <Popover key={i}>
-                  <PopoverTrigger asChild>
-                    <button className="flex flex-col items-center gap-0.5 cursor-pointer flex-shrink-0" data-testid={`button-card-participant-${participant.id}`}>
-                      {wrappedAvatar}
-                      <div className="flex items-center gap-0.5 text-muted-foreground" data-testid={`text-follower-count-card-${participant.id}`}>
-                        <Heart className="w-3 h-3 text-pink-500" />
-                        <span className="text-[10px]">{count}</span>
-                      </div>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-60 p-2" align="center">
-                    <ParticipantPopover
-                      participant={participant}
-                      currentUserId={user?.id}
-                      onOpenDm={onOpenDm}
-                    />
-                  </PopoverContent>
-                </Popover>
-              );
-            })}
+              })}
+            </div>
           </div>
 
-          {/* Footer: count + vote + join */}
-          <div className="flex items-center justify-between gap-2">
+          {/* Footer */}
+          <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Users className="w-3.5 h-3.5" />
-                <span className="text-xs">{participants.length}/{room.maxUsers}</span>
-              </div>
-              {isLoggedIn && onVote && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onVote(); }}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors border ${hasVoted ? "bg-primary/15 border-primary/40 text-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-primary"}`}
-                  data-testid={`button-vote-room-${room.id}`}
-                  title={hasVoted ? "Remove vote" : "Vote for this room"}
-                >
-                  <ChevronUp className="w-3 h-3" />
-                  {voteCount}
-                </button>
-              )}
-              {!isLoggedIn && voteCount > 0 && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <ChevronUp className="w-3 h-3" />{voteCount}
-                </span>
+              {isFull && (
+                <div className="flex items-center gap-1 text-white/40">
+                  <Ban className="w-3 h-3" />
+                  <span className="text-[10px]">Full</span>
+                </div>
               )}
             </div>
-            {isFull ? (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Ban className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">This group is full</span>
-              </div>
-            ) : !isLoggedIn ? (
-              <Button
-                size="sm"
-                variant="outline"
-                asChild
+            {isFull ? null : !isLoggedIn ? (
+              <a
+                href="/api/login"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95 ml-auto"
+                style={{ background: "linear-gradient(90deg, #0ea5e9 0%, #7c3aed 100%)", boxShadow: "0 2px 16px rgba(124,58,237,0.35)" }}
                 data-testid={`button-signin-room-${room.id}`}
               >
-                <a href="/api/login">
-                  <LogIn className="w-3.5 h-3.5 mr-1.5" />
-                  Sign in to Join
-                </a>
-              </Button>
+                <LogIn className="w-3.5 h-3.5" />
+                Sign in to Join
+              </a>
             ) : (
-              <Button
-                size="sm"
-                data-testid={`button-join-room-${room.id}`}
+              <button
+                className="flex items-center gap-1.5 px-5 py-2 rounded-lg text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95 ml-auto"
+                style={{ background: "linear-gradient(90deg, #0ea5e9 0%, #7c3aed 100%)", boxShadow: "0 2px 16px rgba(124,58,237,0.35)" }}
                 onClick={() => onJoin(room.id)}
+                data-testid={`button-join-room-${room.id}`}
               >
-                Join & Talk
-              </Button>
+                <LogIn className="w-3.5 h-3.5" />
+                Enter Room
+              </button>
             )}
           </div>
-
         </div>
-      </Card>
+      </div>
 
       {/* Report Dialog */}
       {(() => {
