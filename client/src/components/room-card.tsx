@@ -9,7 +9,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, LogIn as StepInIcon } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass } from "@/components/profile-decorations";
@@ -430,11 +430,19 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const glow = getThemeGlowColor((room as any).roomTheme);
   const displaySlots = Array.from({ length: Math.min(room.maxUsers, 10) });
 
+  /* circle size is based on room.maxUsers — fixed per room, never changes with current participants */
+  const circleSize =
+    room.maxUsers <= 2 ? 76 :
+    room.maxUsers <= 4 ? 68 :
+    room.maxUsers <= 6 ? 60 :
+    room.maxUsers <= 8 ? 52 :
+    room.maxUsers <= 10 ? 46 : 40;
+
   const settingsButton = isOwner ? (
     <Button
       size="icon"
       variant="ghost"
-      className="flex-shrink-0 w-7 h-7 text-white/50 hover:text-white hover:bg-white/10"
+      className="flex-shrink-0 w-7 h-7 text-red-500 hover:text-red-400 hover:bg-red-500/10"
       onClick={(e) => {
         e.stopPropagation();
         setEditTitle(room.title);
@@ -548,7 +556,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         style={{
           borderRadius: "16px",
           background: "linear-gradient(145deg, #07102a 0%, #0c1740 55%, #110929 100%)",
-          minHeight: 280,
+          height: 290,
         }}
       >
         {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} />}
@@ -600,8 +608,6 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   const count = followerCounts[p.id] || 0;
                   const ringClass = getAvatarRingClass(p.avatarRing);
                   const hasRing = !!ringClass;
-
-                  const circleSize = displaySlots.length > 8 ? 56 : displaySlots.length > 6 ? 62 : 68;
 
                   const avatarEl = (
                     <div
@@ -664,7 +670,6 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 }
 
                 /* Empty slot — neon ring circle */
-                const circleSize = displaySlots.length > 8 ? 56 : displaySlots.length > 6 ? 62 : 68;
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div
@@ -731,30 +736,38 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               )}
             </div>
 
-            {isFull ? null : !isLoggedIn ? (
+            {isFull ? (
+              <button
+                disabled
+                className="flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white/40 text-xs font-bold cursor-not-allowed"
+                style={{ background: "rgba(255,255,255,0.08)" }}
+                data-testid={`button-join-room-${room.id}`}
+              >
+                <Footprints className="w-3.5 h-3.5" />
+                Full
+              </button>
+            ) : !isLoggedIn ? (
               <a
                 href="/api/login"
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95"
+                className="step-in-btn flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-white text-xs font-bold active:scale-95"
                 style={{
                   background: `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
-                  boxShadow: `0 2px 14px ${glow.to}`,
                 }}
                 data-testid={`button-signin-room-${room.id}`}
               >
-                <StepInIcon className="w-3.5 h-3.5" />
+                <Footprints className="w-3.5 h-3.5 animate-bounce" />
                 Step In
               </a>
             ) : (
               <button
-                className="flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95"
+                className="step-in-btn flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white text-xs font-bold active:scale-95"
                 style={{
                   background: `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
-                  boxShadow: `0 2px 14px ${glow.to}`,
                 }}
                 onClick={() => onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
               >
-                <StepInIcon className="w-3.5 h-3.5" />
+                <Footprints className="w-3.5 h-3.5 animate-bounce" />
                 Step In
               </button>
             )}

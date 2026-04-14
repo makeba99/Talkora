@@ -1120,3 +1120,22 @@ html.synthwave .neon-text {
     filter: brightness(1.2);
   }
 }
+
+@keyframes step-in-glow {
+  0%, 100% {
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.5), 0 0 0 0 rgba(124, 58, 237, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 4px 22px rgba(124, 58, 237, 0.8), 0 0 0 4px rgba(124, 58, 237, 0.15);
+    transform: scale(1.04);
+  }
+}
+
+.step-in-btn {
+  animation: step-in-glow 1.8s ease-in-out infinite;
+  transition: opacity 0.15s;
+}
+.step-in-btn:hover {
+  opacity: 0.88;
+}
