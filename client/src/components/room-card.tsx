@@ -31,6 +31,7 @@ interface RoomCardProps {
   voteCount?: number;
   hasVoted?: boolean;
   onVote?: () => void;
+  followerCountsOverride?: Record<string, number>;
 }
 
 
@@ -305,7 +306,7 @@ function CardHologramVideo({ src }: { src: string }) {
   );
 }
 
-export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote }: RoomCardProps) {
+export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, followerCountsOverride }: RoomCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme } = useTheme();
@@ -315,16 +316,18 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const fallbackText = getFallbackTextClass(room.maxUsers);
   const participantIds = participants.map((p) => p.id);
 
-  const { data: followerCounts = {} } = useQuery<Record<string, number>>({
+  const { data: fetchedFollowerCounts = {} } = useQuery<Record<string, number>>({
     queryKey: ["/api/follows/counts", ...participantIds],
     queryFn: async () => {
       if (participantIds.length === 0) return {};
       const res = await apiRequest("POST", "/api/follows/counts", { userIds: participantIds });
       return res.json();
     },
-    enabled: participantIds.length > 0,
+    enabled: participantIds.length > 0 && !followerCountsOverride,
     staleTime: 30000,
   });
+
+  const followerCounts = followerCountsOverride ?? fetchedFollowerCounts;
 
   const [reportOpen, setReportOpen] = useState(false);
 

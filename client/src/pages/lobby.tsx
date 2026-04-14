@@ -159,6 +159,38 @@ const SAMPLE_ROOM_PARTICIPANTS: Record<string, User[]> = {
   "sample-room-6": [SAMPLE_USERS.yuki, SAMPLE_USERS.takeshi, SAMPLE_USERS.hana, SAMPLE_USERS.kevin],
 };
 
+const SAMPLE_FOLLOWER_COUNTS: Record<string, number> = {
+  "sample-user-1":  145,
+  "sample-user-2":  89,
+  "sample-user-3":  203,
+  "sample-user-4":  67,
+  "sample-user-5":  312,
+  "sample-user-6":  421,
+  "sample-user-7":  156,
+  "sample-user-8":  78,
+  "sample-user-9":  234,
+  "sample-user-10": 91,
+  "sample-user-11": 189,
+  "sample-user-12": 342,
+  "sample-user-13": 127,
+  "sample-user-14": 56,
+  "sample-user-15": 98,
+  "sample-user-16": 213,
+  "sample-user-17": 176,
+  "sample-user-18": 144,
+  "sample-user-19": 267,
+  "sample-user-20": 83,
+};
+
+const SAMPLE_VOTE_COUNTS: Record<string, number> = {
+  "sample-room-1": 12,
+  "sample-room-2": 7,
+  "sample-room-3": 24,
+  "sample-room-4": 18,
+  "sample-room-5": 9,
+  "sample-room-6": 15,
+};
+
 function getUserName(person: User) {
   return person.displayName || [person.firstName, person.lastName].filter(Boolean).join(" ") || person.email || "Language learner";
 }
@@ -925,6 +957,7 @@ export default function Lobby() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
               {filteredRooms.map((room) => {
                 const mergedParticipants = allRoomParticipants(roomParticipants);
+                const isSample = room.id.startsWith("sample-");
                 return (
                   <RoomCard
                     key={room.id}
@@ -934,9 +967,10 @@ export default function Lobby() {
                     onOpenDm={(userId) => setDmUserId(userId)}
                     isOwner={room.ownerId === user?.id}
                     isLoggedIn={!!user}
-                    voteCount={voteData?.counts?.[room.id] || 0}
+                    voteCount={isSample ? SAMPLE_VOTE_COUNTS[room.id] ?? 0 : (voteData?.counts?.[room.id] || 0)}
                     hasVoted={voteData?.userVotes?.[room.id] || false}
-                    onVote={user ? () => voteMutation.mutate({ roomId: room.id, hasVoted: voteData?.userVotes?.[room.id] || false }) : undefined}
+                    onVote={isSample ? undefined : (user ? () => voteMutation.mutate({ roomId: room.id, hasVoted: voteData?.userVotes?.[room.id] || false }) : undefined)}
+                    followerCountsOverride={isSample ? SAMPLE_FOLLOWER_COUNTS : undefined}
                   />
                 );
               })}
