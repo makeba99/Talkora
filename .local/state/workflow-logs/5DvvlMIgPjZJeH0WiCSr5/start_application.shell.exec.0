@@ -1,0 +1,580 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 0 empty rooms for deletion
+4:48:36 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+4:48:45 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+4:48:45 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+4:48:45 PM [express] GET /api/rooms 200 in 4ms :: []
+4:49:25 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+4:49:25 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+4:49:25 PM [express] GET /api/rooms 200 in 18ms :: []
+4:52:55 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+4:52:56 PM [express] GET /api/rooms 304 in 16ms :: []
+4:53:01 PM [express] GET /api/rooms 304 in 2ms :: []
+4:53:06 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+4:53:06 PM [express] GET /api/rooms 304 in 2ms :: []
+4:53:11 PM [express] GET /api/rooms 304 in 2ms :: []
+4:53:16 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+4:53:17 PM [express] GET /api/rooms 304 in 4ms :: []
+4:53:32 PM [express] GET /api/rooms 304 in 11ms :: []
+4:53:36 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+4:53:37 PM [express] GET /api/rooms 304 in 2ms :: []
+4:53:43 PM [express] GET /api/rooms 304 in 2ms :: []
+4:53:47 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+4:53:48 PM [express] GET /api/rooms 304 in 1ms :: []
+4:53:53 PM [express] GET /api/rooms 304 in 1ms :: []
+4:53:57 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+4:53:58 PM [express] GET /api/rooms 304 in 1ms :: []
+4:54:49 PM [express] GET /api/rooms 304 in 10ms :: []
+4:54:54 PM [express] GET /api/rooms 304 in 1ms :: []
+4:54:57 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+4:54:59 PM [express] GET /api/rooms 304 in 2ms :: []
+4:55:28 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+4:55:30 PM [express] GET /api/rooms 304 in 13ms :: []
+4:55:35 PM [express] GET /api/rooms 304 in 2ms :: []
+5:11:22 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:11:22 PM [express] GET /api/rooms 304 in 14ms :: []
+5:11:27 PM [express] GET /api/rooms 304 in 2ms :: []
+5:11:32 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:11:33 PM [express] GET /api/rooms 304 in 2ms :: []
+5:11:38 PM [express] GET /api/rooms 304 in 2ms :: []
+5:11:43 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+5:11:43 PM [express] GET /api/rooms 304 in 2ms :: []
+5:11:49 PM [express] GET /api/rooms 304 in 2ms :: []
+5:11:53 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:11:54 PM [express] GET /api/rooms 304 in 2ms :: []
+5:11:59 PM [express] GET /api/rooms 304 in 2ms :: []
+5:12:03 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:12:05 PM [express] GET /api/rooms 304 in 2ms :: []
+5:12:11 PM [express] GET /api/rooms 304 in 2ms :: []
+5:12:14 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:12:16 PM [express] GET /api/rooms 304 in 2ms :: []
+5:12:21 PM [express] GET /api/rooms 304 in 3ms :: []
+5:12:25 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:12:27 PM [express] GET /api/rooms 304 in 2ms :: []
+5:12:32 PM [express] GET /api/rooms 304 in 3ms :: []
+5:12:35 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:12:37 PM [express] GET /api/rooms 304 in 2ms :: []
+5:12:42 PM [express] GET /api/rooms 304 in 10ms :: []
+5:12:45 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:12:48 PM [express] GET /api/rooms 304 in 2ms :: []
+5:12:53 PM [express] GET /api/rooms 304 in 1ms :: []
+5:12:56 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:12:58 PM [express] GET /api/rooms 304 in 1ms :: []
+5:13:03 PM [express] GET /api/rooms 304 in 2ms :: []
+5:13:06 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:13:09 PM [express] GET /api/rooms 304 in 2ms :: []
+5:13:14 PM [express] GET /api/rooms 304 in 1ms :: []
+5:13:16 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+5:13:19 PM [express] GET /api/rooms 304 in 2ms :: []
+5:13:25 PM [express] GET /api/rooms 304 in 2ms :: []
+5:13:26 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+5:13:30 PM [express] GET /api/rooms 304 in 1ms :: []
+5:13:35 PM [express] GET /api/rooms 304 in 2ms :: []
+5:13:37 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+5:13:41 PM [express] GET /api/login 302 in 486ms
+5:13:41 PM [express] GET /api/rooms 304 in 2ms :: []
+5:13:55 PM [express] GET /api/callback 302 in 268ms
+5:13:58 PM [express] GET /api/auth/user 401 in 0ms :: {"message":"Unauthorized"}
+5:13:58 PM [express] GET /api/rooms 200 in 2ms :: []
+5:13:58 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+5:14:00 PM [express] GET /api/auth/user 200 in 7ms :: {"id":"57700172","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"user","warningCount":0,"createdAt":"2026-04-14T17:13:55.826Z","updatedAt":"2026-04-14T17:13:55.826Z"}
+5:14:00 PM [express] GET /api/users 200 in 8ms :: [{"id":"57700172","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"user","warningCount":0,"createdAt":"2026-04-14T17:13:55.826Z","updatedAt":"2026-04-14T17:13:55.826Z"}]
+5:14:00 PM [express] GET /api/users/rooms 200 in 5ms :: {}
+5:14:00 PM [express] GET /api/follows/followers/57700172 200 in 9ms :: []
+5:14:00 PM [express] GET /api/messages/conversations 200 in 17ms :: []
+5:14:00 PM [express] GET /api/follows/following/57700172 200 in 23ms :: []
+5:14:00 PM [express] GET /api/messages/unread/count 200 in 19ms :: {"count":0}
+5:14:00 PM [express] GET /api/notifications 200 in 6ms :: []
+5:14:00 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:14:00 PM [express] GET /api/rooms 304 in 7ms :: []
+5:14:05 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:14:05 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:14:05 PM [express] GET /api/rooms 304 in 5ms :: []
+5:14:10 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:14:10 PM [express] GET /api/notifications 304 in 5ms :: []
+5:14:10 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:14:10 PM [express] GET /api/rooms/participants 304 in 7ms :: {}
+5:14:10 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:14:11 PM [express] GET /api/rooms 304 in 5ms :: []
+5:14:12 PM [express] POST /api/rooms 200 in 10ms :: {"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}
+5:14:13 PM [express] GET /api/rooms 200 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:13 PM [express] GET /api/rooms 200 in 7ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:13 PM [express] POST /api/rooms/votes/batch 200 in 70ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:14:16 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:14:16 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:14:18 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:18 PM [express] GET /api/rooms 200 in 2ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:18 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:14:19 PM [express] POST /api/rooms/votes/batch 200 in 1ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{}}
+5:14:20 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:14:21 PM [express] GET /api/notifications 304 in 5ms :: []
+5:14:21 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:14:21 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:14:21 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:14:23 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:24 PM [express] GET /api/rooms 304 in 1ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:25 PM [express] GET /api/youtube/search 200 in 706ms :: [{"id":"1TlNwk-P3HU","title":"Brutal Chun Li Knows She's Impossible To Deal With","thumbnail":"https://i.ytimg.com/vi/1TlNwk-P3HU/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLC2y8zjCJ-E0Fy8K4-UkdLf5cJStw","channelTitle":"MindSmash","duration":"1:14"},{"id":"He98murnJLE","title":"Next Bruce Lee 💀💀","thumbnail":"https://i.ytimg.com/vi/He98murnJLE/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgALyC4oCDAgAEAEYfyBFKBwwDw==&rs=AOn4CLAjfEIGI69MqjyWucQDNBWl8fKUGA","channelTitle":"CR7 EDITZ🪽","duration":"0:11"},{"id":"Dg0H4mJFLXI","title":"Seniors: Eat These 3 Fruits Before Bed to Repair Brain Cells & Boost Memory | Dr. William Li","thumbnail":"https://i.ytimg.com/vi/Dg0H4mJFLXI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLB2VP9CgA4Kz5FxyZLQu32_X6vWxA","channelTitle":"Bio Bites","duration":"27:50"},{"id":"a8kSt-nGBHk","title":"Playtime at the Waterpark | Playground Song | Little Angel Nursery Rhymes","thumbnail":"https://i.ytimg.com/vi/a8kSt-nGBHk/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCyDkyEkcrP8igByNDygv_flIO4IQ","channelTitle":"Emmie's Wonder Wardrobe","duration":"45:53"},{"id":"9Xt-zt5d7zY","title":"Colorful Ice Cream Shop, Bingo! | + Wheels on the Bus,... | Little Angel Kids Songs & Nursery Rhymes","thumbnail":"https://i.ytimg.com/vi/9Xt-zt5d7zY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAR1ecoNqAslTY15M-NjQP8zBUuOg","channelTitle":"Emmie's Wonder Wardrobe","duration":"1:25:43"},{"id":"lTxn2BuqyzU","title":"CGI Animated Short Film: \"Watermelon A Cautionary Tale\" by Kefei Li & Connie Qin He | CGMeetup","thumbnail":"https://i.ytimg.com/vi/lTxn2BuqyzU/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCLK8t3V__T5G5O2-FkIYw_CzwPcg","channelTitle":"CGMeetup","duration":"2:57"},{"id":"vZYbEL06lEU","title":"Lykke Li - I Follow Rivers (Director: Tarik Saleh)","thumbnail":"https://i.ytimg.com/vi/vZYbEL06lEU/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDeZb6DEHwyVBaIQe1UPkbiimMHxg","channelTitle":"Lykke Li","duration":"4:08"},{"id":"vJyy1yUsPvk","title":"Lykke Li - Little Bit","thumbnail":"https://i.ytimg.com/vi/vJyy1yUsPvk/hqdefault.jpg?sqp=-oaymwE9COADEI4CSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4EgALwAooCDAgAEAEYZSBcKFIwDw==&rs=AOn4CLD1dNe9u5bGfR67ipl08SAbQVse-g","channelTitle":"Lykke Li","duration":"3:51"},{"id":"0GiuA4SFt5Y","title":"Jet Li and Leung Ka-yan stars in the film \"Legend of Fang Shiyu\"🔥 |  Action | Kungfu | Wuxia","thumbnail":"https://i.ytimg.com/vi/0GiuA4SFt5Y/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDicWzofTVIqmEkZPactrko1Ecl8w","channelTitle":"Sweet C-drama Paradise","duration":"1:20:30"},{"id":"vfLz7wOKrbE","title":"Chun Li - Lonely lonely I guess I’m lonely","thumbnail":"https://i.ytimg.com/vi/vfLz7wOKrbE/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYJCBcKH8wDw==&rs=AOn4CLBAR1TABxjDctgQLgpNk_Z9TVrv_g","channelTitle":"Dessyy","duration":"0:12"},{"id":"OABLzSI17xE","title":"Chun Li does the sweet little bumblebee dance! 🐝","thumbnail":"https://i.ytimg.com/vi/OABLzSI17xE/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYZSBZKEwwDw==&rs=AOn4CLAdo_Mlg38K8r0aZQQ-Jgzda_z1gw","channelTitle":"Dessyy","duration":"0:12"},{"id":"MSBj2xSwkVM","title":"Tom Lee breaks down why 'the war is actually helping earnings right now'","thumbnail":"https://i.ytimg.com/vi/MSBj2xSwkVM/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDhwnh94xOHsFIZ37id_QdqCGkbJw","channelTitle":"CNBC Television","duration":"4:35"},{"id":"Ke88N4hhp4I","title":"❤️😍 Li Yunrui watches Liu Jiaxi dance the \"Revenge Shake\" with a with a broad smile!","thumbnail":"https://i.ytimg.com/vi/Ke88N4hhp4I/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4Ac4FgAKACooCDAgAEAEYZSBXKFYwDw==&rs=AOn4CLDVB-YAp7Qrw3zp7f7u5iOk5ERoGA","channelTitle":"Cdrama Addict","duration":"0:15"},{"id":"qoX3f0kNwro","title":"Li Fong destroys Conor🔥☠️","thumbnail":"https://i.ytimg.com/vi/qoX3f0kNwro/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAK4CIoCDAgAEAEYfyA8KCYwDw==&rs=AOn4CLBuBy_eyTm11ee5t4YR02rNFZrBWQ","channelTitle":"c.k.blackpanter","duration":"0:22"},{"id":"zI-NaDCU4vY","title":"Li Rye - EST FLOW [Official Music Video] Shot By The Director Frazier","thumbnail":"https://i.ytimg.com/vi/zI-NaDCU4vY/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYZSBUKEowDw==&rs=AOn4CLBvGSRtOEHk57kPm6xT1wTsjf5OYg","channelTitle":"Li Rye","duration":"2:48"},{"id":"mYSpdMjkdMM","title":"4 Foods to Make New Mitochondria (Scientific Proof) | Dr. William Li","thumbnail":"https://i.ytimg.com/vi/mYSpdMjkdMM/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDcCS11D7BBb4tmN4TUPMcwL9SCmA","channelTitle":"Dr. William Li","duration":"25:12"},{"id":"K3JGxj2rvAs","title":"I Follow Rivers - Lykke Li (La Vie d'Adèle/La Vida de Adele)","thumbnail":"https://i.ytimg.com/vi/K3JGxj2rvAs/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYPiBLKHIwDw==&rs=AOn4CLBaZBxZsqyfzK_EFMYytavh5ZGAdA","channelTitle":"Aldo Zuga","duration":"4:44"},{"id":"_t1Bd5SEXaw","title":"The SCARY Truth Behind the \"No Kings\" Protests","thumbnail":"https://i.ytimg.com/vi/_t1Bd5SEXaw/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCkvBuiwxfc1KTdg6jLuAtGto2-uQ","channelTitle":"51-49 with James Li","duration":"11:48"},{"id":"wd3dpz7c_h0","title":"Li Rye -  JB & Rod  [Official Music Video]","thumbnail":"https://i.ytimg.com/vi/wd3dpz7c_h0/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLD5HV-aIq5QK_5apft48MTJnIA1hg","channelTitle":"Li Rye","duration":"2:47"},{"id":"YrHme4xewJ0","title":"li Josh - Sky (Official Music Video) ","thumbnail":"https://i.ytimg.com/vi/YrHme4xewJ0/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYOyBlKEgwDw==&rs=AOn4CLCvCJhQNEuOtKo6hNhYq4sHhxY6pg","channelTitle":"Parktownjosh","duration":"1:56"}]
+5:14:26 PM [express] GET /api/youtube/search 200 in 562ms :: [{"id":"txzZ2Y8Ko6A","title":"\"The Middle East jackpot is just the beginning\"... Bet your life on LIG Defense & Aerospace","thumbnail":"https://i.ytimg.com/vi/txzZ2Y8Ko6A/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAr3mvkijWtvkhr9RsIUjk2metpOg","channelTitle":"서울경제TV","duration":"1:40"},{"id":"ovTK_f0aYHg","title":"The Best Lightning McQueen Races & Stunts | Compilation | Pixar Cars | @disneyjr","thumbnail":"https://i.ytimg.com/vi/ovTK_f0aYHg/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBL-5m_XqC32hWNeLdBrzJnoVBQpw","channelTitle":"Disney Jr. ","duration":"1:02:57"},{"id":"UYVHHnghGnI","title":"Lig Dhau Lawm. 4/3/26","thumbnail":"https://i.ytimg.com/vi/UYVHHnghGnI/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYQyBQKGUwDw==&rs=AOn4CLB9pJSMiUpYYt4B05l6YW3Y_-DNGg","channelTitle":"Hmong Story","duration":"51:00"},{"id":"uCvJ9DLRoec","title":"Lightning McQueen Best Moments from Cars on the Road | Pixar Cars | @disneyjr","thumbnail":"https://i.ytimg.com/vi/uCvJ9DLRoec/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBBxW9RHlYF4XkvHs1p4rus4zLSXQ","channelTitle":"Disney Jr. ","duration":"1:28:44"},{"id":"pvGUAtcQty8","title":"Kayserispor vs Fenerbahce | HIGHLIGHTS Superlig Turkish Lig | 04/11/2026 | beIN SPORTS USA","thumbnail":"https://i.ytimg.com/vi/pvGUAtcQty8/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLByZ8rQbRTcZVQLUpFEykwxn3pLow","channelTitle":"beIN SPORTS USA","duration":"12:01"},{"id":"2WZMNQWVfIo","title":"Galatasaray vs Kocaelispor | HIGHLIGHTS Superlig Turkish Lig | 04/12/2026 | beIN SPORTS USA","thumbnail":"https://i.ytimg.com/vi/2WZMNQWVfIo/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLD_VrcsNLeC_MsPEsxxT4FVbRl7EQ","channelTitle":"beIN SPORTS USA","duration":"11:44"},{"id":"BGcaf6iYTHA","title":"[LIG Nex1 Stock Outlook] The reason for the decline despite stock market benefits; its fate chang...","thumbnail":"https://i.ytimg.com/vi/BGcaf6iYTHA/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBiJsqDkTq-fNMGZ9hNsfO0GHI21g","channelTitle":"주식임당","duration":"23:26"},{"id":"aDej8vgzJ6c","title":"LIG =OSAMU SATO+TOMOHIKO GONDO FIRST ALBUM(2CD)","thumbnail":"https://i.ytimg.com/vi/aDej8vgzJ6c/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLB2Cddm-p6mmRKm3fkbxsh2BcUS-g","channelTitle":"osamu sato","duration":"12:24"},{"id":"svhkb6uBris","title":"[LIG넥스원 주가전망] 팔란티어 솔루션 공동 개발 목표가 '여기' 까지 보세요","thumbnail":"https://i.ytimg.com/vi/svhkb6uBris/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLB9Ybqq3-iUUtafmcP0S8y-nt0i7g","channelTitle":"실전투자아카데미","duration":"16:55"},{"id":"EgLC-PCS9V4","title":"Besiktas vs Antalyaspor | HIGHLIGHTS Süper lig Turkish Lig | 04/10/2026 | beIN SPORTS USA","thumbnail":"https://i.ytimg.com/vi/EgLC-PCS9V4/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDo2aBRADvc-LDi1b_zuXQz0WgIYA","channelTitle":"beIN SPORTS USA","duration":"11:56"},{"id":"-X_BIgxKO-o","title":"Goztepe vs Galatasaray | HIGHLIGHTS Superlig Turkish Lig | 04/08/2026 | beIN SPORTS USA","thumbnail":"https://i.ytimg.com/vi/-X_BIgxKO-o/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDic0tWnSPzvarUpJMYpK-s7L3CiQ","channelTitle":"beIN SPORTS USA","duration":"12:24"},{"id":"s4wN9oRGilY","title":"Çaykur Rizespor (2-1) Gaziantep FK - Highlights/Summary | Trendyol Süper Lig - 2025/26","thumbnail":"https://i.ytimg.com/vi/s4wN9oRGilY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLArCs3xdPMEc19yxdi-h_A92m_ZTg","channelTitle":"beIN SPORTS Türkiye","duration":"7:37"},{"id":"p7dzT4x8ebU","title":"LIG넥스원 주가전망🚀\"이 소식\" 연이은 상한가 나올 수 밖에 없는 결정적인 이유!! (LIG넥스원전망·분석)","thumbnail":"https://i.ytimg.com/vi/p7dzT4x8ebU/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDcpxnPJuLdZGzOwUVkjwu65qfb-Q","channelTitle":"Knowledge World","duration":"7:26"},{"id":"WzjSEKSXtcY","title":"Lightning McQueen's Best Racing Competitions! | Compilation | Pixar Cars | @disneyjr","thumbnail":"https://i.ytimg.com/vi/WzjSEKSXtcY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDUsdtqAtybrG2FR07VHPhoqEXUkQ","channelTitle":"Disney Jr. ","duration":"57:26"},{"id":"UpPoA-aMvNA","title":"LIG넥스원 일감이 물밀듯 쏟아져 들어온다! 100만원 돌파는 시간문제 #LIG넥스원 #LIG넥스원전망","thumbnail":"https://i.ytimg.com/vi/UpPoA-aMvNA/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLC_dIJAC7houlmfDOt_YK8cuoVJDw","channelTitle":"경제와의 전쟁","duration":"14:48"},{"id":"QM2AIpvtagk","title":"şampiyon Galatasaray Süper lig puan durumu","thumbnail":"https://i.ytimg.com/vi/QM2AIpvtagk/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4Ac4FgAKACooCDAgAEAEYZSBlKGUwDw==&rs=AOn4CLBkD_5cNGGDa4ja1IYtKZqYYtA0dA","channelTitle":"ALPER DEMİREL","duration":"0:11"},{"id":"hOZTl4Ukam8","title":"Kayserispor (0-4) Fenerbahçe - Highlights | Trendyol Süper Lig - 2025/26","thumbnail":"https://i.ytimg.com/vi/hOZTl4Ukam8/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCG3dJhGXc9M2Ztm9fXhTMvcN1nSw","channelTitle":"beIN SPORTS Türkiye","duration":"8:11"}]
+5:14:26 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:14:26 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:14:27 PM [express] GET /api/youtube/search 304 in 600ms :: [{"id":"1TlNwk-P3HU","title":"Brutal Chun Li Knows She's Impossible To Deal With","thumbnail":"https://i.ytimg.com/vi/1TlNwk-P3HU/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLC2y8zjCJ-E0Fy8K4-UkdLf5cJStw","channelTitle":"MindSmash","duration":"1:14"},{"id":"He98murnJLE","title":"Next Bruce Lee 💀💀","thumbnail":"https://i.ytimg.com/vi/He98murnJLE/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgALyC4oCDAgAEAEYfyBFKBwwDw==&rs=AOn4CLAjfEIGI69MqjyWucQDNBWl8fKUGA","channelTitle":"CR7 EDITZ🪽","duration":"0:11"},{"id":"Dg0H4mJFLXI","title":"Seniors: Eat These 3 Fruits Before Bed to Repair Brain Cells & Boost Memory | Dr. William Li","thumbnail":"https://i.ytimg.com/vi/Dg0H4mJFLXI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLB2VP9CgA4Kz5FxyZLQu32_X6vWxA","channelTitle":"Bio Bites","duration":"27:50"},{"id":"a8kSt-nGBHk","title":"Playtime at the Waterpark | Playground Song | Little Angel Nursery Rhymes","thumbnail":"https://i.ytimg.com/vi/a8kSt-nGBHk/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCyDkyEkcrP8igByNDygv_flIO4IQ","channelTitle":"Emmie's Wonder Wardrobe","duration":"45:53"},{"id":"9Xt-zt5d7zY","title":"Colorful Ice Cream Shop, Bingo! | + Wheels on the Bus,... | Little Angel Kids Songs & Nursery Rhymes","thumbnail":"https://i.ytimg.com/vi/9Xt-zt5d7zY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAR1ecoNqAslTY15M-NjQP8zBUuOg","channelTitle":"Emmie's Wonder Wardrobe","duration":"1:25:43"},{"id":"lTxn2BuqyzU","title":"CGI Animated Short Film: \"Watermelon A Cautionary Tale\" by Kefei Li & Connie Qin He | CGMeetup","thumbnail":"https://i.ytimg.com/vi/lTxn2BuqyzU/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCLK8t3V__T5G5O2-FkIYw_CzwPcg","channelTitle":"CGMeetup","duration":"2:57"},{"id":"vZYbEL06lEU","title":"Lykke Li - I Follow Rivers (Director: Tarik Saleh)","thumbnail":"https://i.ytimg.com/vi/vZYbEL06lEU/hqdefault.jpg?sqp=-oaymwEjCOADEI4CSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDeZb6DEHwyVBaIQe1UPkbiimMHxg","channelTitle":"Lykke Li","duration":"4:08"},{"id":"vJyy1yUsPvk","title":"Lykke Li - Little Bit","thumbnail":"https://i.ytimg.com/vi/vJyy1yUsPvk/hqdefault.jpg?sqp=-oaymwE9COADEI4CSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4EgALwAooCDAgAEAEYZSBcKFIwDw==&rs=AOn4CLD1dNe9u5bGfR67ipl08SAbQVse-g","channelTitle":"Lykke Li","duration":"3:51"},{"id":"0GiuA4SFt5Y","title":"Jet Li and Leung Ka-yan stars in the film \"Legend of Fang Shiyu\"🔥 |  Action | Kungfu | Wuxia","thumbnail":"https://i.ytimg.com/vi/0GiuA4SFt5Y/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDicWzofTVIqmEkZPactrko1Ecl8w","channelTitle":"Sweet C-drama Paradise","duration":"1:20:30"},{"id":"vfLz7wOKrbE","title":"Chun Li - Lonely lonely I guess I’m lonely","thumbnail":"https://i.ytimg.com/vi/vfLz7wOKrbE/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYJCBcKH8wDw==&rs=AOn4CLBAR1TABxjDctgQLgpNk_Z9TVrv_g","channelTitle":"Dessyy","duration":"0:12"},{"id":"OABLzSI17xE","title":"Chun Li does the sweet little bumblebee dance! 🐝","thumbnail":"https://i.ytimg.com/vi/OABLzSI17xE/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYZSBZKEwwDw==&rs=AOn4CLAdo_Mlg38K8r0aZQQ-Jgzda_z1gw","channelTitle":"Dessyy","duration":"0:12"},{"id":"MSBj2xSwkVM","title":"Tom Lee breaks down why 'the war is actually helping earnings right now'","thumbnail":"https://i.ytimg.com/vi/MSBj2xSwkVM/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDhwnh94xOHsFIZ37id_QdqCGkbJw","channelTitle":"CNBC Television","duration":"4:35"},{"id":"Ke88N4hhp4I","title":"❤️😍 Li Yunrui watches Liu Jiaxi dance the \"Revenge Shake\" with a with a broad smile!","thumbnail":"https://i.ytimg.com/vi/Ke88N4hhp4I/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4Ac4FgAKACooCDAgAEAEYZSBXKFYwDw==&rs=AOn4CLDVB-YAp7Qrw3zp7f7u5iOk5ERoGA","channelTitle":"Cdrama Addict","duration":"0:15"},{"id":"qoX3f0kNwro","title":"Li Fong destroys Conor🔥☠️","thumbnail":"https://i.ytimg.com/vi/qoX3f0kNwro/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAK4CIoCDAgAEAEYfyA8KCYwDw==&rs=AOn4CLBuBy_eyTm11ee5t4YR02rNFZrBWQ","channelTitle":"c.k.blackpanter","duration":"0:22"},{"id":"zI-NaDCU4vY","title":"Li Rye - EST FLOW [Official Music Video] Shot By The Director Frazier","thumbnail":"https://i.ytimg.com/vi/zI-NaDCU4vY/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYZSBUKEowDw==&rs=AOn4CLBvGSRtOEHk57kPm6xT1wTsjf5OYg","channelTitle":"Li Rye","duration":"2:48"},{"id":"mYSpdMjkdMM","title":"4 Foods to Make New Mitochondria (Scientific Proof) | Dr. William Li","thumbnail":"https://i.ytimg.com/vi/mYSpdMjkdMM/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDcCS11D7BBb4tmN4TUPMcwL9SCmA","channelTitle":"Dr. William Li","duration":"25:12"},{"id":"K3JGxj2rvAs","title":"I Follow Rivers - Lykke Li (La Vie d'Adèle/La Vida de Adele)","thumbnail":"https://i.ytimg.com/vi/K3JGxj2rvAs/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYPiBLKHIwDw==&rs=AOn4CLBaZBxZsqyfzK_EFMYytavh5ZGAdA","channelTitle":"Aldo Zuga","duration":"4:44"},{"id":"_t1Bd5SEXaw","title":"The SCARY Truth Behind the \"No Kings\" Protests","thumbnail":"https://i.ytimg.com/vi/_t1Bd5SEXaw/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCkvBuiwxfc1KTdg6jLuAtGto2-uQ","channelTitle":"51-49 with James Li","duration":"11:48"},{"id":"wd3dpz7c_h0","title":"Li Rye -  JB & Rod  [Official Music Video]","thumbnail":"https://i.ytimg.com/vi/wd3dpz7c_h0/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLD5HV-aIq5QK_5apft48MTJnIA1hg","channelTitle":"Li Rye","duration":"2:47"},{"id":"YrHme4xewJ0","title":"li Josh - Sky (Official Music Video) ","thumbnail":"https://i.ytimg.com/vi/YrHme4xewJ0/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYOyBlKEgwDw==&rs=AOn4CLCvCJhQNEuOtKo6hNhYq4sHhxY6pg","channelTitle":"Parktownjosh","duration":"1:56"}]
+5:14:29 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:29 PM [express] GET /api/youtube/search 200 in 576ms :: [{"id":"B1dmRjyN0CQ","title":"NF - Lie (Audio)","thumbnail":"https://i.ytimg.com/vi/B1dmRjyN0CQ/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCZ9LyH88KJKii_UkFnCzZU2cjNJw","channelTitle":"NFrealmusic","duration":"3:30"},{"id":"TS71fTCL8zw","title":"NF – Lie (Lyrics) 🎵","thumbnail":"https://i.ytimg.com/vi/TS71fTCL8zw/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAK0jnWC0_yRYw-Y5MWhl7R4f88Sg","channelTitle":"Pixl Networks","duration":"3:27"},{"id":"2Cv3phvP8Ro","title":"BIGBANG - LIES(거짓말) M/V","thumbnail":"https://i.ytimg.com/vi/2Cv3phvP8Ro/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDsOKdZPP2MQn85bpIE6rfgKxQu9Q","channelTitle":"YG ENTERTAINMENT","duration":"4:55"},{"id":"CXiyZ3Gnnrg","title":"I Lied for 45 MINUTES Straight In Perfect Lie!","thumbnail":"https://i.ytimg.com/vi/CXiyZ3Gnnrg/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLD4e8z3mcjfBHquNWZOxFN6Bj1xVg","channelTitle":"BeckBroJack Movies and BeckBroPlays","duration":"45:05"},{"id":"3d6T2qFZ5vU","title":"Kizz Daniel - Lie (Official Video)","thumbnail":"https://i.ytimg.com/vi/3d6T2qFZ5vU/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDGisAHE7jXhjstinq8LENJQzE1tA","channelTitle":"Kizz Daniel","duration":"4:37"},{"id":"-ThId6ZWqsE","title":"Lie","thumbnail":"https://i.ytimg.com/vi/-ThId6ZWqsE/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCprrdzo2Vw-PcRMd_zSXQ3PA5chA","channelTitle":"BANGTANTV","duration":"3:36"},{"id":"XFuiWBx1E6s","title":"Lie // NF LYRICS","thumbnail":"https://i.ytimg.com/vi/XFuiWBx1E6s/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYXyBfKF8wDw==&rs=AOn4CLBevd_wyjgzj_OovIuC5130VF6v2Q","channelTitle":"Watermelove","duration":"3:46"},{"id":"Xiaeg-BSZe8","title":"YOU LIED (CatNap's Theme) | Poppy Playtime: Chapter 3|  [SMILING CRITTERS FULLY ANIMATED SONG]","thumbnail":"https://i.ytimg.com/vi/Xiaeg-BSZe8/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDuiyJjKETnN6agg5BFMeRUGudnkA","channelTitle":"Cougar macdowall Va","duration":"2:15"},{"id":"GT8ihKhuQGc","title":"L.I.E. (Long Island Expressway) 2001 Full Movie Good Quality","thumbnail":"https://i.ytimg.com/vi/GT8ihKhuQGc/hqdefault.jpg?sqp=-oaymwE9COADEI4CSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Ac4FgAKKA4oCDAgAEAEYKiBlKBkwDw==&rs=AOn4CLAXfVXl4xOSigiqjFHFr-cjDSEXaw","channelTitle":"Peter Peter","duration":"1:37:18"},{"id":"t7idHWrhy7Q","title":"LIE (LIE)","thumbnail":"https://i.ytimg.com/vi/t7idHWrhy7Q/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCAv22F1uwCV5P07szbepPWBDW90Q","channelTitle":"Park Hwayobi - Topic","duration":"4:33"},{"id":"TLWa3kfKs2I","title":"LIE - TEMPTATIONS (OFFICIAL VIDEO) [Dir.  Derek Rathbun]","thumbnail":"https://i.ytimg.com/vi/TLWa3kfKs2I/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4AbYIgALQBYoCDAgAEAEYQiBfKHIwDw==&rs=AOn4CLAztZ45Sp2vMLgsTr7O7tJ_ruM8eA","channelTitle":"FACELESS INC.","duration":"2:34"},{"id":"Em6OnxXAcBI","title":"Baby Money - L.I.E. (Official Visualizer)","thumbnail":"https://i.ytimg.com/vi/Em6OnxXAcBI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCcuMd_-_pyjAx-oG4O_sb_sZBPPg","channelTitle":"Baby Money","duration":"2:25"},{"id":"DXII9Gl-k9w","title":"Lil Pete - Lie (Audio) (feat. 03 Greedo)","thumbnail":"https://i.ytimg.com/vi/DXII9Gl-k9w/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCQJcVg4iUgtNqH8jh7bl8oWJAlzA","channelTitle":"Lil Pete","duration":"3:13"},{"id":"v29aCmkD8pk","title":"10 LIES about APHMAU in Minecraft!","thumbnail":"https://i.ytimg.com/vi/v29aCmkD8pk/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBIJ9XJJ8TgO-BH659tRG3J3BtpoA","channelTitle":"Aphmau","duration":"20:13"},{"id":"pCwLsXZnFl4","title":"The Band Perry - You Lie (Official Music Video)","thumbnail":"https://i.ytimg.com/vi/pCwLsXZnFl4/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDk8WjdzK6QIB--yiyK8JzoMKqu2w","channelTitle":"The Band Perry","duration":"3:43"},{"id":"fNtfEbzY5Ts","title":"Lie Telugu Full HD Movie || Nithiin And Arjun Sarja Super Hit Full Action Thriller Movie || FSM","thumbnail":"https://i.ytimg.com/vi/fNtfEbzY5Ts/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAzDg-exUyLmnWzxylMnMTgyEDEWA","channelTitle":"First Show Movies","duration":"1:55:31"},{"id":"QG8p2LZFVSo","title":"Jennifer Lawrence & Robert Pattinson Take Lie Detector Tests | Vanity Fair","thumbnail":"https://i.ytimg.com/vi/QG8p2LZFVSo/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAacksN2-pdQLeJtamJI2iuj970iA","channelTitle":"Vanity Fair","duration":"17:36"},{"id":"AHswOGi_Y3s","title":"(197 Media) Lie - 06/29/2024","thumbnail":"https://i.ytimg.com/vi/AHswOGi_Y3s/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAElAADIQj0AgKJDeAHwAQH4Af4JgALQBYoCDAgAEAEYZSBXKEgwDw==&rs=AOn4CLAtIOCVwgdyV5YDmGvDuGHLCyyrYw","channelTitle":"197 Media","duration":"19:00"}]
+5:14:31 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:14:31 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:14:31 PM [express] GET /api/notifications 304 in 7ms :: []
+5:14:31 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:14:31 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:14:34 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:36 PM [express] PATCH /api/rooms/9e3bdb2f-c756-4dea-9b2d-e596910412f5 200 in 10ms :: {"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":"https://www.youtube.com/embed/Xiaeg-BSZe8?autoplay=1&mute=1&loop=1&playlist=Xiaeg-BSZe8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-14T17:14:12.950Z"}
+5:14:37 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:14:37 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:14:39 PM [express] PATCH /api/rooms/9e3bdb2f-c756-4dea-9b2d-e596910412f5 200 in 12ms :: {"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":"https://www.youtube.com/embed/Xiaeg-BSZe8?autoplay=1&mute=1&loop=1&playlist=Xiaeg-BSZe8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-14T17:14:12.950Z"}
+5:14:39 PM [express] GET /api/rooms 200 in 17ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":"https://www.youtube.com/embed/Xiaeg-BSZe8?autoplay=1&mute=1&loop=1&playlist=Xiaeg-BSZe8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:39 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":"https://www.youtube.com/embed/Xiaeg-BSZe8?autoplay=1&mute=1&loop=1&playlist=Xiaeg-BSZe8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:41 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:14:41 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:14:41 PM [express] GET /api/notifications 304 in 5ms :: []
+5:14:42 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:14:43 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:14:44 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:14:44 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":"https://www.youtube.com/embed/Xiaeg-BSZe8?autoplay=1&mute=1&loop=1&playlist=Xiaeg-BSZe8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:48 PM [express] GET /api/messages/unread/count 304 in 55ms :: {"count":0}
+5:14:49 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:14:49 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":"https://www.youtube.com/embed/Xiaeg-BSZe8?autoplay=1&mute=1&loop=1&playlist=Xiaeg-BSZe8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:51 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:14:52 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:14:52 PM [express] GET /api/notifications 304 in 6ms :: []
+5:14:53 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:14:54 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:14:55 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":"https://www.youtube.com/embed/Xiaeg-BSZe8?autoplay=1&mute=1&loop=1&playlist=Xiaeg-BSZe8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-14T17:14:12.950Z"}]
+5:14:58 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:15:00 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:15:00 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":"https://www.youtube.com/embed/Xiaeg-BSZe8?autoplay=1&mute=1&loop=1&playlist=Xiaeg-BSZe8&controls=0&modestbranding=1&rel=0","createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:02 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:15:02 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:15:02 PM [express] GET /api/notifications 304 in 16ms :: []
+5:15:03 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:15:04 PM [express] PATCH /api/rooms/9e3bdb2f-c756-4dea-9b2d-e596910412f5 200 in 11ms :: {"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}
+5:15:05 PM [express] GET /api/rooms 200 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:05 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:15:06 PM [express] PATCH /api/rooms/9e3bdb2f-c756-4dea-9b2d-e596910412f5 200 in 8ms :: {"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}
+5:15:06 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:09 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:15:10 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:15:12 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:12 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:15:12 PM [express] GET /api/rooms/participants 304 in 9ms :: {}
+5:15:12 PM [express] GET /api/notifications 304 in 17ms :: []
+5:15:14 PM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:15:14 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:15:15 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:15:17 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:19 PM [express] GET /api/messages/unread/count 304 in 14ms :: {"count":0}
+5:15:21 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:15:22 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:15:22 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:22 PM [express] GET /api/notifications 304 in 5ms :: []
+5:15:22 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:15:25 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:15:26 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:15:27 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:30 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:15:31 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:15:32 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:15:33 PM [express] GET /api/notifications 304 in 4ms :: []
+5:15:33 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:15:33 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:15:35 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/create-room-dialog.tsx[22m
+5:15:35 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:15:37 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:15:38 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:40 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:15:42 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:15:43 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:15:43 PM [express] PATCH /api/rooms/9e3bdb2f-c756-4dea-9b2d-e596910412f5 200 in 8ms :: {"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}
+5:15:43 PM [express] GET /api/rooms 200 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:43 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:15:43 PM [express] GET /api/notifications 304 in 15ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:15:43 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m
+5:15:44 PM [express] POST /api/rooms/votes/batch 200 in 83ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:15:46 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:15:47 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:15:48 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:15:50 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x2)[39m
+5:15:51 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:15:52 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:15:53 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:15:53 PM [express] GET /api/rooms/participants 304 in 3ms :: {}
+5:15:53 PM [express] GET /api/notifications 304 in 5ms :: []
+5:15:53 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:15:56 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:15:58 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:15:59 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:03 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:16:03 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:16:03 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:16:04 PM [express] GET /api/rooms/participants 304 in 10ms :: {}
+5:16:04 PM [express] GET /api/notifications 304 in 33ms :: []
+5:16:04 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:08 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:16:08 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:16:09 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x3)[39m
+5:16:10 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:13 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:16:13 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:16:14 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:16:14 PM [express] GET /api/notifications 304 in 6ms :: []
+5:16:14 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:16:14 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:16:15 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:19 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:16:20 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:16:20 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:24 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:16:24 PM [express] GET /api/messages/unread/count 304 in 12ms :: {"count":0}
+5:16:24 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:16:24 PM [express] GET /api/notifications 304 in 4ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:16:25 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/theme-picker.tsx[22m
+5:16:25 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:16:26 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:29 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:16:30 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:16:31 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:34 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:16:34 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:16:34 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:16:34 PM [express] GET /api/notifications 304 in 5ms :: []
+5:16:36 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:16:36 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":2,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:37 PM [express] PATCH /api/rooms/9e3bdb2f-c756-4dea-9b2d-e596910412f5 200 in 11ms :: {"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}
+5:16:37 PM [express] GET /api/rooms 200 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:40 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:16:41 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:16:42 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:44 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:16:45 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:16:45 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:16:45 PM [express] GET /api/notifications 304 in 5ms :: []
+5:16:45 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:16:46 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/notifications-dropdown.tsx[22m
+5:16:47 PM [express] GET /api/users/rooms 304 in 8ms :: {}
+5:16:48 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:50 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:16:51 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/notifications-dropdown.tsx[22m [33m(x2)[39m
+5:16:52 PM [express] GET /api/users/rooms 304 in 45ms :: {}
+5:16:53 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:16:55 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+5:16:55 PM [express] GET /api/rooms/participants 304 in 6ms :: {}
+5:16:56 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:16:57 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/profile-dropdown.tsx[22m
+5:16:57 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:16:58 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+[2m5:16:59 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/profile-dropdown.tsx[22m Could not Fast Refresh ("AVATAR_RINGS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m5:16:59 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/components/room-card.tsx, /src/components/voice-room.tsx[22m
+5:17:01 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:17:02 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/profile-dropdown.tsx[22m
+5:17:03 PM [express] GET /api/users/rooms 304 in 7ms :: {}
+5:17:04 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:17:05 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:17:05 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:17:06 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:17:06 PM [express] GET /api/notifications 304 in 4ms :: []
+5:17:08 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:17:09 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:17:11 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:17:14 PM [express] GET /api/users/rooms 304 in 3ms :: {}
+5:17:14 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:17:19 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/profile-dropdown.tsx[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:17:26 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m
+[2m5:17:34 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/profile-dropdown.tsx[22m Could not Fast Refresh ("AVATAR_RINGS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m5:17:34 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/components/room-card.tsx, /src/components/voice-room.tsx[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:17:35 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m
+5:17:48 PM [express] GET /api/notifications 304 in 7ms :: []
+5:17:48 PM [express] GET /api/messages/unread/count 304 in 16ms :: {"count":0}
+5:17:49 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:17:49 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
