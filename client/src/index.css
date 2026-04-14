@@ -1139,3 +1139,16 @@ html.synthwave .neon-text {
 .step-in-btn:hover {
   opacity: 0.88;
 }
+
+/* ── Cosmic animated border ── */
+@keyframes cosmic-hue {
+  0%   { filter: hue-rotate(0deg)   brightness(1.1); }
+  25%  { filter: hue-rotate(60deg)  brightness(1.25); }
+  50%  { filter: hue-rotate(120deg) brightness(1.1); }
+  75%  { filter: hue-rotate(60deg)  brightness(1.25); }
+  100% { filter: hue-rotate(0deg)   brightness(1.1); }
+}
+
+.cosmic-border-wrap {
+  animation: cosmic-hue 5s ease-in-out infinite;
+}

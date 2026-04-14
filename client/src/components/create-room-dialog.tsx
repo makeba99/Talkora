@@ -56,7 +56,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   const [level, setLevel] = useState("Beginner");
   const [maxUsers, setMaxUsers] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
-  const [roomTheme, setRoomTheme] = useState("default");
+  const [roomTheme, setRoomTheme] = useState("cosmic");
   const [videoTab, setVideoTab] = useState<"upload" | "youtube">("upload");
   const [hologramFile, setHologramFile] = useState<File | null>(null);
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);

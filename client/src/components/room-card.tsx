@@ -59,8 +59,9 @@ function LanguageFlag({ language }: { language: string }) {
   );
 }
 
-function getThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string } {
+function getThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string; animated?: boolean } {
   switch (themeId) {
+    case "cosmic":   return { from: "rgba(37,99,235,1)", to: "rgba(239,68,68,1)", ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)", animated: true };
     case "neon":     return { from: "rgba(0,220,255,0.9)", to: "rgba(168,85,247,0.8)", ring: "rgba(0,220,255,0.7), rgba(168,85,247,0.7)" };
     case "galaxy":   return { from: "rgba(99,102,241,0.9)", to: "rgba(168,85,247,0.8)", ring: "rgba(99,102,241,0.7), rgba(168,85,247,0.7)" };
     case "sunset":   return { from: "rgba(251,146,60,0.9)", to: "rgba(239,68,68,0.8)", ring: "rgba(251,146,60,0.7), rgba(239,68,68,0.7)" };
@@ -73,11 +74,12 @@ function getThemeGlowColor(themeId: string | null | undefined): { from: string; 
     case "aurora":   return { from: "rgba(45,212,191,0.9)", to: "rgba(74,222,128,0.8)", ring: "rgba(45,212,191,0.7), rgba(74,222,128,0.7)" };
     case "storm":    return { from: "rgba(59,130,246,0.9)", to: "rgba(100,116,139,0.8)", ring: "rgba(59,130,246,0.7), rgba(100,116,139,0.7)" };
     case "volcanic": return { from: "rgba(239,68,68,0.9)", to: "rgba(251,146,60,0.8)", ring: "rgba(239,68,68,0.7), rgba(251,146,60,0.7)" };
-    default:         return { from: "rgba(37,99,235,0.95)", to: "rgba(220,38,120,0.9)", ring: "rgba(37,99,235,0.8), rgba(220,38,120,0.8)" };
+    default:         return { from: "rgba(37,99,235,1)", to: "rgba(239,68,68,1)", ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)", animated: true };
   }
 }
 
 const ROOM_THEMES = [
+  { id: "cosmic", label: "✦ Cosmic", from: "from-blue-600", to: "to-red-500", preview: "from-blue-600 via-purple-500 to-red-500" },
   { id: "default", label: "Default", from: "from-cyan-500", to: "to-purple-500", preview: "from-cyan-500 to-purple-500" },
   { id: "neon", label: "Neon", from: "from-cyan-400", to: "to-purple-500", preview: "from-cyan-400 to-purple-500" },
   { id: "galaxy", label: "Galaxy", from: "from-indigo-500", to: "to-purple-700", preview: "from-indigo-500 to-purple-700" },
@@ -318,7 +320,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const [editLanguage, setEditLanguage] = useState(room.language);
   const [editLevel, setEditLevel] = useState(room.level);
   const [editMaxUsers, setEditMaxUsers] = useState(room.maxUsers);
-  const [editTheme, setEditTheme] = useState((room as any).roomTheme || "default");
+  const [editTheme, setEditTheme] = useState((room as any).roomTheme || "cosmic");
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);
   const [hologramFile, setHologramFile] = useState<File | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -449,7 +451,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         setEditLanguage(room.language);
         setEditLevel(room.level);
         setEditMaxUsers(room.maxUsers);
-        setEditTheme((room as any).roomTheme || "default");
+        setEditTheme((room as any).roomTheme || "cosmic");
         setHologramPreview(null);
         setHologramFile(null);
         setVideoTab("upload");
@@ -536,11 +538,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   })();
 
   /* ── neon border gradient ── */
-  const borderGradient = `linear-gradient(135deg, ${glow.from} 0%, ${glow.to} 100%)`;
-  const outerGlow = `0 0 18px ${glow.from}, 0 0 38px ${glow.to}`;
+  const borderGradient = `linear-gradient(135deg, ${glow.from} 0%, rgba(168,85,247,1) 50%, ${glow.to} 100%)`;
+  const outerGlow = `0 0 22px ${glow.from}, 0 0 45px ${glow.to}`;
 
   return (
     <div
+      className={glow.animated ? "cosmic-border-wrap" : ""}
       style={{
         width: "100%",
         padding: "2px",
@@ -555,7 +558,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         className="flex flex-col relative overflow-hidden"
         style={{
           borderRadius: "16px",
-          background: "linear-gradient(145deg, #07102a 0%, #0c1740 55%, #110929 100%)",
+          background: "rgba(6, 10, 28, 0.52)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
           height: 290,
         }}
       >
