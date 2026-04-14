@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, Palette } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -393,22 +393,11 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => { onOpenTheme?.(); }}
-              data-testid="menu-appearance"
-            >
-              <Palette className="w-4 h-4 mr-2" />
-              Appearance 🌈
-            </DropdownMenuItem>
-            <DropdownMenuItem
               onClick={() => { onOpenNotifications?.(); }}
               data-testid="menu-notifications"
             >
               <Bell className="w-4 h-4 mr-2" />
               Notifications
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setBlockedOpen(true)} data-testid="menu-blocked-users" className="text-muted-foreground">
-              <Ban className="w-4 h-4 mr-2" />
-              Blocked Users
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
