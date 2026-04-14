@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Footprints, Plus, Globe, BookOpen, Star } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Footprints, Plus, Globe, BookOpen, Star, Heart, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 type FeaturedParticipant = {
   name: string;
   color: string;
+  avatarUrl: string;
+  followers: number;
 };
 
 type FeaturedRoom = {
@@ -97,9 +99,9 @@ const FEATURED_ROOM_GROUPS: FeaturedGroup[] = [
     subtitle: "Conversation circles that are always visible when you return home.",
     icon: "mic",
     rooms: [
-      { id: "daily-english", title: "Morning English Warmup", language: "English", level: "Beginner", maxUsers: 6, theme: "hologram", participants: [{ name: "Maya", color: "#22d3ee" }, { name: "Leo", color: "#a78bfa" }, { name: "Nora", color: "#34d399" }] },
-      { id: "daily-spanish", title: "Spanish Travel Phrases", language: "Spanish", level: "Intermediate", maxUsers: 8, theme: "sunset", participants: [{ name: "Ana", color: "#fb923c" }, { name: "Luis", color: "#f472b6" }] },
-      { id: "daily-french", title: "French Cafe Chat", language: "French", level: "Advanced", maxUsers: 5, theme: "plasma", participants: [{ name: "Camille", color: "#e879f9" }, { name: "Theo", color: "#818cf8" }, { name: "Ari", color: "#f0abfc" }, { name: "Sam", color: "#38bdf8" }] },
+      { id: "daily-english", title: "Morning English Warmup", language: "English", level: "Beginner", maxUsers: 6, theme: "hologram", participants: [{ name: "Maya", color: "#22d3ee", avatarUrl: "https://randomuser.me/api/portraits/women/44.jpg", followers: 128 }, { name: "Leo", color: "#a78bfa", avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg", followers: 91 }, { name: "Nora", color: "#34d399", avatarUrl: "https://randomuser.me/api/portraits/women/68.jpg", followers: 214 }] },
+      { id: "daily-spanish", title: "Spanish Travel Phrases", language: "Spanish", level: "Intermediate", maxUsers: 8, theme: "sunset", participants: [{ name: "Ana", color: "#fb923c", avatarUrl: "https://randomuser.me/api/portraits/women/12.jpg", followers: 174 }, { name: "Luis", color: "#f472b6", avatarUrl: "https://randomuser.me/api/portraits/men/65.jpg", followers: 82 }] },
+      { id: "daily-french", title: "French Cafe Chat", language: "French", level: "Advanced", maxUsers: 5, theme: "plasma", participants: [{ name: "Camille", color: "#e879f9", avatarUrl: "https://randomuser.me/api/portraits/women/27.jpg", followers: 241 }, { name: "Theo", color: "#818cf8", avatarUrl: "https://randomuser.me/api/portraits/men/22.jpg", followers: 119 }, { name: "Ari", color: "#f0abfc", avatarUrl: "https://randomuser.me/api/portraits/women/51.jpg", followers: 98 }, { name: "Sam", color: "#38bdf8", avatarUrl: "https://randomuser.me/api/portraits/men/41.jpg", followers: 157 }] },
     ],
   },
   {
@@ -108,9 +110,9 @@ const FEATURED_ROOM_GROUPS: FeaturedGroup[] = [
     subtitle: "Low-pressure rooms built around music, films, food, and daily life.",
     icon: "star",
     rooms: [
-      { id: "culture-japanese", title: "Anime & Everyday Japanese", language: "Japanese", level: "Beginner", maxUsers: 7, theme: "cosmic", participants: [{ name: "Ren", color: "#60a5fa" }, { name: "Yuki", color: "#c084fc" }] },
-      { id: "culture-korean", title: "Korean Drama Reactions", language: "Korean", level: "Intermediate", maxUsers: 6, theme: "plasma", participants: [{ name: "Min", color: "#f472b6" }, { name: "Jae", color: "#a78bfa" }, { name: "Ivy", color: "#22d3ee" }] },
-      { id: "culture-armenian", title: "Armenian Heritage Talk", language: "Armenian", level: "Native", maxUsers: 6, theme: "aurora", participants: [{ name: "Aram", color: "#2dd4bf" }, { name: "Lena", color: "#86efac" }] },
+      { id: "culture-japanese", title: "Anime & Everyday Japanese", language: "Japanese", level: "Beginner", maxUsers: 7, theme: "cosmic", participants: [{ name: "Ren", color: "#60a5fa", avatarUrl: "https://randomuser.me/api/portraits/men/75.jpg", followers: 302 }, { name: "Yuki", color: "#c084fc", avatarUrl: "https://randomuser.me/api/portraits/women/35.jpg", followers: 188 }] },
+      { id: "culture-korean", title: "Korean Drama Reactions", language: "Korean", level: "Intermediate", maxUsers: 6, theme: "plasma", participants: [{ name: "Min", color: "#f472b6", avatarUrl: "https://randomuser.me/api/portraits/women/72.jpg", followers: 267 }, { name: "Jae", color: "#a78bfa", avatarUrl: "https://randomuser.me/api/portraits/men/81.jpg", followers: 143 }, { name: "Ivy", color: "#22d3ee", avatarUrl: "https://randomuser.me/api/portraits/women/88.jpg", followers: 225 }] },
+      { id: "culture-armenian", title: "Armenian Heritage Talk", language: "Armenian", level: "Native", maxUsers: 6, theme: "aurora", participants: [{ name: "Aram", color: "#2dd4bf", avatarUrl: "https://randomuser.me/api/portraits/men/48.jpg", followers: 176 }, { name: "Lena", color: "#86efac", avatarUrl: "https://randomuser.me/api/portraits/women/63.jpg", followers: 199 }] },
     ],
   },
   {
@@ -119,9 +121,9 @@ const FEATURED_ROOM_GROUPS: FeaturedGroup[] = [
     subtitle: "Focused cards for interviews, exams, pronunciation, and confidence.",
     icon: "book",
     rooms: [
-      { id: "goal-business", title: "Business English Roleplay", language: "English", level: "Advanced", maxUsers: 5, theme: "ocean", participants: [{ name: "Omar", color: "#38bdf8" }, { name: "Priya", color: "#60a5fa" }, { name: "Chen", color: "#67e8f9" }] },
-      { id: "goal-arabic", title: "Arabic Pronunciation Lab", language: "Arabic", level: "Beginner", maxUsers: 4, theme: "sunset", participants: [{ name: "Noor", color: "#fb923c" }] },
-      { id: "goal-german", title: "German Exam Speaking", language: "German", level: "Intermediate", maxUsers: 6, theme: "cosmic", participants: [{ name: "Klara", color: "#818cf8" }, { name: "Ben", color: "#f87171" }] },
+      { id: "goal-business", title: "Business English Roleplay", language: "English", level: "Advanced", maxUsers: 5, theme: "ocean", participants: [{ name: "Omar", color: "#38bdf8", avatarUrl: "https://randomuser.me/api/portraits/men/15.jpg", followers: 331 }, { name: "Priya", color: "#60a5fa", avatarUrl: "https://randomuser.me/api/portraits/women/5.jpg", followers: 286 }, { name: "Chen", color: "#67e8f9", avatarUrl: "https://randomuser.me/api/portraits/men/24.jpg", followers: 204 }] },
+      { id: "goal-arabic", title: "Arabic Pronunciation Lab", language: "Arabic", level: "Beginner", maxUsers: 4, theme: "sunset", participants: [{ name: "Noor", color: "#fb923c", avatarUrl: "https://randomuser.me/api/portraits/women/76.jpg", followers: 162 }] },
+      { id: "goal-german", title: "German Exam Speaking", language: "German", level: "Intermediate", maxUsers: 6, theme: "cosmic", participants: [{ name: "Klara", color: "#818cf8", avatarUrl: "https://randomuser.me/api/portraits/women/39.jpg", followers: 248 }, { name: "Ben", color: "#f87171", avatarUrl: "https://randomuser.me/api/portraits/men/53.jpg", followers: 137 }] },
     ],
   },
 ];
@@ -159,7 +161,7 @@ function FeaturedRoomCard({ room, isLoggedIn, onStepIn }: { room: FeaturedRoom; 
       data-testid={`card-featured-room-${room.id}`}
     >
       <div
-        className="h-full min-h-[232px] rounded-2xl p-3.5 flex flex-col justify-between overflow-hidden relative"
+        className="h-[290px] rounded-2xl p-3.5 flex flex-col justify-between overflow-hidden relative"
         style={{
           background: "linear-gradient(145deg, rgba(5,8,24,0.9), rgba(10,13,38,0.78))",
           border: "1px solid rgba(255,255,255,0.06)",
@@ -192,23 +194,38 @@ function FeaturedRoomCard({ room, isLoggedIn, onStepIn }: { room: FeaturedRoom; 
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-x-2 gap-y-1.5">
             {Array.from({ length: Math.min(room.maxUsers, 8) }).map((_, index) => {
               const participant = room.participants[index];
               return (
-                <div key={index} className="flex items-center justify-center">
+                <div key={index} className="flex flex-col items-center">
                   <div
-                    className="w-10 h-10 rounded-full p-[2px]"
+                    className="w-12 h-12 rounded-full p-[3px]"
                     style={{ background: participant ? `linear-gradient(135deg, ${participant.color}, rgba(167,139,250,0.92))` : theme.border }}
                     data-testid={`avatar-featured-${room.id}-${index}`}
                   >
-                    <div
-                      className="w-full h-full rounded-full flex items-center justify-center text-[11px] font-black text-white"
-                      style={{ background: participant ? "rgba(6,10,28,0.72)" : "rgba(255,255,255,0.05)" }}
-                    >
-                      {participant ? participant.name.slice(0, 2).toUpperCase() : <Users className="w-4 h-4 text-white/35" />}
-                    </div>
+                    {participant ? (
+                      <img
+                        src={participant.avatarUrl}
+                        alt={participant.name}
+                        className="w-full h-full rounded-full object-cover border-2 border-[#0a1228]"
+                        data-testid={`img-featured-profile-${room.id}-${index}`}
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(255,255,255,0.05)" }}
+                      >
+                        <Users className="w-5 h-5 text-white/35" />
+                      </div>
+                    )}
                   </div>
+                  {participant && (
+                    <div className="mt-0.5 flex items-center gap-0.5" data-testid={`text-featured-followers-${room.id}-${index}`}>
+                      <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" />
+                      <span className="text-[9px] text-white/60 font-medium">{participant.followers}</span>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -255,6 +272,7 @@ export default function Lobby() {
   >({});
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [closedFeaturedGroups, setClosedFeaturedGroups] = useState<Set<string>>(new Set());
 
   const { data: rooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
@@ -734,9 +752,12 @@ export default function Lobby() {
               </p>
             </div>
 
-            {FEATURED_ROOM_GROUPS.map((group) => (
+            {FEATURED_ROOM_GROUPS.map((group) => {
+              const isClosed = closedFeaturedGroups.has(group.id);
+              return (
               <div key={group.id} className="space-y-3" data-testid={`group-featured-rooms-${group.id}`}>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{
@@ -755,7 +776,24 @@ export default function Lobby() {
                       {group.subtitle}
                     </p>
                   </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setClosedFeaturedGroups((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(group.id)) next.delete(group.id);
+                        else next.add(group.id);
+                        return next;
+                      });
+                    }}
+                    className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/55 hover:text-white hover:border-cyan-400/35 transition-colors flex-shrink-0"
+                    data-testid={`button-toggle-featured-group-${group.id}`}
+                  >
+                    {isClosed ? <ChevronDown className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                    {isClosed ? "Open" : "Close"}
+                  </button>
                 </div>
+                {!isClosed && (
                 <div className="grid grid-cols-1 min-[560px]:grid-cols-3 gap-4">
                   {group.rooms.map((room) => (
                     <FeaturedRoomCard
@@ -775,8 +813,10 @@ export default function Lobby() {
                     />
                   ))}
                 </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </section>
         </div>
       </div>
