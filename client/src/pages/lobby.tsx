@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
@@ -191,6 +191,21 @@ const SAMPLE_VOTE_COUNTS: Record<string, number> = {
   "sample-room-6": 15,
 };
 
+const SAMPLE_SPEAKER_META: Record<string, { bio: string; languages: string[]; voteCount: number; commentCount: number; isOnline: boolean }> = {
+  "sample-user-1":  { bio: "Passionate about bridging cultures through language", languages: ["English", "Spanish"],  voteCount: 89,  commentCount: 24, isOnline: true  },
+  "sample-user-2":  { bio: "Daily English practice enthusiast & tech lover",      languages: ["English", "Mandarin"], voteCount: 54,  commentCount: 11, isOnline: true  },
+  "sample-user-3":  { bio: "Loves French cinema and casual Spanish conversation",  languages: ["French", "Spanish"],   voteCount: 112, commentCount: 31, isOnline: false },
+  "sample-user-4":  { bio: "Native speaker helping beginners get confident",       languages: ["Spanish", "English"],  voteCount: 43,  commentCount: 9,  isOnline: true  },
+  "sample-user-5":  { bio: "Trilingual and always looking for a language buddy",   languages: ["Korean", "French"],    voteCount: 201, commentCount: 56, isOnline: true  },
+  "sample-user-6":  { bio: "Advanced English, advanced mindset, let's talk!",      languages: ["English", "German"],   voteCount: 267, commentCount: 74, isOnline: true  },
+  "sample-user-7":  { bio: "Russian soul, English dreams, talking daily",          languages: ["English", "Russian"],  voteCount: 95,  commentCount: 28, isOnline: false },
+  "sample-user-8":  { bio: "Join my room for casual conversation practice",        languages: ["English", "Irish"],    voteCount: 48,  commentCount: 15, isOnline: true  },
+  "sample-user-9":  { bio: "Arabic & English fluent — DM me anytime",             languages: ["English", "Arabic"],   voteCount: 143, commentCount: 41, isOnline: false },
+  "sample-user-10": { bio: "K-pop fan, Korean learner, English speaker",           languages: ["Korean", "English"],   voteCount: 58,  commentCount: 19, isOnline: true  },
+};
+
+const SAMPLE_PEOPLE = Object.values(SAMPLE_USERS).slice(0, 10);
+
 function getUserName(person: User) {
   return person.displayName || [person.firstName, person.lastName].filter(Boolean).join(" ") || person.email || "Language learner";
 }
@@ -205,6 +220,12 @@ function PeopleDiscoveryCard({
   isPending,
   onFollowToggle,
   onTalk,
+  voteCount = 0,
+  commentCount = 0,
+  hasVoted = false,
+  onVote,
+  bio,
+  languages = [],
 }: {
   person: User;
   followerCount: number;
@@ -215,7 +236,14 @@ function PeopleDiscoveryCard({
   isPending: boolean;
   onFollowToggle: () => void;
   onTalk: () => void;
+  voteCount?: number;
+  commentCount?: number;
+  hasVoted?: boolean;
+  onVote?: () => void;
+  bio?: string;
+  languages?: string[];
 }) {
+  const { toast } = useToast();
   const name = getUserName(person);
   const initials = name
     .split(" ")
@@ -226,74 +254,153 @@ function PeopleDiscoveryCard({
 
   return (
     <article
-      className="min-w-[210px] max-w-[210px] rounded-2xl border border-white/10 bg-white/[0.045] p-3.5 backdrop-blur-sm"
-      style={{ boxShadow: "0 0 20px rgba(0,210,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)" }}
+      className="flex-shrink-0 min-w-[260px] max-w-[260px] rounded-2xl border border-white/10 backdrop-blur-sm overflow-hidden flex flex-col"
+      style={{
+        background: "linear-gradient(160deg, rgba(8,15,40,0.92) 0%, rgba(5,10,30,0.88) 100%)",
+        boxShadow: "0 0 28px rgba(0,210,255,0.09), inset 0 1px 0 rgba(255,255,255,0.07)",
+      }}
       data-testid={`card-discovery-user-${person.id}`}
     >
-      <div className="flex items-start gap-3">
-        <div className="relative flex-shrink-0">
-          <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-br from-cyan-400 via-violet-400 to-fuchsia-500">
-            {person.profileImageUrl ? (
-              <img
-                src={person.profileImageUrl}
-                alt={name}
-                className="w-full h-full rounded-full object-cover border-2 border-[#081126]"
-                data-testid={`img-discovery-user-${person.id}`}
-              />
-            ) : (
-              <div
-                className="w-full h-full rounded-full flex items-center justify-center text-sm font-black text-white border-2 border-[#081126]"
-                style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(167,139,250,0.22))" }}
-                data-testid={`avatar-discovery-user-${person.id}`}
-              >
-                {initials}
-              </div>
-            )}
+      {/* Top banner accent */}
+      <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #22d3ee, #818cf8, #e879f9)" }} />
+
+      <div className="p-4 flex flex-col flex-1 gap-3">
+        {/* Avatar + name row */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-shrink-0">
+            <div
+              className="w-[72px] h-[72px] rounded-full p-[2.5px]"
+              style={{ background: "linear-gradient(135deg, #22d3ee, #818cf8, #e879f9)" }}
+            >
+              {person.profileImageUrl ? (
+                <img
+                  src={person.profileImageUrl}
+                  alt={name}
+                  className="w-full h-full rounded-full object-cover border-2 border-[#08102a]"
+                  data-testid={`img-discovery-user-${person.id}`}
+                />
+              ) : (
+                <div
+                  className="w-full h-full rounded-full flex items-center justify-center text-lg font-black text-white border-2 border-[#08102a]"
+                  style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(167,139,250,0.22))" }}
+                  data-testid={`avatar-discovery-user-${person.id}`}
+                >
+                  {initials}
+                </div>
+              )}
+            </div>
+            <span
+              className={`absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full border-2 border-[#08102a] ${isOnline ? "bg-emerald-400" : "bg-slate-500"}`}
+              data-testid={`status-discovery-user-${person.id}`}
+            />
           </div>
-          <span
-            className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-[#081126] ${isOnline ? "bg-emerald-400" : "bg-slate-500"}`}
-            data-testid={`status-discovery-user-${person.id}`}
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-extrabold text-white" data-testid={`text-discovery-name-${person.id}`}>
-            {name}
-          </h3>
-          <p className="mt-0.5 truncate text-[11px] text-white/45" data-testid={`text-discovery-handle-${person.id}`}>
-            {isOnline ? "Online now" : "Track for when online"}
-          </p>
-          <div className="mt-2 flex items-center gap-2 text-[11px] text-white/60">
-            <span className="flex items-center gap-1" data-testid={`text-discovery-followers-${person.id}`}>
-              <Heart className="w-3 h-3 text-red-400 fill-red-400" />
-              {followerCount}
-            </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-extrabold text-white leading-tight" data-testid={`text-discovery-name-${person.id}`}>
+              {name}
+            </h3>
+            <p className={`text-[11px] font-semibold mt-0.5 ${isOnline ? "text-emerald-400" : "text-white/40"}`}>
+              {isOnline ? "● Online now" : "○ Offline"}
+            </p>
             {currentRoomId && (
-              <span className="flex items-center gap-1 text-cyan-300" data-testid={`text-discovery-live-${person.id}`}>
-                <Radio className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-cyan-300 bg-cyan-400/10 rounded-full px-2 py-0.5">
+                <Radio className="w-2.5 h-2.5" />
                 Talking
               </span>
             )}
           </div>
         </div>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button
-          onClick={onFollowToggle}
-          disabled={isCurrentUser || isPending}
-          className="rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-3 py-2 text-xs font-bold text-cyan-100 disabled:opacity-45 disabled:cursor-not-allowed hover:bg-cyan-400/16 transition-colors"
-          data-testid={`button-follow-discovery-${person.id}`}
-        >
-          {isCurrentUser ? "You" : isFollowing ? "Following" : "Follow"}
-        </button>
-        <button
-          onClick={onTalk}
-          disabled={isCurrentUser || (!isOnline && !currentRoomId)}
-          className="flex items-center justify-center gap-1 rounded-xl border border-violet-400/25 bg-violet-400/10 px-3 py-2 text-xs font-bold text-violet-100 disabled:opacity-45 disabled:cursor-not-allowed hover:bg-violet-400/16 transition-colors"
-          data-testid={`button-talk-discovery-${person.id}`}
-        >
-          {!currentRoomId && <MessageCircle className="w-3 h-3" />}
-          {isCurrentUser ? "You" : currentRoomId ? "Talk" : "Message"}
-        </button>
+
+        {/* Bio */}
+        {bio && (
+          <p className="text-[11px] text-white/55 leading-relaxed line-clamp-2">{bio}</p>
+        )}
+
+        {/* Language badges */}
+        {languages.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Globe className="w-3 h-3 text-white/30 flex-shrink-0" />
+            {languages.map((lang) => (
+              <span
+                key={lang}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-violet-400/25 bg-violet-400/10 text-violet-200"
+              >
+                {lang}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Stats row */}
+        <div className="flex items-center gap-3 text-[11px]">
+          <span className="flex items-center gap-1 text-white/60" data-testid={`text-discovery-followers-${person.id}`}>
+            <Heart className="w-3 h-3 text-red-400 fill-red-400" />
+            <span className="font-semibold text-white/80">{followerCount}</span>
+            <span className="text-white/35">followers</span>
+          </span>
+          {voteCount > 0 && (
+            <span className="flex items-center gap-1 text-white/60">
+              <Flame className="w-3 h-3 text-orange-400" />
+              <span className="font-semibold text-white/80">{voteCount + (hasVoted ? 1 : 0)}</span>
+            </span>
+          )}
+          {commentCount > 0 && (
+            <span className="flex items-center gap-1 text-white/60">
+              <MessageSquare className="w-3 h-3 text-blue-400" />
+              <span className="font-semibold text-white/80">{commentCount}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-col gap-2 mt-auto">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={onFollowToggle}
+              disabled={isCurrentUser || isPending}
+              className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
+                isFollowing
+                  ? "border-cyan-400/40 bg-cyan-400/20 text-cyan-200 hover:bg-cyan-400/25"
+                  : "border-cyan-400/25 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/16"
+              } disabled:opacity-45 disabled:cursor-not-allowed`}
+              data-testid={`button-follow-discovery-${person.id}`}
+            >
+              {isCurrentUser ? "You" : isFollowing ? "✓ Following" : "+ Follow"}
+            </button>
+            <button
+              onClick={onTalk}
+              disabled={isCurrentUser || (!isOnline && !currentRoomId)}
+              className="flex items-center justify-center gap-1 rounded-xl border border-violet-400/25 bg-violet-400/10 px-3 py-2 text-xs font-bold text-violet-100 disabled:opacity-45 disabled:cursor-not-allowed hover:bg-violet-400/16 transition-colors"
+              data-testid={`button-talk-discovery-${person.id}`}
+            >
+              <MessageCircle className="w-3 h-3" />
+              {isCurrentUser ? "You" : currentRoomId ? "Talk" : "Message"}
+            </button>
+          </div>
+          <button
+            onClick={onVote}
+            disabled={isCurrentUser}
+            className={`w-full flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
+              hasVoted
+                ? "border-orange-400/50 bg-orange-400/20 text-orange-200"
+                : "border-orange-400/20 bg-orange-400/8 text-orange-300/70 hover:bg-orange-400/14 hover:border-orange-400/35"
+            } disabled:opacity-45 disabled:cursor-not-allowed`}
+            data-testid={`button-vote-discovery-${person.id}`}
+          >
+            <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-orange-400 text-orange-400" : ""}`} />
+            {hasVoted ? "Voted!" : "Vote"}
+            {(voteCount > 0) && <span className="ml-1 opacity-60">{voteCount + (hasVoted ? 1 : 0)}</span>}
+          </button>
+          <button
+            onClick={() => toast({ title: "💬 Comments", description: "Comment threads are coming soon!" })}
+            disabled={isCurrentUser}
+            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-blue-400/20 bg-blue-400/8 px-3 py-2 text-xs font-bold text-blue-300/70 hover:bg-blue-400/14 hover:border-blue-400/35 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
+            data-testid={`button-comment-discovery-${person.id}`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Comment
+            {commentCount > 0 && <span className="ml-1 opacity-60">{commentCount}</span>}
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -310,6 +417,7 @@ export default function Lobby() {
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [languagesExpanded, setLanguagesExpanded] = useState(false);
   const [activeDiscovery, setActiveDiscovery] = useState<DiscoveryFilter>("rooms");
+  const [speakerVotes, setSpeakerVotes] = useState<Set<string>>(new Set());
   const [dmUserId, setDmUserId] = useState<string | null>(null);
   const [roomParticipants, setRoomParticipants] = useState<
     Record<string, User[]>
@@ -550,16 +658,26 @@ export default function Lobby() {
     });
 
   const followingIds = new Set(following.map((follow) => follow.followingId));
-  const filteredPeople = allUsers
+  const realUserIds = new Set(allUsers.map((u) => u.id));
+  const sampleToMerge = SAMPLE_PEOPLE.filter((u) => !realUserIds.has(u.id));
+  const mergedPeople = [...allUsers, ...sampleToMerge];
+
+  const getSpeakerFollowers = (id: string) =>
+    followerCounts[id] ?? SAMPLE_FOLLOWER_COUNTS[id] ?? 0;
+  const getSpeakerOnline = (p: User) =>
+    onlineUsers.has(p.id) || p.status === "online" || (SAMPLE_SPEAKER_META[p.id]?.isOnline ?? false);
+
+  const filteredPeople = mergedPeople
     .filter((person) => {
-      const searchable = `${getUserName(person)} ${person.email || ""} ${person.bio || ""}`.toLowerCase();
+      const meta = SAMPLE_SPEAKER_META[person.id];
+      const searchable = `${getUserName(person)} ${person.email || ""} ${(person as any).bio || ""} ${meta?.bio || ""} ${(meta?.languages || []).join(" ")}`.toLowerCase();
       return searchable.includes(searchQuery.toLowerCase());
     })
     .sort((a, b) => {
-      const aFollowers = followerCounts[a.id] || 0;
-      const bFollowers = followerCounts[b.id] || 0;
-      const aOnline = onlineUsers.has(a.id) || a.status === "online";
-      const bOnline = onlineUsers.has(b.id) || b.status === "online";
+      const aFollowers = getSpeakerFollowers(a.id);
+      const bFollowers = getSpeakerFollowers(b.id);
+      const aOnline = getSpeakerOnline(a);
+      const bOnline = getSpeakerOnline(b);
       const aInRoom = usersCurrentRooms[a.id] ? 1 : 0;
       const bInRoom = usersCurrentRooms[b.id] ? 1 : 0;
 
@@ -568,7 +686,8 @@ export default function Lobby() {
       }
 
       return bFollowers - aFollowers || Number(bOnline) - Number(aOnline) || getUserName(a).localeCompare(getUserName(b));
-    });
+    })
+    .slice(0, 10);
 
   const languageCounts: Record<string, number> = {};
   rooms.forEach((r) => {
@@ -846,68 +965,79 @@ export default function Lobby() {
           )}
 
           {activeDiscovery !== "rooms" ? (
-            user ? (
-              <section className="space-y-3" data-testid="section-people-discovery">
-                <div className="flex items-end justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-black text-white" data-testid="text-people-discovery-title">
-                      {activeDiscovery === "top-speakers" ? "Top speakers to track" : "Famous users to follow"}
-                    </h2>
-                    <p className="text-sm text-white/45">
-                      Follow people to track them, then talk when they are online or inside a room.
-                    </p>
-                  </div>
-                  <span className="text-xs text-white/45" data-testid="text-people-discovery-count">
-                    {filteredPeople.length} people
-                  </span>
+            <section className="space-y-3" data-testid="section-people-discovery">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-black text-white" data-testid="text-people-discovery-title">
+                    {activeDiscovery === "top-speakers" ? "Top speakers to track" : "Famous users to follow"}
+                  </h2>
+                  <p className="text-sm text-white/45">
+                    Follow people to track them, then talk when they are online or inside a room.
+                  </p>
                 </div>
-                {filteredPeople.length === 0 ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm text-white/50" data-testid="text-no-discovery-users">
-                    No people found. Try a different search.
-                  </div>
-                ) : (
-                  <div className="flex gap-3 overflow-x-auto app-scrollbar pb-2" data-testid="list-people-discovery">
-                    {filteredPeople.map((person) => {
-                      const isOnline = onlineUsers.has(person.id) || person.status === "online";
-                      const currentRoomId = usersCurrentRooms[person.id];
-                      const isFollowing = followingIds.has(person.id);
-                      return (
-                        <PeopleDiscoveryCard
-                          key={person.id}
-                          person={person}
-                          followerCount={followerCounts[person.id] || 0}
-                          isOnline={isOnline}
-                          currentRoomId={currentRoomId}
-                          isFollowing={isFollowing}
-                          isCurrentUser={person.id === user.id}
-                          isPending={followMutation.isPending}
-                          onFollowToggle={() => {
-                            if (person.id !== user.id) {
-                              followMutation.mutate({ personId: person.id, isFollowing });
-                            }
-                          }}
-                          onTalk={() => {
-                            if (currentRoomId) {
-                              handleJoinRoom(currentRoomId);
-                              return;
-                            }
-                            setDmUserId(person.id);
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            ) : (
-              <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-5 text-center" data-testid="prompt-signin-people-discovery">
-                <h2 className="text-lg font-black text-white">Sign in to discover people</h2>
-                <p className="mt-1 text-sm text-white/50">Track top speakers and famous users, then talk when they are online.</p>
-                <Button asChild className="mt-4" data-testid="button-signin-people-discovery">
-                  <a href="/api/login">Sign In</a>
-                </Button>
+                <span className="text-xs text-white/45 flex items-center gap-1" data-testid="text-people-discovery-count">
+                  {filteredPeople.length} people
+                </span>
               </div>
-            )
+              {filteredPeople.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm text-white/50" data-testid="text-no-discovery-users">
+                  No people found. Try a different search.
+                </div>
+              ) : (
+                <div className="flex gap-4 overflow-x-auto app-scrollbar pb-2" data-testid="list-people-discovery">
+                  {filteredPeople.map((person) => {
+                    const isSamplePerson = person.id.startsWith("sample-user-");
+                    const meta = SAMPLE_SPEAKER_META[person.id];
+                    const isOnline = getSpeakerOnline(person);
+                    const currentRoomId = usersCurrentRooms[person.id];
+                    const isFollowing = followingIds.has(person.id);
+                    const hasVoted = speakerVotes.has(person.id);
+                    return (
+                      <PeopleDiscoveryCard
+                        key={person.id}
+                        person={person}
+                        followerCount={getSpeakerFollowers(person.id)}
+                        isOnline={isOnline}
+                        currentRoomId={currentRoomId}
+                        isFollowing={isFollowing}
+                        isCurrentUser={!!user && person.id === user.id}
+                        isPending={followMutation.isPending}
+                        voteCount={meta?.voteCount ?? 0}
+                        commentCount={meta?.commentCount ?? 0}
+                        hasVoted={hasVoted}
+                        bio={meta?.bio ?? (person as any).bio}
+                        languages={meta?.languages ?? []}
+                        onFollowToggle={() => {
+                          if (!user) { toast({ title: "Sign in to follow users", description: "Create an account to start following." }); return; }
+                          if (person.id !== user.id) {
+                            followMutation.mutate({ personId: person.id, isFollowing });
+                          }
+                        }}
+                        onVote={() => {
+                          if (!user) { toast({ title: "Sign in to vote", description: "Create an account to vote for speakers." }); return; }
+                          setSpeakerVotes((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(person.id)) next.delete(person.id);
+                            else next.add(person.id);
+                            return next;
+                          });
+                          toast({ title: hasVoted ? "Vote removed" : "Voted! 🔥" });
+                        }}
+                        onTalk={() => {
+                          if (!user) { toast({ title: "Sign in to message", description: "Create an account to send messages." }); return; }
+                          if (currentRoomId) {
+                            handleJoinRoom(currentRoomId);
+                            return;
+                          }
+                          if (!isSamplePerson) setDmUserId(person.id);
+                          else toast({ title: "This is a demo user", description: "Sign in and meet real language learners!" });
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           ) : roomsLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
               {[1, 2, 3, 4, 5, 6].map((i) => (
