@@ -1,0 +1,119 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 0 empty rooms for deletion
+8:48:12 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+8:48:19 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+8:48:19 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+8:48:19 PM [express] GET /api/rooms 200 in 3ms :: []
+8:48:24 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+8:48:24 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+8:48:24 PM [express] GET /api/rooms 200 in 1ms :: []
+8:48:27 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+8:48:27 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:48:27 PM [express] GET /api/rooms 304 in 4ms :: []
+8:48:29 PM [express] GET /api/rooms 304 in 3ms :: []
+8:48:34 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:48:35 PM [express] GET /api/rooms 304 in 1ms :: []
+8:48:40 PM [express] GET /api/rooms 304 in 2ms :: []
+8:48:45 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:48:45 PM [express] GET /api/rooms 304 in 2ms :: []
+8:48:50 PM [express] GET /api/rooms 304 in 2ms :: []
+8:48:55 PM [express] GET /api/rooms 304 in 2ms :: []
+8:48:56 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:49:01 PM [express] GET /api/rooms 304 in 3ms :: []
+8:49:06 PM [express] GET /api/rooms 304 in 2ms :: []
+8:49:06 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:49:11 PM [express] GET /api/rooms 304 in 2ms :: []
+8:49:16 PM [express] GET /api/rooms 304 in 2ms :: []
+8:49:17 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+8:49:22 PM [express] GET /api/rooms 304 in 3ms :: []
+8:49:27 PM [express] GET /api/rooms 304 in 1ms :: []
+8:49:27 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+8:49:32 PM [express] GET /api/rooms 304 in 2ms :: []
+8:49:37 PM [express] GET /api/rooms 304 in 1ms :: []
+8:49:38 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+8:49:43 PM [express] GET /api/rooms 304 in 2ms :: []
+8:49:48 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:49:48 PM [express] GET /api/rooms 304 in 2ms :: []
+8:49:53 PM [express] GET /api/rooms 304 in 1ms :: []
+8:49:58 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+8:49:59 PM [express] GET /api/rooms 304 in 2ms :: []
+8:50:04 PM [express] GET /api/rooms 304 in 1ms :: []
+8:50:09 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+8:50:09 PM [express] GET /api/rooms 304 in 1ms :: []
+8:50:14 PM [express] GET /api/rooms 304 in 2ms :: []
+8:50:19 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:50:20 PM [express] GET /api/rooms 304 in 2ms :: []
+8:50:25 PM [express] GET /api/rooms 304 in 2ms :: []
+8:50:29 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:50:30 PM [express] GET /api/rooms 304 in 1ms :: []
+8:50:35 PM [express] GET /api/rooms 304 in 2ms :: []
+8:50:40 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:50:40 PM [express] GET /api/rooms 304 in 1ms :: []
+8:50:46 PM [express] GET /api/rooms 304 in 1ms :: []
+8:50:50 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:50:51 PM [express] GET /api/rooms 304 in 2ms :: []
+8:50:56 PM [express] GET /api/rooms 304 in 2ms :: []
+8:51:01 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:51:02 PM [express] GET /api/rooms 304 in 2ms :: []
+8:51:07 PM [express] GET /api/rooms 304 in 1ms :: []
+8:51:11 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:51:12 PM [express] GET /api/rooms 304 in 2ms :: []
+8:51:17 PM [express] GET /api/rooms 304 in 2ms :: []
+8:51:21 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:51:23 PM [express] GET /api/rooms 304 in 1ms :: []
+8:51:28 PM [express] GET /api/rooms 304 in 1ms :: []
+8:51:31 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:51:33 PM [express] GET /api/rooms 304 in 3ms :: []
+8:51:38 PM [express] GET /api/rooms 304 in 2ms :: []
+8:51:42 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:51:43 PM [express] GET /api/rooms 304 in 2ms :: []
+8:51:49 PM [express] GET /api/rooms 304 in 3ms :: []
+8:51:52 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:51:54 PM [express] GET /api/rooms 304 in 2ms :: []
+8:51:59 PM [express] GET /api/rooms 304 in 2ms :: []
+8:52:02 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+8:52:05 PM [express] GET /api/rooms 304 in 2ms :: []
+8:52:10 PM [express] GET /api/rooms 304 in 2ms :: []
+8:52:12 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:52:15 PM [express] GET /api/rooms 304 in 1ms :: []
+8:52:20 PM [express] GET /api/rooms 304 in 1ms :: []
+8:52:23 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:52:26 PM [express] GET /api/rooms 304 in 2ms :: []
+8:52:31 PM [express] GET /api/rooms 304 in 2ms :: []
+8:52:33 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+8:52:36 PM [express] GET /api/rooms 304 in 2ms :: []
+8:52:42 PM [express] GET /api/rooms 304 in 2ms :: []
+8:52:43 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:52:43 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/room-card.tsx, /src/index.css[22m
+8:52:47 PM [express] GET /api/rooms 304 in 1ms :: []
