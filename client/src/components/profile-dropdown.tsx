@@ -18,9 +18,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
+import { useSocket } from "@/lib/socket";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
@@ -230,6 +231,7 @@ interface ProfileDropdownProps {
 
 export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDropdownProps = {}) {
   const { user, logout } = useAuth();
+  const { appearOffline, setAppearOffline } = useSocket();
   const { toast } = useToast();
   const [editOpen, setEditOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -372,15 +374,29 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 p-0 overflow-hidden">
           <div className="flex items-center gap-3 px-3 py-3 border-b border-border bg-muted/30">
-            <Avatar className="w-10 h-10 flex-shrink-0">
-              <AvatarImage src={user?.profileImageUrl || undefined} />
-              <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                {getUserInitials(user)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative flex-shrink-0">
+              <Avatar className="w-10 h-10">
+                <AvatarImage src={user?.profileImageUrl || undefined} />
+                <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                  {getUserInitials(user)}
+                </AvatarFallback>
+              </Avatar>
+              <span
+                className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background"
+                style={{
+                  background: appearOffline ? "#6b7280" : "#22c55e",
+                  boxShadow: appearOffline ? "none" : "0 0 6px rgba(34,197,94,0.7)",
+                }}
+                data-testid="status-dot-dropdown"
+              />
+            </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate" data-testid="text-dropdown-user-name">{getUserDisplayName(user)}</p>
-              <p className="text-xs text-muted-foreground truncate" data-testid="text-dropdown-user-email">{user?.email || ""}</p>
+              <p className="text-xs truncate" data-testid="text-dropdown-status"
+                style={{ color: appearOffline ? "rgba(251,191,36,0.85)" : "rgba(34,197,94,0.85)" }}
+              >
+                {appearOffline ? "Appearing offline" : "Online"}
+              </p>
             </div>
           </div>
           <div className="p-1">
@@ -398,6 +414,43 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
             >
               <Bell className="w-4 h-4 mr-2" />
               Notifications
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setAppearOffline(!appearOffline)}
+              data-testid="menu-appear-offline"
+              className="cursor-pointer"
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                  {appearOffline
+                    ? <EyeOff className="w-4 h-4 mr-2 text-amber-400" />
+                    : <Eye className="w-4 h-4 mr-2" />
+                  }
+                  <span className={appearOffline ? "text-amber-400" : ""}>
+                    Appear Offline
+                  </span>
+                </div>
+                <div
+                  className="relative ml-3 flex-shrink-0 w-8 h-4 rounded-full transition-colors duration-200"
+                  style={{
+                    background: appearOffline
+                      ? "rgba(251,191,36,0.85)"
+                      : "rgba(255,255,255,0.15)",
+                    border: appearOffline
+                      ? "1px solid rgba(251,191,36,0.5)"
+                      : "1px solid rgba(255,255,255,0.2)",
+                  }}
+                >
+                  <span
+                    className="absolute top-0.5 w-3 h-3 rounded-full transition-all duration-200"
+                    style={{
+                      background: "#fff",
+                      left: appearOffline ? "calc(100% - 14px)" : "2px",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                    }}
+                  />
+                </div>
+              </div>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

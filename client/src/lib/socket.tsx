@@ -1,20 +1,38 @@
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+
+const APPEAR_OFFLINE_KEY = "connect2talk:appearOffline";
 
 interface SocketContextType {
   socket: Socket | null;
   connected: boolean;
+  appearOffline: boolean;
+  setAppearOffline: (v: boolean) => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   connected: false,
+  appearOffline: false,
+  setAppearOffline: () => {},
 });
 
 export function SocketProvider({ children, userId }: { children: React.ReactNode; userId: string }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
+  const [appearOffline, setAppearOfflineState] = useState<boolean>(
+    () => localStorage.getItem(APPEAR_OFFLINE_KEY) === "true"
+  );
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const appearOfflineRef = useRef(appearOffline);
+  appearOfflineRef.current = appearOffline;
+
+  const emitOnline = useCallback((s: Socket) => {
+    if (!appearOfflineRef.current && s.connected) {
+      s.emit("user:online", userId);
+    }
+  }, [userId]);
 
   useEffect(() => {
     const s = io({
@@ -26,6 +44,7 @@ export function SocketProvider({ children, userId }: { children: React.ReactNode
       timeout: 30000,
       forceNew: false,
     });
+    socketRef.current = s;
 
     const startHeartbeat = () => {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
@@ -45,12 +64,12 @@ export function SocketProvider({ children, userId }: { children: React.ReactNode
 
     s.on("connect", () => {
       setConnected(true);
-      s.emit("user:online", userId);
+      emitOnline(s);
       startHeartbeat();
     });
 
     s.on("reconnect", () => {
-      s.emit("user:online", userId);
+      emitOnline(s);
       startHeartbeat();
     });
 
@@ -64,7 +83,7 @@ export function SocketProvider({ children, userId }: { children: React.ReactNode
         if (!s.connected) {
           s.connect();
         } else {
-          s.emit("user:online", userId);
+          emitOnline(s);
           s.emit("heartbeat");
         }
       }
@@ -89,10 +108,22 @@ export function SocketProvider({ children, userId }: { children: React.ReactNode
       window.removeEventListener("focus", handleVisibilityChange);
       s.disconnect();
     };
+  }, [userId, emitOnline]);
+
+  const setAppearOffline = useCallback((value: boolean) => {
+    localStorage.setItem(APPEAR_OFFLINE_KEY, String(value));
+    setAppearOfflineState(value);
+    const s = socketRef.current;
+    if (!s || !s.connected) return;
+    if (value) {
+      s.emit("user:offline", userId);
+    } else {
+      s.emit("user:online", userId);
+    }
   }, [userId]);
 
   return (
-    <SocketContext.Provider value={{ socket, connected }}>
+    <SocketContext.Provider value={{ socket, connected, appearOffline, setAppearOffline }}>
       {children}
     </SocketContext.Provider>
   );

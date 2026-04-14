@@ -1015,6 +1015,12 @@ export async function registerRoutes(
       }
     });
 
+    socket.on("user:offline", async (userId: string) => {
+      onlineUsers.delete(userId);
+      await storage.updateUserStatus(userId, "offline");
+      io.emit("presence:update", { userId, status: "offline" });
+    });
+
     socket.on("heartbeat", () => {
     });
 
