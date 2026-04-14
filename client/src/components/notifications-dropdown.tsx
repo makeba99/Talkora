@@ -16,7 +16,12 @@ import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useSocket } from "@/lib/socket";
 import { useToast } from "@/hooks/use-toast";
 
-export function NotificationsDropdown() {
+interface NotificationsDropdownProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: NotificationsDropdownProps = {}) {
   const { user } = useAuth();
   const { socket } = useSocket();
   const { toast } = useToast();
@@ -119,7 +124,7 @@ export function NotificationsDropdown() {
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={controlledOpen} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button size="icon" variant="ghost" className="relative" data-testid="button-notifications">
           <Bell className="w-4 h-4" />

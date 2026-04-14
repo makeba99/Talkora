@@ -35,6 +35,8 @@ export default function Lobby() {
   const [roomParticipants, setRoomParticipants] = useState<
     Record<string, User[]>
   >({});
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const { data: rooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
@@ -250,9 +252,12 @@ export default function Lobby() {
                 )}
                 <SocialPanel onlineUsers={onlineUsers} onOpenDm={(userId) => setDmUserId(userId)} />
                 <MessagesDropdown onOpenDm={(userId) => setDmUserId(userId)} />
-                <NotificationsDropdown />
-                <ThemePicker />
-                <ProfileDropdown />
+                <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} />
+                <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} />
+                <ProfileDropdown
+                  onOpenTheme={() => setThemePickerOpen(true)}
+                  onOpenNotifications={() => setNotificationsOpen(true)}
+                />
               </>
             ) : (
               <>

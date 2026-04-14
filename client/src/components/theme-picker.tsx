@@ -15,9 +15,16 @@ const CATEGORIES = [
   { label: "Animated", ids: THEMES.filter((t) => t.animated).map((t) => t.id) },
 ];
 
-export function ThemePicker() {
+interface ThemePickerProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function ThemePicker({ open: controlledOpen, onOpenChange }: ThemePickerProps = {}) {
   const { theme, setTheme } = useTheme();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [hovered, setHovered] = useState<Theme | null>(null);
   const [category, setCategory] = useState<string>("All");
 

@@ -223,7 +223,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[2, 4, 6, 8, 10, 12].map((n) => (
+                {[2, 3, 4, 6, 8, 10, 12].map((n) => (
                   <SelectItem key={n} value={String(n)}>
                     {n} people
                   </SelectItem>

@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, Palette } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -223,7 +223,12 @@ function ImageCropDialog({
   );
 }
 
-export function ProfileDropdown() {
+interface ProfileDropdownProps {
+  onOpenTheme?: () => void;
+  onOpenNotifications?: () => void;
+}
+
+export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDropdownProps = {}) {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [editOpen, setEditOpen] = useState(false);
@@ -365,32 +370,56 @@ export function ProfileDropdown() {
             <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={handleOpenEdit} data-testid="menu-edit-profile">
-            <User className="w-4 h-4 mr-2" />
-            Edit Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => fileInputRef.current?.click()} data-testid="menu-upload-avatar">
-            <Camera className="w-4 h-4 mr-2" />
-            Change Avatar
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleOpenSettings} data-testid="menu-settings">
-            <Sparkles className="w-4 h-4 mr-2" />
-            Decorations
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setBlockedOpen(true)} data-testid="menu-blocked-users">
-            <Ban className="w-4 h-4 mr-2" />
-            Blocked Users
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => logout()}
-            className="text-destructive focus:text-destructive"
-            data-testid="menu-logout"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Log out
-          </DropdownMenuItem>
+        <DropdownMenuContent align="end" className="w-56 p-0 overflow-hidden">
+          <div className="flex items-center gap-3 px-3 py-3 border-b border-border bg-muted/30">
+            <Avatar className="w-10 h-10 flex-shrink-0">
+              <AvatarImage src={user?.profileImageUrl || undefined} />
+              <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                {getUserInitials(user)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate" data-testid="text-dropdown-user-name">{getUserDisplayName(user)}</p>
+              <p className="text-xs text-muted-foreground truncate" data-testid="text-dropdown-user-email">{user?.email || ""}</p>
+            </div>
+          </div>
+          <div className="p-1">
+            <DropdownMenuItem onClick={handleOpenEdit} data-testid="menu-edit-profile">
+              <User className="w-4 h-4 mr-2" />
+              My Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleOpenSettings} data-testid="menu-settings">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => { onOpenTheme?.(); }}
+              data-testid="menu-appearance"
+            >
+              <Palette className="w-4 h-4 mr-2" />
+              Appearance 🌈
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => { onOpenNotifications?.(); }}
+              data-testid="menu-notifications"
+            >
+              <Bell className="w-4 h-4 mr-2" />
+              Notifications
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setBlockedOpen(true)} data-testid="menu-blocked-users" className="text-muted-foreground">
+              <Ban className="w-4 h-4 mr-2" />
+              Blocked Users
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => logout()}
+              className="text-destructive focus:text-destructive"
+              data-testid="menu-logout"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </DropdownMenuItem>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
 

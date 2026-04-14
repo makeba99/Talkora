@@ -562,6 +562,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   /* ── grid columns: always 2 rows, balanced ── */
   const gridCols =
     room.maxUsers <= 2 ? 2 :
+    room.maxUsers === 3 ? 3 :
     room.maxUsers <= 4 ? 4 :
     Math.ceil(room.maxUsers / 2);
 
@@ -651,7 +652,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
           {/* ── Body: unified neon ring circle grid ── */}
           <div className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 overflow-hidden">
-            <div className={`grid ${isPremiumAtmosphere ? "gap-3" : "gap-2"}`} style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}>
+            <div className={`grid ${isPremiumAtmosphere ? "gap-3" : "gap-2"}`} style={{ gridTemplateColumns: `repeat(${gridCols}, auto)`, justifyContent: room.maxUsers <= 4 ? "center" : "start" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
@@ -910,7 +911,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[2, 4, 6, 8, 10, 12].map((n) => (
+                  {[2, 3, 4, 6, 8, 10, 12].map((n) => (
                     <SelectItem key={n} value={String(n)}>{n} people</SelectItem>
                   ))}
                 </SelectContent>
