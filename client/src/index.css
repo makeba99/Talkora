@@ -1331,3 +1331,39 @@ html.synthwave .neon-text {
   box-shadow: 0 0 7px rgba(0, 220, 255, 0.48), 0 0 12px rgba(255, 0, 200, 0.24);
   animation: premium-atmosphere-spark 2.6s ease-in-out infinite;
 }
+
+/* ── Hammer button animation ── */
+@keyframes hammer-strike {
+  0%   { transform: rotate(-32deg) translateY(-1px); }
+  14%  { transform: rotate(20deg)  translateY(2px);  }
+  24%  { transform: rotate(-12deg) translateY(-1px); }
+  34%  { transform: rotate(6deg)   translateY(1px);  }
+  42%  { transform: rotate(-3deg)  translateY(0px);  }
+  50%  { transform: rotate(0deg)   translateY(0px);  }
+  100% { transform: rotate(-32deg) translateY(-1px); }
+}
+
+@keyframes hammer-btn-pulse {
+  0%   { box-shadow: 0 0 20px rgba(0,200,255,0.20), 0 2px 8px rgba(0,0,0,0.30); }
+  14%  { box-shadow: 0 0 28px rgba(0,200,255,0.50), 0 0 40px rgba(100,50,240,0.30), 0 2px 8px rgba(0,0,0,0.30); }
+  35%  { box-shadow: 0 0 20px rgba(0,200,255,0.20), 0 2px 8px rgba(0,0,0,0.30); }
+  100% { box-shadow: 0 0 20px rgba(0,200,255,0.20), 0 2px 8px rgba(0,0,0,0.30); }
+}
+
+.hammer-icon {
+  display: inline-block;
+  transform-origin: 78% 78%;
+  animation: hammer-strike 2.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+}
+
+.hammer-btn {
+  animation: hammer-btn-pulse 2.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+}
+
+.hammer-btn:hover .hammer-icon {
+  animation-duration: 1s;
+}
+
+.hammer-btn:hover {
+  animation-duration: 1s;
+}
