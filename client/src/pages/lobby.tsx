@@ -215,45 +215,59 @@ export default function Lobby() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="border-b sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-3 p-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
-              <Mic className="w-5 h-5 text-primary" />
+      <header
+        className="sticky top-0 z-50 bg-background/90 backdrop-blur-md"
+        style={{
+          borderBottom: "1px solid rgba(0,220,255,0.12)",
+          boxShadow: "0 1px 0 rgba(0,220,255,0.08), 0 4px 24px rgba(0,0,0,0.35)",
+        }}
+      >
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{
+                background: "linear-gradient(135deg, rgba(0,200,255,0.18) 0%, rgba(110,60,255,0.18) 100%)",
+                border: "1px solid rgba(0,210,255,0.28)",
+                boxShadow: "0 0 14px rgba(0,210,255,0.15), inset 0 1px 0 rgba(255,255,255,0.08)",
+              }}
+            >
+              <Mic className="w-4.5 h-4.5 text-cyan-400" />
             </div>
             <div className="min-w-0 hidden sm:block">
-              <h1 className="text-base font-bold leading-tight">
-                Connect<span className="text-primary">2</span>Talk
+              <h1 className="text-[15px] font-extrabold leading-tight tracking-tight">
+                Connect<span style={{ color: "#22d3ee" }}>2</span>Talk
               </h1>
-              <p className="text-xs text-muted-foreground leading-tight">
+              <p className="text-[10px] text-muted-foreground leading-tight tracking-widest uppercase opacity-70">
                 Language Practice Community
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             {user ? (
               <>
                 {isAdminUser && (
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => navigate("/admin")}
-                    className="border-primary/30 bg-primary/5"
+                    className="mr-1 text-xs border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/40"
                     data-testid="button-admin-panel"
                   >
                     {user.role === "superadmin" || user.email === "dj55jggg@gmail.com" ? (
-                      <Crown className="w-4 h-4 mr-2 text-amber-300" />
+                      <Crown className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
                     ) : (
-                      <ShieldCheck className="w-4 h-4 mr-2 text-primary" />
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-cyan-400" />
                     )}
-                    <span className="hidden sm:inline">Admin</span>
+                    <span className="hidden sm:inline text-amber-300/80">Admin</span>
                   </Button>
                 )}
                 <SocialPanel onlineUsers={onlineUsers} onOpenDm={(userId) => setDmUserId(userId)} />
                 <MessagesDropdown onOpenDm={(userId) => setDmUserId(userId)} />
                 <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} />
                 <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} />
+                <div className="w-px h-5 mx-1.5 flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
                 <ProfileDropdown
                   onOpenTheme={() => setThemePickerOpen(true)}
                   onOpenNotifications={() => setNotificationsOpen(true)}
@@ -262,9 +276,19 @@ export default function Lobby() {
             ) : (
               <>
                 <ThemePicker />
-                <Button asChild data-testid="button-sign-in">
+                <Button
+                  asChild
+                  data-testid="button-sign-in"
+                  size="sm"
+                  className="ml-1 font-semibold"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,60,240,0.9) 100%)",
+                    border: "1px solid rgba(0,210,255,0.3)",
+                    boxShadow: "0 0 18px rgba(0,200,255,0.2)",
+                  }}
+                >
                   <a href="/api/login">
-                    <LogIn className="w-4 h-4 mr-2" />
+                    <LogIn className="w-4 h-4 mr-1.5" />
                     Sign In
                   </a>
                 </Button>
@@ -275,17 +299,32 @@ export default function Lobby() {
       </header>
 
       <div className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto p-4 space-y-5 animate-fade-in">
+        <div className="max-w-6xl mx-auto p-4 space-y-4 animate-fade-in">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
               <Input
-                placeholder="Search rooms..."
+                placeholder="Search rooms, languages, users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-10 pr-14 h-10 transition-all duration-200"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.border = "1px solid rgba(0,210,255,0.45)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,210,255,0.08), 0 0 16px rgba(0,210,255,0.1)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
                 data-testid="input-search-rooms"
               />
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 text-[10px] text-muted-foreground/40 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 font-mono pointer-events-none">
+                ⌘K
+              </kbd>
             </div>
             {user && (
               <CreateRoomDialog
@@ -295,53 +334,87 @@ export default function Lobby() {
             )}
           </div>
 
-          <div className="space-y-2">
-            <div className="flex gap-2 flex-wrap">
-              {visibleLanguages.map((lang) => {
-                const count =
-                  lang === "All" ? rooms.length : languageCounts[lang] || 0;
-                const isActive = selectedLanguage === lang;
-                return (
-                  <button
-                    key={lang}
-                    onClick={() => setSelectedLanguage(lang)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover-elevate"
-                    }`}
-                    data-testid={`tab-language-${lang.toLowerCase()}`}
-                  >
-                    {lang}
-                    <Badge
-                      variant={isActive ? "secondary" : "outline"}
-                      className="text-xs px-1.5 min-w-5 justify-center"
-                    >
-                      {count}
-                    </Badge>
-                  </button>
-                );
-              })}
-              {languageTags.length > 8 && (
+          <div className="flex gap-2 flex-wrap items-center">
+            {visibleLanguages.map((lang) => {
+              const count = lang === "All" ? rooms.length : languageCounts[lang] || 0;
+              const isActive = selectedLanguage === lang;
+              return (
                 <button
-                  onClick={() => setLanguagesExpanded(!languagesExpanded)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground bg-muted hover-elevate"
-                  data-testid="button-toggle-languages"
+                  key={lang}
+                  onClick={() => setSelectedLanguage(lang)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200"
+                  style={
+                    isActive
+                      ? {
+                          background: "linear-gradient(135deg, rgba(0,200,255,0.85) 0%, rgba(100,50,240,0.85) 100%)",
+                          border: "1px solid rgba(0,210,255,0.4)",
+                          color: "#fff",
+                          boxShadow: "0 0 14px rgba(0,200,255,0.22), 0 2px 8px rgba(0,0,0,0.25)",
+                        }
+                      : {
+                          background: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          color: "rgba(255,255,255,0.55)",
+                        }
+                  }
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.09)";
+                      e.currentTarget.style.border = "1px solid rgba(255,255,255,0.18)";
+                      e.currentTarget.style.color = "rgba(255,255,255,0.85)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                      e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)";
+                      e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+                    }
+                  }}
+                  data-testid={`tab-language-${lang.toLowerCase()}`}
                 >
-                  {languagesExpanded ? (
-                    <>
-                      <ChevronUp className="w-3.5 h-3.5" />
-                      Collapse
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3.5 h-3.5" />
-                      More
-                    </>
-                  )}
+                  {lang}
+                  <span
+                    className="text-[11px] font-bold min-w-4 text-center"
+                    style={{ opacity: isActive ? 0.9 : 0.6 }}
+                  >
+                    {count}
+                  </span>
                 </button>
-              )}
-            </div>
+              );
+            })}
+            {languageTags.length > 8 && (
+              <button
+                onClick={() => setLanguagesExpanded(!languagesExpanded)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "rgba(255,255,255,0.45)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.09)";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.75)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+                }}
+                data-testid="button-toggle-languages"
+              >
+                {languagesExpanded ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    Collapse
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    More
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           {roomsLoading ? (

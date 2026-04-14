@@ -160,8 +160,17 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button data-testid="button-create-room">
-          <Plus className="w-4 h-4 mr-2" />
+        <Button
+          data-testid="button-create-room"
+          className="h-10 px-4 font-semibold whitespace-nowrap flex-shrink-0"
+          style={{
+            background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,50,240,0.9) 100%)",
+            border: "1px solid rgba(0,210,255,0.35)",
+            boxShadow: "0 0 20px rgba(0,200,255,0.2), 0 2px 8px rgba(0,0,0,0.3)",
+            color: "#fff",
+          }}
+        >
+          <Plus className="w-4 h-4 mr-1.5" />
           Create Room
         </Button>
       </DialogTrigger>
