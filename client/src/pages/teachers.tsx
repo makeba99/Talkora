@@ -83,12 +83,13 @@ function LanguageFlag({ language }: { language: string }) {
 
 function StarRating({ rating, max = 5, size = "sm" }: { rating: number; max?: number; size?: "sm" | "lg" }) {
   const sz = size === "lg" ? "w-5 h-5" : "w-3.5 h-3.5";
+  const normalizedRating = rating > max ? rating / 10 : rating;
   return (
     <div className="flex items-center gap-0.5">
       {Array.from({ length: max }).map((_, i) => (
         <Star
           key={i}
-          className={`${sz} ${i < rating ? "text-amber-400 fill-amber-400" : "text-white/20"}`}
+          className={`${sz} ${i < Math.round(normalizedRating) ? "text-amber-400 fill-amber-400" : "text-white/20"}`}
         />
       ))}
     </div>
@@ -117,6 +118,105 @@ function getInitials(user: ReviewWithUser["user"]) {
   const name = getDisplayName(user);
   return name.slice(0, 2).toUpperCase();
 }
+
+const SAMPLE_TEACHERS: Teacher[] = [
+  {
+    id: "sample-teacher-maya",
+    name: "Maya Chen",
+    bio: "Conversation coach focused on confidence, natural pacing, and practical vocabulary for everyday English.",
+    avatarUrl: null,
+    languages: ["English", "Chinese"],
+    levels: ["Beginner", "Intermediate", "Advanced"],
+    specializations: ["General Conversation", "Pronunciation", "Business English"],
+    hourlyRate: 24,
+    sessionDurations: ["30", "60"],
+    rating: 49,
+    reviewCount: 38,
+    isAvailable: true,
+    userId: null,
+    createdAt: new Date(),
+  },
+  {
+    id: "sample-teacher-sofia",
+    name: "Sofia Ramirez",
+    bio: "Spanish tutor for travel, casual speaking, and grammar patterns that help learners sound more natural.",
+    avatarUrl: null,
+    languages: ["Spanish", "English"],
+    levels: ["Beginner", "Intermediate"],
+    specializations: ["Travel", "Grammar", "Slang & Casual"],
+    hourlyRate: 18,
+    sessionDurations: ["30", "45", "60"],
+    rating: 48,
+    reviewCount: 52,
+    isAvailable: true,
+    userId: null,
+    createdAt: new Date(),
+  },
+  {
+    id: "sample-teacher-aram",
+    name: "Aram Petrosyan",
+    bio: "Native Armenian speaker helping learners practice heritage conversations, reading basics, and pronunciation.",
+    avatarUrl: null,
+    languages: ["Armenian", "English"],
+    levels: ["Beginner", "Intermediate", "Native"],
+    specializations: ["Reading", "Pronunciation", "General Conversation"],
+    hourlyRate: 22,
+    sessionDurations: ["30", "60"],
+    rating: 47,
+    reviewCount: 24,
+    isAvailable: true,
+    userId: null,
+    createdAt: new Date(),
+  },
+  {
+    id: "sample-teacher-yuki",
+    name: "Yuki Tanaka",
+    bio: "Japanese teacher for anime fans, travelers, and learners building sentence structure from zero.",
+    avatarUrl: null,
+    languages: ["Japanese", "English"],
+    levels: ["Beginner", "Intermediate"],
+    specializations: ["Travel", "Listening", "Slang & Casual"],
+    hourlyRate: 30,
+    sessionDurations: ["45", "60"],
+    rating: 50,
+    reviewCount: 41,
+    isAvailable: true,
+    userId: null,
+    createdAt: new Date(),
+  },
+  {
+    id: "sample-teacher-nour",
+    name: "Nour Haddad",
+    bio: "Arabic pronunciation and conversation sessions with patient correction and practical daily-life topics.",
+    avatarUrl: null,
+    languages: ["Arabic", "English"],
+    levels: ["Beginner", "Intermediate", "Advanced"],
+    specializations: ["Pronunciation", "Listening", "Academic"],
+    hourlyRate: 28,
+    sessionDurations: ["30", "60"],
+    rating: 48,
+    reviewCount: 33,
+    isAvailable: false,
+    userId: null,
+    createdAt: new Date(),
+  },
+  {
+    id: "sample-teacher-elena",
+    name: "Elena Fischer",
+    bio: "German exam and interview coach for learners who need structured speaking practice and clear feedback.",
+    avatarUrl: null,
+    languages: ["German", "English"],
+    levels: ["Intermediate", "Advanced"],
+    specializations: ["Exam Preparation", "Business English", "Writing"],
+    hourlyRate: 36,
+    sessionDurations: ["60"],
+    rating: 49,
+    reviewCount: 45,
+    isAvailable: true,
+    userId: null,
+    createdAt: new Date(),
+  },
+];
 
 function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher; onView: () => void; onBook: () => void; isLoggedIn: boolean }) {
   return (
@@ -176,7 +276,7 @@ function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher
             <div className="flex items-center gap-1.5 mt-0.5">
               <StarRating rating={teacher.rating} />
               <span className="text-[11px] text-white/50">
-                {teacher.rating > 0 ? `${teacher.rating}.0` : "New"} {teacher.reviewCount > 0 ? `(${teacher.reviewCount})` : ""}
+                {teacher.rating > 0 ? (teacher.rating > 5 ? (teacher.rating / 10).toFixed(1) : teacher.rating.toFixed(1)) : "New"} {teacher.reviewCount > 0 ? `(${teacher.reviewCount})` : ""}
               </span>
             </div>
             <div className="mt-1.5 flex items-center gap-1.5">
@@ -887,7 +987,7 @@ export default function TeachersPage() {
     experience: "",
   });
 
-  const { data: allTeachers = [], isLoading } = useQuery<Teacher[]>({
+  const { data: fetchedTeachers = [], isLoading } = useQuery<Teacher[]>({
     queryKey: ["/api/teachers"],
   });
 
@@ -930,6 +1030,9 @@ export default function TeachersPage() {
       toast({ title: "Failed to cancel", description: err.message, variant: "destructive" });
     },
   });
+
+  const allTeachers = fetchedTeachers.length > 0 ? fetchedTeachers : SAMPLE_TEACHERS;
+  const showingSampleTeachers = fetchedTeachers.length === 0;
 
   const filteredTeachers = allTeachers
     .filter((t) => {
@@ -1323,6 +1426,7 @@ export default function TeachersPage() {
                 {filteredTeachers.length === allTeachers.length
                   ? `${allTeachers.length} teacher${allTeachers.length !== 1 ? "s" : ""} available`
                   : `${filteredTeachers.length} of ${allTeachers.length} teachers match`}
+                {showingSampleTeachers ? " in preview" : ""}
               </p>
               {activeFilterCount > 0 && (
                 <div className="flex items-center gap-1 text-[11px] text-white/35">
@@ -1334,7 +1438,7 @@ export default function TeachersPage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 min-[560px]:grid-cols-3 gap-5">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="space-y-3 p-5 rounded-xl border" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
                   <div className="flex gap-3">
