@@ -1,0 +1,447 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 1 empty rooms for deletion
+5:17:52 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+5:18:03 PM [express] GET /api/auth/user 200 in 17ms :: {"id":"57700172","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T17:13:55.826Z","updatedAt":"2026-04-14T17:13:55.826Z"}
+5:18:03 PM [express] GET /api/users 200 in 8ms :: [{"id":"57700172","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T17:13:55.826Z","updatedAt":"2026-04-14T17:13:55.826Z"}]
+5:18:03 PM [express] GET /api/follows/followers/57700172 304 in 9ms :: []
+5:18:03 PM [express] GET /api/users/rooms 304 in 10ms :: {}
+5:18:03 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:18:03 PM [express] GET /api/messages/conversations 304 in 24ms :: []
+5:18:03 PM [express] GET /api/follows/following/57700172 304 in 21ms :: []
+5:18:03 PM [express] GET /api/notifications 304 in 12ms :: []
+5:18:03 PM [express] GET /api/rooms 304 in 13ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:03 PM [express] GET /api/rooms/participants 304 in 6ms :: {}
+5:18:03 PM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:18:08 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:18:08 PM [express] GET /api/users/rooms 304 in 9ms :: {}
+5:18:08 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+5:18:08 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:09 PM [express] GET /api/rooms/participants 200 in 0ms :: {}
+5:18:09 PM [express] GET /api/rooms 200 in 2ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:09 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{}}
+5:18:13 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+5:18:13 PM [express] GET /api/notifications 304 in 5ms :: []
+5:18:13 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:18:14 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:18:14 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:18:14 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:19 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:18:19 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:18:19 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:23 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:18:24 PM [express] GET /api/notifications 304 in 5ms :: []
+5:18:24 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:18:24 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:18:24 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:18:24 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:29 PM [express] GET /api/users/rooms 304 in 35ms :: {}
+5:18:29 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:18:30 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:34 PM [express] POST /api/rooms/votes/batch 200 in 8ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:18:34 PM [express] GET /api/messages/conversations 304 in 28ms :: []
+5:18:34 PM [express] GET /api/notifications 304 in 8ms :: []
+5:18:34 PM [express] GET /api/rooms/participants 304 in 7ms :: {}
+5:18:35 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:18:35 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:18:35 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:40 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:18:40 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:18:40 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:44 PM [express] GET /api/messages/conversations 304 in 8ms :: []
+5:18:44 PM [express] GET /api/notifications 304 in 5ms :: []
+5:18:44 PM [express] GET /api/rooms/participants 304 in 10ms :: {}
+5:18:45 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:18:45 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:18:45 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:51 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:18:51 PM [express] GET /api/messages/unread/count 304 in 18ms :: {"count":0}
+5:18:51 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:18:54 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:18:54 PM [express] GET /api/notifications 304 in 6ms :: []
+5:18:55 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:18:56 PM [express] GET /api/users/rooms 304 in 8ms :: {}
+5:18:56 PM [express] GET /api/messages/unread/count 304 in 9ms :: {"count":0}
+5:18:56 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:19:01 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:01 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:19:01 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:19:04 PM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":0},"userVotes":{"9e3bdb2f-c756-4dea-9b2d-e596910412f5":false}}
+5:19:05 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:19:05 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:19:05 PM [express] GET /api/notifications 304 in 6ms :: []
+5:19:06 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:06 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:19:07 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:19:12 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:12 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:19:12 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:19:15 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+5:19:15 PM [express] GET /api/rooms/participants 304 in 8ms :: {}
+5:19:15 PM [express] GET /api/notifications 304 in 9ms :: []
+5:19:17 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:19:17 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:19:17 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9e3bdb2f-c756-4dea-9b2d-e596910412f5","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:14:12.950Z"}]
+5:19:22 PM [express] GET /api/rooms/participants 304 in 3ms :: {}
+5:19:22 PM [express] GET /api/rooms 200 in 3ms :: []
+5:19:22 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:19:22 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:19:25 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:19:25 PM [express] GET /api/notifications 304 in 5ms :: []
+5:19:27 PM [express] GET /api/rooms 304 in 7ms :: []
+5:19:28 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:19:28 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:19:32 PM [express] GET /api/rooms/participants 304 in 45ms :: {}
+5:19:32 PM [express] GET /api/rooms 304 in 6ms :: []
+5:19:33 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:33 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:19:35 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:19:36 PM [express] GET /api/notifications 304 in 6ms :: []
+5:19:38 PM [express] GET /api/rooms 304 in 4ms :: []
+5:19:38 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:19:38 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:19:43 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:19:43 PM [express] GET /api/rooms 304 in 5ms :: []
+5:19:43 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:43 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:19:46 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:19:46 PM [express] GET /api/notifications 304 in 5ms :: []
+5:19:48 PM [express] GET /api/rooms 304 in 5ms :: []
+5:19:49 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:19:49 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:19:51 PM [express] POST /api/rooms 200 in 11ms :: {"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}
+5:19:52 PM [express] GET /api/rooms 200 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:19:52 PM [express] GET /api/rooms 200 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:19:52 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"0336790b-24d9-49e4-8208-fcb7604137b5":0},"userVotes":{"0336790b-24d9-49e4-8208-fcb7604137b5":false}}
+5:19:53 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:19:56 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:19:56 PM [express] GET /api/notifications 304 in 5ms :: []
+5:19:57 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:19:59 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:19:59 PM [express] GET /api/messages/unread/count 304 in 14ms :: {"count":0}
+5:20:02 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:03 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:20:04 PM [express] GET /api/users/rooms 304 in 10ms :: {}
+5:20:04 PM [express] GET /api/messages/unread/count 304 in 13ms :: {"count":0}
+5:20:06 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+5:20:07 PM [express] GET /api/notifications 304 in 4ms :: []
+5:20:07 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:09 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:20:09 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:20:13 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:13 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:20:15 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:20:15 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:20:15 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/profile-dropdown.tsx[22m
+[2m5:20:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/profile-dropdown.tsx[22m Could not Fast Refresh ("AVATAR_RINGS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m5:20:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/components/room-card.tsx, /src/components/voice-room.tsx[22m
+5:20:17 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:20:17 PM [express] GET /api/notifications 304 in 5ms :: []
+5:20:18 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:20 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:20:20 PM [express] GET /api/users/rooms 304 in 3ms :: {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:20:22 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/profile-dropdown.tsx[22m
+5:20:22 PM [express] POST /api/rooms/votes/batch 200 in 8ms :: {"counts":{"0336790b-24d9-49e4-8208-fcb7604137b5":0},"userVotes":{"0336790b-24d9-49e4-8208-fcb7604137b5":false}}
+5:20:23 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:24 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:20:30 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:20:30 PM [express] GET /api/messages/unread/count 304 in 14ms :: {"count":0}
+5:20:34 PM [express] GET /api/rooms 304 in 36ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:34 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:20:36 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:20:36 PM [express] GET /api/users/rooms 304 in 7ms :: {}
+5:20:37 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:20:37 PM [express] GET /api/notifications 304 in 6ms :: []
+5:20:39 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:41 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:20:41 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:20:44 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:44 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:20:46 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:20:46 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:20:47 PM [express] GET /api/messages/conversations 304 in 35ms :: []
+5:20:47 PM [express] GET /api/notifications 304 in 6ms :: []
+5:20:49 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:20:51 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:20:51 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:20:53 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"0336790b-24d9-49e4-8208-fcb7604137b5":0},"userVotes":{"0336790b-24d9-49e4-8208-fcb7604137b5":false}}
+5:20:57 PM [express] GET /api/users/rooms 304 in 8ms :: {}
+5:20:57 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:20:58 PM [express] GET /api/notifications 304 in 8ms :: []
+5:20:58 PM [express] GET /api/messages/conversations 304 in 19ms :: []
+5:20:59 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:01 PM [express] GET /api/auth/user 200 in 6ms :: {"id":"57700172","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T17:13:55.826Z","updatedAt":"2026-04-14T17:13:55.826Z"}
+5:21:01 PM [express] GET /api/rooms/0336790b-24d9-49e4-8208-fcb7604137b5 200 in 7ms :: {"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}
+5:21:01 PM [express] GET /api/blocks 200 in 10ms :: []
+5:21:01 PM [express] GET /api/follows/following/57700172 200 in 12ms :: []
+5:21:02 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:21:02 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:21:03 PM [express] POST /api/follows/counts 200 in 14ms :: {"57700172":0}
+5:21:04 PM [express] GET /api/rooms/participants 200 in 6ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[{"id":"57700172","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T17:13:55.826Z","updatedAt":"2026-04-14T17:13:55.826Z"}]}
+5:21:05 PM [express] GET /api/rooms 200 in 8ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:07 PM [express] GET /api/users/rooms 200 in 6ms :: {"57700172":"0336790b-24d9-49e4-8208-fcb7604137b5"}
+5:21:07 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:21:08 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+5:21:08 PM [express] GET /api/notifications 304 in 6ms :: []
+5:21:10 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:13 PM [express] GET /api/users/rooms 304 in 5ms :: {"57700172":"0336790b-24d9-49e4-8208-fcb7604137b5"}
+5:21:13 PM [express] GET /api/messages/unread/count 304 in 16ms :: {"count":0}
+5:21:15 PM [express] GET /api/rooms/participants 304 in 5ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[{"id":"57700172","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T17:13:55.826Z","updatedAt":"2026-04-14T17:13:55.826Z"}]}
+5:21:15 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+[2m5:21:15 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/profile-dropdown.tsx[22m Could not Fast Refresh ("AVATAR_RINGS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m5:21:15 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/components/room-card.tsx, /src/components/voice-room.tsx[22m
+5:21:18 PM [express] GET /api/users/rooms 304 in 5ms :: {"57700172":"0336790b-24d9-49e4-8208-fcb7604137b5"}
+5:21:18 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:21:18 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:21:18 PM [express] GET /api/notifications 304 in 7ms :: []
+5:21:20 PM [express] GET /api/rooms 200 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:23 PM [express] GET /api/users/rooms 200 in 4ms :: {}
+5:21:23 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:21:24 PM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"0336790b-24d9-49e4-8208-fcb7604137b5":0},"userVotes":{"0336790b-24d9-49e4-8208-fcb7604137b5":false}}
+5:21:25 PM [express] GET /api/rooms/participants 200 in 5ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:21:26 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:28 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:21:28 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:21:28 PM [express] GET /api/users/rooms 304 in 7ms :: {}
+5:21:29 PM [express] GET /api/notifications 304 in 5ms :: []
+5:21:31 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:34 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:21:34 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:21:39 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:39 PM [express] GET /api/messages/conversations 304 in 9ms :: []
+5:21:39 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:21:39 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:21:41 PM [express] GET /api/notifications 304 in 5ms :: []
+5:21:44 PM [express] GET /api/rooms/participants 304 in 4ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:21:44 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:44 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:21:44 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:21:49 PM [express] GET /api/messages/conversations 304 in 57ms :: []
+5:21:49 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:50 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:21:50 PM [express] GET /api/users/rooms 304 in 36ms :: {}
+5:21:51 PM [express] GET /api/notifications 304 in 6ms :: []
+5:21:55 PM [express] GET /api/rooms/participants 304 in 5ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:21:55 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:21:55 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:21:55 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:22:00 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:22:00 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:00 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:22:01 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:22:02 PM [express] GET /api/notifications 304 in 4ms :: []
+5:22:04 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"0336790b-24d9-49e4-8208-fcb7604137b5":0},"userVotes":{"0336790b-24d9-49e4-8208-fcb7604137b5":false}}
+5:22:05 PM [express] GET /api/rooms/participants 304 in 4ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:22:05 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+5:22:05 PM [express] GET /api/rooms/participants 200 in 1ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:22:05 PM [express] GET /api/rooms 200 in 2ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:05 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:05 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"0336790b-24d9-49e4-8208-fcb7604137b5":0},"userVotes":{}}
+5:22:06 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:22:08 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:22:10 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:22:11 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:11 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:22:12 PM [express] GET /api/notifications 304 in 5ms :: []
+5:22:13 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:22:15 PM [express] GET /api/rooms/participants 304 in 4ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:22:16 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:16 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:22:18 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:22:20 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:22:21 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:22 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:22:22 PM [express] GET /api/notifications 304 in 4ms :: []
+5:22:23 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:22:26 PM [express] GET /api/rooms/participants 304 in 6ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:22:26 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:27 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:22:29 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:22:30 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:22:32 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:32 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:22:32 PM [express] GET /api/notifications 304 in 4ms :: []
+5:22:34 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:22:34 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"0336790b-24d9-49e4-8208-fcb7604137b5":0},"userVotes":{"0336790b-24d9-49e4-8208-fcb7604137b5":false}}
+5:22:36 PM [express] GET /api/rooms/participants 304 in 4ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:22:37 PM [express] GET /api/rooms 304 in 4ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:37 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+5:22:39 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:22:41 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+5:22:42 PM [express] GET /api/rooms 304 in 8ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:43 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:22:43 PM [express] GET /api/notifications 304 in 7ms :: []
+5:22:44 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:22:46 PM [express] GET /api/rooms/participants 304 in 4ms :: {"0336790b-24d9-49e4-8208-fcb7604137b5":[]}
+5:22:48 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"0336790b-24d9-49e4-8208-fcb7604137b5","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":3,"ownerId":"57700172","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T17:19:51.829Z"}]
+5:22:48 PM [express] GET /api/messages/unread/count 304 in 53ms :: {"count":0}
+5:22:50 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:22:51 PM [express] GET /api/rooms 200 in 6ms :: []
+5:22:51 PM [express] GET /api/rooms/participants 200 in 16ms :: {}
+5:22:51 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:22:53 PM [express] GET /api/notifications 304 in 47ms :: []
+5:22:53 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:22:55 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:22:56 PM [express] GET /api/rooms 304 in 4ms :: []
+5:22:58 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:23:00 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:23:01 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:23:01 PM [express] GET /api/rooms 304 in 5ms :: []
+5:23:01 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+5:23:04 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:23:04 PM [express] GET /api/notifications 304 in 5ms :: []
+5:23:06 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:23:06 PM [express] GET /api/rooms 304 in 5ms :: []
+5:23:09 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:23:11 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:23:11 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:23:12 PM [express] GET /api/rooms 304 in 5ms :: []
+5:23:12 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:23:14 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:23:14 PM [express] GET /api/notifications 304 in 5ms :: []
+5:23:16 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:23:17 PM [express] GET /api/rooms 304 in 5ms :: []
+5:23:20 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:23:21 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:23:21 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:23:22 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+5:23:22 PM [express] GET /api/rooms 304 in 5ms :: []
+5:23:25 PM [express] GET /api/notifications 304 in 5ms :: []
+5:23:25 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:23:30 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:23:30 PM [express] GET /api/rooms 304 in 4ms :: []
+5:23:30 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:23:32 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:23:32 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:23:35 PM [express] GET /api/notifications 304 in 5ms :: []
+5:23:35 PM [express] GET /api/rooms 304 in 7ms :: []
+5:23:35 PM [express] GET /api/users/rooms 304 in 14ms :: {}
+5:23:36 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:23:37 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m
+5:23:40 PM [express] GET /api/rooms 304 in 5ms :: []
+5:23:40 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:23:41 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:23:42 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:23:43 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:23:44 PM [express] GET /api/auth/user 304 in 5ms :: {"id":"57700172","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T17:13:55.826Z","updatedAt":"2026-04-14T17:13:55.826Z"}
+5:23:45 PM [express] GET /api/notifications 304 in 5ms :: []
+5:23:46 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:23:46 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/create-room-dialog.tsx[22m
+5:23:46 PM [express] GET /api/messages/unread/count 304 in 19ms :: {"count":0}
+5:23:49 PM [express] GET /api/rooms 304 in 5ms :: []
+5:23:51 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:23:52 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:23:53 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:23:54 PM [express] GET /api/rooms/participants 304 in 3ms :: {}
+5:23:54 PM [express] GET /api/rooms 304 in 5ms :: []
+5:23:56 PM [express] GET /api/notifications 304 in 5ms :: []
+5:23:56 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:23:57 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:24:00 PM [express] GET /api/rooms 304 in 6ms :: []
+5:24:02 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:24:02 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:24:03 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:24:04 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:24:05 PM [express] GET /api/rooms 304 in 5ms :: []
+5:24:06 PM [express] GET /api/notifications 304 in 4ms :: []
+5:24:07 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+5:24:07 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}

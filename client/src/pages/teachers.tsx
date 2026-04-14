@@ -124,7 +124,7 @@ const SAMPLE_TEACHERS: Teacher[] = [
     id: "sample-teacher-maya",
     name: "Maya Chen",
     bio: "Conversation coach focused on confidence, natural pacing, and practical vocabulary for everyday English.",
-    avatarUrl: null,
+    avatarUrl: "https://randomuser.me/api/portraits/women/44.jpg",
     languages: ["English", "Chinese"],
     levels: ["Beginner", "Intermediate", "Advanced"],
     specializations: ["General Conversation", "Pronunciation", "Business English"],
@@ -140,7 +140,7 @@ const SAMPLE_TEACHERS: Teacher[] = [
     id: "sample-teacher-sofia",
     name: "Sofia Ramirez",
     bio: "Spanish tutor for travel, casual speaking, and grammar patterns that help learners sound more natural.",
-    avatarUrl: null,
+    avatarUrl: "https://randomuser.me/api/portraits/women/12.jpg",
     languages: ["Spanish", "English"],
     levels: ["Beginner", "Intermediate"],
     specializations: ["Travel", "Grammar", "Slang & Casual"],
@@ -156,7 +156,7 @@ const SAMPLE_TEACHERS: Teacher[] = [
     id: "sample-teacher-aram",
     name: "Aram Petrosyan",
     bio: "Native Armenian speaker helping learners practice heritage conversations, reading basics, and pronunciation.",
-    avatarUrl: null,
+    avatarUrl: "https://randomuser.me/api/portraits/men/48.jpg",
     languages: ["Armenian", "English"],
     levels: ["Beginner", "Intermediate", "Native"],
     specializations: ["Reading", "Pronunciation", "General Conversation"],
@@ -172,7 +172,7 @@ const SAMPLE_TEACHERS: Teacher[] = [
     id: "sample-teacher-yuki",
     name: "Yuki Tanaka",
     bio: "Japanese teacher for anime fans, travelers, and learners building sentence structure from zero.",
-    avatarUrl: null,
+    avatarUrl: "https://randomuser.me/api/portraits/women/35.jpg",
     languages: ["Japanese", "English"],
     levels: ["Beginner", "Intermediate"],
     specializations: ["Travel", "Listening", "Slang & Casual"],
@@ -188,7 +188,7 @@ const SAMPLE_TEACHERS: Teacher[] = [
     id: "sample-teacher-nour",
     name: "Nour Haddad",
     bio: "Arabic pronunciation and conversation sessions with patient correction and practical daily-life topics.",
-    avatarUrl: null,
+    avatarUrl: "https://randomuser.me/api/portraits/women/76.jpg",
     languages: ["Arabic", "English"],
     levels: ["Beginner", "Intermediate", "Advanced"],
     specializations: ["Pronunciation", "Listening", "Academic"],
@@ -204,7 +204,7 @@ const SAMPLE_TEACHERS: Teacher[] = [
     id: "sample-teacher-elena",
     name: "Elena Fischer",
     bio: "German exam and interview coach for learners who need structured speaking practice and clear feedback.",
-    avatarUrl: null,
+    avatarUrl: "https://randomuser.me/api/portraits/women/39.jpg",
     languages: ["German", "English"],
     levels: ["Intermediate", "Advanced"],
     specializations: ["Exam Preparation", "Business English", "Writing"],
@@ -687,14 +687,6 @@ function TeacherProfileDialog({
               className="relative p-6 pb-4"
               style={{ background: "linear-gradient(to bottom, rgba(0,200,255,0.05) 0%, transparent 100%)" }}
             >
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
-                data-testid="button-teacher-profile-close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
               <div className="flex items-start gap-4">
                 <div
                   className="rounded-full p-[2px] flex-shrink-0"
@@ -730,7 +722,7 @@ function TeacherProfileDialog({
                   <div className="flex items-center gap-2 mt-1">
                     <StarRating rating={teacher.rating} size="lg" />
                     <span className="text-sm text-white/50">
-                      {teacher.rating > 0 ? `${teacher.rating}.0` : "No ratings yet"} {teacher.reviewCount > 0 ? `· ${teacher.reviewCount} reviews` : ""}
+                      {teacher.rating > 0 ? (teacher.rating > 5 ? (teacher.rating / 10).toFixed(1) : teacher.rating.toFixed(1)) : "No ratings yet"} {teacher.reviewCount > 0 ? `· ${teacher.reviewCount} reviews` : ""}
                     </span>
                   </div>
                   <div className="mt-2 flex items-center gap-3">
