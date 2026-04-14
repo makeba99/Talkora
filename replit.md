@@ -105,7 +105,7 @@ shared/
 52. Premium Atmosphere theme — animated transparent neon-glass room cards with cyan/fuchsia/orange glow, star particles, light sweeps, and matching avatar rings/buttons
 53. Book a Teacher feature — dedicated `/teachers` page with teacher discovery, profiles, booking dialog (date/time/duration/session type), star-rated reviews, and "My Bookings" panel with cancellation support
 54. Apply to Become a Teacher — users can submit applications from `/teachers` (name, bio, languages, levels, specializations, suggested rate, PayPal email, experience); admins review in the Admin panel "Teacher Applications" tab, approve (setting the rate, auto-creating a teacher profile) or reject with notes; application status shown inline to the applicant
-55. Homepage featured room groups — persistent neon room-card sections show topic/language practice ideas styled like room cards, with real profile photos, follower counts, participant slots, Join Spot labels, Step In actions, and per-group close/open controls below the live rooms
+55. Search discovery filters — lobby search now switches between Rooms, Top Speakers, and Famous Users; people filters show real users in a horizontal scroll list with follower counts, online/current-room indicators, follow tracking, and talk/message actions
 56. Teacher discovery preview — `/teachers` displays responsive sample teacher cards when no approved teacher records exist yet, matching the app's neon room-card visual language
 57. Global themed scrollbars — scrollable areas use thin cyan/violet gradient scrollbars with stable gutter spacing so controls such as Create Room remain accessible on smaller screens
 
