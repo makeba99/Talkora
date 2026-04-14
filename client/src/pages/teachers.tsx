@@ -238,6 +238,14 @@ function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher
       onClick={onView}
       data-testid={`card-teacher-${teacher.id}`}
     >
+      {teacher.id.startsWith("sample-") && (
+        <div
+          className="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide uppercase"
+          style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.25)", color: "#c4b5fd" }}
+        >
+          Demo
+        </div>
+      )}
       {!teacher.isAvailable && (
         <div
           className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full text-[10px] font-semibold"
@@ -256,16 +264,16 @@ function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher
         </div>
       )}
 
-      <div className="p-5 space-y-4">
-        <div className="flex items-start gap-3.5">
+      <div className="p-4 space-y-3">
+        <div className="flex items-start gap-3">
           <div className="relative flex-shrink-0">
             <div
               className="rounded-full p-[2px]"
               style={{ background: "linear-gradient(135deg, rgba(0,200,255,0.7) 0%, rgba(110,60,255,0.7) 100%)" }}
             >
-              <Avatar className="w-14 h-14 border-2 border-background">
+              <Avatar className="w-11 h-11 border-2 border-background">
                 <AvatarImage src={teacher.avatarUrl || undefined} />
-                <AvatarFallback className="text-lg font-bold" style={{ background: "rgba(0,200,255,0.1)" }}>
+                <AvatarFallback className="text-base font-bold" style={{ background: "rgba(0,200,255,0.1)" }}>
                   {teacher.name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -1023,7 +1031,9 @@ export default function TeachersPage() {
     },
   });
 
-  const allTeachers = fetchedTeachers.length > 0 ? fetchedTeachers : SAMPLE_TEACHERS;
+  const realTeacherIds = new Set(fetchedTeachers.map((t) => t.id));
+  const sampleTeachersToShow = SAMPLE_TEACHERS.filter((s) => !realTeacherIds.has(s.id));
+  const allTeachers = [...fetchedTeachers, ...sampleTeachersToShow];
   const showingSampleTeachers = fetchedTeachers.length === 0;
 
   const filteredTeachers = allTeachers
@@ -1430,7 +1440,7 @@ export default function TeachersPage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 min-[560px]:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 min-[760px]:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="space-y-3 p-5 rounded-xl border" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
                   <div className="flex gap-3">
@@ -1484,7 +1494,7 @@ export default function TeachersPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 min-[480px]:grid-cols-2 min-[760px]:grid-cols-3 gap-4">
               {filteredTeachers.map((teacher) => (
                 <TeacherCard
                   key={teacher.id}
