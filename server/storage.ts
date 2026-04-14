@@ -26,12 +26,15 @@ import {
   teachers,
   bookings,
   teacherReviews,
+  teacherApplications,
   type Teacher,
   type InsertTeacher,
   type Booking,
   type InsertBooking,
   type TeacherReview,
   type InsertTeacherReview,
+  type TeacherApplication,
+  type InsertTeacherApplication,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -103,6 +106,12 @@ export interface IStorage {
   createTeacherReview(data: InsertTeacherReview): Promise<TeacherReview>;
   getTeacherReviews(teacherId: string): Promise<TeacherReview[]>;
   hasUserReviewedTeacher(userId: string, teacherId: string): Promise<boolean>;
+
+  createTeacherApplication(data: InsertTeacherApplication & { userId: string }): Promise<TeacherApplication>;
+  getTeacherApplicationByUser(userId: string): Promise<TeacherApplication | undefined>;
+  getAllTeacherApplications(): Promise<TeacherApplication[]>;
+  updateTeacherApplication(id: string, data: Partial<TeacherApplication>): Promise<TeacherApplication | undefined>;
+  getPendingApplicationCount(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -487,6 +496,30 @@ export class DatabaseStorage implements IStorage {
     const [existing] = await db.select().from(teacherReviews)
       .where(and(eq(teacherReviews.userId, userId), eq(teacherReviews.teacherId, teacherId)));
     return !!existing;
+  }
+
+  async createTeacherApplication(data: InsertTeacherApplication & { userId: string }): Promise<TeacherApplication> {
+    const [app] = await db.insert(teacherApplications).values({ ...data, status: "pending" }).returning();
+    return app;
+  }
+
+  async getTeacherApplicationByUser(userId: string): Promise<TeacherApplication | undefined> {
+    const [app] = await db.select().from(teacherApplications).where(eq(teacherApplications.userId, userId)).orderBy(desc(teacherApplications.createdAt));
+    return app;
+  }
+
+  async getAllTeacherApplications(): Promise<TeacherApplication[]> {
+    return db.select().from(teacherApplications).orderBy(desc(teacherApplications.createdAt));
+  }
+
+  async updateTeacherApplication(id: string, data: Partial<TeacherApplication>): Promise<TeacherApplication | undefined> {
+    const [app] = await db.update(teacherApplications).set({ ...data, updatedAt: new Date() }).where(eq(teacherApplications.id, id)).returning();
+    return app;
+  }
+
+  async getPendingApplicationCount(): Promise<number> {
+    const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(teacherApplications).where(eq(teacherApplications.status, "pending"));
+    return row?.count ?? 0;
   }
 }
 

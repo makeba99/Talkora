@@ -4,8 +4,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { LANGUAGES, LEVELS } from "@shared/schema";
-import type { Teacher, Booking } from "@shared/schema";
+import { LANGUAGES, LEVELS, SPECIALIZATIONS } from "@shared/schema";
+import type { Teacher, Booking, TeacherApplication } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,9 @@ import {
   GraduationCap,
   ChevronDown,
   ChevronUp,
+  SendHorizonal,
+  DollarSign,
+  XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -860,6 +863,17 @@ export default function TeachersPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [myBookingsExpanded, setMyBookingsExpanded] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [applyForm, setApplyForm] = useState({
+    name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.displayName ?? ""),
+    bio: "",
+    languages: [] as string[],
+    levels: [] as string[],
+    specializations: [] as string[],
+    suggestedRate: "",
+    paypalEmail: "",
+    experience: "",
+  });
 
   const { data: allTeachers = [], isLoading } = useQuery<Teacher[]>({
     queryKey: ["/api/teachers"],
@@ -868,6 +882,27 @@ export default function TeachersPage() {
   const { data: myBookings = [] } = useQuery<BookingWithTeacher[]>({
     queryKey: ["/api/bookings/my"],
     enabled: !!user,
+  });
+
+  const { data: myApplication } = useQuery<TeacherApplication | null>({
+    queryKey: ["/api/teacher-applications/my"],
+    enabled: !!user,
+  });
+
+  const applyMutation = useMutation({
+    mutationFn: async (data: typeof applyForm) => {
+      const res = await apiRequest("POST", "/api/teacher-applications", {
+        ...data,
+        suggestedRate: Number(data.suggestedRate) || 0,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher-applications/my"] });
+      setApplyOpen(false);
+      toast({ title: "Application submitted!", description: "We'll review your application and get back to you." });
+    },
+    onError: (err: any) => toast({ title: "Submission failed", description: err.message, variant: "destructive" }),
   });
 
   const cancelMutation = useMutation({
@@ -1180,6 +1215,75 @@ export default function TeachersPage() {
         </div>
       </div>
 
+      {/* ── Apply to Become a Teacher CTA ─────────────────────────── */}
+      {user && (
+        <div className="px-4 pb-8 mt-6">
+          <div
+            className="rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+            style={{
+              background: "linear-gradient(135deg, rgba(110,60,255,0.10) 0%, rgba(0,200,255,0.07) 100%)",
+              border: "1px solid rgba(110,60,255,0.2)",
+              boxShadow: "0 0 32px rgba(110,60,255,0.08), inset 0 1px 0 rgba(255,255,255,0.04)",
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, rgba(110,60,255,0.3) 0%, rgba(0,200,255,0.2) 100%)",
+                  border: "1px solid rgba(110,60,255,0.35)",
+                  boxShadow: "0 0 14px rgba(110,60,255,0.2)",
+                }}
+              >
+                <GraduationCap className="w-5 h-5 text-violet-300" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white text-[15px]">Become a Teacher</h3>
+                <p className="text-[13px] text-white/50 mt-0.5 max-w-xs">
+                  Share your language skills and earn. Apply to join our teaching team.
+                </p>
+                {myApplication && (
+                  <div className="mt-2 flex items-center gap-2">
+                    {myApplication.status === "pending" && (
+                      <span className="text-[12px] text-amber-300 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />Application under review
+                      </span>
+                    )}
+                    {myApplication.status === "approved" && (
+                      <span className="text-[12px] text-green-400 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />Application approved — you're a teacher!
+                      </span>
+                    )}
+                    {myApplication.status === "rejected" && (
+                      <span className="text-[12px] text-red-400 flex items-center gap-1.5">
+                        <XCircle className="w-3.5 h-3.5" />Application not approved
+                        {myApplication.adminNotes && <span className="text-white/40">· {myApplication.adminNotes}</span>}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            {(!myApplication || myApplication.status === "rejected") && (
+              <Button
+                className="shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, rgba(110,60,255,0.5) 0%, rgba(0,200,255,0.35) 100%)",
+                  border: "1px solid rgba(110,60,255,0.4)",
+                  color: "white",
+                  boxShadow: "0 0 16px rgba(110,60,255,0.25)",
+                }}
+                onClick={() => setApplyOpen(true)}
+                data-testid="button-apply-to-teach"
+              >
+                <SendHorizonal className="w-4 h-4 mr-2" />
+                Apply Now
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       <TeacherProfileDialog
         teacher={selectedTeacher}
         open={profileOpen}
@@ -1199,6 +1303,169 @@ export default function TeachersPage() {
           onClose={() => setBookingOpen(false)}
         />
       )}
+
+      {/* ── Apply to Teach Dialog ─────────────────────────────────── */}
+      <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" style={{ background: "rgba(14,14,28,0.98)", border: "1px solid rgba(110,60,255,0.25)" }}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <GraduationCap className="w-5 h-5 text-violet-400" />
+              Apply to Become a Teacher
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="apply-name">Full Name</Label>
+              <Input
+                id="apply-name"
+                value={applyForm.name}
+                onChange={(e) => setApplyForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Your name as it'll appear to students"
+                data-testid="input-apply-name"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="apply-bio">Bio / Teaching Profile</Label>
+              <Textarea
+                id="apply-bio"
+                value={applyForm.bio}
+                onChange={(e) => setApplyForm((f) => ({ ...f, bio: e.target.value }))}
+                placeholder="Tell us about yourself and your teaching approach..."
+                rows={3}
+                data-testid="input-apply-bio"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Languages You Teach</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {LANGUAGES.filter((l) => l !== "All").map((lang) => {
+                  const sel = applyForm.languages.includes(lang);
+                  return (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => setApplyForm((f) => ({
+                        ...f,
+                        languages: sel ? f.languages.filter((x) => x !== lang) : [...f.languages, lang],
+                      }))}
+                      className={`text-[12px] px-2.5 py-1 rounded-full border transition-all ${sel ? "bg-primary/20 text-primary border-primary/40" : "bg-white/5 text-white/50 border-white/10 hover:border-white/20"}`}
+                      data-testid={`chip-lang-${lang}`}
+                    >
+                      {lang}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Student Levels</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {LEVELS.map((level) => {
+                  const sel = applyForm.levels.includes(level);
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setApplyForm((f) => ({
+                        ...f,
+                        levels: sel ? f.levels.filter((x) => x !== level) : [...f.levels, level],
+                      }))}
+                      className={`text-[12px] px-2.5 py-1 rounded-full border transition-all ${sel ? "bg-violet-500/20 text-violet-300 border-violet-500/40" : "bg-white/5 text-white/50 border-white/10 hover:border-white/20"}`}
+                      data-testid={`chip-level-${level}`}
+                    >
+                      {level}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Specializations</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {SPECIALIZATIONS.map((spec) => {
+                  const sel = applyForm.specializations.includes(spec);
+                  return (
+                    <button
+                      key={spec}
+                      type="button"
+                      onClick={() => setApplyForm((f) => ({
+                        ...f,
+                        specializations: sel ? f.specializations.filter((x) => x !== spec) : [...f.specializations, spec],
+                      }))}
+                      className={`text-[12px] px-2.5 py-1 rounded-full border transition-all ${sel ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" : "bg-white/5 text-white/50 border-white/10 hover:border-white/20"}`}
+                      data-testid={`chip-spec-${spec}`}
+                    >
+                      {spec}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="apply-rate">Suggested Hourly Rate (USD)</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="apply-rate"
+                    type="number"
+                    min={1}
+                    className="pl-9"
+                    value={applyForm.suggestedRate}
+                    onChange={(e) => setApplyForm((f) => ({ ...f, suggestedRate: e.target.value }))}
+                    placeholder="e.g. 25"
+                    data-testid="input-apply-rate"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="apply-paypal">PayPal Email</Label>
+                <Input
+                  id="apply-paypal"
+                  type="email"
+                  value={applyForm.paypalEmail}
+                  onChange={(e) => setApplyForm((f) => ({ ...f, paypalEmail: e.target.value }))}
+                  placeholder="your@paypal.com"
+                  data-testid="input-apply-paypal"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="apply-experience">Teaching Experience (optional)</Label>
+              <Textarea
+                id="apply-experience"
+                value={applyForm.experience}
+                onChange={(e) => setApplyForm((f) => ({ ...f, experience: e.target.value }))}
+                placeholder="Certifications, past teaching roles, years of experience..."
+                rows={2}
+                data-testid="input-apply-experience"
+              />
+            </div>
+
+            <div className="pt-1 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setApplyOpen(false)}>Cancel</Button>
+              <Button
+                style={{
+                  background: "linear-gradient(135deg, rgba(110,60,255,0.5) 0%, rgba(0,200,255,0.35) 100%)",
+                  border: "1px solid rgba(110,60,255,0.4)",
+                  color: "white",
+                }}
+                onClick={() => applyMutation.mutate(applyForm)}
+                disabled={applyMutation.isPending || !applyForm.name || !applyForm.bio || !applyForm.paypalEmail}
+                data-testid="button-submit-application"
+              >
+                {applyMutation.isPending ? "Submitting..." : "Submit Application"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1110,6 +1110,120 @@ export async function registerRoutes(
     }
   });
 
+  // ── Teacher Applications ───────────────────────────────────────────────────
+  app.get("/api/teacher-applications/my", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const app = await storage.getTeacherApplicationByUser(userId);
+      res.json(app || null);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/teacher-applications", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const existing = await storage.getTeacherApplicationByUser(userId);
+      if (existing && existing.status === "pending") {
+        return res.status(400).json({ message: "You already have a pending application" });
+      }
+      const { name, bio, languages, levels, specializations, suggestedRate, paypalEmail, experience } = req.body;
+      if (!name || !bio || !paypalEmail) {
+        return res.status(400).json({ message: "Name, bio, and PayPal email are required" });
+      }
+      const application = await storage.createTeacherApplication({
+        userId,
+        name,
+        bio,
+        languages: languages || [],
+        levels: levels || [],
+        specializations: specializations || [],
+        suggestedRate: Number(suggestedRate) || 0,
+        paypalEmail,
+        experience: experience || null,
+      });
+      res.json(application);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/teacher-applications", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const applications = await storage.getAllTeacherApplications();
+      const enriched = await Promise.all(
+        applications.map(async (app) => {
+          const user = await storage.getUser(app.userId);
+          return { ...app, user: user ? { id: user.id, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, email: user.email, profileImageUrl: user.profileImageUrl } : null };
+        })
+      );
+      res.json(enriched);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/teacher-applications/:id/approve", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { approvedRate, adminNotes } = req.body;
+      const app = await storage.updateTeacherApplication(req.params.id as string, {
+        status: "approved",
+        approvedRate: Number(approvedRate) || 0,
+        adminNotes: adminNotes || null,
+      });
+      if (!app) return res.status(404).json({ message: "Application not found" });
+      const teacher = await storage.createTeacher({
+        name: app.name,
+        bio: app.bio,
+        languages: app.languages,
+        levels: app.levels,
+        specializations: app.specializations,
+        hourlyRate: Number(approvedRate) || app.suggestedRate,
+        sessionDurations: ["30", "60"],
+        isAvailable: true,
+        userId: app.userId,
+        rating: 0,
+        reviewCount: 0,
+        avatarUrl: null,
+      });
+      await storage.createNotification({ userId: app.userId, fromUserId: (req.user as any).id, type: "teacher_approved" });
+      const socketId = userSockets.get(app.userId);
+      if (socketId) {
+        io.to(socketId).emit("admin:notification", { type: "teacher_approved" });
+      }
+      res.json({ application: app, teacher });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/teacher-applications/:id/reject", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { adminNotes } = req.body;
+      const app = await storage.updateTeacherApplication(req.params.id as string, {
+        status: "rejected",
+        adminNotes: adminNotes || null,
+      });
+      if (!app) return res.status(404).json({ message: "Application not found" });
+      await storage.createNotification({ userId: app.userId, fromUserId: (req.user as any).id, type: "teacher_rejected" });
+      const socketId = userSockets.get(app.userId);
+      if (socketId) io.to(socketId).emit("admin:notification", { type: "teacher_rejected" });
+      res.json(app);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/teacher-applications/pending-count", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const count = await storage.getPendingApplicationCount();
+      res.json({ count });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   (async () => {
     try {
       const allRooms = await storage.getAllRooms();

@@ -104,6 +104,7 @@ shared/
 51. Room creation customization — creators can choose the room card theme and background video during initial room creation, including uploaded videos or YouTube links/search results
 52. Premium Atmosphere theme — animated transparent neon-glass room cards with cyan/fuchsia/orange glow, star particles, light sweeps, and matching avatar rings/buttons
 53. Book a Teacher feature — dedicated `/teachers` page with teacher discovery, profiles, booking dialog (date/time/duration/session type), star-rated reviews, and "My Bookings" panel with cancellation support
+54. Apply to Become a Teacher — users can submit applications from `/teachers` (name, bio, languages, levels, specializations, suggested rate, PayPal email, experience); admins review in the Admin panel "Teacher Applications" tab, approve (setting the rate, auto-creating a teacher profile) or reject with notes; application status shown inline to the applicant
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.

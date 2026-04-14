@@ -189,6 +189,28 @@ export const insertTeacherReviewSchema = createInsertSchema(teacherReviews).omit
 export type InsertTeacherReview = z.infer<typeof insertTeacherReviewSchema>;
 export type TeacherReview = typeof teacherReviews.$inferSelect;
 
+export const teacherApplications = pgTable("teacher_applications", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  name: text("name").notNull(),
+  bio: text("bio").notNull(),
+  languages: text("languages").array().notNull().default(sql`'{}'::text[]`),
+  levels: text("levels").array().notNull().default(sql`'{}'::text[]`),
+  specializations: text("specializations").array().notNull().default(sql`'{}'::text[]`),
+  suggestedRate: integer("suggested_rate").notNull().default(0),
+  paypalEmail: varchar("paypal_email", { length: 255 }).notNull(),
+  experience: text("experience"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  adminNotes: text("admin_notes"),
+  approvedRate: integer("approved_rate"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTeacherApplicationSchema = createInsertSchema(teacherApplications).omit({ id: true, createdAt: true, updatedAt: true, status: true, adminNotes: true, approvedRate: true });
+export type InsertTeacherApplication = z.infer<typeof insertTeacherApplicationSchema>;
+export type TeacherApplication = typeof teacherApplications.$inferSelect;
+
 export const LANGUAGES = [
   "All",
   "English",
@@ -206,3 +228,18 @@ export const LANGUAGES = [
 ] as const;
 
 export const LEVELS = ["Beginner", "Intermediate", "Advanced", "Native"] as const;
+
+export const SPECIALIZATIONS = [
+  "General Conversation",
+  "Business English",
+  "Grammar",
+  "Pronunciation",
+  "Exam Preparation",
+  "Writing",
+  "Reading",
+  "Listening",
+  "Travel",
+  "Academic",
+  "Children",
+  "Slang & Casual",
+] as const;

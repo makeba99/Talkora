@@ -1,17 +1,22 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName } from "@/lib/utils";
-import type { Report, User } from "@shared/schema";
+import type { Report, User, TeacherApplication } from "@shared/schema";
 
 const OWNER_EMAIL = "dj55jggg@gmail.com";
 
@@ -54,6 +59,13 @@ export default function AdminPage() {
   const canAccess = user?.role === "admin" || user?.role === "superadmin" || user?.email === OWNER_EMAIL;
   const isSuperAdmin = user?.role === "superadmin" || user?.email === OWNER_EMAIL;
 
+  const [approveOpen, setApproveOpen] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<(TeacherApplication & { user: any }) | null>(null);
+  const [approvedRate, setApprovedRate] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectNotes, setRejectNotes] = useState("");
+
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     enabled: !!canAccess,
@@ -61,6 +73,11 @@ export default function AdminPage() {
 
   const { data: reports = [], isLoading: reportsLoading } = useQuery<Report[]>({
     queryKey: ["/api/admin/reports"],
+    enabled: !!canAccess,
+  });
+
+  const { data: teacherApps = [], isLoading: appsLoading } = useQuery<(TeacherApplication & { user: any })[]>({
+    queryKey: ["/api/admin/teacher-applications"],
     enabled: !!canAccess,
   });
 
@@ -72,12 +89,45 @@ export default function AdminPage() {
     return counts;
   }, [reports]);
 
+  const approveMutation = useMutation({
+    mutationFn: async ({ id, rate, notes }: { id: string; rate: number; notes: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/teacher-applications/${id}/approve`, { approvedRate: rate, adminNotes: notes });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teacher-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/teachers"] });
+      toast({ title: "Application approved", description: "Teacher profile has been created." });
+      setApproveOpen(false);
+      setSelectedApp(null);
+      setApprovedRate("");
+      setAdminNotes("");
+    },
+    onError: (err: any) => toast({ title: "Failed to approve", description: err.message, variant: "destructive" }),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/teacher-applications/${id}/reject`, { adminNotes: notes });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/teacher-applications"] });
+      toast({ title: "Application rejected" });
+      setRejectOpen(false);
+      setSelectedApp(null);
+      setRejectNotes("");
+    },
+    onError: (err: any) => toast({ title: "Failed to reject", description: err.message, variant: "destructive" }),
+  });
+
   const stats = useMemo(() => {
     const pending = reports.filter((report) => report.status === "pending").length;
     const warned = users.filter((item) => item.warningCount > 0).length;
     const admins = users.filter((item) => item.role === "admin" || item.role === "superadmin" || item.email === OWNER_EMAIL).length;
-    return { pending, warned, admins };
-  }, [reports, users]);
+    const pendingApps = teacherApps.filter((a) => a.status === "pending").length;
+    return { pending, warned, admins, pendingApps };
+  }, [reports, users, teacherApps]);
 
   const updateReportMutation = useMutation({
     mutationFn: async ({ reportId, status }: { reportId: string; status: string }) => {
@@ -198,11 +248,17 @@ export default function AdminPage() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 min-w-full sm:min-w-[420px]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 min-w-full sm:min-w-[500px]">
             <Card className="bg-background/50 border-primary/20">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">Pending reports</p>
                 <p className="text-2xl font-bold text-primary" data-testid="text-pending-reports">{stats.pending}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-background/50 border-violet-400/20">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground">Teacher apps</p>
+                <p className="text-2xl font-bold text-violet-300" data-testid="text-pending-apps">{stats.pendingApps}</p>
               </CardContent>
             </Card>
             <Card className="bg-background/50 border-amber-400/20">
@@ -221,7 +277,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className="grid w-full max-w-lg grid-cols-3 bg-card/80 backdrop-blur">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-card/80 backdrop-blur">
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -233,6 +289,15 @@ export default function AdminPage() {
             <TabsTrigger value="warnings" data-testid="tab-admin-warnings">
               <AlertTriangle className="w-4 h-4 mr-2" />
               Warnings
+            </TabsTrigger>
+            <TabsTrigger value="applications" data-testid="tab-admin-applications" className="relative">
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Teachers
+              {stats.pendingApps > 0 && (
+                <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-[10px] font-bold text-white">
+                  {stats.pendingApps}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -390,7 +455,196 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="applications">
+            <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+              <CardHeader>
+                <CardTitle>Teacher Applications</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-[620px] overflow-auto admin-scrollbar pr-2 space-y-3">
+                  {appsLoading ? (
+                    [1, 2, 3].map((i) => <Skeleton key={i} className="h-36 w-full" />)
+                  ) : teacherApps.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-12" data-testid="text-no-applications">No applications yet.</p>
+                  ) : (
+                    teacherApps.map((app) => (
+                      <div key={app.id} className="rounded-xl border border-border/70 bg-background/55 p-4 space-y-3" data-testid={`card-application-${app.id}`}>
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10 border border-primary/20">
+                              <AvatarImage src={app.user?.profileImageUrl ?? undefined} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                {(app.user?.firstName?.[0] ?? app.name?.[0] ?? "?").toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="font-semibold" data-testid={`text-app-name-${app.id}`}>{app.name}</h3>
+                                <Badge
+                                  className={
+                                    app.status === "pending"
+                                      ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                                      : app.status === "approved"
+                                      ? "bg-green-500/15 text-green-400 border border-green-500/30"
+                                      : "bg-red-500/15 text-red-400 border border-red-500/30"
+                                  }
+                                  data-testid={`badge-app-status-${app.id}`}
+                                >
+                                  {app.status === "pending" ? (
+                                    <><Clock className="w-3 h-3 mr-1" />Pending</>
+                                  ) : app.status === "approved" ? (
+                                    <><CheckCircle2 className="w-3 h-3 mr-1" />Approved</>
+                                  ) : (
+                                    <><XCircle className="w-3 h-3 mr-1" />Rejected</>
+                                  )}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">{app.user?.email ?? "—"}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Suggested rate: <span className="text-foreground font-medium">${app.suggestedRate}/hr</span>
+                                {app.approvedRate ? <> · Approved: <span className="text-green-400 font-medium">${app.approvedRate}/hr</span></> : null}
+                              </p>
+                            </div>
+                          </div>
+                          {app.status === "pending" && (
+                            <div className="flex gap-2 shrink-0">
+                              <Button
+                                size="sm"
+                                className="bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
+                                onClick={() => {
+                                  setSelectedApp(app);
+                                  setApprovedRate(String(app.suggestedRate));
+                                  setAdminNotes("");
+                                  setApproveOpen(true);
+                                }}
+                                data-testid={`button-approve-${app.id}`}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                onClick={() => {
+                                  setSelectedApp(app);
+                                  setRejectNotes("");
+                                  setRejectOpen(true);
+                                }}
+                                data-testid={`button-reject-${app.id}`}
+                              >
+                                <XCircle className="w-3.5 h-3.5 mr-1" />Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-sm text-muted-foreground line-clamp-2" data-testid={`text-app-bio-${app.id}`}>{app.bio}</p>
+                          {app.languages?.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {app.languages.map((lang) => (
+                                <span key={lang} className="text-[11px] rounded-full px-2 py-0.5 bg-primary/10 text-primary border border-primary/20">{lang}</span>
+                              ))}
+                            </div>
+                          )}
+                          {app.adminNotes && (
+                            <p className="text-xs text-amber-300/80 italic mt-1">Admin note: {app.adminNotes}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Approve Dialog */}
+        <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
+          <DialogContent className="sm:max-w-md bg-card border-primary/20">
+            <DialogHeader>
+              <DialogTitle>Approve Application</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Approving: <span className="text-foreground font-medium">{selectedApp?.name}</span></p>
+                <p className="text-xs text-muted-foreground">Suggested rate: ${selectedApp?.suggestedRate}/hr</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="approved-rate">Approved Hourly Rate (USD)</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="approved-rate"
+                    type="number"
+                    min={1}
+                    className="pl-9"
+                    value={approvedRate}
+                    onChange={(e) => setApprovedRate(e.target.value)}
+                    data-testid="input-approved-rate"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="admin-notes">Admin Notes (optional)</Label>
+                <Textarea
+                  id="admin-notes"
+                  placeholder="Any notes for the applicant..."
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  rows={2}
+                  data-testid="textarea-admin-notes"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setApproveOpen(false)}>Cancel</Button>
+                <Button
+                  className="bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
+                  onClick={() => selectedApp && approveMutation.mutate({ id: selectedApp.id, rate: Number(approvedRate), notes: adminNotes })}
+                  disabled={approveMutation.isPending || !approvedRate}
+                  data-testid="button-confirm-approve"
+                >
+                  {approveMutation.isPending ? "Approving..." : "Approve & Create Profile"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reject Dialog */}
+        <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+          <DialogContent className="sm:max-w-md bg-card border-primary/20">
+            <DialogHeader>
+              <DialogTitle>Reject Application</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">Rejecting application from: <span className="text-foreground font-medium">{selectedApp?.name}</span></p>
+              <div className="space-y-1.5">
+                <Label htmlFor="reject-notes">Reason / Notes (optional)</Label>
+                <Textarea
+                  id="reject-notes"
+                  placeholder="Reason for rejection..."
+                  value={rejectNotes}
+                  onChange={(e) => setRejectNotes(e.target.value)}
+                  rows={3}
+                  data-testid="textarea-reject-notes"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setRejectOpen(false)}>Cancel</Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => selectedApp && rejectMutation.mutate({ id: selectedApp.id, notes: rejectNotes })}
+                  disabled={rejectMutation.isPending}
+                  data-testid="button-confirm-reject"
+                >
+                  {rejectMutation.isPending ? "Rejecting..." : "Reject Application"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
