@@ -9,7 +9,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, LogIn as StepInIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass } from "@/components/profile-decorations";
@@ -59,21 +59,21 @@ function LanguageFlag({ language }: { language: string }) {
   );
 }
 
-function getThemeGlowColor(themeId: string | null | undefined): string {
+function getThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string } {
   switch (themeId) {
-    case "neon": return "rgba(0,220,255,0.55), rgba(168,85,247,0.4)";
-    case "galaxy": return "rgba(99,102,241,0.5), rgba(168,85,247,0.5)";
-    case "sunset": return "rgba(251,146,60,0.5), rgba(239,68,68,0.45)";
-    case "forest": return "rgba(52,211,153,0.45), rgba(16,185,129,0.4)";
-    case "cyberpunk": return "rgba(250,204,21,0.45), rgba(0,220,255,0.4)";
-    case "ocean": return "rgba(59,130,246,0.5), rgba(6,182,212,0.5)";
-    case "cherry": return "rgba(244,114,182,0.5), rgba(251,113,133,0.5)";
-    case "gold": return "rgba(253,224,71,0.45), rgba(245,158,11,0.4)";
-    case "violet": return "rgba(167,139,250,0.5), rgba(232,121,249,0.5)";
-    case "aurora": return "rgba(45,212,191,0.5), rgba(74,222,128,0.45)";
-    case "storm": return "rgba(59,130,246,0.5), rgba(100,116,139,0.4)";
-    case "volcanic": return "rgba(239,68,68,0.5), rgba(251,146,60,0.45)";
-    default: return "rgba(0,220,255,0.5), rgba(168,85,247,0.4)";
+    case "neon":     return { from: "rgba(0,220,255,0.9)", to: "rgba(168,85,247,0.8)", ring: "rgba(0,220,255,0.7), rgba(168,85,247,0.7)" };
+    case "galaxy":   return { from: "rgba(99,102,241,0.9)", to: "rgba(168,85,247,0.8)", ring: "rgba(99,102,241,0.7), rgba(168,85,247,0.7)" };
+    case "sunset":   return { from: "rgba(251,146,60,0.9)", to: "rgba(239,68,68,0.8)", ring: "rgba(251,146,60,0.7), rgba(239,68,68,0.7)" };
+    case "forest":   return { from: "rgba(52,211,153,0.9)", to: "rgba(16,185,129,0.8)", ring: "rgba(52,211,153,0.7), rgba(16,185,129,0.7)" };
+    case "cyberpunk":return { from: "rgba(250,204,21,0.9)", to: "rgba(0,220,255,0.8)", ring: "rgba(250,204,21,0.7), rgba(0,220,255,0.7)" };
+    case "ocean":    return { from: "rgba(59,130,246,0.9)", to: "rgba(6,182,212,0.8)", ring: "rgba(59,130,246,0.7), rgba(6,182,212,0.7)" };
+    case "cherry":   return { from: "rgba(244,114,182,0.9)", to: "rgba(251,113,133,0.8)", ring: "rgba(244,114,182,0.7), rgba(251,113,133,0.7)" };
+    case "gold":     return { from: "rgba(253,224,71,0.9)", to: "rgba(245,158,11,0.8)", ring: "rgba(253,224,71,0.7), rgba(245,158,11,0.7)" };
+    case "violet":   return { from: "rgba(167,139,250,0.9)", to: "rgba(232,121,249,0.8)", ring: "rgba(167,139,250,0.7), rgba(232,121,249,0.7)" };
+    case "aurora":   return { from: "rgba(45,212,191,0.9)", to: "rgba(74,222,128,0.8)", ring: "rgba(45,212,191,0.7), rgba(74,222,128,0.7)" };
+    case "storm":    return { from: "rgba(59,130,246,0.9)", to: "rgba(100,116,139,0.8)", ring: "rgba(59,130,246,0.7), rgba(100,116,139,0.7)" };
+    case "volcanic": return { from: "rgba(239,68,68,0.9)", to: "rgba(251,146,60,0.8)", ring: "rgba(239,68,68,0.7), rgba(251,146,60,0.7)" };
+    default:         return { from: "rgba(37,99,235,0.95)", to: "rgba(220,38,120,0.9)", ring: "rgba(37,99,235,0.8), rgba(220,38,120,0.8)" };
   }
 }
 
@@ -427,9 +427,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const themeBorderClass = getRoomThemeBorderClass((room as any).roomTheme);
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
-  const openSlots = Math.max(0, room.maxUsers - participants.length);
-  const glowColors = getThemeGlowColor((room as any).roomTheme);
-  const displaySlots = Array.from({ length: Math.min(room.maxUsers, 8) });
+  const glow = getThemeGlowColor((room as any).roomTheme);
+  const displaySlots = Array.from({ length: Math.min(room.maxUsers, 10) });
 
   const settingsButton = isOwner ? (
     <Button
@@ -528,20 +527,28 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     );
   })();
 
+  /* ── neon border gradient ── */
+  const borderGradient = `linear-gradient(135deg, ${glow.from} 0%, ${glow.to} 100%)`;
+  const outerGlow = `0 0 18px ${glow.from}, 0 0 38px ${glow.to}`;
+
   return (
     <div
-      className={`p-[1.5px] rounded-2xl bg-gradient-to-br ${themeBorderClass}`}
       style={{
         width: "100%",
-        height: 280,
-        filter: `drop-shadow(0 0 10px ${glowColors.split(",")[0]}) drop-shadow(0 0 20px ${glowColors.split(",")[1] || glowColors.split(",")[0]})`,
+        padding: "2px",
+        borderRadius: "18px",
+        background: borderGradient,
+        boxShadow: outerGlow,
+        position: "relative",
       }}
       data-testid={`card-room-${room.id}`}
     >
       <div
-        className="rounded-2xl flex flex-col relative overflow-hidden h-full"
+        className="flex flex-col relative overflow-hidden"
         style={{
+          borderRadius: "16px",
           background: "linear-gradient(145deg, #07102a 0%, #0c1740 55%, #110929 100%)",
+          minHeight: 280,
         }}
       >
         {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} />}
@@ -549,39 +556,43 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         <div className="relative z-[2] flex flex-col h-full">
 
           {/* ── Header ── */}
-          <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-1">
+          <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-1">
             <div className="flex-1 min-w-0">
+              {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
-                <h3 className="font-extrabold text-base text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+                <h3 className="font-extrabold text-sm text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
                   {room.title}
                 </h3>
                 {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />}
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
+              {/* Sub-row: flag, language, level, joining count */}
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                 <LanguageFlag language={room.language} />
-                <span className="text-[11px] text-white/60 font-medium">{room.language}</span>
-                <span className="text-white/30 text-[11px]">•</span>
+                <span className="text-[11px] text-white/70 font-medium">{room.language}</span>
+                <span className="text-white/30 text-[10px]">•</span>
                 <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-cyan-400"}`}>
                   {room.level}
                 </span>
+                {voteCount > 0 && (
+                  <>
+                    <span className="text-white/30 text-[10px]">•</span>
+                    <div className="flex items-center gap-0.5">
+                      <Users className="w-3 h-3 text-orange-400/80" />
+                      <span className="text-[11px] font-semibold text-orange-400">{voteCount} joining</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {participants.length > 0 && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)" }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-[10px] text-green-400 font-semibold">Live</span>
-                </div>
-              )}
-              <Mic className="w-3.5 h-3.5 text-white/30" />
+            <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
               {settingsButton}
             </div>
           </div>
 
-          {/* ── Body: unified circle grid ── */}
-          <div className="flex-1 flex flex-col justify-center px-4 pb-1 overflow-hidden">
-            <div className="flex flex-wrap gap-x-3 gap-y-2 items-start">
+          {/* ── Body: unified neon ring circle grid ── */}
+          <div className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 overflow-hidden">
+            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(5, 1fr)` }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
@@ -590,12 +601,20 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   const ringClass = getAvatarRingClass(p.avatarRing);
                   const hasRing = !!ringClass;
 
+                  const circleSize = displaySlots.length > 8 ? 56 : displaySlots.length > 6 ? 62 : 68;
+
                   const avatarEl = (
                     <div
-                      className={`rounded-full p-[3px] flex-shrink-0 ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600"}`}
-                      style={{ boxShadow: hasRing ? undefined : "0 0 10px rgba(0,200,255,0.35)" }}
+                      className={`rounded-full flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
+                      style={{
+                        width: circleSize + 6,
+                        height: circleSize + 6,
+                        padding: 3,
+                        background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
+                        boxShadow: `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
+                      }}
                     >
-                      <Avatar className="w-[68px] h-[68px] border-2 border-[#0a1228]">
+                      <Avatar style={{ width: circleSize, height: circleSize }} className="border-2 border-[#0a1228]">
                         <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} />
                         <AvatarFallback className="text-base font-bold bg-[#0d1a3a] text-cyan-300">
                           {getUserInitials(p)}
@@ -605,15 +624,15 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   );
 
                   const decorated = (
-                    <ProfileDecoration decorationId={(p as any).profileDecoration} size={68}>
+                    <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize}>
                       {avatarEl}
                     </ProfileDecoration>
                   );
 
                   const heartRow = (
-                    <div className="flex items-center justify-center gap-0.5 mt-1" data-testid={`text-follower-count-card-${p.id}`}>
-                      <Heart className="w-3 h-3 text-red-400 fill-red-400" />
-                      <span className="text-[10px] text-white/65 font-medium">{count}</span>
+                    <div className="flex items-center justify-center gap-0.5 mt-0.5" data-testid={`text-follower-count-card-${p.id}`}>
+                      <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" />
+                      <span className="text-[9px] text-white/60 font-medium">{count}</span>
                     </div>
                   );
 
@@ -644,53 +663,64 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   );
                 }
 
-                /* Empty slot — circle with person silhouette */
+                /* Empty slot — neon ring circle */
+                const circleSize = displaySlots.length > 8 ? 56 : displaySlots.length > 6 ? 62 : 68;
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div
-                      className="w-[68px] h-[68px] rounded-full flex items-center justify-center flex-shrink-0"
+                      className="rounded-full flex items-center justify-center flex-shrink-0"
                       style={{
-                        border: "2px dashed rgba(100,200,255,0.25)",
-                        background: "radial-gradient(circle at 50% 40%, rgba(0,150,255,0.08), rgba(0,50,120,0.06))",
+                        width: circleSize + 6,
+                        height: circleSize + 6,
+                        background: `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
+                        padding: 2,
+                        boxShadow: `0 0 8px ${glow.from}, 0 0 16px ${glow.to}`,
                       }}
                     >
-                      <Users className="w-6 h-6 text-cyan-400/30" />
+                      <div
+                        className="w-full h-full rounded-full flex items-center justify-center"
+                        style={{
+                          background: "radial-gradient(circle at 40% 35%, rgba(100,120,255,0.18), rgba(20,10,60,0.85))",
+                        }}
+                      >
+                        <Users className="w-5 h-5" style={{ color: "rgba(180,140,255,0.55)" }} />
+                      </div>
                     </div>
-                    <div className="h-4" />
                   </div>
                 );
               })}
             </div>
 
-            {participants.length > 0 && (
-              <div className="flex items-center gap-1 mt-2">
-                <Mic className="w-3 h-3 text-cyan-400/70" />
-                <span className="text-[10px] text-cyan-400/80 font-semibold">{participants.length} Live speaking</span>
+            {/* + Join Spot */}
+            {!isFull && (
+              <div className="flex items-center justify-center gap-1 mt-2">
+                <Plus className="w-3 h-3 text-white/50" />
+                <span className="text-[11px] text-white/50 font-medium">Join Spot</span>
               </div>
             )}
           </div>
 
           {/* ── Footer ── */}
-          <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-2">
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-white/50">
                 <Users className="w-3.5 h-3.5" />
                 <span className="text-[11px] font-medium">{participants.length}/{room.maxUsers}</span>
               </div>
               {isLoggedIn && onOpenDm && (
-                <button className="text-white/40 hover:text-white/70 transition-colors" title="Messages" data-testid={`button-messages-${room.id}`}>
+                <button className="text-white/35 hover:text-white/70 transition-colors" title="Messages" data-testid={`button-messages-${room.id}`}>
                   <MessageSquare className="w-3.5 h-3.5" />
                 </button>
               )}
               {isLoggedIn && onVote && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onVote(); }}
-                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-primary" : "text-white/35 hover:text-primary"}`}
+                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/35 hover:text-orange-400"}`}
                   data-testid={`button-vote-room-${room.id}`}
                   title={hasVoted ? "Remove vote" : "Vote"}
                 >
-                  <ChevronUp className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-medium">{voteCount}</span>
+                  <Flame className="w-3.5 h-3.5" />
+                  <span className="text-[11px] font-semibold">{voteCount}</span>
                 </button>
               )}
               {isFull && (
@@ -705,21 +735,27 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               <a
                 href="/api/login"
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95"
-                style={{ background: "linear-gradient(90deg, #2563eb 0%, #7c3aed 100%)", boxShadow: "0 2px 14px rgba(124,58,237,0.4)" }}
+                style={{
+                  background: `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
+                  boxShadow: `0 2px 14px ${glow.to}`,
+                }}
                 data-testid={`button-signin-room-${room.id}`}
               >
-                <MonitorPlay className="w-3.5 h-3.5" />
-                Enter Room
+                <StepInIcon className="w-3.5 h-3.5" />
+                Step In
               </a>
             ) : (
               <button
                 className="flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95"
-                style={{ background: "linear-gradient(90deg, #2563eb 0%, #7c3aed 100%)", boxShadow: "0 2px 14px rgba(124,58,237,0.4)" }}
+                style={{
+                  background: `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
+                  boxShadow: `0 2px 14px ${glow.to}`,
+                }}
                 onClick={() => onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
               >
-                <MonitorPlay className="w-3.5 h-3.5" />
-                Enter Room
+                <StepInIcon className="w-3.5 h-3.5" />
+                Step In
               </button>
             )}
           </div>
