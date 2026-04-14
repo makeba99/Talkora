@@ -23,6 +23,90 @@ import { Button } from "@/components/ui/button";
 
 type DiscoveryFilter = "rooms" | "top-speakers" | "famous-users";
 
+function makeSampleUser(id: string, firstName: string, lastName: string, portrait: string): User {
+  return {
+    id,
+    email: null,
+    firstName,
+    lastName,
+    displayName: `${firstName} ${lastName}`,
+    profileImageUrl: `https://randomuser.me/api/portraits/${portrait}.jpg`,
+    bio: null,
+    avatarRing: null,
+    flairBadge: null,
+    profileDecoration: null,
+    instagramUrl: null,
+    linkedinUrl: null,
+    facebookUrl: null,
+    status: "online",
+    role: "user",
+    warningCount: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+const SAMPLE_USERS = {
+  sofia:   makeSampleUser("sample-user-1",  "Sofia",   "Martinez", "women/32"),
+  liam:    makeSampleUser("sample-user-2",  "Liam",    "Chen",     "men/46"),
+  emma:    makeSampleUser("sample-user-3",  "Emma",    "Davis",    "women/28"),
+  carlos:  makeSampleUser("sample-user-4",  "Carlos",  "Rivera",   "men/14"),
+  aigerim: makeSampleUser("sample-user-5",  "Aigerim", "Bekova",   "women/61"),
+  marcus:  makeSampleUser("sample-user-6",  "Marcus",  "Williams", "men/88"),
+  anya:    makeSampleUser("sample-user-7",  "Anya",    "Petrova",  "women/52"),
+  james:   makeSampleUser("sample-user-8",  "James",   "O'Brien",  "men/67"),
+  nadia:   makeSampleUser("sample-user-9",  "Nadia",   "Hassan",   "women/77"),
+  kevin:   makeSampleUser("sample-user-10", "Kevin",   "Park",     "men/33"),
+};
+
+const SAMPLE_ROOMS: Room[] = [
+  {
+    id: "sample-room-1",
+    title: "English Club 🇬🇧",
+    language: "English",
+    level: "Beginner",
+    maxUsers: 8,
+    ownerId: SAMPLE_USERS.sofia.id,
+    isPublic: false,
+    activeUsers: 3,
+    roomTheme: "neon",
+    hologramVideoUrl: null,
+    createdAt: new Date(),
+  },
+  {
+    id: "sample-room-2",
+    title: "Spanish Practice 🇪🇸",
+    language: "Spanish",
+    level: "Intermediate",
+    maxUsers: 2,
+    ownerId: SAMPLE_USERS.carlos.id,
+    isPublic: true,
+    activeUsers: 2,
+    roomTheme: "sunset",
+    hologramVideoUrl: null,
+    createdAt: new Date(),
+  },
+  {
+    id: "sample-room-3",
+    title: "Advanced English Talk",
+    language: "English",
+    level: "Advanced",
+    maxUsers: 5,
+    ownerId: SAMPLE_USERS.marcus.id,
+    isPublic: true,
+    activeUsers: 5,
+    roomTheme: "cosmic",
+    hologramVideoUrl: null,
+    createdAt: new Date(),
+  },
+];
+
+const SAMPLE_ROOM_PARTICIPANTS: Record<string, User[]> = {
+  "sample-room-1": [SAMPLE_USERS.sofia, SAMPLE_USERS.liam, SAMPLE_USERS.emma],
+  "sample-room-2": [SAMPLE_USERS.carlos, SAMPLE_USERS.aigerim],
+  "sample-room-3": [SAMPLE_USERS.marcus, SAMPLE_USERS.anya, SAMPLE_USERS.james, SAMPLE_USERS.nadia, SAMPLE_USERS.kevin],
+};
+
 function getUserName(person: User) {
   return person.displayName || [person.firstName, person.lastName].filter(Boolean).join(" ") || person.email || "Language learner";
 }
@@ -149,9 +233,20 @@ export default function Lobby() {
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  const { data: rooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
+  const { data: fetchedRooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
     refetchInterval: 5000,
+  });
+
+  const realRoomIds = new Set(fetchedRooms.map((r) => r.id));
+  const rooms = [
+    ...fetchedRooms,
+    ...SAMPLE_ROOMS.filter((s) => !realRoomIds.has(s.id)),
+  ];
+
+  const allRoomParticipants = (base: Record<string, User[]>) => ({
+    ...SAMPLE_ROOM_PARTICIPANTS,
+    ...base,
   });
 
   const roomIds = rooms.map((r) => r.id);
@@ -345,13 +440,17 @@ export default function Lobby() {
 
   const handleJoinRoom = useCallback(
     (roomId: string) => {
+      if (roomId.startsWith("sample-")) {
+        toast({ title: "Demo room", description: "Sign in and create your own room to start talking!" });
+        return;
+      }
       if (!user) {
         window.location.href = "/api/login";
         return;
       }
       window.open(`/room/${roomId}`, "_blank");
     },
-    [user]
+    [user, toast]
   );
 
   const filteredRooms = rooms
@@ -772,20 +871,23 @@ export default function Lobby() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filteredRooms.map((room) => (
-                <RoomCard
-                  key={room.id}
-                  room={room}
-                  participants={roomParticipants[room.id] || []}
-                  onJoin={handleJoinRoom}
-                  onOpenDm={(userId) => setDmUserId(userId)}
-                  isOwner={room.ownerId === user?.id}
-                  isLoggedIn={!!user}
-                  voteCount={voteData?.counts?.[room.id] || 0}
-                  hasVoted={voteData?.userVotes?.[room.id] || false}
-                  onVote={user ? () => voteMutation.mutate({ roomId: room.id, hasVoted: voteData?.userVotes?.[room.id] || false }) : undefined}
-                />
-              ))}
+              {filteredRooms.map((room) => {
+                const mergedParticipants = allRoomParticipants(roomParticipants);
+                return (
+                  <RoomCard
+                    key={room.id}
+                    room={room}
+                    participants={mergedParticipants[room.id] || []}
+                    onJoin={handleJoinRoom}
+                    onOpenDm={(userId) => setDmUserId(userId)}
+                    isOwner={room.ownerId === user?.id}
+                    isLoggedIn={!!user}
+                    voteCount={voteData?.counts?.[room.id] || 0}
+                    hasVoted={voteData?.userVotes?.[room.id] || false}
+                    onVote={user ? () => voteMutation.mutate({ roomId: room.id, hasVoted: voteData?.userVotes?.[room.id] || false }) : undefined}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

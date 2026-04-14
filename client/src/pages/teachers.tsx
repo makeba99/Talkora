@@ -243,7 +243,7 @@ function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher
           className="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide uppercase"
           style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.25)", color: "#c4b5fd" }}
         >
-          Demo
+          Trial Course
         </div>
       )}
       {!teacher.isAvailable && (
