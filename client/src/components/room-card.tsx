@@ -33,12 +33,31 @@ interface RoomCardProps {
 }
 
 
-const LANGUAGE_FLAGS: Record<string, string> = {
-  English: "🇬🇧", Spanish: "🇪🇸", French: "🇫🇷", German: "🇩🇪",
-  Japanese: "🇯🇵", Chinese: "🇨🇳", Korean: "🇰🇷", Portuguese: "🇧🇷",
-  Italian: "🇮🇹", Russian: "🇷🇺", Arabic: "🇸🇦", Hindi: "🇮🇳",
-  Turkish: "🇹🇷", Dutch: "🇳🇱", Polish: "🇵🇱", Swedish: "🇸🇪",
+const LANGUAGE_CODES: Record<string, string> = {
+  English: "gb", Spanish: "es", French: "fr", German: "de",
+  Japanese: "jp", Chinese: "cn", Korean: "kr", Portuguese: "br",
+  Italian: "it", Russian: "ru", Arabic: "sa", Hindi: "in",
+  Turkish: "tr", Dutch: "nl", Polish: "pl", Swedish: "se",
+  Norwegian: "no", Danish: "dk", Finnish: "fi", Greek: "gr",
+  Hebrew: "il", Ukrainian: "ua", Romanian: "ro", Hungarian: "hu",
+  Armenian: "am", Indonesian: "id",
 };
+
+function LanguageFlag({ language }: { language: string }) {
+  const code = LANGUAGE_CODES[language];
+  if (!code) return <Globe className="w-3.5 h-3.5 text-white/50" />;
+  return (
+    <img
+      src={`https://flagcdn.com/20x15/${code}.png`}
+      srcSet={`https://flagcdn.com/40x30/${code}.png 2x`}
+      width={20}
+      height={15}
+      alt={language}
+      className="rounded-[2px] flex-shrink-0"
+      style={{ objectFit: "cover" }}
+    />
+  );
+}
 
 function getThemeGlowColor(themeId: string | null | undefined): string {
   switch (themeId) {
@@ -408,65 +427,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const themeBorderClass = getRoomThemeBorderClass((room as any).roomTheme);
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
-  const speakerCount = Math.min(participants.length, 2);
-  const extraSpeakers = Math.max(0, participants.length - 2);
   const openSlots = Math.max(0, room.maxUsers - participants.length);
   const glowColors = getThemeGlowColor((room as any).roomTheme);
-  const flagEmoji = LANGUAGE_FLAGS[room.language] || "🌐";
-
-  const renderSpeakerAvatar = (participant: User, i: number) => {
-    const count = followerCounts[participant.id] || 0;
-    const ringClass = getAvatarRingClass(participant.avatarRing);
-    const hasRing = !!ringClass;
-
-    const avatarEl = (
-      <div className={`rounded-full p-[3px] flex-shrink-0 ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600"}`}
-        style={{ boxShadow: hasRing ? undefined : "0 0 12px rgba(0,200,255,0.4)" }}>
-        <Avatar className="w-[72px] h-[72px] border-2 border-[#0a1228]">
-          <AvatarImage src={participant.profileImageUrl || undefined} alt={getUserDisplayName(participant)} />
-          <AvatarFallback className="text-lg font-bold bg-[#0d1a3a] text-cyan-300">
-            {getUserInitials(participant)}
-          </AvatarFallback>
-        </Avatar>
-      </div>
-    );
-
-    const decorated = (
-      <ProfileDecoration decorationId={(participant as any).profileDecoration} size={72}>
-        {avatarEl}
-      </ProfileDecoration>
-    );
-
-    const heartRow = (
-      <div className="flex items-center justify-center gap-0.5 mt-1" data-testid={`text-follower-count-card-${participant.id}`}>
-        <Heart className="w-3 h-3 text-red-400 fill-red-400" />
-        <span className="text-[11px] text-white/70 font-medium">{count}</span>
-      </div>
-    );
-
-    if (!isLoggedIn) {
-      return (
-        <div key={i} className="flex flex-col items-center">
-          {decorated}
-          {heartRow}
-        </div>
-      );
-    }
-
-    return (
-      <Popover key={i}>
-        <PopoverTrigger asChild>
-          <button className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform" data-testid={`button-card-participant-${participant.id}`}>
-            {decorated}
-            {heartRow}
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-60 p-2" align="center">
-          <ParticipantPopover participant={participant} currentUserId={user?.id} onOpenDm={onOpenDm} />
-        </PopoverContent>
-      </Popover>
-    );
-  };
+  const displaySlots = Array.from({ length: Math.min(room.maxUsers, 8) });
 
   const settingsButton = isOwner ? (
     <Button
@@ -595,7 +558,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />}
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-sm">{flagEmoji}</span>
+                <LanguageFlag language={room.language} />
                 <span className="text-[11px] text-white/60 font-medium">{room.language}</span>
                 <span className="text-white/30 text-[11px]">•</span>
                 <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-cyan-400"}`}>
@@ -616,75 +579,62 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             </div>
           </div>
 
-          {/* ── Body ── */}
-          <div className="flex flex-1 gap-3 px-4 pb-1 overflow-hidden min-h-0">
+          {/* ── Body: unified circle grid ── */}
+          <div className="flex-1 flex flex-col justify-center px-4 pb-1 overflow-hidden">
+            <div className="flex flex-wrap gap-x-3 gap-y-2 items-start">
+              {displaySlots.map((_, i) => {
+                const p = participants[i];
 
-            {/* Left: speaker avatars */}
-            <div className="flex flex-col justify-between flex-shrink-0">
-              <div className="flex gap-3">
-                {[0, 1].map((i) => {
-                  const p = participants[i];
-                  if (!p) {
+                if (p) {
+                  const count = followerCounts[p.id] || 0;
+                  const ringClass = getAvatarRingClass(p.avatarRing);
+                  const hasRing = !!ringClass;
+
+                  const avatarEl = (
+                    <div
+                      className={`rounded-full p-[3px] flex-shrink-0 ${hasRing ? ringClass : "bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600"}`}
+                      style={{ boxShadow: hasRing ? undefined : "0 0 10px rgba(0,200,255,0.35)" }}
+                    >
+                      <Avatar className="w-[68px] h-[68px] border-2 border-[#0a1228]">
+                        <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} />
+                        <AvatarFallback className="text-base font-bold bg-[#0d1a3a] text-cyan-300">
+                          {getUserInitials(p)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  );
+
+                  const decorated = (
+                    <ProfileDecoration decorationId={(p as any).profileDecoration} size={68}>
+                      {avatarEl}
+                    </ProfileDecoration>
+                  );
+
+                  const heartRow = (
+                    <div className="flex items-center justify-center gap-0.5 mt-1" data-testid={`text-follower-count-card-${p.id}`}>
+                      <Heart className="w-3 h-3 text-red-400 fill-red-400" />
+                      <span className="text-[10px] text-white/65 font-medium">{count}</span>
+                    </div>
+                  );
+
+                  if (!isLoggedIn) {
                     return (
-                      <div key={i} className="flex flex-col items-center gap-1">
-                        <div className="w-[72px] h-[72px] rounded-full flex-shrink-0"
-                          style={{ border: "2px dashed rgba(100,200,255,0.2)", background: "rgba(0,150,255,0.04)" }} />
-                        <div className="h-4" />
+                      <div key={i} className="flex flex-col items-center">
+                        {decorated}
+                        {heartRow}
                       </div>
                     );
                   }
-                  return renderSpeakerAvatar(p, i);
-                })}
-              </div>
-              <div className="mt-2 space-y-1.5">
-                {participants.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Mic className="w-3 h-3 text-cyan-400/70" />
-                    <span className="text-[10px] text-cyan-400/80 font-semibold">{participants.length} Live speaking</span>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* Right: frosted glass panel with remaining slots */}
-            <div
-              className="flex-1 rounded-xl flex flex-col justify-center items-center gap-2 p-3 relative overflow-hidden"
-              style={{
-                background: "rgba(10,40,90,0.35)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid rgba(100,200,255,0.12)",
-                boxShadow: "inset 0 0 20px rgba(0,180,255,0.04)",
-              }}
-            >
-              {/* Ambient glow spot */}
-              <div className="absolute w-16 h-16 rounded-full opacity-20 blur-2xl"
-                style={{ background: "radial-gradient(circle, rgba(0,200,255,0.8), transparent)", top: "20%", left: "30%" }} />
-
-              {/* Remaining participant slots as icons */}
-              <div className="flex gap-3 justify-center">
-                {participants.slice(2, 5).map((p, i) => {
-                  const rk = getAvatarRingClass(p.avatarRing);
-                  const cnt = followerCounts[p.id] || 0;
-                  const slot = (
-                    <div className="flex flex-col items-center gap-0.5">
-                      <div className={`rounded-full p-[2px] ${rk || "bg-gradient-to-br from-cyan-400 to-purple-500"}`}>
-                        <Avatar className="w-9 h-9 border border-[#0a1228]">
-                          <AvatarImage src={p.profileImageUrl || undefined} />
-                          <AvatarFallback className="text-[10px] bg-[#0d1a3a] text-cyan-300">{getUserInitials(p)}</AvatarFallback>
-                        </Avatar>
-                      </div>
-                      <div className="flex items-center gap-0.5">
-                        <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" />
-                        <span className="text-[8px] text-white/50">{cnt}</span>
-                      </div>
-                    </div>
-                  );
-                  if (!isLoggedIn) return <div key={i}>{slot}</div>;
                   return (
                     <Popover key={i}>
                       <PopoverTrigger asChild>
-                        <button className="hover:scale-105 transition-transform" data-testid={`button-card-participant-${p.id}`}>
-                          {slot}
+                        <button
+                          className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                          data-testid={`button-card-participant-${p.id}`}
+                        >
+                          {decorated}
+                          {heartRow}
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-60 p-2" align="center">
@@ -692,30 +642,32 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                       </PopoverContent>
                     </Popover>
                   );
-                })}
-                {/* Empty join-spot slots */}
-                {Array.from({ length: Math.min(openSlots, Math.max(0, 3 - Math.max(0, participants.length - 2))) }).map((_, i) => (
-                  <div key={`empty-${i}`} className="flex flex-col items-center gap-0.5">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                      style={{ border: "1.5px dashed rgba(100,200,255,0.3)", background: "rgba(0,150,255,0.06)" }}>
-                      <UserPlus className="w-4 h-4 text-cyan-400/50" />
-                    </div>
-                    <span className="text-[8px] text-white/25">open</span>
-                  </div>
-                ))}
-              </div>
+                }
 
-              {extraSpeakers > 0 || openSlots > 0 ? (
-                <div className="flex items-center gap-1">
-                  <Mic className="w-3 h-3 text-cyan-400/60" />
-                  <span className="text-[10px] text-white/50 font-medium">
-                    {extraSpeakers > 0
-                      ? `+${extraSpeakers} speaking`
-                      : `${openSlots} spot${openSlots !== 1 ? "s" : ""} open`}
-                  </span>
-                </div>
-              ) : null}
+                /* Empty slot — circle with person silhouette */
+                return (
+                  <div key={i} className="flex flex-col items-center">
+                    <div
+                      className="w-[68px] h-[68px] rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{
+                        border: "2px dashed rgba(100,200,255,0.25)",
+                        background: "radial-gradient(circle at 50% 40%, rgba(0,150,255,0.08), rgba(0,50,120,0.06))",
+                      }}
+                    >
+                      <Users className="w-6 h-6 text-cyan-400/30" />
+                    </div>
+                    <div className="h-4" />
+                  </div>
+                );
+              })}
             </div>
+
+            {participants.length > 0 && (
+              <div className="flex items-center gap-1 mt-2">
+                <Mic className="w-3 h-3 text-cyan-400/70" />
+                <span className="text-[10px] text-cyan-400/80 font-semibold">{participants.length} Live speaking</span>
+              </div>
+            )}
           </div>
 
           {/* ── Footer ── */}
