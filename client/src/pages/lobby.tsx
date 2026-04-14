@@ -114,10 +114,10 @@ const SAMPLE_ROOMS: Room[] = [
     title: "Korean Study Group 🇰🇷",
     language: "Korean",
     level: "Beginner",
-    maxUsers: 4,
+    maxUsers: 3,
     ownerId: SAMPLE_USERS.min.id,
     isPublic: true,
-    activeUsers: 4,
+    activeUsers: 3,
     roomTheme: "hologram",
     hologramVideoUrl: null,
     createdAt: new Date(),
@@ -154,9 +154,9 @@ const SAMPLE_ROOM_PARTICIPANTS: Record<string, User[]> = {
   "sample-room-1": [SAMPLE_USERS.sofia, SAMPLE_USERS.liam, SAMPLE_USERS.emma],
   "sample-room-2": [SAMPLE_USERS.carlos, SAMPLE_USERS.aigerim],
   "sample-room-3": [SAMPLE_USERS.marcus, SAMPLE_USERS.anya, SAMPLE_USERS.james, SAMPLE_USERS.nadia, SAMPLE_USERS.kevin],
-  "sample-room-4": [SAMPLE_USERS.min, SAMPLE_USERS.seo, SAMPLE_USERS.lucas, SAMPLE_USERS.aigerim],
-  "sample-room-5": [SAMPLE_USERS.pierre, SAMPLE_USERS.claire, SAMPLE_USERS.anya],
-  "sample-room-6": [SAMPLE_USERS.yuki, SAMPLE_USERS.takeshi, SAMPLE_USERS.hana, SAMPLE_USERS.kevin],
+  "sample-room-4": [SAMPLE_USERS.min, SAMPLE_USERS.seo, SAMPLE_USERS.hassan],
+  "sample-room-5": [SAMPLE_USERS.pierre, SAMPLE_USERS.claire, SAMPLE_USERS.fatima],
+  "sample-room-6": [SAMPLE_USERS.yuki, SAMPLE_USERS.takeshi, SAMPLE_USERS.hana, SAMPLE_USERS.lucas],
 };
 
 const SAMPLE_FOLLOWER_COUNTS: Record<string, number> = {
