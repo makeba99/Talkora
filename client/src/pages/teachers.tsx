@@ -36,6 +36,14 @@ import {
   SendHorizonal,
   DollarSign,
   XCircle,
+  ArrowUpDown,
+  TrendingUp,
+  Flame,
+  BadgeDollarSign,
+  CircleCheckBig,
+  Trophy,
+  Filter,
+  SlidersHorizontal,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -864,6 +872,10 @@ export default function TeachersPage() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [myBookingsExpanded, setMyBookingsExpanded] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("top-rated");
+  const [priceRange, setPriceRange] = useState("all");
+  const [quickFilter, setQuickFilter] = useState<string | null>(null);
+  const [selectedSpec, setSelectedSpec] = useState("All");
   const [applyForm, setApplyForm] = useState({
     name: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.displayName ?? ""),
     bio: "",
@@ -919,19 +931,51 @@ export default function TeachersPage() {
     },
   });
 
-  const filteredTeachers = allTeachers.filter((t) => {
-    const matchesSearch =
-      !searchQuery ||
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.specializations.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      t.languages.some((l) => l.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesLang = selectedLanguage === "All" || t.languages.includes(selectedLanguage);
-    const matchesLevel = selectedLevel === "All" || t.levels.includes(selectedLevel);
-    return matchesSearch && matchesLang && matchesLevel;
-  });
+  const filteredTeachers = allTeachers
+    .filter((t) => {
+      const matchesSearch =
+        !searchQuery ||
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.bio.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.specializations.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        t.languages.some((l) => l.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesLang = selectedLanguage === "All" || t.languages.includes(selectedLanguage);
+      const matchesLevel = selectedLevel === "All" || t.levels.includes(selectedLevel);
+      const matchesSpec = selectedSpec === "All" || t.specializations.includes(selectedSpec);
+      const matchesPrice =
+        priceRange === "all" ? true :
+        priceRange === "budget" ? t.hourlyRate <= 20 :
+        priceRange === "mid" ? t.hourlyRate > 20 && t.hourlyRate <= 35 :
+        priceRange === "premium" ? t.hourlyRate > 35 : true;
+      const matchesQuick =
+        !quickFilter ? true :
+        quickFilter === "top-rated" ? t.rating >= 47 :
+        quickFilter === "most-reviewed" ? t.reviewCount >= 30 :
+        quickFilter === "available" ? t.isAvailable :
+        quickFilter === "budget" ? t.hourlyRate <= 25 :
+        quickFilter === "featured" ? t.rating >= 49 : true;
+      return matchesSearch && matchesLang && matchesLevel && matchesSpec && matchesPrice && matchesQuick;
+    })
+    .sort((a, b) => {
+      if (sortBy === "top-rated") return b.rating - a.rating;
+      if (sortBy === "most-reviewed") return b.reviewCount - a.reviewCount;
+      if (sortBy === "price-asc") return a.hourlyRate - b.hourlyRate;
+      if (sortBy === "price-desc") return b.hourlyRate - a.hourlyRate;
+      return 0;
+    });
 
   const languages = ["All", ...LANGUAGES.filter((l) => l !== "All")];
   const levels = ["All", ...LEVELS];
+  const specs = ["All", ...SPECIALIZATIONS];
+
+  const activeFilterCount = [
+    selectedLanguage !== "All",
+    selectedLevel !== "All",
+    selectedSpec !== "All",
+    priceRange !== "all",
+    !!quickFilter,
+    !!searchQuery,
+  ].filter(Boolean).length;
 
   const activeBookings = myBookings.filter((b) => b.status !== "cancelled" && b.status !== "completed");
   const pastBookings = myBookings.filter((b) => b.status === "cancelled" || b.status === "completed");
@@ -1095,48 +1139,198 @@ export default function TeachersPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2.5">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
-              <Input
-                placeholder="Search teachers, languages, specializations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 text-sm"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                data-testid="input-search-teachers"
-              />
+          {/* ── Advanced Search & Filter Bar ─────────────────────────── */}
+          <div
+            className="rounded-2xl p-4 space-y-3"
+            style={{
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}
+          >
+            {/* Search row */}
+            <div className="flex gap-2.5">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
+                <Input
+                  placeholder="Search by name, language, specialization or keywords…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-9 h-10 text-sm"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  data-testid="input-search-teachers"
+                />
+                {searchQuery && (
+                  <button
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                    onClick={() => setSearchQuery("")}
+                    data-testid="button-clear-search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              {/* Sort */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger
+                  className="w-44 h-10 text-sm shrink-0"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  data-testid="select-sort-teachers"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="top-rated">⭐ Top Rated</SelectItem>
+                  <SelectItem value="most-reviewed">💬 Most Reviews</SelectItem>
+                  <SelectItem value="price-asc">💰 Price: Low → High</SelectItem>
+                  <SelectItem value="price-desc">💎 Price: High → Low</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-              <SelectTrigger
-                className="w-full sm:w-40 h-10 text-sm"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                data-testid="select-filter-language"
-              >
-                <Globe className="w-4 h-4 mr-2 opacity-50 flex-shrink-0" />
-                <SelectValue placeholder="Language" />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map((l) => (
-                  <SelectItem key={l} value={l}>{l}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-              <SelectTrigger
-                className="w-full sm:w-40 h-10 text-sm"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                data-testid="select-filter-level"
-              >
-                <GraduationCap className="w-4 h-4 mr-2 opacity-50 flex-shrink-0" />
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                {levels.map((l) => (
-                  <SelectItem key={l} value={l}>{l}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            {/* Quick filter chips */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: "top-rated", label: "Top Rated", icon: <Trophy className="w-3.5 h-3.5" />, color: "amber" },
+                { id: "featured", label: "Featured", icon: <Sparkles className="w-3.5 h-3.5" />, color: "violet" },
+                { id: "most-reviewed", label: "Popular", icon: <Flame className="w-3.5 h-3.5" />, color: "orange" },
+                { id: "available", label: "Available Now", icon: <CircleCheckBig className="w-3.5 h-3.5" />, color: "green" },
+                { id: "budget", label: "Budget ≤$25", icon: <BadgeDollarSign className="w-3.5 h-3.5" />, color: "cyan" },
+              ].map(({ id, label, icon, color }) => {
+                const active = quickFilter === id;
+                const colorMap: Record<string, string> = {
+                  amber: active ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-amber-500/30 hover:text-amber-300/70",
+                  violet: active ? "bg-violet-500/20 text-violet-300 border-violet-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-violet-500/30 hover:text-violet-300/70",
+                  orange: active ? "bg-orange-500/20 text-orange-300 border-orange-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-orange-500/30 hover:text-orange-300/70",
+                  green: active ? "bg-green-500/20 text-green-300 border-green-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-green-500/30 hover:text-green-300/70",
+                  cyan: active ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-cyan-500/30 hover:text-cyan-300/70",
+                };
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setQuickFilter(active ? null : id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all ${colorMap[color]}`}
+                    data-testid={`chip-quick-${id}`}
+                  >
+                    {icon}{label}
+                    {active && <X className="w-3 h-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Dropdown filters row */}
+            <div className="flex flex-wrap gap-2">
+              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                <SelectTrigger
+                  className="w-36 h-9 text-xs"
+                  style={{
+                    background: selectedLanguage !== "All" ? "rgba(0,200,255,0.1)" : "rgba(255,255,255,0.04)",
+                    border: selectedLanguage !== "All" ? "1px solid rgba(0,200,255,0.35)" : "1px solid rgba(255,255,255,0.1)",
+                    color: selectedLanguage !== "All" ? "rgba(0,200,255,0.9)" : undefined,
+                  }}
+                  data-testid="select-filter-language"
+                >
+                  <Globe className="w-3.5 h-3.5 mr-1.5 opacity-60 flex-shrink-0" />
+                  <SelectValue placeholder="Language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                <SelectTrigger
+                  className="w-36 h-9 text-xs"
+                  style={{
+                    background: selectedLevel !== "All" ? "rgba(110,60,255,0.12)" : "rgba(255,255,255,0.04)",
+                    border: selectedLevel !== "All" ? "1px solid rgba(110,60,255,0.35)" : "1px solid rgba(255,255,255,0.1)",
+                    color: selectedLevel !== "All" ? "rgba(167,139,250,0.9)" : undefined,
+                  }}
+                  data-testid="select-filter-level"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 opacity-60 flex-shrink-0" />
+                  <SelectValue placeholder="Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {levels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedSpec} onValueChange={setSelectedSpec}>
+                <SelectTrigger
+                  className="w-44 h-9 text-xs"
+                  style={{
+                    background: selectedSpec !== "All" ? "rgba(251,146,60,0.1)" : "rgba(255,255,255,0.04)",
+                    border: selectedSpec !== "All" ? "1px solid rgba(251,146,60,0.35)" : "1px solid rgba(255,255,255,0.1)",
+                    color: selectedSpec !== "All" ? "rgba(251,146,60,0.9)" : undefined,
+                  }}
+                  data-testid="select-filter-spec"
+                >
+                  <BookOpen className="w-3.5 h-3.5 mr-1.5 opacity-60 flex-shrink-0" />
+                  <SelectValue placeholder="Specialization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {specs.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <Select value={priceRange} onValueChange={setPriceRange}>
+                <SelectTrigger
+                  className="w-36 h-9 text-xs"
+                  style={{
+                    background: priceRange !== "all" ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.04)",
+                    border: priceRange !== "all" ? "1px solid rgba(34,197,94,0.35)" : "1px solid rgba(255,255,255,0.1)",
+                    color: priceRange !== "all" ? "rgba(74,222,128,0.9)" : undefined,
+                  }}
+                  data-testid="select-filter-price"
+                >
+                  <DollarSign className="w-3.5 h-3.5 mr-1.5 opacity-60 flex-shrink-0" />
+                  <SelectValue placeholder="Price range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any price</SelectItem>
+                  <SelectItem value="budget">Budget (≤$20/hr)</SelectItem>
+                  <SelectItem value="mid">Mid ($21–$35/hr)</SelectItem>
+                  <SelectItem value="premium">Premium ($35+/hr)</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Clear all filters */}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedLanguage("All");
+                    setSelectedLevel("All");
+                    setSelectedSpec("All");
+                    setPriceRange("all");
+                    setQuickFilter(null);
+                  }}
+                  className="flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs text-red-400/70 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 transition-all"
+                  style={{ background: "rgba(239,68,68,0.05)" }}
+                  data-testid="button-clear-filters"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Clear all ({activeFilterCount})
+                </button>
+              )}
+            </div>
+
+            {/* Results summary */}
+            <div className="flex items-center justify-between pt-0.5">
+              <p className="text-[11px] text-white/35" data-testid="text-results-count">
+                {filteredTeachers.length === allTeachers.length
+                  ? `${allTeachers.length} teacher${allTeachers.length !== 1 ? "s" : ""} available`
+                  : `${filteredTeachers.length} of ${allTeachers.length} teachers match`}
+              </p>
+              {activeFilterCount > 0 && (
+                <div className="flex items-center gap-1 text-[11px] text-white/35">
+                  <SlidersHorizontal className="w-3 h-3" />
+                  {activeFilterCount} filter{activeFilterCount !== 1 ? "s" : ""} active
+                </div>
+              )}
+            </div>
           </div>
 
           {isLoading ? (
