@@ -59,41 +59,50 @@ function LanguageFlag({ language }: { language: string }) {
   );
 }
 
-function getThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string; animated?: boolean } {
+function getThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string; animated?: string } {
   switch (themeId) {
-    case "cosmic":   return { from: "rgba(37,99,235,1)", to: "rgba(239,68,68,1)", ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)", animated: true };
-    case "neon":     return { from: "rgba(0,220,255,0.9)", to: "rgba(168,85,247,0.8)", ring: "rgba(0,220,255,0.7), rgba(168,85,247,0.7)" };
-    case "galaxy":   return { from: "rgba(99,102,241,0.9)", to: "rgba(168,85,247,0.8)", ring: "rgba(99,102,241,0.7), rgba(168,85,247,0.7)" };
-    case "sunset":   return { from: "rgba(251,146,60,0.9)", to: "rgba(239,68,68,0.8)", ring: "rgba(251,146,60,0.7), rgba(239,68,68,0.7)" };
-    case "forest":   return { from: "rgba(52,211,153,0.9)", to: "rgba(16,185,129,0.8)", ring: "rgba(52,211,153,0.7), rgba(16,185,129,0.7)" };
-    case "cyberpunk":return { from: "rgba(250,204,21,0.9)", to: "rgba(0,220,255,0.8)", ring: "rgba(250,204,21,0.7), rgba(0,220,255,0.7)" };
-    case "ocean":    return { from: "rgba(59,130,246,0.9)", to: "rgba(6,182,212,0.8)", ring: "rgba(59,130,246,0.7), rgba(6,182,212,0.7)" };
-    case "cherry":   return { from: "rgba(244,114,182,0.9)", to: "rgba(251,113,133,0.8)", ring: "rgba(244,114,182,0.7), rgba(251,113,133,0.7)" };
-    case "gold":     return { from: "rgba(253,224,71,0.9)", to: "rgba(245,158,11,0.8)", ring: "rgba(253,224,71,0.7), rgba(245,158,11,0.7)" };
-    case "violet":   return { from: "rgba(167,139,250,0.9)", to: "rgba(232,121,249,0.8)", ring: "rgba(167,139,250,0.7), rgba(232,121,249,0.7)" };
-    case "aurora":   return { from: "rgba(45,212,191,0.9)", to: "rgba(74,222,128,0.8)", ring: "rgba(45,212,191,0.7), rgba(74,222,128,0.7)" };
-    case "storm":    return { from: "rgba(59,130,246,0.9)", to: "rgba(100,116,139,0.8)", ring: "rgba(59,130,246,0.7), rgba(100,116,139,0.7)" };
-    case "volcanic": return { from: "rgba(239,68,68,0.9)", to: "rgba(251,146,60,0.8)", ring: "rgba(239,68,68,0.7), rgba(251,146,60,0.7)" };
-    default:         return { from: "rgba(37,99,235,1)", to: "rgba(239,68,68,1)", ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)", animated: true };
+    /* ── Premium Animated Themes ── */
+    case "cosmic":     return { from: "rgba(37,99,235,1)",    to: "rgba(239,68,68,1)",    ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)",    animated: "cosmic-border-wrap" };
+    case "plasma":     return { from: "rgba(236,72,153,1)",   to: "rgba(99,102,241,1)",   ring: "rgba(236,72,153,0.9), rgba(99,102,241,0.9)",   animated: "plasma-border-wrap" };
+    case "hologram":   return { from: "rgba(6,182,212,1)",    to: "rgba(52,211,153,1)",   ring: "rgba(6,182,212,0.9), rgba(52,211,153,0.9)",    animated: "hologram-border-wrap" };
+    case "inferno":    return { from: "rgba(234,88,12,1)",    to: "rgba(250,204,21,1)",   ring: "rgba(234,88,12,0.9), rgba(250,204,21,0.9)",    animated: "inferno-border-wrap" };
+    /* ── Standard Themes ── */
+    case "neon":       return { from: "rgba(0,220,255,0.9)",  to: "rgba(168,85,247,0.8)", ring: "rgba(0,220,255,0.7), rgba(168,85,247,0.7)" };
+    case "galaxy":     return { from: "rgba(99,102,241,0.9)", to: "rgba(168,85,247,0.8)", ring: "rgba(99,102,241,0.7), rgba(168,85,247,0.7)" };
+    case "sunset":     return { from: "rgba(251,146,60,0.9)", to: "rgba(239,68,68,0.8)",  ring: "rgba(251,146,60,0.7), rgba(239,68,68,0.7)" };
+    case "forest":     return { from: "rgba(52,211,153,0.9)", to: "rgba(16,185,129,0.8)", ring: "rgba(52,211,153,0.7), rgba(16,185,129,0.7)" };
+    case "cyberpunk":  return { from: "rgba(250,204,21,0.9)", to: "rgba(0,220,255,0.8)",  ring: "rgba(250,204,21,0.7), rgba(0,220,255,0.7)" };
+    case "ocean":      return { from: "rgba(59,130,246,0.9)", to: "rgba(6,182,212,0.8)",  ring: "rgba(59,130,246,0.7), rgba(6,182,212,0.7)" };
+    case "cherry":     return { from: "rgba(244,114,182,0.9)",to: "rgba(251,113,133,0.8)",ring: "rgba(244,114,182,0.7), rgba(251,113,133,0.7)" };
+    case "gold":       return { from: "rgba(253,224,71,0.9)", to: "rgba(245,158,11,0.8)", ring: "rgba(253,224,71,0.7), rgba(245,158,11,0.7)" };
+    case "violet":     return { from: "rgba(167,139,250,0.9)",to: "rgba(232,121,249,0.8)",ring: "rgba(167,139,250,0.7), rgba(232,121,249,0.7)" };
+    case "aurora":     return { from: "rgba(45,212,191,0.9)", to: "rgba(74,222,128,0.8)", ring: "rgba(45,212,191,0.7), rgba(74,222,128,0.7)" };
+    case "storm":      return { from: "rgba(59,130,246,0.9)", to: "rgba(100,116,139,0.8)",ring: "rgba(59,130,246,0.7), rgba(100,116,139,0.7)" };
+    case "volcanic":   return { from: "rgba(239,68,68,0.9)",  to: "rgba(251,146,60,0.8)", ring: "rgba(239,68,68,0.7), rgba(251,146,60,0.7)" };
+    default:           return { from: "rgba(37,99,235,1)",    to: "rgba(239,68,68,1)",    ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)",    animated: "cosmic-border-wrap" };
   }
 }
 
 const ROOM_THEMES = [
-  { id: "cosmic", label: "✦ Cosmic", from: "from-blue-600", to: "to-red-500", preview: "from-blue-600 via-purple-500 to-red-500" },
-  { id: "default", label: "Default", from: "from-cyan-500", to: "to-purple-500", preview: "from-cyan-500 to-purple-500" },
-  { id: "neon", label: "Neon", from: "from-cyan-400", to: "to-purple-500", preview: "from-cyan-400 to-purple-500" },
-  { id: "galaxy", label: "Galaxy", from: "from-indigo-500", to: "to-purple-700", preview: "from-indigo-500 to-purple-700" },
-  { id: "sunset", label: "Sunset", from: "from-orange-400", to: "to-red-500", preview: "from-orange-400 to-red-500" },
-  { id: "forest", label: "Forest", from: "from-green-400", to: "to-emerald-600", preview: "from-green-400 to-emerald-600" },
-  { id: "cyberpunk", label: "Cyberpunk", from: "from-yellow-400", to: "to-cyan-400", preview: "from-yellow-400 to-cyan-400" },
-  { id: "ocean", label: "Ocean", from: "from-blue-400", to: "to-cyan-600", preview: "from-blue-400 to-cyan-600" },
-  { id: "cherry", label: "Cherry", from: "from-pink-400", to: "to-rose-500", preview: "from-pink-400 to-rose-500" },
-  { id: "gold", label: "Gold", from: "from-yellow-300", to: "to-amber-500", preview: "from-yellow-300 to-amber-500" },
-  { id: "violet", label: "Violet", from: "from-violet-400", to: "to-fuchsia-600", preview: "from-violet-400 to-fuchsia-600" },
-  { id: "aurora", label: "Aurora", from: "from-teal-400", to: "to-green-400", preview: "from-teal-400 to-green-400" },
-  { id: "matrix", label: "Matrix", from: "from-green-400", to: "to-green-700", preview: "from-green-400 to-green-700" },
-  { id: "storm", label: "Storm", from: "from-blue-500", to: "to-slate-600", preview: "from-blue-500 to-slate-600" },
-  { id: "volcanic", label: "Volcanic", from: "from-red-500", to: "to-orange-400", preview: "from-red-500 to-orange-400" },
+  /* ── Premium Animated (top section) ── */
+  { id: "cosmic",   label: "✦ Cosmic",   from: "from-blue-600",   to: "to-red-500",      preview: "from-blue-600 via-purple-500 to-red-500" },
+  { id: "plasma",   label: "✦ Plasma",   from: "from-pink-500",   to: "to-indigo-500",   preview: "from-pink-500 via-purple-600 to-indigo-500" },
+  { id: "hologram", label: "✦ Hologram", from: "from-cyan-400",   to: "to-emerald-400",  preview: "from-cyan-400 via-teal-500 to-emerald-400" },
+  { id: "inferno",  label: "✦ Inferno",  from: "from-orange-600", to: "to-yellow-400",   preview: "from-orange-600 via-red-500 to-yellow-400" },
+  /* ── Standard ── */
+  { id: "default",  label: "Default",    from: "from-cyan-500",   to: "to-purple-500",   preview: "from-cyan-500 to-purple-500" },
+  { id: "neon",     label: "Neon",       from: "from-cyan-400",   to: "to-purple-500",   preview: "from-cyan-400 to-purple-500" },
+  { id: "galaxy",   label: "Galaxy",     from: "from-indigo-500", to: "to-purple-700",   preview: "from-indigo-500 to-purple-700" },
+  { id: "sunset",   label: "Sunset",     from: "from-orange-400", to: "to-red-500",      preview: "from-orange-400 to-red-500" },
+  { id: "forest",   label: "Forest",     from: "from-green-400",  to: "to-emerald-600",  preview: "from-green-400 to-emerald-600" },
+  { id: "cyberpunk",label: "Cyberpunk",  from: "from-yellow-400", to: "to-cyan-400",     preview: "from-yellow-400 to-cyan-400" },
+  { id: "ocean",    label: "Ocean",      from: "from-blue-400",   to: "to-cyan-600",     preview: "from-blue-400 to-cyan-600" },
+  { id: "cherry",   label: "Cherry",     from: "from-pink-400",   to: "to-rose-500",     preview: "from-pink-400 to-rose-500" },
+  { id: "gold",     label: "Gold",       from: "from-yellow-300", to: "to-amber-500",    preview: "from-yellow-300 to-amber-500" },
+  { id: "violet",   label: "Violet",     from: "from-violet-400", to: "to-fuchsia-600",  preview: "from-violet-400 to-fuchsia-600" },
+  { id: "aurora",   label: "Aurora",     from: "from-teal-400",   to: "to-green-400",    preview: "from-teal-400 to-green-400" },
+  { id: "storm",    label: "Storm",      from: "from-blue-500",   to: "to-slate-600",    preview: "from-blue-500 to-slate-600" },
+  { id: "volcanic", label: "Volcanic",   from: "from-red-500",    to: "to-orange-400",   preview: "from-red-500 to-orange-400" },
 ];
 
 function getAvatarSizeClass(maxUsers: number): string {
@@ -541,9 +550,15 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const borderGradient = `linear-gradient(135deg, ${glow.from} 0%, rgba(168,85,247,1) 50%, ${glow.to} 100%)`;
   const outerGlow = `0 0 22px ${glow.from}, 0 0 45px ${glow.to}`;
 
+  /* ── grid columns: always 2 rows, balanced ── */
+  const gridCols =
+    room.maxUsers <= 2 ? 2 :
+    room.maxUsers <= 4 ? 4 :
+    Math.ceil(room.maxUsers / 2);
+
   return (
     <div
-      className={glow.animated ? "cosmic-border-wrap" : ""}
+      className={glow.animated ?? ""}
       style={{
         width: "100%",
         padding: "2px",
@@ -605,7 +620,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
           {/* ── Body: unified neon ring circle grid ── */}
           <div className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 overflow-hidden">
-            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(5, 1fr)` }}>
+            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
