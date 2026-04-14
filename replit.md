@@ -103,6 +103,7 @@ shared/
 50. Chat link previews — pasted links are clickable, and pasted direct image/GIF URLs or GIF pages with preview metadata render as inline chat previews
 51. Room creation customization — creators can choose the room card theme and background video during initial room creation, including uploaded videos or YouTube links/search results
 52. Premium Atmosphere theme — animated transparent neon-glass room cards with cyan/fuchsia/orange glow, star particles, light sweeps, and matching avatar rings/buttons
+53. Book a Teacher feature — dedicated `/teachers` page with teacher discovery, profiles, booking dialog (date/time/duration/session type), star-rated reviews, and "My Bookings" panel with cancellation support
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.

@@ -138,6 +138,57 @@ export const roomVotes = pgTable("room_votes", {
 
 export type RoomVote = typeof roomVotes.$inferSelect;
 
+export const teachers = pgTable("teachers", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  bio: text("bio"),
+  avatarUrl: varchar("avatar_url", { length: 500 }),
+  languages: text("languages").array().notNull().default(sql`'{}'::text[]`),
+  levels: text("levels").array().notNull().default(sql`'{}'::text[]`),
+  specializations: text("specializations").array().notNull().default(sql`'{}'::text[]`),
+  hourlyRate: integer("hourly_rate").notNull().default(0),
+  sessionDurations: text("session_durations").array().notNull().default(sql`'{30,60}'::text[]`),
+  rating: integer("rating").notNull().default(0),
+  reviewCount: integer("review_count").notNull().default(0),
+  isAvailable: boolean("is_available").notNull().default(true),
+  userId: varchar("user_id", { length: 36 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTeacherSchema = createInsertSchema(teachers).omit({ id: true, createdAt: true });
+export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
+export type Teacher = typeof teachers.$inferSelect;
+
+export const bookings = pgTable("bookings", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id", { length: 36 }).notNull(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  sessionType: varchar("session_type", { length: 20 }).notNull().default("private"),
+  notes: text("notes"),
+  roomId: varchar("room_id", { length: 36 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true, status: true, roomId: true });
+export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type Booking = typeof bookings.$inferSelect;
+
+export const teacherReviews = pgTable("teacher_reviews", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id", { length: 36 }).notNull(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTeacherReviewSchema = createInsertSchema(teacherReviews).omit({ id: true, createdAt: true });
+export type InsertTeacherReview = z.infer<typeof insertTeacherReviewSchema>;
+export type TeacherReview = typeof teacherReviews.$inferSelect;
+
 export const LANGUAGES = [
   "All",
   "English",

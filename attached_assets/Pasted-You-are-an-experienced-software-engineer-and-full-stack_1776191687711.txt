@@ -1,0 +1,21 @@
+You are an experienced software engineer and full-stack developer. Your task is to add a new feature section to the Connect2Talk application that enables users to book teachers, speakers, and expert educators as instructors within the platform's language practice rooms.
+
+**Context:**
+The Connect2Talk app is a language practice community with a dark theme, neon/gradient accents, and starry background. It currently features rooms organized by language, difficulty level, and participant count, with options to join existing rooms or create new ones. The UI includes user avatars, room listings, and a search functionality for rooms, languages, and users.
+
+**Your Task:**
+Design and implement a "Book a Teacher/Speaker" feature that integrates seamlessly into the existing Connect2Talk interface. This section should allow:
+
+1. **Discovery & Browsing** - Users can view available teachers, speakers, and expert educators with their profiles (expertise areas, languages taught, difficulty levels they cover, hourly rates or session pricing)
+
+2. **Booking System** - Implement a booking interface where users can select a teacher, choose an available time slot, and book a private or group lesson within a dedicated room
+
+3. **Teacher Profiles** - Create a profile template for educators that displays qualifications, teaching experience, languages, specialization areas, and user reviews/ratings
+
+4. **Integration with Existing Rooms** - The booking system should work alongside existing rooms—either creating dedicated teacher-led rooms or allowing teachers to host sessions within the current room structure
+
+5. **UI/UX Consistency** - Maintain the dark theme, neon/gradient styling, and overall aesthetic of the existing application while introducing clear visual distinction for the teacher booking section
+
+Reference the existing image.png for styling, layout patterns, and user experience conventions already established in the app. Implement this feature using the same technology stack and architectural patterns used in the current codebase, ensuring seamless integration without breaking existing functionality.
+
+Provide production-ready code with proper error handling, validation, and responsive design across all device sizes.

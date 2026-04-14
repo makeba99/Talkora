@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
@@ -247,6 +247,16 @@ export default function Lobby() {
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {user ? (
               <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/teachers")}
+                  className="mr-1 text-xs border border-violet-500/20 bg-violet-500/5 hover:bg-violet-500/10 hover:border-violet-500/40"
+                  data-testid="button-book-teacher-nav"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-violet-400" />
+                  <span className="hidden sm:inline text-violet-300/80">Book Teacher</span>
+                </Button>
                 {isAdminUser && (
                   <Button
                     variant="ghost"
@@ -275,6 +285,16 @@ export default function Lobby() {
               </>
             ) : (
               <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/teachers")}
+                  className="text-xs border border-violet-500/20 bg-violet-500/5 hover:bg-violet-500/10 hover:border-violet-500/40"
+                  data-testid="button-book-teacher-nav-guest"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-violet-400" />
+                  <span className="hidden sm:inline text-violet-300/80">Book Teacher</span>
+                </Button>
                 <ThemePicker />
                 <Button
                   asChild

@@ -12,6 +12,7 @@ import Lobby from "@/pages/lobby";
 import RoomPage from "@/pages/room";
 import DmPage from "@/pages/dm";
 import AdminPage from "@/pages/admin";
+import TeachersPage from "@/pages/teachers";
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -33,6 +34,7 @@ function AppContent() {
       <Switch>
         <Route path="/" component={Lobby} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/teachers" component={TeachersPage} />
         <Route path="/room/:id" component={RoomPage} />
         <Route path="/messages/:userId" component={DmPage} />
         <Route>

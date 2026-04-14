@@ -23,6 +23,15 @@ import {
   type InsertBlock,
   type Report,
   type InsertReport,
+  teachers,
+  bookings,
+  teacherReviews,
+  type Teacher,
+  type InsertTeacher,
+  type Booking,
+  type InsertBooking,
+  type TeacherReview,
+  type InsertTeacherReview,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -77,6 +86,23 @@ export interface IStorage {
   removeVote(roomId: string, userId: string): Promise<void>;
   getVoteCounts(roomIds: string[]): Promise<Record<string, number>>;
   getUserVotes(userId: string, roomIds: string[]): Promise<Record<string, boolean>>;
+
+  getAllTeachers(): Promise<Teacher[]>;
+  getTeacher(id: string): Promise<Teacher | undefined>;
+  createTeacher(data: InsertTeacher): Promise<Teacher>;
+  updateTeacher(id: string, data: Partial<Teacher>): Promise<Teacher | undefined>;
+  deleteTeacher(id: string): Promise<void>;
+
+  createBooking(data: InsertBooking & { userId: string }): Promise<Booking>;
+  getBooking(id: string): Promise<Booking | undefined>;
+  getBookingsByUser(userId: string): Promise<Booking[]>;
+  getBookingsByTeacher(teacherId: string): Promise<Booking[]>;
+  updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
+  cancelBooking(id: string): Promise<void>;
+
+  createTeacherReview(data: InsertTeacherReview): Promise<TeacherReview>;
+  getTeacherReviews(teacherId: string): Promise<TeacherReview[]>;
+  hasUserReviewedTeacher(userId: string, teacherId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -391,6 +417,76 @@ export class DatabaseStorage implements IStorage {
     for (const id of roomIds) votes[id] = false;
     for (const r of result) votes[r.roomId] = true;
     return votes;
+  }
+
+  async getAllTeachers(): Promise<Teacher[]> {
+    return db.select().from(teachers).orderBy(desc(teachers.createdAt));
+  }
+
+  async getTeacher(id: string): Promise<Teacher | undefined> {
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id));
+    return teacher;
+  }
+
+  async createTeacher(data: InsertTeacher): Promise<Teacher> {
+    const [teacher] = await db.insert(teachers).values(data).returning();
+    return teacher;
+  }
+
+  async updateTeacher(id: string, data: Partial<Teacher>): Promise<Teacher | undefined> {
+    const [teacher] = await db.update(teachers).set(data).where(eq(teachers.id, id)).returning();
+    return teacher;
+  }
+
+  async deleteTeacher(id: string): Promise<void> {
+    await db.delete(bookings).where(eq(bookings.teacherId, id));
+    await db.delete(teacherReviews).where(eq(teacherReviews.teacherId, id));
+    await db.delete(teachers).where(eq(teachers.id, id));
+  }
+
+  async createBooking(data: InsertBooking & { userId: string }): Promise<Booking> {
+    const [booking] = await db.insert(bookings).values({ ...data, status: "pending" }).returning();
+    return booking;
+  }
+
+  async getBooking(id: string): Promise<Booking | undefined> {
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
+    return booking;
+  }
+
+  async getBookingsByUser(userId: string): Promise<Booking[]> {
+    return db.select().from(bookings).where(eq(bookings.userId, userId)).orderBy(desc(bookings.scheduledAt));
+  }
+
+  async getBookingsByTeacher(teacherId: string): Promise<Booking[]> {
+    return db.select().from(bookings).where(eq(bookings.teacherId, teacherId)).orderBy(desc(bookings.scheduledAt));
+  }
+
+  async updateBookingStatus(id: string, status: string): Promise<Booking | undefined> {
+    const [booking] = await db.update(bookings).set({ status }).where(eq(bookings.id, id)).returning();
+    return booking;
+  }
+
+  async cancelBooking(id: string): Promise<void> {
+    await db.update(bookings).set({ status: "cancelled" }).where(eq(bookings.id, id));
+  }
+
+  async createTeacherReview(data: InsertTeacherReview): Promise<TeacherReview> {
+    const [review] = await db.insert(teacherReviews).values(data).returning();
+    const allReviews = await db.select().from(teacherReviews).where(eq(teacherReviews.teacherId, data.teacherId));
+    const avgRating = Math.round(allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length);
+    await db.update(teachers).set({ rating: avgRating, reviewCount: allReviews.length }).where(eq(teachers.id, data.teacherId));
+    return review;
+  }
+
+  async getTeacherReviews(teacherId: string): Promise<TeacherReview[]> {
+    return db.select().from(teacherReviews).where(eq(teacherReviews.teacherId, teacherId)).orderBy(desc(teacherReviews.createdAt));
+  }
+
+  async hasUserReviewedTeacher(userId: string, teacherId: string): Promise<boolean> {
+    const [existing] = await db.select().from(teacherReviews)
+      .where(and(eq(teacherReviews.userId, userId), eq(teacherReviews.teacherId, teacherId)));
+    return !!existing;
   }
 }
 

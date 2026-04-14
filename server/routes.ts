@@ -971,6 +971,145 @@ export async function registerRoutes(
     roomDeleteTimers.set(roomId, timer);
   }
 
+  // ── Teachers ──────────────────────────────────────────────────────────────
+  app.get("/api/teachers", async (_req, res) => {
+    try {
+      const all = await storage.getAllTeachers();
+      res.json(all);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/teachers/:id", async (req, res) => {
+    try {
+      const teacher = await storage.getTeacher(req.params.id as string);
+      if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+      res.json(teacher);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/teachers", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { insertTeacherSchema } = await import("@shared/schema");
+      const parsed = insertTeacherSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: parsed.error.message });
+      const teacher = await storage.createTeacher(parsed.data);
+      res.json(teacher);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/teachers/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const updated = await storage.updateTeacher(req.params.id as string, req.body);
+      if (!updated) return res.status(404).json({ message: "Teacher not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/teachers/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.deleteTeacher(req.params.id as string);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Teacher Reviews ────────────────────────────────────────────────────────
+  app.get("/api/teachers/:id/reviews", async (req, res) => {
+    try {
+      const reviews = await storage.getTeacherReviews(req.params.id as string);
+      const reviewsWithUsers = await Promise.all(
+        reviews.map(async (r) => {
+          const user = await storage.getUser(r.userId);
+          return { ...r, user: user ? { id: user.id, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, profileImageUrl: user.profileImageUrl } : null };
+        })
+      );
+      res.json(reviewsWithUsers);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/teachers/:id/reviews", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const teacherId = req.params.id as string;
+      const already = await storage.hasUserReviewedTeacher(userId, teacherId);
+      if (already) return res.status(400).json({ message: "You have already reviewed this teacher" });
+      const { rating, comment } = req.body;
+      if (typeof rating !== "number" || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5" });
+      }
+      const review = await storage.createTeacherReview({ teacherId, userId, rating, comment });
+      res.json(review);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Bookings ───────────────────────────────────────────────────────────────
+  app.get("/api/bookings/my", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const userBookings = await storage.getBookingsByUser(userId);
+      const enriched = await Promise.all(
+        userBookings.map(async (b) => {
+          const teacher = await storage.getTeacher(b.teacherId);
+          return { ...b, teacher };
+        })
+      );
+      res.json(enriched);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/bookings", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { teacherId, scheduledAt, durationMinutes, sessionType, notes } = req.body;
+      if (!teacherId || !scheduledAt || !durationMinutes || !sessionType) {
+        return res.status(400).json({ message: "Missing required booking fields" });
+      }
+      const teacher = await storage.getTeacher(teacherId);
+      if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+      if (!teacher.isAvailable) return res.status(400).json({ message: "Teacher is not currently available" });
+      const booking = await storage.createBooking({
+        teacherId,
+        userId,
+        scheduledAt: new Date(scheduledAt),
+        durationMinutes,
+        sessionType,
+        notes: notes || null,
+      });
+      res.json(booking);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/bookings/:id/cancel", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const booking = await storage.getBooking(req.params.id as string);
+      if (!booking) return res.status(404).json({ message: "Booking not found" });
+      if (booking.userId !== userId) return res.status(403).json({ message: "Not authorized" });
+      if (booking.status === "cancelled") return res.status(400).json({ message: "Booking already cancelled" });
+      await storage.cancelBooking(booking.id);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   (async () => {
     try {
       const allRooms = await storage.getAllRooms();
