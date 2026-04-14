@@ -15,6 +15,7 @@ import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass } from "@/components/profile-decorations";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/lib/theme";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LANGUAGES, LEVELS } from "@shared/schema";
@@ -272,7 +273,7 @@ function CardHologramVideo({ src }: { src: string }) {
   const overlay = (
     <div
       className="absolute inset-0 z-[1] pointer-events-none"
-      style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.42) 60%, rgba(0,0,0,0.65) 100%)" }}
+      style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.44) 0%, rgba(2,4,18,0.32) 58%, rgba(2,4,18,0.58) 100%)" }}
     />
   );
   if (ytId) {
@@ -282,7 +283,7 @@ function CardHologramVideo({ src }: { src: string }) {
           src={buildYoutubeEmbed(ytId)}
           className="absolute inset-0 w-full h-full z-0"
           allow="autoplay; encrypted-media"
-          style={{ border: "none", pointerEvents: "none" }}
+          style={{ border: "none", pointerEvents: "none", opacity: 0.42, filter: "brightness(0.62) saturate(0.55)" }}
         />
         {overlay}
       </>
@@ -297,7 +298,7 @@ function CardHologramVideo({ src }: { src: string }) {
         muted
         playsInline
         className="absolute inset-0 w-full h-full object-cover z-0"
-        style={{ filter: "brightness(1.05) saturate(1.15)" }}
+        style={{ opacity: 0.42, filter: "brightness(0.62) saturate(0.55)" }}
       />
       {overlay}
     </>
@@ -307,6 +308,7 @@ function CardHologramVideo({ src }: { src: string }) {
 export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote }: RoomCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme } = useTheme();
   const isFull = participants.length >= room.maxUsers;
   const slots = Array.from({ length: Math.min(room.maxUsers, 12) });
   const avatarSize = getAvatarSizeClass(room.maxUsers);
@@ -440,8 +442,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const themeBorderClass = getRoomThemeBorderClass((room as any).roomTheme);
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
-  const glow = getThemeGlowColor((room as any).roomTheme);
-  const isPremiumAtmosphere = (room as any).roomTheme === "premium-atmosphere";
+  const isPremiumAtmosphere = theme === "premium-atmosphere" || (room as any).roomTheme === "premium-atmosphere";
+  const glow = getThemeGlowColor(isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme);
   const displaySlots = Array.from({ length: Math.min(room.maxUsers, 10) });
 
   /* circle size is based on room.maxUsers — fixed per room, never changes with current participants */
@@ -551,11 +553,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
   /* ── neon border gradient ── */
   const borderGradient = isPremiumAtmosphere
-    ? `linear-gradient(135deg, rgba(0,220,255,1) 0%, rgba(98,72,255,1) 28%, rgba(255,0,200,1) 52%, rgba(255,104,64,1) 76%, rgba(255,205,70,1) 100%)`
+    ? `linear-gradient(135deg, rgba(0,220,255,0.90) 0%, rgba(88,72,255,0.72) 28%, rgba(255,0,190,0.74) 52%, rgba(255,104,64,0.82) 78%, rgba(255,205,70,0.78) 100%)`
     : `linear-gradient(135deg, ${glow.from} 0%, rgba(168,85,247,1) 50%, ${glow.to} 100%)`;
   const outerGlow = isPremiumAtmosphere
-    ? "0 0 20px rgba(0,220,255,0.95), 0 0 46px rgba(255,0,200,0.72), 0 0 76px rgba(255,104,64,0.55)"
-    : `0 0 22px ${glow.from}, 0 0 45px ${glow.to}`;
+    ? "0 0 12px rgba(0,220,255,0.58), 0 0 26px rgba(255,0,190,0.34), 0 0 44px rgba(255,104,64,0.24)"
+    : `0 0 14px ${glow.from}, 0 0 30px ${glow.to}`;
 
   /* ── grid columns: always 2 rows, balanced ── */
   const gridCols =
@@ -581,10 +583,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         style={{
           borderRadius: "16px",
           background: isPremiumAtmosphere
-            ? "linear-gradient(145deg, rgba(8,11,33,0.42), rgba(34,10,48,0.34) 48%, rgba(15,7,23,0.48))"
-            : "rgba(6, 10, 28, 0.52)",
-          backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.45)" : "blur(18px)",
-          WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.45)" : "blur(18px)",
+            ? "linear-gradient(145deg, rgba(4,7,22,0.86), rgba(7,8,27,0.78) 48%, rgba(7,4,17,0.88))"
+            : "rgba(6, 10, 28, 0.28)",
+          backdropFilter: isPremiumAtmosphere ? "blur(18px) saturate(1.18)" : "blur(18px) saturate(1.05)",
+          WebkitBackdropFilter: isPremiumAtmosphere ? "blur(18px) saturate(1.18)" : "blur(18px) saturate(1.05)",
           height: isPremiumAtmosphere ? 304 : 290,
         }}
       >
@@ -667,7 +669,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         padding: 3,
                         background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
                         boxShadow: isPremiumAtmosphere
-                          ? `0 0 10px rgba(0,220,255,0.95), 0 0 18px rgba(255,0,200,0.7), 0 0 30px rgba(255,124,48,0.5)`
+                          ? `0 0 6px rgba(0,220,255,0.46), 0 0 11px rgba(255,0,200,0.26), 0 0 17px rgba(255,124,48,0.18)`
                           : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
                       }}
                     >
@@ -729,11 +731,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         width: circleSize + 6,
                         height: circleSize + 6,
                         background: isPremiumAtmosphere
-                          ? "conic-gradient(from 120deg, #00dcff, #6a5cff, #ff00c8, #ff6a3d, #ffd34f, #00dcff)"
+                          ? "conic-gradient(from 120deg, rgba(0,220,255,0.78), rgba(106,92,255,0.46), rgba(255,0,200,0.50), rgba(255,106,61,0.58), rgba(255,211,79,0.50), rgba(0,220,255,0.78))"
                           : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
                         padding: 2,
                         boxShadow: isPremiumAtmosphere
-                          ? "0 0 9px rgba(0,220,255,0.88), 0 0 18px rgba(255,0,200,0.62), 0 0 28px rgba(255,117,49,0.45)"
+                          ? "0 0 5px rgba(0,220,255,0.38), 0 0 10px rgba(255,0,200,0.20), 0 0 14px rgba(255,117,49,0.16)"
                           : `0 0 8px ${glow.from}, 0 0 16px ${glow.to}`,
                       }}
                     >
@@ -741,7 +743,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         className="w-full h-full rounded-full flex items-center justify-center"
                         style={{
                           background: isPremiumAtmosphere
-                            ? "radial-gradient(circle at 42% 32%, rgba(90,150,255,0.28), rgba(54,24,112,0.54) 46%, rgba(8,10,32,0.78))"
+                            ? "radial-gradient(circle at 42% 32%, rgba(255,255,255,0.06), rgba(16,20,55,0.68) 48%, rgba(4,7,22,0.88))"
                             : "radial-gradient(circle at 40% 35%, rgba(100,120,255,0.18), rgba(20,10,60,0.85))",
                         }}
                       >

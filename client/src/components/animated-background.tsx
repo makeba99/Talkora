@@ -684,10 +684,140 @@ function drawNeuralPulse(ctx: Ctx, W: number, H: number, t: number, state: Neura
 }
 
 /* ─────────────────────────────────────────────
+   PREMIUM ATMOSPHERE – luxury cosmic glass field
+───────────────────────────────────────────── */
+interface PremiumStar { x: number; y: number; r: number; tw: number; color: string; drift: number; }
+interface PremiumNode { x: number; y: number; vx: number; vy: number; r: number; color: string; phase: number; }
+interface PremiumState { stars: PremiumStar[]; nodes: PremiumNode[]; }
+
+const PREMIUM_STAR_COLORS = ["#ffffff", "#9eefff", "#7edbff", "#d6b8ff", "#ff8f5a", "#ffd37a", "#ff7bda"];
+const PREMIUM_NODE_COLORS = ["#00dcff", "#4e7dff", "#c13dff", "#ff42ca", "#ff7440", "#ffd05a"];
+
+function buildPremiumAtmosphere(W: number, H: number): PremiumState {
+  return {
+    stars: Array.from({ length: 260 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.15 + 0.18,
+      tw: Math.random() * Math.PI * 2,
+      color: PREMIUM_STAR_COLORS[Math.floor(Math.random() * PREMIUM_STAR_COLORS.length)],
+      drift: 0.03 + Math.random() * 0.12,
+    })),
+    nodes: Array.from({ length: 58 }, () => {
+      const speed = 0.05 + Math.random() * 0.12;
+      const angle = Math.random() * Math.PI * 2;
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: 1.4 + Math.random() * 2.2,
+        color: PREMIUM_NODE_COLORS[Math.floor(Math.random() * PREMIUM_NODE_COLORS.length)],
+        phase: Math.random() * Math.PI * 2,
+      };
+    }),
+  };
+}
+
+function drawPremiumAtmosphere(ctx: Ctx, W: number, H: number, t: number, state: PremiumState) {
+  ctx.clearRect(0, 0, W, H);
+
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#020615");
+  bg.addColorStop(0.45, "#05051a");
+  bg.addColorStop(1, "#12050f");
+  ctx.fillStyle = bg;
+  ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+
+  const nebula = [
+    { x: W * 0.16, y: H * 0.18, r: W * 0.36, c: "rgba(0,120,255,0.09)" },
+    { x: W * 0.82, y: H * 0.26, r: W * 0.30, c: "rgba(255,82,36,0.07)" },
+    { x: W * 0.48, y: H * 0.70, r: W * 0.34, c: "rgba(255,0,190,0.05)" },
+    { x: W * 0.62, y: H * 0.18, r: W * 0.22, c: "rgba(46,80,255,0.06)" },
+  ];
+
+  nebula.forEach((n, i) => {
+    const ox = Math.sin(t * (0.12 + i * 0.03) + i) * 28;
+    const oy = Math.cos(t * (0.10 + i * 0.04) + i) * 18;
+    const g = ctx.createRadialGradient(n.x + ox, n.y + oy, 0, n.x + ox, n.y + oy, n.r);
+    g.addColorStop(0, n.c);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  });
+
+  state.stars.forEach((s) => {
+    s.y += s.drift;
+    if (s.y > H + 4) {
+      s.y = -4;
+      s.x = Math.random() * W;
+    }
+    const pulse = 0.24 + 0.55 * (0.5 + 0.5 * Math.sin(t * 1.3 + s.tw));
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = s.color;
+    ctx.shadowColor = s.color;
+    ctx.shadowBlur = s.r > 0.9 ? 9 : 4;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.shadowBlur = 0;
+
+  for (let i = 0; i < state.nodes.length; i++) {
+    const a = state.nodes[i];
+    a.x += a.vx;
+    a.y += a.vy;
+    if (a.x < 0 || a.x > W) a.vx *= -1;
+    if (a.y < 0 || a.y > H) a.vy *= -1;
+
+    for (let j = i + 1; j < state.nodes.length; j++) {
+      const b = state.nodes[j];
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < 180) {
+        const alpha = (1 - d / 180) * 0.20;
+        const grd = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+        grd.addColorStop(0, `rgba(0,220,255,${alpha})`);
+        grd.addColorStop(0.5, `rgba(255,0,200,${alpha * 0.72})`);
+        grd.addColorStop(1, `rgba(255,124,50,${alpha * 0.8})`);
+        ctx.strokeStyle = grd;
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+
+    const glow = 0.35 + 0.35 * Math.sin(t * 1.4 + a.phase);
+    ctx.globalAlpha = 0.55 + glow * 0.35;
+    ctx.fillStyle = a.color;
+    ctx.shadowColor = a.color;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, a.r + glow, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+
+  const vignette = ctx.createRadialGradient(W * 0.5, H * 0.46, 0, W * 0.5, H * 0.46, Math.max(W, H) * 0.72);
+  vignette.addColorStop(0, "rgba(0,0,0,0)");
+  vignette.addColorStop(0.72, "rgba(0,0,0,0.26)");
+  vignette.addColorStop(1, "rgba(0,0,0,0.68)");
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const ANIMATED_THEMES = new Set([
-  "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon","neural-pulse",
+  "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon","neural-pulse","premium-atmosphere",
 ]);
 
 export function AnimatedBackground() {
@@ -703,6 +833,7 @@ export function AnimatedBackground() {
     rain?:        RainColumn[];
     nebula?:      NebParticle[];
     neural?:      NeuralState;
+    premium?:     PremiumState;
   }>({});
 
   const active = ANIMATED_THEMES.has(theme);
@@ -740,6 +871,9 @@ export function AnimatedBackground() {
       }
       if (theme === "neural-pulse") {
         dataRef.current.neural = buildNeuralPulse(W, H);
+      }
+      if (theme === "premium-atmosphere") {
+        dataRef.current.premium = buildPremiumAtmosphere(W, H);
       }
     };
 
@@ -798,6 +932,10 @@ export function AnimatedBackground() {
       else if (theme === "neural-pulse") {
         if (!dataRef.current.neural) return;
         drawNeuralPulse(ctx, W, H, t, dataRef.current.neural);
+      }
+      else if (theme === "premium-atmosphere") {
+        if (!dataRef.current.premium) return;
+        drawPremiumAtmosphere(ctx, W, H, t, dataRef.current.premium);
       }
 
       rafRef.current = requestAnimationFrame(draw);

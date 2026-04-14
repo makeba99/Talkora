@@ -489,9 +489,9 @@ html.premium-atmosphere {
 
 html.premium-atmosphere body {
   background:
-    radial-gradient(ellipse at 14% 10%, rgba(0, 110, 255, 0.28) 0%, transparent 36%),
-    radial-gradient(ellipse at 88% 22%, rgba(255, 87, 34, 0.22) 0%, transparent 34%),
-    radial-gradient(ellipse at 48% 78%, rgba(255, 0, 200, 0.14) 0%, transparent 42%),
+    radial-gradient(ellipse at 14% 10%, rgba(0, 110, 255, 0.22) 0%, transparent 36%),
+    radial-gradient(ellipse at 88% 22%, rgba(255, 87, 34, 0.16) 0%, transparent 34%),
+    radial-gradient(ellipse at 48% 78%, rgba(255, 0, 200, 0.10) 0%, transparent 42%),
     hsl(228 62% 4%);
 }
 
@@ -1128,7 +1128,8 @@ html.aurora #animated-bg-canvas,
 html.neon-cyberpunk #animated-bg-canvas,
 html.midnight-purple #animated-bg-canvas,
 html.blood-moon #animated-bg-canvas,
-html.neural-pulse #animated-bg-canvas {
+html.neural-pulse #animated-bg-canvas,
+html.premium-atmosphere #animated-bg-canvas {
   opacity: 1;
 }
 
@@ -1233,9 +1234,8 @@ html.synthwave .neon-text {
 .inferno-border-wrap { animation: inferno-hue 6s ease-in-out infinite; }
 
 @keyframes premium-atmosphere-border {
-  0%, 100% { filter: brightness(1.18) saturate(1.25) hue-rotate(0deg); transform: translateZ(0); }
-  35% { filter: brightness(1.38) saturate(1.58) hue-rotate(18deg); }
-  70% { filter: brightness(1.28) saturate(1.42) hue-rotate(-16deg); }
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 @keyframes premium-atmosphere-spark {
@@ -1257,11 +1257,12 @@ html.synthwave .neon-text {
 }
 
 .premium-atmosphere-border-wrap {
+  background-size: 260% 260% !important;
   animation: premium-atmosphere-border 4.6s ease-in-out infinite;
 }
 
 .premium-atmosphere-card {
-  box-shadow: inset 0 0 32px rgba(255, 255, 255, 0.055), inset 0 -1px 0 rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.035), inset 0 -1px 0 rgba(255, 255, 255, 0.07);
 }
 
 .premium-atmosphere-card-effects {
@@ -1270,6 +1271,7 @@ html.synthwave .neon-text {
   overflow: hidden;
   pointer-events: none;
   z-index: 1;
+  opacity: 0.42;
 }
 
 .premium-atmosphere-orb,
@@ -1281,8 +1283,9 @@ html.synthwave .neon-text {
 
 .premium-atmosphere-orb {
   border-radius: 9999px;
-  filter: blur(18px);
+  filter: blur(26px);
   animation: premium-atmosphere-orb 9s ease-in-out infinite;
+  display: none;
 }
 
 .premium-atmosphere-orb-a {
@@ -1290,7 +1293,7 @@ html.synthwave .neon-text {
   height: 150px;
   left: -52px;
   top: -48px;
-  background: radial-gradient(circle, rgba(0, 220, 255, 0.34), transparent 68%);
+  background: radial-gradient(circle, rgba(0, 220, 255, 0.10), transparent 68%);
 }
 
 .premium-atmosphere-orb-b {
@@ -1298,7 +1301,7 @@ html.synthwave .neon-text {
   height: 170px;
   right: -58px;
   top: -18px;
-  background: radial-gradient(circle, rgba(255, 93, 43, 0.30), transparent 68%);
+  background: radial-gradient(circle, rgba(255, 93, 43, 0.09), transparent 68%);
   animation-delay: -2.4s;
 }
 
@@ -1307,7 +1310,7 @@ html.synthwave .neon-text {
   height: 150px;
   left: 35%;
   bottom: -74px;
-  background: radial-gradient(circle, rgba(255, 0, 200, 0.24), transparent 70%);
+  background: radial-gradient(circle, rgba(255, 0, 200, 0.08), transparent 70%);
   animation-delay: -4.2s;
 }
 
@@ -1316,7 +1319,7 @@ html.synthwave .neon-text {
   left: 0;
   width: 34%;
   height: 180%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
   animation: premium-atmosphere-sweep 5.8s ease-in-out infinite;
 }
 
@@ -1325,6 +1328,6 @@ html.synthwave .neon-text {
   height: 2px;
   border-radius: 9999px;
   background: rgba(235, 247, 255, 0.95);
-  box-shadow: 0 0 10px rgba(0, 220, 255, 0.8), 0 0 18px rgba(255, 0, 200, 0.45);
+  box-shadow: 0 0 7px rgba(0, 220, 255, 0.48), 0 0 12px rgba(255, 0, 200, 0.24);
   animation: premium-atmosphere-spark 2.6s ease-in-out infinite;
 }

@@ -166,10 +166,10 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "neural-pulse",
+  theme: "premium-atmosphere",
   setTheme: () => {},
   toggleTheme: () => {},
-  currentThemeDef: THEMES.find(t => t.id === "neural-pulse") ?? THEMES[0],
+  currentThemeDef: THEMES.find(t => t.id === "premium-atmosphere") ?? THEMES[0],
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -178,9 +178,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem("theme") as Theme | null;
       const hasExplicitChoice = localStorage.getItem("theme-chosen") === "1";
       if (saved && hasExplicitChoice) return saved;
-      return "neural-pulse";
+      return "premium-atmosphere";
     }
-    return "neural-pulse";
+    return "premium-atmosphere";
   });
 
   useEffect(() => {
