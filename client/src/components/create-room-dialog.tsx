@@ -10,6 +10,11 @@ import { LANGUAGES, LEVELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 const ROOM_THEMES = [
+  { id: "premium-atmosphere", label: "Premium Atmosphere", preview: "from-cyan-400 via-fuchsia-500 to-orange-400" },
+  { id: "cosmic", label: "Cosmic", preview: "from-blue-600 via-purple-500 to-red-500" },
+  { id: "plasma", label: "Plasma", preview: "from-pink-500 via-purple-600 to-indigo-500" },
+  { id: "hologram", label: "Hologram", preview: "from-cyan-400 via-teal-500 to-emerald-400" },
+  { id: "inferno", label: "Inferno", preview: "from-orange-600 via-red-500 to-yellow-400" },
   { id: "default", label: "Default", preview: "from-cyan-500 to-purple-500" },
   { id: "neon", label: "Neon", preview: "from-cyan-400 to-purple-500" },
   { id: "galaxy", label: "Galaxy", preview: "from-indigo-500 to-purple-700" },
@@ -56,7 +61,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   const [level, setLevel] = useState("Beginner");
   const [maxUsers, setMaxUsers] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
-  const [roomTheme, setRoomTheme] = useState("cosmic");
+  const [roomTheme, setRoomTheme] = useState("premium-atmosphere");
   const [videoTab, setVideoTab] = useState<"upload" | "youtube">("upload");
   const [hologramFile, setHologramFile] = useState<File | null>(null);
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);
@@ -100,7 +105,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
   const resetForm = () => {
     setTitle("");
-    setRoomTheme("default");
+    setRoomTheme("premium-atmosphere");
     setHologramFile(null);
     setHologramPreview(null);
     setYtLinkInput("");

@@ -16,7 +16,8 @@ export type Theme =
   | "synthwave"
   | "blood-moon"
   | "slate-noir"
-  | "neural-pulse";
+  | "neural-pulse"
+  | "premium-atmosphere";
 
 export interface ThemeDefinition {
   id: Theme;
@@ -28,6 +29,14 @@ export interface ThemeDefinition {
 }
 
 export const THEMES: ThemeDefinition[] = [
+  {
+    id: "premium-atmosphere",
+    label: "Premium Atmosphere",
+    description: "Luxury animated neon glass",
+    swatchColors: ["#03050f", "#1a0b2f", "#ff5c31"],
+    isDark: true,
+    animated: true,
+  },
   {
     id: "dark",
     label: "Dark",

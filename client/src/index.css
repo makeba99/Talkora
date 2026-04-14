@@ -438,6 +438,63 @@ html.aurora {
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+html.premium-atmosphere {
+  --button-outline: rgba(0, 220, 255, .18);
+  --badge-outline: rgba(255, 104, 64, .10);
+  --opaque-button-border-intensity: 14;
+  --elevate-1: rgba(0, 220, 255, .08);
+  --elevate-2: rgba(255, 0, 200, .14);
+  --background: 228 62% 4%;
+  --foreground: 220 40% 94%;
+  --border: 236 48% 18%;
+  --card: 236 54% 8%;
+  --card-foreground: 220 40% 94%;
+  --card-border: 198 100% 50%;
+  --sidebar: 232 60% 5%;
+  --sidebar-foreground: 220 40% 94%;
+  --sidebar-border: 236 48% 15%;
+  --sidebar-primary: 190 100% 50%;
+  --sidebar-primary-foreground: 228 62% 4%;
+  --sidebar-accent: 268 52% 13%;
+  --sidebar-accent-foreground: 220 40% 94%;
+  --sidebar-ring: 318 100% 55%;
+  --popover: 236 54% 8%;
+  --popover-foreground: 220 40% 94%;
+  --popover-border: 198 100% 50%;
+  --primary: 190 100% 50%;
+  --primary-foreground: 228 62% 4%;
+  --secondary: 318 100% 55%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 236 42% 13%;
+  --muted-foreground: 220 18% 66%;
+  --accent: 20 100% 58%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 56%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 236 42% 20%;
+  --ring: 318 100% 55%;
+  --chart-1: 190 100% 50%;
+  --chart-2: 318 100% 55%;
+  --chart-3: 20 100% 58%;
+  --chart-4: 250 100% 68%;
+  --chart-5: 42 100% 62%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+html.premium-atmosphere body {
+  background:
+    radial-gradient(ellipse at 14% 10%, rgba(0, 110, 255, 0.28) 0%, transparent 36%),
+    radial-gradient(ellipse at 88% 22%, rgba(255, 87, 34, 0.22) 0%, transparent 34%),
+    radial-gradient(ellipse at 48% 78%, rgba(255, 0, 200, 0.14) 0%, transparent 42%),
+    hsl(228 62% 4%);
+}
+
 .dark {
   --button-outline: rgba(0, 188, 212, .12);
   --badge-outline: rgba(0, 188, 212, .06);
@@ -1174,3 +1231,100 @@ html.synthwave .neon-text {
   100% { filter: hue-rotate(0deg)   brightness(1.1) saturate(1.2); }
 }
 .inferno-border-wrap { animation: inferno-hue 6s ease-in-out infinite; }
+
+@keyframes premium-atmosphere-border {
+  0%, 100% { filter: brightness(1.18) saturate(1.25) hue-rotate(0deg); transform: translateZ(0); }
+  35% { filter: brightness(1.38) saturate(1.58) hue-rotate(18deg); }
+  70% { filter: brightness(1.28) saturate(1.42) hue-rotate(-16deg); }
+}
+
+@keyframes premium-atmosphere-spark {
+  0%, 100% { opacity: 0.16; transform: scale(0.65); }
+  50% { opacity: 0.95; transform: scale(1.35); }
+}
+
+@keyframes premium-atmosphere-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  40% { transform: translate(18px, -16px) scale(1.08); opacity: 0.8; }
+  72% { transform: translate(-14px, 10px) scale(0.94); opacity: 0.42; }
+}
+
+@keyframes premium-atmosphere-sweep {
+  0% { transform: translateX(-120%) rotate(9deg); opacity: 0; }
+  18% { opacity: 0.75; }
+  55% { opacity: 0.3; }
+  100% { transform: translateX(145%) rotate(9deg); opacity: 0; }
+}
+
+.premium-atmosphere-border-wrap {
+  animation: premium-atmosphere-border 4.6s ease-in-out infinite;
+}
+
+.premium-atmosphere-card {
+  box-shadow: inset 0 0 32px rgba(255, 255, 255, 0.055), inset 0 -1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.premium-atmosphere-card-effects {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.premium-atmosphere-orb,
+.premium-atmosphere-sweep,
+.premium-atmosphere-spark {
+  position: absolute;
+  display: block;
+}
+
+.premium-atmosphere-orb {
+  border-radius: 9999px;
+  filter: blur(18px);
+  animation: premium-atmosphere-orb 9s ease-in-out infinite;
+}
+
+.premium-atmosphere-orb-a {
+  width: 150px;
+  height: 150px;
+  left: -52px;
+  top: -48px;
+  background: radial-gradient(circle, rgba(0, 220, 255, 0.34), transparent 68%);
+}
+
+.premium-atmosphere-orb-b {
+  width: 170px;
+  height: 170px;
+  right: -58px;
+  top: -18px;
+  background: radial-gradient(circle, rgba(255, 93, 43, 0.30), transparent 68%);
+  animation-delay: -2.4s;
+}
+
+.premium-atmosphere-orb-c {
+  width: 150px;
+  height: 150px;
+  left: 35%;
+  bottom: -74px;
+  background: radial-gradient(circle, rgba(255, 0, 200, 0.24), transparent 70%);
+  animation-delay: -4.2s;
+}
+
+.premium-atmosphere-sweep {
+  top: -40%;
+  left: 0;
+  width: 34%;
+  height: 180%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  animation: premium-atmosphere-sweep 5.8s ease-in-out infinite;
+}
+
+.premium-atmosphere-spark {
+  width: 2px;
+  height: 2px;
+  border-radius: 9999px;
+  background: rgba(235, 247, 255, 0.95);
+  box-shadow: 0 0 10px rgba(0, 220, 255, 0.8), 0 0 18px rgba(255, 0, 200, 0.45);
+  animation: premium-atmosphere-spark 2.6s ease-in-out infinite;
+}

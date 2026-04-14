@@ -61,6 +61,7 @@ function LanguageFlag({ language }: { language: string }) {
 
 function getThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string; animated?: string } {
   switch (themeId) {
+    case "premium-atmosphere": return { from: "rgba(0,210,255,1)",    to: "rgba(255,92,49,1)",     ring: "rgba(0,210,255,0.95), rgba(255,0,184,0.95), rgba(255,150,40,0.95)", animated: "premium-atmosphere-border-wrap" };
     /* ── Premium Animated Themes ── */
     case "cosmic":     return { from: "rgba(37,99,235,1)",    to: "rgba(239,68,68,1)",    ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)",    animated: "cosmic-border-wrap" };
     case "plasma":     return { from: "rgba(236,72,153,1)",   to: "rgba(99,102,241,1)",   ring: "rgba(236,72,153,0.9), rgba(99,102,241,0.9)",   animated: "plasma-border-wrap" };
@@ -84,6 +85,7 @@ function getThemeGlowColor(themeId: string | null | undefined): { from: string; 
 }
 
 const ROOM_THEMES = [
+  { id: "premium-atmosphere", label: "✦ Premium Atmosphere", from: "from-cyan-400", to: "to-orange-400", preview: "from-cyan-400 via-fuchsia-500 to-orange-400" },
   /* ── Premium Animated (top section) ── */
   { id: "cosmic",   label: "✦ Cosmic",   from: "from-blue-600",   to: "to-red-500",      preview: "from-blue-600 via-purple-500 to-red-500" },
   { id: "plasma",   label: "✦ Plasma",   from: "from-pink-500",   to: "to-indigo-500",   preview: "from-pink-500 via-purple-600 to-indigo-500" },
@@ -439,6 +441,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
   const glow = getThemeGlowColor((room as any).roomTheme);
+  const isPremiumAtmosphere = (room as any).roomTheme === "premium-atmosphere";
   const displaySlots = Array.from({ length: Math.min(room.maxUsers, 10) });
 
   /* circle size is based on room.maxUsers — fixed per room, never changes with current participants */
@@ -547,8 +550,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   })();
 
   /* ── neon border gradient ── */
-  const borderGradient = `linear-gradient(135deg, ${glow.from} 0%, rgba(168,85,247,1) 50%, ${glow.to} 100%)`;
-  const outerGlow = `0 0 22px ${glow.from}, 0 0 45px ${glow.to}`;
+  const borderGradient = isPremiumAtmosphere
+    ? `linear-gradient(135deg, rgba(0,220,255,1) 0%, rgba(98,72,255,1) 28%, rgba(255,0,200,1) 52%, rgba(255,104,64,1) 76%, rgba(255,205,70,1) 100%)`
+    : `linear-gradient(135deg, ${glow.from} 0%, rgba(168,85,247,1) 50%, ${glow.to} 100%)`;
+  const outerGlow = isPremiumAtmosphere
+    ? "0 0 20px rgba(0,220,255,0.95), 0 0 46px rgba(255,0,200,0.72), 0 0 76px rgba(255,104,64,0.55)"
+    : `0 0 22px ${glow.from}, 0 0 45px ${glow.to}`;
 
   /* ── grid columns: always 2 rows, balanced ── */
   const gridCols =
@@ -570,15 +577,37 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
       data-testid={`card-room-${room.id}`}
     >
       <div
-        className="flex flex-col relative overflow-hidden"
+        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
         style={{
           borderRadius: "16px",
-          background: "rgba(6, 10, 28, 0.52)",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
-          height: 290,
+          background: isPremiumAtmosphere
+            ? "linear-gradient(145deg, rgba(8,11,33,0.42), rgba(34,10,48,0.34) 48%, rgba(15,7,23,0.48))"
+            : "rgba(6, 10, 28, 0.52)",
+          backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.45)" : "blur(18px)",
+          WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.45)" : "blur(18px)",
+          height: isPremiumAtmosphere ? 304 : 290,
         }}
       >
+        {isPremiumAtmosphere && (
+          <div className="premium-atmosphere-card-effects" aria-hidden="true">
+            <span className="premium-atmosphere-orb premium-atmosphere-orb-a" />
+            <span className="premium-atmosphere-orb premium-atmosphere-orb-b" />
+            <span className="premium-atmosphere-orb premium-atmosphere-orb-c" />
+            <span className="premium-atmosphere-sweep" />
+            {Array.from({ length: 28 }).map((_, i) => (
+              <span
+                key={i}
+                className="premium-atmosphere-spark"
+                style={{
+                  left: `${(i * 17 + 9) % 100}%`,
+                  top: `${(i * 29 + 13) % 100}%`,
+                  animationDelay: `${(i % 9) * 0.28}s`,
+                  animationDuration: `${2.1 + (i % 7) * 0.38}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
         {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} />}
 
         <div className="relative z-[2] flex flex-col h-full">
@@ -620,7 +649,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
           {/* ── Body: unified neon ring circle grid ── */}
           <div className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 overflow-hidden">
-            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}>
+            <div className={`grid ${isPremiumAtmosphere ? "gap-3" : "gap-2"}`} style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
@@ -637,10 +666,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         height: circleSize + 6,
                         padding: 3,
                         background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
-                        boxShadow: `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
+                        boxShadow: isPremiumAtmosphere
+                          ? `0 0 10px rgba(0,220,255,0.95), 0 0 18px rgba(255,0,200,0.7), 0 0 30px rgba(255,124,48,0.5)`
+                          : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
                       }}
                     >
-                      <Avatar style={{ width: circleSize, height: circleSize }} className="border-2 border-[#0a1228]">
+                      <Avatar style={{ width: circleSize, height: circleSize }} className={`border-2 ${isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
                         <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} />
                         <AvatarFallback className="text-base font-bold bg-[#0d1a3a] text-cyan-300">
                           {getUserInitials(p)}
@@ -697,15 +728,21 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                       style={{
                         width: circleSize + 6,
                         height: circleSize + 6,
-                        background: `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
+                        background: isPremiumAtmosphere
+                          ? "conic-gradient(from 120deg, #00dcff, #6a5cff, #ff00c8, #ff6a3d, #ffd34f, #00dcff)"
+                          : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
                         padding: 2,
-                        boxShadow: `0 0 8px ${glow.from}, 0 0 16px ${glow.to}`,
+                        boxShadow: isPremiumAtmosphere
+                          ? "0 0 9px rgba(0,220,255,0.88), 0 0 18px rgba(255,0,200,0.62), 0 0 28px rgba(255,117,49,0.45)"
+                          : `0 0 8px ${glow.from}, 0 0 16px ${glow.to}`,
                       }}
                     >
                       <div
                         className="w-full h-full rounded-full flex items-center justify-center"
                         style={{
-                          background: "radial-gradient(circle at 40% 35%, rgba(100,120,255,0.18), rgba(20,10,60,0.85))",
+                          background: isPremiumAtmosphere
+                            ? "radial-gradient(circle at 42% 32%, rgba(90,150,255,0.28), rgba(54,24,112,0.54) 46%, rgba(8,10,32,0.78))"
+                            : "radial-gradient(circle at 40% 35%, rgba(100,120,255,0.18), rgba(20,10,60,0.85))",
                         }}
                       >
                         <Users className="w-5 h-5" style={{ color: "rgba(180,140,255,0.55)" }} />
@@ -771,7 +808,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 href="/api/login"
                 className="step-in-btn flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-white text-xs font-bold active:scale-95"
                 style={{
-                  background: `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
+                  background: isPremiumAtmosphere
+                    ? "linear-gradient(90deg, #04d9ff 0%, #654cff 32%, #ff13c8 60%, #ff7138 82%, #ffd44d 100%)"
+                    : `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
                 }}
                 data-testid={`button-signin-room-${room.id}`}
               >
@@ -782,7 +821,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               <button
                 className="step-in-btn flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white text-xs font-bold active:scale-95"
                 style={{
-                  background: `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
+                  background: isPremiumAtmosphere
+                    ? "linear-gradient(90deg, #04d9ff 0%, #654cff 32%, #ff13c8 60%, #ff7138 82%, #ffd44d 100%)"
+                    : `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
                 }}
                 onClick={() => onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}

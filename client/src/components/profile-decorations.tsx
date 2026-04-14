@@ -613,6 +613,7 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
 
 export const ROOM_THEMES = [
   { id: "none", label: "Default", description: "Standard theme", bg: "" },
+  { id: "premium-atmosphere", label: "💎 Premium Atmosphere", description: "Transparent neon glass with luxury cosmic motion", bg: "premium-atmosphere" },
   { id: "neon", label: "⚡ Neon City", description: "Cyan & purple neon glow", bg: "neon" },
   { id: "galaxy", label: "🌌 Galaxy", description: "Deep space starfield", bg: "galaxy" },
   { id: "sunset", label: "🌅 Sunset", description: "Warm orange glow", bg: "sunset" },
@@ -629,6 +630,15 @@ export const ROOM_THEMES = [
 export type RoomThemeId = typeof ROOM_THEMES[number]["id"];
 
 const ROOM_THEME_KEYFRAMES = `
+  @keyframes rt-premium-drift {
+    0%,100% { transform: translate(0,0) scale(1); opacity: 0.52; }
+    35% { transform: translate(24px,-18px) scale(1.08); opacity: 0.82; }
+    70% { transform: translate(-18px,14px) scale(0.94); opacity: 0.44; }
+  }
+  @keyframes rt-premium-constellation {
+    0%,100% { opacity: 0.08; transform: scaleX(0.9); }
+    50% { opacity: 0.24; transform: scaleX(1.04); }
+  }
   @keyframes rt-dust-drift {
     0%   { transform: translate(0,0) scale(1); opacity: var(--dp,0.4); }
     25%  { transform: translate(var(--dx1,4px), var(--dy1,-6px)) scale(1.05); opacity: calc(var(--dp,0.4) * 1.5); }
@@ -772,6 +782,8 @@ const ROOM_THEME_KEYFRAMES = `
 
 export function getChatPanelStyle(themeId: string | null | undefined): React.CSSProperties {
   switch (themeId) {
+    case "premium-atmosphere":
+      return { background: "rgba(6,8,24,0.58)", backdropFilter: "blur(20px) saturate(1.4)", WebkitBackdropFilter: "blur(20px) saturate(1.4)", borderColor: "rgba(0,220,255,0.24)" };
     case "neon":
       return { background: "rgba(5,3,14,0.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(80,40,180,0.22)" };
     case "galaxy":
@@ -801,6 +813,8 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
 
 export function getRoomThemeStyle(themeId: string | null | undefined): React.CSSProperties {
   switch (themeId) {
+    case "premium-atmosphere":
+      return { background: "radial-gradient(ellipse at 20% 18%, rgba(0,90,255,0.24) 0%, transparent 38%), radial-gradient(ellipse at 82% 34%, rgba(255,75,28,0.18) 0%, transparent 42%), radial-gradient(ellipse at 48% 72%, rgba(255,0,190,0.12) 0%, transparent 46%), #03050f" };
     case "neon":
       return { background: "radial-gradient(ellipse at 30% 40%, #07091c 0%, #060612 55%, #08060e 100%)" };
     case "galaxy":
@@ -945,6 +959,23 @@ export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefin
   if (themeId === "none") return null;
 
   switch (themeId) {
+    case "premium-atmosphere":
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 15% 12%, rgba(0,220,255,0.18) 0%, transparent 45%), radial-gradient(ellipse at 88% 30%, rgba(255,98,35,0.16) 0%, transparent 42%), radial-gradient(ellipse at 45% 70%, rgba(255,0,200,0.10) 0%, transparent 48%)" }} />
+          <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(115deg, transparent 0 28%, rgba(0,220,255,0.10) 30%, transparent 32% 100%), linear-gradient(24deg, transparent 0 42%, rgba(255,128,64,0.10) 44%, transparent 46% 100%)", animation:"rt-premium-constellation 7s ease-in-out infinite" }} />
+          {[0,1,2].map((i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%", width:`${38 + i * 18}%`, height:`${38 + i * 18}%`, left:`${-8 + i * 32}%`, top:`${-10 + i * 18}%`, background:i === 0 ? "radial-gradient(circle, rgba(0,220,255,0.14), transparent 66%)" : i === 1 ? "radial-gradient(circle, rgba(255,0,200,0.12), transparent 68%)" : "radial-gradient(circle, rgba(255,118,42,0.14), transparent 68%)", filter:"blur(10px)", animation:`rt-premium-drift ${10 + i * 3}s ease-in-out infinite ${i * 1.6}s` }} />
+          ))}
+          {Array.from({length:60}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%", width:1+(i%4), height:1+(i%4), background:i%5===0 ? "rgba(255,141,73,0.92)" : i%3===0 ? "rgba(255,0,200,0.84)" : "rgba(170,225,255,0.9)", top:`${(i*19+11)%100}%`, left:`${(i*23+7)%100}%`, boxShadow:i%4===0 ? "0 0 10px currentColor" : undefined, animation:`rt-star-twinkle ${1.6+(i%8)*0.35}s ease-in-out infinite ${(i%11)*0.24}s`, opacity:0.14+(i%6)*0.09 }} />
+          ))}
+          {Array.from({length:4}).map((_,i)=>(
+            <div key={`line-${i}`} style={{ position:"absolute", height:"1px", width:`${24 + i * 10}%`, left:`${8 + i * 20}%`, top:`${18 + i * 17}%`, background:"linear-gradient(90deg, transparent, rgba(0,220,255,0.34), rgba(255,0,200,0.20), transparent)", transform:`rotate(${-16 + i * 11}deg)`, animation:`rt-premium-constellation ${4.8+i}s ease-in-out infinite ${i * 0.6}s` }} />
+          ))}
+        </div>
+      );
     case "neon":
       return (
         <div style={base}>
@@ -1287,6 +1318,7 @@ export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefin
 
 export function getRoomThemeBorderClass(themeId: string | null | undefined): string {
   switch (themeId) {
+    case "premium-atmosphere": return "from-cyan-400 via-fuchsia-500 to-orange-400";
     case "neon": return "from-cyan-400 to-purple-500";
     case "galaxy": return "from-indigo-500 to-purple-700";
     case "sunset": return "from-orange-400 to-red-500";
