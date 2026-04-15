@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -2501,44 +2500,71 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const currentTheme = (room as any).roomTheme || "none";
 
   const sidePanelContent = (
-    <Tabs value={sidePanelTab} onValueChange={setSidePanelTab} className="flex flex-col h-full">
-      <TabsList className="w-full border-b border-border/60 bg-transparent h-auto p-0 flex shrink-0">
-        <TabsTrigger
-          value="chat"
-          className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/[0.07] data-[state=active]:text-primary text-muted-foreground/70 text-[11px] py-3 px-1 transition-all duration-200 relative font-medium tracking-wide hover:text-foreground/80 hover:bg-muted/30"
-          data-testid="tab-chat"
-        >
-          <MessageSquare className="w-3 h-3 mr-1" /> Chat
+    <div className="flex flex-col h-full">
+      {/* Icon-only tab switcher row */}
+      <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-white/[0.07] shrink-0">
+        {/* Chat */}
+        <div className="relative">
+          <button
+            onClick={() => setSidePanelTab("chat")}
+            data-testid="tab-chat"
+            title="Chat"
+            className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
+            style={sidePanelTab === "chat"
+              ? { background: "rgba(0,225,255,0.12)", border: "1px solid rgba(0,225,255,0.22)", color: "rgba(0,225,255,0.92)", boxShadow: "0 0 10px rgba(0,225,255,0.10)" }
+              : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
+            }
+          >
+            <MessageSquare className="w-[15px] h-[15px]" />
+          </button>
           {unreadChatBadge > 0 && (
-            <span className="ml-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[15px] h-[15px] px-0.5 flex items-center justify-center leading-none shadow-sm">
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.5)" }}>
               {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
             </span>
           )}
-        </TabsTrigger>
-        <TabsTrigger
-          value="youtube"
-          className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-red-400 data-[state=active]:bg-red-500/[0.07] data-[state=active]:text-red-400 text-muted-foreground/70 text-[11px] py-3 px-1 transition-all duration-200 font-medium tracking-wide hover:text-foreground/80 hover:bg-muted/30"
+        </div>
+        {/* YouTube */}
+        <button
+          onClick={() => setSidePanelTab("youtube")}
           data-testid="tab-youtube"
+          title="YouTube"
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
+          style={sidePanelTab === "youtube"
+            ? { background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.22)", color: "rgba(252,100,100,0.92)", boxShadow: "0 0 10px rgba(239,68,68,0.10)" }
+            : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
+          }
         >
-          <Youtube className="w-3 h-3 mr-1" /> YouTube
-        </TabsTrigger>
-        <TabsTrigger
-          value="read"
-          className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-400 data-[state=active]:bg-emerald-500/[0.07] data-[state=active]:text-emerald-400 text-muted-foreground/70 text-[11px] py-3 px-1 transition-all duration-200 font-medium tracking-wide hover:text-foreground/80 hover:bg-muted/30"
+          <Youtube className="w-[15px] h-[15px]" />
+        </button>
+        {/* Read */}
+        <button
+          onClick={() => setSidePanelTab("read")}
           data-testid="tab-read"
+          title="Read"
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
+          style={sidePanelTab === "read"
+            ? { background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.22)", color: "rgba(110,231,183,0.92)", boxShadow: "0 0 10px rgba(52,211,153,0.10)" }
+            : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
+          }
         >
-          <BookOpen className="w-3 h-3 mr-1" /> Read
-        </TabsTrigger>
-        <TabsTrigger
-          value="chess"
-          className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-400 data-[state=active]:bg-amber-500/[0.07] data-[state=active]:text-amber-400 text-muted-foreground/70 text-[11px] py-3 px-1 transition-all duration-200 font-medium tracking-wide hover:text-foreground/80 hover:bg-muted/30"
+          <BookOpen className="w-[15px] h-[15px]" />
+        </button>
+        {/* Chess */}
+        <button
+          onClick={() => setSidePanelTab("chess")}
           data-testid="tab-chess"
+          title="Chess"
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
+          style={sidePanelTab === "chess"
+            ? { background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.22)", color: "rgba(253,224,71,0.92)", boxShadow: "0 0 10px rgba(251,191,36,0.10)" }
+            : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
+          }
         >
-          <Gamepad2 className="w-3 h-3 mr-1" /> Chess
-        </TabsTrigger>
-      </TabsList>
+          <Gamepad2 className="w-[15px] h-[15px]" />
+        </button>
+      </div>
 
-      <TabsContent value="chat" className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" forceMount style={{ display: sidePanelTab === "chat" ? "flex" : "none" }}>
+      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chat" ? "flex" : "none" }}>
         <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border/40 bg-muted/10">
           <button
             onClick={() => setShowMentionsOnly(false)}
@@ -2891,10 +2917,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </Button>
           </div>
         </form>
-      </TabsContent>
+      </div>
 
 
-      <TabsContent value="youtube" className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" forceMount style={{ display: sidePanelTab === "youtube" ? "flex" : "none" }}>
+      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "youtube" ? "flex" : "none" }}>
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0 space-y-2">
             <div className="relative">
@@ -3010,9 +3036,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           </ScrollArea>
         </div>
-      </TabsContent>
+      </div>
 
-      <TabsContent value="read" className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" forceMount style={{ display: sidePanelTab === "read" ? "flex" : "none" }}>
+      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "read" ? "flex" : "none" }}>
         {sharedBook && !selectedBook && (
           <div className="m-3 p-3 rounded-xl border border-green-500/30 bg-green-500/5 space-y-2 flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -3176,9 +3202,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </ScrollArea>
           </div>
         )}
-      </TabsContent>
+      </div>
 
-      <TabsContent value="chess" className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" forceMount style={{ display: sidePanelTab === "chess" ? "flex" : "none" }}>
+      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chess" ? "flex" : "none" }}>
         <div className="p-3 pb-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
@@ -3256,8 +3282,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             ))}
           </div>
         </div>
-      </TabsContent>
-    </Tabs>
+      </div>
+    </div>
   );
 
   return (
@@ -3673,41 +3699,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 );
               })()}
-
-              {/* YouTube */}
-              {(() => {
-                const isActive = sidePanelTab === "youtube" && sidePanelOpen;
-                return (
-                  <button
-                    onClick={() => {
-                      const isMobile = window.innerWidth < 768;
-                      if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); setSidePanelTab("youtube"); }
-                      else if (sidePanelOpen && sidePanelTab === "youtube") { setSidePanelOpen(false); }
-                      else { setSidePanelOpen(true); setSidePanelTab("youtube"); }
-                    }}
-                    data-testid="button-panel-youtube"
-                    title="YouTube"
-                    className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
-                    style={isActive
-                      ? { background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.22)", color: "rgba(252,100,100,0.92)", boxShadow: "0 0 10px rgba(239,68,68,0.14)" }
-                      : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
-                    }
-                  >
-                    <Youtube className="w-[14px] h-[14px]" />
-                  </button>
-                );
-              })()}
-
-              {/* GoLive */}
-              <button
-                onClick={() => setGoLiveOpen(true)}
-                data-testid="button-go-live"
-                title="Go Live"
-                className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
-                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }}
-              >
-                <Tv className="w-[14px] h-[14px]" />
-              </button>
 
               {/* Settings */}
               {isHost && (

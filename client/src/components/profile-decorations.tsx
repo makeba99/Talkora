@@ -614,7 +614,8 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
 export const ROOM_THEMES = [
   { id: "none", label: "Default", description: "Standard theme", bg: "" },
   { id: "premium-atmosphere", label: "💎 Premium Atmosphere", description: "Transparent neon glass with luxury cosmic motion", bg: "premium-atmosphere" },
-  { id: "neon", label: "⚡ Neon City", description: "Cyan & purple neon glow", bg: "neon" },
+  { id: "plasma", label: "⚡ Plasma", description: "Electric purple & blue plasma energy", bg: "plasma" },
+  { id: "neon", label: "🌆 Neon City", description: "Cyan & purple neon glow", bg: "neon" },
   { id: "galaxy", label: "🌌 Galaxy", description: "Deep space starfield", bg: "galaxy" },
   { id: "sunset", label: "🌅 Sunset", description: "Warm orange glow", bg: "sunset" },
   { id: "forest", label: "🌿 Forest", description: "Green nature vibes", bg: "forest" },
@@ -784,6 +785,8 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
   switch (themeId) {
     case "premium-atmosphere":
       return { background: "rgba(6,8,24,0.58)", backdropFilter: "blur(20px) saturate(1.4)", WebkitBackdropFilter: "blur(20px) saturate(1.4)", borderColor: "rgba(0,220,255,0.24)" };
+    case "plasma":
+      return { background: "rgba(12,4,28,0.68)", backdropFilter: "blur(18px) saturate(1.5)", WebkitBackdropFilter: "blur(18px) saturate(1.5)", borderColor: "rgba(140,60,255,0.28)" };
     case "neon":
       return { background: "rgba(5,3,14,0.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(80,40,180,0.22)" };
     case "galaxy":
@@ -815,6 +818,8 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
   switch (themeId) {
     case "premium-atmosphere":
       return { background: "radial-gradient(ellipse at 20% 18%, rgba(0,90,255,0.24) 0%, transparent 38%), radial-gradient(ellipse at 82% 34%, rgba(255,75,28,0.18) 0%, transparent 42%), radial-gradient(ellipse at 48% 72%, rgba(255,0,190,0.12) 0%, transparent 46%), #03050f" };
+    case "plasma":
+      return { background: "radial-gradient(ellipse at 30% 20%, rgba(120,40,255,0.32) 0%, transparent 45%), radial-gradient(ellipse at 75% 65%, rgba(0,120,255,0.22) 0%, transparent 50%), radial-gradient(ellipse at 55% 90%, rgba(200,0,255,0.18) 0%, transparent 40%), #07020f" };
     case "neon":
       return { background: "radial-gradient(ellipse at 30% 40%, #07091c 0%, #060612 55%, #08060e 100%)" };
     case "galaxy":
@@ -973,6 +978,35 @@ export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefin
           ))}
           {Array.from({length:4}).map((_,i)=>(
             <div key={`line-${i}`} style={{ position:"absolute", height:"1px", width:`${24 + i * 10}%`, left:`${8 + i * 20}%`, top:`${18 + i * 17}%`, background:"linear-gradient(90deg, transparent, rgba(0,220,255,0.34), rgba(255,0,200,0.20), transparent)", transform:`rotate(${-16 + i * 11}deg)`, animation:`rt-premium-constellation ${4.8+i}s ease-in-out infinite ${i * 0.6}s` }} />
+          ))}
+        </div>
+      );
+    case "plasma":
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          <div style={{ position:"absolute", top:"-20%", left:"-15%", width:"60%", height:"60%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(120,40,255,0.18) 0%, transparent 65%)",
+            animation:"rt-orb-drift 9s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", bottom:"-15%", right:"-12%", width:"55%", height:"55%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(0,120,255,0.14) 0%, transparent 65%)",
+            animation:"rt-orb-drift2 12s ease-in-out infinite 2s" }} />
+          <div style={{ position:"absolute", top:"30%", right:"10%", width:"40%", height:"40%", borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(200,0,255,0.10) 0%, transparent 70%)",
+            animation:"rt-orb-drift 15s ease-in-out infinite 4s" }} />
+          <div style={{ position:"absolute", top:0, left:"38%", width:"1px", height:"100%",
+            background:"linear-gradient(to bottom, transparent, rgba(120,40,255,0.22), transparent)",
+            animation:"rt-scanline 8s linear infinite" }} />
+          <div style={{ position:"absolute", top:0, left:"65%", width:"1px", height:"100%",
+            background:"linear-gradient(to bottom, transparent, rgba(0,120,255,0.16), transparent)",
+            animation:"rt-scanline 11s linear infinite 3s" }} />
+          {Array.from({length:22}).map((_,i)=>(
+            <div key={i} style={{ position:"absolute", borderRadius:"50%",
+              width: 1.5+(i%3)*1, height: 1.5+(i%3)*1,
+              background: i%3===0 ? "#7828ff" : i%3===1 ? "#0078ff" : "#c800ff",
+              top:`${(i*17+9)%100}%`, left:`${(i*23+13)%100}%`,
+              opacity: 0.22+(i%4)*0.14,
+              animation:`rt-star-twinkle ${1.8+(i%5)*0.4}s ease-in-out infinite ${(i%7)*0.35}s` }} />
           ))}
         </div>
       );
