@@ -15,7 +15,7 @@ import {
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell, LockKeyhole,
-  AtSign, TrendingUp, StopCircle, Clock
+  AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -651,6 +651,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     queryKey: ["/api/follows/following", user?.id],
     enabled: !!user,
   });
+
+  const { data: followers = [] } = useQuery<Follow[]>({
+    queryKey: ["/api/follows/followers", user?.id],
+    enabled: !!user,
+  });
+
+  const { data: allUsers = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: !!user,
+  });
+
+  const [peopleSearch, setPeopleSearch] = useState("");
+  const [peopleFilter, setPeopleFilter] = useState<"all" | "friends" | "following" | "followers">("all");
 
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const blockedIdsRef = useRef<Set<string>>(new Set());
@@ -2562,6 +2575,32 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         >
           <Gamepad2 className="w-[15px] h-[15px]" />
         </button>
+        {/* Go Live */}
+        <button
+          onClick={() => setSidePanelTab("golive")}
+          data-testid="tab-golive"
+          title="Go Live"
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
+          style={sidePanelTab === "golive"
+            ? { background: "rgba(239,68,68,0.14)", border: "1px solid rgba(239,68,68,0.28)", color: "rgba(252,80,80,0.95)", boxShadow: "0 0 10px rgba(239,68,68,0.14)" }
+            : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
+          }
+        >
+          <Radio className="w-[15px] h-[15px]" />
+        </button>
+        {/* People */}
+        <button
+          onClick={() => setSidePanelTab("people")}
+          data-testid="tab-people"
+          title="People"
+          className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
+          style={sidePanelTab === "people"
+            ? { background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.28)", color: "rgba(167,139,250,0.95)", boxShadow: "0 0 10px rgba(139,92,246,0.12)" }
+            : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
+          }
+        >
+          <UsersRound className="w-[15px] h-[15px]" />
+        </button>
       </div>
 
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chat" ? "flex" : "none" }}>
@@ -3283,6 +3322,230 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           </div>
         </div>
       </div>
+
+      {/* ── Go Live Panel ── */}
+      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "golive" ? "flex" : "none" }}>
+        <div className="p-3 pb-2 border-b border-white/[0.07] flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Go Live</p>
+              <p className="text-[10px] text-muted-foreground">Stream this room to your audience</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
+          {/* Platform selector */}
+          <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+            {(["youtube", "twitch", "tiktok"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setGoLivePlatform(p)}
+                className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
+                style={goLivePlatform === p
+                  ? { background: p === "youtube" ? "rgba(239,68,68,0.20)" : p === "twitch" ? "rgba(145,70,255,0.20)" : "rgba(0,0,0,0.30)", color: p === "youtube" ? "#fc6464" : p === "twitch" ? "#bf94ff" : "#ffffff", border: "1px solid " + (p === "youtube" ? "rgba(239,68,68,0.30)" : p === "twitch" ? "rgba(145,70,255,0.30)" : "rgba(255,255,255,0.15)") }
+                  : { color: "rgba(255,255,255,0.40)", border: "1px solid transparent" }
+                }
+              >
+                {p === "youtube" ? "YouTube" : p === "twitch" ? "Twitch" : "TikTok"}
+              </button>
+            ))}
+          </div>
+
+          {/* Steps */}
+          {goLivePlatform === "youtube" && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                {[
+                  { step: "1", text: "Go to YouTube Studio → Go Live → Stream" },
+                  { step: "2", text: "Copy your Stream URL and Stream Key from YouTube" },
+                  { step: "3", text: "In OBS: Settings → Stream → Service: YouTube → paste key" },
+                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this tab" },
+                  { step: "5", text: "Click Start Streaming in OBS" },
+                ].map(({ step, text }) => (
+                  <div key={step} className="flex items-start gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                    <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-[9px] font-bold text-white">{step}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-snug">{text}</p>
+                  </div>
+                ))}
+              </div>
+              <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" className="block">
+                <button className="w-full py-2 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1.5" style={{ background: "rgba(239,68,68,0.80)", border: "1px solid rgba(239,68,68,0.40)" }}>
+                  <ExternalLink className="w-3.5 h-3.5" /> Open YouTube Studio
+                </button>
+              </a>
+            </div>
+          )}
+          {goLivePlatform === "twitch" && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                {[
+                  { step: "1", text: "Go to Twitch Dashboard → Settings → Stream" },
+                  { step: "2", text: "Copy your Primary Stream Key" },
+                  { step: "3", text: "In OBS: Settings → Stream → Service: Twitch → paste key" },
+                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this tab" },
+                  { step: "5", text: "Click Start Streaming in OBS" },
+                ].map(({ step, text }) => (
+                  <div key={step} className="flex items-start gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                    <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-[9px] font-bold text-white">{step}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-snug">{text}</p>
+                  </div>
+                ))}
+              </div>
+              <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="block">
+                <button className="w-full py-2 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1.5" style={{ background: "rgba(145,70,255,0.70)", border: "1px solid rgba(145,70,255,0.40)" }}>
+                  <ExternalLink className="w-3.5 h-3.5" /> Open Twitch Dashboard
+                </button>
+              </a>
+            </div>
+          )}
+          {goLivePlatform === "tiktok" && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                {[
+                  { step: "1", text: "Open TikTok app → tap + → Go Live → PC Stream" },
+                  { step: "2", text: "Copy the Stream URL and Stream Key from TikTok" },
+                  { step: "3", text: "In OBS: Settings → Stream → Custom RTMP → paste URL & key" },
+                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this tab" },
+                  { step: "5", text: "Click Start Streaming in OBS" },
+                ].map(({ step, text }) => (
+                  <div key={step} className="flex items-start gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                    <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-[9px] font-bold text-white">{step}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-snug">{text}</p>
+                  </div>
+                ))}
+              </div>
+              <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" className="block">
+                <button className="w-full py-2 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1.5" style={{ background: "rgba(0,0,0,0.60)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                  <ExternalLink className="w-3.5 h-3.5" /> Open TikTok
+                </button>
+              </a>
+            </div>
+          )}
+          <div className="text-center">
+            <p className="text-[10px] text-muted-foreground/60">Need OBS? Download free at <a href="https://obsproject.com" target="_blank" rel="noopener noreferrer" className="text-primary/80 hover:text-primary">obsproject.com</a></p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── People Panel ── */}
+      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "people" ? "flex" : "none" }}>
+        <div className="p-3 pb-2 flex-shrink-0">
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={peopleSearch}
+              onChange={(e) => setPeopleSearch(e.target.value)}
+              data-testid="input-people-search"
+              className="w-full pl-8 pr-3 py-2 text-xs rounded-lg bg-white/[0.04] border border-white/[0.10] text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all duration-150"
+            />
+          </div>
+        </div>
+        {/* Filter tabs */}
+        <div className="flex gap-1 px-3 pb-2 flex-shrink-0">
+          {(["all", "friends", "following", "followers"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setPeopleFilter(f)}
+              data-testid={`filter-people-${f}`}
+              className="flex-1 py-1 rounded-lg text-[10px] font-semibold capitalize transition-all duration-150"
+              style={peopleFilter === f
+                ? { background: "rgba(139,92,246,0.18)", color: "rgba(167,139,250,0.95)", border: "1px solid rgba(139,92,246,0.30)" }
+                : { color: "rgba(255,255,255,0.38)", border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.03)" }
+              }
+            >
+              {f === "friends" ? "Friends" : f === "following" ? "Following" : f === "followers" ? "Followers" : "All"}
+            </button>
+          ))}
+        </div>
+        {/* People list */}
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-3 pb-3 space-y-1">
+            {(() => {
+              const followingSet = new Set(following.map((f) => f.followingId));
+              const followerSet = new Set(followers.map((f) => f.followerId));
+              const friendSet = new Set([...following.map((f) => f.followingId)].filter((id) => followerSet.has(id)));
+
+              let filtered = allUsers.filter((u) => u.id !== user?.id);
+              if (peopleFilter === "following") filtered = filtered.filter((u) => followingSet.has(u.id));
+              else if (peopleFilter === "followers") filtered = filtered.filter((u) => followerSet.has(u.id));
+              else if (peopleFilter === "friends") filtered = filtered.filter((u) => friendSet.has(u.id));
+
+              if (peopleSearch.trim()) {
+                const q = peopleSearch.toLowerCase();
+                filtered = filtered.filter((u) =>
+                  getUserDisplayName(u).toLowerCase().includes(q) ||
+                  (u.email && u.email.toLowerCase().includes(q))
+                );
+              }
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-10 gap-3">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(139,92,246,0.10)", border: "1px solid rgba(139,92,246,0.18)" }}>
+                      <UsersRound className="w-6 h-6" style={{ color: "rgba(139,92,246,0.60)" }} />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-medium text-muted-foreground/80">No connections yet</p>
+                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">Follow someone to see them here.</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return filtered.map((u) => {
+                const isFollowingUser = followingSet.has(u.id);
+                return (
+                  <div
+                    key={u.id}
+                    data-testid={`row-person-${u.id}`}
+                    className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/[0.04] transition-colors duration-150 group"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={u.profileImageUrl ?? undefined} />
+                        <AvatarFallback className="text-[10px] font-semibold bg-violet-900/40 text-violet-200">
+                          {getUserInitials(u)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {u.status === "online" && (
+                        <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-background" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate leading-tight">{getUserDisplayName(u)}</p>
+                      <p className="text-[10px] text-muted-foreground/60 truncate leading-tight">{u.email}</p>
+                    </div>
+                    <button
+                      data-testid={`button-follow-${u.id}`}
+                      onClick={() => isFollowingUser ? unfollowMutation.mutate(u.id) : followMutation.mutate(u.id)}
+                      className="flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150 opacity-0 group-hover:opacity-100"
+                      style={isFollowingUser
+                        ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.50)", border: "1px solid rgba(255,255,255,0.10)" }
+                        : { background: "rgba(139,92,246,0.18)", color: "rgba(167,139,250,0.95)", border: "1px solid rgba(139,92,246,0.28)" }
+                      }
+                    >
+                      {isFollowingUser ? "Following" : "Follow"}
+                    </button>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </ScrollArea>
+      </div>
+
     </div>
   );
 
@@ -3669,27 +3932,26 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
             {/* ── Right: Panel toggles ── */}
             <div className="flex items-center justify-end gap-0.5 flex-1 basis-0">
-              {/* Chat */}
+              {/* Social Panel Toggle */}
               {(() => {
-                const isActive = sidePanelTab === "chat" && sidePanelOpen;
+                const isActive = sidePanelOpen;
                 return (
                   <div className="relative">
                     <button
                       onClick={() => {
                         const isMobile = window.innerWidth < 768;
-                        if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); setSidePanelTab("chat"); }
-                        else if (sidePanelOpen && sidePanelTab === "chat") { setSidePanelOpen(false); }
-                        else { setSidePanelOpen(true); setSidePanelTab("chat"); }
+                        if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); }
+                        else { setSidePanelOpen(!sidePanelOpen); }
                       }}
-                      data-testid="button-panel-chat"
-                      title="Chat"
+                      data-testid="button-panel-social"
+                      title="Social Panel"
                       className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
                       style={isActive
                         ? { background: "rgba(0,225,255,0.12)", border: "1px solid rgba(0,225,255,0.22)", color: "rgba(0,225,255,0.92)", boxShadow: "0 0 10px rgba(0,225,255,0.14)" }
                         : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
                       }
                     >
-                      <MessageSquare className="w-[14px] h-[14px]" />
+                      <LayoutGrid className="w-[14px] h-[14px]" />
                     </button>
                     {unreadChatBadge > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.5)" }}>
