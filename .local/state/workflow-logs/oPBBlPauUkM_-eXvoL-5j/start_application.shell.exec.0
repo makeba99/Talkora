@@ -1,0 +1,375 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 0 empty rooms for deletion
+6:48:12 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+6:48:21 PM [express] GET /api/auth/user 304 in 9ms :: {"id":"57704316","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T18:40:55.355Z","updatedAt":"2026-04-14T18:40:55.355Z"}
+6:48:21 PM [express] GET /api/users 200 in 6ms :: [{"id":"57704316","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T18:40:55.355Z","updatedAt":"2026-04-14T18:40:55.355Z"}]
+6:48:21 PM [express] GET /api/follows/following/57704316 304 in 9ms :: []
+6:48:21 PM [express] GET /api/messages/conversations 304 in 8ms :: []
+6:48:21 PM [express] GET /api/users/rooms 304 in 7ms :: {}
+6:48:21 PM [express] GET /api/follows/followers/57704316 304 in 23ms :: []
+6:48:21 PM [express] GET /api/messages/unread/count 304 in 22ms :: {"count":0}
+6:48:22 PM [express] GET /api/notifications 304 in 7ms :: []
+6:48:22 PM [express] GET /api/rooms 304 in 8ms :: []
+6:48:22 PM [express] GET /api/rooms/participants 304 in 7ms :: {}
+6:48:26 PM [express] GET /api/teachers 304 in 8ms :: []
+6:48:26 PM [express] GET /api/teacher-applications/my 200 in 6ms
+6:48:26 PM [express] GET /api/bookings/my 304 in 8ms :: []
+6:48:26 PM [express] GET /api/auth/user 401 in 0ms :: {"message":"Unauthorized"}
+6:48:27 PM [express] GET /api/teachers 200 in 3ms :: []
+6:49:16 PM [express] POST /api/teacher-applications 200 in 66ms :: {"id":"aacbaae7-c1a9-4307-bad1-a714f7013520","userId":"57704316","name":"z","bio":"zzz","languages":[],"levels":[],"specializations":[],"suggestedRate":7,"paypalEmail":"a46947314@gmail.com","experience":"xzzzz","status":"pending","adminNotes":null,"approvedRate":null,"createdAt":"2026-04-14T18:49:16.192Z","updatedAt":"2026-04-14T18:49:16.192Z"}
+6:49:17 PM [express] GET /api/teacher-applications/my 200 in 6ms :: {"id":"aacbaae7-c1a9-4307-bad1-a714f7013520","userId":"57704316","name":"z","bio":"zzz","languages":[],"levels":[],"specializations":[],"suggestedRate":7,"paypalEmail":"a46947314@gmail.com","experience":"xzzzz","status":"pending","adminNotes":null,"approvedRate":null,"createdAt":"2026-04-14T18:49:16.192Z","updatedAt":"2026-04-14T18:49:16.192Z"}
+6:50:05 PM [express] GET /api/users/rooms 304 in 15ms :: {}
+6:50:05 PM [express] GET /api/messages/unread/count 304 in 27ms :: {"count":0}
+6:50:05 PM [express] GET /api/rooms 304 in 18ms :: []
+6:50:10 PM [express] GET /api/notifications 304 in 41ms :: []
+6:50:10 PM [express] GET /api/rooms/participants 304 in 32ms :: {}
+6:50:10 PM [express] GET /api/rooms 304 in 6ms :: []
+6:50:10 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+6:50:10 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+6:50:10 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+6:50:15 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+6:50:15 PM [express] GET /api/rooms 304 in 9ms :: []
+6:50:15 PM [express] GET /api/users/rooms 304 in 3ms :: {}
+6:50:20 PM [express] GET /api/rooms/participants 304 in 9ms :: {}
+6:50:20 PM [express] GET /api/notifications 304 in 14ms :: []
+6:50:20 PM [express] GET /api/rooms 304 in 5ms :: []
+6:50:20 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:50:20 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:50:21 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+6:50:26 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:50:26 PM [express] GET /api/rooms 304 in 6ms :: []
+6:50:26 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+6:50:30 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+6:50:30 PM [express] GET /api/notifications 304 in 6ms :: []
+6:50:31 PM [express] GET /api/messages/conversations 304 in 8ms :: []
+6:50:31 PM [express] GET /api/users/rooms 304 in 15ms :: {}
+6:50:31 PM [express] GET /api/rooms 304 in 44ms :: []
+6:50:31 PM [express] GET /api/messages/unread/count 304 in 10ms :: {"count":0}
+6:50:36 PM [express] GET /api/rooms 304 in 8ms :: []
+6:50:36 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:50:36 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+6:50:41 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+6:50:41 PM [express] GET /api/notifications 304 in 5ms :: []
+6:50:41 PM [express] GET /api/messages/conversations 304 in 8ms :: []
+6:50:41 PM [express] GET /api/rooms 304 in 5ms :: []
+6:50:41 PM [express] GET /api/users/rooms 304 in 3ms :: {}
+6:50:42 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:50:47 PM [express] GET /api/rooms 304 in 7ms :: []
+6:50:47 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:50:47 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+6:51:06 PM [express] GET /api/users/rooms 304 in 18ms :: {}
+6:51:06 PM [express] GET /api/rooms 304 in 29ms :: []
+6:51:06 PM [express] GET /api/messages/unread/count 304 in 30ms :: {"count":0}
+6:51:11 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+6:51:11 PM [express] GET /api/messages/conversations 304 in 8ms :: []
+6:51:11 PM [express] GET /api/notifications 304 in 6ms :: []
+6:51:11 PM [express] GET /api/users/rooms 304 in 156ms :: {}
+6:51:11 PM [express] GET /api/rooms 304 in 159ms :: []
+6:51:11 PM [express] GET /api/messages/unread/count 304 in 154ms :: {"count":0}
+6:51:17 PM [express] GET /api/rooms 304 in 5ms :: []
+6:51:17 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+6:51:17 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:51:21 PM [express] GET /api/rooms/participants 304 in 6ms :: {}
+6:51:21 PM [express] GET /api/messages/conversations 304 in 8ms :: []
+6:51:21 PM [express] GET /api/notifications 304 in 6ms :: []
+6:51:22 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:51:22 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+6:51:22 PM [express] GET /api/rooms 304 in 8ms :: []
+6:51:30 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+6:51:30 PM [express] GET /api/teachers 200 in 7ms :: [{"id":"32a103ab-d0c7-4335-9222-ed4ef2b5c431","name":"Carlos Ferreira","bio":"Brazilian Portuguese teacher and musician from São Paulo. I bring energy and creativity to every lesson — my students often say they feel like they're actually in Brazil. Great for conversational Portuguese, slang, and cultural immersion.","avatarUrl":"https://randomuser.me/api/portraits/men/75.jpg","languages":["Portuguese","Spanish","English"],"levels":["Beginner","Intermediate"],"specializations":["General Conversation","Slang & Casual","Pronunciation"],"hourlyRate":22,"sessionDurations":["30","60"],"rating":46,"reviewCount":18,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.365Z"},{"id":"b3c655a8-8513-45fa-a6c8-66a8337ceb33","name":"Yuki Tanaka","bio":"Japanese language instructor from Tokyo with 6 years of online teaching. I teach everything from hiragana/katakana basics to advanced kanji and JLPT preparation. I use immersive techniques inspired by how children naturally acquire language.","avatarUrl":"https://randomuser.me/api/portraits/women/27.jpg","languages":["Japanese","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["General Conversation","Exam Preparation","Grammar"],"hourlyRate":25,"sessionDurations":["30","60"],"rating":49,"reviewCount":44,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.362Z"},{"id":"d01f3b8d-9baa-4cf6-8002-3e32e2ce083b","name":"Camille Dubois","bio":"Bonjour! I'm a French teacher from Lyon with a passion for culture and language. Whether you're a complete beginner or preparing for DELF/DALF, I'll guide you with patience and creativity. Lessons include conversation, grammar, and authentic French media.","avatarUrl":"https://randomuser.me/api/portraits/women/65.jpg","languages":["French","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["General Conversation","Exam Preparation","Writing"],"hourlyRate":30,"sessionDurations":["30","60"],"rating":47,"reviewCount":29,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.359Z"},{"id":"01af7f71-e657-4d73-bac2-9fcf9e99cacc","name":"James Okafor","bio":"CELTA-certified English teacher from London with 10+ years helping learners from over 20 countries. I focus on grammar clarity, exam preparation (IELTS/TOEFL), and natural pronunciation. My sessions are structured but always fun.","avatarUrl":"https://randomuser.me/api/portraits/men/32.jpg","languages":["English"],"levels":["Beginner","Intermediate","Advanced","Native"],"specializations":["Exam Preparation","Grammar","Pronunciation","Academic"],"hourlyRate":35,"sessionDurations":["30","60"],"rating":50,"reviewCount":62,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.356Z"},{"id":"2dd22935-4039-473c-82bd-b8650ed40bda","name":"Sofia Martínez","bio":"Native Spanish speaker from Madrid with 8 years of teaching experience. I specialize in conversational Spanish and business communication, helping students build real-world fluency fast. My lessons are relaxed, engaging, and tailored to your pace.","avatarUrl":"https://randomuser.me/api/portraits/women/44.jpg","languages":["Spanish","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["Business English","General Conversation","Pronunciation"],"hourlyRate":28,"sessionDurations":["30","60"],"rating":48,"reviewCount":37,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.351Z"}]
+6:51:38 PM [express] GET /api/users/rooms 304 in 17ms :: {}
+6:51:38 PM [express] GET /api/rooms 304 in 21ms :: []
+6:51:38 PM [express] GET /api/messages/unread/count 304 in 29ms :: {"count":0}
+6:51:43 PM [express] GET /api/notifications 304 in 6ms :: []
+6:51:43 PM [express] GET /api/messages/conversations 304 in 8ms :: []
+6:51:43 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+6:51:43 PM [express] GET /api/users/rooms 304 in 15ms :: {}
+6:51:43 PM [express] GET /api/rooms 304 in 7ms :: []
+6:51:43 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:51:59 PM [express] GET /api/users/rooms 304 in 17ms :: {}
+6:51:59 PM [express] GET /api/messages/unread/count 304 in 26ms :: {"count":0}
+6:51:59 PM [express] GET /api/rooms 304 in 30ms :: []
+6:52:04 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+6:52:04 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+6:52:04 PM [express] GET /api/notifications 304 in 7ms :: []
+6:52:09 PM [express] GET /api/auth/user 200 in 5ms :: {"id":"57704316","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"user","warningCount":0,"createdAt":"2026-04-14T18:40:55.355Z","updatedAt":"2026-04-14T18:40:55.355Z"}
+6:52:09 PM [express] GET /api/follows/following/57704316 304 in 6ms :: []
+6:52:09 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:52:09 PM [express] GET /api/messages/conversations 200 in 7ms :: []
+6:52:09 PM [express] GET /api/users 200 in 19ms :: [{"id":"57704316","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"user","warningCount":0,"createdAt":"2026-04-14T18:40:55.355Z","updatedAt":"2026-04-14T18:40:55.355Z"}]
+6:52:09 PM [express] GET /api/follows/followers/57704316 304 in 20ms :: []
+6:52:09 PM [express] GET /api/notifications 200 in 10ms :: []
+6:52:09 PM [express] GET /api/rooms/participants 200 in 4ms :: {}
+6:52:09 PM [express] GET /api/rooms 304 in 6ms :: []
+6:52:09 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:52:11 PM [express] GET /api/teachers 200 in 6ms :: [{"id":"32a103ab-d0c7-4335-9222-ed4ef2b5c431","name":"Carlos Ferreira","bio":"Brazilian Portuguese teacher and musician from São Paulo. I bring energy and creativity to every lesson — my students often say they feel like they're actually in Brazil. Great for conversational Portuguese, slang, and cultural immersion.","avatarUrl":"https://randomuser.me/api/portraits/men/75.jpg","languages":["Portuguese","Spanish","English"],"levels":["Beginner","Intermediate"],"specializations":["General Conversation","Slang & Casual","Pronunciation"],"hourlyRate":22,"sessionDurations":["30","60"],"rating":46,"reviewCount":18,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.365Z"},{"id":"b3c655a8-8513-45fa-a6c8-66a8337ceb33","name":"Yuki Tanaka","bio":"Japanese language instructor from Tokyo with 6 years of online teaching. I teach everything from hiragana/katakana basics to advanced kanji and JLPT preparation. I use immersive techniques inspired by how children naturally acquire language.","avatarUrl":"https://randomuser.me/api/portraits/women/27.jpg","languages":["Japanese","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["General Conversation","Exam Preparation","Grammar"],"hourlyRate":25,"sessionDurations":["30","60"],"rating":49,"reviewCount":44,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.362Z"},{"id":"d01f3b8d-9baa-4cf6-8002-3e32e2ce083b","name":"Camille Dubois","bio":"Bonjour! I'm a French teacher from Lyon with a passion for culture and language. Whether you're a complete beginner or preparing for DELF/DALF, I'll guide you with patience and creativity. Lessons include conversation, grammar, and authentic French media.","avatarUrl":"https://randomuser.me/api/portraits/women/65.jpg","languages":["French","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["General Conversation","Exam Preparation","Writing"],"hourlyRate":30,"sessionDurations":["30","60"],"rating":47,"reviewCount":29,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.359Z"},{"id":"01af7f71-e657-4d73-bac2-9fcf9e99cacc","name":"James Okafor","bio":"CELTA-certified English teacher from London with 10+ years helping learners from over 20 countries. I focus on grammar clarity, exam preparation (IELTS/TOEFL), and natural pronunciation. My sessions are structured but always fun.","avatarUrl":"https://randomuser.me/api/portraits/men/32.jpg","languages":["English"],"levels":["Beginner","Intermediate","Advanced","Native"],"specializations":["Exam Preparation","Grammar","Pronunciation","Academic"],"hourlyRate":35,"sessionDurations":["30","60"],"rating":50,"reviewCount":62,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.356Z"},{"id":"2dd22935-4039-473c-82bd-b8650ed40bda","name":"Sofia Martínez","bio":"Native Spanish speaker from Madrid with 8 years of teaching experience. I specialize in conversational Spanish and business communication, helping students build real-world fluency fast. My lessons are relaxed, engaging, and tailored to your pace.","avatarUrl":"https://randomuser.me/api/portraits/women/44.jpg","languages":["Spanish","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["Business English","General Conversation","Pronunciation"],"hourlyRate":28,"sessionDurations":["30","60"],"rating":48,"reviewCount":37,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.351Z"}]
+6:52:11 PM [express] GET /api/teacher-applications/my 304 in 7ms :: {"id":"aacbaae7-c1a9-4307-bad1-a714f7013520","userId":"57704316","name":"z","bio":"zzz","languages":[],"levels":[],"specializations":[],"suggestedRate":7,"paypalEmail":"a46947314@gmail.com","experience":"xzzzz","status":"pending","adminNotes":null,"approvedRate":null,"createdAt":"2026-04-14T18:49:16.192Z","updatedAt":"2026-04-14T18:49:16.192Z"}
+6:52:11 PM [express] GET /api/bookings/my 304 in 18ms :: []
+6:53:13 PM [express] POST /api/bookings 200 in 42ms :: {"id":"9f019b64-d646-4fdc-8ed9-b8ce3c5b260f","teacherId":"2dd22935-4039-473c-82bd-b8650ed40bda","userId":"57704316","scheduledAt":"2026-04-16T07:54:00.000Z","durationMinutes":60,"status":"pending","sessionType":"private","notes":"poppp","roomId":null,"createdAt":"2026-04-14T18:53:13.245Z"}
+6:53:13 PM [express] GET /api/bookings/my 200 in 10ms :: [{"id":"9f019b64-d646-4fdc-8ed9-b8ce3c5b260f","teacherId":"2dd22935-4039-473c-82bd-b8650ed40bda","userId":"57704316","scheduledAt":"2026-04-16T07:54:00.000Z","durationMinutes":60,"status":"pending","sessionType":"private","notes":"poppp","roomId":null,"createdAt":"2026-04-14T18:53:13.245Z","teacher":{"id":"2dd22935-4039-473c-82bd-b8650ed40bda","name":"Sofia Martínez","bio":"Native Spanish speaker from Madrid with 8 years of teaching experience. I specialize in conversational Spanish and business communication, helping students build real-world fluency fast. My lessons are relaxed, engaging, and tailored to your pace.","avatarUrl":"https://randomuser.me/api/portraits/women/44.jpg","languages":["Spanish","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["Business English","General Conversation","Pronunciation"],"hourlyRate":28,"sessionDurations":["30","60"],"rating":48,"reviewCount":37,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.351Z"}}]
+6:53:25 PM [express] GET /api/users/rooms 304 in 25ms :: {}
+6:53:25 PM [express] GET /api/messages/unread/count 304 in 46ms :: {"count":0}
+6:53:25 PM [express] GET /api/rooms 304 in 48ms :: []
+6:53:30 PM [express] GET /api/notifications 304 in 6ms :: []
+6:53:30 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+6:53:30 PM [express] GET /api/rooms/participants 304 in 13ms :: {}
+6:53:30 PM [express] GET /api/users/rooms 304 in 23ms :: {}
+6:53:30 PM [express] GET /api/rooms 304 in 8ms :: []
+6:53:30 PM [express] GET /api/messages/unread/count 304 in 9ms :: {"count":0}
+6:54:28 PM [express] GET /api/users/rooms 304 in 93ms :: {}
+6:54:28 PM [express] GET /api/messages/unread/count 304 in 110ms :: {"count":0}
+6:54:28 PM [express] GET /api/rooms 304 in 108ms :: []
+6:54:42 PM [express] GET /api/users/rooms 304 in 19ms :: {}
+6:54:42 PM [express] GET /api/rooms 304 in 27ms :: []
+6:54:42 PM [express] GET /api/messages/unread/count 304 in 24ms :: {"count":0}
+6:54:47 PM [express] GET /api/notifications 304 in 6ms :: []
+6:54:47 PM [express] GET /api/rooms/participants 304 in 8ms :: {}
+6:54:47 PM [express] GET /api/messages/conversations 304 in 12ms :: []
+6:54:47 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:54:47 PM [express] GET /api/rooms 304 in 8ms :: []
+6:54:47 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+6:54:53 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+6:54:53 PM [express] GET /api/rooms 304 in 6ms :: []
+6:54:53 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:54:57 PM [express] GET /api/rooms/participants 304 in 6ms :: {}
+6:54:57 PM [express] GET /api/notifications 304 in 6ms :: []
+6:54:57 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+6:54:58 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:54:58 PM [express] GET /api/rooms 304 in 6ms :: []
+6:54:58 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+6:55:03 PM [express] GET /api/users/rooms 304 in 7ms :: {}
+6:55:03 PM [express] GET /api/rooms 304 in 13ms :: []
+6:55:04 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:55:08 PM [express] GET /api/rooms/participants 304 in 7ms :: {}
+6:55:08 PM [express] GET /api/notifications 304 in 5ms :: []
+6:55:08 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+6:55:09 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+6:55:09 PM [express] GET /api/rooms 304 in 5ms :: []
+6:55:09 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:55:15 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:55:18 PM [express] GET /api/notifications 304 in 5ms :: []
+6:55:18 PM [express] GET /api/rooms 304 in 4ms :: []
+6:55:18 PM [express] GET /api/users/rooms 304 in 3ms :: {}
+6:55:19 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+6:55:20 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+6:55:23 PM [express] GET /api/messages/conversations 304 in 11ms :: []
+6:55:23 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+6:55:23 PM [express] GET /api/rooms 304 in 5ms :: []
+6:55:25 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:55:28 PM [express] GET /api/notifications 304 in 7ms :: []
+6:55:28 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:55:28 PM [express] GET /api/rooms 304 in 5ms :: []
+6:55:29 PM [express] GET /api/rooms/participants 304 in 43ms :: {}
+6:55:31 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+6:55:33 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+6:55:34 PM [express] GET /api/users/rooms 304 in 3ms :: {}
+6:55:34 PM [express] GET /api/rooms 304 in 6ms :: []
+6:55:36 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:55:38 PM [express] GET /api/notifications 304 in 6ms :: []
+6:55:39 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+6:55:39 PM [express] GET /api/rooms 304 in 7ms :: []
+6:55:39 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+6:55:41 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:55:44 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+6:55:44 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:55:44 PM [express] GET /api/rooms 304 in 5ms :: []
+6:55:46 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:55:49 PM [express] GET /api/notifications 304 in 5ms :: []
+6:55:49 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+6:55:49 PM [express] GET /api/rooms 304 in 5ms :: []
+6:55:50 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+6:55:52 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:55:54 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+6:55:55 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:55:55 PM [express] GET /api/rooms 304 in 5ms :: []
+6:56:10 PM [express] GET /api/teachers/32a103ab-d0c7-4335-9222-ed4ef2b5c431/reviews 200 in 56ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:56:16 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/teachers.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:56:21 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/teachers.tsx, /src/index.css[22m [33m(x2)[39m
+6:56:24 PM [express] POST /api/teachers/32a103ab-d0c7-4335-9222-ed4ef2b5c431/reviews 200 in 30ms :: {"id":"dcd33c69-c11c-4079-9e84-552d9363bb23","teacherId":"32a103ab-d0c7-4335-9222-ed4ef2b5c431","userId":"57704316","rating":5,"comment":"Dam hot","createdAt":"2026-04-14T18:56:24.211Z"}
+6:56:24 PM [express] GET /api/teachers 200 in 6ms :: [{"id":"32a103ab-d0c7-4335-9222-ed4ef2b5c431","name":"Carlos Ferreira","bio":"Brazilian Portuguese teacher and musician from São Paulo. I bring energy and creativity to every lesson — my students often say they feel like they're actually in Brazil. Great for conversational Portuguese, slang, and cultural immersion.","avatarUrl":"https://randomuser.me/api/portraits/men/75.jpg","languages":["Portuguese","Spanish","English"],"levels":["Beginner","Intermediate"],"specializations":["General Conversation","Slang & Casual","Pronunciation"],"hourlyRate":22,"sessionDurations":["30","60"],"rating":5,"reviewCount":1,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.365Z"},{"id":"b3c655a8-8513-45fa-a6c8-66a8337ceb33","name":"Yuki Tanaka","bio":"Japanese language instructor from Tokyo with 6 years of online teaching. I teach everything from hiragana/katakana basics to advanced kanji and JLPT preparation. I use immersive techniques inspired by how children naturally acquire language.","avatarUrl":"https://randomuser.me/api/portraits/women/27.jpg","languages":["Japanese","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["General Conversation","Exam Preparation","Grammar"],"hourlyRate":25,"sessionDurations":["30","60"],"rating":49,"reviewCount":44,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.362Z"},{"id":"d01f3b8d-9baa-4cf6-8002-3e32e2ce083b","name":"Camille Dubois","bio":"Bonjour! I'm a French teacher from Lyon with a passion for culture and language. Whether you're a complete beginner or preparing for DELF/DALF, I'll guide you with patience and creativity. Lessons include conversation, grammar, and authentic French media.","avatarUrl":"https://randomuser.me/api/portraits/women/65.jpg","languages":["French","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["General Conversation","Exam Preparation","Writing"],"hourlyRate":30,"sessionDurations":["30","60"],"rating":47,"reviewCount":29,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.359Z"},{"id":"01af7f71-e657-4d73-bac2-9fcf9e99cacc","name":"James Okafor","bio":"CELTA-certified English teacher from London with 10+ years helping learners from over 20 countries. I focus on grammar clarity, exam preparation (IELTS/TOEFL), and natural pronunciation. My sessions are structured but always fun.","avatarUrl":"https://randomuser.me/api/portraits/men/32.jpg","languages":["English"],"levels":["Beginner","Intermediate","Advanced","Native"],"specializations":["Exam Preparation","Grammar","Pronunciation","Academic"],"hourlyRate":35,"sessionDurations":["30","60"],"rating":50,"reviewCount":62,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.356Z"},{"id":"2dd22935-4039-473c-82bd-b8650ed40bda","name":"Sofia Martínez","bio":"Native Spanish speaker from Madrid with 8 years of teaching experience. I specialize in conversational Spanish and business communication, helping students build real-world fluency fast. My lessons are relaxed, engaging, and tailored to your pace.","avatarUrl":"https://randomuser.me/api/portraits/women/44.jpg","languages":["Spanish","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["Business English","General Conversation","Pronunciation"],"hourlyRate":28,"sessionDurations":["30","60"],"rating":48,"reviewCount":37,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.351Z"}]
+6:56:27 PM [express] GET /api/teachers/32a103ab-d0c7-4335-9222-ed4ef2b5c431/reviews 200 in 8ms :: [{"id":"dcd33c69-c11c-4079-9e84-552d9363bb23","teacherId":"32a103ab-d0c7-4335-9222-ed4ef2b5c431","userId":"57704316","rating":5,"comment":"Dam hot","createdAt":"2026-04-14T18:56:24.211Z","user":{"id":"57704316","displayName":null,"firstName":"A46947314","lastName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c"}}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:56:33 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/teachers.tsx, /src/index.css[22m [33m(x3)[39m
+6:56:41 PM [express] GET /api/teachers/b3c655a8-8513-45fa-a6c8-66a8337ceb33/reviews 200 in 182ms :: []
+6:56:59 PM [express] GET /api/users/rooms 304 in 16ms :: {}
+6:56:59 PM [express] GET /api/rooms 304 in 34ms :: []
+6:56:59 PM [express] GET /api/messages/unread/count 304 in 33ms :: {"count":0}
+6:57:04 PM [express] GET /api/notifications 304 in 6ms :: []
+6:57:04 PM [express] GET /api/rooms/participants 304 in 6ms :: {}
+6:57:04 PM [express] GET /api/messages/conversations 304 in 11ms :: []
+6:57:04 PM [express] GET /api/messages/unread/count 304 in 33ms :: {"count":0}
+6:57:04 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+6:57:04 PM [express] GET /api/rooms 304 in 5ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:57:10 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/teachers.tsx, /src/index.css[22m [33m(x4)[39m
+6:57:23 PM [express] GET /api/teachers/d01f3b8d-9baa-4cf6-8002-3e32e2ce083b/reviews 200 in 25ms :: []
+6:57:27 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+6:57:27 PM [express] GET /api/teachers 200 in 3ms :: [{"id":"32a103ab-d0c7-4335-9222-ed4ef2b5c431","name":"Carlos Ferreira","bio":"Brazilian Portuguese teacher and musician from São Paulo. I bring energy and creativity to every lesson — my students often say they feel like they're actually in Brazil. Great for conversational Portuguese, slang, and cultural immersion.","avatarUrl":"https://randomuser.me/api/portraits/men/75.jpg","languages":["Portuguese","Spanish","English"],"levels":["Beginner","Intermediate"],"specializations":["General Conversation","Slang & Casual","Pronunciation"],"hourlyRate":22,"sessionDurations":["30","60"],"rating":5,"reviewCount":1,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.365Z"},{"id":"b3c655a8-8513-45fa-a6c8-66a8337ceb33","name":"Yuki Tanaka","bio":"Japanese language instructor from Tokyo with 6 years of online teaching. I teach everything from hiragana/katakana basics to advanced kanji and JLPT preparation. I use immersive techniques inspired by how children naturally acquire language.","avatarUrl":"https://randomuser.me/api/portraits/women/27.jpg","languages":["Japanese","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["General Conversation","Exam Preparation","Grammar"],"hourlyRate":25,"sessionDurations":["30","60"],"rating":49,"reviewCount":44,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.362Z"},{"id":"d01f3b8d-9baa-4cf6-8002-3e32e2ce083b","name":"Camille Dubois","bio":"Bonjour! I'm a French teacher from Lyon with a passion for culture and language. Whether you're a complete beginner or preparing for DELF/DALF, I'll guide you with patience and creativity. Lessons include conversation, grammar, and authentic French media.","avatarUrl":"https://randomuser.me/api/portraits/women/65.jpg","languages":["French","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["General Conversation","Exam Preparation","Writing"],"hourlyRate":30,"sessionDurations":["30","60"],"rating":47,"reviewCount":29,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.359Z"},{"id":"01af7f71-e657-4d73-bac2-9fcf9e99cacc","name":"James Okafor","bio":"CELTA-certified English teacher from London with 10+ years helping learners from over 20 countries. I focus on grammar clarity, exam preparation (IELTS/TOEFL), and natural pronunciation. My sessions are structured but always fun.","avatarUrl":"https://randomuser.me/api/portraits/men/32.jpg","languages":["English"],"levels":["Beginner","Intermediate","Advanced","Native"],"specializations":["Exam Preparation","Grammar","Pronunciation","Academic"],"hourlyRate":35,"sessionDurations":["30","60"],"rating":50,"reviewCount":62,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.356Z"},{"id":"2dd22935-4039-473c-82bd-b8650ed40bda","name":"Sofia Martínez","bio":"Native Spanish speaker from Madrid with 8 years of teaching experience. I specialize in conversational Spanish and business communication, helping students build real-world fluency fast. My lessons are relaxed, engaging, and tailored to your pace.","avatarUrl":"https://randomuser.me/api/portraits/women/44.jpg","languages":["Spanish","English"],"levels":["Beginner","Intermediate","Advanced"],"specializations":["Business English","General Conversation","Pronunciation"],"hourlyRate":28,"sessionDurations":["30","60"],"rating":48,"reviewCount":37,"isAvailable":true,"userId":null,"createdAt":"2026-04-14T18:51:25.351Z"}]
+6:57:37 PM [express] GET /api/auth/user 200 in 15ms :: {"id":"57704316","email":"a46947314@gmail.com","firstName":"A46947314","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocKnnOZAY0fI3Ljw6YgrHcUlq-acNCpor7KjzMyTEhMjqIbsInCp=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-14T18:40:55.355Z","updatedAt":"2026-04-14T18:40:55.355Z"}
+6:57:42 PM [express] GET /api/users/rooms 304 in 36ms :: {}
+6:57:42 PM [express] GET /api/messages/unread/count 304 in 36ms :: {"count":0}
+6:57:42 PM [express] GET /api/rooms 304 in 37ms :: []
+6:57:49 PM [express] GET /api/messages/conversations 304 in 1126ms :: []
+6:57:49 PM [express] GET /api/rooms/participants 304 in 214ms :: {}
+6:57:49 PM [express] GET /api/messages/unread/count 304 in 356ms :: {"count":0}
+6:57:49 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+6:57:49 PM [express] GET /api/notifications 304 in 990ms :: []
+6:57:49 PM [express] GET /api/rooms 304 in 368ms :: []
+6:57:55 PM [express] GET /api/users/rooms 304 in 34ms :: {}
+6:57:55 PM [express] GET /api/rooms 304 in 37ms :: []
+6:57:55 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:58:16 PM [express] GET /api/users/rooms 304 in 105ms :: {}
+6:58:16 PM [express] GET /api/rooms 304 in 125ms :: []
+6:58:16 PM [express] GET /api/messages/unread/count 304 in 134ms :: {"count":0}
+6:58:21 PM [express] GET /api/notifications 304 in 6ms :: []
+6:58:21 PM [express] GET /api/rooms/participants 304 in 6ms :: {}
+6:58:21 PM [express] GET /api/messages/conversations 304 in 10ms :: []
+6:58:21 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+6:58:21 PM [express] GET /api/rooms 304 in 5ms :: []
+6:58:22 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:58:27 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:58:27 PM [express] GET /api/rooms 304 in 6ms :: []
+6:58:28 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:58:31 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+6:58:31 PM [express] GET /api/messages/conversations 304 in 14ms :: []
+6:58:32 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:58:32 PM [express] GET /api/rooms 304 in 7ms :: []
+6:58:32 PM [express] GET /api/notifications 304 in 5ms :: []
+6:58:33 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+6:58:37 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+6:58:37 PM [express] GET /api/rooms 304 in 9ms :: []
+6:58:38 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:58:42 PM [express] GET /api/messages/conversations 304 in 4ms :: []
+6:58:42 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+6:58:43 PM [express] GET /api/rooms 304 in 5ms :: []
+6:58:43 PM [express] GET /api/notifications 304 in 5ms :: []
+6:58:43 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+6:58:44 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+6:58:49 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+6:58:49 PM [express] GET /api/rooms 304 in 5ms :: []
+6:58:49 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:58:52 PM [express] GET /api/messages/conversations 304 in 15ms :: []
+6:58:53 PM [express] POST /api/rooms 200 in 32ms :: {"id":"9bb9a760-5769-49d9-8eb0-bb500a681a23","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57704316","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T18:58:53.795Z"}
+6:58:54 PM [express] GET /api/rooms 200 in 5ms :: [{"id":"9bb9a760-5769-49d9-8eb0-bb500a681a23","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57704316","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T18:58:53.795Z"}]
+6:58:54 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:58:54 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9bb9a760-5769-49d9-8eb0-bb500a681a23","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57704316","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T18:58:53.795Z"}]
+6:58:54 PM [express] POST /api/rooms/votes/batch 200 in 8ms :: {"counts":{"9bb9a760-5769-49d9-8eb0-bb500a681a23":0},"userVotes":{"9bb9a760-5769-49d9-8eb0-bb500a681a23":false}}
+6:58:54 PM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+6:58:55 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+6:58:58 PM [express] GET /api/notifications 304 in 47ms :: []
+6:58:59 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:58:59 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"9bb9a760-5769-49d9-8eb0-bb500a681a23","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57704316","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T18:58:53.795Z"}]
+6:59:00 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:59:03 PM [express] GET /api/messages/conversations 304 in 9ms :: []
+6:59:05 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9bb9a760-5769-49d9-8eb0-bb500a681a23","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57704316","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T18:58:53.795Z"}]
+6:59:05 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+6:59:05 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+6:59:05 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+6:59:18 PM [express] GET /api/notifications 304 in 6ms :: []
+6:59:20 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"9bb9a760-5769-49d9-8eb0-bb500a681a23","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57704316","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T18:58:53.795Z"}]
+6:59:20 PM [express] GET /api/users/rooms 304 in 4ms :: {}
+6:59:20 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+6:59:23 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+6:59:26 PM [express] GET /api/rooms/participants 304 in 328ms :: {}
+6:59:26 PM [express] GET /api/users/rooms 304 in 60ms :: {}
+6:59:26 PM [express] POST /api/rooms/votes/batch 200 in 528ms :: {"counts":{"9bb9a760-5769-49d9-8eb0-bb500a681a23":0},"userVotes":{"9bb9a760-5769-49d9-8eb0-bb500a681a23":false}}
+6:59:26 PM [express] GET /api/messages/unread/count 304 in 88ms :: {"count":0}
+6:59:26 PM [express] GET /api/rooms 304 in 474ms :: [{"id":"9bb9a760-5769-49d9-8eb0-bb500a681a23","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57704316","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-14T18:58:53.795Z"}]
