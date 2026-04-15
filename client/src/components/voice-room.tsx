@@ -486,119 +486,113 @@ function ParticipantCard({
 
   const renderControlDock = () => {
     const neutralButtonStyle = {
-      background: "linear-gradient(180deg, rgba(255,255,255,0.105), rgba(255,255,255,0.055))",
-      border: "1px solid rgba(255,255,255,0.14)",
-      color: "rgba(255,255,255,0.78)",
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.22)",
+      background: "linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.045))",
+      border: "1px solid rgba(255,255,255,0.12)",
+      color: "rgba(255,255,255,0.72)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 12px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.18)",
     };
     const activeNeutralButtonStyle = {
-      background: "linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.075))",
-      border: "1px solid rgba(255,255,255,0.24)",
-      color: "rgba(255,255,255,0.96)",
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 10px 22px rgba(0,0,0,0.28)",
-    };
-    const liveButtonStyle = {
-      background: "linear-gradient(180deg, rgba(220,38,38,0.92), rgba(153,27,27,0.88))",
-      border: "1px solid rgba(248,113,113,0.38)",
-      color: "#fff",
-      boxShadow: "0 0 16px rgba(220,38,38,0.26), inset 0 1px 0 rgba(255,255,255,0.16)",
+      background: "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.09))",
+      border: "1px solid rgba(255,255,255,0.26)",
+      color: "rgba(255,255,255,0.97)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 6px 16px rgba(0,0,0,0.32), 0 1px 4px rgba(0,0,0,0.2)",
     };
     const leaveButtonStyle = {
-      background: "linear-gradient(180deg, rgba(239,68,68,0.96), rgba(185,28,28,0.94))",
-      border: "1px solid rgba(248,113,113,0.48)",
+      background: "linear-gradient(180deg, rgba(239,68,68,0.94), rgba(185,28,28,0.92))",
+      border: "1px solid rgba(248,113,113,0.44)",
       color: "#fff",
-      boxShadow: "0 0 18px rgba(220,38,38,0.34), inset 0 1px 0 rgba(255,255,255,0.18)",
+      boxShadow: "0 0 20px rgba(220,38,38,0.3), 0 4px 14px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.18)",
     };
-    const neutralLabelStyle = { color: "rgba(255,255,255,0.42)" };
-    const activeLabelStyle = { color: "rgba(255,255,255,0.68)" };
-    const dangerLabelStyle = { color: "rgba(248,113,113,0.72)" };
+    const neutralLabelStyle = { color: "rgba(255,255,255,0.38)" };
+    const activeLabelStyle = { color: "rgba(255,255,255,0.72)" };
+    const dangerLabelStyle = { color: "rgba(248,113,113,0.78)" };
 
     return (
       <div
-        className="pointer-events-auto flex items-center gap-2.5 select-none"
+        className="pointer-events-auto flex items-center gap-1 select-none"
         style={{
-          background: "linear-gradient(180deg, rgba(18,21,32,0.92), rgba(9,11,18,0.86))",
-          backdropFilter: "blur(28px) saturate(1.15)",
-          WebkitBackdropFilter: "blur(28px) saturate(1.15)",
-          border: "1px solid rgba(255,255,255,0.11)",
-          borderRadius: "24px",
-          boxShadow: "0 16px 42px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.035), inset 0 1px 0 rgba(255,255,255,0.09)",
-          padding: "8px 10px",
+          background: "linear-gradient(180deg, rgba(16,19,30,0.94), rgba(8,10,18,0.90))",
+          backdropFilter: "blur(32px) saturate(1.2)",
+          WebkitBackdropFilter: "blur(32px) saturate(1.2)",
+          border: "1px solid rgba(255,255,255,0.10)",
+          borderRadius: "28px",
+          boxShadow: "0 20px 48px rgba(0,0,0,0.48), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.08)",
+          padding: "10px 14px",
         }}
         data-testid="toolbar-room-controls"
       >
-        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
           <button
             onClick={toggleMute}
             disabled={micError}
             data-testid="button-toggle-mute"
             title={isMuted ? "Unmute" : "Mute"}
-            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={isMuted ? neutralButtonStyle : liveButtonStyle}
+            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={isMuted ? neutralButtonStyle : activeNeutralButtonStyle}
           >
-            {isMuted ? <MicOff className="w-[18px] h-[18px]" /> : <Mic className="w-[18px] h-[18px]" />}
+            {isMuted ? <MicOff className="w-[19px] h-[19px]" /> : <Mic className="w-[19px] h-[19px]" />}
           </button>
-          <span className="text-[9px] font-semibold leading-none tracking-wide" style={isMuted ? neutralLabelStyle : dangerLabelStyle}>
-            {isMuted ? "Unmute" : "Live"}
+          <span className="text-[9px] font-semibold leading-none tracking-wide" style={isMuted ? neutralLabelStyle : activeLabelStyle}>
+            {isMuted ? "Unmute" : "Mic On"}
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
           <button
             onClick={toggleVideo}
             data-testid="button-toggle-video"
             title={isVideoOn ? "Stop Camera" : "Camera"}
-            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95"
             style={isVideoOn ? activeNeutralButtonStyle : neutralButtonStyle}
           >
-            {isVideoOn ? <Video className="w-[18px] h-[18px]" /> : <VideoOff className="w-[18px] h-[18px]" />}
+            {isVideoOn ? <Video className="w-[19px] h-[19px]" /> : <VideoOff className="w-[19px] h-[19px]" />}
           </button>
           <span className="text-[9px] font-semibold leading-none tracking-wide" style={isVideoOn ? activeLabelStyle : neutralLabelStyle}>
             Camera
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
           <button
             onClick={handleScreenShare}
             data-testid="button-screen-share"
             title={isScreenSharing ? "Stop Share" : "Share Screen"}
-            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95"
             style={isScreenSharing ? activeNeutralButtonStyle : neutralButtonStyle}
           >
-            <Monitor className="w-[18px] h-[18px]" />
+            <Monitor className="w-[19px] h-[19px]" />
           </button>
           <span className="text-[9px] font-semibold leading-none tracking-wide" style={isScreenSharing ? activeLabelStyle : neutralLabelStyle}>
             Share
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
           <button
             onClick={toggleHand}
             data-testid="button-toggle-hand"
             title={handRaised ? "Lower Hand" : "Raise Hand"}
-            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95"
             style={handRaised ? activeNeutralButtonStyle : neutralButtonStyle}
           >
-            <Hand className="w-[18px] h-[18px]" />
+            <Hand className="w-[19px] h-[19px]" />
           </button>
           <span className="text-[9px] font-semibold leading-none tracking-wide" style={handRaised ? activeLabelStyle : neutralLabelStyle}>
             Hand
           </span>
         </div>
 
-        <div className="mx-0.5 h-10 w-px" style={{ background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.16), transparent)" }} />
+        <div className="mx-1 h-11 w-px" style={{ background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.13), transparent)" }} />
 
-        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
           <button
             onClick={handleLeave}
             data-testid="button-leave-room"
             title="Leave Room"
-            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95"
             style={leaveButtonStyle}
           >
-            <PhoneOff className="w-[18px] h-[18px]" />
+            <PhoneOff className="w-[19px] h-[19px]" />
           </button>
           <span className="text-[9px] font-semibold leading-none tracking-wide" style={dangerLabelStyle}>
             Leave
