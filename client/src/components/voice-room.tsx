@@ -484,6 +484,130 @@ function ParticipantCard({
     </div>
   );
 
+  const renderControlDock = () => {
+    const neutralButtonStyle = {
+      background: "linear-gradient(180deg, rgba(255,255,255,0.105), rgba(255,255,255,0.055))",
+      border: "1px solid rgba(255,255,255,0.14)",
+      color: "rgba(255,255,255,0.78)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.22)",
+    };
+    const activeNeutralButtonStyle = {
+      background: "linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.075))",
+      border: "1px solid rgba(255,255,255,0.24)",
+      color: "rgba(255,255,255,0.96)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 10px 22px rgba(0,0,0,0.28)",
+    };
+    const liveButtonStyle = {
+      background: "linear-gradient(180deg, rgba(220,38,38,0.92), rgba(153,27,27,0.88))",
+      border: "1px solid rgba(248,113,113,0.38)",
+      color: "#fff",
+      boxShadow: "0 0 16px rgba(220,38,38,0.26), inset 0 1px 0 rgba(255,255,255,0.16)",
+    };
+    const leaveButtonStyle = {
+      background: "linear-gradient(180deg, rgba(239,68,68,0.96), rgba(185,28,28,0.94))",
+      border: "1px solid rgba(248,113,113,0.48)",
+      color: "#fff",
+      boxShadow: "0 0 18px rgba(220,38,38,0.34), inset 0 1px 0 rgba(255,255,255,0.18)",
+    };
+    const neutralLabelStyle = { color: "rgba(255,255,255,0.42)" };
+    const activeLabelStyle = { color: "rgba(255,255,255,0.68)" };
+    const dangerLabelStyle = { color: "rgba(248,113,113,0.72)" };
+
+    return (
+      <div
+        className="pointer-events-auto flex items-center gap-2.5 select-none"
+        style={{
+          background: "linear-gradient(180deg, rgba(18,21,32,0.92), rgba(9,11,18,0.86))",
+          backdropFilter: "blur(28px) saturate(1.15)",
+          WebkitBackdropFilter: "blur(28px) saturate(1.15)",
+          border: "1px solid rgba(255,255,255,0.11)",
+          borderRadius: "24px",
+          boxShadow: "0 16px 42px rgba(0,0,0,0.42), 0 0 0 1px rgba(255,255,255,0.035), inset 0 1px 0 rgba(255,255,255,0.09)",
+          padding: "8px 10px",
+        }}
+        data-testid="toolbar-room-controls"
+      >
+        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+          <button
+            onClick={toggleMute}
+            disabled={micError}
+            data-testid="button-toggle-mute"
+            title={isMuted ? "Unmute" : "Mute"}
+            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={isMuted ? neutralButtonStyle : liveButtonStyle}
+          >
+            {isMuted ? <MicOff className="w-[18px] h-[18px]" /> : <Mic className="w-[18px] h-[18px]" />}
+          </button>
+          <span className="text-[9px] font-semibold leading-none tracking-wide" style={isMuted ? neutralLabelStyle : dangerLabelStyle}>
+            {isMuted ? "Unmute" : "Live"}
+          </span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+          <button
+            onClick={toggleVideo}
+            data-testid="button-toggle-video"
+            title={isVideoOn ? "Stop Camera" : "Camera"}
+            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+            style={isVideoOn ? activeNeutralButtonStyle : neutralButtonStyle}
+          >
+            {isVideoOn ? <Video className="w-[18px] h-[18px]" /> : <VideoOff className="w-[18px] h-[18px]" />}
+          </button>
+          <span className="text-[9px] font-semibold leading-none tracking-wide" style={isVideoOn ? activeLabelStyle : neutralLabelStyle}>
+            Camera
+          </span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+          <button
+            onClick={handleScreenShare}
+            data-testid="button-screen-share"
+            title={isScreenSharing ? "Stop Share" : "Share Screen"}
+            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+            style={isScreenSharing ? activeNeutralButtonStyle : neutralButtonStyle}
+          >
+            <Monitor className="w-[18px] h-[18px]" />
+          </button>
+          <span className="text-[9px] font-semibold leading-none tracking-wide" style={isScreenSharing ? activeLabelStyle : neutralLabelStyle}>
+            Share
+          </span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+          <button
+            onClick={toggleHand}
+            data-testid="button-toggle-hand"
+            title={handRaised ? "Lower Hand" : "Raise Hand"}
+            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+            style={handRaised ? activeNeutralButtonStyle : neutralButtonStyle}
+          >
+            <Hand className="w-[18px] h-[18px]" />
+          </button>
+          <span className="text-[9px] font-semibold leading-none tracking-wide" style={handRaised ? activeLabelStyle : neutralLabelStyle}>
+            Hand
+          </span>
+        </div>
+
+        <div className="mx-0.5 h-10 w-px" style={{ background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.16), transparent)" }} />
+
+        <div className="flex flex-col items-center gap-1 min-w-[46px]">
+          <button
+            onClick={handleLeave}
+            data-testid="button-leave-room"
+            title="Leave Room"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-150 hover:-translate-y-0.5 active:translate-y-0"
+            style={leaveButtonStyle}
+          >
+            <PhoneOff className="w-[18px] h-[18px]" />
+          </button>
+          <span className="text-[9px] font-semibold leading-none tracking-wide" style={dangerLabelStyle}>
+            Leave
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <ProfileDecoration decorationId={(p as any).profileDecoration} size={112}>
       <div 
@@ -3371,9 +3495,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       </Dialog>
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <div className="border-b border-white/[0.07] px-4 py-2.5" style={{ background: "rgba(8,10,18,0.6)", backdropFilter: "blur(12px)" }}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0 flex-shrink">
+        <div className="border-b border-white/[0.07] px-4 py-2.5" style={{ background: "rgba(8,10,18,0.74)", backdropFilter: "blur(16px)" }}>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1 basis-0">
               <div className="relative flex-shrink-0">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(0,225,255,0.12)", border: "1px solid rgba(0,225,255,0.2)" }}>
                   <Mic className="w-4 h-4 text-cyan-400" />
@@ -3403,7 +3527,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-0.5 flex-shrink-0">
+            <div className="order-3 flex w-full justify-center md:order-none md:w-auto md:flex-shrink-0">
+              {renderControlDock()}
+            </div>
+
+            <div className="flex items-center justify-end gap-0.5 flex-1 basis-0">
               {/* Chat */}
               <div className="relative">
                 <button
@@ -3885,110 +4013,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          {/* Floating control bar — top center */}
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-            <div
-              className="pointer-events-auto flex items-end gap-0 select-none"
-              style={{
-                background: "rgba(18, 20, 30, 0.94)",
-                backdropFilter: "blur(32px)",
-                WebkitBackdropFilter: "blur(32px)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "18px",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.07)",
-                padding: "8px 10px 10px 10px",
-              }}
-            >
-              {/* Mic */}
-              <div className="flex flex-col items-center gap-1 px-2">
-                <button
-                  onClick={toggleMute}
-                  disabled={micError}
-                  data-testid="button-toggle-mute"
-                  title={isMuted ? "Unmute" : "Mute"}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={isMuted
-                    ? { background: "rgba(220,38,38,0.22)", border: "1px solid rgba(220,38,38,0.45)", color: "#f87171", boxShadow: "0 0 14px rgba(220,38,38,0.2)" }
-                    : { background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.11)", color: "rgba(255,255,255,0.75)" }
-                  }
-                >
-                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-                <span className="text-[9px] font-medium leading-none" style={{ color: isMuted ? "rgba(248,113,113,0.7)" : "rgba(255,255,255,0.32)" }}>
-                  {isMuted ? "Unmute" : "Mute"}
-                </span>
-              </div>
-
-              {/* Camera */}
-              <div className="flex flex-col items-center gap-1 px-2">
-                <button
-                  onClick={toggleVideo}
-                  data-testid="button-toggle-video"
-                  title={isVideoOn ? "Stop Camera" : "Camera"}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
-                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.11)", color: isVideoOn ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.75)" }}
-                >
-                  {isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-                </button>
-                <span className="text-[9px] font-medium leading-none" style={{ color: "rgba(255,255,255,0.32)" }}>
-                  Camera
-                </span>
-              </div>
-
-              {/* Screen Share */}
-              <div className="flex flex-col items-center gap-1 px-2">
-                <button
-                  onClick={handleScreenShare}
-                  data-testid="button-screen-share"
-                  title={isScreenSharing ? "Stop Share" : "Share Screen"}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
-                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.11)", color: isScreenSharing ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.75)" }}
-                >
-                  <Monitor className="w-4 h-4" />
-                </button>
-                <span className="text-[9px] font-medium leading-none" style={{ color: "rgba(255,255,255,0.32)" }}>
-                  Share
-                </span>
-              </div>
-
-              {/* Hand Raise */}
-              <div className="flex flex-col items-center gap-1 px-2">
-                <button
-                  onClick={toggleHand}
-                  data-testid="button-toggle-hand"
-                  title={handRaised ? "Lower Hand" : "Raise Hand"}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
-                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.11)", color: handRaised ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.75)" }}
-                >
-                  <Hand className="w-4 h-4" />
-                </button>
-                <span className="text-[9px] font-medium leading-none" style={{ color: "rgba(255,255,255,0.32)" }}>
-                  Hand
-                </span>
-              </div>
-
-              {/* Divider */}
-              <div className="self-center mx-1" style={{ width: 1, height: 26, background: "rgba(255,255,255,0.08)" }} />
-
-              {/* Leave */}
-              <div className="flex flex-col items-center gap-1 px-2">
-                <button
-                  onClick={handleLeave}
-                  data-testid="button-leave-room"
-                  title="Leave Room"
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
-                  style={{ background: "rgba(220,38,38,0.88)", border: "1px solid rgba(248,113,113,0.35)", color: "#fff", boxShadow: "0 0 14px rgba(220,38,38,0.28)" }}
-                >
-                  <PhoneOff className="w-4 h-4" />
-                </button>
-                <span className="text-[9px] font-medium leading-none" style={{ color: "rgba(248,113,113,0.6)" }}>
-                  Leave
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className={`flex items-end justify-center p-3 pt-16 pb-4 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
+          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
             <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-5">
               {participants.map((p, index) => {
                 const isBlockedUser = blockedIds.has(p.id) && p.id !== user?.id;
