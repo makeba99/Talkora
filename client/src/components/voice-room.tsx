@@ -3396,55 +3396,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-background/80 backdrop-blur-md rounded-full px-3 sm:px-4 py-1.5 border flex-shrink-0" data-testid="controls-floating">
-              <Button
-                size="icon"
-                variant={isMuted ? "destructive" : "secondary"}
-                onClick={toggleMute}
-                disabled={micError}
-                className="rounded-full"
-                data-testid="button-toggle-mute"
-              >
-                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </Button>
-              <Button
-                size="icon"
-                variant={isVideoOn ? "default" : "destructive"}
-                onClick={toggleVideo}
-                className="rounded-full"
-                data-testid="button-toggle-video"
-              >
-                {isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-              </Button>
-              <Button
-                size="icon"
-                variant="secondary"
-                onClick={handleScreenShare}
-                className={`rounded-full ${isScreenSharing ? "text-primary" : ""}`}
-                data-testid="button-screen-share"
-              >
-                <Monitor className="w-4 h-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant={handRaised ? "default" : "secondary"}
-                onClick={toggleHand}
-                className="rounded-full"
-                data-testid="button-toggle-hand"
-              >
-                <Hand className="w-4 h-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="destructive"
-                onClick={handleLeave}
-                className="rounded-full"
-                data-testid="button-leave-room"
-              >
-                <PhoneOff className="w-4 h-4" />
-              </Button>
-            </div>
-
             <div className="flex items-center gap-1 flex-shrink-0">
               <div className="relative">
                 <Button
@@ -3933,7 +3884,126 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          <div className={`flex items-end justify-center p-3 pb-2 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
+          {/* Premium floating bottom control bar */}
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+            <div
+              className="pointer-events-auto flex items-end gap-0 select-none"
+              style={{
+                background: "rgba(6, 8, 16, 0.90)",
+                backdropFilter: "blur(28px)",
+                WebkitBackdropFilter: "blur(28px)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: "20px",
+                boxShadow: "0 20px 56px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
+                padding: "10px 16px 12px 16px",
+              }}
+            >
+              {/* Mic */}
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <button
+                  onClick={toggleMute}
+                  disabled={micError}
+                  data-testid="button-toggle-mute"
+                  title={isMuted ? "Unmute" : "Mute"}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 border ${
+                    isMuted
+                      ? "bg-red-500/20 border-red-500/40 text-red-400"
+                      : "bg-cyan-400/10 border-cyan-400/20 text-cyan-300 hover:bg-cyan-400/20"
+                  } hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed`}
+                  style={isMuted
+                    ? { boxShadow: "0 0 18px rgba(239,68,68,0.22)" }
+                    : { boxShadow: "0 0 14px rgba(0,225,255,0.14)" }
+                  }
+                >
+                  {isMuted ? <MicOff className="w-[18px] h-[18px]" /> : <Mic className="w-[18px] h-[18px]" />}
+                </button>
+                <span className="text-[10px] font-medium leading-none" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  {isMuted ? "Unmute" : "Mute"}
+                </span>
+              </div>
+
+              {/* Camera */}
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <button
+                  onClick={toggleVideo}
+                  data-testid="button-toggle-video"
+                  title={isVideoOn ? "Stop Camera" : "Start Camera"}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 border ${
+                    isVideoOn
+                      ? "bg-cyan-400/10 border-cyan-400/20 text-cyan-300 hover:bg-cyan-400/20"
+                      : "border-white/[0.07] text-white/40 hover:bg-white/[0.08] hover:text-white/60"
+                  } hover:scale-105 active:scale-95`}
+                  style={isVideoOn ? { background: "rgba(0,225,255,0.08)", boxShadow: "0 0 14px rgba(0,225,255,0.12)" } : { background: "rgba(255,255,255,0.04)" }}
+                >
+                  {isVideoOn ? <Video className="w-[18px] h-[18px]" /> : <VideoOff className="w-[18px] h-[18px]" />}
+                </button>
+                <span className="text-[10px] font-medium leading-none" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  {isVideoOn ? "Stop Cam" : "Camera"}
+                </span>
+              </div>
+
+              {/* Screen Share */}
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <button
+                  onClick={handleScreenShare}
+                  data-testid="button-screen-share"
+                  title={isScreenSharing ? "Stop Sharing" : "Share Screen"}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 border ${
+                    isScreenSharing
+                      ? "border-violet-400/30 text-violet-300 hover:bg-violet-400/20"
+                      : "border-white/[0.07] text-white/40 hover:bg-white/[0.08] hover:text-white/60"
+                  } hover:scale-105 active:scale-95`}
+                  style={isScreenSharing ? { background: "rgba(139,92,246,0.12)", boxShadow: "0 0 14px rgba(139,92,246,0.18)" } : { background: "rgba(255,255,255,0.04)" }}
+                >
+                  <Monitor className="w-[18px] h-[18px]" />
+                </button>
+                <span className="text-[10px] font-medium leading-none" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  {isScreenSharing ? "Stop Share" : "Share"}
+                </span>
+              </div>
+
+              {/* Hand Raise */}
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <button
+                  onClick={toggleHand}
+                  data-testid="button-toggle-hand"
+                  title={handRaised ? "Lower Hand" : "Raise Hand"}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 border ${
+                    handRaised
+                      ? "border-amber-400/30 text-amber-300 hover:bg-amber-400/20"
+                      : "border-white/[0.07] text-white/40 hover:bg-white/[0.08] hover:text-white/60"
+                  } hover:scale-105 active:scale-95`}
+                  style={handRaised ? { background: "rgba(251,191,36,0.12)", boxShadow: "0 0 14px rgba(251,191,36,0.18)" } : { background: "rgba(255,255,255,0.04)" }}
+                >
+                  <Hand className="w-[18px] h-[18px]" />
+                </button>
+                <span className="text-[10px] font-medium leading-none" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  {handRaised ? "Lower" : "Raise Hand"}
+                </span>
+              </div>
+
+              {/* Divider */}
+              <div className="self-center mx-2" style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)" }} />
+
+              {/* Leave */}
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <button
+                  onClick={handleLeave}
+                  data-testid="button-leave-room"
+                  title="Leave Room"
+                  className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 border border-red-500/40 text-white hover:scale-105 active:scale-95"
+                  style={{ background: "rgba(220,38,38,0.85)", boxShadow: "0 0 22px rgba(220,38,38,0.35)" }}
+                >
+                  <PhoneOff className="w-[18px] h-[18px]" />
+                </button>
+                <span className="text-[10px] font-medium leading-none" style={{ color: "rgba(248,113,113,0.6)" }}>
+                  Leave
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className={`flex items-end justify-center p-3 pb-24 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
             <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-5">
               {participants.map((p, index) => {
                 const isBlockedUser = blockedIds.has(p.id) && p.id !== user?.id;
