@@ -1616,116 +1616,148 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const renderControlDock = () => {
-    const neutralButtonStyle = {
-      background: "linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.045))",
-      border: "1px solid rgba(255,255,255,0.12)",
-      color: "rgba(255,255,255,0.72)",
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 12px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.18)",
+    const ghostStyle: React.CSSProperties = {
+      background: "rgba(255,255,255,0.058)",
+      border: "1px solid rgba(255,255,255,0.085)",
+      color: "rgba(255,255,255,0.40)",
     };
-    const activeNeutralButtonStyle = {
-      background: "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.09))",
-      border: "1px solid rgba(255,255,255,0.26)",
-      color: "rgba(255,255,255,0.97)",
-      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 6px 16px rgba(0,0,0,0.32), 0 1px 4px rgba(0,0,0,0.2)",
+    const activeStyle: React.CSSProperties = {
+      background: "linear-gradient(145deg, rgba(255,255,255,0.155) 0%, rgba(255,255,255,0.08) 100%)",
+      border: "1px solid rgba(255,255,255,0.20)",
+      color: "rgba(255,255,255,0.96)",
+      boxShadow: "0 0 14px rgba(255,255,255,0.07), 0 4px 16px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.12)",
     };
-    const leaveButtonStyle = {
-      background: "linear-gradient(180deg, rgba(239,68,68,0.94), rgba(185,28,28,0.92))",
-      border: "1px solid rgba(248,113,113,0.44)",
+    const micLiveStyle: React.CSSProperties = {
+      background: "linear-gradient(145deg, rgba(34,197,94,0.18) 0%, rgba(22,163,74,0.10) 100%)",
+      border: "1px solid rgba(34,197,94,0.30)",
+      color: "rgba(74,222,128,0.96)",
+      boxShadow: "0 0 18px rgba(34,197,94,0.22), 0 4px 16px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
+    };
+    const handRaisedStyle: React.CSSProperties = {
+      background: "linear-gradient(145deg, rgba(251,191,36,0.22) 0%, rgba(217,119,6,0.13) 100%)",
+      border: "1px solid rgba(251,191,36,0.40)",
+      color: "rgba(251,191,36,0.97)",
+      boxShadow: "0 0 22px rgba(251,191,36,0.30), 0 4px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
+    };
+    const leaveStyle: React.CSSProperties = {
+      background: "linear-gradient(145deg, rgba(239,68,68,0.90) 0%, rgba(185,28,28,0.88) 100%)",
+      border: "1px solid rgba(248,113,113,0.40)",
       color: "#fff",
-      boxShadow: "0 0 20px rgba(220,38,38,0.3), 0 4px 14px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.18)",
+      boxShadow: "0 0 24px rgba(239,68,68,0.28), 0 4px 16px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.16)",
     };
-    const neutralLabelStyle = { color: "rgba(255,255,255,0.38)" };
-    const activeLabelStyle = { color: "rgba(255,255,255,0.72)" };
-    const dangerLabelStyle = { color: "rgba(248,113,113,0.78)" };
+
+    const btnBase = "relative w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-200 ease-out hover:-translate-y-[3px] hover:scale-[1.04] active:translate-y-0 active:scale-[0.97]";
+    const labelBase = "text-[9px] font-semibold leading-none tracking-wider uppercase";
 
     return (
       <div
-        className="pointer-events-auto flex items-center gap-1 select-none"
+        className="pointer-events-auto flex items-center gap-1.5 select-none"
         style={{
-          background: "linear-gradient(180deg, rgba(16,19,30,0.94), rgba(8,10,18,0.90))",
-          backdropFilter: "blur(32px) saturate(1.2)",
-          WebkitBackdropFilter: "blur(32px) saturate(1.2)",
-          border: "1px solid rgba(255,255,255,0.10)",
-          borderRadius: "28px",
-          boxShadow: "0 20px 48px rgba(0,0,0,0.48), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.08)",
-          padding: "10px 14px",
+          background: "linear-gradient(180deg, rgba(18,22,36,0.97) 0%, rgba(9,11,22,0.95) 100%)",
+          backdropFilter: "blur(40px) saturate(1.35)",
+          WebkitBackdropFilter: "blur(40px) saturate(1.35)",
+          border: "1px solid rgba(255,255,255,0.088)",
+          borderRadius: "32px",
+          boxShadow: "0 24px 56px rgba(0,0,0,0.52), 0 0 0 1px rgba(255,255,255,0.022), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.18)",
+          padding: "11px 16px",
         }}
         data-testid="toolbar-room-controls"
       >
-        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
+        {/* Mute */}
+        <div className="flex flex-col items-center gap-[7px]">
           <button
             onClick={toggleMute}
             disabled={micError}
             data-testid="button-toggle-mute"
             title={isMuted ? "Unmute" : "Mute"}
-            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={isMuted ? neutralButtonStyle : activeNeutralButtonStyle}
+            className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
+            style={isMuted ? ghostStyle : micLiveStyle}
           >
-            {isMuted ? <MicOff className="w-[19px] h-[19px]" /> : <Mic className="w-[19px] h-[19px]" />}
+            {isMuted
+              ? <MicOff className="w-[18px] h-[18px]" />
+              : (
+                <span className="relative flex items-center justify-center">
+                  <Mic className="w-[18px] h-[18px]" />
+                  <span className="absolute -top-[3px] -right-[3px] w-[7px] h-[7px] rounded-full bg-green-400 border border-black/30 shadow-sm" />
+                </span>
+              )
+            }
           </button>
-          <span className="text-[9px] font-semibold leading-none tracking-wide" style={isMuted ? neutralLabelStyle : activeLabelStyle}>
-            {isMuted ? "Unmute" : "Mic On"}
+          <span className={labelBase} style={isMuted ? { color: "rgba(255,255,255,0.32)" } : { color: "rgba(74,222,128,0.82)" }}>
+            {isMuted ? "Unmute" : "Live"}
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
+        {/* Camera */}
+        <div className="flex flex-col items-center gap-[7px]">
           <button
             onClick={toggleVideo}
             data-testid="button-toggle-video"
             title={isVideoOn ? "Stop Camera" : "Camera"}
-            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95"
-            style={isVideoOn ? activeNeutralButtonStyle : neutralButtonStyle}
+            className={btnBase}
+            style={isVideoOn ? activeStyle : ghostStyle}
           >
-            {isVideoOn ? <Video className="w-[19px] h-[19px]" /> : <VideoOff className="w-[19px] h-[19px]" />}
+            {isVideoOn ? <Video className="w-[18px] h-[18px]" /> : <VideoOff className="w-[18px] h-[18px]" />}
           </button>
-          <span className="text-[9px] font-semibold leading-none tracking-wide" style={isVideoOn ? activeLabelStyle : neutralLabelStyle}>
+          <span className={labelBase} style={isVideoOn ? { color: "rgba(255,255,255,0.68)" } : { color: "rgba(255,255,255,0.32)" }}>
             Camera
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
+        {/* Share */}
+        <div className="flex flex-col items-center gap-[7px]">
           <button
             onClick={handleScreenShare}
             data-testid="button-screen-share"
             title={isScreenSharing ? "Stop Share" : "Share Screen"}
-            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95"
-            style={isScreenSharing ? activeNeutralButtonStyle : neutralButtonStyle}
+            className={btnBase}
+            style={isScreenSharing ? activeStyle : ghostStyle}
           >
-            <Monitor className="w-[19px] h-[19px]" />
+            <Monitor className="w-[18px] h-[18px]" />
           </button>
-          <span className="text-[9px] font-semibold leading-none tracking-wide" style={isScreenSharing ? activeLabelStyle : neutralLabelStyle}>
+          <span className={labelBase} style={isScreenSharing ? { color: "rgba(255,255,255,0.68)" } : { color: "rgba(255,255,255,0.32)" }}>
             Share
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
-          <button
-            onClick={toggleHand}
-            data-testid="button-toggle-hand"
-            title={handRaised ? "Lower Hand" : "Raise Hand"}
-            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95"
-            style={handRaised ? activeNeutralButtonStyle : neutralButtonStyle}
-          >
-            <Hand className="w-[19px] h-[19px]" />
-          </button>
-          <span className="text-[9px] font-semibold leading-none tracking-wide" style={handRaised ? activeLabelStyle : neutralLabelStyle}>
+        {/* Hand — premium standout button */}
+        <div className="flex flex-col items-center gap-[7px]">
+          <div className="relative">
+            {handRaised && (
+              <span
+                className="absolute inset-0 rounded-[18px] animate-ping"
+                style={{ background: "rgba(251,191,36,0.28)", animationDuration: "1.4s" }}
+              />
+            )}
+            <button
+              onClick={toggleHand}
+              data-testid="button-toggle-hand"
+              title={handRaised ? "Lower Hand" : "Raise Hand"}
+              className={btnBase}
+              style={handRaised ? handRaisedStyle : ghostStyle}
+            >
+              <Hand className="w-[18px] h-[18px]" style={handRaised ? { filter: "drop-shadow(0 0 4px rgba(251,191,36,0.6))" } : undefined} />
+            </button>
+          </div>
+          <span className={labelBase} style={handRaised ? { color: "rgba(251,191,36,0.86)" } : { color: "rgba(255,255,255,0.32)" }}>
             Hand
           </span>
         </div>
 
-        <div className="mx-1 h-11 w-px" style={{ background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.13), transparent)" }} />
+        <div className="mx-0.5 h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
 
-        <div className="flex flex-col items-center gap-1.5 min-w-[52px]">
+        {/* Leave */}
+        <div className="flex flex-col items-center gap-[7px]">
           <button
             onClick={handleLeave}
             data-testid="button-leave-room"
             title="Leave Room"
-            className="w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-150 hover:-translate-y-[3px] hover:brightness-110 active:translate-y-0 active:brightness-95"
-            style={leaveButtonStyle}
+            className={btnBase}
+            style={leaveStyle}
           >
-            <PhoneOff className="w-[19px] h-[19px]" />
+            <PhoneOff className="w-[18px] h-[18px]" />
           </button>
-          <span className="text-[9px] font-semibold leading-none tracking-wide" style={dangerLabelStyle}>
+          <span className={labelBase} style={{ color: "rgba(252,165,165,0.72)" }}>
             Leave
           </span>
         </div>
