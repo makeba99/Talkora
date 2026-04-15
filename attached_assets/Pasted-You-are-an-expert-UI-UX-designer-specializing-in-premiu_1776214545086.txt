@@ -1,0 +1,24 @@
+You are an expert UI/UX designer specializing in premium video conferencing interfaces. Your task is to redesign the control panel and interface layout in the uploaded image files to achieve a modern, high-level premium aesthetic with improved spatial hierarchy and usability.
+
+**Core Requirements:**
+
+- **Redesign the floating control panel** to have more sophisticated spacing, larger padding between buttons, and a refined visual hierarchy that feels "handy" and premium
+- **Standardize all muted button states** to use the same neutral, muted color palette across the interface (no inconsistent coloring)
+- **Implement consistent color coding**: Muted buttons stay neutral; only active/critical states (like "Leave" or "Unmute" when engaged) use accent colors (red)
+- **Reposition the control panel** so it does NOT overlay the YouTube video content area or obstruct primary viewing zones
+- **Tighten spacing** between the user profile section and control elements to create a more integrated, compact feel without crowding
+- **Elevate button styling** to premium standards: refined rounded corners, subtle shadows, consistent stroke weights, and polished icon treatments
+- **Move the control panel higher** in the layout (away from the bottom edge) to create visual breathing room and improve accessibility
+
+**Context from Current Design:**
+
+The current interface uses a dark theme with a pill-shaped floating control panel containing five primary buttons (Unmute, Camera, Share, Hand, Leave). A YouTube sidebar occupies the right edge. User profile and video elements are scattered across the lower portions. The redesign should maintain the dark aesthetic and functional organization while addressing spacing, color consistency, and premium positioning.
+
+**Design Principles:**
+
+- All buttons in their default/muted state should appear visually identical in color and treatment
+- Only when activated or in critical states should buttons shift to accent colors
+- The interface should feel like a high-end, professional video conferencing tool—not cluttered or amateur
+- Maintain clear visual separation between the control panel and content areas
+
+Deliver mockups or detailed design specifications showing the repositioned control panel, refined button styling, updated color states, and improved spatial relationships.
