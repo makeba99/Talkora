@@ -35,6 +35,9 @@ import {
   type InsertTeacherReview,
   type TeacherApplication,
   type InsertTeacherApplication,
+  userComments,
+  type UserComment,
+  type InsertUserComment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -112,6 +115,10 @@ export interface IStorage {
   getAllTeacherApplications(): Promise<TeacherApplication[]>;
   updateTeacherApplication(id: string, data: Partial<TeacherApplication>): Promise<TeacherApplication | undefined>;
   getPendingApplicationCount(): Promise<number>;
+
+  getUserComments(targetUserId: string): Promise<(UserComment & { authorName: string; authorAvatar: string | null })[]>;
+  createUserComment(data: InsertUserComment): Promise<UserComment>;
+  deleteUserComment(commentId: string, authorId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -520,6 +527,33 @@ export class DatabaseStorage implements IStorage {
   async getPendingApplicationCount(): Promise<number> {
     const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(teacherApplications).where(eq(teacherApplications.status, "pending"));
     return row?.count ?? 0;
+  }
+
+  async getUserComments(targetUserId: string): Promise<(UserComment & { authorName: string; authorAvatar: string | null })[]> {
+    const rows = await db
+      .select({
+        id: userComments.id,
+        targetUserId: userComments.targetUserId,
+        authorId: userComments.authorId,
+        text: userComments.text,
+        createdAt: userComments.createdAt,
+        authorName: sql<string>`coalesce(${users.displayName}, concat(${users.firstName}, ' ', ${users.lastName}), ${users.email}, 'User')`,
+        authorAvatar: users.profileImageUrl,
+      })
+      .from(userComments)
+      .leftJoin(users, eq(userComments.authorId, users.id))
+      .where(eq(userComments.targetUserId, targetUserId))
+      .orderBy(desc(userComments.createdAt));
+    return rows as (UserComment & { authorName: string; authorAvatar: string | null })[];
+  }
+
+  async createUserComment(data: InsertUserComment): Promise<UserComment> {
+    const [comment] = await db.insert(userComments).values(data).returning();
+    return comment;
+  }
+
+  async deleteUserComment(commentId: string, authorId: string): Promise<void> {
+    await db.delete(userComments).where(and(eq(userComments.id, commentId), eq(userComments.authorId, authorId)));
   }
 }
 

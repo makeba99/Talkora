@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema } from "@shared/schema";
+import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
@@ -1105,6 +1105,41 @@ export async function registerRoutes(
       if (booking.status === "cancelled") return res.status(400).json({ message: "Booking already cancelled" });
       await storage.cancelBooking(booking.id);
       res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── User Comments ───────────────────────────────────────────────────────────
+  app.get("/api/users/:targetUserId/comments", async (req, res) => {
+    try {
+      const { targetUserId } = req.params;
+      const comments = await storage.getUserComments(targetUserId);
+      res.json(comments);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/users/:targetUserId/comments", isAuthenticated, async (req: any, res) => {
+    try {
+      const authorId = (req.user as any).id;
+      const { targetUserId } = req.params;
+      const parsed = insertUserCommentSchema.safeParse({ ...req.body, authorId, targetUserId });
+      if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid comment" });
+      const comment = await storage.createUserComment(parsed.data);
+      res.status(201).json(comment);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/users/:targetUserId/comments/:commentId", isAuthenticated, async (req: any, res) => {
+    try {
+      const authorId = (req.user as any).id;
+      const { commentId } = req.params;
+      await storage.deleteUserComment(commentId, authorId);
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

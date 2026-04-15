@@ -211,6 +211,23 @@ export const insertTeacherApplicationSchema = createInsertSchema(teacherApplicat
 export type InsertTeacherApplication = z.infer<typeof insertTeacherApplicationSchema>;
 export type TeacherApplication = typeof teacherApplications.$inferSelect;
 
+export const userComments = pgTable("user_comments", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  targetUserId: varchar("target_user_id", { length: 36 }).notNull(),
+  authorId: varchar("author_id", { length: 36 }).notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertUserCommentSchema = createInsertSchema(userComments).pick({
+  targetUserId: true,
+  authorId: true,
+  text: true,
+}).extend({ text: z.string().min(1).max(500) });
+
+export type InsertUserComment = z.infer<typeof insertUserCommentSchema>;
+export type UserComment = typeof userComments.$inferSelect;
+
 export const LANGUAGES = [
   "All",
   "English",

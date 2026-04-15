@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
+import { CommentThreadDialog } from "@/components/comment-thread-dialog";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
 import { DmDialog } from "@/components/dm-dialog";
 import { MessagesDropdown } from "@/components/messages-dropdown";
@@ -224,6 +225,7 @@ function PeopleDiscoveryCard({
   commentCount = 0,
   hasVoted = false,
   onVote,
+  onComment,
   bio,
   languages = [],
 }: {
@@ -240,6 +242,7 @@ function PeopleDiscoveryCard({
   commentCount?: number;
   hasVoted?: boolean;
   onVote?: () => void;
+  onComment?: () => void;
   bio?: string;
   languages?: string[];
 }) {
@@ -391,13 +394,12 @@ function PeopleDiscoveryCard({
             {(voteCount > 0) && <span className="ml-1 opacity-60">{voteCount + (hasVoted ? 1 : 0)}</span>}
           </button>
           <button
-            onClick={() => toast({ title: "💬 Comments", description: "Comment threads are coming soon!" })}
-            disabled={isCurrentUser}
-            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-blue-400/20 bg-blue-400/8 px-3 py-2 text-xs font-bold text-blue-300/70 hover:bg-blue-400/14 hover:border-blue-400/35 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
+            onClick={onComment}
+            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-blue-400/20 bg-blue-400/8 px-3 py-2 text-xs font-bold text-blue-300/70 hover:bg-blue-400/14 hover:border-blue-400/35 transition-colors"
             data-testid={`button-comment-discovery-${person.id}`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            Comment
+            Comments
             {commentCount > 0 && <span className="ml-1 opacity-60">{commentCount}</span>}
           </button>
         </div>
@@ -419,6 +421,7 @@ export default function Lobby() {
   const [activeDiscovery, setActiveDiscovery] = useState<DiscoveryFilter>("rooms");
   const [speakerVotes, setSpeakerVotes] = useState<Set<string>>(new Set());
   const [dmUserId, setDmUserId] = useState<string | null>(null);
+  const [commentTargetUser, setCommentTargetUser] = useState<{ user: any; name: string } | null>(null);
   const [roomParticipants, setRoomParticipants] = useState<
     Record<string, User[]>
   >({});
@@ -1023,6 +1026,9 @@ export default function Lobby() {
                           });
                           toast({ title: hasVoted ? "Vote removed" : "Voted! 🔥" });
                         }}
+                        onComment={() => {
+                          setCommentTargetUser({ user: person, name: getUserName(person) });
+                        }}
                         onTalk={() => {
                           if (!user) { toast({ title: "Sign in to message", description: "Create an account to send messages." }); return; }
                           if (currentRoomId) {
@@ -1113,6 +1119,14 @@ export default function Lobby() {
         <DmDialog
           otherUserId={dmUserId}
           onClose={() => setDmUserId(null)}
+        />
+      )}
+
+      {commentTargetUser && (
+        <CommentThreadDialog
+          targetUser={commentTargetUser.user}
+          targetUserName={commentTargetUser.name}
+          onClose={() => setCommentTargetUser(null)}
         />
       )}
     </div>
