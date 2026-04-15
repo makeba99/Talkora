@@ -3521,94 +3521,130 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       </Dialog>
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <div className="border-b border-white/[0.07] px-4 py-2.5" style={{ background: "rgba(8,10,18,0.74)", backdropFilter: "blur(16px)" }}>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1 basis-0">
+        <div
+          className="border-b px-3 py-2"
+          style={{
+            background: "linear-gradient(180deg, rgba(12,15,26,0.96) 0%, rgba(8,10,20,0.92) 100%)",
+            backdropFilter: "blur(24px) saturate(1.3)",
+            borderColor: "rgba(255,255,255,0.07)",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.04)",
+          }}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+
+            {/* ── Left: Title ── */}
+            <div className="flex items-center gap-2 min-w-0 flex-1 basis-0">
               <div className="relative flex-shrink-0">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "rgba(0,225,255,0.12)", border: "1px solid rgba(0,225,255,0.2)" }}>
-                  <Mic className="w-4 h-4 text-cyan-400" />
+                <div
+                  className="w-7 h-7 rounded-[10px] flex items-center justify-center"
+                  style={{ background: "rgba(0,225,255,0.10)", border: "1px solid rgba(0,225,255,0.18)", boxShadow: "0 0 10px rgba(0,225,255,0.08)" }}
+                >
+                  <Mic className="w-[13px] h-[13px] text-cyan-400" />
                 </div>
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border-2 border-background" />
+                <span className="absolute -top-px -right-px w-[7px] h-[7px] rounded-full bg-green-400 border border-black/40" style={{ boxShadow: "0 0 4px rgba(74,222,128,0.7)" }} />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <h2 className="font-bold text-sm truncate text-white/90" data-testid="text-voice-room-title">
+                  <h2
+                    className="font-semibold text-[13px] truncate leading-tight"
+                    style={{ color: "rgba(255,255,255,0.92)", letterSpacing: "-0.01em" }}
+                    data-testid="text-voice-room-title"
+                  >
                     {room.title}
                   </h2>
                   {isHost && (
-                    <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "rgba(0,225,255,0.12)", color: "rgba(0,225,255,0.9)", border: "1px solid rgba(0,225,255,0.2)" }}>
+                    <span
+                      className="flex-shrink-0 text-[9px] font-bold px-1.5 py-[2px] rounded-md tracking-wider uppercase"
+                      style={{ background: "rgba(0,225,255,0.10)", color: "rgba(0,225,255,0.85)", border: "1px solid rgba(0,225,255,0.18)" }}
+                    >
                       HOST
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>
-                    {room.language}
-                  </span>
-                  <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
-                  <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>{room.level}</span>
-                  <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
-                  <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>{participants.length}/{room.maxUsers}</span>
+                <div className="flex items-center gap-1 mt-[2px]">
+                  <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.40)" }}>{room.language}</span>
+                  <span style={{ color: "rgba(255,255,255,0.16)", fontSize: 10 }}>·</span>
+                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.30)" }}>{room.level}</span>
+                  <span style={{ color: "rgba(255,255,255,0.16)", fontSize: 10 }}>·</span>
+                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.30)" }}>{participants.length}/{room.maxUsers}</span>
                 </div>
               </div>
             </div>
 
+            {/* ── Center: Control dock ── */}
             <div className="order-3 flex w-full justify-center md:order-none md:w-auto md:flex-shrink-0">
               {renderControlDock()}
             </div>
 
+            {/* ── Right: Panel toggles ── */}
             <div className="flex items-center justify-end gap-0.5 flex-1 basis-0">
               {/* Chat */}
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    const isMobile = window.innerWidth < 768;
-                    if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); setSidePanelTab("chat"); }
-                    else if (sidePanelOpen && sidePanelTab === "chat") { setSidePanelOpen(false); }
-                    else { setSidePanelOpen(true); setSidePanelTab("chat"); }
-                  }}
-                  data-testid="button-panel-chat"
-                  title="Chat"
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${sidePanelTab === "chat" && sidePanelOpen ? "text-cyan-300" : "text-white/40 hover:text-white/70"}`}
-                  style={sidePanelTab === "chat" && sidePanelOpen ? { background: "rgba(0,225,255,0.12)", border: "1px solid rgba(0,225,255,0.2)" } : { background: "transparent" }}
-                >
-                  <MessageSquare className="w-[15px] h-[15px]" />
-                </button>
-                {unreadChatBadge > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none">
-                    {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
-                  </span>
-                )}
-              </div>
+              {(() => {
+                const isActive = sidePanelTab === "chat" && sidePanelOpen;
+                return (
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        const isMobile = window.innerWidth < 768;
+                        if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); setSidePanelTab("chat"); }
+                        else if (sidePanelOpen && sidePanelTab === "chat") { setSidePanelOpen(false); }
+                        else { setSidePanelOpen(true); setSidePanelTab("chat"); }
+                      }}
+                      data-testid="button-panel-chat"
+                      title="Chat"
+                      className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
+                      style={isActive
+                        ? { background: "rgba(0,225,255,0.12)", border: "1px solid rgba(0,225,255,0.22)", color: "rgba(0,225,255,0.92)", boxShadow: "0 0 10px rgba(0,225,255,0.14)" }
+                        : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
+                      }
+                    >
+                      <MessageSquare className="w-[14px] h-[14px]" />
+                    </button>
+                    {unreadChatBadge > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.5)" }}>
+                        {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* YouTube */}
-              <button
-                onClick={() => {
-                  const isMobile = window.innerWidth < 768;
-                  if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); setSidePanelTab("youtube"); }
-                  else if (sidePanelOpen && sidePanelTab === "youtube") { setSidePanelOpen(false); }
-                  else { setSidePanelOpen(true); setSidePanelTab("youtube"); }
-                }}
-                data-testid="button-panel-youtube"
-                title="YouTube"
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${sidePanelTab === "youtube" && sidePanelOpen ? "text-red-400" : "text-white/40 hover:text-white/70"}`}
-                style={sidePanelTab === "youtube" && sidePanelOpen ? { background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.2)" } : { background: "transparent" }}
-              >
-                <Youtube className="w-[15px] h-[15px]" />
-              </button>
+              {(() => {
+                const isActive = sidePanelTab === "youtube" && sidePanelOpen;
+                return (
+                  <button
+                    onClick={() => {
+                      const isMobile = window.innerWidth < 768;
+                      if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); setSidePanelTab("youtube"); }
+                      else if (sidePanelOpen && sidePanelTab === "youtube") { setSidePanelOpen(false); }
+                      else { setSidePanelOpen(true); setSidePanelTab("youtube"); }
+                    }}
+                    data-testid="button-panel-youtube"
+                    title="YouTube"
+                    className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
+                    style={isActive
+                      ? { background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.22)", color: "rgba(252,100,100,0.92)", boxShadow: "0 0 10px rgba(239,68,68,0.14)" }
+                      : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
+                    }
+                  >
+                    <Youtube className="w-[14px] h-[14px]" />
+                  </button>
+                );
+              })()}
 
-              {/* GoLive — subtle, not red */}
+              {/* GoLive */}
               <button
                 onClick={() => setGoLiveOpen(true)}
                 data-testid="button-go-live"
                 title="Go Live"
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 text-white/40 hover:text-white/70"
-                style={{ background: "transparent" }}
+                className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }}
               >
-                <Tv className="w-[15px] h-[15px]" />
+                <Tv className="w-[14px] h-[14px]" />
               </button>
 
-              {/* Host: single Settings button (theme + edit inside dialog) */}
+              {/* Settings */}
               {isHost && (
                 <button
                   onClick={() => {
@@ -3621,10 +3657,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   }}
                   data-testid="button-host-settings"
                   title="Room Settings"
-                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 text-white/40 hover:text-white/70"
-                  style={{ background: "transparent" }}
+                  className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }}
                 >
-                  <Settings className="w-[15px] h-[15px]" />
+                  <Settings className="w-[14px] h-[14px]" />
                 </button>
               )}
               {!isHost && (() => {
@@ -3641,10 +3677,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <button
                         data-testid="button-non-host-settings"
                         title="Room Info"
-                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 text-white/40 hover:text-white/70"
-                        style={{ background: "transparent" }}
+                        className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
+                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }}
                       >
-                        <Settings className="w-[15px] h-[15px]" />
+                        <Settings className="w-[14px] h-[14px]" />
                       </button>
                     </PopoverTrigger>
                     <PopoverContent
