@@ -1,0 +1,300 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 0 empty rooms for deletion
+12:40:39 AM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+12:40:44 AM [express] GET /api/callback 302 in 636ms
+12:40:52 AM [express] GET /api/auth/user 200 in 8ms :: {"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}
+12:40:52 AM [express] GET /api/follows/following/57714376 200 in 15ms :: []
+12:40:52 AM [express] GET /api/follows/followers/57714376 200 in 14ms :: []
+12:40:52 AM [express] GET /api/users 200 in 23ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:40:53 AM [express] GET /api/users/rooms 200 in 6ms :: {}
+12:40:53 AM [express] GET /api/messages/conversations 200 in 9ms :: []
+12:40:53 AM [express] GET /api/messages/unread/count 200 in 5ms :: {"count":0}
+12:40:53 AM [express] GET /api/notifications 200 in 6ms :: []
+12:40:53 AM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:40:53 AM [express] GET /api/rooms 304 in 6ms :: []
+12:40:53 AM [express] GET /api/rooms/participants 304 in 4ms :: {}
+12:40:53 AM [express] POST /api/follows/counts 200 in 9ms :: {"57714376":0}
+12:40:55 AM [express] GET /api/auth/user 200 in 5ms :: {"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}
+12:40:56 AM [express] GET /api/users 200 in 74ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:40:56 AM [express] GET /api/messages/conversations 200 in 64ms :: []
+12:40:56 AM [express] GET /api/follows/followers/57714376 200 in 62ms :: []
+12:40:56 AM [express] GET /api/follows/following/57714376 200 in 67ms :: []
+12:40:56 AM [express] GET /api/users/rooms 200 in 64ms :: {}
+12:40:56 AM [express] GET /api/rooms 200 in 19ms :: []
+12:40:56 AM [express] GET /api/rooms/participants 200 in 11ms :: {}
+12:40:56 AM [express] POST /api/rooms/votes/batch 200 in 24ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:40:56 AM [express] GET /api/notifications 200 in 30ms :: []
+12:40:56 AM [express] GET /api/messages/unread/count 200 in 34ms :: {"count":0}
+12:40:57 AM [express] POST /api/follows/counts 200 in 9ms :: {"57714376":0}
+12:41:02 AM [express] GET /api/users/rooms 304 in 9ms :: {}
+12:41:02 AM [express] GET /api/rooms 304 in 8ms :: []
+12:41:02 AM [express] GET /api/messages/unread/count 304 in 9ms :: {"count":0}
+12:41:02 AM [express] GET /api/auth/user 401 in 0ms :: {"message":"Unauthorized"}
+12:41:02 AM [express] GET /api/rooms 200 in 5ms :: []
+12:41:02 AM [express] GET /api/rooms/participants 200 in 0ms :: {}
+12:41:02 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+12:41:06 AM [express] GET /api/messages/conversations 304 in 8ms :: []
+12:41:07 AM [express] GET /api/notifications 304 in 7ms :: []
+12:41:07 AM [express] GET /api/rooms/participants 304 in 16ms :: {}
+12:41:07 AM [express] GET /api/users/rooms 304 in 4ms :: {}
+12:41:07 AM [express] GET /api/rooms 304 in 5ms :: []
+12:41:07 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:41:09 AM [express] POST /api/rooms 200 in 10ms :: {"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}
+12:41:09 AM [express] GET /api/rooms 200 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:41:09 AM [express] GET /api/rooms 200 in 8ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:41:09 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:41:09 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:41:10 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:41:15 AM [express] GET /api/auth/user 304 in 6ms :: {"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}
+12:41:15 AM [express] GET /api/rooms/c41d10b3-2575-4543-b406-38bee2d758c5 200 in 6ms :: {"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":0,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}
+12:41:16 AM [express] GET /api/follows/following/57714376 304 in 6ms :: []
+12:41:16 AM [express] GET /api/blocks 200 in 7ms :: []
+12:41:26 AM [express] GET /api/rooms 200 in 15ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:41:28 AM [express] GET /api/users/rooms 200 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:41:28 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+12:41:31 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:41:33 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+12:41:33 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:41:33 AM [express] GET /api/notifications 304 in 14ms :: []
+12:41:33 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+12:41:33 AM [express] GET /api/rooms/participants 200 in 5ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:41:36 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:41:38 AM [express] GET /api/users 200 in 6ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:41:38 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:41:38 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+12:41:40 AM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:41:42 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:41:43 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+12:41:43 AM [express] GET /api/notifications 304 in 6ms :: []
+12:41:43 AM [express] GET /api/rooms/participants 304 in 5ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:41:44 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:41:44 AM [express] GET /api/users/rooms 304 in 22ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:41:47 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:41:49 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+12:41:49 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:43:34 AM [express] GET /api/youtube/featured 200 in 657ms :: [{"id":"fTKqtvXjkvo","title":"Top Hits 2026 ~ Trending Songs 2026 ~ Top Songs 2026 Top Music 🎶🎧","thumbnail":"https://i.ytimg.com/vi/fTKqtvXjkvo/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCc0Bh4NbKVlSHtbQ8puaqgZnB8VQ","channelTitle":"Revive Music","duration":"2:29:42"},{"id":"7NgCf0TPgW8","title":"Top 100 Songs 2024 -  Maroon 5, Ed Sheeran, Selena Gomez, Adele, The Weeknd, Dua Lipa","thumbnail":"https://i.ytimg.com/vi/7NgCf0TPgW8/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDY1hbQ3vdKF0VpotbA8L6gAaXm3w","channelTitle":"Dream Music","duration":"4:14:59"},{"id":"3ihtcnPwkqI","title":"Acoustic songs 2025 🌸 Music 2025 new songs with lyrics that last through love","thumbnail":"https://i.ytimg.com/vi/3ihtcnPwkqI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLA2xndf1eF-U-KDcseWsu8xkLsbnw","channelTitle":"Acoustic Radio","duration":"1:04:36"},{"id":"xLgRlJSgMh4","title":"Top songs 2024 🍰 Best trending music 2024 ~ Songs that make you dance","thumbnail":"https://i.ytimg.com/vi/xLgRlJSgMh4/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLC2eSDpB2ljhVVfQpLm-z1R2ykFiA","channelTitle":"Love Life Lyrics","duration":"1:13:10"},{"id":"0fFUmWWeLwM","title":"HOT HITS PHILIPPINES - JULY 2024 UPDATED SPOTIFY PLAYLIST","thumbnail":"https://i.ytimg.com/vi/0fFUmWWeLwM/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAqufNdqv7Eogjh2SUOeSbP2Jcu0w","channelTitle":"Brian Pepito Music","duration":"3:02:44"},{"id":"LuzXr3He9NI","title":"Top Hits 2026 Playlist ~ Trending Music 2026 🎵 Spotify Mix ~ Best TikTok Songs (Hits Collection)","thumbnail":"https://i.ytimg.com/vi/LuzXr3He9NI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDYGCbWHt9hVJgRZhJATrTnXn6KUg","channelTitle":"Dynamic Deep House","duration":"2:32:57"},{"id":"mWhjb60MT2Q","title":"Multo - Cup Of Joe, Tibok - Earl Agustin | Best New Tagalog Love Songs 2025- Hot Hits OPM On Spotify","thumbnail":"https://i.ytimg.com/vi/mWhjb60MT2Q/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLA98NabPXTQ2gK8Bfwgf83v29ykxw","channelTitle":"Midnight Tears","duration":"1:39:04"},{"id":"Db63h6RQEbE","title":"Best songs that make you dance 2024 🍧 Dance playlist 2024 ~ Songs to sing & dance","thumbnail":"https://i.ytimg.com/vi/Db63h6RQEbE/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCt98yqY-61eKXaTwQc75EATmtf5g","channelTitle":"Love Life Lyrics","duration":"1:06:55"},{"id":"-RpehAr9kdE","title":"Top 10 Trending Songs In The World 2024","thumbnail":"https://i.ytimg.com/vi/-RpehAr9kdE/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4Ac4FgAKACooCDAgAEAEYfyAsKG0wDw==&rs=AOn4CLBl7FdlOkLlF3W_e0akmoZ0_Jiw2A","channelTitle":"Factztheories ","duration":"1:00"},{"id":"XGmLQC9wQk0","title":"BEST SONGS OF 2024 MASHUP","thumbnail":"https://i.ytimg.com/vi/XGmLQC9wQk0/hq720.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYZSBRKD8wDw==&rs=AOn4CLBe5LpHRmDIL0lQwZGEqTU78Y3m4w","channelTitle":"minlee 민리","duration":"0:46"},{"id":"hUgHCuy1lEY","title":"100 SONGS That OWNED 2024 - 2025! (Most Popular Songs)","thumbnail":"https://i.ytimg.com/vi/hUgHCuy1lEY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBDIzpztXldY2Ypvhc3zr3PFIZhHg","channelTitle":"YouQuiz - Music","duration":"11:47"},{"id":"xZUATKzg3d8","title":"Best English Songs 2024 ( New Songs 2024 ) 🍑 New Popular Songs 2024🎧 Best Pop Music 2024 New Songs","thumbnail":"https://i.ytimg.com/vi/xZUATKzg3d8/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYZSBlKGUwDw==&rs=AOn4CLBvawNkdyEAdtWEJbhX8y29LCf7fw","channelTitle":"US - UK Billboard Hits","duration":"0:38"},{"id":"-pr4fVvHgyQ","title":"Miley Cyrus, Adele, Ed Sheeran, Maroon 5, Sia, Dua Lipa, The Weeknd, Rihanna ☘️ Top Hits 2024","thumbnail":"https://i.ytimg.com/vi/-pr4fVvHgyQ/hq720_2.jpg?sqp=-oaymwE9COgCEMoBSFryq4qpAy8IARUAAAAAGAAlAADIQj0AgKJDeAHwAQH4AbYIgAKAD4oCDAgAEAEYciBEKCswDw==&rs=AOn4CLA9rUgB_Kf-JzeTfjdmRvRk0YRiGg","channelTitle":"Mạnhmm","duration":"0:59"},{"id":"lJAIdl7SipU","title":"Top Hits 2026 🍒 Trending Music 2026 ~ TikTok & Spotify Viral Hits 🎧 Best Songs 2026 Updated Weekly","thumbnail":"https://i.ytimg.com/vi/lJAIdl7SipU/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCPQILB6uRvybKvC-bu16sUoggh6g","channelTitle":"Dynamic Deep House","duration":"2:28:42"}]
+12:45:23 AM [express] GET /api/rooms 304 in 18ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:45:23 AM [express] GET /api/rooms/participants 304 in 7ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:45:23 AM [express] GET /api/messages/conversations 304 in 18ms :: []
+12:45:23 AM [express] POST /api/rooms/votes/batch 200 in 33ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:45:23 AM [express] GET /api/notifications 304 in 28ms :: []
+12:45:24 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:45:24 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+12:45:24 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:45:24 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714376":0}
+12:45:29 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:45:29 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:45:29 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+12:45:34 AM [express] GET /api/rooms/participants 304 in 5ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:45:34 AM [express] GET /api/notifications 304 in 15ms :: []
+12:45:34 AM [express] GET /api/messages/conversations 304 in 22ms :: []
+12:45:34 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:45:34 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+12:45:34 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:45:39 AM [express] GET /api/users 304 in 36ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:45:39 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:45:40 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:45:40 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+12:45:44 AM [express] GET /api/rooms/participants 304 in 5ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:45:44 AM [express] GET /api/notifications 304 in 6ms :: []
+12:45:44 AM [express] GET /api/messages/conversations 304 in 14ms :: []
+12:45:45 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:45:45 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:45:45 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:45:50 AM [express] GET /api/users/rooms 304 in 7ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:45:50 AM [express] GET /api/messages/unread/count 304 in 9ms :: {"count":0}
+12:45:50 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:45:54 AM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:45:54 AM [express] POST /api/follows/counts 200 in 9ms :: {"57714376":0}
+12:45:54 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:45:54 AM [express] GET /api/rooms/participants 304 in 6ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:45:54 AM [express] GET /api/notifications 304 in 7ms :: []
+12:45:54 AM [express] GET /api/messages/conversations 304 in 8ms :: []
+12:45:55 AM [express] GET /api/users/rooms 304 in 7ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:45:55 AM [express] GET /api/messages/unread/count 304 in 11ms :: {"count":0}
+12:45:56 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:01 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:01 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:46:01 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:05 AM [express] GET /api/notifications 304 in 12ms :: []
+12:46:05 AM [express] GET /api/rooms/participants 304 in 10ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:46:05 AM [express] GET /api/messages/conversations 304 in 20ms :: []
+12:46:06 AM [express] GET /api/users/rooms 304 in 7ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:06 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+12:46:06 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:09 AM [express] GET /api/users 304 in 6ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:46:11 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:11 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:46:11 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:16 AM [express] GET /api/notifications 304 in 6ms :: []
+12:46:16 AM [express] GET /api/rooms/participants 304 in 4ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:46:16 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+12:46:17 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:17 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+12:46:17 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:38 AM [express] GET /api/users/rooms 304 in 16ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:38 AM [express] GET /api/rooms 304 in 15ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:38 AM [express] GET /api/messages/unread/count 304 in 26ms :: {"count":0}
+12:46:40 AM [express] GET /api/users 304 in 4ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:46:43 AM [express] GET /api/users/rooms 304 in 47ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:43 AM [express] GET /api/rooms 304 in 49ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:43 AM [express] GET /api/messages/unread/count 304 in 21ms :: {"count":0}
+12:46:46 AM [express] GET /api/notifications 304 in 6ms :: []
+12:46:46 AM [express] GET /api/rooms/participants 304 in 3ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:46:46 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+12:46:48 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:48 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:46:48 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:53 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:53 AM [express] GET /api/rooms 304 in 8ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:53 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+12:46:54 AM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:46:54 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714376":0}
+12:46:55 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:46:56 AM [express] GET /api/rooms/participants 304 in 5ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:46:56 AM [express] GET /api/notifications 304 in 9ms :: []
+12:46:56 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+12:46:59 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:46:59 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:46:59 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:47:04 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:47:04 AM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+12:47:04 AM [express] GET /api/rooms 304 in 8ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:47:07 AM [express] GET /api/rooms/participants 304 in 5ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:47:07 AM [express] GET /api/notifications 304 in 6ms :: []
+12:47:07 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+12:47:09 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:47:09 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:47:09 AM [express] GET /api/messages/unread/count 304 in 16ms :: {"count":0}
+12:47:10 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:47:37 AM [express] GET /api/rooms/participants 304 in 13ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:47:37 AM [express] GET /api/messages/conversations 304 in 15ms :: []
+12:47:37 AM [express] GET /api/notifications 304 in 22ms :: []
+12:47:48 AM [express] GET /api/rooms/participants 304 in 15ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:47:48 AM [express] GET /api/notifications 304 in 5ms :: []
+12:47:48 AM [express] GET /api/messages/conversations 304 in 14ms :: []
+12:47:50 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:47:50 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+12:47:50 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:47:54 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:47:54 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714376":0}
+12:47:55 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:47:55 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:47:55 AM [express] GET /api/messages/unread/count 304 in 14ms :: {"count":0}
+12:47:56 AM [express] GET /api/users 304 in 4ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:47:58 AM [express] GET /api/rooms/participants 304 in 6ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:47:58 AM [express] GET /api/messages/conversations 304 in 6ms :: []
+12:47:58 AM [express] GET /api/notifications 304 in 4ms :: []
+12:48:00 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:00 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:48:00 AM [express] GET /api/rooms 304 in 14ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:05 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:05 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+12:48:05 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:08 AM [express] GET /api/rooms/participants 304 in 4ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:48:08 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+12:48:08 AM [express] GET /api/notifications 304 in 6ms :: []
+12:48:11 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:11 AM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+12:48:11 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:11 AM [express] GET /api/users 304 in 6ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:48:16 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:16 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:16 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:48:19 AM [express] GET /api/rooms/participants 304 in 4ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:48:19 AM [express] GET /api/notifications 304 in 6ms :: []
+12:48:19 AM [express] GET /api/messages/conversations 304 in 3ms :: []
+12:48:21 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:21 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+12:48:21 AM [express] GET /api/rooms 304 in 13ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:25 AM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:48:25 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714376":0}
+12:48:26 AM [express] GET /api/users 304 in 6ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:48:27 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+12:48:27 AM [express] GET /api/users/rooms 304 in 7ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:27 AM [express] GET /api/rooms 304 in 16ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:29 AM [express] GET /api/messages/conversations 304 in 6ms :: []
+12:48:29 AM [express] GET /api/notifications 304 in 9ms :: []
+12:48:29 AM [express] GET /api/rooms/participants 304 in 9ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:48:32 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:32 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+12:48:32 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:48:32 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m
+12:48:36 AM [express] GET /api/auth/user 304 in 6ms :: {"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}
+12:48:36 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714376":0}
+12:48:37 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:37 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+12:48:37 AM [express] GET /api/rooms 304 in 3ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:39 AM [express] GET /api/notifications 304 in 5ms :: []
+12:48:39 AM [express] GET /api/rooms/participants 304 in 3ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:48:39 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+12:48:42 AM [express] GET /api/users 304 in 4ms :: [{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]
+12:48:42 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:42 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+12:48:42 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:48 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:48 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+12:48:48 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:49 AM [express] GET /api/rooms/participants 304 in 59ms :: {"c41d10b3-2575-4543-b406-38bee2d758c5":[{"id":"57714376","email":"fombatd@gmail.com","firstName":"Fombatd","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLF4yUBB9Mn1b5WbjcxKFN_HlSdjUIPbT8n9UVzK_haXDB-oA=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-15T00:40:44.782Z","updatedAt":"2026-04-15T00:40:44.782Z"}]}
+12:48:49 AM [express] GET /api/messages/conversations 304 in 44ms :: []
+12:48:49 AM [express] GET /api/notifications 304 in 45ms :: []
+12:48:53 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714376":"c41d10b3-2575-4543-b406-38bee2d758c5"}
+12:48:53 AM [express] GET /api/rooms 304 in 9ms :: [{"id":"c41d10b3-2575-4543-b406-38bee2d758c5","title":"Jack was first user","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57714376","isPublic":true,"activeUsers":1,"roomTheme":"premium-atmosphere","hologramVideoUrl":null,"createdAt":"2026-04-15T00:41:09.333Z"}]
+12:48:53 AM [express] GET /api/messages/unread/count 304 in 9ms :: {"count":0}
+12:48:55 AM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"c41d10b3-2575-4543-b406-38bee2d758c5":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"c41d10b3-2575-4543-b406-38bee2d758c5":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+12:48:55 AM [express] POST /api/follows/counts 200 in 6ms :: {"57714376":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m12:48:56 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x2)[39m
