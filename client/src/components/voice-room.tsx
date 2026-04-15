@@ -15,7 +15,8 @@ import {
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, Maximize2, Palette,
-  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell, LockKeyhole
+  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell, LockKeyhole,
+  AtSign, TrendingUp, StopCircle, Clock
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -2501,69 +2502,94 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const sidePanelContent = (
     <Tabs value={sidePanelTab} onValueChange={setSidePanelTab} className="flex flex-col h-full">
-      <TabsList className="w-full border-b bg-transparent h-auto p-0 flex">
-        <TabsTrigger value="chat" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/5 text-xs py-2.5 px-1.5 transition-colors relative" data-testid="tab-chat">
-          <MessageSquare className="w-3.5 h-3.5 mr-1" /> Chat
+      <TabsList className="w-full border-b border-border/60 bg-transparent h-auto p-0 flex shrink-0">
+        <TabsTrigger
+          value="chat"
+          className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/[0.07] data-[state=active]:text-primary text-muted-foreground/70 text-[11px] py-3 px-1 transition-all duration-200 relative font-medium tracking-wide hover:text-foreground/80 hover:bg-muted/30"
+          data-testid="tab-chat"
+        >
+          <MessageSquare className="w-3 h-3 mr-1" /> Chat
           {unreadChatBadge > 0 && (
-            <span className="ml-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-0.5 flex items-center justify-center leading-none">
+            <span className="ml-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[15px] h-[15px] px-0.5 flex items-center justify-center leading-none shadow-sm">
               {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
             </span>
           )}
         </TabsTrigger>
-        <TabsTrigger value="youtube" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/5 text-xs py-2.5 px-1.5 transition-colors" data-testid="tab-youtube">
-          <Youtube className="w-3.5 h-3.5 mr-1" /> YouTube
+        <TabsTrigger
+          value="youtube"
+          className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-red-400 data-[state=active]:bg-red-500/[0.07] data-[state=active]:text-red-400 text-muted-foreground/70 text-[11px] py-3 px-1 transition-all duration-200 font-medium tracking-wide hover:text-foreground/80 hover:bg-muted/30"
+          data-testid="tab-youtube"
+        >
+          <Youtube className="w-3 h-3 mr-1" /> YouTube
         </TabsTrigger>
-        <TabsTrigger value="read" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/5 text-xs py-2.5 px-1.5 transition-colors" data-testid="tab-read">
-          <BookOpen className="w-3.5 h-3.5 mr-1" /> Read
+        <TabsTrigger
+          value="read"
+          className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-400 data-[state=active]:bg-emerald-500/[0.07] data-[state=active]:text-emerald-400 text-muted-foreground/70 text-[11px] py-3 px-1 transition-all duration-200 font-medium tracking-wide hover:text-foreground/80 hover:bg-muted/30"
+          data-testid="tab-read"
+        >
+          <BookOpen className="w-3 h-3 mr-1" /> Read
         </TabsTrigger>
-        <TabsTrigger value="chess" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-primary/5 text-xs py-2.5 px-1.5 transition-colors" data-testid="tab-chess">
-          <Gamepad2 className="w-3.5 h-3.5 mr-1" /> Chess
+        <TabsTrigger
+          value="chess"
+          className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-amber-400 data-[state=active]:bg-amber-500/[0.07] data-[state=active]:text-amber-400 text-muted-foreground/70 text-[11px] py-3 px-1 transition-all duration-200 font-medium tracking-wide hover:text-foreground/80 hover:bg-muted/30"
+          data-testid="tab-chess"
+        >
+          <Gamepad2 className="w-3 h-3 mr-1" /> Chess
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="chat" className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" forceMount style={{ display: sidePanelTab === "chat" ? "flex" : "none" }}>
-        <div className="flex items-center gap-1 px-2 py-1 border-b">
+        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border/40 bg-muted/10">
           <button
             onClick={() => setShowMentionsOnly(false)}
-            className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${!showMentionsOnly ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+            className={`text-[11px] px-3 py-1 rounded-full transition-all duration-150 font-medium ${!showMentionsOnly ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60"}`}
             data-testid="filter-all-messages"
           >
             All
           </button>
           <button
             onClick={() => setShowMentionsOnly(true)}
-            className={`text-[11px] px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${showMentionsOnly ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+            className={`text-[11px] px-3 py-1 rounded-full transition-all duration-150 flex items-center gap-1 font-medium ${showMentionsOnly ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60"}`}
             data-testid="filter-mentions"
           >
-            @ Mentions
+            <AtSign className="w-2.5 h-2.5" /> Mentions
           </button>
         </div>
         <ScrollArea className="flex-1 min-h-0" ref={chatScrollRef} onScroll={handleScroll}>
-          <div className="p-3 space-y-3 min-h-full flex flex-col justify-end">
+          <div className="px-3 py-3 space-y-1 min-h-full flex flex-col justify-end">
             {(() => {
               const displayedMessages = showMentionsOnly
                 ? chatMessages.filter(msg => msg.type !== "system" && (msg as any).type !== "deleted" && isMentionedInMessage(msg.text))
                 : chatMessages;
               return displayedMessages.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-8 mt-auto">
-                {showMentionsOnly ? "No messages mentioning you." : "No messages yet. Start the conversation!"}
-              </p>
+              <div className="flex flex-col items-center justify-center gap-3 py-12 mt-auto">
+                <div className="w-11 h-11 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center">
+                  {showMentionsOnly
+                    ? <AtSign className="w-5 h-5 text-muted-foreground/40" />
+                    : <MessageSquare className="w-5 h-5 text-muted-foreground/40" />
+                  }
+                </div>
+                <p className="text-[11px] text-muted-foreground/60 text-center leading-relaxed max-w-[140px]">
+                  {showMentionsOnly ? "No mentions yet." : "No messages yet.\nStart the conversation!"}
+                </p>
+              </div>
             ) : (
               displayedMessages.map((msg) => {
                 if (msg.type === "system" && !showMentionsOnly) {
                   return (
-                    <div key={msg.id} className="flex items-center justify-center gap-2 py-1" data-testid={`room-chat-${msg.id}`}>
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <div key={msg.id} className="flex items-center justify-center gap-1.5 py-0.5" data-testid={`room-chat-${msg.id}`}>
+                      <div className="h-px flex-1 bg-border/30" />
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50 bg-muted/20 rounded-full px-2.5 py-0.5">
                         {msg.text.includes("joined") ? (
-                          <LogIn className="w-3 h-3 text-chart-3" />
+                          <LogIn className="w-2.5 h-2.5 text-emerald-500/70" />
                         ) : msg.text.includes("left") ? (
-                          <LogOut className="w-3 h-3 text-chart-4" />
+                          <LogOut className="w-2.5 h-2.5 text-rose-400/70" />
                         ) : (
-                          <Shield className="w-3 h-3 text-blue-400" />
+                          <Shield className="w-2.5 h-2.5 text-primary/60" />
                         )}
                         <span>{msg.text}</span>
-                        <span className="text-[10px]">{formatTime(msg.createdAt)}</span>
                       </div>
+                      <div className="h-px flex-1 bg-border/30" />
                     </div>
                   );
                 }
@@ -2588,13 +2614,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 return (
                   <div
                     key={msg.id}
-                    className="group flex items-start gap-2.5 relative"
+                    className="group flex items-start gap-2.5 relative rounded-lg px-2 py-1.5 -mx-2 transition-colors duration-100 hover:bg-muted/20"
                     data-testid={`room-chat-${msg.id}`}
                     onMouseEnter={() => setHoveredMsgId(msg.id)}
                     onMouseLeave={() => setHoveredMsgId(null)}
                   >
-                    <div className={`rounded-full p-[2px] bg-gradient-to-br ${gradient} flex-shrink-0 mt-0.5`}>
-                      <Avatar className="w-9 h-9 border border-background">
+                    <div className={`rounded-full p-[2px] bg-gradient-to-br ${gradient} flex-shrink-0 mt-0.5 shadow-sm`}>
+                      <Avatar className="w-8 h-8 border border-background/80">
                         <AvatarImage src={msgUser?.profileImageUrl || undefined} />
                         <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
                           {getUserInitials(msgUser)}
@@ -2603,8 +2629,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-2 flex-wrap min-w-0">
-                        <span className="text-xs font-semibold min-w-0 break-words [overflow-wrap:anywhere]">{getUserDisplayName(msgUser)}</span>
-                        <span className="text-[10px] text-muted-foreground">{formatTime(msg.createdAt)}</span>
+                        <span className="text-[12px] font-semibold min-w-0 break-words [overflow-wrap:anywhere] tracking-tight">{getUserDisplayName(msgUser)}</span>
+                        <span className="text-[10px] text-muted-foreground/50">{formatTime(msg.createdAt)}</span>
                         {msg.isPrivate && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
                             <LockKeyhole className="w-2.5 h-2.5 mr-1" />
@@ -2696,7 +2722,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             })()}
           </div>
         </ScrollArea>
-        <form onSubmit={handleSendChat} className="p-3 border-t flex flex-col gap-2 relative flex-shrink-0 mt-auto">
+        <form onSubmit={handleSendChat} className="p-3 border-t border-border/40 bg-muted/5 flex flex-col gap-2 relative flex-shrink-0 mt-auto">
           {replyingTo && (
             <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/60 rounded-md border-l-2 border-primary/50" data-testid="reply-preview">
               <div className="flex-1 min-w-0">
@@ -2822,9 +2848,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   }
                 }
               }}
-              placeholder={pasteUploading ? "Uploading image..." : privateChatToId === "public" ? "Type a message... (@ to mention)" : "Type a temporary private message..."}
+              placeholder={pasteUploading ? "Uploading image..." : privateChatToId === "public" ? "Message the room…" : "Private message…"}
               disabled={pasteUploading}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2.5 pr-10 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none disabled:opacity-60"
+              className="flex w-full rounded-xl border border-border/50 bg-muted/20 px-3.5 py-2.5 pr-10 text-[13px] ring-offset-background placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/30 resize-none disabled:opacity-50 transition-all duration-150 leading-relaxed"
               rows={3}
               data-testid="input-room-chat"
             />
@@ -2870,73 +2896,112 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
       <TabsContent value="youtube" className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" forceMount style={{ display: sidePanelTab === "youtube" ? "flex" : "none" }}>
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="p-3 pb-2 border-b flex-shrink-0">
+          <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0 space-y-2">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
               <Input
                 value={youtubeSearch}
                 onChange={(e) => handleYoutubeSearchInput(e.target.value)}
-                placeholder="Search YouTube videos..."
-                className="pl-8 text-sm"
+                placeholder="Search YouTube…"
+                className="pl-9 text-[13px] rounded-xl bg-muted/30 border-border/50 placeholder:text-muted-foreground/40 focus-visible:ring-red-400/30 focus-visible:border-red-400/40 h-9"
                 data-testid="input-youtube-search"
               />
               {youtubeSearching && (
-                <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 animate-spin" />
               )}
             </div>
             {activeYoutubeId && (
-              <div className="flex items-center gap-1 mt-2">
-                <Button size="icon" variant="ghost" onClick={handleStopYoutube} title="Stop" data-testid="button-stop-youtube-panel">
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
+              <button
+                onClick={handleStopYoutube}
+                title="Stop playback"
+                data-testid="button-stop-youtube-panel"
+                className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
+              >
+                <StopCircle className="w-3.5 h-3.5" />
+                Stop playback
+              </button>
             )}
           </div>
           <ScrollArea className="flex-1 min-h-0">
-            <div className="p-3 space-y-2">
+            <div className="p-3 space-y-3">
               {youtubeResults.length > 0 && (
-                <div className="space-y-1" data-testid="youtube-search-results">
+                <div className="space-y-2" data-testid="youtube-search-results">
+                  <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest px-0.5">Results</p>
                   {youtubeResults.map((video: any) => (
                     <button
                       key={video.id}
                       onClick={() => handleSelectYoutubeVideo(video.id)}
-                      className="w-full flex items-start gap-2 p-1.5 rounded-md hover-elevate active-elevate-2 text-left transition-colors"
+                      className="w-full rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:bg-muted/25 hover:border-border/60 transition-all duration-150 text-left group"
                       data-testid={`button-youtube-result-${video.id}`}
                     >
-                      <img src={video.thumbnail} alt="" className="w-24 h-14 rounded object-cover flex-shrink-0 bg-muted" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium line-clamp-2 leading-tight">{video.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {video.channelTitle && <span className="text-[10px] text-muted-foreground truncate">{video.channelTitle}</span>}
-                          {video.duration && <span className="text-[10px] text-muted-foreground flex-shrink-0">{video.duration}</span>}
+                      <div className="relative w-full aspect-video bg-muted overflow-hidden">
+                        <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        {video.duration && (
+                          <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" />{video.duration}
+                          </span>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                            <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                          </div>
                         </div>
+                      </div>
+                      <div className="p-2.5">
+                        <p className="text-[12px] font-medium line-clamp-2 leading-snug">{video.title}</p>
+                        {video.channelTitle && (
+                          <span className="text-[10px] text-muted-foreground/60 mt-1 block truncate">{video.channelTitle}</span>
+                        )}
                       </div>
                     </button>
                   ))}
                 </div>
               )}
               {youtubeSearch.trim() && !youtubeSearching && youtubeResults.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-2">No results found</p>
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <Youtube className="w-8 h-8 text-muted-foreground/20" />
+                  <p className="text-[11px] text-muted-foreground/50">No results found</p>
+                </div>
               )}
               {!youtubeSearch.trim() && (
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide px-1 pb-1">
-                    {youtubeFeaturedLoading ? "Loading trending..." : "🔥 Trending Now"}
-                  </p>
-                  {youtubeFeaturedLoading && <div className="flex items-center justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 px-0.5">
+                    <TrendingUp className="w-3 h-3 text-red-400/70" />
+                    <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
+                      {youtubeFeaturedLoading ? "Loading…" : "Trending Now"}
+                    </p>
+                  </div>
+                  {youtubeFeaturedLoading && (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/30" />
+                    </div>
+                  )}
                   {!youtubeFeaturedLoading && youtubeFeatured.map((video: any) => (
                     <button
                       key={video.id}
                       onClick={() => handleSelectYoutubeVideo(video.id)}
-                      className="w-full flex items-start gap-2 p-1.5 rounded-md hover-elevate active-elevate-2 text-left transition-colors"
+                      className="w-full rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:bg-muted/25 hover:border-border/60 transition-all duration-150 text-left group"
                     >
-                      <img src={video.thumbnail} alt="" className="w-24 h-14 rounded object-cover flex-shrink-0 bg-muted" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium line-clamp-2 leading-tight">{video.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {video.channelTitle && <span className="text-[10px] text-muted-foreground truncate">{video.channelTitle}</span>}
-                          {video.duration && <span className="text-[10px] text-muted-foreground flex-shrink-0">{video.duration}</span>}
+                      <div className="relative w-full aspect-video bg-muted overflow-hidden">
+                        <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        {video.duration && (
+                          <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" />{video.duration}
+                          </span>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                            <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                          </div>
                         </div>
+                      </div>
+                      <div className="p-2.5">
+                        <p className="text-[12px] font-medium line-clamp-2 leading-snug">{video.title}</p>
+                        {video.channelTitle && (
+                          <span className="text-[10px] text-muted-foreground/60 mt-1 block truncate">{video.channelTitle}</span>
+                        )}
                       </div>
                     </button>
                   ))}
