@@ -97,12 +97,14 @@ export const blocks = pgTable("blocks", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   blockerId: varchar("blocker_id", { length: 36 }).notNull(),
   blockedId: varchar("blocked_id", { length: 36 }).notNull(),
+  blockType: varchar("block_type", { length: 20 }).notNull().default("ordinary"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertBlockSchema = createInsertSchema(blocks).pick({
   blockerId: true,
   blockedId: true,
+  blockType: true,
 });
 
 export type InsertBlock = z.infer<typeof insertBlockSchema>;

@@ -617,8 +617,14 @@ export async function registerRoutes(
     try {
       const userId = (req.user as any).id;
       const rows = await storage.getBlocksByBlocker(userId);
-      const users = await Promise.all(rows.map(r => storage.getUser(r.blockedId)));
-      res.json(users.filter(Boolean));
+      const usersWithType = await Promise.all(
+        rows.map(async r => {
+          const u = await storage.getUser(r.blockedId);
+          if (!u) return null;
+          return { ...u, blockType: r.blockType };
+        })
+      );
+      res.json(usersWithType.filter(Boolean));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -626,7 +632,7 @@ export async function registerRoutes(
 
   app.post("/api/blocks", isAuthenticated, async (req: any, res) => {
     try {
-      const parsed = insertBlockSchema.safeParse(req.body);
+      const parsed = insertBlockSchema.safeParse({ ...req.body, blockType: req.body.blockType || "ordinary" });
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid block data" });
       }
@@ -635,11 +641,12 @@ export async function registerRoutes(
 
       const blockerId = (req.user as any).id;
       const blockedId = parsed.data.blockedId;
+      const blockType = parsed.data.blockType || "ordinary";
 
       const blockerSocketId = userSockets.get(blockerId);
       const blockedSocketId = userSockets.get(blockedId);
-      if (blockerSocketId) io.to(blockerSocketId).emit("user:blocked", { otherId: blockedId });
-      if (blockedSocketId) io.to(blockedSocketId).emit("user:blocked", { otherId: blockerId });
+      if (blockerSocketId) io.to(blockerSocketId).emit("user:blocked", { otherId: blockedId, blockType });
+      if (blockedSocketId) io.to(blockedSocketId).emit("user:blocked", { otherId: blockerId, blockType });
 
       const blockerRoomId = userCurrentRoom.get(blockerId);
       if (blockerRoomId) {

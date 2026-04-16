@@ -80,8 +80,8 @@ export interface IStorage {
 
   createBlock(block: InsertBlock): Promise<Block>;
   deleteBlock(blockerId: string, blockedId: string): Promise<void>;
-  getBlockedIds(userId: string): Promise<string[]>;
-  getBlocksByBlocker(blockerId: string): Promise<{ blockedId: string }[]>;
+  getBlockedIds(userId: string): Promise<{ id: string; blockType: string }[]>;
+  getBlocksByBlocker(blockerId: string): Promise<{ blockedId: string; blockType: string }[]>;
   
   createReport(report: InsertReport & { reporterName?: string; reportedName?: string; category?: string }): Promise<Report>;
   getAllReports(): Promise<Report[]>;
@@ -326,12 +326,15 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getBlockedIds(userId: string): Promise<string[]> {
+  async getBlockedIds(userId: string): Promise<{ id: string; blockType: string }[]> {
     const rows = await db
       .select()
       .from(blocks)
       .where(or(eq(blocks.blockerId, userId), eq(blocks.blockedId, userId)));
-    return rows.map(r => r.blockerId === userId ? r.blockedId : r.blockerId);
+    return rows.map(r => ({
+      id: r.blockerId === userId ? r.blockedId : r.blockerId,
+      blockType: r.blockType,
+    }));
   }
 
   async deleteBlock(blockerId: string, blockedId: string): Promise<void> {
@@ -345,9 +348,9 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async getBlocksByBlocker(blockerId: string): Promise<{ blockedId: string }[]> {
+  async getBlocksByBlocker(blockerId: string): Promise<{ blockedId: string; blockType: string }[]> {
     const rows = await db
-      .select({ blockedId: blocks.blockedId })
+      .select({ blockedId: blocks.blockedId, blockType: blocks.blockType })
       .from(blocks)
       .where(eq(blocks.blockerId, blockerId));
     return rows;

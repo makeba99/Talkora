@@ -15,7 +15,7 @@ import {
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell, LockKeyhole,
-  AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound
+  AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -553,6 +553,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
   const [dmUserId, setDmUserId] = useState<string | null>(null);
   const [reportTargetUserId, setReportTargetUserId] = useState<string | null>(null);
+  const [blockDialogUserId, setBlockDialogUserId] = useState<string | null>(null);
+  const [blockDialogStep, setBlockDialogStep] = useState<"choose" | "forever-confirm">("choose");
+  const [blockDialogName, setBlockDialogName] = useState<string>("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [participantRoles, setParticipantRoles] = useState<Record<string, string>>({});
@@ -668,14 +671,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const blockedIdsRef = useRef<Set<string>>(new Set());
-  const { data: initialBlockedIds = [] } = useQuery<string[]>({
+  const [foreverBlockedIds, setForeverBlockedIds] = useState<Set<string>>(new Set());
+  const foreverBlockedIdsRef = useRef<Set<string>>(new Set());
+  const { data: initialBlockedIds = [] } = useQuery<{ id: string; blockType: string }[]>({
     queryKey: ["/api/blocks"],
     enabled: !!user,
   });
   useEffect(() => {
-    const s = new Set(initialBlockedIds);
-    setBlockedIds(s);
-    blockedIdsRef.current = s;
+    const ordinary = new Set(initialBlockedIds.filter(b => b.blockType !== "forever").map(b => b.id));
+    const forever = new Set(initialBlockedIds.filter(b => b.blockType === "forever").map(b => b.id));
+    setBlockedIds(ordinary);
+    blockedIdsRef.current = ordinary;
+    setForeverBlockedIds(forever);
+    foreverBlockedIdsRef.current = forever;
   }, [initialBlockedIds]);
 
   const followMutation = useMutation({
@@ -1087,7 +1095,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     });
 
     socket.on("webrtc:offer", async (data: { offer: RTCSessionDescriptionInit; from: string }) => {
-      if (blockedIdsRef.current.has(data.from)) return;
+      if (blockedIdsRef.current.has(data.from) || foreverBlockedIdsRef.current.has(data.from)) return;
       try {
         let pc = peerConnections.current.get(data.from);
         if (!pc) {
@@ -1140,7 +1148,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     });
 
     socket.on("webrtc:new-peer", async (data: { peerId: string }) => {
-      if (blockedIdsRef.current.has(data.peerId)) return;
+      if (blockedIdsRef.current.has(data.peerId) || foreverBlockedIdsRef.current.has(data.peerId)) return;
       try {
         const pc = createPeerConnection(data.peerId);
         const offer = await pc.createOffer();
@@ -1201,6 +1209,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     });
 
     socket.on("room:chat-message", (msg: ChatMessage) => {
+      if (msg.userId !== user?.id && (blockedIdsRef.current.has(msg.userId) || foreverBlockedIdsRef.current.has(msg.userId))) return;
       setChatMessages((prev) => [...prev, { ...msg, reactions: msg.reactions || {} }]);
       if (sidePanelTabRef.current !== "chat" && (msg as any).type !== "system" && msg.userId !== user?.id) {
         setUnreadChatBadge((prev) => prev + 1);
@@ -1348,14 +1357,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setRoomData((prev: any) => ({ ...prev, ownerId: data.newOwnerId }));
     });
 
-    socket.on("user:blocked", ({ otherId }: { otherId: string }) => {
-      setBlockedIds(prev => { const n = new Set(prev); n.add(otherId); blockedIdsRef.current = n; return n; });
-      setParticipants(prev => prev.filter(p => p.id !== otherId));
-      cleanupPeer(otherId);
+    socket.on("user:blocked", ({ otherId, blockType }: { otherId: string; blockType?: string }) => {
+      if (blockType === "forever") {
+        setForeverBlockedIds(prev => { const n = new Set(prev); n.add(otherId); foreverBlockedIdsRef.current = n; return n; });
+        setParticipants(prev => prev.filter(p => p.id !== otherId));
+        cleanupPeer(otherId);
+      } else {
+        setBlockedIds(prev => { const n = new Set(prev); n.add(otherId); blockedIdsRef.current = n; return n; });
+        cleanupPeer(otherId);
+      }
     });
 
     socket.on("user:unblocked", ({ otherId }: { otherId: string }) => {
       setBlockedIds(prev => { const n = new Set(prev); n.delete(otherId); blockedIdsRef.current = n; return n; });
+      setForeverBlockedIds(prev => { const n = new Set(prev); n.delete(otherId); foreverBlockedIdsRef.current = n; return n; });
       queryClient.invalidateQueries({ queryKey: ["/api/blocks"] });
     });
 
@@ -1409,6 +1424,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     const handleRoomDm = (msg: any) => {
       if (msg.fromId === user.id) return;
       if (msg.toId !== user.id) return;
+      if (blockedIdsRef.current.has(msg.fromId) || foreverBlockedIdsRef.current.has(msg.fromId)) return;
       const fromUser = participants.find(p => p.id === msg.fromId) as User | undefined;
       if (roomDmTimerRef.current) clearTimeout(roomDmTimerRef.current);
       setRoomDmNotification({ fromId: msg.fromId, text: msg.text, fromUser });
@@ -1813,10 +1829,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:assign-role", { roomId: room.id, targetUserId, role, assignedBy: user?.id });
   };
 
-  const handleBlock = async (targetUserId: string) => {
+  const handleBlock = (targetUserId: string) => {
+    const target = participants.find(p => p.id === targetUserId);
+    setBlockDialogName(target?.username || target?.displayName || "this user");
+    setBlockDialogStep("choose");
+    setBlockDialogUserId(targetUserId);
+  };
+
+  const executeBlock = async (targetUserId: string, blockType: "ordinary" | "forever") => {
     try {
-      await apiRequest("POST", "/api/blocks", { blockerId: user?.id, blockedId: targetUserId });
-      toast({ title: "User blocked." });
+      await apiRequest("POST", "/api/blocks", { blockerId: user?.id, blockedId: targetUserId, blockType });
+      setBlockDialogUserId(null);
+      toast({ title: blockType === "forever" ? "User permanently hidden." : "User blocked." });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Failed to block user" });
     }
@@ -4420,6 +4444,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
             <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-5">
               {participants.map((p, index) => {
+                if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
                 const isBlockedUser = blockedIds.has(p.id) && p.id !== user?.id;
                 const isSpeaking = speakingUsers.has(p.id);
                 const isMe = p.id === user?.id;
@@ -4804,6 +4829,83 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           />
         );
       })()}
+
+      {/* Block Type Dialog */}
+      <Dialog open={!!blockDialogUserId && blockDialogStep === "choose"} onOpenChange={(open) => { if (!open) setBlockDialogUserId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="w-5 h-5" />
+              Block {blockDialogName}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground mb-4">Choose how you'd like to block this user.</p>
+          <div className="flex flex-col gap-3">
+            <button
+              data-testid="btn-ordinary-block"
+              className="flex items-start gap-3 rounded-lg border p-4 text-left hover:bg-muted/50 transition-colors"
+              onClick={() => blockDialogUserId && executeBlock(blockDialogUserId, "ordinary")}
+            >
+              <VolumeX className="w-5 h-5 mt-0.5 text-muted-foreground shrink-0" />
+              <div>
+                <div className="font-semibold text-sm">Ordinary Block</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Their profile card stays visible, but you won't hear their voice or receive their messages.</div>
+              </div>
+            </button>
+            <button
+              data-testid="btn-forever-block-choose"
+              className="flex items-start gap-3 rounded-lg border border-red-500/40 bg-red-50 dark:bg-red-950/20 p-4 text-left hover:bg-red-100 dark:hover:bg-red-950/40 transition-colors"
+              onClick={() => setBlockDialogStep("forever-confirm")}
+            >
+              <EyeOff className="w-5 h-5 mt-0.5 text-red-500 shrink-0" />
+              <div>
+                <div className="font-semibold text-sm text-red-600 dark:text-red-400">Forever Block</div>
+                <div className="text-xs text-red-500/80 mt-0.5">This person completely disappears from your view — no profile, no voice, no messages, ever.</div>
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forever Block Confirmation Dialog */}
+      <Dialog open={!!blockDialogUserId && blockDialogStep === "forever-confirm"} onOpenChange={(open) => { if (!open) setBlockDialogUserId(null); }}>
+        <DialogContent className="max-w-sm border-red-500 bg-red-950/10 dark:bg-red-950/30">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-500">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              Permanently hide {blockDialogName}?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+              This is a <span className="underline underline-offset-2">Forever Block</span>. Once applied:
+            </p>
+            <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
+              <li>This user will vanish from your platform entirely</li>
+              <li>You will never see their profile, voice, or messages</li>
+              <li>They will not know you blocked them</li>
+            </ul>
+            <p className="text-xs text-muted-foreground">You can undo this from your blocked users list.</p>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button
+              variant="outline"
+              className="flex-1"
+              data-testid="btn-forever-block-cancel"
+              onClick={() => setBlockDialogStep("choose")}
+            >
+              Go back
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white border-0"
+              data-testid="btn-forever-block-confirm"
+              onClick={() => blockDialogUserId && executeBlock(blockDialogUserId, "forever")}
+            >
+              Forever Block
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
