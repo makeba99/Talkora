@@ -3522,6 +3522,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       {u.status === "online" && (
                         <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-background" />
                       )}
+                      <button
+                        data-testid={`button-dm-avatar-${u.id}`}
+                        onClick={() => setDmUserId(u.id)}
+                        className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                        style={{ background: "rgba(139,92,246,0.72)", backdropFilter: "blur(2px)" }}
+                        title={`Message ${getUserDisplayName(u)}`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-white" />
+                      </button>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold truncate leading-tight">{getUserDisplayName(u)}</p>
