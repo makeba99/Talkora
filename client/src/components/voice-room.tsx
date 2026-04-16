@@ -614,6 +614,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const bookScrollRef = useRef<HTMLDivElement | null>(null);
   const lastScrollEmitRef = useRef(0);
   const [unreadChatBadge, setUnreadChatBadge] = useState(0);
+  const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
   const sidePanelTabRef = useRef(sidePanelTab);
   const ytSyncTimeRef = useRef<number>(0);
   const youtubeStartedByRef = useRef<string | null>(null);
@@ -1412,6 +1413,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (roomDmTimerRef.current) clearTimeout(roomDmTimerRef.current);
       setRoomDmNotification({ fromId: msg.fromId, text: msg.text, fromUser });
       roomDmTimerRef.current = setTimeout(() => setRoomDmNotification(null), 7000);
+      setDmUnreadCounts(prev => ({ ...prev, [msg.fromId]: (prev[msg.fromId] || 0) + 1 }));
     };
     socket.on("dm:new", handleRoomDm);
     return () => {
@@ -3524,13 +3526,24 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       )}
                       <button
                         data-testid={`button-dm-avatar-${u.id}`}
-                        onClick={() => setDmUserId(u.id)}
+                        onClick={() => {
+                          setDmUserId(u.id);
+                          setDmUnreadCounts(prev => { const next = { ...prev }; delete next[u.id]; return next; });
+                        }}
                         className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                         style={{ background: "rgba(139,92,246,0.72)", backdropFilter: "blur(2px)" }}
                         title={`Message ${getUserDisplayName(u)}`}
                       >
                         <MessageSquare className="w-3.5 h-3.5 text-white" />
                       </button>
+                      {(dmUnreadCounts[u.id] || 0) > 0 && (
+                        <span
+                          data-testid={`badge-dm-unread-${u.id}`}
+                          className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-rose-500 border border-background flex items-center justify-center text-[9px] font-bold text-white leading-none z-10"
+                        >
+                          {dmUnreadCounts[u.id] > 9 ? "9+" : dmUnreadCounts[u.id]}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold truncate leading-tight">{getUserDisplayName(u)}</p>
