@@ -3477,7 +3477,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               const followerSet = new Set(followers.map((f) => f.followerId));
               const friendSet = new Set([...following.map((f) => f.followingId)].filter((id) => followerSet.has(id)));
 
-              let filtered = allUsers.filter((u) => u.id !== user?.id);
+              const connectedSet = new Set([...Array.from(followingSet), ...Array.from(followerSet)]);
+              let filtered = allUsers.filter((u) => u.id !== user?.id && connectedSet.has(u.id));
               if (peopleFilter === "following") filtered = filtered.filter((u) => followingSet.has(u.id));
               else if (peopleFilter === "followers") filtered = filtered.filter((u) => followerSet.has(u.id));
               else if (peopleFilter === "friends") filtered = filtered.filter((u) => friendSet.has(u.id));
@@ -3485,8 +3486,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               if (peopleSearch.trim()) {
                 const q = peopleSearch.toLowerCase();
                 filtered = filtered.filter((u) =>
-                  getUserDisplayName(u).toLowerCase().includes(q) ||
-                  (u.email && u.email.toLowerCase().includes(q))
+                  getUserDisplayName(u).toLowerCase().includes(q)
                 );
               }
 
@@ -3525,7 +3525,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold truncate leading-tight">{getUserDisplayName(u)}</p>
-                      <p className="text-[10px] text-muted-foreground/60 truncate leading-tight">{u.email}</p>
+                      <p className="text-[10px] text-muted-foreground/60 truncate leading-tight">{u.bio || (u.status === "online" ? "Online" : "Offline")}</p>
                     </div>
                     <button
                       data-testid={`button-follow-${u.id}`}
