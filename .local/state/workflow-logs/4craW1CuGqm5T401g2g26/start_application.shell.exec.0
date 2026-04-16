@@ -1,0 +1,861 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx --yes tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0KStartup cleanup: scheduled 1 empty rooms for deletion
+2:58:07 AM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+2:58:14 AM [express] POST /api/follows/counts 200 in 155ms :: {"57714024":1,"57767026":1}
+2:58:17 AM [express] GET /api/auth/user 304 in 18ms :: {"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}
+2:58:17 AM [express] GET /api/follows/following/57767026 304 in 17ms :: [{"id":"c1c9e691-2e34-48f1-929a-6958fe9bb927","followerId":"57767026","followingId":"57714024","createdAt":"2026-04-16T02:57:04.594Z"}]
+2:58:17 AM [express] GET /api/users/rooms 304 in 15ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:17 AM [express] GET /api/users 200 in 17ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+2:58:17 AM [express] POST /api/rooms/votes/batch 200 in 24ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+2:58:17 AM [express] GET /api/messages/conversations 304 in 21ms :: []
+2:58:17 AM [express] GET /api/follows/followers/57767026 304 in 13ms :: [{"id":"eafe2274-c9c1-4469-a808-e566070e027a","followerId":"57714024","followingId":"57767026","createdAt":"2026-04-16T02:49:32.154Z"}]
+2:58:17 AM [express] GET /api/messages/unread/count 304 in 12ms :: {"count":0}
+2:58:17 AM [express] GET /api/notifications 304 in 11ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+2:58:17 AM [express] GET /api/rooms/participants 200 in 7ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:58:17 AM [express] GET /api/rooms 304 in 11ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:17 AM [express] POST /api/follows/counts 200 in 6ms :: {"57714024":1,"57767026":1}
+2:58:18 AM [express] POST /api/rooms/votes/batch 200 in 9ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+2:58:18 AM [express] POST /api/follows/counts 200 in 92ms :: {"57714024":1,"57767026":1}
+2:58:22 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:23 AM [express] GET /api/messages/unread/count 304 in 15ms :: {"count":0}
+2:58:23 AM [express] GET /api/rooms 304 in 14ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:27 AM [express] GET /api/messages/conversations 304 in 7ms :: []
+2:58:28 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:58:28 AM [express] GET /api/notifications 304 in 7ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+2:58:28 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:28 AM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+2:58:28 AM [express] GET /api/rooms 304 in 10ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:32 AM [express] GET /api/users 200 in 6ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+2:58:33 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+2:58:33 AM [express] GET /api/users/rooms 304 in 8ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:33 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:33 AM [express] GET /api/messages/unread/count 304 in 23ms :: {"count":0}
+2:58:38 AM [express] GET /api/messages/conversations 304 in 6ms :: []
+2:58:38 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:58:38 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+2:58:38 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:38 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:38 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+2:58:43 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:44 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:44 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+2:58:48 AM [express] GET /api/users 304 in 7ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+2:58:48 AM [express] GET /api/messages/conversations 304 in 6ms :: []
+2:58:48 AM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+2:58:48 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:58:48 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+2:58:49 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:49 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:49 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+2:58:54 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:54 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:54 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+2:58:55 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:55 AM [express] GET /api/notifications 200 in 10ms :: [{"id":"36079d85-05cb-411c-9022-80410cffc890","userId":"57714024","fromUserId":"57767026","type":"follow","read":false,"createdAt":"2026-04-16T02:57:04.797Z"}]
+2:58:55 AM [express] GET /api/rooms/participants 200 in 6ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:58:55 AM [express] GET /api/rooms 304 in 23ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:55 AM [express] GET /api/messages/conversations 304 in 23ms :: []
+2:58:55 AM [express] GET /api/messages/unread/count 304 in 38ms :: {"count":0}
+2:58:55 AM [express] GET /api/users 200 in 6ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+2:58:56 AM [express] POST /api/follows/counts 200 in 7ms :: {"57714024":1,"57767026":1}
+2:58:58 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+2:58:58 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:58:58 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+2:58:59 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:58:59 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:58:59 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+2:59:03 AM [express] GET /api/users 200 in 5ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+2:59:03 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+2:59:04 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:59:04 AM [express] GET /api/auth/user 304 in 5ms :: {"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}
+2:59:04 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:59:04 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+2:59:05 AM [express] GET /api/users 304 in 11ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+2:59:05 AM [express] GET /api/follows/following/57714024 304 in 12ms :: [{"id":"eafe2274-c9c1-4469-a808-e566070e027a","followerId":"57714024","followingId":"57767026","createdAt":"2026-04-16T02:49:32.154Z"}]
+2:59:05 AM [express] GET /api/users/rooms 304 in 9ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:59:05 AM [express] GET /api/messages/conversations 304 in 11ms :: []
+2:59:05 AM [express] GET /api/follows/followers/57714024 200 in 19ms :: [{"id":"c1c9e691-2e34-48f1-929a-6958fe9bb927","followerId":"57767026","followingId":"57714024","createdAt":"2026-04-16T02:57:04.594Z"}]
+2:59:05 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+2:59:05 AM [express] POST /api/rooms/votes/batch 200 in 9ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+2:59:05 AM [express] GET /api/notifications 304 in 11ms :: [{"id":"36079d85-05cb-411c-9022-80410cffc890","userId":"57714024","fromUserId":"57767026","type":"follow","read":false,"createdAt":"2026-04-16T02:57:04.797Z"}]
+2:59:05 AM [express] GET /api/rooms 304 in 12ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:59:05 AM [express] GET /api/rooms/participants 304 in 8ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:59:05 AM [express] POST /api/follows/counts 200 in 6ms :: {"57714024":1,"57767026":1}
+2:59:05 AM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+2:59:05 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+2:59:08 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+2:59:09 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:59:09 AM [express] GET /api/notifications 304 in 6ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+2:59:09 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:59:10 AM [express] GET /api/rooms 304 in 10ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:59:10 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+2:59:15 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:59:15 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:59:15 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+2:59:18 AM [express] GET /api/users 304 in 5ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+2:59:18 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+2:59:19 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+2:59:19 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+2:59:19 AM [express] GET /api/notifications 304 in 13ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+2:59:24 AM [express] GET /api/auth/user 304 in 4ms :: {"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}
+2:59:24 AM [express] GET /api/rooms/604b4143-0482-4c5c-9923-8011694f4493 304 in 5ms :: {"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}
+2:59:25 AM [express] GET /api/follows/following/57767026 304 in 7ms :: [{"id":"c1c9e691-2e34-48f1-929a-6958fe9bb927","followerId":"57767026","followingId":"57714024","createdAt":"2026-04-16T02:57:04.594Z"}]
+2:59:25 AM [express] GET /api/users 200 in 8ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+2:59:25 AM [express] GET /api/blocks 304 in 9ms :: []
+2:59:25 AM [express] GET /api/follows/followers/57767026 304 in 21ms :: [{"id":"eafe2274-c9c1-4469-a808-e566070e027a","followerId":"57714024","followingId":"57767026","createdAt":"2026-04-16T02:49:32.154Z"}]
+2:59:25 AM [express] GET /api/users/rooms 304 in 3ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+2:59:25 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+2:59:25 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+3:00:03 AM [express] POST /api/follows/counts 200 in 17ms :: {"57714024":1,"57767026":1}
+3:00:03 AM [express] GET /api/users 304 in 5ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:00:05 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:05 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:05 AM [express] GET /api/messages/unread/count 304 in 3ms :: {"count":0}
+3:00:09 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+3:00:09 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+3:00:09 AM [express] GET /api/notifications 304 in 19ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:00:10 AM [express] GET /api/users/rooms 304 in 3ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:11 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:00:11 AM [express] GET /api/rooms 304 in 13ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:16 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:16 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:00:16 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:18 AM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:00:19 AM [express] GET /api/users 304 in 4ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:00:19 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:00:20 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+3:00:20 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:00:21 AM [express] GET /api/users/rooms 304 in 143ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:21 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:00:21 AM [express] GET /api/rooms 304 in 15ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:26 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:26 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:00:26 AM [express] GET /api/rooms 304 in 3ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:29 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:00:30 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+3:00:30 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:00:31 AM [express] GET /api/users/rooms 304 in 7ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:32 AM [express] GET /api/rooms 304 in 9ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:32 AM [express] GET /api/messages/unread/count 304 in 17ms :: {"count":0}
+3:00:34 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:00:34 AM [express] GET /api/users 304 in 5ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:00:37 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:37 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:37 AM [express] GET /api/messages/unread/count 304 in 14ms :: {"count":0}
+3:00:39 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:00:40 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+3:00:40 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:00:42 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:42 AM [express] GET /api/rooms 304 in 10ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:42 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:00:47 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:47 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:00:47 AM [express] GET /api/rooms 304 in 13ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:49 AM [express] POST /api/rooms/votes/batch 200 in 8ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:00:49 AM [express] GET /api/users 304 in 4ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:00:50 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:00:50 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+3:00:50 AM [express] GET /api/notifications 304 in 4ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:00:52 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:52 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:00:52 AM [express] GET /api/rooms 304 in 3ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:00:58 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:00:58 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:00:58 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:00:59 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin.tsx, /src/pages/lobby.tsx, /src/pages/teachers.tsx, /src/components/voice-room.tsx, /src/components/create-room-dialog.tsx, /src/components/room-card.tsx, /src/components/social-panel.tsx[22m
+3:01:01 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:01:01 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+3:01:01 AM [express] GET /api/notifications 304 in 19ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:01:02 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:01:02 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1}
+3:01:02 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1}
+3:01:02 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:01:02 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:01:03 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:01:07 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:01:07 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:01:08 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+3:01:11 AM [express] GET /api/messages/conversations 304 in 13ms :: []
+3:01:11 AM [express] GET /api/notifications 304 in 9ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:01:12 AM [express] GET /api/rooms/participants 200 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:01:12 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:01:12 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:01:13 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:01:27 AM [express] GET /api/rooms 304 in 16ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:01:27 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:01:29 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:01:31 AM [express] GET /api/messages/conversations 304 in 6ms :: []
+3:01:31 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:01:32 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:01:32 AM [express] GET /api/users 304 in 17ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:01:32 AM [express] POST /api/follows/counts 200 in 21ms :: {"57714024":1,"57767026":1}
+3:01:32 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:01:32 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:01:33 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:01:34 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:01:38 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:01:38 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:01:39 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:01:41 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+3:01:42 AM [express] GET /api/notifications 304 in 8ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:01:42 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:01:43 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:01:43 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:01:44 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:01:46 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m
+3:01:47 AM [express] GET /api/users 304 in 5ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:01:48 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:01:48 AM [express] GET /api/users/rooms 304 in 3ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:01:49 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:01:50 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1}
+3:01:50 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1}
+3:01:50 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:01:50 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+3:01:52 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:01:52 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x2)[39m
+3:01:52 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:01:53 AM [express] GET /api/rooms/participants 304 in 93ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:01:53 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:01:53 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:01:55 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:02:04 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:02:04 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:02:05 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:02:09 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:02:09 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:02:10 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x3)[39m
+3:02:11 AM [express] GET /api/messages/unread/count 304 in 9ms :: {"count":0}
+3:02:12 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:02:12 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:02:13 AM [express] GET /api/rooms/participants 200 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]}
+3:02:14 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:02:14 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:02:16 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:02:17 AM [express] GET /api/users 304 in 10ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:02:19 AM [express] GET /api/users/rooms 304 in 7ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:02:19 AM [express] GET /api/rooms 304 in 12ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:02:20 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x4)[39m
+3:02:21 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:02:22 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+3:02:22 AM [express] GET /api/notifications 304 in 4ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:02:23 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1}
+3:02:23 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:02:23 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1}
+3:02:23 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+3:02:23 AM [express] GET /api/rooms/participants 200 in 11ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:02:25 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:02:25 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:02:26 AM [express] GET /api/messages/unread/count 304 in 62ms :: {"count":0}
+3:02:30 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:02:30 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:02:31 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:02:32 AM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:02:32 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:02:32 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:02:33 AM [express] GET /api/users 304 in 4ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:02:33 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:02:34 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:02:35 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x5)[39m
+3:02:35 AM [express] GET /api/users/rooms 304 in 10ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:02:35 AM [express] GET /api/rooms 304 in 12ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:02:37 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+3:02:40 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:02:40 AM [express] GET /api/rooms 304 in 8ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:02:42 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:02:42 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x6)[39m
+3:02:43 AM [express] GET /api/messages/conversations 304 in 10ms :: []
+3:02:43 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:02:44 AM [express] GET /api/rooms/participants 304 in 6ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:02:46 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:02:46 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:02:47 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:03:01 AM [express] GET /api/users/rooms 304 in 14ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:03:01 AM [express] GET /api/rooms 304 in 16ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:03:01 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x7)[39m
+3:03:02 AM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:03:02 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+3:03:02 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:03:03 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:03:03 AM [express] GET /api/users 304 in 4ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:03:04 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:03:04 AM [express] GET /api/rooms/participants 304 in 3ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:03:05 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1}
+3:03:05 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:03:05 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1}
+3:03:05 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:03:06 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:03:06 AM [express] GET /api/rooms 304 in 10ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:03:21 AM [express] GET /api/users/rooms 304 in 18ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:03:21 AM [express] GET /api/rooms 304 in 20ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:03:23 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:03:23 AM [express] GET /api/messages/conversations 304 in 4ms :: []
+3:03:24 AM [express] GET /api/notifications 304 in 7ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:03:24 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:03:24 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x8)[39m
+3:03:27 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:03:27 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:03:28 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:03:32 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:03:32 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:03:33 AM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:03:33 AM [express] POST /api/follows/counts 200 in 16ms :: {"57714024":1,"57767026":1}
+3:03:33 AM [express] GET /api/users 304 in 5ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:03:33 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:03:33 AM [express] GET /api/messages/unread/count 304 in 3ms :: {"count":0}
+3:03:34 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:03:39 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:03:42 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:03:42 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:03:43 AM [express] GET /api/auth/user 304 in 4ms :: {"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}
+3:03:43 AM [express] GET /api/rooms/604b4143-0482-4c5c-9923-8011694f4493 304 in 4ms :: {"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}
+3:03:43 AM [express] GET /api/follows/following/57767026 304 in 6ms :: [{"id":"c1c9e691-2e34-48f1-929a-6958fe9bb927","followerId":"57767026","followingId":"57714024","createdAt":"2026-04-16T02:57:04.594Z"}]
+3:03:43 AM [express] GET /api/follows/followers/57767026 304 in 6ms :: [{"id":"eafe2274-c9c1-4469-a808-e566070e027a","followerId":"57714024","followingId":"57767026","createdAt":"2026-04-16T02:49:32.154Z"}]
+3:03:43 AM [express] GET /api/users 200 in 17ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:03:43 AM [express] GET /api/blocks 304 in 18ms :: []
+3:03:44 AM [express] GET /api/messages/conversations 304 in 6ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:03:44 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x9)[39m
+3:03:45 AM [express] GET /api/messages/unread/count 304 in 112ms :: {"count":0}
+3:03:45 AM [express] GET /api/rooms/participants 304 in 109ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:03:45 AM [express] GET /api/notifications 304 in 111ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:03:47 AM [express] POST /api/follows/counts 200 in 9ms :: {"57714024":1}
+3:03:47 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1}
+3:03:47 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1,"57767026":1}
+3:03:47 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:03:47 AM [express] POST /api/follows/counts 200 in 6ms :: {"57714024":1,"57767026":1}
+3:03:47 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:03:48 AM [express] GET /api/users 304 in 7ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:03:50 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:04:15 AM [express] GET /api/rooms/participants 304 in 15ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:04:15 AM [express] GET /api/notifications 304 in 15ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:04:16 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:04:17 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:04:18 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:04:19 AM [express] GET /api/users 304 in 5ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:04:20 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x10)[39m
+3:04:21 AM [express] GET /api/messages/unread/count 304 in 11ms :: {"count":0}
+3:04:23 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:04:23 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:04:23 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x11)[39m
+3:04:25 AM [express] GET /api/messages/conversations 304 in 10ms :: []
+3:04:25 AM [express] POST /api/follows/counts 200 in 15ms :: {"57714024":1}
+3:04:26 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+3:04:27 AM [express] POST /api/follows/counts 200 in 7ms :: {"57714024":1}
+3:04:27 AM [express] POST /api/follows/counts 200 in 7ms :: {"57714024":1,"57767026":1}
+3:04:28 AM [express] GET /api/users/rooms 304 in 7ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:04:28 AM [express] GET /api/rooms 304 in 9ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:04:31 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+3:04:33 AM [express] POST /api/rooms/votes/batch 200 in 11ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:04:33 AM [express] POST /api/follows/counts 200 in 16ms :: {"57714024":1,"57767026":1}
+3:04:33 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:04:33 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:04:34 AM [express] GET /api/users 200 in 7ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:04:34 AM [express] POST /api/follows/counts 200 in 6ms :: {"57714024":1,"57767026":1}
+3:04:36 AM [express] GET /api/messages/conversations 304 in 6ms :: []
+3:04:36 AM [express] GET /api/rooms/participants 304 in 10ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:04:36 AM [express] GET /api/notifications 304 in 12ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:04:36 AM [express] GET /api/messages/unread/count 304 in 13ms :: {"count":0}
+3:04:38 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:04:38 AM [express] GET /api/rooms 304 in 10ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:04:44 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x12)[39m
+3:04:57 AM [express] GET /api/rooms/participants 304 in 17ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:04:57 AM [express] GET /api/notifications 304 in 18ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:04:57 AM [express] GET /api/messages/conversations 304 in 31ms :: []
+3:04:57 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:04:59 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:04:59 AM [express] GET /api/rooms 304 in 10ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:02 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:05:03 AM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:05:04 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:04 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:04 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:05:04 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+3:05:07 AM [express] GET /api/rooms/participants 304 in 6ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:05:07 AM [express] GET /api/messages/conversations 304 in 10ms :: []
+3:05:07 AM [express] GET /api/notifications 304 in 23ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:05:07 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:05:09 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:09 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:12 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:05:14 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:14 AM [express] GET /api/rooms 304 in 8ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:17 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:05:17 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:05:17 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:05:18 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:05:19 AM [express] GET /api/users 304 in 6ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:05:20 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:20 AM [express] GET /api/rooms 304 in 8ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:23 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+3:05:25 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:25 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:27 AM [express] GET /api/notifications 304 in 6ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:05:27 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:05:27 AM [express] GET /api/messages/conversations 304 in 17ms :: []
+3:05:28 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:05:30 AM [express] GET /api/users/rooms 304 in 3ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:30 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:33 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:05:33 AM [express] POST /api/rooms/votes/batch 200 in 8ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:05:34 AM [express] GET /api/users 304 in 6ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:05:34 AM [express] POST /api/follows/counts 200 in 6ms :: {"57714024":1,"57767026":1}
+3:05:35 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:35 AM [express] GET /api/rooms 304 in 8ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:37 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:05:37 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:05:37 AM [express] GET /api/messages/conversations 304 in 9ms :: []
+3:05:38 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+3:05:41 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:41 AM [express] GET /api/rooms 304 in 9ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:44 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:05:46 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:46 AM [express] GET /api/rooms 304 in 8ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:48 AM [express] GET /api/notifications 304 in 47ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:05:48 AM [express] GET /api/messages/conversations 304 in 47ms :: []
+3:05:48 AM [express] GET /api/rooms/participants 304 in 48ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:05:49 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:05:50 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:05:51 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:51 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:54 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:05:56 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:05:56 AM [express] GET /api/rooms 304 in 9ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:05:58 AM [express] GET /api/messages/conversations 304 in 8ms :: []
+3:05:58 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:05:58 AM [express] GET /api/notifications 304 in 18ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:05:59 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:06:02 AM [express] GET /api/users/rooms 304 in 3ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:02 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:03 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:06:05 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:06:05 AM [express] POST /api/follows/counts 200 in 6ms :: {"57714024":1,"57767026":1}
+3:06:05 AM [express] GET /api/users 304 in 7ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:06:07 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:07 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:08 AM [express] GET /api/rooms/participants 304 in 6ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:06:08 AM [express] GET /api/messages/conversations 304 in 7ms :: []
+3:06:08 AM [express] GET /api/notifications 304 in 3ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:06:10 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:06:12 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:12 AM [express] GET /api/rooms 304 in 8ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:15 AM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+3:06:17 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:17 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:06:17 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x13)[39m
+3:06:19 AM [express] GET /api/rooms/participants 304 in 20ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:06:19 AM [express] GET /api/messages/conversations 304 in 22ms :: []
+3:06:19 AM [express] GET /api/notifications 304 in 34ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:06:20 AM [express] GET /api/users 304 in 4ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:06:20 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:06:21 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1}
+3:06:21 AM [express] POST /api/follows/counts 200 in 4ms :: {"57714024":1}
+3:06:21 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+3:06:21 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+3:06:22 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:22 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:25 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:06:28 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:28 AM [express] GET /api/rooms 304 in 9ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:29 AM [express] GET /api/rooms/participants 304 in 6ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:06:29 AM [express] GET /api/messages/conversations 304 in 9ms :: []
+3:06:29 AM [express] GET /api/notifications 304 in 16ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:06:31 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:06:33 AM [express] GET /api/users/rooms 304 in 7ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:33 AM [express] GET /api/rooms 304 in 9ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:34 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:06:35 AM [express] POST /api/follows/counts 200 in 7ms :: {"57714024":1,"57767026":1}
+3:06:35 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:06:36 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:06:41 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:06:43 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:43 AM [express] GET /api/rooms 304 in 18ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:46 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:06:48 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:48 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:49 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:06:49 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:06:49 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:06:51 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:06:52 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:06:54 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:54 AM [express] GET /api/rooms 304 in 4ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:57 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:06:59 AM [express] GET /api/users/rooms 304 in 6ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:06:59 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:06:59 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:06:59 AM [express] GET /api/messages/conversations 304 in 6ms :: []
+3:06:59 AM [express] GET /api/notifications 304 in 15ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:07:02 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:07:04 AM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"604b4143-0482-4c5c-9923-8011694f4493":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+3:07:04 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:07:04 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:07:05 AM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":1,"57767026":1}
+3:07:06 AM [express] GET /api/users 304 in 5ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:07:07 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:07:09 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:07:09 AM [express] GET /api/rooms 304 in 5ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:07:09 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:07:09 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:07:09 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:07:13 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:07:14 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:07:14 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:07:18 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:07:20 AM [express] GET /api/rooms/participants 304 in 4ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:07:20 AM [express] GET /api/messages/conversations 304 in 5ms :: []
+3:07:20 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:07:20 AM [express] GET /api/users/rooms 304 in 5ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:07:20 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:07:21 AM [express] GET /api/users 304 in 6ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]
+3:07:23 AM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+3:07:25 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:07:25 AM [express] GET /api/rooms 304 in 6ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:07:28 AM [express] GET /api/messages/unread/count 304 in 4ms :: {"count":0}
+3:07:30 AM [express] GET /api/rooms/participants 304 in 5ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:07:30 AM [express] GET /api/messages/conversations 304 in 7ms :: []
+3:07:30 AM [express] GET /api/notifications 304 in 5ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:07:30 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:07:30 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:07:33 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:07:36 AM [express] GET /api/users 200 in 4ms :: [{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"}]
+3:07:39 AM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+3:07:40 AM [express] GET /api/rooms/participants 304 in 6ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:07:40 AM [express] GET /api/messages/conversations 304 in 7ms :: []
+3:07:40 AM [express] GET /api/notifications 304 in 13ms :: [{"id":"5a73f171-310c-4f5a-b5eb-8ba4f60e101d","userId":"57767026","fromUserId":"57714024","type":"follow","read":false,"createdAt":"2026-04-16T02:49:32.158Z"}]
+3:07:40 AM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+3:07:40 AM [express] GET /api/users/rooms 304 in 4ms :: {"57714024":"604b4143-0482-4c5c-9923-8011694f4493","57767026":"604b4143-0482-4c5c-9923-8011694f4493"}
+3:07:40 AM [express] GET /api/rooms/participants 200 in 1ms :: {"604b4143-0482-4c5c-9923-8011694f4493":[{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"createdAt":"2026-04-16T02:49:01.349Z","updatedAt":"2026-04-16T02:49:04.769Z"},{"id":"57767026","email":"rikoman50@gmail.com","firstName":"Rikoman50","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLK1yC3XHaAo6YR6bfORphgZhQ7JT8jdpHmJ-DzeL4ByE5ZpHo=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"createdAt":"2026-04-16T02:47:50.150Z","updatedAt":"2026-04-16T02:47:50.150Z"}]}
+3:07:40 AM [express] GET /api/rooms 304 in 7ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:07:40 AM [express] GET /api/rooms 200 in 4ms :: [{"id":"604b4143-0482-4c5c-9923-8011694f4493","title":"Justy i want to fuck you so bad","language":"English","level":"Beginner","maxUsers":8,"ownerId":"57767026","isPublic":true,"activeUsers":2,"roomTheme":"cherry","hologramVideoUrl":null,"createdAt":"2026-04-16T02:48:04.410Z"}]
+3:07:40 AM [express] POST /api/rooms/votes/batch 200 in 13ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+3:07:41 AM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"604b4143-0482-4c5c-9923-8011694f4493":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+3:07:41 AM [express] POST /api/follows/counts 200 in 3ms :: {"57714024":1,"57767026":1}
