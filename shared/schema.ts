@@ -228,6 +228,84 @@ export const insertUserCommentSchema = createInsertSchema(userComments).pick({
 export type InsertUserComment = z.infer<typeof insertUserCommentSchema>;
 export type UserComment = typeof userComments.$inferSelect;
 
+export const BADGE_TYPES = {
+  lovely_user: {
+    id: "lovely_user",
+    label: "Lovely User",
+    emoji: "💜",
+    color: "#a855f7",
+    quote: "Your warmth and kindness make this community a better place.",
+  },
+  trusted_user: {
+    id: "trusted_user",
+    label: "Trusted User",
+    emoji: "✅",
+    color: "#22c55e",
+    quote: "Your integrity and reliability have earned the trust of everyone here.",
+  },
+  platform_best_friend: {
+    id: "platform_best_friend",
+    label: "Platform Best Friend",
+    emoji: "🤝",
+    color: "#f59e0b",
+    quote: "You've become an irreplaceable part of our family.",
+  },
+  top_speaker: {
+    id: "top_speaker",
+    label: "Top Speaker",
+    emoji: "🎤",
+    color: "#3b82f6",
+    quote: "Your voice inspires learners everywhere. Keep speaking!",
+  },
+  language_champion: {
+    id: "language_champion",
+    label: "Language Champion",
+    emoji: "🏆",
+    color: "#f97316",
+    quote: "You've shown what true dedication to language learning looks like.",
+  },
+  community_star: {
+    id: "community_star",
+    label: "Community Star",
+    emoji: "⭐",
+    color: "#eab308",
+    quote: "You light up our community with your incredible presence.",
+  },
+  helping_hand: {
+    id: "helping_hand",
+    label: "Helping Hand",
+    emoji: "🙌",
+    color: "#06b6d4",
+    quote: "Your support and help mean the world to everyone here.",
+  },
+  rising_star: {
+    id: "rising_star",
+    label: "Rising Star",
+    emoji: "🌟",
+    color: "#ec4899",
+    quote: "Watch out world — a remarkable new star has risen!",
+  },
+} as const;
+
+export type BadgeType = keyof typeof BADGE_TYPES;
+
+export const userBadges = pgTable("user_badges", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  badgeType: varchar("badge_type", { length: 50 }).notNull(),
+  awardedById: varchar("awarded_by_id", { length: 36 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertUserBadgeSchema = createInsertSchema(userBadges).pick({
+  userId: true,
+  badgeType: true,
+  awardedById: true,
+});
+
+export type InsertUserBadge = z.infer<typeof insertUserBadgeSchema>;
+export type UserBadge = typeof userBadges.$inferSelect;
+
 export const LANGUAGES = [
   "All",
   "English",

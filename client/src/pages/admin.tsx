@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName } from "@/lib/utils";
-import type { Report, User, TeacherApplication } from "@shared/schema";
+import type { Report, User, TeacherApplication, UserBadge } from "@shared/schema";
+import { BADGE_TYPES } from "@shared/schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const OWNER_EMAIL = "dj55jggg@gmail.com";
 
@@ -65,6 +67,8 @@ export default function AdminPage() {
   const [adminNotes, setAdminNotes] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
+  const [badgeUserId, setBadgeUserId] = useState("");
+  const [badgeType, setBadgeType] = useState("");
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -79,6 +83,37 @@ export default function AdminPage() {
   const { data: teacherApps = [], isLoading: appsLoading } = useQuery<(TeacherApplication & { user: any })[]>({
     queryKey: ["/api/admin/teacher-applications"],
     enabled: !!canAccess,
+  });
+
+  const { data: allBadges = [], isLoading: badgesLoading } = useQuery<(UserBadge & { userName: string; userAvatar: string | null })[]>({
+    queryKey: ["/api/admin/badges"],
+    enabled: !!canAccess,
+  });
+
+  const awardBadgeMutation = useMutation({
+    mutationFn: async ({ userId, badgeType }: { userId: string; badgeType: string }) => {
+      const res = await apiRequest("POST", "/api/admin/badges/award", { userId, badgeType });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/badges"] });
+      toast({ title: "Badge awarded!", description: "The badge announcement has been sent to all users." });
+      setBadgeUserId("");
+      setBadgeType("");
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to award badge", description: err?.message, variant: "destructive" });
+    },
+  });
+
+  const removeBadgeMutation = useMutation({
+    mutationFn: async (badgeId: string) => {
+      await apiRequest("DELETE", `/api/admin/badges/${badgeId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/badges"] });
+      toast({ title: "Badge removed" });
+    },
   });
 
   const reportsByUser = useMemo(() => {
@@ -277,7 +312,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-card/80 backdrop-blur">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5 bg-card/80 backdrop-blur">
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -298,6 +333,10 @@ export default function AdminPage() {
                   {stats.pendingApps}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="badges" data-testid="tab-admin-badges">
+              <Award className="w-4 h-4 mr-2" />
+              Badges
             </TabsTrigger>
           </TabsList>
 
@@ -557,6 +596,106 @@ export default function AdminPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="badges">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-amber-400" />
+                    Award a Badge
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Select User</label>
+                    <Select value={badgeUserId} onValueChange={setBadgeUserId}>
+                      <SelectTrigger data-testid="select-badge-user">
+                        <SelectValue placeholder="Choose a user..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.filter(u => u.email !== OWNER_EMAIL && u.role !== "superadmin").map((u) => (
+                          <SelectItem key={u.id} value={u.id} data-testid={`option-badge-user-${u.id}`}>
+                            {getUserDisplayName(u)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Select Badge</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.values(BADGE_TYPES).map((b) => (
+                        <button
+                          key={b.id}
+                          data-testid={`button-badge-type-${b.id}`}
+                          onClick={() => setBadgeType(b.id)}
+                          className="flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all"
+                          style={{
+                            borderColor: badgeType === b.id ? b.color : "rgba(255,255,255,0.1)",
+                            background: badgeType === b.id ? `${b.color}18` : "transparent",
+                          }}
+                        >
+                          <span className="text-xl">{b.emoji}</span>
+                          <div>
+                            <p className="text-xs font-semibold" style={{ color: badgeType === b.id ? b.color : undefined }}>{b.label}</p>
+                            <p className="text-[10px] text-muted-foreground line-clamp-1">{b.quote}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={() => awardBadgeMutation.mutate({ userId: badgeUserId, badgeType })}
+                    disabled={!badgeUserId || !badgeType || awardBadgeMutation.isPending}
+                    data-testid="button-award-badge"
+                    style={{ background: badgeType ? `${BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES]?.color}30` : undefined, color: badgeType ? BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES]?.color : undefined }}
+                  >
+                    <Award className="w-4 h-4 mr-2" />
+                    {awardBadgeMutation.isPending ? "Awarding..." : "Award Badge & Announce"}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+                <CardHeader>
+                  <CardTitle>Awarded Badges</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-[520px] overflow-auto admin-scrollbar pr-1 space-y-2">
+                    {badgesLoading ? (
+                      [1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)
+                    ) : allBadges.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-10">No badges awarded yet.</p>
+                    ) : (
+                      allBadges.map((b) => {
+                        const def = BADGE_TYPES[b.badgeType as keyof typeof BADGE_TYPES];
+                        if (!def) return null;
+                        return (
+                          <div key={b.id} data-testid={`card-badge-${b.id}`} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-background/40">
+                            <span className="text-2xl">{def.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{b.userName}</p>
+                              <p className="text-xs font-medium" style={{ color: def.color }}>{def.label}</p>
+                            </div>
+                            <button
+                              data-testid={`button-remove-badge-${b.id}`}
+                              onClick={() => removeBadgeMutation.mutate(b.id)}
+                              disabled={removeBadgeMutation.isPending}
+                              className="text-muted-foreground/50 hover:text-destructive transition-colors p-1 rounded"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 

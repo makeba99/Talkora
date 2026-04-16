@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema } from "@shared/schema";
+import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, BADGE_TYPES } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
@@ -858,6 +858,75 @@ export async function registerRoutes(
     try {
       const allUsers = await storage.getAllUsers();
       res.json(allUsers);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/badges/award", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId, badgeType } = req.body;
+      if (!userId || !badgeType) return res.status(400).json({ message: "userId and badgeType required" });
+      if (!(badgeType in BADGE_TYPES)) return res.status(400).json({ message: "Invalid badge type" });
+
+      const target = await storage.getUser(userId);
+      if (!target) return res.status(404).json({ message: "User not found" });
+
+      const badge = await storage.awardBadge({
+        userId,
+        badgeType,
+        awardedById: (req.user as any).id,
+      });
+
+      const badgeDef = BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES];
+      const targetName = target.displayName || [target.firstName, target.lastName].filter(Boolean).join(" ") || target.email || "A user";
+
+      io.emit("badge:awarded", {
+        badge,
+        badgeDef,
+        userName: targetName,
+        userAvatar: target.profileImageUrl,
+        userId: target.id,
+        quote: badgeDef.quote,
+      });
+
+      res.json(badge);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/badges", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      const badgeCounts: Record<string, number> = {};
+      const userBadgeList: any[] = [];
+      for (const u of allUsers) {
+        const badges = await storage.getUserBadges(u.id);
+        if (badges.length > 0) {
+          badgeCounts[u.id] = badges.length;
+          userBadgeList.push(...badges.map((b) => ({ ...b, userName: u.displayName || u.email || u.id, userAvatar: u.profileImageUrl })));
+        }
+      }
+      res.json(userBadgeList);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/badges/:badgeId", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.removeBadge(req.params.badgeId);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/users/:id/badges", async (req, res) => {
+    try {
+      const badges = await storage.getUserBadges(req.params.id);
+      res.json(badges);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

@@ -38,6 +38,9 @@ import {
   userComments,
   type UserComment,
   type InsertUserComment,
+  userBadges,
+  type UserBadge,
+  type InsertUserBadge,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -119,6 +122,10 @@ export interface IStorage {
   getUserComments(targetUserId: string): Promise<(UserComment & { authorName: string; authorAvatar: string | null })[]>;
   createUserComment(data: InsertUserComment): Promise<UserComment>;
   deleteUserComment(commentId: string, authorId: string): Promise<void>;
+
+  awardBadge(data: InsertUserBadge): Promise<UserBadge>;
+  getUserBadges(userId: string): Promise<UserBadge[]>;
+  removeBadge(badgeId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -554,6 +561,19 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUserComment(commentId: string, authorId: string): Promise<void> {
     await db.delete(userComments).where(and(eq(userComments.id, commentId), eq(userComments.authorId, authorId)));
+  }
+
+  async awardBadge(data: InsertUserBadge): Promise<UserBadge> {
+    const [badge] = await db.insert(userBadges).values(data).returning();
+    return badge;
+  }
+
+  async getUserBadges(userId: string): Promise<UserBadge[]> {
+    return db.select().from(userBadges).where(eq(userBadges.userId, userId)).orderBy(desc(userBadges.createdAt));
+  }
+
+  async removeBadge(badgeId: string): Promise<void> {
+    await db.delete(userBadges).where(eq(userBadges.id, badgeId));
   }
 }
 

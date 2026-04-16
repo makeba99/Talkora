@@ -11,8 +11,36 @@ import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import type { User, Follow } from "@shared/schema";
+import type { User, Follow, UserBadge } from "@shared/schema";
+import { BADGE_TYPES } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+function UserBadgePips({ userId }: { userId: string }) {
+  const { data: badges = [] } = useQuery<UserBadge[]>({
+    queryKey: ["/api/users", userId, "badges"],
+    queryFn: () => fetch(`/api/users/${userId}/badges`).then(r => r.json()),
+    staleTime: 60000,
+  });
+  if (badges.length === 0) return null;
+  const displayed = badges.slice(0, 3);
+  return (
+    <div className="flex items-center gap-0.5 mt-0.5">
+      {displayed.map((b) => {
+        const def = BADGE_TYPES[b.badgeType as keyof typeof BADGE_TYPES];
+        if (!def) return null;
+        return (
+          <Tooltip key={b.id}>
+            <TooltipTrigger asChild>
+              <span className="text-[11px] leading-none cursor-default">{def.emoji}</span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">{def.label}</TooltipContent>
+          </Tooltip>
+        );
+      })}
+      {badges.length > 3 && <span className="text-[10px] text-muted-foreground">+{badges.length - 3}</span>}
+    </div>
+  );
+}
 
 interface SocialPanelProps {
   onOpenDm?: (userId: string) => void;
@@ -139,6 +167,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
               {isOnline ? "Online" : "Offline"}
             </p>
           )}
+          <UserBadgePips userId={u.id} />
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {inRoomId && (
