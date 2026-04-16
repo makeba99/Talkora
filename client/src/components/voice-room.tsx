@@ -3524,18 +3524,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       {u.status === "online" && (
                         <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-background" />
                       )}
-                      <button
-                        data-testid={`button-dm-avatar-${u.id}`}
-                        onClick={() => {
-                          setDmUserId(u.id);
-                          setDmUnreadCounts(prev => { const next = { ...prev }; delete next[u.id]; return next; });
-                        }}
-                        className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                        style={{ background: "rgba(139,92,246,0.72)", backdropFilter: "blur(2px)" }}
-                        title={`Message ${getUserDisplayName(u)}`}
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 text-white" />
-                      </button>
                       {(dmUnreadCounts[u.id] || 0) > 0 && (
                         <span
                           data-testid={`badge-dm-unread-${u.id}`}
@@ -3549,17 +3537,31 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <p className="text-xs font-semibold truncate leading-tight">{getUserDisplayName(u)}</p>
                       <p className="text-[10px] text-muted-foreground/60 truncate leading-tight">{u.bio || (u.status === "online" ? "Online" : "Offline")}</p>
                     </div>
-                    <button
-                      data-testid={`button-follow-${u.id}`}
-                      onClick={() => isFollowingUser ? unfollowMutation.mutate(u.id) : followMutation.mutate(u.id)}
-                      className="flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150 opacity-0 group-hover:opacity-100"
-                      style={isFollowingUser
-                        ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.50)", border: "1px solid rgba(255,255,255,0.10)" }
-                        : { background: "rgba(139,92,246,0.18)", color: "rgba(167,139,250,0.95)", border: "1px solid rgba(139,92,246,0.28)" }
-                      }
-                    >
-                      {isFollowingUser ? "Following" : "Follow"}
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <button
+                        data-testid={`button-dm-${u.id}`}
+                        onClick={() => {
+                          setDmUserId(u.id);
+                          setDmUnreadCounts(prev => { const next = { ...prev }; delete next[u.id]; return next; });
+                        }}
+                        className="p-1.5 rounded-lg transition-all duration-150"
+                        style={{ background: "rgba(139,92,246,0.14)", color: "rgba(167,139,250,0.90)", border: "1px solid rgba(139,92,246,0.24)" }}
+                        title={`Message ${getUserDisplayName(u)}`}
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                      </button>
+                      <button
+                        data-testid={`button-follow-${u.id}`}
+                        onClick={() => isFollowingUser ? unfollowMutation.mutate(u.id) : followMutation.mutate(u.id)}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150"
+                        style={isFollowingUser
+                          ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.50)", border: "1px solid rgba(255,255,255,0.10)" }
+                          : { background: "rgba(139,92,246,0.18)", color: "rgba(167,139,250,0.95)", border: "1px solid rgba(139,92,246,0.28)" }
+                        }
+                      >
+                        {isFollowingUser ? "Following" : "Follow"}
+                      </button>
+                    </div>
                   </div>
                 );
               });
