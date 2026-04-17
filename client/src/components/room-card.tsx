@@ -65,24 +65,24 @@ function getThemeGlowColor(themeId: string | null | undefined): { from: string; 
   switch (themeId) {
     case "premium-atmosphere": return { from: "rgba(0,210,255,1)",    to: "rgba(255,92,49,1)",     ring: "rgba(0,210,255,0.95), rgba(255,0,184,0.95), rgba(255,150,40,0.95)", animated: "premium-atmosphere-border-wrap" };
     /* ── Premium Animated Themes ── */
-    case "cosmic":     return { from: "rgba(37,99,235,1)",    to: "rgba(239,68,68,1)",    ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)",    animated: "cosmic-border-wrap" };
-    case "plasma":     return { from: "rgba(236,72,153,1)",   to: "rgba(99,102,241,1)",   ring: "rgba(236,72,153,0.9), rgba(99,102,241,0.9)",   animated: "plasma-border-wrap" };
-    case "hologram":   return { from: "rgba(6,182,212,1)",    to: "rgba(52,211,153,1)",   ring: "rgba(6,182,212,0.9), rgba(52,211,153,0.9)",    animated: "hologram-border-wrap" };
-    case "inferno":    return { from: "rgba(234,88,12,1)",    to: "rgba(250,204,21,1)",   ring: "rgba(234,88,12,0.9), rgba(250,204,21,0.9)",    animated: "inferno-border-wrap" };
+    case "cosmic":     return { from: "rgba(37,99,235,0.55)",  to: "rgba(239,68,68,0.45)",  ring: "rgba(37,99,235,0.5), rgba(239,68,68,0.4)",   animated: "cosmic-border-wrap" };
+    case "plasma":     return { from: "rgba(236,72,153,0.5)",  to: "rgba(99,102,241,0.45)", ring: "rgba(236,72,153,0.45), rgba(99,102,241,0.4)", animated: "plasma-border-wrap" };
+    case "hologram":   return { from: "rgba(6,182,212,0.55)",  to: "rgba(52,211,153,0.45)", ring: "rgba(6,182,212,0.5), rgba(52,211,153,0.4)",   animated: "hologram-border-wrap" };
+    case "inferno":    return { from: "rgba(234,88,12,0.55)",  to: "rgba(250,204,21,0.45)", ring: "rgba(234,88,12,0.5), rgba(250,204,21,0.4)",   animated: "inferno-border-wrap" };
     /* ── Standard Themes ── */
-    case "neon":       return { from: "rgba(0,220,255,0.9)",  to: "rgba(168,85,247,0.8)", ring: "rgba(0,220,255,0.7), rgba(168,85,247,0.7)" };
-    case "galaxy":     return { from: "rgba(99,102,241,0.9)", to: "rgba(168,85,247,0.8)", ring: "rgba(99,102,241,0.7), rgba(168,85,247,0.7)" };
-    case "sunset":     return { from: "rgba(251,146,60,0.9)", to: "rgba(239,68,68,0.8)",  ring: "rgba(251,146,60,0.7), rgba(239,68,68,0.7)" };
-    case "forest":     return { from: "rgba(52,211,153,0.9)", to: "rgba(16,185,129,0.8)", ring: "rgba(52,211,153,0.7), rgba(16,185,129,0.7)" };
-    case "cyberpunk":  return { from: "rgba(250,204,21,0.9)", to: "rgba(0,220,255,0.8)",  ring: "rgba(250,204,21,0.7), rgba(0,220,255,0.7)" };
-    case "ocean":      return { from: "rgba(59,130,246,0.9)", to: "rgba(6,182,212,0.8)",  ring: "rgba(59,130,246,0.7), rgba(6,182,212,0.7)" };
-    case "cherry":     return { from: "rgba(244,114,182,0.9)",to: "rgba(251,113,133,0.8)",ring: "rgba(244,114,182,0.7), rgba(251,113,133,0.7)" };
-    case "gold":       return { from: "rgba(253,224,71,0.9)", to: "rgba(245,158,11,0.8)", ring: "rgba(253,224,71,0.7), rgba(245,158,11,0.7)" };
-    case "violet":     return { from: "rgba(167,139,250,0.9)",to: "rgba(232,121,249,0.8)",ring: "rgba(167,139,250,0.7), rgba(232,121,249,0.7)" };
-    case "aurora":     return { from: "rgba(45,212,191,0.9)", to: "rgba(74,222,128,0.8)", ring: "rgba(45,212,191,0.7), rgba(74,222,128,0.7)" };
-    case "storm":      return { from: "rgba(59,130,246,0.9)", to: "rgba(100,116,139,0.8)",ring: "rgba(59,130,246,0.7), rgba(100,116,139,0.7)" };
-    case "volcanic":   return { from: "rgba(239,68,68,0.9)",  to: "rgba(251,146,60,0.8)", ring: "rgba(239,68,68,0.7), rgba(251,146,60,0.7)" };
-    default:           return { from: "rgba(37,99,235,1)",    to: "rgba(239,68,68,1)",    ring: "rgba(37,99,235,0.9), rgba(239,68,68,0.9)",    animated: "cosmic-border-wrap" };
+    case "neon":       return { from: "rgba(0,220,255,0.38)",  to: "rgba(130,80,220,0.30)", ring: "rgba(0,220,255,0.32), rgba(130,80,220,0.28)" };
+    case "galaxy":     return { from: "rgba(99,102,241,0.38)", to: "rgba(130,80,200,0.30)", ring: "rgba(99,102,241,0.32), rgba(130,80,200,0.28)" };
+    case "sunset":     return { from: "rgba(251,146,60,0.40)", to: "rgba(220,68,68,0.32)",  ring: "rgba(251,146,60,0.35), rgba(220,68,68,0.28)" };
+    case "forest":     return { from: "rgba(52,211,153,0.40)", to: "rgba(16,185,129,0.32)", ring: "rgba(52,211,153,0.35), rgba(16,185,129,0.28)" };
+    case "cyberpunk":  return { from: "rgba(210,180,21,0.40)", to: "rgba(0,195,220,0.32)",  ring: "rgba(210,180,21,0.35), rgba(0,195,220,0.28)" };
+    case "ocean":      return { from: "rgba(59,130,246,0.40)", to: "rgba(6,182,212,0.32)",  ring: "rgba(59,130,246,0.35), rgba(6,182,212,0.28)" };
+    case "cherry":     return { from: "rgba(200,90,140,0.38)", to: "rgba(210,90,110,0.30)", ring: "rgba(200,90,140,0.32), rgba(210,90,110,0.28)" };
+    case "gold":       return { from: "rgba(220,185,50,0.40)", to: "rgba(200,140,10,0.32)", ring: "rgba(220,185,50,0.35), rgba(200,140,10,0.28)" };
+    case "violet":     return { from: "rgba(150,110,240,0.38)",to: "rgba(190,95,220,0.30)", ring: "rgba(150,110,240,0.32), rgba(190,95,220,0.28)" };
+    case "aurora":     return { from: "rgba(45,212,191,0.40)", to: "rgba(74,200,110,0.32)", ring: "rgba(45,212,191,0.35), rgba(74,200,110,0.28)" };
+    case "storm":      return { from: "rgba(59,130,246,0.40)", to: "rgba(90,105,130,0.30)", ring: "rgba(59,130,246,0.35), rgba(90,105,130,0.28)" };
+    case "volcanic":   return { from: "rgba(220,60,60,0.40)",  to: "rgba(230,130,50,0.32)", ring: "rgba(220,60,60,0.35), rgba(230,130,50,0.28)" };
+    default:           return { from: "rgba(70,110,220,0.40)", to: "rgba(90,60,180,0.30)",  ring: "rgba(70,110,220,0.35), rgba(90,60,180,0.28)", animated: undefined };
   }
 }
 
@@ -554,13 +554,13 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     );
   })();
 
-  /* ── neon border gradient ── */
+  /* ── elegant border gradient ── */
   const borderGradient = isPremiumAtmosphere
-    ? `linear-gradient(135deg, rgba(0,220,255,0.90) 0%, rgba(88,72,255,0.72) 28%, rgba(255,0,190,0.74) 52%, rgba(255,104,64,0.82) 78%, rgba(255,205,70,0.78) 100%)`
-    : `linear-gradient(135deg, ${glow.from} 0%, rgba(168,85,247,1) 50%, ${glow.to} 100%)`;
+    ? `linear-gradient(135deg, rgba(0,220,255,0.50) 0%, rgba(88,72,255,0.32) 28%, rgba(200,60,180,0.30) 52%, rgba(255,104,64,0.38) 78%, rgba(220,175,60,0.34) 100%)`
+    : `linear-gradient(135deg, ${glow.from} 0%, rgba(255,255,255,0.10) 50%, ${glow.to} 100%)`;
   const outerGlow = isPremiumAtmosphere
-    ? "0 0 12px rgba(0,220,255,0.58), 0 0 26px rgba(255,0,190,0.34), 0 0 44px rgba(255,104,64,0.24)"
-    : `0 0 14px ${glow.from}, 0 0 30px ${glow.to}`;
+    ? "0 0 8px rgba(0,220,255,0.18), 0 0 18px rgba(200,60,180,0.10)"
+    : `0 0 10px ${glow.from.replace(/[\d.]+\)$/, "0.25)")}`;
 
   /* ── grid columns: always 2 rows, balanced ── */
   const gridCols =
@@ -574,7 +574,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
       className={glow.animated ?? ""}
       style={{
         width: "100%",
-        padding: "2px",
+        padding: "1px",
         borderRadius: "18px",
         background: borderGradient,
         boxShadow: outerGlow,
@@ -588,9 +588,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
           borderRadius: "16px",
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgba(4,7,22,0.86), rgba(7,8,27,0.78) 48%, rgba(7,4,17,0.88))"
-            : "rgba(6, 10, 28, 0.28)",
-          backdropFilter: isPremiumAtmosphere ? "blur(18px) saturate(1.18)" : "blur(18px) saturate(1.05)",
-          WebkitBackdropFilter: isPremiumAtmosphere ? "blur(18px) saturate(1.18)" : "blur(18px) saturate(1.05)",
+            : "linear-gradient(160deg, rgba(10, 14, 38, 0.72) 0%, rgba(6, 9, 26, 0.78) 100%)",
+          backdropFilter: isPremiumAtmosphere ? "blur(20px) saturate(1.3)" : "blur(20px) saturate(1.15)",
+          WebkitBackdropFilter: isPremiumAtmosphere ? "blur(20px) saturate(1.3)" : "blur(20px) saturate(1.15)",
           height: isPremiumAtmosphere ? 304 : 290,
         }}
       >
