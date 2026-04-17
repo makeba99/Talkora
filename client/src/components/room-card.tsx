@@ -66,7 +66,7 @@ function getThemeGlowColor(themeId: string | null | undefined): { from: string; 
     case "premium-atmosphere": return { from: "rgba(0,210,255,1)",    to: "rgba(255,92,49,1)",     ring: "rgba(0,210,255,0.95), rgba(255,0,184,0.95), rgba(255,150,40,0.95)", animated: "premium-atmosphere-border-wrap" };
     /* ── Premium Animated Themes ── */
     case "cosmic":     return { from: "rgba(37,99,235,0.55)",  to: "rgba(239,68,68,0.45)",  ring: "rgba(37,99,235,0.5), rgba(239,68,68,0.4)",   animated: "cosmic-border-wrap" };
-    case "plasma":     return { from: "rgba(236,72,153,0.5)",  to: "rgba(99,102,241,0.45)", ring: "rgba(236,72,153,0.45), rgba(99,102,241,0.4)", animated: "plasma-border-wrap" };
+    case "plasma":     return { from: "rgba(185,195,215,0.55)", to: "rgba(99,102,241,0.45)", ring: "rgba(185,195,215,0.50), rgba(99,102,241,0.4)", animated: "plasma-border-wrap" };
     case "hologram":   return { from: "rgba(6,182,212,0.55)",  to: "rgba(52,211,153,0.45)", ring: "rgba(6,182,212,0.5), rgba(52,211,153,0.4)",   animated: "hologram-border-wrap" };
     case "inferno":    return { from: "rgba(234,88,12,0.55)",  to: "rgba(250,204,21,0.45)", ring: "rgba(234,88,12,0.5), rgba(250,204,21,0.4)",   animated: "inferno-border-wrap" };
     /* ── Standard Themes ── */
@@ -76,13 +76,13 @@ function getThemeGlowColor(themeId: string | null | undefined): { from: string; 
     case "forest":     return { from: "rgba(52,211,153,0.40)", to: "rgba(16,185,129,0.32)", ring: "rgba(52,211,153,0.35), rgba(16,185,129,0.28)" };
     case "cyberpunk":  return { from: "rgba(210,180,21,0.40)", to: "rgba(0,195,220,0.32)",  ring: "rgba(210,180,21,0.35), rgba(0,195,220,0.28)" };
     case "ocean":      return { from: "rgba(59,130,246,0.40)", to: "rgba(6,182,212,0.32)",  ring: "rgba(59,130,246,0.35), rgba(6,182,212,0.28)" };
-    case "cherry":     return { from: "rgba(200,90,140,0.38)", to: "rgba(210,90,110,0.30)", ring: "rgba(200,90,140,0.32), rgba(210,90,110,0.28)" };
+    case "cherry":     return { from: "rgba(185,198,218,0.42)", to: "rgba(155,170,195,0.32)", ring: "rgba(185,198,218,0.38), rgba(155,170,195,0.28)" };
     case "gold":       return { from: "rgba(220,185,50,0.40)", to: "rgba(200,140,10,0.32)", ring: "rgba(220,185,50,0.35), rgba(200,140,10,0.28)" };
     case "violet":     return { from: "rgba(150,110,240,0.38)",to: "rgba(190,95,220,0.30)", ring: "rgba(150,110,240,0.32), rgba(190,95,220,0.28)" };
     case "aurora":     return { from: "rgba(45,212,191,0.40)", to: "rgba(74,200,110,0.32)", ring: "rgba(45,212,191,0.35), rgba(74,200,110,0.28)" };
     case "storm":      return { from: "rgba(59,130,246,0.40)", to: "rgba(90,105,130,0.30)", ring: "rgba(59,130,246,0.35), rgba(90,105,130,0.28)" };
     case "volcanic":   return { from: "rgba(220,60,60,0.40)",  to: "rgba(230,130,50,0.32)", ring: "rgba(220,60,60,0.35), rgba(230,130,50,0.28)" };
-    default:           return { from: "rgba(70,110,220,0.40)", to: "rgba(90,60,180,0.30)",  ring: "rgba(70,110,220,0.35), rgba(90,60,180,0.28)", animated: undefined };
+    default:           return { from: "rgba(175,190,210,0.42)", to: "rgba(140,158,185,0.32)", ring: "rgba(175,190,210,0.38), rgba(140,158,185,0.28)", animated: undefined };
   }
 }
 
@@ -556,10 +556,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
   /* ── elegant border gradient ── */
   const borderGradient = isPremiumAtmosphere
-    ? `linear-gradient(135deg, rgba(0,220,255,0.50) 0%, rgba(88,72,255,0.32) 28%, rgba(200,60,180,0.30) 52%, rgba(255,104,64,0.38) 78%, rgba(220,175,60,0.34) 100%)`
-    : `linear-gradient(135deg, ${glow.from} 0%, rgba(255,255,255,0.10) 50%, ${glow.to} 100%)`;
+    ? `linear-gradient(135deg, rgba(0,220,255,0.50) 0%, rgba(88,72,255,0.32) 28%, rgba(185,198,218,0.32) 52%, rgba(255,104,64,0.38) 78%, rgba(220,175,60,0.34) 100%)`
+    : `linear-gradient(135deg, ${glow.from} 0%, rgba(185,198,218,0.14) 50%, ${glow.to} 100%)`;
   const outerGlow = isPremiumAtmosphere
-    ? "0 0 8px rgba(0,220,255,0.18), 0 0 18px rgba(200,60,180,0.10)"
+    ? "0 0 8px rgba(0,220,255,0.18), 0 0 18px rgba(175,190,210,0.10)"
     : `0 0 10px ${glow.from.replace(/[\d.]+\)$/, "0.25)")}`;
 
   /* ── grid columns: always 2 rows, balanced ── */
