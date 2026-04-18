@@ -117,6 +117,8 @@ shared/
 62. Profile block list — users can view blocked users from the profile menu and unblock them
 63. Owner announcement management — Platform Owner can draft, edit, publish, and delete announcements with image/GIF attachments; published announcements appear in the lobby and are broadcast live to active users/rooms
 64. Announcement read receipts — logged-in users automatically create per-announcement view receipts, can dismiss published announcements from the lobby, and the Platform Owner sees viewed/dismissed counts in the admin announcement list
+65. Microphone recovery/settings — voice rooms include an Allow Microphone retry flow with clear blocked-permission guidance and a microphone source selector for switching between connected input devices.
+66. Chat unread/reply upgrades — room chat shows a prominent jump-to-latest button with unread counts, and replies now preserve text/image/GIF previews when sending text, pasted images, uploaded images, or selected GIFs.
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.

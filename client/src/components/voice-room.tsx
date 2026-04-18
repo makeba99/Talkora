@@ -13,7 +13,7 @@ import {
   Mic, MicOff, PhoneOff, Hand, Globe, AlertCircle, MessageSquare,
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
-  Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, Maximize2, Palette,
+  Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon
 } from "lucide-react";
@@ -529,6 +529,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
   const [micError, setMicError] = useState(false);
   const [showMicHelp, setShowMicHelp] = useState(false);
+  const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState(() => localStorage.getItem("connect2talk-mic-device") || "default");
+  const [micSwitching, setMicSwitching] = useState(false);
+  const [micPermissionStatus, setMicPermissionStatus] = useState<PermissionState | "unknown">("unknown");
   const [dismissedWelcomeIds, setDismissedWelcomeIds] = useState<Set<string>>(new Set());
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [sidePanelTab, setSidePanelTab] = useState("chat");
@@ -594,6 +598,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [availableScreenUsers, setAvailableScreenUsers] = useState<Set<string>>(new Set());
   const youtubeSearchTimeout = useRef<NodeJS.Timeout | null>(null);
   const localStream = useRef<MediaStream | null>(null);
+  const selectedAudioDeviceIdRef = useRef(selectedAudioDeviceId);
   const videoStream = useRef<MediaStream | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -661,6 +666,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   }, [roomProp]);
 
   const isHost = room.ownerId === user?.id;
+
+  useEffect(() => {
+    selectedAudioDeviceIdRef.current = selectedAudioDeviceId;
+    localStorage.setItem("connect2talk-mic-device", selectedAudioDeviceId);
+  }, [selectedAudioDeviceId]);
 
   useEffect(() => {
     sidePanelTabRef.current = sidePanelTab;
@@ -1019,6 +1029,105 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     [socket, room.id, cleanupPeer]
   );
 
+  const getAudioConstraints = useCallback((deviceId = selectedAudioDeviceIdRef.current): MediaTrackConstraints => ({
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+    ...(deviceId && deviceId !== "default" ? { deviceId: { exact: deviceId } } : {}),
+  }), []);
+
+  const refreshAudioInputDevices = useCallback(async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter((device) => device.kind === "audioinput");
+      setAudioInputDevices(audioInputs);
+      const selected = selectedAudioDeviceIdRef.current;
+      if (selected !== "default" && !audioInputs.some((device) => device.deviceId === selected)) {
+        setSelectedAudioDeviceId("default");
+      }
+    } catch (err) {
+      console.error("Failed to load microphones:", err);
+    }
+  }, []);
+
+  const updateMicPermissionStatus = useCallback(async () => {
+    if (!navigator.permissions?.query) {
+      setMicPermissionStatus("unknown");
+      return;
+    }
+    try {
+      const status = await navigator.permissions.query({ name: "microphone" as PermissionName });
+      setMicPermissionStatus(status.state);
+      status.onchange = () => setMicPermissionStatus(status.state);
+    } catch {
+      setMicPermissionStatus("unknown");
+    }
+  }, []);
+
+  const attachLocalAnalyser = useCallback((stream: MediaStream) => {
+    if (!user) return;
+    if (!audioContextRef.current) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) audioContextRef.current = new AudioContextClass();
+    }
+    if (audioContextRef.current) {
+      try {
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        const analyser = audioContextRef.current.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        analysersRef.current.set(user.id, analyser);
+      } catch (e) {}
+    }
+  }, [user]);
+
+  const publishLocalAudioStream = useCallback(async (stream: MediaStream) => {
+    if (!socket) return;
+    const audioTrack = stream.getAudioTracks()[0];
+    if (!audioTrack) return;
+    for (const [peerId, pc] of Array.from(peerConnections.current.entries())) {
+      try {
+        const sender = pc.getSenders().find((s) => s.track?.kind === "audio");
+        if (sender) {
+          await sender.replaceTrack(audioTrack);
+          continue;
+        }
+        pc.addTrack(audioTrack, stream);
+        if (pc.signalingState === "stable") {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          socket.emit("webrtc:offer", { offer, to: peerId, roomId: room.id });
+        }
+      } catch (err) {
+        console.error("Failed to publish microphone to peer:", err);
+      }
+    }
+  }, [socket, room.id]);
+
+  const applyLocalAudioStream = useCallback(async (stream: MediaStream, keepMuteState = false) => {
+    const previousStream = localStream.current;
+    stream.getAudioTracks().forEach((track) => {
+      track.enabled = keepMuteState ? !isMutedRef.current : false;
+    });
+    localStream.current = stream;
+    if (previousStream && previousStream !== stream) {
+      previousStream.getTracks().forEach((track) => track.stop());
+    }
+    setMicError(false);
+    setShowMicHelp(false);
+    attachLocalAnalyser(stream);
+    await publishLocalAudioStream(stream);
+  }, [attachLocalAnalyser, publishLocalAudioStream]);
+
+  useEffect(() => {
+    updateMicPermissionStatus();
+    refreshAudioInputDevices();
+    if (!navigator.mediaDevices?.addEventListener) return;
+    navigator.mediaDevices.addEventListener("devicechange", refreshAudioInputDevices);
+    return () => navigator.mediaDevices.removeEventListener("devicechange", refreshAudioInputDevices);
+  }, [refreshAudioInputDevices, updateMicPermissionStatus]);
+
   useEffect(() => {
     if (!socket || !user) return;
 
@@ -1061,35 +1170,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
     const initMedia = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        });
-        localStream.current = stream;
-        stream.getAudioTracks().forEach((track) => {
-          track.enabled = false;
-        });
-        setMicError(false);
-        
-        if (!audioContextRef.current) {
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextClass) audioContextRef.current = new AudioContextClass();
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() });
+        } catch (err: any) {
+          if (selectedAudioDeviceIdRef.current !== "default" && (err?.name === "OverconstrainedError" || err?.name === "NotFoundError")) {
+            selectedAudioDeviceIdRef.current = "default";
+            setSelectedAudioDeviceId("default");
+            stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints("default") });
+          } else {
+            throw err;
+          }
         }
-        if (audioContextRef.current) {
-          try {
-             const source = audioContextRef.current.createMediaStreamSource(stream);
-             const analyser = audioContextRef.current.createAnalyser();
-             analyser.fftSize = 256;
-             source.connect(analyser);
-             analysersRef.current.set(user.id, analyser);
-          } catch(e) {}
-        }
+        await applyLocalAudioStream(stream);
+        await refreshAudioInputDevices();
       } catch (err) {
         console.error("Failed to get microphone:", err);
         setMicError(true);
+        await updateMicPermissionStatus();
+        await refreshAudioInputDevices();
       }
       socket.emit("room:join", { roomId: room.id, userId: user.id });
       socket.emit("room:mute", { roomId: room.id, userId: user.id, isMuted: true });
@@ -1491,7 +1590,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       });
       audioElements.current.clear();
     };
-  }, [socket, user, room.id, createPeerConnection, cleanupPeer, flushPendingCandidates, addSystemMessage, playNotificationSound]);
+  }, [socket, user, room.id, createPeerConnection, cleanupPeer, flushPendingCandidates, addSystemMessage, playNotificationSound, getAudioConstraints, applyLocalAudioStream, refreshAudioInputDevices, updateMicPermissionStatus]);
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -1701,31 +1800,71 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const retryMicPermission = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast({ title: "Microphone unavailable", description: "This browser does not support microphone access.", variant: "destructive" });
+      return;
+    }
+    setMicSwitching(true);
+    try {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() });
+      } catch (err: any) {
+        if (selectedAudioDeviceIdRef.current !== "default" && (err?.name === "OverconstrainedError" || err?.name === "NotFoundError")) {
+          selectedAudioDeviceIdRef.current = "default";
+          setSelectedAudioDeviceId("default");
+          stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints("default") });
+        } else {
+          throw err;
+        }
+      }
+      await applyLocalAudioStream(stream);
+      setIsMuted(true);
+      socket?.emit("room:mute", { roomId: room.id, userId: user?.id, isMuted: true });
+      await updateMicPermissionStatus();
+      await refreshAudioInputDevices();
+      toast({ title: "Microphone enabled", description: "You can now unmute to speak." });
+    } catch (err: any) {
+      setMicError(true);
+      setShowMicHelp(true);
+      await updateMicPermissionStatus();
+      const isDenied = err?.name === "NotAllowedError" || micPermissionStatus === "denied";
+      toast({
+        title: isDenied ? "Microphone is blocked" : "Could not open microphone",
+        description: isDenied ? "Use the mic/camera icon in the address bar and set microphone to Allow, then click Allow Microphone again." : "Check that another app is not using the selected microphone.",
+        variant: "destructive",
+      });
+    } finally {
+      setMicSwitching(false);
+    }
+  };
+
+  const handleMicrophoneSelect = async (deviceId: string) => {
+    const previousDeviceId = selectedAudioDeviceIdRef.current;
+    setSelectedAudioDeviceId(deviceId);
+    selectedAudioDeviceIdRef.current = deviceId;
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    setMicSwitching(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: getAudioConstraints(deviceId),
       });
-      localStream.current = stream;
-      stream.getAudioTracks().forEach((track) => { track.enabled = false; });
-      setMicError(false);
-      setShowMicHelp(false);
-      if (!audioContextRef.current) {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContextClass) audioContextRef.current = new AudioContextClass();
-      }
-      if (audioContextRef.current && user) {
-        try {
-          const source = audioContextRef.current.createMediaStreamSource(stream);
-          const analyser = audioContextRef.current.createAnalyser();
-          analyser.fftSize = 256;
-          source.connect(analyser);
-          analysersRef.current.set(user.id, analyser);
-        } catch (e) {}
-      }
-      socket?.emit("room:mute", { roomId: room.id, userId: user?.id, isMuted: true });
-      toast({ title: "Microphone enabled", description: "You can now unmute to speak." });
-    } catch {
+      await applyLocalAudioStream(stream, true);
+      await updateMicPermissionStatus();
+      await refreshAudioInputDevices();
+      toast({ title: "Microphone switched", description: "Your selected microphone is now active." });
+    } catch (err: any) {
+      setSelectedAudioDeviceId(previousDeviceId);
+      selectedAudioDeviceIdRef.current = previousDeviceId;
+      setMicError(true);
       setShowMicHelp(true);
+      toast({
+        title: "Could not switch microphone",
+        description: err?.name === "NotAllowedError" ? "Allow microphone access in your browser first." : "Try a different microphone or reset to Default.",
+        variant: "destructive",
+      });
+    } finally {
+      setMicSwitching(false);
     }
   };
 
@@ -2348,6 +2487,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
     }
   }, []);
+
+  useEffect(() => {
+    const viewport = chatScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (!viewport) return;
+    viewport.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => viewport.removeEventListener("scroll", handleScroll);
+  }, [handleScroll, sidePanelTab, sidePanelOpen, mobileSheetOpen]);
 
   useEffect(() => {
     if (chatMessages.length === 0) return;
@@ -2984,12 +3131,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       {msg.replyTo && (
                         <div className="mt-0.5 mb-1.5 pl-2 border-l-2 border-primary/40 rounded-r-md" style={{ background: "rgba(255,255,255,0.04)" }}>
                           <span className="text-[10px] font-semibold text-primary/70 block px-1.5 pt-1">{msg.replyTo.userName}</span>
-                          <div className="px-1.5 pb-1 text-xs opacity-80 pointer-events-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                            {renderMessageContent(
-                              msg.replyTo.text,
-                              (url) => setLightboxMedia({ url, msgId: msg.id }),
-                              (id) => handleSelectYoutubeVideo(id)
-                            )}
+                          <div className="px-1.5 pb-1 text-xs opacity-80 pointer-events-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]" data-testid={`reply-preview-message-${msg.id}`}>
+                            {renderReplyPreview(msg.replyTo.text)}
                           </div>
                         </div>
                       )}
@@ -3127,17 +3270,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <button
                 type="button"
                 onClick={scrollToBottom}
-                className="absolute -top-10 right-1 w-7 h-7 rounded-full shadow-lg flex items-center justify-center z-20 animate-in fade-in slide-in-from-bottom-2 transition-colors"
-                style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
+                className="absolute -top-12 right-1 rounded-full shadow-lg flex items-center gap-1.5 z-20 animate-in fade-in slide-in-from-bottom-2 transition-all px-3 py-1.5 text-[11px] font-semibold hover:scale-[1.02] active:scale-95"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, rgba(99,102,241,0.95) 100%)", color: "hsl(var(--primary-foreground))", boxShadow: "0 10px 30px rgba(0,0,0,0.28), 0 0 18px rgba(99,102,241,0.35)" }}
                 data-testid="button-new-messages-indicator"
                 aria-label="Scroll to latest messages"
               >
-                <ChevronUp className="w-3.5 h-3.5 rotate-180" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 bg-destructive text-destructive-foreground text-[8px] font-bold rounded-full flex items-center justify-center px-0.5">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
+                <ChevronsDown className="w-3.5 h-3.5" />
+                <span data-testid="text-new-message-count">
+                  {unreadCount > 0 ? `${unreadCount} new ${unreadCount === 1 ? "message" : "messages"}` : "Jump to latest"}
+                </span>
               </button>
             )}
             <textarea
@@ -3169,7 +3310,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       text: `[img:${imgUrl}]`,
                       messageColor: chatMessageColor,
                       privateToId: privateChatToId === "public" ? null : privateChatToId,
+                      replyTo: replyingTo || undefined,
                     });
+                    setReplyingTo(null);
                   } catch (err) {
                     console.error("Paste image upload failed:", err);
                   } finally {
@@ -3272,7 +3415,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     text: `[gif:${gifUrl}]`,
                     messageColor: chatMessageColor,
                     privateToId: privateChatToId === "public" ? null : privateChatToId,
+                    replyTo: replyingTo || undefined,
                   });
+                  setReplyingTo(null);
                 }
               }} />
               <ImageUploadButton onImageSelect={(imgUrl) => {
@@ -3283,7 +3428,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     text: `[img:${imgUrl}]`,
                     messageColor: chatMessageColor,
                     privateToId: privateChatToId === "public" ? null : privateChatToId,
+                    replyTo: replyingTo || undefined,
                   });
+                  setReplyingTo(null);
                 }
               }} />
             </div>
@@ -4451,6 +4598,89 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 );
               })()}
 
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    data-testid="button-audio-settings"
+                    title="Microphone settings"
+                    className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
+                    style={micError
+                      ? { background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.24)", color: "rgba(251,191,36,0.92)", boxShadow: "0 0 10px rgba(245,158,11,0.12)" }
+                      : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
+                    }
+                  >
+                    <Mic className="w-[14px] h-[14px]" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-80 p-0 border-0 shadow-2xl overflow-hidden"
+                  style={{ background: "#1a1f2e" }}
+                  align="end"
+                  data-testid="popover-audio-settings"
+                >
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center flex-shrink-0">
+                        <Mic className="w-4 h-4 text-cyan-300" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white">Microphone Settings</p>
+                        <p className="text-[11px] text-white/45 leading-relaxed">
+                          Allow access and choose which mic you want to use.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] text-white/65">Source</Label>
+                      <Select value={selectedAudioDeviceId} onValueChange={handleMicrophoneSelect} disabled={micSwitching}>
+                        <SelectTrigger className="h-9 bg-white/5 border-white/10 text-white" data-testid="select-microphone-source">
+                          <SelectValue placeholder="Default microphone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">Default microphone</SelectItem>
+                          {audioInputDevices.filter((device) => device.deviceId).map((device, index) => (
+                            <SelectItem key={device.deviceId} value={device.deviceId}>
+                              {device.label || `Microphone ${index + 1}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {micPermissionStatus === "denied" && (
+                      <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100/80 leading-relaxed" data-testid="status-mic-blocked">
+                        Your browser is blocking the mic. Click the mic/camera icon in the address bar, choose Allow, then retry.
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={retryMicPermission}
+                        disabled={micSwitching}
+                        data-testid="button-audio-allow"
+                        className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      >
+                        {micSwitching ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Mic className="w-3.5 h-3.5 mr-1.5" />}
+                        Allow
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={refreshAudioInputDevices}
+                        disabled={micSwitching}
+                        data-testid="button-refresh-microphones"
+                        className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                        Refresh
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               {/* Settings */}
               {isHost && (
                 <button
@@ -4550,11 +4780,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={retryMicPermission}
+                  disabled={micSwitching}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/40 text-amber-200 text-[11px] font-medium transition-colors"
                   data-testid="button-retry-mic"
                 >
-                  <Mic className="w-3 h-3" />
-                  Allow Microphone
+                  {micSwitching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mic className="w-3 h-3" />}
+                  {micSwitching ? "Opening…" : "Allow Microphone"}
                 </button>
                 <button
                   onClick={() => setShowMicHelp(!showMicHelp)}
@@ -4563,6 +4794,22 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 >
                   How to enable
                 </button>
+              </div>
+              <div className="max-w-sm space-y-1.5">
+                <Label className="text-[10px] text-amber-200/70">Microphone source</Label>
+                <Select value={selectedAudioDeviceId} onValueChange={handleMicrophoneSelect} disabled={micSwitching}>
+                  <SelectTrigger className="h-8 bg-black/25 border-amber-500/25 text-amber-100 text-[11px]" data-testid="select-microphone-source-inline">
+                    <SelectValue placeholder="Default microphone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default microphone</SelectItem>
+                    {audioInputDevices.filter((device) => device.deviceId).map((device, index) => (
+                      <SelectItem key={device.deviceId} value={device.deviceId}>
+                        {device.label || `Microphone ${index + 1}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               {showMicHelp && (
                 <div className="rounded-lg bg-black/30 border border-amber-500/20 px-3 py-2.5 space-y-1.5">

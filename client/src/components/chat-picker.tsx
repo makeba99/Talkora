@@ -473,8 +473,9 @@ const YT_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts
 const TT_REGEX = /https?:\/\/(?:www\.)?tiktok\.com\/@([\w.]+)(?:\/video\/(\d+)|\/live)(?:[^\s]*)?/;
 
 export function renderReplyPreview(text: string): JSX.Element {
-  if (text.startsWith("[gif:") && text.endsWith("]")) {
-    const gifUrl = text.slice(5, -1);
+  const trimmedText = text.trim();
+  if (trimmedText.startsWith("[gif:") && trimmedText.endsWith("]")) {
+    const gifUrl = trimmedText.slice(5, -1);
     return (
       <div className="flex items-center gap-1.5">
         <img
@@ -487,8 +488,8 @@ export function renderReplyPreview(text: string): JSX.Element {
       </div>
     );
   }
-  if (text.startsWith("[img:") && text.endsWith("]")) {
-    const imgUrl = text.slice(5, -1);
+  if (trimmedText.startsWith("[img:") && trimmedText.endsWith("]")) {
+    const imgUrl = trimmedText.slice(5, -1);
     return (
       <div className="flex items-center gap-1.5">
         <img
@@ -501,11 +502,26 @@ export function renderReplyPreview(text: string): JSX.Element {
       </div>
     );
   }
-  const ytMatch = text.match(YT_REGEX);
+  const directImageMatch = trimmedText.match(URL_REGEX)?.find((url) => DIRECT_IMAGE_REGEX.test(trimUrl(url).cleanUrl));
+  if (directImageMatch) {
+    const imgUrl = trimUrl(directImageMatch).cleanUrl;
+    return (
+      <div className="flex items-center gap-1.5">
+        <img
+          src={imgUrl}
+          alt="Image"
+          className="rounded flex-shrink-0 object-cover"
+          style={{ width: 36, height: 28 }}
+        />
+        <span className="text-[10px] text-muted-foreground italic">Image / GIF</span>
+      </div>
+    );
+  }
+  const ytMatch = trimmedText.match(YT_REGEX);
   if (ytMatch) {
     const videoId = ytMatch[1];
     const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-    const cleanText = text.replace(ytMatch[0], "").trim();
+    const cleanText = trimmedText.replace(ytMatch[0], "").trim();
     return (
       <div className="flex items-center gap-1.5">
         <div className="relative flex-shrink-0 rounded overflow-hidden" style={{ width: 48, height: 28 }}>
@@ -528,7 +544,7 @@ export function renderReplyPreview(text: string): JSX.Element {
       </div>
     );
   }
-  return <span className="text-[10px] text-muted-foreground truncate">{text}</span>;
+  return <span className="text-[10px] text-muted-foreground truncate">{trimmedText}</span>;
 }
 
 export function renderMessageContent(text: string, onImageClick?: (url: string) => void, onVideoClick?: (videoId: string) => void): JSX.Element {
