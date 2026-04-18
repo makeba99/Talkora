@@ -3077,49 +3077,28 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </button>
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={privateChatToId} onValueChange={setPrivateChatToId}>
-              <SelectTrigger className="h-8 flex-1 min-w-[150px] text-xs" data-testid="select-private-chat-recipient">
-                <SelectValue placeholder="Public chat" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="public">Public chat</SelectItem>
-                {participants
-                  .filter((p) => p.id !== user?.id)
-                  .map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      Private to {getUserDisplayName(p)}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="h-8 px-2" data-testid="button-chat-color-picker">
-                  <Palette className="w-3.5 h-3.5 mr-1.5" />
-                  <span className="w-3.5 h-3.5 rounded-full border" style={{ backgroundColor: chatMessageColor }} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-3" side="top" align="end">
-                <div className="space-y-2">
-                  <p className="text-xs font-medium">Message color</p>
-                  <div className="grid grid-cols-6 gap-2">
-                    {["#e5e7eb", "#22d3ee", "#a78bfa", "#facc15", "#fb7185", "#4ade80", "#f97316", "#60a5fa", "#f0abfc", "#ffffff", "#c084fc", "#2dd4bf"].map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => setChatMessageColor(color)}
-                        className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${chatMessageColor === color ? "border-primary ring-2 ring-primary/40" : "border-border"}`}
-                        style={{ backgroundColor: color }}
-                        data-testid={`button-chat-color-${color.replace("#", "")}`}
-                        aria-label={`Set chat color ${color}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+
+          {privateChatToId !== "public" && (() => {
+            const whisperTarget = participants.find(p => p.id === privateChatToId);
+            return (
+              <div className="flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-lg border border-amber-400/30 bg-amber-400/8" data-testid="whisper-indicator">
+                <LockKeyhole className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                <span className="text-[11px] text-amber-300 font-medium flex-1 truncate">
+                  Whispering to {getUserDisplayName(whisperTarget)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPrivateChatToId("public")}
+                  className="text-amber-400/60 hover:text-amber-300 transition-colors flex-shrink-0 rounded p-0.5 hover:bg-amber-400/10"
+                  aria-label="Switch to public chat"
+                  data-testid="button-clear-whisper"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })()}
+
           {mentionQuery !== null && mentionFilteredParticipants.length > 0 && (
             <div className="absolute bottom-full left-0 right-0 mx-3 mb-1 bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto z-50" data-testid="mention-dropdown">
               {mentionFilteredParticipants.map((p, i) => (
@@ -3139,19 +3118,26 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               ))}
             </div>
           )}
+
           <div className="relative">
             <div className="absolute top-1.5 right-1.5 z-10">
               <EmojiPickerButton onEmojiSelect={(emoji) => setChatText((prev) => prev + emoji)} />
             </div>
-            {!isAtBottom && unreadCount > 0 && (
+            {!isAtBottom && (
               <button
                 type="button"
                 onClick={scrollToBottom}
-                className="absolute -top-12 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium shadow-lg hover:bg-primary/90 flex items-center gap-1.5 z-20 animate-in fade-in slide-in-from-bottom-2"
+                className="absolute -top-10 right-1 w-7 h-7 rounded-full shadow-lg flex items-center justify-center z-20 animate-in fade-in slide-in-from-bottom-2 transition-colors"
+                style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
                 data-testid="button-new-messages-indicator"
+                aria-label="Scroll to latest messages"
               >
-                <MessageSquare className="w-3.5 h-3.5" />
-                {unreadCount} new {unreadCount === 1 ? 'message' : 'messages'}
+                <ChevronUp className="w-3.5 h-3.5 rotate-180" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 bg-destructive text-destructive-foreground text-[8px] font-bold rounded-full flex items-center justify-center px-0.5">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </button>
             )}
             <textarea
@@ -3194,12 +3180,90 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               placeholder={pasteUploading ? "Uploading image..." : privateChatToId === "public" ? "Message the room…" : "Private message…"}
               disabled={pasteUploading}
               className="flex w-full rounded-xl border border-border/50 bg-muted/20 px-3.5 py-2.5 pr-10 text-[13px] ring-offset-background placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/30 resize-none disabled:opacity-50 transition-all duration-150 leading-relaxed"
-              rows={3}
+              style={privateChatToId !== "public" ? { borderColor: "rgba(251,191,36,0.35)", boxShadow: "0 0 0 1px rgba(251,191,36,0.15)" } : undefined}
+              rows={2}
               data-testid="input-room-chat"
             />
           </div>
+
           <div className="flex items-center justify-between gap-1">
             <div className="flex items-center gap-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={`h-7 w-7 rounded-lg transition-colors ${privateChatToId !== "public" ? "text-amber-400 bg-amber-400/10 hover:bg-amber-400/20" : "text-muted-foreground hover:text-foreground"}`}
+                    data-testid="button-chat-mode-toggle"
+                    aria-label={privateChatToId === "public" ? "Switch to private" : "Switch to public"}
+                  >
+                    {privateChatToId === "public" ? <Globe className="w-3.5 h-3.5" /> : <LockKeyhole className="w-3.5 h-3.5" />}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-52 p-1.5" side="top" align="start" data-testid="popover-chat-mode">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pb-1 pt-0.5">Chat mode</p>
+                  <button
+                    type="button"
+                    onClick={() => setPrivateChatToId("public")}
+                    className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm text-left transition-colors ${privateChatToId === "public" ? "bg-primary/10 text-primary" : "hover:bg-muted/60"}`}
+                    data-testid="button-public-chat-mode"
+                  >
+                    <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="text-[12px] font-medium">Public chat</span>
+                    {privateChatToId === "public" && <span className="ml-auto text-[10px] text-primary">✓</span>}
+                  </button>
+                  {participants.filter(p => p.id !== user?.id).length > 0 && (
+                    <>
+                      <div className="h-px bg-border/40 my-1" />
+                      <p className="text-[10px] text-muted-foreground px-2 pb-0.5">Whisper privately to</p>
+                      {participants.filter(p => p.id !== user?.id).map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setPrivateChatToId(p.id)}
+                          className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors ${privateChatToId === p.id ? "bg-amber-400/10 text-amber-300" : "hover:bg-muted/60"}`}
+                          data-testid={`button-private-to-${p.id}`}
+                        >
+                          <Avatar className="w-5 h-5 flex-shrink-0">
+                            <AvatarImage src={p.profileImageUrl || ""} />
+                            <AvatarFallback className="text-[8px]">{getUserInitials(p)}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-[12px] font-medium truncate">{getUserDisplayName(p)}</span>
+                          {privateChatToId === p.id && <span className="ml-auto text-[10px] text-amber-400">✓</span>}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground" data-testid="button-chat-color-picker" aria-label="Message color">
+                    <span className="w-3 h-3 rounded-full border border-border/60" style={{ backgroundColor: chatMessageColor }} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-52 p-3" side="top" align="start">
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium">Message color</p>
+                    <div className="grid grid-cols-6 gap-2">
+                      {["#e5e7eb", "#22d3ee", "#a78bfa", "#facc15", "#fb7185", "#4ade80", "#f97316", "#60a5fa", "#f0abfc", "#ffffff", "#c084fc", "#2dd4bf"].map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setChatMessageColor(color)}
+                          className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${chatMessageColor === color ? "border-primary ring-2 ring-primary/40" : "border-border"}`}
+                          style={{ backgroundColor: color }}
+                          data-testid={`button-chat-color-${color.replace("#", "")}`}
+                          aria-label={`Set chat color ${color}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               <GifPickerButton onGifSelect={(gifUrl) => {
                 if (socket && user) {
                   socket.emit("room:chat", {
@@ -3229,7 +3293,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               disabled={!chatText.trim()}
               data-testid="button-send-room-chat"
             >
-              <Send className="w-4 h-4 mr-1.5" />
+              <Send className="w-3.5 h-3.5 mr-1" />
               Send
             </Button>
           </div>
