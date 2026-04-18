@@ -253,15 +253,16 @@ export default function AdminPage() {
 
   const restrictMutation = useMutation({
     mutationFn: async ({ userId, days }: { userId: string; days: number }) => {
+      const restrictionDays = Math.min(365, Math.max(1, Number(days) || 1));
       const res = await apiRequest("POST", `/api/admin/users/${userId}/restrict`, {
-        days,
-        reason: `Restricted by Platform Owner for ${days} day${days === 1 ? "" : "s"}.`,
+        days: restrictionDays,
+        reason: `Restricted by Platform Owner for ${restrictionDays} day${restrictionDays === 1 ? "" : "s"}.`,
       });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({ title: "User restricted", description: "The user was notified immediately." });
+      toast({ title: "Restriction updated", description: "The user was notified immediately." });
     },
     onError: (error: any) => toast({ title: "Failed to restrict user", description: error.message, variant: "destructive" }),
   });
@@ -641,6 +642,8 @@ export default function AdminPage() {
                       const canDeleteUser = isSuperAdmin && !isOwner && item.role !== "admin";
                       const restrictedUntil = item.restrictedUntil ? new Date(item.restrictedUntil) : null;
                       const isRestricted = !!restrictedUntil && restrictedUntil.getTime() > Date.now();
+                      const remainingRestrictionDays = restrictedUntil ? Math.max(1, Math.ceil((restrictedUntil.getTime() - Date.now()) / (24 * 60 * 60 * 1000))) : 1;
+                      const restrictionDaysValue = restrictDaysMap[item.id] ?? remainingRestrictionDays;
                       return (
                         <div key={item.id} className="rounded-xl border border-border/70 bg-background/55 p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" data-testid={`card-user-${item.id}`}>
                           <div className="min-w-0 space-y-2">
@@ -684,38 +687,43 @@ export default function AdminPage() {
                                 Warn
                               </Button>
                             )}
-                            {isSuperAdmin && !isOwner && !isRestricted && (
+                            {isSuperAdmin && !isOwner && (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button size="sm" variant="destructive" disabled={restrictMutation.isPending} data-testid={`button-restrict-user-${item.id}`}>
                                     <Ban className="w-3 h-3 mr-1" />
-                                    Restrict
+                                    {isRestricted ? "Adjust restriction" : "Restrict"}
                                     <ChevronDown className="w-3 h-3 ml-1" />
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-52 p-3" align="end">
-                                  <p className="text-xs font-medium mb-2">Restrict for how many days?</p>
+                                <PopoverContent className="w-60 p-3" align="end">
+                                  <p className="text-xs font-medium mb-2">{isRestricted ? "Set a new restriction length" : "Restrict for how many days?"}</p>
+                                  {isRestricted && restrictedUntil && (
+                                    <p className="text-[11px] text-muted-foreground mb-2" data-testid={`text-current-restriction-${item.id}`}>
+                                      Current: until {restrictedUntil.toLocaleString()}
+                                    </p>
+                                  )}
                                   <div className="flex items-center gap-2">
                                     <Input
                                       type="number"
                                       min={1}
                                       max={365}
-                                      value={restrictDaysMap[item.id] ?? 1}
-                                      onChange={(e) => setRestrictDaysMap((prev) => ({ ...prev, [item.id]: Math.max(1, parseInt(e.target.value) || 1) }))}
+                                      value={restrictionDaysValue}
+                                      onChange={(e) => setRestrictDaysMap((prev) => ({ ...prev, [item.id]: Math.min(365, Math.max(1, parseInt(e.target.value) || 1)) }))}
                                       className="h-8 w-20 text-sm"
                                       data-testid={`input-restrict-days-${item.id}`}
                                     />
-                                    <span className="text-xs text-muted-foreground">day{(restrictDaysMap[item.id] ?? 1) !== 1 ? "s" : ""}</span>
+                                    <span className="text-xs text-muted-foreground">day{restrictionDaysValue !== 1 ? "s" : ""}</span>
                                   </div>
                                   <Button
                                     size="sm"
                                     variant="destructive"
                                     className="w-full mt-2"
                                     disabled={restrictMutation.isPending}
-                                    onClick={() => restrictMutation.mutate({ userId: item.id, days: restrictDaysMap[item.id] ?? 1 })}
+                                    onClick={() => restrictMutation.mutate({ userId: item.id, days: restrictionDaysValue })}
                                     data-testid={`button-confirm-restrict-${item.id}`}
                                   >
-                                    Confirm Restrict
+                                    {isRestricted ? "Update Restriction" : "Confirm Restrict"}
                                   </Button>
                                 </PopoverContent>
                               </Popover>

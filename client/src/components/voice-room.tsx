@@ -1371,6 +1371,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
     });
 
+    socket.on("room:joined-another-room", (data: { oldRoomId: string; newRoomId: string }) => {
+      if (data.oldRoomId === room.id) {
+        toast({ title: "You joined another room", description: "You were removed from this room automatically." });
+        handleLeave();
+      }
+    });
+
     socket.on("room:already-in-room", (data: { roomId: string }) => {
       toast({
         title: "Already in another room",
@@ -1579,6 +1586,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("room:hand-raised");
       socket.off("room:mute-update");
       socket.off("room:kicked");
+      socket.off("room:host-deleted");
+      socket.off("room:joined-another-room");
       socket.off("room:already-in-room");
       socket.off("room:chat-message");
       socket.off("room:chat-delete");
@@ -1903,6 +1912,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     audioElements.current.clear();
     socket?.emit("room:leave", { roomId: room.id, userId: user?.id });
     onLeave();
+  };
+
+  const openDeleteRoomConfirmation = () => {
+    setEditTitle(room.title);
+    setEditLanguage(room.language);
+    setEditLevel(room.level);
+    setEditMaxUsers(room.maxUsers);
+    setEditRoomTheme((room as any).roomTheme || "none");
+    setDeleteRoomOpen(true);
+    setEditDialogOpen(true);
   };
 
   const renderMicSettingsContent = () => (
@@ -4774,6 +4793,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               })()}
 
               {/* Settings */}
+              {isHost && (
+                <button
+                  onClick={openDeleteRoomConfirmation}
+                  data-testid="button-host-delete-room"
+                  title="Delete Room"
+                  className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
+                  style={{ background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.22)", color: "rgba(248,113,113,0.9)" }}
+                >
+                  <Trash2 className="w-[14px] h-[14px]" />
+                </button>
+              )}
               {isHost && (
                 <button
                   onClick={() => {

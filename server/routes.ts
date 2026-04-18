@@ -569,6 +569,58 @@ export async function registerRoutes(
   const isUserRestricted = (user: User | undefined | null) =>
     !!(user?.restrictedUntil && new Date(user.restrictedUntil).getTime() > Date.now());
 
+  const leaveRoomState = async (roomId: string, userId: string, leavingSocket?: any) => {
+    leavingSocket?.leave(roomId);
+
+    if (userCurrentRoom.get(userId) === roomId) {
+      userCurrentRoom.delete(userId);
+    }
+
+    roomVideoStatus.get(roomId)?.delete(userId);
+    roomRoles.get(roomId)?.delete(userId);
+    if (roomScreenShareStatus.get(roomId) === userId) {
+      roomScreenShareStatus.delete(roomId);
+      io.to(roomId).emit("room:screen-share", { userId, active: false });
+    }
+
+    const ytState = roomYoutubeState.get(roomId);
+    if (ytState && ytState.startedBy === userId) {
+      roomYoutubeState.delete(roomId);
+    }
+
+    const bkState = roomBookState.get(roomId);
+    if (bkState) {
+      bkState.watchers.delete(userId);
+      if (bkState.hostId === userId) {
+        roomBookState.delete(roomId);
+        io.to(roomId).emit("room:book", { book: null, hostId: null, scrollPct: 0, watchers: [] });
+      } else {
+        io.to(roomId).emit("room:book-watchers-update", { userId, watching: false });
+      }
+    }
+
+    if (!roomParticipants.has(roomId)) return [];
+
+    roomParticipants.get(roomId)!.delete(userId);
+    const participants = Array.from(roomParticipants.get(roomId)!.values());
+    await storage.updateRoomActiveUsers(roomId, participants.length);
+    io.to(roomId).emit("room:user-left", { userId, participants });
+    io.emit("room:participants-update", { roomId, participants });
+
+    if (participants.length === 0) {
+      roomVideoStatus.delete(roomId);
+      roomScreenShareStatus.delete(roomId);
+      roomYoutubeState.delete(roomId);
+      roomRoles.delete(roomId);
+      roomMuteStatus.delete(roomId);
+      startRoomDeleteTimer(roomId);
+    } else {
+      roomMuteStatus.get(roomId)?.delete(userId);
+    }
+
+    return participants;
+  };
+
   app.post("/api/rooms", isAuthenticated, async (req: any, res) => {
     try {
       const parsed = createRoomBody.safeParse(req.body);
@@ -1141,7 +1193,8 @@ export async function registerRoutes(
       if (target.role === "superadmin" || target.email === SUPER_ADMIN_EMAIL) {
         return res.status(403).json({ message: "Platform Owner cannot be restricted" });
       }
-      const restrictedUntil = new Date(Date.now() + Math.max(1, Number(days) || 1) * 24 * 60 * 60 * 1000);
+      const restrictionDays = Math.min(365, Math.max(1, Number(days) || 1));
+      const restrictedUntil = new Date(Date.now() + restrictionDays * 24 * 60 * 60 * 1000);
       const updated = await storage.restrictUser(userId, {
         restrictedUntil,
         restrictedReason: String(reason).slice(0, 500),
@@ -2243,8 +2296,12 @@ export async function registerRoutes(
 
       const existingRoomId = userCurrentRoom.get(userId);
       if (existingRoomId && existingRoomId !== roomId) {
-        socket.emit("room:already-in-room", { roomId: existingRoomId });
-        return;
+        const previousSocketId = userSockets.get(userId);
+        const previousSocket = previousSocketId ? io.sockets.sockets.get(previousSocketId) : undefined;
+        if (previousSocketId && previousSocketId !== socket.id) {
+          io.to(previousSocketId).emit("room:joined-another-room", { oldRoomId: existingRoomId, newRoomId: roomId });
+        }
+        await leaveRoomState(existingRoomId, userId, previousSocketId === socket.id ? socket : previousSocket);
       }
 
       cancelRoomDeleteTimer(roomId);
@@ -2332,54 +2389,7 @@ export async function registerRoutes(
 
     socket.on("room:leave", async (data: { roomId: string; userId: string }) => {
       const { roomId, userId } = data;
-      socket.leave(roomId);
-
-      userCurrentRoom.delete(userId);
-      roomVideoStatus.get(roomId)?.delete(userId);
-      roomRoles.get(roomId)?.delete(userId);
-      if (roomScreenShareStatus.get(roomId) === userId) {
-        roomScreenShareStatus.delete(roomId);
-        io.to(roomId).emit("room:screen-share", { userId, active: false });
-      }
-
-      const ytState = roomYoutubeState.get(roomId);
-      if (ytState && ytState.startedBy === userId) {
-        roomYoutubeState.delete(roomId);
-      }
-
-      const bkState = roomBookState.get(roomId);
-      if (bkState) {
-        bkState.watchers.delete(userId);
-        if (bkState.hostId === userId) {
-          roomBookState.delete(roomId);
-          io.to(roomId).emit("room:book", { book: null, hostId: null, scrollPct: 0, watchers: [] });
-        } else {
-          io.to(roomId).emit("room:book-watchers-update", { userId, watching: false });
-        }
-      }
-
-      if (roomParticipants.has(roomId)) {
-        roomParticipants.get(roomId)!.delete(userId);
-        const participants = Array.from(
-          roomParticipants.get(roomId)!.values()
-        );
-
-        await storage.updateRoomActiveUsers(roomId, participants.length);
-
-        io.to(roomId).emit("room:user-left", { userId, participants });
-        io.emit("room:participants-update", { roomId, participants });
-
-        if (participants.length === 0) {
-          roomVideoStatus.delete(roomId);
-          roomScreenShareStatus.delete(roomId);
-          roomYoutubeState.delete(roomId);
-          roomRoles.delete(roomId);
-          roomMuteStatus.delete(roomId);
-          startRoomDeleteTimer(roomId);
-        } else {
-          roomMuteStatus.get(roomId)?.delete(userId);
-        }
-      }
+      await leaveRoomState(roomId, userId, socket);
     });
 
     socket.on("room:mute", (data: { roomId: string; userId: string; isMuted: boolean }) => {
