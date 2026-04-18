@@ -2741,6 +2741,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           >
             <AtSign className="w-2.5 h-2.5" /> Mentions
           </button>
+          {isHost && (
+            <button
+              onClick={() => setWelcomeDialogOpen(true)}
+              data-testid="button-chat-welcome"
+              title={welcomeText ? "Edit welcome message" : "Set welcome message"}
+              className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150"
+              style={welcomeText
+                ? { background: "rgba(139,92,246,0.18)", border: "1px solid rgba(139,92,246,0.35)", color: "rgba(167,139,250,0.95)", boxShadow: "0 0 8px rgba(139,92,246,0.15)" }
+                : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }
+              }
+            >
+              <span className="text-[12px] leading-none">👋</span>
+              <span>{welcomeText ? "Welcome" : "Add Welcome"}</span>
+            </button>
+          )}
         </div>
         <ScrollArea className="flex-1 min-h-0" ref={chatScrollRef} onScroll={handleScroll}>
           <div className="px-3 py-3 space-y-1 min-h-full flex flex-col justify-end">
@@ -4327,19 +4342,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 );
               })()}
-
-              {/* Welcome Message (host only) */}
-              {isHost && (
-                <button
-                  onClick={() => setWelcomeDialogOpen(true)}
-                  data-testid="button-host-welcome"
-                  title="Welcome Message"
-                  className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
-                  style={welcomeText ? { background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.28)", color: "rgba(167,139,250,0.9)" } : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }}
-                >
-                  <span className="text-[13px] leading-none">👋</span>
-                </button>
-              )}
 
               {/* Settings */}
               {isHost && (
