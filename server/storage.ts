@@ -237,29 +237,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversations(userId: string): Promise<{ otherUserId: string; lastMessage: string; lastMessageAt: Date; unreadCount: number }[]> {
-    const allMessages = await db
-      .select()
-      .from(messages)
-      .where(or(eq(messages.fromId, userId), eq(messages.toId, userId)))
-      .orderBy(desc(messages.createdAt));
-
-    const convMap = new Map<string, { otherUserId: string; lastMessage: string; lastMessageAt: Date; unreadCount: number }>();
-    for (const msg of allMessages) {
-      const otherUserId = msg.fromId === userId ? msg.toId : msg.fromId;
-      if (!convMap.has(otherUserId)) {
-        convMap.set(otherUserId, {
-          otherUserId,
-          lastMessage: msg.text,
-          lastMessageAt: msg.createdAt,
-          unreadCount: 0,
-        });
-      }
-      if (msg.toId === userId && !msg.read) {
-        const conv = convMap.get(otherUserId)!;
-        conv.unreadCount++;
-      }
-    }
-    return Array.from(convMap.values()).sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+    const result = await db.execute(sql`
+      WITH latest_per_conversation AS (
+        SELECT DISTINCT ON (
+          LEAST(from_id, to_id),
+          GREATEST(from_id, to_id)
+        )
+          CASE WHEN from_id = ${userId} THEN to_id ELSE from_id END AS other_user_id,
+          text AS last_message,
+          created_at AS last_message_at
+        FROM messages
+        WHERE from_id = ${userId} OR to_id = ${userId}
+        ORDER BY
+          LEAST(from_id, to_id),
+          GREATEST(from_id, to_id),
+          created_at DESC
+      ),
+      unread_counts AS (
+        SELECT from_id AS other_user_id, COUNT(*)::int AS unread_count
+        FROM messages
+        WHERE to_id = ${userId} AND read = false
+        GROUP BY from_id
+      )
+      SELECT
+        l.other_user_id AS "otherUserId",
+        l.last_message   AS "lastMessage",
+        l.last_message_at AS "lastMessageAt",
+        COALESCE(u.unread_count, 0) AS "unreadCount"
+      FROM latest_per_conversation l
+      LEFT JOIN unread_counts u ON l.other_user_id = u.other_user_id
+      ORDER BY l.last_message_at DESC
+    `);
+    return (result.rows as any[]).map((row) => ({
+      otherUserId: row.otherUserId,
+      lastMessage: row.lastMessage,
+      lastMessageAt: new Date(row.lastMessageAt),
+      unreadCount: Number(row.unreadCount),
+    }));
   }
 
   async markConversationRead(userId: string, otherUserId: string): Promise<void> {

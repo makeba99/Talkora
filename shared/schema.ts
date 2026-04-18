@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -22,7 +22,10 @@ export const rooms = pgTable("rooms", {
   welcomeMediaPosition: varchar("welcome_media_position", { length: 20 }).notNull().default("below"),
   welcomeAccentColor: varchar("welcome_accent_color", { length: 30 }).notNull().default("#8B5CF6"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  roomsOwnerIdx: index("rooms_owner_id_idx").on(table.ownerId),
+  roomsCreatedAtIdx: index("rooms_created_at_idx").on(table.createdAt),
+}));
 
 export const insertRoomSchema = createInsertSchema(rooms).pick({
   title: true,
@@ -44,7 +47,12 @@ export const messages = pgTable("messages", {
   text: text("text").notNull(),
   read: boolean("read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  messagesFromIdx: index("messages_from_id_idx").on(table.fromId),
+  messagesToIdx: index("messages_to_id_idx").on(table.toId),
+  messagesConversationIdx: index("messages_conversation_idx").on(table.fromId, table.toId),
+  messagesCreatedAtIdx: index("messages_created_at_idx").on(table.createdAt),
+}));
 
 export const insertMessageSchema = createInsertSchema(messages).pick({
   fromId: true,
@@ -60,7 +68,10 @@ export const follows = pgTable("follows", {
   followerId: varchar("follower_id", { length: 36 }).notNull(),
   followingId: varchar("following_id", { length: 36 }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  followsFollowerIdx: index("follows_follower_id_idx").on(table.followerId),
+  followsFollowingIdx: index("follows_following_id_idx").on(table.followingId),
+}));
 
 export const insertFollowSchema = createInsertSchema(follows).pick({
   followerId: true,
@@ -76,7 +87,10 @@ export const roomMessages = pgTable("room_messages", {
   userId: varchar("user_id", { length: 36 }).notNull(),
   text: text("text").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  roomMessagesRoomIdx: index("room_messages_room_id_idx").on(table.roomId),
+  roomMessagesCreatedAtIdx: index("room_messages_created_at_idx").on(table.createdAt),
+}));
 
 export const insertRoomMessageSchema = createInsertSchema(roomMessages).pick({
   roomId: true,
@@ -94,7 +108,10 @@ export const notifications = pgTable("notifications", {
   type: text("type").notNull(),
   read: boolean("read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  notificationsUserIdx: index("notifications_user_id_idx").on(table.userId),
+  notificationsCreatedAtIdx: index("notifications_created_at_idx").on(table.createdAt),
+}));
 
 export type Notification = typeof notifications.$inferSelect;
 
@@ -104,7 +121,10 @@ export const blocks = pgTable("blocks", {
   blockedId: varchar("blocked_id", { length: 36 }).notNull(),
   blockType: varchar("block_type", { length: 20 }).notNull().default("ordinary"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  blocksBlockerIdx: index("blocks_blocker_id_idx").on(table.blockerId),
+  blocksBlockedIdx: index("blocks_blocked_id_idx").on(table.blockedId),
+}));
 
 export const insertBlockSchema = createInsertSchema(blocks).pick({
   blockerId: true,
@@ -125,7 +145,10 @@ export const reports = pgTable("reports", {
   reason: text("reason"),
   status: varchar("status", { length: 20 }).notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  reportsReportedIdx: index("reports_reported_id_idx").on(table.reportedId),
+  reportsCreatedAtIdx: index("reports_created_at_idx").on(table.createdAt),
+}));
 
 export const insertReportSchema = createInsertSchema(reports).pick({
   reporterId: true,
@@ -141,7 +164,10 @@ export const roomVotes = pgTable("room_votes", {
   roomId: varchar("room_id", { length: 36 }).notNull(),
   userId: varchar("user_id", { length: 36 }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  roomVotesRoomIdx: index("room_votes_room_id_idx").on(table.roomId),
+  roomVotesUserRoomIdx: index("room_votes_user_room_idx").on(table.userId, table.roomId),
+}));
 
 export type RoomVote = typeof roomVotes.$inferSelect;
 
@@ -177,7 +203,10 @@ export const bookings = pgTable("bookings", {
   notes: text("notes"),
   roomId: varchar("room_id", { length: 36 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  bookingsTeacherIdx: index("bookings_teacher_id_idx").on(table.teacherId),
+  bookingsUserIdx: index("bookings_user_id_idx").on(table.userId),
+}));
 
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true, status: true, roomId: true });
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
@@ -190,7 +219,10 @@ export const teacherReviews = pgTable("teacher_reviews", {
   rating: integer("rating").notNull(),
   comment: text("comment"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  teacherReviewsTeacherIdx: index("teacher_reviews_teacher_id_idx").on(table.teacherId),
+  teacherReviewsUserTeacherIdx: index("teacher_reviews_user_teacher_idx").on(table.userId, table.teacherId),
+}));
 
 export const insertTeacherReviewSchema = createInsertSchema(teacherReviews).omit({ id: true, createdAt: true });
 export type InsertTeacherReview = z.infer<typeof insertTeacherReviewSchema>;
@@ -212,7 +244,10 @@ export const teacherApplications = pgTable("teacher_applications", {
   approvedRate: integer("approved_rate"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  teacherAppUserIdx: index("teacher_applications_user_id_idx").on(table.userId),
+  teacherAppStatusIdx: index("teacher_applications_status_idx").on(table.status),
+}));
 
 export const insertTeacherApplicationSchema = createInsertSchema(teacherApplications).omit({ id: true, createdAt: true, updatedAt: true, status: true, adminNotes: true, approvedRate: true });
 export type InsertTeacherApplication = z.infer<typeof insertTeacherApplicationSchema>;
@@ -224,7 +259,10 @@ export const userComments = pgTable("user_comments", {
   authorId: varchar("author_id", { length: 36 }).notNull(),
   text: text("text").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userCommentsTargetIdx: index("user_comments_target_user_id_idx").on(table.targetUserId),
+  userCommentsAuthorIdx: index("user_comments_author_id_idx").on(table.authorId),
+}));
 
 export const insertUserCommentSchema = createInsertSchema(userComments).pick({
   targetUserId: true,
@@ -302,7 +340,9 @@ export const userBadges = pgTable("user_badges", {
   badgeType: varchar("badge_type", { length: 50 }).notNull(),
   awardedById: varchar("awarded_by_id", { length: 36 }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  userBadgesUserIdx: index("user_badges_user_id_idx").on(table.userId),
+}));
 
 export const insertUserBadgeSchema = createInsertSchema(userBadges).pick({
   userId: true,
@@ -323,7 +363,11 @@ export const badgeApplications = pgTable("badge_applications", {
   adminNotes: text("admin_notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  badgeAppsUserIdx: index("badge_applications_user_id_idx").on(table.userId),
+  badgeAppsUserTypeIdx: index("badge_applications_user_type_idx").on(table.userId, table.badgeType),
+  badgeAppsStatusIdx: index("badge_applications_status_idx").on(table.status),
+}));
 
 export const insertBadgeApplicationSchema = createInsertSchema(badgeApplications).pick({
   userId: true,
@@ -349,7 +393,10 @@ export const announcements = pgTable("announcements", {
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  announcementsStatusIdx: index("announcements_status_idx").on(table.status),
+  announcementsPublishedAtIdx: index("announcements_published_at_idx").on(table.publishedAt),
+}));
 
 export const insertAnnouncementSchema = createInsertSchema(announcements)
   .omit({ id: true, createdAt: true, updatedAt: true, publishedAt: true })

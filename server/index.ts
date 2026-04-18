@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { startCleanupScheduler } from "./cleanup";
 
 const app = express();
 const httpServer = createServer(app);
@@ -65,6 +66,7 @@ app.use((req, res, next) => {
   registerAuthRoutes(app);
 
   await registerRoutes(httpServer, app);
+  startCleanupScheduler();
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
