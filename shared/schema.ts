@@ -344,6 +344,7 @@ export const announcements = pgTable("announcements", {
   status: varchar("status", { length: 20 }).notNull().default("draft"),
   mediaUrls: text("media_urls").array().notNull().default(sql`'{}'::text[]`),
   mediaTypes: text("media_types").array().notNull().default(sql`'{}'::text[]`),
+  showOnLobby: boolean("show_on_lobby").notNull().default(false),
   createdById: varchar("created_by_id", { length: 36 }).notNull(),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -361,6 +362,7 @@ export const insertAnnouncementSchema = createInsertSchema(announcements)
     status: z.enum(["draft", "published"]).default("draft"),
     mediaUrls: z.array(z.string().startsWith("/uploads/")).max(4).default([]),
     mediaTypes: z.array(z.enum(["image", "gif"])).max(4).default([]),
+    showOnLobby: z.boolean().default(false),
   });
 
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;

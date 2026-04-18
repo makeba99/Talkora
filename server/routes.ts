@@ -1201,7 +1201,7 @@ export async function registerRoutes(
   app.get("/api/announcements", async (req: any, res) => {
     try {
       const userId = typeof req.isAuthenticated === "function" && req.isAuthenticated() ? (req.user as any).id : undefined;
-      res.json(await storage.getPublishedAnnouncements(5, userId));
+      res.json(await storage.getPublishedAnnouncements(5, userId, true));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -1322,6 +1322,7 @@ export async function registerRoutes(
         createdById: existing.createdById,
         mediaUrls: Array.isArray(req.body.mediaUrls) ? req.body.mediaUrls : existing.mediaUrls,
         mediaTypes: Array.isArray(req.body.mediaTypes) ? req.body.mediaTypes : existing.mediaTypes,
+        showOnLobby: req.body.showOnLobby !== undefined ? Boolean(req.body.showOnLobby) : existing.showOnLobby,
       });
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid announcement data" });

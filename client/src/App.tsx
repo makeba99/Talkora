@@ -26,11 +26,7 @@ function GlobalSocketEvents() {
   useEffect(() => {
     if (!socket) return;
     const handleBadgeAwarded = (event: any) => setBadgeEvent(event);
-    const handleAnnouncement = (event: any) => {
-      toast({
-        title: event?.kind === "maintenance" ? "Maintenance announcement" : "Platform announcement",
-        description: event?.title || event?.message || "New announcement from the Platform Owner.",
-      });
+    const handleAnnouncement = (_event: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
     };
     const handleRestricted = (event: any) => {

@@ -19,6 +19,7 @@ import { getUserDisplayName } from "@/lib/utils";
 import type { Announcement, Report, User, TeacherApplication, UserBadge } from "@shared/schema";
 import { BADGE_TYPES } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 const OWNER_EMAIL = "dj55jggg@gmail.com";
 type OwnerAnnouncement = Announcement & { viewCount?: number; dismissCount?: number };
@@ -77,6 +78,7 @@ export default function AdminPage() {
   const [announcementMediaPosition, setAnnouncementMediaPosition] = useState<"above" | "below" | "between">("below");
   const [announcementMediaUrls, setAnnouncementMediaUrls] = useState<string[]>([]);
   const [announcementMediaTypes, setAnnouncementMediaTypes] = useState<("image" | "gif")[]>([]);
+  const [announcementShowOnLobby, setAnnouncementShowOnLobby] = useState(false);
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -255,6 +257,7 @@ export default function AdminPage() {
     setAnnouncementKind("platform");
     setAnnouncementMediaUrls([]);
     setAnnouncementMediaTypes([]);
+    setAnnouncementShowOnLobby(false);
     setEditingAnnouncementId(null);
   };
 
@@ -267,6 +270,7 @@ export default function AdminPage() {
     setAnnouncementKind(announcement.kind);
     setAnnouncementMediaUrls(announcement.mediaUrls || []);
     setAnnouncementMediaTypes((announcement.mediaTypes || []) as ("image" | "gif")[]);
+    setAnnouncementShowOnLobby((announcement as any).showOnLobby || false);
   };
 
   const uploadAnnouncementMediaMutation = useMutation({
@@ -303,6 +307,7 @@ export default function AdminPage() {
         status,
         mediaUrls: announcementMediaUrls,
         mediaTypes: announcementMediaTypes,
+        showOnLobby: announcementShowOnLobby,
       };
       const res = editingAnnouncementId
         ? await apiRequest("PATCH", `/api/admin/announcements/${editingAnnouncementId}`, payload)
@@ -968,6 +973,18 @@ export default function AdminPage() {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background/40 px-4 py-3">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="announcement-show-on-lobby" className="text-sm font-medium">Show on home page</Label>
+                        <p className="text-xs text-muted-foreground">By default, announcements only appear in room chats. Enable this to also show a banner on the lobby.</p>
+                      </div>
+                      <Switch
+                        id="announcement-show-on-lobby"
+                        checked={announcementShowOnLobby}
+                        onCheckedChange={setAnnouncementShowOnLobby}
+                        data-testid="switch-announcement-show-on-lobby"
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="announcement-body">Message</Label>

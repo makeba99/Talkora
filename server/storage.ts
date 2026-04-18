@@ -684,11 +684,13 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getPublishedAnnouncements(limit = 5, userId?: string): Promise<(Announcement & { viewedAt?: Date | null; dismissedAt?: Date | null })[]> {
+  async getPublishedAnnouncements(limit = 5, userId?: string, lobbyOnly = false): Promise<(Announcement & { viewedAt?: Date | null; dismissedAt?: Date | null })[]> {
     const rows = await db
       .select()
       .from(announcements)
-      .where(eq(announcements.status, "published"))
+      .where(lobbyOnly
+        ? and(eq(announcements.status, "published"), eq(announcements.showOnLobby, true))
+        : eq(announcements.status, "published"))
       .orderBy(desc(announcements.publishedAt))
       .limit(userId ? Math.max(limit * 4, 20) : limit);
 

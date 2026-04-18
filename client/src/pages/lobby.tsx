@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CommentThreadDialog } from "@/components/comment-thread-dialog";
@@ -844,6 +844,48 @@ export default function Lobby() {
 
       <div className="flex-1 overflow-auto app-scrollbar">
         <div className="max-w-7xl mx-auto p-3 sm:p-4 pb-8 space-y-5 animate-fade-in">
+          {announcements.length > 0 && (
+            <div className="space-y-2" data-testid="container-lobby-announcements">
+              {announcements.map((announcement) => (
+                <div
+                  key={announcement.id}
+                  className="relative flex gap-3 rounded-xl border px-4 py-3"
+                  style={{
+                    background: announcement.kind === "maintenance"
+                      ? "rgba(245,158,11,0.08)"
+                      : announcement.kind === "safety"
+                      ? "rgba(239,68,68,0.08)"
+                      : announcement.kind === "celebration"
+                      ? "rgba(167,139,250,0.08)"
+                      : "rgba(0,200,255,0.06)",
+                    borderColor: announcement.kind === "maintenance"
+                      ? "rgba(245,158,11,0.25)"
+                      : announcement.kind === "safety"
+                      ? "rgba(239,68,68,0.25)"
+                      : announcement.kind === "celebration"
+                      ? "rgba(167,139,250,0.25)"
+                      : "rgba(0,200,255,0.18)",
+                  }}
+                  data-testid={`card-lobby-announcement-${announcement.id}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold leading-snug" data-testid={`text-lobby-announcement-title-${announcement.id}`}>{announcement.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed line-clamp-2" data-testid={`text-lobby-announcement-body-${announcement.id}`}>{announcement.body}</p>
+                  </div>
+                  {user && (
+                    <button
+                      onClick={() => dismissAnnouncementMutation.mutate(announcement.id)}
+                      className="flex-shrink-0 self-start text-muted-foreground/50 hover:text-muted-foreground transition-colors mt-0.5"
+                      aria-label="Dismiss announcement"
+                      data-testid={`button-dismiss-lobby-announcement-${announcement.id}`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
