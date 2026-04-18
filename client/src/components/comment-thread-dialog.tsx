@@ -19,51 +19,51 @@ type CommentRow = {
 type SampleComment = {
   id: string;
   authorName: string;
-  authorAvatar: string;
+  authorAvatar: string | null;
   text: string;
   createdAt: string;
 };
 
 const SAMPLE_COMMENTS: Record<string, SampleComment[]> = {
   "sample-user-1": [
-    { id: "sc-1-1", authorName: "Marcus Williams", authorAvatar: "https://randomuser.me/api/portraits/men/88.jpg", text: "Sofia is such an encouraging speaker! Really helped me with my pronunciation.", createdAt: "2026-04-13T10:22:00Z" },
-    { id: "sc-1-2", authorName: "Liam Chen", authorAvatar: "https://randomuser.me/api/portraits/men/46.jpg", text: "One of the best English conversation partners I've had 🙌", createdAt: "2026-04-12T08:45:00Z" },
-    { id: "sc-1-3", authorName: "Emma Davis", authorAvatar: "https://randomuser.me/api/portraits/women/28.jpg", text: "Always patient, always helpful. Highly recommend her rooms!", createdAt: "2026-04-11T19:10:00Z" },
+    { id: "sc-1-1", authorName: "Marcus Williams", authorAvatar: null, text: "Sofia is such an encouraging speaker! Really helped me with my pronunciation.", createdAt: "2026-04-13T10:22:00Z" },
+    { id: "sc-1-2", authorName: "Liam Chen", authorAvatar: null, text: "One of the best English conversation partners I've had 🙌", createdAt: "2026-04-12T08:45:00Z" },
+    { id: "sc-1-3", authorName: "Emma Davis", authorAvatar: null, text: "Always patient, always helpful. Highly recommend her rooms!", createdAt: "2026-04-11T19:10:00Z" },
   ],
   "sample-user-2": [
-    { id: "sc-2-1", authorName: "Nadia Hassan", authorAvatar: "https://randomuser.me/api/portraits/women/77.jpg", text: "Liam explains things really clearly. Great for English practice.", createdAt: "2026-04-13T14:05:00Z" },
-    { id: "sc-2-2", authorName: "Kevin Park", authorAvatar: "https://randomuser.me/api/portraits/men/33.jpg", text: "Had a great conversation session with Liam. Very knowledgeable!", createdAt: "2026-04-12T11:30:00Z" },
+    { id: "sc-2-1", authorName: "Nadia Hassan", authorAvatar: null, text: "Liam explains things really clearly. Great for English practice.", createdAt: "2026-04-13T14:05:00Z" },
+    { id: "sc-2-2", authorName: "Kevin Park", authorAvatar: null, text: "Had a great conversation session with Liam. Very knowledgeable!", createdAt: "2026-04-12T11:30:00Z" },
   ],
   "sample-user-3": [
-    { id: "sc-3-1", authorName: "Pierre Dupont", authorAvatar: "https://randomuser.me/api/portraits/men/55.jpg", text: "Emma's French tips are gold! She really knows the nuances.", createdAt: "2026-04-14T09:20:00Z" },
-    { id: "sc-3-2", authorName: "Aigerim Bekova", authorAvatar: "https://randomuser.me/api/portraits/women/61.jpg", text: "Love Emma's energy in conversation rooms. So much fun!", createdAt: "2026-04-13T16:45:00Z" },
-    { id: "sc-3-3", authorName: "James O'Brien", authorAvatar: "https://randomuser.me/api/portraits/men/67.jpg", text: "She made me feel comfortable speaking French for the first time!", createdAt: "2026-04-11T12:00:00Z" },
+    { id: "sc-3-1", authorName: "Pierre Dupont", authorAvatar: null, text: "Emma's French tips are gold! She really knows the nuances.", createdAt: "2026-04-14T09:20:00Z" },
+    { id: "sc-3-2", authorName: "Aigerim Bekova", authorAvatar: null, text: "Love Emma's energy in conversation rooms. So much fun!", createdAt: "2026-04-13T16:45:00Z" },
+    { id: "sc-3-3", authorName: "James O'Brien", authorAvatar: null, text: "She made me feel comfortable speaking French for the first time!", createdAt: "2026-04-11T12:00:00Z" },
   ],
   "sample-user-4": [
-    { id: "sc-4-1", authorName: "Sofia Martinez", authorAvatar: "https://randomuser.me/api/portraits/women/32.jpg", text: "Carlos is a native Spanish speaker and he's super patient 🔥", createdAt: "2026-04-12T20:15:00Z" },
+    { id: "sc-4-1", authorName: "Sofia Martinez", authorAvatar: null, text: "Carlos is a native Spanish speaker and he's super patient 🔥", createdAt: "2026-04-12T20:15:00Z" },
   ],
   "sample-user-5": [
-    { id: "sc-5-1", authorName: "Marcus Williams", authorAvatar: "https://randomuser.me/api/portraits/men/88.jpg", text: "Aigerim is trilingual! Her Korean is incredible.", createdAt: "2026-04-14T07:30:00Z" },
-    { id: "sc-5-2", authorName: "Min Ji-hoon", authorAvatar: "https://randomuser.me/api/portraits/men/72.jpg", text: "She helped me understand Korean honorifics much better 🙏", createdAt: "2026-04-13T13:20:00Z" },
-    { id: "sc-5-3", authorName: "Yuki Tanaka", authorAvatar: "https://randomuser.me/api/portraits/women/5.jpg", text: "Best language buddy on the platform. Period.", createdAt: "2026-04-12T17:55:00Z" },
+    { id: "sc-5-1", authorName: "Marcus Williams", authorAvatar: null, text: "Aigerim is trilingual! Her Korean is incredible.", createdAt: "2026-04-14T07:30:00Z" },
+    { id: "sc-5-2", authorName: "Min Ji-hoon", authorAvatar: null, text: "She helped me understand Korean honorifics much better 🙏", createdAt: "2026-04-13T13:20:00Z" },
+    { id: "sc-5-3", authorName: "Yuki Tanaka", authorAvatar: null, text: "Best language buddy on the platform. Period.", createdAt: "2026-04-12T17:55:00Z" },
   ],
   "sample-user-6": [
-    { id: "sc-6-1", authorName: "Emma Davis", authorAvatar: "https://randomuser.me/api/portraits/women/28.jpg", text: "Marcus is on another level. His vocabulary is insane!", createdAt: "2026-04-14T11:10:00Z" },
-    { id: "sc-6-2", authorName: "Anya Petrova", authorAvatar: "https://randomuser.me/api/portraits/women/52.jpg", text: "He runs the best Advanced English rooms. Always packed!", createdAt: "2026-04-13T08:40:00Z" },
+    { id: "sc-6-1", authorName: "Emma Davis", authorAvatar: null, text: "Marcus is on another level. His vocabulary is insane!", createdAt: "2026-04-14T11:10:00Z" },
+    { id: "sc-6-2", authorName: "Anya Petrova", authorAvatar: null, text: "He runs the best Advanced English rooms. Always packed!", createdAt: "2026-04-13T08:40:00Z" },
   ],
   "sample-user-7": [
-    { id: "sc-7-1", authorName: "Nadia Hassan", authorAvatar: "https://randomuser.me/api/portraits/women/77.jpg", text: "Anya gave me great tips on British vs American English differences.", createdAt: "2026-04-11T15:00:00Z" },
+    { id: "sc-7-1", authorName: "Nadia Hassan", authorAvatar: null, text: "Anya gave me great tips on British vs American English differences.", createdAt: "2026-04-11T15:00:00Z" },
   ],
   "sample-user-8": [
-    { id: "sc-8-1", authorName: "Lucas Santos", authorAvatar: "https://randomuser.me/api/portraits/men/22.jpg", text: "James is so funny in his rooms, makes learning a pleasure!", createdAt: "2026-04-13T21:00:00Z" },
-    { id: "sc-8-2", authorName: "Claire Bernard", authorAvatar: "https://randomuser.me/api/portraits/women/17.jpg", text: "Really helpful with Irish slang and expressions 😄", createdAt: "2026-04-12T10:15:00Z" },
+    { id: "sc-8-1", authorName: "Lucas Santos", authorAvatar: null, text: "James is so funny in his rooms, makes learning a pleasure!", createdAt: "2026-04-13T21:00:00Z" },
+    { id: "sc-8-2", authorName: "Claire Bernard", authorAvatar: null, text: "Really helpful with Irish slang and expressions 😄", createdAt: "2026-04-12T10:15:00Z" },
   ],
   "sample-user-9": [
-    { id: "sc-9-1", authorName: "Hassan Al-Amin", authorAvatar: "https://randomuser.me/api/portraits/men/78.jpg", text: "Nadia is brilliant at English-Arabic code switching. Rare skill!", createdAt: "2026-04-14T06:50:00Z" },
+    { id: "sc-9-1", authorName: "Hassan Al-Amin", authorAvatar: null, text: "Nadia is brilliant at English-Arabic code switching. Rare skill!", createdAt: "2026-04-14T06:50:00Z" },
   ],
   "sample-user-10": [
-    { id: "sc-10-1", authorName: "Seo Yeon", authorAvatar: "https://randomuser.me/api/portraits/women/44.jpg", text: "Kevin gets the K-pop references right away. Fun room!", createdAt: "2026-04-13T18:25:00Z" },
-    { id: "sc-10-2", authorName: "Hana Suzuki", authorAvatar: "https://randomuser.me/api/portraits/women/26.jpg", text: "His Korean enthusiasm is contagious 😊", createdAt: "2026-04-12T14:00:00Z" },
+    { id: "sc-10-1", authorName: "Seo Yeon", authorAvatar: null, text: "Kevin gets the K-pop references right away. Fun room!", createdAt: "2026-04-13T18:25:00Z" },
+    { id: "sc-10-2", authorName: "Hana Suzuki", authorAvatar: null, text: "His Korean enthusiasm is contagious 😊", createdAt: "2026-04-12T14:00:00Z" },
   ],
 };
 

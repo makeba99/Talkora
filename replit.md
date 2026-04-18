@@ -156,3 +156,9 @@ Badge applications table (shared/schema.ts):
 - Horizontal card layout in voice rooms
 - Rooms open in new tab from lobby (leave closes tab)
 - YouTube uses real-time search (not URL paste)
+
+## Privacy Controls
+- Geolocation is disabled through browser Permissions-Policy headers and a frontend runtime guard that denies geolocation permission checks.
+- Security event records intentionally do not store IP addresses or browser user-agent strings.
+- API request logs record only method, path, status, and duration; response bodies are not logged.
+- Browser fingerprinting surfaces are reduced by denying sensor/client-hint permissions and removing third-party demo avatar/font requests from the default app shell.

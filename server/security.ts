@@ -26,7 +26,6 @@ export type SecurityEventData = {
   eventType: string;
   severity: "critical" | "high" | "medium" | "low";
   description: string;
-  userAgent?: string | null;
   requestPath?: string | null;
 };
 
@@ -39,9 +38,7 @@ export async function logSecurityEvent(data: SecurityEventData): Promise<void> {
         eventType: data.eventType,
         severity: data.severity,
         description: data.description,
-        userAgent: data.userAgent
-          ? data.userAgent.slice(0, 500)
-          : null,
+        userAgent: null,
         requestPath: data.requestPath
           ? data.requestPath.slice(0, 255)
           : null,
@@ -70,7 +67,6 @@ export const authRateLimiter = rateLimit({
       eventType: "rate_limit_exceeded",
       severity: "high",
       description: `Auth endpoint rate limit exceeded on ${req.path}`,
-      userAgent: req.headers["user-agent"] ?? null,
       requestPath: req.path,
     });
     res.status(429).json({
@@ -91,7 +87,6 @@ export const apiRateLimiter = rateLimit({
       eventType: "rate_limit_exceeded",
       severity: "medium",
       description: `API rate limit exceeded on ${req.path}`,
-      userAgent: req.headers["user-agent"] ?? null,
       requestPath: req.path,
     });
     res.status(429).json({
@@ -112,7 +107,6 @@ export const uploadRateLimiter = rateLimit({
       eventType: "rate_limit_exceeded",
       severity: "medium",
       description: `Upload rate limit exceeded`,
-      userAgent: req.headers["user-agent"] ?? null,
       requestPath: req.path,
     });
     res.status(429).json({
@@ -176,7 +170,6 @@ export function threatDetectionMiddleware(
       eventType: threat === "xss" ? "xss_attempt" : "sqli_attempt",
       severity: "high",
       description: `${threat === "xss" ? "XSS" : "SQL injection"} pattern detected in request to ${req.path}`,
-      userAgent: req.headers["user-agent"] ?? null,
       requestPath: req.path,
     }).catch(() => {});
   }
@@ -204,7 +197,6 @@ export function privilegeCheckMiddleware(
       eventType: "privilege_escalation",
       severity: "high",
       description: `Non-admin user attempted to access admin endpoint: ${req.method} ${req.path}`,
-      userAgent: req.headers["user-agent"] ?? null,
       requestPath: req.path,
     }).catch(() => {});
   }
@@ -218,8 +210,8 @@ export function applySecurityMiddleware(app: Express): void {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          fontSrc: ["'self'", "data:"],
           imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
           mediaSrc: ["'self'", "blob:", "https:", "http:"],
           connectSrc: ["'self'", "wss:", "ws:", "https:"],
@@ -230,17 +222,43 @@ export function applySecurityMiddleware(app: Express): void {
       },
       crossOriginEmbedderPolicy: false,
       crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+      originAgentCluster: false,
       hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
         preload: true,
       },
-      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+      referrerPolicy: { policy: "no-referrer" },
     })
   );
 
   app.use((_req: Request, res: Response, next: NextFunction) => {
-    res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=(), payment=(), usb=()");
+    res.removeHeader("Accept-CH");
+    res.setHeader(
+      "Permissions-Policy",
+      [
+        "geolocation=()",
+        "accelerometer=()",
+        "attribution-reporting=()",
+        "browsing-topics=()",
+        "ch-ua=()",
+        "ch-ua-arch=()",
+        "ch-ua-bitness=()",
+        "ch-ua-full-version=()",
+        "ch-ua-full-version-list=()",
+        "ch-ua-mobile=()",
+        "ch-ua-model=()",
+        "ch-ua-platform=()",
+        "ch-ua-platform-version=()",
+        "ch-ua-wow64=()",
+        "gyroscope=()",
+        "interest-cohort=()",
+        "magnetometer=()",
+        "payment=()",
+        "usb=()",
+      ].join(", ")
+    );
+    res.setHeader("Critical-CH", "");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Download-Options", "noopen");
     res.setHeader("X-Permitted-Cross-Domain-Policies", "none");

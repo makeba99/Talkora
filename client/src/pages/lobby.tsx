@@ -25,14 +25,14 @@ import { Button } from "@/components/ui/button";
 type DiscoveryFilter = "rooms" | "top-speakers" | "famous-users";
 type LobbyAnnouncement = Announcement & { viewedAt?: string | null; dismissedAt?: string | null };
 
-function makeSampleUser(id: string, firstName: string, lastName: string, portrait: string): User {
+function makeSampleUser(id: string, firstName: string, lastName: string, _portrait: string): User {
   return {
     id,
     email: null,
     firstName,
     lastName,
     displayName: `${firstName} ${lastName}`,
-    profileImageUrl: `https://randomuser.me/api/portraits/${portrait}.jpg`,
+    profileImageUrl: null,
     bio: null,
     avatarRing: null,
     flairBadge: null,
