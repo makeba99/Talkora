@@ -4549,37 +4549,48 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 ))}
               </div>
             )}
-            <label className={`inline-flex items-center gap-1.5 text-[11px] cursor-pointer px-2 py-1 rounded-lg border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors ${uploadingWelcomeMedia ? "opacity-50 pointer-events-none" : ""}`}>
-              {uploadingWelcomeMedia ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
-              {uploadingWelcomeMedia ? "Uploading…" : "Add Image / GIF"}
-              <input
-                type="file"
-                accept="image/*,image/gif"
-                className="hidden"
-                multiple
-                onChange={async (e) => {
-                  const files = Array.from(e.target.files || []);
-                  if (!files.length) return;
-                  setUploadingWelcomeMedia(true);
-                  try {
-                    for (const file of files) {
-                      const fd = new FormData();
-                      fd.append("media", file);
-                      const res = await fetch(`/api/rooms/${room.id}/welcome-media`, { method: "POST", body: fd, credentials: "include" });
-                      if (res.ok) {
-                        const data = await res.json();
-                        setWelcomeMediaUrlsState(prev => [...prev, data.url]);
-                        setWelcomeMediaTypesState(prev => [...prev, data.type]);
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className={`inline-flex items-center gap-1.5 text-[11px] cursor-pointer px-2 py-1 rounded-lg border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors ${uploadingWelcomeMedia ? "opacity-50 pointer-events-none" : ""}`}>
+                {uploadingWelcomeMedia ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                {uploadingWelcomeMedia ? "Uploading…" : "Upload Image"}
+                <input
+                  type="file"
+                  accept="image/*,image/gif"
+                  className="hidden"
+                  multiple
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (!files.length) return;
+                    setUploadingWelcomeMedia(true);
+                    try {
+                      for (const file of files) {
+                        const fd = new FormData();
+                        fd.append("media", file);
+                        const res = await fetch(`/api/rooms/${room.id}/welcome-media`, { method: "POST", body: fd, credentials: "include" });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setWelcomeMediaUrlsState(prev => [...prev, data.url]);
+                          setWelcomeMediaTypesState(prev => [...prev, data.type]);
+                        }
                       }
+                    } finally {
+                      setUploadingWelcomeMedia(false);
+                      e.target.value = "";
                     }
-                  } finally {
-                    setUploadingWelcomeMedia(false);
-                    e.target.value = "";
-                  }
-                }}
-                data-testid="input-welcome-media-upload"
-              />
-            </label>
+                  }}
+                  data-testid="input-welcome-media-upload"
+                />
+              </label>
+              <div className="flex items-center gap-1.5 text-[11px] border border-border/40 bg-muted/20 rounded-lg overflow-hidden">
+                <span className="pl-2 text-muted-foreground flex items-center gap-1">🎁 Gift / GIF</span>
+                <GifPickerButton
+                  onGifSelect={(gifUrl) => {
+                    setWelcomeMediaUrlsState(prev => [...prev, gifUrl]);
+                    setWelcomeMediaTypesState(prev => [...prev, "gif"]);
+                  }}
+                />
+              </div>
+            </div>
             <div className="flex gap-2 pt-1">
               <Button
                 variant="outline"
@@ -5086,7 +5097,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           )}
 
           {isScreenSharing && !(activeYoutubeId && showYoutube) && !showEReader && (
-            <div className="flex-1 min-h-0 bg-black" data-testid="media-main-screen">
+            <div className="flex-1 min-h-0 bg-black relative" data-testid="media-main-screen">
               <video
                 ref={(el) => {
                   screenVideoRef.current = el;
@@ -5098,6 +5109,31 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 muted
                 className="w-full h-full object-contain"
               />
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/70 backdrop-blur-sm border border-green-500/40 rounded-full px-4 py-1.5 shadow-lg z-10">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+                <Monitor className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                <span className="text-white text-xs font-semibold">You are sharing your screen</span>
+                <button
+                  onClick={handleScreenShare}
+                  className="ml-1 text-[10px] text-red-400 hover:text-red-300 font-medium border border-red-500/40 hover:border-red-400/60 rounded-full px-2 py-0.5 transition-colors"
+                  data-testid="button-stop-screen-share-overlay"
+                >
+                  Stop
+                </button>
+              </div>
+              <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
+                <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-green-500/70 bg-green-700 flex items-center justify-center">
+                  {user?.profileImageUrl ? (
+                    <img src={user.profileImageUrl} className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-white">{getUserInitials(user as any)}</span>
+                  )}
+                </div>
+                <div className="flex flex-col leading-none">
+                  <span className="text-white text-[11px] font-semibold">{getUserDisplayName(user as any)}</span>
+                  <span className="text-green-400 text-[9px] font-medium">Sharing screen</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -5115,10 +5151,29 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 playsInline
                 className="w-full h-full object-contain"
               />
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/70 backdrop-blur-sm rounded-full px-3 py-1 text-xs flex items-center gap-1.5">
-                <Monitor className="w-3 h-3" />
-                {getUserDisplayName(participants.find(p => p.id === remoteScreenShareUserId))} is sharing screen
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/15 rounded-full px-3 py-1 shadow-lg z-10">
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0" />
+                <Monitor className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                <span className="text-white text-xs">{getUserDisplayName(participants.find(p => p.id === remoteScreenShareUserId))} is sharing screen</span>
               </div>
+              {(() => {
+                const sharer = participants.find(p => p.id === remoteScreenShareUserId);
+                return sharer ? (
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
+                    <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-blue-500/70 bg-blue-600 flex items-center justify-center">
+                      {(sharer as any).profileImageUrl ? (
+                        <img src={(sharer as any).profileImageUrl} className="w-full h-full object-cover rounded-full" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                      ) : (
+                        <span className="text-[10px] font-bold text-white">{getUserInitials(sharer as any)}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col leading-none">
+                      <span className="text-white text-[11px] font-semibold">{getUserDisplayName(sharer as any)}</span>
+                      <span className="text-blue-400 text-[9px] font-medium">Sharing screen</span>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           )}
 

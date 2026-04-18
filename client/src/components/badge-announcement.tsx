@@ -397,7 +397,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.25, duration: 0.4 }}
                 >
-                  <p className="text-white font-bold text-lg leading-tight truncate" data-testid="badge-user-name">
+                  <p className="text-white font-bold text-lg leading-tight break-words" data-testid="badge-user-name">
                     {event.userName}
                   </p>
                   <p className="text-white/55 text-sm mt-0.5">has been awarded</p>
@@ -423,7 +423,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.55 }}
-                    className="text-white/45 text-xs leading-relaxed italic mt-2 line-clamp-2"
+                    className="text-white/45 text-xs leading-relaxed italic mt-2"
                     data-testid="badge-quote"
                   >
                     "{event.quote}"

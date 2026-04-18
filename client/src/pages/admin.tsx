@@ -20,6 +20,7 @@ import type { Announcement, Report, User, TeacherApplication, UserBadge } from "
 import { BADGE_TYPES } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { GifPickerButton } from "@/components/chat-picker";
 
 const OWNER_EMAIL = "dj55jggg@gmail.com";
 type OwnerAnnouncement = Announcement & { viewCount?: number; dismissCount?: number };
@@ -1166,18 +1167,31 @@ export default function AdminPage() {
                         <Label htmlFor="announcement-media">Images and GIFs</Label>
                         <span className="text-xs text-muted-foreground" data-testid="text-announcement-media-count">{announcementMediaUrls.length}/4 attached</span>
                       </div>
-                      <Input
-                        id="announcement-media"
-                        type="file"
-                        accept="image/png,image/jpeg,image/gif,image/webp"
-                        disabled={announcementMediaUrls.length >= 4 || uploadAnnouncementMediaMutation.isPending}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) uploadAnnouncementMediaMutation.mutate(file);
-                          e.currentTarget.value = "";
-                        }}
-                        data-testid="input-announcement-media"
-                      />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Input
+                          id="announcement-media"
+                          type="file"
+                          accept="image/png,image/jpeg,image/gif,image/webp"
+                          disabled={announcementMediaUrls.length >= 4 || uploadAnnouncementMediaMutation.isPending}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadAnnouncementMediaMutation.mutate(file);
+                            e.currentTarget.value = "";
+                          }}
+                          className="flex-1 min-w-0"
+                          data-testid="input-announcement-media"
+                        />
+                        <div className="flex items-center gap-1.5 text-sm border border-border/60 bg-muted/20 rounded-md px-2 py-1 flex-shrink-0">
+                          <span className="text-muted-foreground text-xs">🎁 Gift / GIF</span>
+                          <GifPickerButton
+                            onGifSelect={(gifUrl) => {
+                              if (announcementMediaUrls.length >= 4) return;
+                              setAnnouncementMediaUrls(prev => [...prev, gifUrl].slice(0, 4));
+                              setAnnouncementMediaTypes(prev => [...prev, "gif"].slice(0, 4));
+                            }}
+                          />
+                        </div>
+                      </div>
                       {announcementMediaUrls.length > 0 && (
                         <div className="grid gap-3 sm:grid-cols-2">
                           {announcementMediaUrls.map((url, index) => (
