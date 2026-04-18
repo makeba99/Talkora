@@ -47,6 +47,8 @@ import {
   announcements,
   type Announcement,
   type InsertAnnouncement,
+  announcementReceipts,
+  type AnnouncementReceipt,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -141,10 +143,13 @@ export interface IStorage {
 
   createAnnouncement(data: InsertAnnouncement): Promise<Announcement>;
   getAnnouncement(id: string): Promise<Announcement | undefined>;
-  getAnnouncements(): Promise<Announcement[]>;
-  getPublishedAnnouncements(limit?: number): Promise<Announcement[]>;
+  getAnnouncements(): Promise<(Announcement & { viewCount: number; dismissCount: number })[]>;
+  getPublishedAnnouncements(limit?: number, userId?: string): Promise<(Announcement & { viewedAt?: Date | null; dismissedAt?: Date | null })[]>;
   updateAnnouncement(id: string, data: Partial<Announcement>): Promise<Announcement | undefined>;
   deleteAnnouncement(id: string): Promise<void>;
+  markAnnouncementViewed(announcementId: string, userId: string): Promise<AnnouncementReceipt>;
+  dismissAnnouncement(announcementId: string, userId: string): Promise<AnnouncementReceipt>;
+  getAnnouncementReceiptCounts(announcementIds: string[]): Promise<Record<string, { viewCount: number; dismissCount: number }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -669,17 +674,43 @@ export class DatabaseStorage implements IStorage {
     return announcement;
   }
 
-  async getAnnouncements(): Promise<Announcement[]> {
-    return db.select().from(announcements).orderBy(desc(announcements.updatedAt));
+  async getAnnouncements(): Promise<(Announcement & { viewCount: number; dismissCount: number })[]> {
+    const rows = await db.select().from(announcements).orderBy(desc(announcements.updatedAt));
+    const counts = await this.getAnnouncementReceiptCounts(rows.map((announcement) => announcement.id));
+    return rows.map((announcement) => ({
+      ...announcement,
+      viewCount: counts[announcement.id]?.viewCount || 0,
+      dismissCount: counts[announcement.id]?.dismissCount || 0,
+    }));
   }
 
-  async getPublishedAnnouncements(limit = 5): Promise<Announcement[]> {
-    return db
+  async getPublishedAnnouncements(limit = 5, userId?: string): Promise<(Announcement & { viewedAt?: Date | null; dismissedAt?: Date | null })[]> {
+    const rows = await db
       .select()
       .from(announcements)
       .where(eq(announcements.status, "published"))
       .orderBy(desc(announcements.publishedAt))
-      .limit(limit);
+      .limit(userId ? Math.max(limit * 4, 20) : limit);
+
+    if (!userId) return rows;
+
+    const receipts = await db
+      .select()
+      .from(announcementReceipts)
+      .where(eq(announcementReceipts.userId, userId));
+    const receiptsByAnnouncement = new Map(receipts.map((receipt) => [receipt.announcementId, receipt]));
+
+    return rows
+      .filter((announcement) => !receiptsByAnnouncement.get(announcement.id)?.dismissedAt)
+      .slice(0, limit)
+      .map((announcement) => {
+        const receipt = receiptsByAnnouncement.get(announcement.id);
+        return {
+          ...announcement,
+          viewedAt: receipt?.viewedAt || null,
+          dismissedAt: receipt?.dismissedAt || null,
+        };
+      });
   }
 
   async updateAnnouncement(id: string, data: Partial<Announcement>): Promise<Announcement | undefined> {
@@ -692,7 +723,54 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAnnouncement(id: string): Promise<void> {
+    await db.delete(announcementReceipts).where(eq(announcementReceipts.announcementId, id));
     await db.delete(announcements).where(eq(announcements.id, id));
+  }
+
+  async markAnnouncementViewed(announcementId: string, userId: string): Promise<AnnouncementReceipt> {
+    const [receipt] = await db
+      .insert(announcementReceipts)
+      .values({ announcementId, userId, viewedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [announcementReceipts.announcementId, announcementReceipts.userId],
+        set: { viewedAt: new Date(), updatedAt: new Date() },
+      })
+      .returning();
+    return receipt;
+  }
+
+  async dismissAnnouncement(announcementId: string, userId: string): Promise<AnnouncementReceipt> {
+    const now = new Date();
+    const [receipt] = await db
+      .insert(announcementReceipts)
+      .values({ announcementId, userId, viewedAt: now, dismissedAt: now })
+      .onConflictDoUpdate({
+        target: [announcementReceipts.announcementId, announcementReceipts.userId],
+        set: { viewedAt: now, dismissedAt: now, updatedAt: now },
+      })
+      .returning();
+    return receipt;
+  }
+
+  async getAnnouncementReceiptCounts(announcementIds: string[]): Promise<Record<string, { viewCount: number; dismissCount: number }>> {
+    if (announcementIds.length === 0) return {};
+    const rows = await db
+      .select({
+        announcementId: announcementReceipts.announcementId,
+        viewCount: sql<number>`count(*) filter (where ${announcementReceipts.viewedAt} is not null)`,
+        dismissCount: sql<number>`count(*) filter (where ${announcementReceipts.dismissedAt} is not null)`,
+      })
+      .from(announcementReceipts)
+      .where(inArray(announcementReceipts.announcementId, announcementIds))
+      .groupBy(announcementReceipts.announcementId);
+
+    return Object.fromEntries(rows.map((row) => [
+      row.announcementId,
+      {
+        viewCount: Number(row.viewCount) || 0,
+        dismissCount: Number(row.dismissCount) || 0,
+      },
+    ]));
   }
 }
 

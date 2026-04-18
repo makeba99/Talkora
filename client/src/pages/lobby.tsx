@@ -23,6 +23,7 @@ import type { Announcement, Follow, Room, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 
 type DiscoveryFilter = "rooms" | "top-speakers" | "famous-users";
+type LobbyAnnouncement = Announcement & { viewedAt?: string | null; dismissedAt?: string | null };
 
 function makeSampleUser(id: string, firstName: string, lastName: string, portrait: string): User {
   return {
@@ -427,16 +428,44 @@ export default function Lobby() {
   >({});
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const viewedAnnouncementIdsRef = useRef<Set<string>>(new Set());
 
   const { data: fetchedRooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
     refetchInterval: 5000,
   });
 
-  const { data: announcements = [] } = useQuery<Announcement[]>({
+  const { data: announcements = [] } = useQuery<LobbyAnnouncement[]>({
     queryKey: ["/api/announcements"],
     refetchInterval: 30000,
   });
+
+  const markAnnouncementsViewedMutation = useMutation({
+    mutationFn: async (announcementIds: string[]) => {
+      await apiRequest("POST", "/api/announcements/viewed", { announcementIds });
+    },
+  });
+
+  const dismissAnnouncementMutation = useMutation({
+    mutationFn: async (announcementId: string) => {
+      await apiRequest("POST", `/api/announcements/${announcementId}/dismiss`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      toast({ title: "Announcement dismissed" });
+    },
+    onError: (err: any) => toast({ title: "Could not dismiss announcement", description: err.message, variant: "destructive" }),
+  });
+
+  useEffect(() => {
+    if (!user || announcements.length === 0) return;
+    const unseenIds = announcements
+      .filter((announcement) => !announcement.viewedAt && !viewedAnnouncementIdsRef.current.has(announcement.id))
+      .map((announcement) => announcement.id);
+    if (unseenIds.length === 0) return;
+    unseenIds.forEach((id) => viewedAnnouncementIdsRef.current.add(id));
+    markAnnouncementsViewedMutation.mutate(unseenIds);
+  }, [user, announcements]);
 
   const realRoomIds = new Set(fetchedRooms.map((r) => r.id));
   const rooms = [
@@ -838,6 +867,24 @@ export default function Lobby() {
                       </div>
                       <h3 className="text-base font-semibold text-white" data-testid={`text-announcement-title-${announcement.id}`}>{announcement.title}</h3>
                       <p className="line-clamp-3 text-sm text-slate-300" data-testid={`text-announcement-body-${announcement.id}`}>{announcement.body}</p>
+                      <div className="flex justify-end pt-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-xs text-slate-300 hover:text-white"
+                          onClick={() => {
+                            if (!user) {
+                              toast({ title: "Sign in to dismiss announcements", description: "Dismissed announcements are saved to your account." });
+                              return;
+                            }
+                            dismissAnnouncementMutation.mutate(announcement.id);
+                          }}
+                          disabled={dismissAnnouncementMutation.isPending}
+                          data-testid={`button-dismiss-announcement-${announcement.id}`}
+                        >
+                          Dismiss
+                        </Button>
+                      </div>
                     </div>
                   </article>
                 ))}

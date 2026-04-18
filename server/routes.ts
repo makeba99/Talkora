@@ -1132,9 +1132,42 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/announcements", async (_req, res) => {
+  app.get("/api/announcements", async (req: any, res) => {
     try {
-      res.json(await storage.getPublishedAnnouncements(5));
+      const userId = typeof req.isAuthenticated === "function" && req.isAuthenticated() ? (req.user as any).id : undefined;
+      res.json(await storage.getPublishedAnnouncements(5, userId));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/announcements/viewed", isAuthenticated, async (req: any, res) => {
+    try {
+      const announcementIds = z.array(z.string()).max(20).safeParse(req.body.announcementIds);
+      if (!announcementIds.success) return res.status(400).json({ message: "announcementIds must be an array." });
+      const userId = (req.user as any).id;
+      const marked: string[] = [];
+      for (const announcementId of Array.from(new Set(announcementIds.data))) {
+        const announcement = await storage.getAnnouncement(announcementId);
+        if (announcement?.status === "published") {
+          await storage.markAnnouncementViewed(announcementId, userId);
+          marked.push(announcementId);
+        }
+      }
+      res.json({ ok: true, marked });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/announcements/:id/dismiss", isAuthenticated, async (req: any, res) => {
+    try {
+      const announcement = await storage.getAnnouncement(req.params.id);
+      if (!announcement || announcement.status !== "published") {
+        return res.status(404).json({ message: "Announcement not found" });
+      }
+      const receipt = await storage.dismissAnnouncement(req.params.id, (req.user as any).id);
+      res.json(receipt);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

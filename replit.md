@@ -116,6 +116,7 @@ shared/
 61. Restrictions — restricted users are blocked from creating rooms, joining rooms, sending room chat, and sending direct messages until the restriction expires
 62. Profile block list — users can view blocked users from the profile menu and unblock them
 63. Owner announcement management — Platform Owner can draft, edit, publish, and delete announcements with image/GIF attachments; published announcements appear in the lobby and are broadcast live to active users/rooms
+64. Announcement read receipts — logged-in users automatically create per-announcement view receipts, can dismiss published announcements from the lobby, and the Platform Owner sees viewed/dismissed counts in the admin announcement list
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.
@@ -125,7 +126,7 @@ shared/
 - Restrictions: persist `restrictedUntil`, `restrictedReason`, and `restrictedById`; server routes and sockets enforce active restrictions.
 - Reports: stored in `reports` with reporter/reported metadata, category, reason, and status (`pending`, `reviewed`, `dismissed`).
 - Badge applications: stored in `badgeApplications` with status (`pending`, `approved`, `rejected`); approval awards the badge and broadcasts a celebration.
-- Announcements: stored in `announcements` with title, body, kind, status (`draft`/`published`), image/GIF attachment arrays, creator, and publish timestamps; all CRUD and media uploads are Platform Owner-only.
+- Announcements: stored in `announcements` with title, body, kind, status (`draft`/`published`), image/GIF attachment arrays, creator, and publish timestamps; all CRUD and media uploads are Platform Owner-only. Per-user view/dismiss receipts are stored in `announcementReceipts`.
 - UI: `/admin` dashboard uses gated visibility, role badges, warning/restriction indicators, premium owner badge styling, and custom gradient scrollbars.
 
 ## User Model

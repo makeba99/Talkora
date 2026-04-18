@@ -21,6 +21,7 @@ import { BADGE_TYPES } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const OWNER_EMAIL = "dj55jggg@gmail.com";
+type OwnerAnnouncement = Announcement & { viewCount?: number; dismissCount?: number };
 
 function roleLabel(user: User) {
   if (user.email === OWNER_EMAIL || user.role === "superadmin") return "Platform Owner";
@@ -101,7 +102,7 @@ export default function AdminPage() {
     enabled: !!canAccess,
   });
 
-  const { data: announcements = [], isLoading: announcementsLoading } = useQuery<Announcement[]>({
+  const { data: announcements = [], isLoading: announcementsLoading } = useQuery<OwnerAnnouncement[]>({
     queryKey: ["/api/admin/announcements"],
     enabled: !!isSuperAdmin,
   });
@@ -1069,6 +1070,11 @@ export default function AdminPage() {
                                 <Badge variant="secondary" data-testid={`text-owner-announcement-kind-${announcement.id}`}>
                                   {announcement.kind}
                                 </Badge>
+                                {announcement.status === "published" && (
+                                  <Badge variant="outline" data-testid={`text-owner-announcement-views-${announcement.id}`}>
+                                    {announcement.viewCount || 0} viewed · {announcement.dismissCount || 0} dismissed
+                                  </Badge>
+                                )}
                               </div>
                               <h3 className="font-semibold" data-testid={`text-owner-announcement-title-${announcement.id}`}>{announcement.title}</h3>
                               <p className="text-sm text-muted-foreground line-clamp-3" data-testid={`text-owner-announcement-body-${announcement.id}`}>{announcement.body}</p>

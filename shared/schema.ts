@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -356,6 +356,24 @@ export const insertAnnouncementSchema = createInsertSchema(announcements)
 
 export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
 export type Announcement = typeof announcements.$inferSelect;
+
+export const announcementReceipts = pgTable("announcement_receipts", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  announcementId: varchar("announcement_id", { length: 36 }).notNull(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  viewedAt: timestamp("viewed_at"),
+  dismissedAt: timestamp("dismissed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  announcementUserUnique: uniqueIndex("announcement_receipts_announcement_user_idx").on(table.announcementId, table.userId),
+}));
+
+export const insertAnnouncementReceiptSchema = createInsertSchema(announcementReceipts)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertAnnouncementReceipt = z.infer<typeof insertAnnouncementReceiptSchema>;
+export type AnnouncementReceipt = typeof announcementReceipts.$inferSelect;
 
 export const LANGUAGES = [
   "All",
