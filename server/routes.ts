@@ -1897,6 +1897,51 @@ export async function registerRoutes(
     }
   });
 
+  // ── Payment Methods ──────────────────────────────────────────────────────────
+  app.get("/api/payment-methods", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id || (req.user as any).claims?.sub;
+      const methods = await storage.getPaymentMethods(userId);
+      res.json(methods);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/payment-methods", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id || (req.user as any).claims?.sub;
+      const { last4, brand, expMonth, expYear, cardholderName } = req.body;
+      if (!last4 || !brand || !expMonth || !expYear || !cardholderName) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      const pm = await storage.addPaymentMethod({ userId, last4: String(last4).slice(-4), brand, expMonth: Number(expMonth), expYear: Number(expYear), cardholderName });
+      res.json(pm);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/payment-methods/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id || (req.user as any).claims?.sub;
+      await storage.deletePaymentMethod(req.params.id, userId);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/payment-methods/:id/default", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id || (req.user as any).claims?.sub;
+      await storage.setDefaultPaymentMethod(req.params.id, userId);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // ── User Comments ───────────────────────────────────────────────────────────
   app.get("/api/users/:targetUserId/comments", async (req, res) => {
     try {

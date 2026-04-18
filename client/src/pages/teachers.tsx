@@ -44,8 +44,11 @@ import {
   Trophy,
   Filter,
   SlidersHorizontal,
+  CreditCard,
 } from "lucide-react";
 import { format } from "date-fns";
+import { PaymentMethodForm, SavedCardItem, type CardFormData } from "@/components/payment-method-form";
+import type { PaymentMethod } from "@shared/schema";
 
 type ReviewWithUser = {
   id: string;
@@ -390,11 +393,38 @@ function BookingDialog({
   onClose: () => void;
 }) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [step, setStep] = useState<1 | 2>(1);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState(teacher.sessionDurations[0] || "60");
   const [sessionType, setSessionType] = useState("private");
   const [notes, setNotes] = useState("");
+  const [selectedPmId, setSelectedPmId] = useState<string | null>(null);
+  const [showNewCard, setShowNewCard] = useState(false);
+
+  const totalPrice = Math.round((teacher.hourlyRate * Number(duration)) / 60);
+
+  const { data: paymentMethods = [], refetch: refetchPms } = useQuery<PaymentMethod[]>({
+    queryKey: ["/api/payment-methods"],
+    enabled: !!user,
+  });
+
+  const addPmMutation = useMutation({
+    mutationFn: async (data: CardFormData) => {
+      const res = await apiRequest("POST", "/api/payment-methods", data);
+      return res.json();
+    },
+    onSuccess: (pm: PaymentMethod) => {
+      refetchPms();
+      setSelectedPmId(pm.id);
+      setShowNewCard(false);
+      toast({ title: "Card saved!", description: `${pm.cardholderName}'s card ending in ${pm.last4} added.` });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to save card", description: err.message || "Please try again.", variant: "destructive" });
+    },
+  });
 
   const bookMutation = useMutation({
     mutationFn: async () => {
@@ -412,20 +442,34 @@ function BookingDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings/my"] });
       toast({ title: "Session booked!", description: `Your session with ${teacher.name} is confirmed.` });
-      onClose();
-      setDate(""); setTime(""); setNotes("");
+      handleClose();
     },
     onError: (err: any) => {
       toast({ title: "Booking failed", description: err.message || "Please try again.", variant: "destructive" });
     },
   });
 
+  function handleClose() {
+    onClose();
+    setStep(1);
+    setDate(""); setTime(""); setNotes("");
+    setSelectedPmId(null);
+    setShowNewCard(false);
+  }
+
+  function handleNextStep() {
+    if (!date || !time) return;
+    const defaultPm = paymentMethods.find((p) => p.isDefault);
+    if (!selectedPmId && defaultPm) setSelectedPmId(defaultPm.id);
+    setStep(2);
+  }
+
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
   const minDateStr = minDate.toISOString().split("T")[0];
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
         className="max-w-md border-0 p-0 overflow-hidden"
         style={{ background: "#0d1117" }}
@@ -436,130 +480,255 @@ function BookingDialog({
         />
         <div className="p-6 space-y-5">
           <DialogHeader>
-            <div className="flex items-center gap-3 mb-1">
-              <Avatar className="w-10 h-10">
-                <AvatarImage src={teacher.avatarUrl || undefined} />
-                <AvatarFallback>{teacher.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div>
-                <DialogTitle className="text-[15px]">Book a Session</DialogTitle>
-                <p className="text-[12px] text-white/50">with {teacher.name}</p>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-3">
+                {step === 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="text-white/40 hover:text-white/70 transition-colors mr-1"
+                    data-testid="button-booking-back"
+                  >
+                    ←
+                  </button>
+                )}
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={teacher.avatarUrl || undefined} />
+                  <AvatarFallback>{teacher.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <DialogTitle className="text-[15px]">
+                    {step === 1 ? "Book a Session" : "Payment"}
+                  </DialogTitle>
+                  <p className="text-[12px] text-white/50">with {teacher.name}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {[1, 2].map((s) => (
+                  <div
+                    key={s}
+                    className="h-1.5 rounded-full transition-all"
+                    style={{
+                      width: step === s ? "24px" : "8px",
+                      background: step >= s ? "rgba(0,200,255,0.7)" : "rgba(255,255,255,0.15)",
+                    }}
+                  />
+                ))}
               </div>
             </div>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] text-white/60">Date</Label>
-              <Input
-                type="date"
-                value={date}
-                min={minDateStr}
-                onChange={(e) => setDate(e.target.value)}
-                className="h-9 text-sm"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                data-testid="input-booking-date"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] text-white/60">Time</Label>
-              <Input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="h-9 text-sm"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                data-testid="input-booking-time"
-              />
-            </div>
-          </div>
+          {step === 1 && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[12px] text-white/60">Date</Label>
+                  <Input
+                    type="date"
+                    value={date}
+                    min={minDateStr}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="h-9 text-sm"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
+                    data-testid="input-booking-date"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[12px] text-white/60">Time</Label>
+                  <Input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="h-9 text-sm"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
+                    data-testid="input-booking-time"
+                  />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] text-white/60">Duration</Label>
-              <Select value={String(duration)} onValueChange={setDuration}>
-                <SelectTrigger
-                  className="h-9 text-sm"
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[12px] text-white/60">Duration</Label>
+                  <Select value={String(duration)} onValueChange={setDuration}>
+                    <SelectTrigger
+                      className="h-9 text-sm"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
+                      data-testid="select-booking-duration"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teacher.sessionDurations.map((d) => (
+                        <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[12px] text-white/60">Session Type</Label>
+                  <Select value={sessionType} onValueChange={setSessionType}>
+                    <SelectTrigger
+                      className="h-9 text-sm"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
+                      data-testid="select-booking-type"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">Private</SelectItem>
+                      <SelectItem value="group">Group</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[12px] text-white/60">Notes (optional)</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Topics to cover, your level, specific goals..."
+                  rows={3}
+                  className="text-sm resize-none"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                  data-testid="select-booking-duration"
+                  data-testid="textarea-booking-notes"
+                />
+              </div>
+
+              <div
+                className="flex items-center justify-between p-3 rounded-lg"
+                style={{ background: "rgba(0,200,255,0.06)", border: "1px solid rgba(0,200,255,0.12)" }}
+              >
+                <div className="text-[12px] text-white/60">Total ({duration} min)</div>
+                <div
+                  className="text-[16px] font-bold"
+                  style={{ background: "linear-gradient(135deg, #22d3ee, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                  data-testid="text-booking-total"
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {teacher.sessionDurations.map((d) => (
-                    <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] text-white/60">Session Type</Label>
-              <Select value={sessionType} onValueChange={setSessionType}>
-                <SelectTrigger
-                  className="h-9 text-sm"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                  data-testid="select-booking-type"
+                  ${totalPrice}
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="ghost"
+                  className="flex-1 h-9"
+                  onClick={handleClose}
+                  style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                  data-testid="button-booking-cancel"
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private">Private</SelectItem>
-                  <SelectItem value="group">Group</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 h-9 font-semibold"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,50,240,0.9) 100%)",
+                    border: "1px solid rgba(0,210,255,0.3)",
+                    boxShadow: "0 0 18px rgba(0,200,255,0.2)",
+                  }}
+                  onClick={handleNextStep}
+                  disabled={!date || !time}
+                  data-testid="button-booking-next"
+                >
+                  Next: Payment →
+                </Button>
+              </div>
+            </>
+          )}
 
-          <div className="space-y-1.5">
-            <Label className="text-[12px] text-white/60">Notes (optional)</Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Topics to cover, your level, specific goals..."
-              rows={3}
-              className="text-sm resize-none"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-              data-testid="textarea-booking-notes"
-            />
-          </div>
+          {step === 2 && (
+            <>
+              <div
+                className="flex items-center justify-between px-3 py-2 rounded-lg text-[12px]"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <span className="text-white/50">{duration} min · {date} at {time}</span>
+                <span
+                  className="font-bold text-[14px]"
+                  style={{ background: "linear-gradient(135deg, #22d3ee, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                >
+                  ${totalPrice}
+                </span>
+              </div>
 
-          <div
-            className="flex items-center justify-between p-3 rounded-lg"
-            style={{ background: "rgba(0,200,255,0.06)", border: "1px solid rgba(0,200,255,0.12)" }}
-          >
-            <div className="text-[12px] text-white/60">Total ({duration} min)</div>
-            <div
-              className="text-[16px] font-bold"
-              style={{ background: "linear-gradient(135deg, #22d3ee, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-            >
-              ${Math.round((teacher.hourlyRate * Number(duration)) / 60)}
-            </div>
-          </div>
+              {paymentMethods.length > 0 && !showNewCard && (
+                <div className="space-y-2">
+                  <Label className="text-[12px] text-white/60">Saved cards</Label>
+                  <div className="space-y-2">
+                    {paymentMethods.map((pm) => (
+                      <SavedCardItem
+                        key={pm.id}
+                        {...pm}
+                        selected={selectedPmId === pm.id}
+                        onSelect={() => setSelectedPmId(pm.id)}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCard(true)}
+                    className="w-full text-[12px] text-cyan-400/70 hover:text-cyan-400 py-2 rounded-lg transition-colors"
+                    style={{ border: "1px dashed rgba(0,200,255,0.2)" }}
+                    data-testid="button-add-new-card"
+                  >
+                    + Add a new card
+                  </button>
+                </div>
+              )}
 
-          <div className="flex gap-2 pt-1">
-            <Button
-              variant="ghost"
-              className="flex-1 h-9"
-              onClick={onClose}
-              style={{ border: "1px solid rgba(255,255,255,0.1)" }}
-              data-testid="button-booking-cancel"
-            >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1 h-9 font-semibold"
-              style={{
-                background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,50,240,0.9) 100%)",
-                border: "1px solid rgba(0,210,255,0.3)",
-                boxShadow: "0 0 18px rgba(0,200,255,0.2)",
-              }}
-              onClick={() => bookMutation.mutate()}
-              disabled={!date || !time || bookMutation.isPending}
-              data-testid="button-booking-confirm"
-            >
-              {bookMutation.isPending ? "Booking..." : "Confirm Booking"}
-            </Button>
-          </div>
+              {(paymentMethods.length === 0 || showNewCard) && (
+                <div className="space-y-3">
+                  {showNewCard && (
+                    <button
+                      type="button"
+                      onClick={() => setShowNewCard(false)}
+                      className="text-[12px] text-white/40 hover:text-white/60 transition-colors"
+                      data-testid="button-back-to-cards"
+                    >
+                      ← Back to saved cards
+                    </button>
+                  )}
+                  {paymentMethods.length === 0 && (
+                    <p className="text-[12px] text-white/40 text-center py-1">
+                      No saved cards yet — add one to continue
+                    </p>
+                  )}
+                  <PaymentMethodForm
+                    onSubmit={(data) => addPmMutation.mutate(data)}
+                    isPending={addPmMutation.isPending}
+                    submitLabel="Save Card & Continue"
+                  />
+                </div>
+              )}
+
+              {paymentMethods.length > 0 && !showNewCard && (
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="ghost"
+                    className="flex-1 h-9"
+                    onClick={handleClose}
+                    style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                    data-testid="button-booking-cancel-2"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1 h-9 font-semibold"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,50,240,0.9) 100%)",
+                      border: "1px solid rgba(0,210,255,0.3)",
+                      boxShadow: "0 0 18px rgba(0,200,255,0.2)",
+                    }}
+                    onClick={() => bookMutation.mutate()}
+                    disabled={!selectedPmId || bookMutation.isPending}
+                    data-testid="button-booking-confirm"
+                  >
+                    {bookMutation.isPending ? "Booking..." : `Confirm & Pay $${totalPrice}`}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -1151,6 +1320,21 @@ export default function TeachersPage() {
 
       <div className="flex-1 overflow-auto">
         <div className="max-w-6xl mx-auto p-4 space-y-5">
+
+          {user && (
+            <button
+              onClick={() => navigate("/payment-methods")}
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-colors hover:opacity-80"
+              style={{ background: "rgba(0,200,255,0.05)", border: "1px solid rgba(0,200,255,0.15)" }}
+              data-testid="button-manage-payment-methods"
+            >
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-cyan-400" />
+                <span className="text-[13px] text-white/70">Payment Methods</span>
+              </div>
+              <span className="text-[11px] text-cyan-400/50">Manage cards →</span>
+            </button>
+          )}
 
           {user && myBookings.length > 0 && (
             <div

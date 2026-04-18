@@ -122,7 +122,8 @@ shared/
 67. Profile image hardening — avatar components fall back to initials when stored image URLs fail, profile image paths are normalized on update, and legacy imported avatar/image files can still be served when old data references root-level filenames.
 68. Short room URLs — rooms keep UUID primary keys internally while storing a short room id plus access key; public rooms open as /room/{shortId} without a key, while private rooms require the host-owned /room/{shortId}?key={accessKey} link and reject unkeyed UUID/short access.
 69. Owner-only account deletion — the Platform Owner can permanently delete non-admin user accounts from /admin, with server-side guards and cleanup across user-related records.
-70. Sample room card images — lobby demo room participants use local generated SVG portrait images so room cards show avatars instead of blank initials and avoid external image dependencies.
+70. Payment methods UI — users can save payment cards (stored as last 4 digits + brand + expiry, never raw card data) via a dedicated `/payment-methods` page and inline during booking; the BookingDialog is a 2-step flow (Session Details → Payment) with card brand detection (Visa/Mastercard/Amex/Discover), real-time formatting, expiry/CVV validation, saved card selection, and default card management.
+71. Sample room card images — lobby demo room participants use local generated SVG portrait images so room cards show avatars instead of blank initials and avoid external image dependencies.
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.

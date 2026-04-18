@@ -459,6 +459,24 @@ export const insertSecurityEventSchema = createInsertSchema(securityEvents).omit
 export type InsertSecurityEvent = z.infer<typeof insertSecurityEventSchema>;
 export type SecurityEvent = typeof securityEvents.$inferSelect;
 
+export const paymentMethods = pgTable("payment_methods", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  last4: varchar("last4", { length: 4 }).notNull(),
+  brand: varchar("brand", { length: 20 }).notNull(),
+  expMonth: integer("exp_month").notNull(),
+  expYear: integer("exp_year").notNull(),
+  cardholderName: text("cardholder_name").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  paymentMethodsUserIdx: index("payment_methods_user_id_idx").on(table.userId),
+}));
+
+export const insertPaymentMethodSchema = createInsertSchema(paymentMethods).omit({ id: true, createdAt: true, isDefault: true });
+export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
+export type PaymentMethod = typeof paymentMethods.$inferSelect;
+
 export const LANGUAGES = [
   "All",
   "English",

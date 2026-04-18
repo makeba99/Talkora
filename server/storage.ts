@@ -51,6 +51,8 @@ import {
   type AnnouncementReceipt,
   securityEvents,
   type SecurityEvent,
+  paymentMethods,
+  type PaymentMethod,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -161,6 +163,12 @@ export interface IStorage {
   getSecurityEvents(limit?: number, unresolvedOnly?: boolean): Promise<SecurityEvent[]>;
   resolveSecurityEvent(id: string, resolvedById: string): Promise<SecurityEvent | undefined>;
   getUnresolvedSecurityEventCount(): Promise<number>;
+
+  getPaymentMethods(userId: string): Promise<PaymentMethod[]>;
+  addPaymentMethod(data: { userId: string; last4: string; brand: string; expMonth: number; expYear: number; cardholderName: string }): Promise<PaymentMethod>;
+  deletePaymentMethod(id: string, userId: string): Promise<void>;
+  setDefaultPaymentMethod(id: string, userId: string): Promise<void>;
+  getDefaultPaymentMethod(userId: string): Promise<PaymentMethod | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -976,6 +984,38 @@ export class DatabaseStorage implements IStorage {
       .from(securityEvents)
       .where(eq(securityEvents.resolved, false));
     return Number(row?.count) || 0;
+  }
+
+  async getPaymentMethods(userId: string): Promise<PaymentMethod[]> {
+    return db.select().from(paymentMethods).where(eq(paymentMethods.userId, userId)).orderBy(desc(paymentMethods.createdAt));
+  }
+
+  async addPaymentMethod(data: { userId: string; last4: string; brand: string; expMonth: number; expYear: number; cardholderName: string }): Promise<PaymentMethod> {
+    const existing = await this.getPaymentMethods(data.userId);
+    const isDefault = existing.length === 0;
+    const [pm] = await db.insert(paymentMethods).values({ ...data, isDefault }).returning();
+    return pm;
+  }
+
+  async deletePaymentMethod(id: string, userId: string): Promise<void> {
+    const [pm] = await db.select().from(paymentMethods).where(and(eq(paymentMethods.id, id), eq(paymentMethods.userId, userId)));
+    await db.delete(paymentMethods).where(and(eq(paymentMethods.id, id), eq(paymentMethods.userId, userId)));
+    if (pm?.isDefault) {
+      const remaining = await this.getPaymentMethods(userId);
+      if (remaining.length > 0) {
+        await db.update(paymentMethods).set({ isDefault: true }).where(eq(paymentMethods.id, remaining[0].id));
+      }
+    }
+  }
+
+  async setDefaultPaymentMethod(id: string, userId: string): Promise<void> {
+    await db.update(paymentMethods).set({ isDefault: false }).where(eq(paymentMethods.userId, userId));
+    await db.update(paymentMethods).set({ isDefault: true }).where(and(eq(paymentMethods.id, id), eq(paymentMethods.userId, userId)));
+  }
+
+  async getDefaultPaymentMethod(userId: string): Promise<PaymentMethod | undefined> {
+    const [pm] = await db.select().from(paymentMethods).where(and(eq(paymentMethods.userId, userId), eq(paymentMethods.isDefault, true)));
+    return pm;
   }
 }
 
