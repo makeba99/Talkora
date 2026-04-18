@@ -275,6 +275,20 @@ export default function AdminPage() {
     onError: (error: any) => toast({ title: "Failed to lift restriction", description: error.message, variant: "destructive" }),
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest("DELETE", `/api/admin/users/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms/participants"] });
+      toast({ title: "User account deleted", description: "The account and related platform data were removed." });
+    },
+    onError: (error: any) => toast({ title: "Failed to delete user", description: error.message, variant: "destructive" }),
+  });
+
   const resetAnnouncementForm = () => {
     setAnnouncementTitle("");
     setAnnouncementBody("");
@@ -621,6 +635,7 @@ export default function AdminPage() {
                       const isOwner = item.email === OWNER_EMAIL || item.role === "superadmin";
                       const canEditRole = isSuperAdmin && !isOwner;
                       const canWarn = !isOwner && (isSuperAdmin || item.role !== "admin");
+                      const canDeleteUser = isSuperAdmin && !isOwner && item.role !== "admin";
                       const restrictedUntil = item.restrictedUntil ? new Date(item.restrictedUntil) : null;
                       const isRestricted = !!restrictedUntil && restrictedUntil.getTime() > Date.now();
                       return (
@@ -674,6 +689,21 @@ export default function AdminPage() {
                             {isSuperAdmin && !isOwner && isRestricted && (
                               <Button size="sm" variant="outline" onClick={() => liftRestrictionMutation.mutate(item.id)} disabled={liftRestrictionMutation.isPending} data-testid={`button-lift-restriction-${item.id}`}>
                                 Lift restriction
+                              </Button>
+                            )}
+                            {canDeleteUser && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  if (window.confirm(`Delete ${getUserDisplayName(item)} permanently? This cannot be undone.`)) {
+                                    deleteUserMutation.mutate(item.id);
+                                  }
+                                }}
+                                disabled={deleteUserMutation.isPending}
+                                data-testid={`button-delete-user-${item.id}`}
+                              >
+                                Delete account
                               </Button>
                             )}
                           </div>

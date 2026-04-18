@@ -7,6 +7,8 @@ export * from "./models/auth";
 
 export const rooms = pgTable("rooms", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  shortId: varchar("short_id", { length: 16 }),
+  accessKey: varchar("access_key", { length: 32 }),
   title: text("title").notNull(),
   language: text("language").notNull(),
   level: text("level").notNull(),
@@ -23,6 +25,7 @@ export const rooms = pgTable("rooms", {
   welcomeAccentColor: varchar("welcome_accent_color", { length: 30 }).notNull().default("#8B5CF6"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
+  roomsShortIdIdx: uniqueIndex("rooms_short_id_idx").on(table.shortId),
   roomsOwnerIdx: index("rooms_owner_id_idx").on(table.ownerId),
   roomsCreatedAtIdx: index("rooms_created_at_idx").on(table.createdAt),
 }));

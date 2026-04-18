@@ -119,11 +119,14 @@ shared/
 64. Announcement read receipts — logged-in users automatically create per-announcement view receipts, can dismiss published announcements from the lobby, and the Platform Owner sees viewed/dismissed counts in the admin announcement list
 65. Microphone recovery/settings — voice rooms include an Allow Microphone retry flow with clear blocked-permission guidance and a microphone source selector for switching between connected input devices.
 66. Chat unread/reply upgrades — room chat shows a prominent jump-to-latest button with unread counts, and replies now preserve text/image/GIF previews when sending text, pasted images, uploaded images, or selected GIFs.
+67. Profile image hardening — avatar components fall back to initials when stored image URLs fail, profile image paths are normalized on update, and legacy imported avatar/image files can still be served when old data references root-level filenames.
+68. Short room URLs — rooms keep UUID primary keys internally while storing a short room id plus access key; lobby joins open /room/{shortId}?key={accessKey} and room loading resolves back to the UUID for WebRTC/socket operations.
+69. Owner-only account deletion — the Platform Owner can permanently delete non-admin user accounts from /admin, with server-side guards and cleanup across user-related records.
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.
 - Platform Admins: assigned only by the Super Admin from `/admin`; can view users, review/dismiss reports, review badge/teacher applications, issue warnings, award badges, and bypass room capacity checks.
-- Platform Owner-only actions: view user emails, restrict/unrestrict users, send global announcements, and promote/demote platform admins.
+- Platform Owner-only actions: view user emails, restrict/unrestrict users, delete non-admin user accounts, send global announcements, and promote/demote platform admins.
 - Warnings: increment `users.warningCount`, create stored notifications, emit real-time warning events, and visually flag warned users in the admin UI.
 - Restrictions: persist `restrictedUntil`, `restrictedReason`, and `restrictedById`; server routes and sockets enforce active restrictions.
 - Reports: stored in `reports` with reporter/reported metadata, category, reason, and status (`pending`, `reviewed`, `dismissed`).
@@ -136,7 +139,7 @@ Users table (shared/models/auth.ts):
 - id (varchar PK), email, firstName, lastName, displayName, profileImageUrl, bio, avatarRing, flairBadge, profileDecoration, status, role, warningCount, restrictedUntil, restrictedReason, restrictedById, createdAt, updatedAt
 
 Rooms table (shared/schema.ts):
-- id, title, language, level, maxUsers, ownerId, isPublic, activeUsers, roomTheme (varchar 50), createdAt
+- id, shortId, accessKey, title, language, level, maxUsers, ownerId, isPublic, activeUsers, roomTheme, hologramVideoUrl, welcome settings, createdAt
 
 Badge applications table (shared/schema.ts):
 - id, userId, badgeType, reason, status, reviewedById, adminNotes, createdAt, updatedAt

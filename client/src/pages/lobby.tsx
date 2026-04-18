@@ -668,7 +668,7 @@ export default function Lobby() {
   }, [socket, toast]);
 
   const handleJoinRoom = useCallback(
-    (roomId: string) => {
+    async (roomId: string) => {
       if (roomId.startsWith("sample-")) {
         toast({ title: "Demo room", description: "Sign in and create your own room to start talking!" });
         return;
@@ -677,7 +677,17 @@ export default function Lobby() {
         window.location.href = "/api/login";
         return;
       }
-      window.open(`/room/${roomId}`, "_blank");
+      try {
+        const res = await apiRequest("POST", `/api/rooms/${encodeURIComponent(roomId)}/access-link`, {});
+        const data = await res.json();
+        window.open(data.path || `/room/${roomId}`, "_blank");
+      } catch (error: any) {
+        toast({
+          title: "Unable to open room",
+          description: error?.message || "Please try again.",
+          variant: "destructive",
+        });
+      }
     },
     [user, toast]
   );

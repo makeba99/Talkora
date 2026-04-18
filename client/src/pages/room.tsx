@@ -11,10 +11,19 @@ export default function RoomPage() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
+  const accessKey = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("key") : null;
 
-  const { data: room, isLoading } = useQuery<Room>({
-    queryKey: ["/api/rooms", params.id],
+  const { data: room, isLoading, isError } = useQuery<Room>({
+    queryKey: ["/api/rooms", params.id, accessKey],
     enabled: !!params.id,
+    queryFn: async () => {
+      const query = accessKey ? `?key=${encodeURIComponent(accessKey)}` : "";
+      const res = await fetch(`/api/rooms/${encodeURIComponent(params.id || "")}${query}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
   });
 
   if (isLoading || authLoading) {
@@ -50,12 +59,12 @@ export default function RoomPage() {
     );
   }
 
-  if (!room) {
+  if (!room || isError) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-3">
           <h2 className="text-xl font-semibold">Room not found</h2>
-          <p className="text-muted-foreground text-sm">This room may have been deleted.</p>
+          <p className="text-muted-foreground text-sm">This room may have been deleted, or the room link may be invalid.</p>
           <Button variant="outline" onClick={() => navigate("/")} data-testid="link-back-lobby">
             Back to Lobby
           </Button>

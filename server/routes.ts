@@ -32,6 +32,30 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+const legacyAssetPattern = /^\/((?:avatar|image|hologram|announcement|welcome)[-_][A-Za-z0-9_.-]+\.(?:png|jpe?g|gif|webp|mp4|webm|mov|ogg))$/i;
+
+function normalizeProfileImageUrl(value: unknown): string | null | undefined {
+  if (value === null) return null;
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (/^(https?:|data:|blob:|\/uploads\/)/i.test(trimmed)) return trimmed;
+  const filename = path.basename(trimmed);
+  if (!/\.(png|jpe?g|gif|webp)$/i.test(filename)) return trimmed.startsWith("/") ? trimmed : `/${filename}`;
+  if (fs.existsSync(path.join(uploadsDir, filename))) return `/uploads/${filename}`;
+  return trimmed.startsWith("/") ? trimmed : `/${filename}`;
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function roomPublicPayload(room: any, includeAccessKey = false) {
+  if (!room) return room;
+  return includeAccessKey ? room : { ...room, accessKey: null };
+}
+
 const uploadStorage = multer.diskStorage({
   destination: uploadsDir,
   filename: (_req, file, cb) => {
@@ -151,6 +175,17 @@ export async function registerRoutes(
   });
   const expressStatic = (await import("express")).default.static;
   app.use("/uploads", expressStatic(uploadsDir));
+
+  app.get(legacyAssetPattern, (req, res, next) => {
+    const filename = req.params[0];
+    const filePath = path.join(process.cwd(), filename);
+    if (!filePath.startsWith(process.cwd() + path.sep) || !fs.existsSync(filePath)) {
+      next();
+      return;
+    }
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.sendFile(filePath);
+  });
 
   app.get("/api/rooms/participants", async (_req, res) => {
     try {
@@ -419,7 +454,7 @@ export async function registerRoutes(
       const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, instagramUrl, linkedinUrl, facebookUrl } = req.body;
       const updateData: any = {};
       if (displayName !== undefined) updateData.displayName = displayName;
-      if (profileImageUrl !== undefined) updateData.profileImageUrl = profileImageUrl;
+      if (profileImageUrl !== undefined) updateData.profileImageUrl = normalizeProfileImageUrl(profileImageUrl);
       if (avatarRing !== undefined) updateData.avatarRing = avatarRing;
       if (flairBadge !== undefined) updateData.flairBadge = flairBadge;
       if (bio !== undefined) updateData.bio = bio;
@@ -471,7 +506,25 @@ export async function registerRoutes(
   app.get("/api/rooms", async (_req, res) => {
     try {
       const allRooms = await storage.getAllRooms();
-      res.json(allRooms);
+      res.json(allRooms.map((room) => roomPublicPayload(room)));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/rooms/:id/access-link", isAuthenticated, async (req: any, res) => {
+    try {
+      const roomParam = req.params.id;
+      const room = isUuid(roomParam) ? await storage.getRoom(roomParam) : await storage.getRoomByShortId(roomParam);
+      if (!room) return res.status(404).json({ message: "Room not found" });
+      const origin = `${req.protocol}://${req.get("host")}`;
+      const pathOnly = `/room/${room.shortId}?key=${encodeURIComponent(room.accessKey || "")}`;
+      res.json({
+        roomId: room.id,
+        shortId: room.shortId,
+        path: pathOnly,
+        url: `${origin}${pathOnly}`,
+      });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -479,9 +532,13 @@ export async function registerRoutes(
 
   app.get("/api/rooms/:id", async (req, res) => {
     try {
-      const room = await storage.getRoom(req.params.id);
+      const roomParam = req.params.id;
+      const room = isUuid(roomParam) ? await storage.getRoom(roomParam) : await storage.getRoomByShortId(roomParam);
       if (!room) return res.status(404).json({ message: "Room not found" });
-      res.json(room);
+      if (!isUuid(roomParam) && room.accessKey !== req.query.key) {
+        return res.status(403).json({ message: "Invalid room link" });
+      }
+      res.json(roomPublicPayload(room, true));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -1057,6 +1114,54 @@ export async function registerRoutes(
         io.to(socketId).emit("admin:restriction-lifted");
       }
       res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/users/:userId", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const requesterId = (req.user as any).id;
+      const target = await storage.getUser(userId);
+      if (!target) return res.status(404).json({ message: "User not found" });
+      if (userId === requesterId) return res.status(403).json({ message: "You cannot delete your own account here" });
+      if (target.role === "admin" || target.role === "superadmin" || target.email === SUPER_ADMIN_EMAIL) {
+        return res.status(403).json({ message: "Admins and the Platform Owner cannot be deleted" });
+      }
+
+      const targetRooms = await storage.getRoomsByOwner(userId);
+      for (const room of targetRooms) {
+        const timer = roomDeleteTimers.get(room.id);
+        if (timer) clearTimeout(timer);
+        roomDeleteTimers.delete(room.id);
+        roomParticipants.delete(room.id);
+        roomVideoStatus.delete(room.id);
+        roomScreenShareStatus.delete(room.id);
+        roomYoutubeState.delete(room.id);
+        roomBookState.delete(room.id);
+        roomRoles.delete(room.id);
+        roomMuteStatus.delete(room.id);
+        roomMessageReactions.delete(room.id);
+        io.to(room.id).emit("room:deleted", { roomId: room.id });
+      }
+
+      const socketId = userSockets.get(userId);
+      if (socketId) {
+        io.to(socketId).emit("admin:account-deleted");
+        io.sockets.sockets.get(socketId)?.disconnect(true);
+      }
+      onlineUsers.delete(userId);
+      userSockets.delete(userId);
+      userCurrentRoom.delete(userId);
+      const timer = disconnectTimers.get(userId);
+      if (timer) clearTimeout(timer);
+      disconnectTimers.delete(userId);
+
+      await storage.deleteUser(userId);
+      io.emit("presence:online", Array.from(onlineUsers));
+      io.emit("room:deleted", { userIds: [userId] });
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

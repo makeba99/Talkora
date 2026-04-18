@@ -55,6 +55,7 @@ import {
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
 import { userCache, roomCache } from "./cache";
+import { randomBytes } from "crypto";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -65,6 +66,7 @@ export interface IStorage {
 
   createRoom(room: InsertRoom & { ownerId: string }): Promise<Room>;
   getRoom(id: string): Promise<Room | undefined>;
+  getRoomByShortId(shortId: string): Promise<Room | undefined>;
   getAllRooms(): Promise<Room[]>;
   getRoomsByOwner(ownerId: string): Promise<Room[]>;
   updateRoom(id: string, data: Partial<{ title: string; language: string; level: string; maxUsers: number; ownerId: string; roomTheme: string | null; hologramVideoUrl: string | null; welcomeMessage: string | null; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string }>): Promise<Room | undefined>;
@@ -103,6 +105,7 @@ export interface IStorage {
   setUserRole(userId: string, role: string): Promise<User | undefined>;
   restrictUser(userId: string, data: { restrictedUntil: Date | null; restrictedReason: string | null; restrictedById: string | null }): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  deleteUser(userId: string): Promise<void>;
 
   addVote(roomId: string, userId: string): Promise<void>;
   removeVote(roomId: string, userId: string): Promise<void>;
@@ -161,6 +164,35 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private generateAccessKey(): string {
+    return randomBytes(12).toString("base64url").slice(0, 16);
+  }
+
+  private async generateUniqueShortId(): Promise<string> {
+    for (let i = 0; i < 12; i++) {
+      const shortId = `iw${randomBytes(4).toString("hex").slice(0, 5)}`;
+      const [existing] = await db.select({ id: rooms.id }).from(rooms).where(eq(rooms.shortId, shortId));
+      if (!existing) return shortId;
+    }
+    return `iw${Date.now().toString(36).slice(-8)}`;
+  }
+
+  private async ensureRoomAccessFields(room: Room): Promise<Room> {
+    if (room.shortId && room.accessKey) return room;
+    const shortId = room.shortId || await this.generateUniqueShortId();
+    const accessKey = room.accessKey || this.generateAccessKey();
+    const [updated] = await db
+      .update(rooms)
+      .set({ shortId, accessKey })
+      .where(eq(rooms.id, room.id))
+      .returning();
+    const result = updated || room;
+    roomCache.set(`room:${result.id}`, result);
+    if (result.shortId) roomCache.set(`room:short:${result.shortId}`, result);
+    roomCache.delete("rooms:all");
+    return result;
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     const cached = userCache.get(`user:${id}`);
     if (cached) return cached;
@@ -214,7 +246,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRoom(roomData: InsertRoom & { ownerId: string }): Promise<Room> {
-    const [room] = await db.insert(rooms).values(roomData).returning();
+    const [room] = await db.insert(rooms).values({
+      ...roomData,
+      shortId: await this.generateUniqueShortId(),
+      accessKey: this.generateAccessKey(),
+    }).returning();
     roomCache.delete("rooms:all");
     return room;
   }
@@ -223,16 +259,29 @@ export class DatabaseStorage implements IStorage {
     const cached = roomCache.get(`room:${id}`);
     if (cached) return cached;
     const [room] = await db.select().from(rooms).where(eq(rooms.id, id));
-    if (room) roomCache.set(`room:${id}`, room);
-    return room;
+    if (!room) return undefined;
+    const result = await this.ensureRoomAccessFields(room);
+    roomCache.set(`room:${id}`, result);
+    return result;
+  }
+
+  async getRoomByShortId(shortId: string): Promise<Room | undefined> {
+    const cached = roomCache.get(`room:short:${shortId}`);
+    if (cached) return cached;
+    const [room] = await db.select().from(rooms).where(eq(rooms.shortId, shortId));
+    if (!room) return undefined;
+    const result = await this.ensureRoomAccessFields(room);
+    roomCache.set(`room:short:${shortId}`, result);
+    return result;
   }
 
   async getAllRooms(): Promise<Room[]> {
     const cached = roomCache.get("rooms:all");
     if (cached) return cached;
     const result = await db.select().from(rooms).orderBy(desc(rooms.createdAt));
-    roomCache.set("rooms:all", result, 5_000);
-    return result;
+    const normalized = await Promise.all(result.map((room) => this.ensureRoomAccessFields(room)));
+    roomCache.set("rooms:all", normalized, 5_000);
+    return normalized;
   }
 
   async getRoomsByOwner(ownerId: string): Promise<Room[]> {
@@ -254,6 +303,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRoom(id: string): Promise<void> {
     await db.delete(roomMessages).where(eq(roomMessages.roomId, id));
+    await db.delete(roomVotes).where(eq(roomVotes.roomId, id));
     await db.delete(rooms).where(eq(rooms.id, id));
     roomCache.delete(`room:${id}`);
     roomCache.delete("rooms:all");
@@ -509,6 +559,56 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    const ownedRooms = await db.select({ id: rooms.id }).from(rooms).where(eq(rooms.ownerId, userId));
+    const ownedRoomIds = ownedRooms.map((room) => room.id);
+    const ownedTeachers = await db.select({ id: teachers.id }).from(teachers).where(eq(teachers.userId, userId));
+    const ownedTeacherIds = ownedTeachers.map((teacher) => teacher.id);
+    const ownedAnnouncements = await db.select({ id: announcements.id }).from(announcements).where(eq(announcements.createdById, userId));
+    const ownedAnnouncementIds = ownedAnnouncements.map((announcement) => announcement.id);
+
+    await db.transaction(async (tx) => {
+      if (ownedRoomIds.length > 0) {
+        await tx.delete(roomMessages).where(inArray(roomMessages.roomId, ownedRoomIds));
+        await tx.delete(roomVotes).where(inArray(roomVotes.roomId, ownedRoomIds));
+        await tx.delete(rooms).where(inArray(rooms.id, ownedRoomIds));
+      }
+
+      if (ownedTeacherIds.length > 0) {
+        await tx.delete(bookings).where(inArray(bookings.teacherId, ownedTeacherIds));
+        await tx.delete(teacherReviews).where(inArray(teacherReviews.teacherId, ownedTeacherIds));
+        await tx.delete(teachers).where(inArray(teachers.id, ownedTeacherIds));
+      }
+
+      if (ownedAnnouncementIds.length > 0) {
+        await tx.delete(announcementReceipts).where(inArray(announcementReceipts.announcementId, ownedAnnouncementIds));
+        await tx.delete(announcements).where(inArray(announcements.id, ownedAnnouncementIds));
+      }
+
+      await tx.delete(messages).where(or(eq(messages.fromId, userId), eq(messages.toId, userId)));
+      await tx.delete(follows).where(or(eq(follows.followerId, userId), eq(follows.followingId, userId)));
+      await tx.delete(notifications).where(or(eq(notifications.userId, userId), eq(notifications.fromUserId, userId)));
+      await tx.delete(blocks).where(or(eq(blocks.blockerId, userId), eq(blocks.blockedId, userId)));
+      await tx.delete(reports).where(or(eq(reports.reporterId, userId), eq(reports.reportedId, userId)));
+      await tx.delete(roomVotes).where(eq(roomVotes.userId, userId));
+      await tx.delete(roomMessages).where(eq(roomMessages.userId, userId));
+      await tx.delete(bookings).where(eq(bookings.userId, userId));
+      await tx.delete(teacherReviews).where(eq(teacherReviews.userId, userId));
+      await tx.delete(teacherApplications).where(eq(teacherApplications.userId, userId));
+      await tx.delete(userComments).where(or(eq(userComments.targetUserId, userId), eq(userComments.authorId, userId)));
+      await tx.delete(userBadges).where(or(eq(userBadges.userId, userId), eq(userBadges.awardedById, userId)));
+      await tx.delete(badgeApplications).where(or(eq(badgeApplications.userId, userId), eq(badgeApplications.reviewedById, userId)));
+      await tx.delete(announcementReceipts).where(eq(announcementReceipts.userId, userId));
+      await tx.delete(securityEvents).where(or(eq(securityEvents.userId, userId), eq(securityEvents.resolvedById, userId)));
+      await tx.delete(users).where(eq(users.id, userId));
+    });
+
+    userCache.delete(`user:${userId}`);
+    userCache.delete("users:all");
+    for (const roomId of ownedRoomIds) roomCache.delete(`room:${roomId}`);
+    roomCache.delete("rooms:all");
   }
 
   async addVote(roomId: string, userId: string): Promise<void> {
