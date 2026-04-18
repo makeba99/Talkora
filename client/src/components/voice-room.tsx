@@ -1888,6 +1888,69 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     onLeave();
   };
 
+  const renderMicSettingsContent = () => (
+    <div className="p-4 space-y-3">
+      <div className="flex items-start gap-2">
+        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center flex-shrink-0">
+          <Mic className="w-4 h-4 text-cyan-300" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-white">Microphone Settings</p>
+          <p className="text-[11px] text-white/45 leading-relaxed">
+            Allow access and choose which mic you want to use.
+          </p>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-[11px] text-white/65">Source</Label>
+        <Select value={selectedAudioDeviceId} onValueChange={handleMicrophoneSelect} disabled={micSwitching}>
+          <SelectTrigger className="h-9 bg-white/5 border-white/10 text-white" data-testid="select-microphone-source">
+            <SelectValue placeholder="Default microphone" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default">Default microphone</SelectItem>
+            {audioInputDevices.filter((device) => device.deviceId).map((device, index) => (
+              <SelectItem key={device.deviceId} value={device.deviceId}>
+                {device.label || `Microphone ${index + 1}`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {micPermissionStatus === "denied" && (
+        <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100/80 leading-relaxed" data-testid="status-mic-blocked">
+          Your browser is blocking the mic. Click the mic/camera icon in the address bar, choose Allow, then retry.
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={retryMicPermission}
+          disabled={micSwitching}
+          data-testid="button-audio-allow"
+          className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+        >
+          {micSwitching ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Mic className="w-3.5 h-3.5 mr-1.5" />}
+          Allow
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={refreshAudioInputDevices}
+          disabled={micSwitching}
+          data-testid="button-refresh-microphones"
+          className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+        >
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+          Refresh
+        </Button>
+      </div>
+    </div>
+  );
+
   const renderControlDock = () => {
     const ghostStyle: React.CSSProperties = {
       background: "rgba(255,255,255,0.058)",
@@ -1938,24 +2001,53 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       >
         {/* Mute */}
         <div className="flex flex-col items-center gap-[7px]">
-          <button
-            onClick={toggleMute}
-            disabled={micError}
-            data-testid="button-toggle-mute"
-            title={isMuted ? "Unmute" : "Mute"}
-            className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
-            style={isMuted ? ghostStyle : micLiveStyle}
-          >
-            {isMuted
-              ? <MicOff className="w-[18px] h-[18px]" />
-              : (
-                <span className="relative flex items-center justify-center">
-                  <Mic className="w-[18px] h-[18px]" />
-                  <span className="absolute -top-[3px] -right-[3px] w-[7px] h-[7px] rounded-full bg-green-400 border border-black/30 shadow-sm" />
-                </span>
-              )
-            }
-          </button>
+          <div className="relative group">
+            <button
+              onClick={toggleMute}
+              disabled={micError}
+              data-testid="button-toggle-mute"
+              title={isMuted ? "Unmute" : "Mute"}
+              className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
+              style={isMuted ? ghostStyle : micLiveStyle}
+            >
+              {isMuted
+                ? <MicOff className="w-[18px] h-[18px]" />
+                : (
+                  <span className="relative flex items-center justify-center">
+                    <Mic className="w-[18px] h-[18px]" />
+                    <span className="absolute -top-[3px] -right-[3px] w-[7px] h-[7px] rounded-full bg-green-400 border border-black/30 shadow-sm" />
+                  </span>
+                )
+              }
+            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid="button-mic-inline-settings"
+                  title="Microphone settings"
+                  className={`absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center border shadow-lg transition-all duration-150 focus:opacity-100 focus:scale-100 ${micError ? "opacity-100 scale-100" : "opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"}`}
+                  style={micError
+                    ? { background: "rgba(245,158,11,0.95)", borderColor: "rgba(251,191,36,0.95)", color: "#111827" }
+                    : { background: "rgba(15,23,42,0.94)", borderColor: "rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.85)" }
+                  }
+                >
+                  <Settings className="w-3 h-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-80 p-0 border-0 shadow-2xl overflow-hidden"
+                style={{ background: "#1a1f2e" }}
+                align="center"
+                side="bottom"
+                sideOffset={12}
+                data-testid="popover-audio-settings"
+              >
+                {renderMicSettingsContent()}
+              </PopoverContent>
+            </Popover>
+          </div>
           <span className={labelBase} style={isMuted ? { color: "rgba(255,255,255,0.32)" } : { color: "rgba(74,222,128,0.82)" }}>
             {isMuted ? "Unmute" : "Live"}
           </span>
@@ -4597,89 +4689,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 );
               })()}
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    data-testid="button-audio-settings"
-                    title="Microphone settings"
-                    className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
-                    style={micError
-                      ? { background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.24)", color: "rgba(251,191,36,0.92)", boxShadow: "0 0 10px rgba(245,158,11,0.12)" }
-                      : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
-                    }
-                  >
-                    <Mic className="w-[14px] h-[14px]" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-80 p-0 border-0 shadow-2xl overflow-hidden"
-                  style={{ background: "#1a1f2e" }}
-                  align="end"
-                  data-testid="popover-audio-settings"
-                >
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-start gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center flex-shrink-0">
-                        <Mic className="w-4 h-4 text-cyan-300" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-white">Microphone Settings</p>
-                        <p className="text-[11px] text-white/45 leading-relaxed">
-                          Allow access and choose which mic you want to use.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px] text-white/65">Source</Label>
-                      <Select value={selectedAudioDeviceId} onValueChange={handleMicrophoneSelect} disabled={micSwitching}>
-                        <SelectTrigger className="h-9 bg-white/5 border-white/10 text-white" data-testid="select-microphone-source">
-                          <SelectValue placeholder="Default microphone" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="default">Default microphone</SelectItem>
-                          {audioInputDevices.filter((device) => device.deviceId).map((device, index) => (
-                            <SelectItem key={device.deviceId} value={device.deviceId}>
-                              {device.label || `Microphone ${index + 1}`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {micPermissionStatus === "denied" && (
-                      <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100/80 leading-relaxed" data-testid="status-mic-blocked">
-                        Your browser is blocking the mic. Click the mic/camera icon in the address bar, choose Allow, then retry.
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={retryMicPermission}
-                        disabled={micSwitching}
-                        data-testid="button-audio-allow"
-                        className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                      >
-                        {micSwitching ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Mic className="w-3.5 h-3.5 mr-1.5" />}
-                        Allow
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={refreshAudioInputDevices}
-                        disabled={micSwitching}
-                        data-testid="button-refresh-microphones"
-                        className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-                        Refresh
-                      </Button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
 
               {/* Settings */}
               {isHost && (
