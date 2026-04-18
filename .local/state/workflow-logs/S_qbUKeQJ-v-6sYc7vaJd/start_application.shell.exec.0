@@ -1,0 +1,489 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 0 empty rooms for deletion
+5:18:44 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+5:18:57 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+5:18:57 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:18:57 PM [express] GET /api/rooms 200 in 45ms :: []
+5:18:57 PM [express] GET /api/announcements 304 in 42ms :: []
+5:18:57 PM [express] POST /api/rooms/votes/batch 200 in 26ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:18:58 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:18:58 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:18:58 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:18:58 PM [express] POST /api/users/badges/batch 200 in 4ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:18:58 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:18:58 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:19:01 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+5:19:01 PM [express] GET /api/rooms/participants 200 in 0ms :: {}
+5:19:01 PM [express] GET /api/rooms 200 in 5ms :: []
+5:19:01 PM [express] GET /api/announcements 200 in 6ms :: []
+5:19:01 PM [express] POST /api/rooms/votes/batch 200 in 4ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:19:01 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:19:01 PM [express] POST /api/users/badges/batch 200 in 10ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:19:01 PM [express] POST /api/users/badges/batch 200 in 11ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:19:01 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:19:01 PM [express] POST /api/users/badges/batch 200 in 11ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:19:01 PM [express] POST /api/users/badges/batch 200 in 33ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:19:02 PM [express] GET /api/rooms 304 in 3ms :: []
+5:19:07 PM [express] GET /api/login 302 in 197ms
+5:19:08 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:19:08 PM [express] GET /api/rooms 304 in 8ms :: []
+5:19:20 PM [express] GET /api/callback 302 in 230ms
+5:19:24 PM [express] GET /api/auth/user 200 in 8ms :: {"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}
+5:19:25 PM [express] GET /api/users 200 in 13ms :: [{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:19:25 PM [express] GET /api/users/rooms 200 in 12ms :: {}
+5:19:25 PM [express] GET /api/follows/followers/54497384 200 in 20ms :: []
+5:19:25 PM [express] GET /api/messages/conversations 200 in 34ms :: []
+5:19:25 PM [express] GET /api/follows/following/54497384 200 in 33ms :: []
+5:19:25 PM [express] GET /api/messages/unread/count 200 in 38ms :: {"count":0}
+5:19:25 PM [express] GET /api/notifications 200 in 16ms :: []
+5:19:25 PM [express] POST /api/rooms/votes/batch 200 in 12ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+5:19:25 PM [express] GET /api/rooms/participants 304 in 7ms :: {}
+5:19:25 PM [express] GET /api/rooms 304 in 8ms :: []
+5:19:25 PM [express] GET /api/announcements 304 in 12ms :: []
+5:19:25 PM [express] POST /api/follows/counts 200 in 6ms :: {"54497384":0}
+5:19:25 PM [express] POST /api/users/badges/batch 200 in 14ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:19:25 PM [express] POST /api/users/badges/batch 200 in 19ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:19:25 PM [express] POST /api/users/badges/batch 200 in 19ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:19:25 PM [express] POST /api/users/badges/batch 200 in 13ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:19:25 PM [express] POST /api/users/badges/batch 200 in 19ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:19:25 PM [express] POST /api/users/badges/batch 200 in 14ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:19:30 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:30 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:19:30 PM [express] GET /api/rooms 304 in 7ms :: []
+5:19:35 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:19:35 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:19:35 PM [express] GET /api/notifications 304 in 8ms :: []
+5:19:35 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:19:35 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:19:35 PM [express] GET /api/rooms 304 in 7ms :: []
+5:19:40 PM [express] GET /api/users 200 in 6ms :: [{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:19:40 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:40 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:19:41 PM [express] GET /api/rooms 304 in 6ms :: []
+5:19:45 PM [express] GET /api/messages/conversations 304 in 7ms :: []
+5:19:45 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:19:45 PM [express] GET /api/notifications 304 in 7ms :: []
+5:19:46 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:46 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:19:46 PM [express] GET /api/rooms 304 in 5ms :: []
+5:19:51 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:51 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:19:51 PM [express] GET /api/rooms 304 in 6ms :: []
+5:19:52 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+5:19:52 PM [express] GET /api/announcements 200 in 3ms :: []
+5:19:52 PM [express] GET /api/rooms 200 in 2ms :: []
+5:19:52 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+5:19:52 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:19:53 PM [express] POST /api/users/badges/batch 200 in 3ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:19:54 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:19:54 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:19:54 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:19:54 PM [express] POST /api/users/badges/batch 200 in 16ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:19:54 PM [express] POST /api/users/badges/batch 200 in 15ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:19:55 PM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+5:19:55 PM [express] GET /api/users 304 in 5ms :: [{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:19:55 PM [express] POST /api/follows/counts 200 in 7ms :: {"54497384":0}
+5:19:55 PM [express] GET /api/announcements 304 in 8ms :: []
+5:19:55 PM [express] GET /api/messages/conversations 304 in 5ms :: []
+5:19:56 PM [express] GET /api/rooms/participants 304 in 4ms :: {}
+5:19:56 PM [express] GET /api/notifications 304 in 8ms :: []
+5:19:56 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:19:56 PM [express] GET /api/messages/unread/count 304 in 9ms :: {"count":0}
+5:19:56 PM [express] GET /api/rooms 304 in 5ms :: []
+5:19:58 PM [express] GET /api/rooms 304 in 2ms :: []
+5:20:02 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:20:02 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:20:02 PM [express] GET /api/rooms 304 in 7ms :: []
+5:20:03 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:20:04 PM [express] GET /api/rooms 304 in 2ms :: []
+5:20:06 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:20:06 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:20:06 PM [express] GET /api/notifications 304 in 7ms :: []
+5:20:07 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:20:07 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:20:07 PM [express] GET /api/rooms 304 in 5ms :: []
+5:20:10 PM [express] GET /api/rooms 304 in 2ms :: []
+5:20:10 PM [express] GET /api/users 304 in 6ms :: [{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:20:12 PM [express] GET /api/users/rooms 304 in 7ms :: {}
+5:20:12 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:20:12 PM [express] GET /api/rooms 304 in 6ms :: []
+5:20:16 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:20:16 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:20:16 PM [express] GET /api/notifications 304 in 7ms :: []
+5:20:17 PM [express] GET /api/users/rooms 304 in 7ms :: {}
+5:20:17 PM [express] GET /api/messages/unread/count 304 in 9ms :: {"count":0}
+5:20:18 PM [express] GET /api/rooms 304 in 6ms :: []
+5:20:23 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:20:23 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:20:23 PM [express] GET /api/rooms 304 in 5ms :: []
+5:20:25 PM [express] POST /api/follows/counts 200 in 56ms :: {"54497384":0}
+5:20:25 PM [express] POST /api/rooms/votes/batch 200 in 57ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+5:20:25 PM [express] GET /api/announcements 304 in 17ms :: []
+5:20:26 PM [express] GET /api/users 304 in 7ms :: [{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:20:26 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:20:27 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:20:27 PM [express] GET /api/notifications 304 in 8ms :: []
+5:20:28 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:20:28 PM [express] GET /api/messages/unread/count 304 in 7ms :: {"count":0}
+5:20:28 PM [express] GET /api/rooms 304 in 5ms :: []
+5:20:33 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:20:33 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:20:34 PM [express] GET /api/rooms 304 in 8ms :: []
+5:20:36 PM [express] GET /api/messages/conversations 304 in 6ms :: []
+5:20:37 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:20:37 PM [express] GET /api/notifications 304 in 18ms :: []
+5:20:39 PM [express] GET /api/users/rooms 304 in 5ms :: {}
+5:20:39 PM [express] GET /api/messages/unread/count 304 in 5ms :: {"count":0}
+5:20:39 PM [express] GET /api/rooms 304 in 6ms :: []
+5:23:04 PM [express] GET /api/users/rooms 304 in 31ms :: {}
+5:23:04 PM [express] GET /api/messages/unread/count 304 in 29ms :: {"count":0}
+5:23:04 PM [express] GET /api/rooms 304 in 17ms :: []
+5:23:07 PM [express] GET /api/messages/conversations 304 in 9ms :: []
+5:23:07 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:23:07 PM [express] GET /api/notifications 304 in 11ms :: []
+5:23:14 PM [express] GET /api/users/rooms 304 in 6ms :: {}
+5:23:14 PM [express] GET /api/messages/unread/count 304 in 12ms :: {"count":0}
+5:23:15 PM [express] GET /api/rooms 304 in 7ms :: []
+5:23:17 PM [express] GET /api/messages/conversations 304 in 9ms :: []
+5:23:17 PM [express] GET /api/rooms/participants 304 in 5ms :: {}
+5:23:17 PM [express] GET /api/notifications 304 in 8ms :: []
+5:23:19 PM [express] GET /api/users/rooms 304 in 9ms :: {}
+5:23:19 PM [express] GET /api/messages/unread/count 304 in 11ms :: {"count":0}
+5:23:20 PM [express] GET /api/rooms 304 in 7ms :: []
+5:23:22 PM [express] POST /api/rooms 200 in 26ms :: {"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":0,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":null,"welcomeMediaUrls":[],"welcomeMediaTypes":[],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}
+5:23:22 PM [express] GET /api/rooms 200 in 7ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":0,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":null,"welcomeMediaUrls":[],"welcomeMediaTypes":[],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:23:22 PM [express] GET /api/rooms 304 in 12ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":0,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":null,"welcomeMediaUrls":[],"welcomeMediaTypes":[],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:23:23 PM [express] POST /api/rooms/votes/batch 200 in 12ms :: {"counts":{"a1566d34-ba5f-496c-886c-c338478164ba":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"a1566d34-ba5f-496c-886c-c338478164ba":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+5:23:36 PM [express] GET /api/auth/user 200 in 241ms :: {"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}
+5:23:36 PM [express] GET /api/rooms/a1566d34-ba5f-496c-886c-c338478164ba 200 in 60ms :: {"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":0,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":null,"welcomeMediaUrls":[],"welcomeMediaTypes":[],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}
+5:23:37 PM [express] GET /api/blocks 200 in 23ms :: []
+5:23:37 PM [express] GET /api/follows/following/54497384 200 in 126ms :: []
+5:23:37 PM [express] GET /api/users 200 in 135ms :: [{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:23:37 PM [express] GET /api/follows/followers/54497384 200 in 140ms :: []
+5:23:38 PM [express] POST /api/follows/counts 200 in 11ms :: {"54497384":0}
+5:23:38 PM [express] POST /api/users/badges/batch 200 in 13ms :: {"54497384":[]}
+5:24:27 PM [express] POST /api/rooms/a1566d34-ba5f-496c-886c-c338478164ba/welcome-media 200 in 1455ms :: {"url":"/uploads/welcome-1776533067740-disw7z.jpg","type":"image"}
+5:24:36 PM [express] PATCH /api/rooms/a1566d34-ba5f-496c-886c-c338478164ba 200 in 38ms :: {"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":1,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute users","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}
+5:24:37 PM [express] GET /api/rooms/a1566d34-ba5f-496c-886c-c338478164ba 200 in 5ms :: {"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":1,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute users","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}
+5:25:05 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+5:25:05 PM [express] GET /api/rooms/a1566d34-ba5f-496c-886c-c338478164ba 200 in 13ms :: {"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":1,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute users","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}
+5:25:16 PM [express] GET /api/login 302 in 18ms
+5:25:30 PM [express] GET /api/callback 302 in 294ms
+5:25:34 PM [express] GET /api/auth/user 200 in 11ms :: {"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}
+5:25:35 PM [express] GET /api/users/rooms 200 in 8ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:25:35 PM [express] GET /api/follows/followers/57714024 200 in 14ms :: []
+5:25:35 PM [express] GET /api/users 200 in 17ms :: [{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"offline","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}]
+5:25:35 PM [express] GET /api/follows/following/57714024 200 in 15ms :: []
+5:25:35 PM [express] GET /api/messages/conversations 200 in 25ms :: []
+5:25:35 PM [express] POST /api/rooms/votes/batch 200 in 32ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+5:25:35 PM [express] GET /api/notifications 200 in 5ms :: []
+5:25:35 PM [express] GET /api/messages/unread/count 200 in 9ms :: {"count":0}
+5:25:35 PM [express] GET /api/rooms 200 in 6ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":1,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute users","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:25:35 PM [express] GET /api/announcements 200 in 8ms :: []
+5:25:35 PM [express] GET /api/rooms/participants 200 in 4ms :: {"a1566d34-ba5f-496c-886c-c338478164ba":[{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]}
+5:25:36 PM [express] POST /api/follows/counts 200 in 8ms :: {"54497384":0,"57714024":0}
+5:25:36 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:25:36 PM [express] POST /api/users/badges/batch 200 in 10ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:25:36 PM [express] POST /api/users/badges/batch 200 in 10ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:25:36 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:25:36 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:25:36 PM [express] POST /api/users/badges/batch 200 in 10ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:25:36 PM [express] POST /api/rooms/votes/batch 200 in 6ms :: {"counts":{"a1566d34-ba5f-496c-886c-c338478164ba":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"a1566d34-ba5f-496c-886c-c338478164ba":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+5:25:36 PM [express] POST /api/follows/counts 200 in 5ms :: {"54497384":0}
+5:25:36 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"54497384":[]}
+5:25:42 PM [express] GET /api/auth/user 200 in 7ms :: {"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}
+5:25:42 PM [express] GET /api/rooms/a1566d34-ba5f-496c-886c-c338478164ba 304 in 5ms :: {"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":1,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute users","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}
+5:25:42 PM [express] GET /api/follows/following/57714024 304 in 7ms :: []
+5:25:42 PM [express] GET /api/users 200 in 9ms :: [{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}]
+5:25:42 PM [express] GET /api/blocks 200 in 9ms :: []
+5:25:42 PM [express] GET /api/follows/followers/57714024 304 in 13ms :: []
+5:25:44 PM [express] POST /api/follows/counts 200 in 6ms :: {"54497384":0,"57714024":0}
+5:25:44 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"54497384":[],"57714024":[]}
+5:25:44 PM [express] POST /api/users/badges/batch 200 in 6ms :: {"54497384":[],"57714024":[]}
+5:25:44 PM [express] POST /api/follows/counts 200 in 8ms :: {"54497384":0,"57714024":0}
+5:26:22 PM [express] GET /api/youtube/featured 200 in 1579ms :: [{"id":"fTKqtvXjkvo","title":"Top Hits 2026 ~ Trending Songs 2026 ~ Top Songs 2026 Top Music 🎶🎧","thumbnail":"https://i.ytimg.com/vi/fTKqtvXjkvo/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCc0Bh4NbKVlSHtbQ8puaqgZnB8VQ","channelTitle":"Revive Music","duration":"2:29:42"},{"id":"xLgRlJSgMh4","title":"Top songs 2024 🍰 Best trending music 2024 ~ Songs that make you dance","thumbnail":"https://i.ytimg.com/vi/xLgRlJSgMh4/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLC2eSDpB2ljhVVfQpLm-z1R2ykFiA","channelTitle":"Love Life Lyrics","duration":"1:13:10"},{"id":"nWjpA4Nbpe8","title":"Top OPM Songs Philippines 2025 🎧 Saranggola - Ben & Ben | Best Tagalog Hits on Spotify & YouTube","thumbnail":"https://i.ytimg.com/vi/nWjpA4Nbpe8/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDWATcUdu9vGXBJGf3hy1zbnb62NQ","channelTitle":"Midnight Tears","duration":"2:33:06"},{"id":"uKQ9kO49YfI","title":"Best OPM Acoustic Love Songs 2026 💖 Trending Music Philippines - The Most Listened Tagalog Hits","thumbnail":"https://i.ytimg.com/vi/uKQ9kO49YfI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAp6kzrcXD64jKWp7AUNAyLD947Kw","channelTitle":"Midnight Tears","duration":"2:05:04"},{"id":"mWhjb60MT2Q","title":"Multo - Cup Of Joe, Tibok - Earl Agustin | Best New Tagalog Love Songs 2025- Hot Hits OPM On Spotify","thumbnail":"https://i.ytimg.com/vi/mWhjb60MT2Q/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLA98NabPXTQ2gK8Bfwgf83v29ykxw","channelTitle":"Midnight Tears","duration":"1:39:04"},{"id":"LuzXr3He9NI","title":"Top Hits 2026 Playlist ~ Trending Music 2026 🎵 Spotify Mix ~ Best TikTok Songs (Hits Collection)","thumbnail":"https://i.ytimg.com/vi/LuzXr3He9NI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDYGCbWHt9hVJgRZhJATrTnXn6KUg","channelTitle":"Dynamic Deep House","duration":"2:32:57"},{"id":"3ihtcnPwkqI","title":"Acoustic songs 2025 🌸 Music 2025 new songs with lyrics that last through love","thumbnail":"https://i.ytimg.com/vi/3ihtcnPwkqI/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLA2xndf1eF-U-KDcseWsu8xkLsbnw","channelTitle":"Acoustic Radio","duration":"1:04:36"},{"id":"Db63h6RQEbE","title":"Best songs that make you dance 2024 🍧 Dance playlist 2024 ~ Songs to sing & dance","thumbnail":"https://i.ytimg.com/vi/Db63h6RQEbE/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCt98yqY-61eKXaTwQc75EATmtf5g","channelTitle":"Love Life Lyrics","duration":"1:06:55"},{"id":"fGPSs1PLc9o","title":"Spotify VIRAL Music 2026 ~ Top Spotify Songs Mix 🎧 Trending Songs 2026 ~ Best Pop Hits Playlist 2026","thumbnail":"https://i.ytimg.com/vi/fGPSs1PLc9o/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLD11SA62vKeHkwr_ez-vR9z7ASyIw","channelTitle":"Dynamic Deep House","duration":"2:36:02"},{"id":"0fFUmWWeLwM","title":"HOT HITS PHILIPPINES - JULY 2024 UPDATED SPOTIFY PLAYLIST","thumbnail":"https://i.ytimg.com/vi/0fFUmWWeLwM/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAqufNdqv7Eogjh2SUOeSbP2Jcu0w","channelTitle":"Brian Pepito Music","duration":"3:02:44"},{"id":"lJAIdl7SipU","title":"Top Hits 2026 🍒 Trending Music 2026 ~ TikTok & Spotify Viral Hits 🎧 Best Songs 2026 Updated Weekly","thumbnail":"https://i.ytimg.com/vi/lJAIdl7SipU/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCPQILB6uRvybKvC-bu16sUoggh6g","channelTitle":"Dynamic Deep House","duration":"2:28:42"},{"id":"hUgHCuy1lEY","title":"100 SONGS That OWNED 2024 - 2025! (Most Popular Songs)","thumbnail":"https://i.ytimg.com/vi/hUgHCuy1lEY/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBDIzpztXldY2Ypvhc3zr3PFIZhHg","channelTitle":"YouQuiz - Music","duration":"11:47"},{"id":"IcPAllWWgEs","title":"When She Cries - Restless Heart 💖 Philippines Music Trending Youtube & Spotify August 2025","thumbnail":"https://i.ytimg.com/vi/IcPAllWWgEs/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLB-pgiWEl2uVYXMp0Pes7JZCV9CDg","channelTitle":"LOVE STORY","duration":"1:37:38"},{"id":"AYWSmmwdN2A","title":"Saksi Ang Langit - December Avenue | Best New Tagalog Love Songs 2025 - Hot Hits OPM Trending","thumbnail":"https://i.ytimg.com/vi/AYWSmmwdN2A/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLA61-_mXILfTzxrrjH3P2ar7vGtAw","channelTitle":"Midnight Tears","duration":"1:44:39"}]
+5:26:55 PM [express] PATCH /api/rooms/a1566d34-ba5f-496c-886c-c338478164ba 200 in 35ms :: {"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}
+5:26:55 PM [express] GET /api/rooms/a1566d34-ba5f-496c-886c-c338478164ba 200 in 7ms :: {"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}
+5:27:44 PM [express] GET /api/users 200 in 17ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"},{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:27:44 PM [express] POST /api/follows/counts 200 in 62ms :: {"54497384":0}
+5:27:44 PM [express] GET /api/messages/conversations 304 in 13ms :: []
+5:27:44 PM [express] GET /api/rooms/participants 200 in 5ms :: {"a1566d34-ba5f-496c-886c-c338478164ba":[{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}]}
+5:27:45 PM [express] GET /api/notifications 304 in 7ms :: []
+5:27:45 PM [express] GET /api/rooms 200 in 8ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:27:45 PM [express] GET /api/users/rooms 200 in 74ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba","57714024":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:27:45 PM [express] GET /api/messages/unread/count 304 in 63ms :: {"count":0}
+5:27:45 PM [express] GET /api/announcements 304 in 39ms :: []
+5:27:45 PM [express] POST /api/follows/counts 200 in 52ms :: {"54497384":0,"57714024":0}
+5:27:45 PM [express] POST /api/rooms/votes/batch 200 in 68ms :: {"counts":{"a1566d34-ba5f-496c-886c-c338478164ba":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"a1566d34-ba5f-496c-886c-c338478164ba":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+5:27:50 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:27:50 PM [express] GET /api/users/rooms 304 in 5ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba","57714024":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:27:50 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:27:55 PM [express] GET /api/rooms/participants 304 in 49ms :: {"a1566d34-ba5f-496c-886c-c338478164ba":[{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}]}
+5:27:55 PM [express] GET /api/messages/conversations 304 in 120ms :: []
+5:27:55 PM [express] GET /api/notifications 304 in 7ms :: []
+5:27:55 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:27:55 PM [express] GET /api/users/rooms 304 in 34ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba","57714024":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:27:55 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:27:59 PM [express] GET /api/users 304 in 6ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"},{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:28:00 PM [express] GET /api/rooms 304 in 6ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:28:01 PM [express] GET /api/users/rooms 304 in 73ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba","57714024":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:28:01 PM [express] GET /api/messages/unread/count 304 in 26ms :: {"count":0}
+5:28:05 PM [express] GET /api/rooms/participants 304 in 5ms :: {"a1566d34-ba5f-496c-886c-c338478164ba":[{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}]}
+5:28:05 PM [express] GET /api/messages/conversations 304 in 55ms :: []
+5:28:05 PM [express] GET /api/notifications 304 in 5ms :: []
+5:28:06 PM [express] GET /api/rooms 304 in 5ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:28:06 PM [express] GET /api/users/rooms 304 in 4ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba","57714024":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:28:06 PM [express] GET /api/messages/unread/count 304 in 6ms :: {"count":0}
+5:28:11 PM [express] GET /api/rooms 304 in 7ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:28:11 PM [express] GET /api/users/rooms 304 in 5ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba","57714024":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:28:11 PM [express] GET /api/messages/unread/count 304 in 8ms :: {"count":0}
+5:28:26 PM [express] GET /api/users 304 in 5866ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"},{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:28:39 PM [express] GET /api/rooms/participants 304 in 9987ms :: {"a1566d34-ba5f-496c-886c-c338478164ba":[{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}]}
+5:28:48 PM [express] POST /api/follows/counts 200 in 26149ms :: {"54497384":0,"57714024":0}
+5:29:06 PM [express] GET /api/users/rooms 304 in 11660ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba","57714024":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:29:06 PM [express] GET /api/announcements 304 in 40589ms :: []
+5:29:06 PM [express] GET /api/messages/conversations 304 in 24787ms :: []
+5:29:06 PM [express] GET /api/rooms 304 in 23976ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:29:06 PM [express] GET /api/notifications 304 in 27290ms :: []
+5:29:06 PM [express] POST /api/rooms/votes/batch 200 in 27115ms :: {"counts":{"a1566d34-ba5f-496c-886c-c338478164ba":0,"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{"a1566d34-ba5f-496c-886c-c338478164ba":false,"sample-room-1":false,"sample-room-2":false,"sample-room-3":false,"sample-room-4":false,"sample-room-5":false,"sample-room-6":false}}
+5:29:06 PM [express] GET /api/messages/unread/count 304 in 46ms :: {"count":0}
+5:29:41 PM [express] GET /api/rooms/participants 304 in 15394ms :: {"a1566d34-ba5f-496c-886c-c338478164ba":[{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"},{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}]}
+5:29:42 PM [express] GET /api/users 304 in 36139ms :: [{"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"},{"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}]
+5:29:42 PM [express] GET /api/users/rooms 304 in 28ms :: {"54497384":"a1566d34-ba5f-496c-886c-c338478164ba","57714024":"a1566d34-ba5f-496c-886c-c338478164ba"}
+5:29:42 PM [express] GET /api/notifications 304 in 44ms :: []
+5:29:42 PM [express] POST /api/follows/counts 200 in 83ms :: {"54497384":0,"57714024":0}
+5:29:42 PM [express] GET /api/rooms 304 in 303ms :: [{"id":"a1566d34-ba5f-496c-886c-c338478164ba","title":"I live alone in This Platfrom","language":"English","level":"Beginner","maxUsers":8,"ownerId":"54497384","isPublic":true,"activeUsers":2,"roomTheme":"matrix","hologramVideoUrl":null,"welcomeMessage":"Hello cute EZERS","welcomeMediaUrls":["/uploads/welcome-1776533067740-disw7z.jpg"],"welcomeMediaTypes":["image"],"welcomeMediaPosition":"below","welcomeAccentColor":"#8B5CF6","createdAt":"2026-04-18T17:23:22.315Z"}]
+5:29:42 PM [express] GET /api/messages/conversations 304 in 292ms :: []
+5:29:42 PM [express] GET /api/messages/unread/count 304 in 325ms :: {"count":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:33:28 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/voice-room.tsx, /src/index.css[22m
+5:33:33 PM [express] GET /api/auth/user 304 in 7ms :: {"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}
+5:33:33 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"57714024":[]}
+5:33:33 PM [express] POST /api/follows/counts 200 in 6ms :: {"57714024":0}
+5:33:33 PM [express] POST /api/follows/counts 200 in 26ms :: {"57714024":0}
+5:33:33 PM [express] POST /api/users/badges/batch 200 in 22ms :: {"57714024":[]}
+5:33:33 PM [express] POST /api/follows/counts 200 in 8ms :: {"54497384":0,"57714024":0}
+5:33:33 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"54497384":[],"57714024":[]}
+5:33:33 PM [express] POST /api/follows/counts 200 in 6ms :: {"54497384":0,"57714024":0}
+5:33:33 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"54497384":[],"57714024":[]}
+5:33:33 PM [express] GET /api/auth/user 304 in 9ms :: {"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}
+5:33:34 PM [express] POST /api/follows/counts 200 in 7ms :: {"54497384":0}
+5:33:34 PM [express] POST /api/users/badges/batch 200 in 12ms :: {"54497384":[]}
+5:33:34 PM [express] POST /api/follows/counts 200 in 5ms :: {"54497384":0}
+5:33:34 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"54497384":[]}
+5:33:34 PM [express] POST /api/follows/counts 200 in 6ms :: {"54497384":0,"57714024":0}
+5:33:34 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"54497384":[],"57714024":[]}
+5:33:34 PM [express] POST /api/users/badges/batch 200 in 12ms :: {"54497384":[],"57714024":[]}
+5:33:34 PM [express] POST /api/follows/counts 200 in 13ms :: {"54497384":0,"57714024":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:33:44 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/voice-room.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:33:50 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/voice-room.tsx, /src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:34:34 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/voice-room.tsx, /src/index.css[22m [33m(x4)[39m
+5:34:38 PM [express] POST /api/follows/counts 200 in 6ms :: {"54497384":0}
+5:34:38 PM [express] POST /api/users/badges/batch 200 in 20ms :: {"54497384":[]}
+5:34:39 PM [express] POST /api/users/badges/batch 200 in 6ms :: {"54497384":[]}
+5:34:39 PM [express] POST /api/follows/counts 200 in 8ms :: {"54497384":0}
+5:34:39 PM [express] POST /api/follows/counts 200 in 7ms :: {"54497384":0,"57714024":0}
+5:34:39 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"54497384":[],"57714024":[]}
+5:34:39 PM [express] POST /api/follows/counts 200 in 6ms :: {"54497384":0,"57714024":0}
+5:34:39 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"54497384":[],"57714024":[]}
+5:34:39 PM [express] POST /api/users/badges/batch 200 in 6ms :: {"57714024":[]}
+5:34:39 PM [express] POST /api/follows/counts 200 in 7ms :: {"57714024":0}
+5:34:39 PM [express] POST /api/follows/counts 200 in 10ms :: {"57714024":0}
+5:34:39 PM [express] POST /api/users/badges/batch 200 in 17ms :: {"57714024":[]}
+5:34:39 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"54497384":[],"57714024":[]}
+5:34:39 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"54497384":[],"57714024":[]}
+5:34:39 PM [express] POST /api/follows/counts 200 in 12ms :: {"54497384":0,"57714024":0}
+5:34:39 PM [express] POST /api/follows/counts 200 in 11ms :: {"54497384":0,"57714024":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:35:05 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/voice-room.tsx, /src/index.css[22m [33m(x5)[39m
+5:35:09 PM [express] POST /api/follows/counts 200 in 6ms :: {"54497384":0}
+5:35:09 PM [express] POST /api/follows/counts 200 in 7ms :: {"54497384":0,"57714024":0}
+5:35:10 PM [express] POST /api/follows/counts 200 in 57ms :: {"54497384":0,"57714024":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:35:20 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/voice-room.tsx, /src/index.css[22m [33m(x6)[39m
+5:35:23 PM [express] POST /api/follows/counts 200 in 5ms :: {"57714024":0}
+5:35:23 PM [express] POST /api/follows/counts 200 in 6ms :: {"57714024":0}
+5:35:23 PM [express] POST /api/follows/counts 200 in 5ms :: {"54497384":0}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:35:27 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/profile-dropdown.tsx[22m
+[2m5:35:29 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/profile-dropdown.tsx[22m Could not Fast Refresh ("AVATAR_RINGS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m5:35:29 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/components/room-card.tsx, /src/components/voice-room.tsx[22m
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 16ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:35:33 PM [express] GET /api/auth/user 200 in 20ms :: {"id":"54497384","email":"techdude2022@gmail.com","firstName":"Techdude2022","lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJb9Fbau8qj2a2ckDvu_1GNIG7WTj33zQ3090AWU4YB9Z6Jzwn4=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"user","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:19:20.870Z","updatedAt":"2026-04-18T17:19:20.870Z"}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 19ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 13ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:35:33 PM [express] GET /api/auth/user 304 in 18ms :: {"id":"57714024","email":"dj55jggg@gmail.com","firstName":null,"lastName":null,"displayName":null,"profileImageUrl":"https://lh3.googleusercontent.com/a/ACg8ocJXYtj-QrZhfzRL5pF4zUc1Ab2CWYGFVg2DdHR2eWWgATpcETMT=s96-c","bio":null,"avatarRing":null,"flairBadge":null,"profileDecoration":null,"instagramUrl":null,"linkedinUrl":null,"facebookUrl":null,"status":"online","role":"superadmin","warningCount":0,"restrictedUntil":null,"restrictedReason":null,"restrictedById":null,"createdAt":"2026-04-18T17:25:30.849Z","updatedAt":"2026-04-18T17:25:34.930Z"}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 15ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 14ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 33ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 14ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 15ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:35:33 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
