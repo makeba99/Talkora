@@ -648,6 +648,47 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/rooms/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const roomId = req.params.id;
+      const userId = (req.user as any).id;
+      const room = await storage.getRoom(roomId);
+      if (!room) return res.status(404).json({ message: "Room not found" });
+      if (room.ownerId !== userId) return res.status(403).json({ message: "Only the room owner can delete this room" });
+
+      // Notify all connected participants before wiping data
+      io.to(roomId).emit("room:host-deleted", { roomId });
+
+      // Evict all participants from in-memory state
+      const participants = roomParticipants.get(roomId);
+      if (participants) {
+        for (const participantId of Array.from(participants.keys())) {
+          userCurrentRoom.delete(participantId);
+        }
+        roomParticipants.delete(roomId);
+      }
+
+      // Cancel any pending auto-delete timer
+      cancelRoomDeleteTimer(roomId);
+
+      // Clear all in-memory room state
+      roomVideoStatus.delete(roomId);
+      roomScreenShareStatus.delete(roomId);
+      roomYoutubeState.delete(roomId);
+      roomBookState.delete(roomId);
+      roomRoles.delete(roomId);
+      roomMuteStatus.delete(roomId);
+      roomMessageReactions.delete(roomId);
+
+      // Delete all persistent data (messages, votes, room record)
+      await storage.deleteRoom(roomId);
+
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.post("/api/rooms/:id/welcome-media", isAuthenticated, uploadWelcomeMedia.single("media"), async (req: any, res) => {
     try {
       const roomId = req.params.id;
@@ -2733,6 +2774,32 @@ export async function registerRoutes(
             for (const [roomId, participants] of Array.from(roomParticipants.entries())) {
               if (participants.has(disconnectingUserId)) {
                 participants.delete(disconnectingUserId);
+
+                // Per-user room state cleanup — identical to manual room:leave
+                roomVideoStatus.get(roomId)?.delete(disconnectingUserId);
+                roomRoles.get(roomId)?.delete(disconnectingUserId);
+
+                if (roomScreenShareStatus.get(roomId) === disconnectingUserId) {
+                  roomScreenShareStatus.delete(roomId);
+                  io.to(roomId).emit("room:screen-share", { userId: disconnectingUserId, active: false });
+                }
+
+                const ytState = roomYoutubeState.get(roomId);
+                if (ytState && ytState.startedBy === disconnectingUserId) {
+                  roomYoutubeState.delete(roomId);
+                }
+
+                const bkState = roomBookState.get(roomId);
+                if (bkState) {
+                  bkState.watchers.delete(disconnectingUserId);
+                  if (bkState.hostId === disconnectingUserId) {
+                    roomBookState.delete(roomId);
+                    io.to(roomId).emit("room:book", { book: null, hostId: null, scrollPct: 0, watchers: [] });
+                  } else {
+                    io.to(roomId).emit("room:book-watchers-update", { userId: disconnectingUserId, watching: false });
+                  }
+                }
+
                 const remainingParticipants = Array.from(participants.values());
                 await storage.updateRoomActiveUsers(roomId, remainingParticipants.length);
                 io.to(roomId).emit("room:user-left", {
@@ -2745,7 +2812,14 @@ export async function registerRoutes(
                 });
 
                 if (remainingParticipants.length === 0) {
+                  roomVideoStatus.delete(roomId);
+                  roomScreenShareStatus.delete(roomId);
+                  roomYoutubeState.delete(roomId);
+                  roomRoles.delete(roomId);
+                  roomMuteStatus.delete(roomId);
                   startRoomDeleteTimer(roomId);
+                } else {
+                  roomMuteStatus.get(roomId)?.delete(disconnectingUserId);
                 }
               }
             }

@@ -558,6 +558,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [youtubeStartedBy, setYoutubeStartedBy] = useState<string | null>(null);
   const [showYoutube, setShowYoutube] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteRoomOpen, setDeleteRoomOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(roomProp.title);
   const [editLanguage, setEditLanguage] = useState(roomProp.language);
   const [editLevel, setEditLevel] = useState(roomProp.level);
@@ -763,6 +764,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     },
     onError: () => {
       toast({ title: "Failed to update room settings", variant: "destructive" });
+    },
+  });
+
+  const deleteRoomMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/rooms/${room.id}`);
+    },
+    onError: () => {
+      toast({ title: "Failed to delete room", variant: "destructive" });
     },
   });
 
@@ -1350,6 +1360,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket.on("room:kicked", (data: { roomId: string }) => {
       if (data.roomId === room.id) {
         toast({ title: "You have been removed from this room", variant: "destructive" });
+        handleLeave();
+      }
+    });
+
+    socket.on("room:host-deleted", (data: { roomId: string }) => {
+      if (data.roomId === room.id) {
+        toast({ title: "This room has been closed by the host", variant: "destructive" });
         handleLeave();
       }
     });
@@ -4303,7 +4320,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setDeleteRoomOpen(false); }}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Edit Room Settings</DialogTitle>
@@ -4493,6 +4510,49 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               {updateRoomMutation.isPending || uploadingVideoVR ? "Saving..." : "Save Changes"}
             </Button>
           </form>
+
+          <div className="mt-4 pt-4 border-t border-destructive/20">
+            {!deleteRoomOpen ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 text-[13px]"
+                onClick={() => setDeleteRoomOpen(true)}
+                data-testid="button-delete-room-start"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                Delete Room
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[12px] text-destructive text-center">This will permanently close the room for everyone. Are you sure?</p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-[12px]"
+                    onClick={() => setDeleteRoomOpen(false)}
+                    disabled={deleteRoomMutation.isPending}
+                    data-testid="button-delete-room-cancel"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="flex-1 text-[12px]"
+                    onClick={() => deleteRoomMutation.mutate()}
+                    disabled={deleteRoomMutation.isPending}
+                    data-testid="button-delete-room-confirm"
+                  >
+                    {deleteRoomMutation.isPending ? "Deleting..." : "Yes, Delete"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
