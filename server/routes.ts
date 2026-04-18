@@ -10,6 +10,7 @@ import multer, { type StorageEngine } from "multer";
 import path from "path";
 import fs from "fs";
 import nodemailer from "nodemailer";
+import { externalCache } from "./cache";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -149,6 +150,9 @@ export async function registerRoutes(
 
   app.get("/api/youtube/featured", isAuthenticated, async (_req: any, res) => {
     try {
+      const cacheKey = "yt:featured";
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
       const ytSearch = await import("youtube-search-api");
       const featured = await ytSearch.GetListByKeyword("trending music 2024", false, 25);
       const videos = (featured.items || [])
@@ -161,6 +165,7 @@ export async function registerRoutes(
           channelTitle: item.channelTitle || "",
           duration: item.length?.simpleText || "",
         }));
+      externalCache.set(cacheKey, videos);
       res.json(videos);
     } catch (err: any) {
       console.error("YouTube featured error:", err);
@@ -174,6 +179,9 @@ export async function registerRoutes(
       if (!query || query.trim().length === 0) {
         return res.json([]);
       }
+      const cacheKey = `yt:search:${query.toLowerCase().trim()}`;
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
       const ytSearch = await import("youtube-search-api");
       const results = await ytSearch.GetListByKeyword(query, false, 25);
       const videos = (results.items || [])
@@ -186,6 +194,7 @@ export async function registerRoutes(
           channelTitle: item.channelTitle || "",
           duration: item.length?.simpleText || "",
         }));
+      externalCache.set(cacheKey, videos);
       res.json(videos);
     } catch (err: any) {
       console.error("YouTube search error:", err);
@@ -217,12 +226,17 @@ export async function registerRoutes(
       if (!query || query.trim().length === 0) {
         return res.json({ results: [] });
       }
+      const cacheKey = `gif:search:${query.toLowerCase().trim()}`;
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
       const response = await fetch(
         `https://api.tenor.com/v1/search?key=${TENOR_KEY}&q=${encodeURIComponent(query)}&limit=20&contentfilter=low&media_filter=basic`
       );
       if (!response.ok) throw new Error("Tenor API error");
       const data = await response.json();
-      res.json({ results: mapTenorResults(data.results || []) });
+      const result = { results: mapTenorResults(data.results || []) };
+      externalCache.set(cacheKey, result);
+      res.json(result);
     } catch (err: any) {
       console.error("GIF search error:", err);
       res.status(500).json({ message: "Failed to search GIFs" });
@@ -231,12 +245,17 @@ export async function registerRoutes(
 
   app.get("/api/gifs/trending", isAuthenticated, async (_req: any, res) => {
     try {
+      const cacheKey = "gif:trending";
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
       const response = await fetch(
         `https://api.tenor.com/v1/trending?key=${TENOR_KEY}&limit=20&contentfilter=low&media_filter=basic`
       );
       if (!response.ok) throw new Error("Tenor API error");
       const data = await response.json();
-      res.json({ results: mapTenorResults(data.results || []) });
+      const result = { results: mapTenorResults(data.results || []) };
+      externalCache.set(cacheKey, result);
+      res.json(result);
     } catch (err: any) {
       console.error("GIF trending error:", err);
       res.status(500).json({ message: "Failed to load trending GIFs" });
@@ -702,14 +721,15 @@ export async function registerRoutes(
     try {
       const userId = (req.user as any).id;
       const rows = await storage.getBlocksByBlocker(userId);
-      const usersWithType = await Promise.all(
-        rows.map(async r => {
-          const u = await storage.getUser(r.blockedId);
+      const userMap = await storage.getUsersByIds(rows.map(r => r.blockedId));
+      const usersWithType = rows
+        .map(r => {
+          const u = userMap.get(r.blockedId);
           if (!u) return null;
           return { ...u, blockType: r.blockType };
         })
-      );
-      res.json(usersWithType.filter(Boolean));
+        .filter(Boolean);
+      res.json(usersWithType);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -1068,14 +1088,14 @@ export async function registerRoutes(
   app.get("/api/admin/badges", isAuthenticated, isAdmin, async (_req, res) => {
     try {
       const allUsers = await storage.getAllUsers();
-      const badgeCounts: Record<string, number> = {};
+      const userIds = allUsers.map(u => u.id);
+      const badgesByUser = await storage.getBadgesForUsers(userIds);
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
       const userBadgeList: any[] = [];
-      for (const u of allUsers) {
-        const badges = await storage.getUserBadges(u.id);
-        if (badges.length > 0) {
-          badgeCounts[u.id] = badges.length;
-          userBadgeList.push(...badges.map((b) => ({ ...b, userName: u.displayName || u.email || u.id, userAvatar: u.profileImageUrl })));
-        }
+      for (const [uid, badges] of Object.entries(badgesByUser)) {
+        if (badges.length === 0) continue;
+        const u = userMap.get(uid);
+        userBadgeList.push(...badges.map((b) => ({ ...b, userName: u?.displayName || u?.email || uid, userAvatar: u?.profileImageUrl })));
       }
       res.json(userBadgeList);
     } catch (err: any) {
@@ -1147,14 +1167,15 @@ export async function registerRoutes(
   app.get("/api/admin/badge-applications", isAuthenticated, isAdmin, async (_req, res) => {
     try {
       const applications = await storage.getBadgeApplications();
-      const enriched = await Promise.all(applications.map(async (application) => {
-        const applicant = await storage.getUser(application.userId);
+      const userMap = await storage.getUsersByIds(applications.map(a => a.userId));
+      const enriched = applications.map((application) => {
+        const applicant = userMap.get(application.userId);
         return {
           ...application,
           userName: applicant ? getDisplayName(applicant) : "Unknown user",
           userAvatar: applicant?.profileImageUrl ?? null,
         };
-      }));
+      });
       res.json(enriched);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -1609,12 +1630,11 @@ export async function registerRoutes(
   app.get("/api/teachers/:id/reviews", async (req, res) => {
     try {
       const reviews = await storage.getTeacherReviews(req.params.id as string);
-      const reviewsWithUsers = await Promise.all(
-        reviews.map(async (r) => {
-          const user = await storage.getUser(r.userId);
-          return { ...r, user: user ? { id: user.id, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, profileImageUrl: user.profileImageUrl } : null };
-        })
-      );
+      const userMap = await storage.getUsersByIds(reviews.map(r => r.userId));
+      const reviewsWithUsers = reviews.map((r) => {
+        const user = userMap.get(r.userId);
+        return { ...r, user: user ? { id: user.id, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, profileImageUrl: user.profileImageUrl } : null };
+      });
       res.json(reviewsWithUsers);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -1643,12 +1663,9 @@ export async function registerRoutes(
     try {
       const userId = (req.user as any).id;
       const userBookings = await storage.getBookingsByUser(userId);
-      const enriched = await Promise.all(
-        userBookings.map(async (b) => {
-          const teacher = await storage.getTeacher(b.teacherId);
-          return { ...b, teacher };
-        })
-      );
+      const allTeachers = await storage.getAllTeachers();
+      const teacherMap = new Map(allTeachers.map(t => [t.id, t]));
+      const enriched = userBookings.map((b) => ({ ...b, teacher: teacherMap.get(b.teacherId) ?? null }));
       res.json(enriched);
     } catch (err: any) {
       res.status(500).json({ message: err.message });

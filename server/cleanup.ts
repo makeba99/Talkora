@@ -6,6 +6,7 @@
  *   CLEANUP_ROOM_MESSAGES_DAYS   - delete room chat messages older than N days (default: 30)
  *   CLEANUP_NOTIFICATIONS_DAYS   - delete read notifications older than N days (default: 60)
  *   CLEANUP_REPORTS_DAYS         - delete resolved/dismissed reports older than N days (default: 180)
+ *   CLEANUP_ORPHAN_FILES_DAYS    - delete unreferenced uploaded files older than N days (default: 7)
  *   CLEANUP_INTERVAL_MINUTES     - how often the cleanup job runs (default: 60)
  *   CLEANUP_ENABLED              - set to "false" to disable entirely (default: true)
  *
@@ -15,6 +16,10 @@
 
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import fs from "fs";
+import path from "path";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
 
 function getEnvDays(key: string, defaultDays: number): number {
   const val = parseInt(process.env[key] ?? "", 10);
@@ -32,11 +37,87 @@ function log(message: string) {
   console.log(`[cleanup] ${ts} ${message}`);
 }
 
+async function getReferencedUploads(): Promise<Set<string>> {
+  const referenced = new Set<string>();
+  try {
+    const [users, rooms, announcements] = await Promise.all([
+      db.execute(sql`
+        SELECT profile_image_url FROM users
+        WHERE profile_image_url LIKE '/uploads/%'
+      `),
+      db.execute(sql`
+        SELECT hologram_video_url, welcome_media_urls FROM rooms
+        WHERE hologram_video_url IS NOT NULL OR array_length(welcome_media_urls, 1) > 0
+      `),
+      db.execute(sql`
+        SELECT media_urls FROM announcements
+        WHERE array_length(media_urls, 1) > 0
+      `),
+    ]);
+
+    for (const row of (users.rows as any[])) {
+      if (row.profile_image_url) {
+        referenced.add(path.basename(row.profile_image_url));
+      }
+    }
+    for (const row of (rooms.rows as any[])) {
+      if (row.hologram_video_url) {
+        referenced.add(path.basename(row.hologram_video_url));
+      }
+      if (Array.isArray(row.welcome_media_urls)) {
+        for (const url of row.welcome_media_urls) {
+          if (url) referenced.add(path.basename(url));
+        }
+      }
+    }
+    for (const row of (announcements.rows as any[])) {
+      if (Array.isArray(row.media_urls)) {
+        for (const url of row.media_urls) {
+          if (url) referenced.add(path.basename(url));
+        }
+      }
+    }
+  } catch (err: any) {
+    log(`ERROR collecting referenced uploads: ${err.message}`);
+  }
+  return referenced;
+}
+
+async function cleanOrphanedFiles(orphanDays: number): Promise<void> {
+  if (!fs.existsSync(uploadsDir)) return;
+  try {
+    const cutoff = daysAgo(orphanDays).getTime();
+    const referenced = await getReferencedUploads();
+    const files = fs.readdirSync(uploadsDir);
+    let deleted = 0;
+    for (const filename of files) {
+      if (referenced.has(filename)) continue;
+      const filepath = path.join(uploadsDir, filename);
+      try {
+        const stat = fs.statSync(filepath);
+        if (!stat.isFile()) continue;
+        if (stat.mtimeMs > cutoff) continue;
+        fs.unlinkSync(filepath);
+        deleted++;
+        log(`Deleted orphaned file: ${filename} (modified ${new Date(stat.mtimeMs).toISOString()})`);
+      } catch {
+        /* skip files that can't be read/deleted */
+      }
+    }
+    if (deleted > 0) {
+      log(`Deleted ${deleted} orphaned upload file(s) older than ${orphanDays} days`);
+    }
+  } catch (err: any) {
+    log(`ERROR cleaning orphaned files: ${err.message}`);
+  }
+}
+
 async function runCleanup(): Promise<void> {
   const messagesDays       = getEnvDays("CLEANUP_MESSAGES_DAYS",       90);
   const roomMessagesDays   = getEnvDays("CLEANUP_ROOM_MESSAGES_DAYS",  30);
   const notificationsDays  = getEnvDays("CLEANUP_NOTIFICATIONS_DAYS",  60);
   const reportsDays        = getEnvDays("CLEANUP_REPORTS_DAYS",        180);
+  const orphanFilesDays    = getEnvDays("CLEANUP_ORPHAN_FILES_DAYS",   7);
 
   log("Starting scheduled data cleanup...");
 
@@ -92,6 +173,8 @@ async function runCleanup(): Promise<void> {
     log(`ERROR cleaning reports: ${err.message}`);
   }
 
+  await cleanOrphanedFiles(orphanFilesDays);
+
   log("Cleanup complete.");
 }
 
@@ -108,7 +191,8 @@ export function startCleanupScheduler(): void {
     `Retention: messages=${getEnvDays("CLEANUP_MESSAGES_DAYS", 90)}d, ` +
     `room_messages=${getEnvDays("CLEANUP_ROOM_MESSAGES_DAYS", 30)}d, ` +
     `notifications=${getEnvDays("CLEANUP_NOTIFICATIONS_DAYS", 60)}d, ` +
-    `reports=${getEnvDays("CLEANUP_REPORTS_DAYS", 180)}d`
+    `reports=${getEnvDays("CLEANUP_REPORTS_DAYS", 180)}d, ` +
+    `orphan_files=${getEnvDays("CLEANUP_ORPHAN_FILES_DAYS", 7)}d`
   );
 
   runCleanup().catch((err) => log(`Startup cleanup error: ${err.message}`));

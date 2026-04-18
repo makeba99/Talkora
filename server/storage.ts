@@ -52,9 +52,11 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
+import { userCache, roomCache } from "./cache";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
+  getUsersByIds(ids: string[]): Promise<Map<string, User>>;
   updateUser(id: string, data: Partial<User>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   updateUserStatus(id: string, status: string): Promise<void>;
@@ -154,8 +156,30 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
+    const cached = userCache.get(`user:${id}`);
+    if (cached) return cached;
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    if (user) userCache.set(`user:${id}`, user);
     return user;
+  }
+
+  async getUsersByIds(ids: string[]): Promise<Map<string, User>> {
+    if (ids.length === 0) return new Map();
+    const result = new Map<string, User>();
+    const missing: string[] = [];
+    for (const id of ids) {
+      const cached = userCache.get(`user:${id}`);
+      if (cached) result.set(id, cached);
+      else missing.push(id);
+    }
+    if (missing.length > 0) {
+      const rows = await db.select().from(users).where(inArray(users.id, missing));
+      for (const row of rows) {
+        userCache.set(`user:${row.id}`, row);
+        result.set(row.id, row);
+      }
+    }
+    return result;
   }
 
   async updateUser(id: string, data: Partial<User>): Promise<User | undefined> {
@@ -164,29 +188,45 @@ export class DatabaseStorage implements IStorage {
       .set({ ...data, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
+    if (user) userCache.set(`user:${id}`, user);
+    userCache.delete("users:all");
     return user;
   }
 
   async getAllUsers(): Promise<User[]> {
-    return db.select().from(users);
+    const cached = userCache.get("users:all");
+    if (cached) return cached;
+    const result = await db.select().from(users);
+    userCache.set("users:all", result, 15_000);
+    return result;
   }
 
   async updateUserStatus(id: string, status: string): Promise<void> {
     await db.update(users).set({ status }).where(eq(users.id, id));
+    userCache.delete(`user:${id}`);
+    userCache.delete("users:all");
   }
 
   async createRoom(roomData: InsertRoom & { ownerId: string }): Promise<Room> {
     const [room] = await db.insert(rooms).values(roomData).returning();
+    roomCache.delete("rooms:all");
     return room;
   }
 
   async getRoom(id: string): Promise<Room | undefined> {
+    const cached = roomCache.get(`room:${id}`);
+    if (cached) return cached;
     const [room] = await db.select().from(rooms).where(eq(rooms.id, id));
+    if (room) roomCache.set(`room:${id}`, room);
     return room;
   }
 
   async getAllRooms(): Promise<Room[]> {
-    return db.select().from(rooms).orderBy(desc(rooms.createdAt));
+    const cached = roomCache.get("rooms:all");
+    if (cached) return cached;
+    const result = await db.select().from(rooms).orderBy(desc(rooms.createdAt));
+    roomCache.set("rooms:all", result, 5_000);
+    return result;
   }
 
   async getRoomsByOwner(ownerId: string): Promise<Room[]> {
@@ -195,19 +235,22 @@ export class DatabaseStorage implements IStorage {
 
   async updateRoom(id: string, data: Partial<{ title: string; language: string; level: string; maxUsers: number; ownerId: string; roomTheme: string | null; hologramVideoUrl: string | null; welcomeMessage: string | null; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string }>): Promise<Room | undefined> {
     const [room] = await db.update(rooms).set(data).where(eq(rooms.id, id)).returning();
+    if (room) roomCache.set(`room:${id}`, room);
+    roomCache.delete("rooms:all");
     return room;
   }
 
   async updateRoomActiveUsers(id: string, count: number): Promise<void> {
-    await db
-      .update(rooms)
-      .set({ activeUsers: count })
-      .where(eq(rooms.id, id));
+    await db.update(rooms).set({ activeUsers: count }).where(eq(rooms.id, id));
+    roomCache.delete(`room:${id}`);
+    roomCache.delete("rooms:all");
   }
 
   async deleteRoom(id: string): Promise<void> {
     await db.delete(roomMessages).where(eq(roomMessages.roomId, id));
     await db.delete(rooms).where(eq(rooms.id, id));
+    roomCache.delete(`room:${id}`);
+    roomCache.delete("rooms:all");
   }
 
   async createMessage(msg: InsertMessage): Promise<Message> {
@@ -430,6 +473,8 @@ export class DatabaseStorage implements IStorage {
       .set({ warningCount: sql`${users.warningCount} + 1`, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
+    if (user) userCache.set(`user:${userId}`, user);
+    userCache.delete("users:all");
     return user;
   }
 
@@ -439,6 +484,8 @@ export class DatabaseStorage implements IStorage {
       .set({ role, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
+    if (user) userCache.set(`user:${userId}`, user);
+    userCache.delete("users:all");
     return user;
   }
 
@@ -448,6 +495,8 @@ export class DatabaseStorage implements IStorage {
       .set({ ...data, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
+    if (user) userCache.set(`user:${userId}`, user);
+    userCache.delete("users:all");
     return user;
   }
 
