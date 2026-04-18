@@ -1969,6 +1969,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       color: "rgba(74,222,128,0.96)",
       boxShadow: "0 0 18px rgba(34,197,94,0.22), 0 4px 16px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
     };
+    const videoActiveStyle: React.CSSProperties = {
+      background: "linear-gradient(145deg, rgba(59,130,246,0.28) 0%, rgba(37,99,235,0.18) 100%)",
+      border: "1px solid rgba(96,165,250,0.50)",
+      color: "rgba(147,197,253,0.97)",
+      boxShadow: "0 0 22px rgba(59,130,246,0.35), 0 4px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10)",
+    };
+    const screenShareActiveStyle: React.CSSProperties = {
+      background: "linear-gradient(145deg, rgba(139,92,246,0.30) 0%, rgba(109,40,217,0.20) 100%)",
+      border: "1px solid rgba(167,139,250,0.50)",
+      color: "rgba(196,181,253,0.97)",
+      boxShadow: "0 0 22px rgba(139,92,246,0.38), 0 4px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10)",
+    };
     const handRaisedStyle: React.CSSProperties = {
       background: "linear-gradient(145deg, rgba(251,191,36,0.22) 0%, rgba(217,119,6,0.13) 100%)",
       border: "1px solid rgba(251,191,36,0.40)",
@@ -2060,11 +2072,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             data-testid="button-toggle-video"
             title={isVideoOn ? "Stop Camera" : "Camera"}
             className={btnBase}
-            style={isVideoOn ? activeStyle : ghostStyle}
+            style={isVideoOn ? videoActiveStyle : ghostStyle}
           >
             {isVideoOn ? <Video className="w-[18px] h-[18px]" /> : <VideoOff className="w-[18px] h-[18px]" />}
           </button>
-          <span className={labelBase} style={isVideoOn ? { color: "rgba(255,255,255,0.68)" } : { color: "rgba(255,255,255,0.32)" }}>
+          <span className={labelBase} style={isVideoOn ? { color: "rgba(147,197,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             Camera
           </span>
         </div>
@@ -2076,11 +2088,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             data-testid="button-screen-share"
             title={isScreenSharing ? "Stop Share" : "Share Screen"}
             className={btnBase}
-            style={isScreenSharing ? activeStyle : ghostStyle}
+            style={isScreenSharing ? screenShareActiveStyle : ghostStyle}
           >
             <Monitor className="w-[18px] h-[18px]" />
           </button>
-          <span className={labelBase} style={isScreenSharing ? { color: "rgba(255,255,255,0.68)" } : { color: "rgba(255,255,255,0.32)" }}>
+          <span className={labelBase} style={isScreenSharing ? { color: "rgba(196,181,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             Share
           </span>
         </div>
