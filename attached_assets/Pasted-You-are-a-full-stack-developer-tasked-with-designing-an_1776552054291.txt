@@ -1,0 +1,42 @@
+You are a full-stack developer tasked with designing and implementing a payment integration feature for an educational platform. Your goal is to create a seamless, user-friendly payment method addition and processing system that mirrors the experience of established platforms like Airbnb Pro.
+
+**Core Requirements:**
+
+Your implementation should enable two user flows:
+1. **Teachers/Instructors** adding payment methods when they first sign up or update their profile
+2. **Booking Users** adding payment methods at checkout before completing a booking
+
+**Key Principles:**
+
+- **Simplicity First**: The payment addition process should take no more than 2-3 steps. Users should never feel lost or overwhelmed by form fields or technical jargon.
+- **Progressive Disclosure**: Show only essential fields initially (card number, expiry, CVV for credit cards; or alternative payment method options). Don't dump all possible fields at once.
+- **Real-time Validation**: Provide instant feedback as users type (card number formatting, expiry date validation, CVV length checking). Catch errors before submission.
+- **Clear Error Messaging**: When validation fails, explain exactly what's wrong and how to fix it in plain language—never technical error codes.
+- **Save & Reuse**: Allow users to save multiple payment methods and select a default, reducing friction on future transactions.
+- **Trust Signals**: Display security badges, encryption indicators, and clear privacy messaging to reassure users their data is safe.
+
+**Technical Considerations:**
+
+- Use a PCI-compliant payment processor (Stripe, PayPal, Square) to handle sensitive card data—never store raw card information in your database.
+- Implement tokenization so saved payment methods are stored securely as tokens, not credentials.
+- Handle both single-use (one-time checkout) and recurring payment scenarios (if applicable).
+- Include proper error handling for declined cards, network failures, and timeout scenarios.
+- Ensure mobile responsiveness—payment forms must work seamlessly on phones and tablets.
+
+**User Experience Touchpoints:**
+
+- Provide a clear call-to-action button ("Add Payment Method" or "Save Card") that's visually distinct.
+- Offer inline help text or tooltips for fields users might find confusing (what is CVV? what's the difference between these payment methods?).
+- Show a confirmation screen after successful addition with the last 4 digits of the card and payment method nickname (e.g., "Visa ending in 4242").
+- Allow users to edit or delete saved payment methods from their account dashboard.
+
+**Deliverable:**
+
+Provide complete, production-ready code including:
+- Frontend components (form UI, validation logic, error states)
+- Backend endpoints (add payment method, list saved methods, process payment)
+- Integration with your chosen payment processor
+- Security best practices and error handling
+- Clear code comments explaining the payment flow
+
+Design this so that even a non-technical user can intuitively understand what to do at each step, and so that adding a payment method feels like a quick, trusted process rather than a barrier to booking or teaching.
