@@ -56,6 +56,15 @@ function roomPublicPayload(room: any, includeAccessKey = false) {
   return includeAccessKey ? room : { ...room, accessKey: null };
 }
 
+function canManageRoomLink(user: User | undefined | null, room: any) {
+  return !!user && (
+    user.id === room.ownerId ||
+    user.role === "admin" ||
+    user.role === "superadmin" ||
+    user.email === "dj55jggg@gmail.com"
+  );
+}
+
 const uploadStorage = multer.diskStorage({
   destination: uploadsDir,
   filename: (_req, file, cb) => {
@@ -517,11 +526,19 @@ export async function registerRoutes(
       const roomParam = req.params.id;
       const room = isUuid(roomParam) ? await storage.getRoom(roomParam) : await storage.getRoomByShortId(roomParam);
       if (!room) return res.status(404).json({ message: "Room not found" });
+      const requester = await storage.getUser((req.user as any).id);
+      const includeKey = !room.isPublic && canManageRoomLink(requester, room);
+      if (!room.isPublic && !includeKey) {
+        return res.status(403).json({ message: "Only the room host can copy the private room key" });
+      }
       const origin = `${req.protocol}://${req.get("host")}`;
-      const pathOnly = `/room/${room.shortId}?key=${encodeURIComponent(room.accessKey || "")}`;
+      const pathOnly = includeKey
+        ? `/room/${room.shortId}?key=${encodeURIComponent(room.accessKey || "")}`
+        : `/room/${room.shortId}`;
       res.json({
         roomId: room.id,
         shortId: room.shortId,
+        keyRequired: !room.isPublic,
         path: pathOnly,
         url: `${origin}${pathOnly}`,
       });
@@ -535,7 +552,7 @@ export async function registerRoutes(
       const roomParam = req.params.id;
       const room = isUuid(roomParam) ? await storage.getRoom(roomParam) : await storage.getRoomByShortId(roomParam);
       if (!room) return res.status(404).json({ message: "Room not found" });
-      if (!isUuid(roomParam) && room.accessKey !== req.query.key) {
+      if (!room.isPublic && room.accessKey !== req.query.key) {
         return res.status(403).json({ message: "Invalid room link" });
       }
       res.json(roomPublicPayload(room, true));

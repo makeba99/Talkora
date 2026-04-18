@@ -120,8 +120,9 @@ shared/
 65. Microphone recovery/settings — voice rooms include an Allow Microphone retry flow with clear blocked-permission guidance and a microphone source selector for switching between connected input devices.
 66. Chat unread/reply upgrades — room chat shows a prominent jump-to-latest button with unread counts, and replies now preserve text/image/GIF previews when sending text, pasted images, uploaded images, or selected GIFs.
 67. Profile image hardening — avatar components fall back to initials when stored image URLs fail, profile image paths are normalized on update, and legacy imported avatar/image files can still be served when old data references root-level filenames.
-68. Short room URLs — rooms keep UUID primary keys internally while storing a short room id plus access key; lobby joins open /room/{shortId}?key={accessKey} and room loading resolves back to the UUID for WebRTC/socket operations.
+68. Short room URLs — rooms keep UUID primary keys internally while storing a short room id plus access key; public rooms open as /room/{shortId} without a key, while private rooms require the host-owned /room/{shortId}?key={accessKey} link and reject unkeyed UUID/short access.
 69. Owner-only account deletion — the Platform Owner can permanently delete non-admin user accounts from /admin, with server-side guards and cleanup across user-related records.
+70. Sample room card images — lobby demo room participants use local generated SVG portrait images so room cards show avatars instead of blank initials and avoid external image dependencies.
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.

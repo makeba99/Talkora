@@ -25,14 +25,28 @@ import { Button } from "@/components/ui/button";
 type DiscoveryFilter = "rooms" | "top-speakers" | "famous-users";
 type LobbyAnnouncement = Announcement & { viewedAt?: string | null; dismissedAt?: string | null };
 
-function makeSampleUser(id: string, firstName: string, lastName: string, _portrait: string): User {
+function samplePortrait(firstName: string, lastName: string, portrait: string) {
+  const seed = portrait.split("/").join("-");
+  const palette = [
+    ["#22d3ee", "#8b5cf6", "#f472b6"],
+    ["#38bdf8", "#14b8a6", "#a78bfa"],
+    ["#fb7185", "#f59e0b", "#7c3aed"],
+    ["#60a5fa", "#06b6d4", "#f97316"],
+  ];
+  const colors = palette[Math.abs(seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)) % palette.length];
+  const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${colors[0]}"/><stop offset=".55" stop-color="${colors[1]}"/><stop offset="1" stop-color="${colors[2]}"/></linearGradient><radialGradient id="glow" cx=".35" cy=".25" r=".8"><stop stop-color="white" stop-opacity=".45"/><stop offset="1" stop-color="white" stop-opacity="0"/></radialGradient></defs><rect width="160" height="160" rx="80" fill="url(#bg)"/><circle cx="80" cy="68" r="34" fill="#fde7d6"/><path d="M42 143c7-31 25-47 38-47s31 16 38 47" fill="#111827" opacity=".78"/><path d="M49 63c5-25 22-39 44-32 12 4 21 14 20 32-11-9-24-11-39-7-10 3-18 5-25 7Z" fill="#111827" opacity=".88"/><circle cx="68" cy="70" r="4" fill="#111827"/><circle cx="93" cy="70" r="4" fill="#111827"/><path d="M69 86c8 7 16 7 24 0" fill="none" stroke="#a85555" stroke-width="5" stroke-linecap="round"/><circle cx="80" cy="80" r="76" fill="url(#glow)"/><text x="80" y="143" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="800" fill="white" opacity=".95">${initials}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function makeSampleUser(id: string, firstName: string, lastName: string, portrait: string): User {
   return {
     id,
     email: null,
     firstName,
     lastName,
     displayName: `${firstName} ${lastName}`,
-    profileImageUrl: null,
+    profileImageUrl: samplePortrait(firstName, lastName, portrait),
     bio: null,
     avatarRing: null,
     flairBadge: null,
