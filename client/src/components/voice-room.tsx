@@ -50,13 +50,20 @@ interface ChatMessage {
   text: string;
   createdAt: string;
   user?: User;
-  type?: "message" | "system";
+  type?: "message" | "system" | "announcement";
   reactions?: Record<string, string[]>;
   replyTo?: { id: string; userId: string; userName: string; text: string } | null;
   messageColor?: string;
   privateToId?: string | null;
   privateToName?: string;
   isPrivate?: boolean;
+  announcementTitle?: string;
+  announcementBody?: string;
+  announcementBodyAfterMedia?: string | null;
+  announcementMediaUrls?: string[];
+  announcementMediaTypes?: string[];
+  announcementMediaPosition?: "above" | "below" | "between";
+  announcementKind?: string;
 }
 
 function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
@@ -2666,6 +2673,63 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </div>
             ) : (
               displayedMessages.map((msg) => {
+                if (msg.type === "announcement" && !showMentionsOnly) {
+                  const kindColors: Record<string, { border: string; bg: string; accent: string; pill: string }> = {
+                    platform:    { border: "border-cyan-500/40",   bg: "bg-cyan-950/40",   accent: "text-cyan-300",    pill: "bg-cyan-500/20 text-cyan-200 border-cyan-500/40" },
+                    maintenance: { border: "border-amber-500/40",  bg: "bg-amber-950/40",  accent: "text-amber-300",   pill: "bg-amber-500/20 text-amber-200 border-amber-500/40" },
+                    safety:      { border: "border-red-500/40",    bg: "bg-red-950/40",    accent: "text-red-300",     pill: "bg-red-500/20 text-red-200 border-red-500/40" },
+                    celebration: { border: "border-violet-500/40", bg: "bg-violet-950/40", accent: "text-violet-300",  pill: "bg-violet-500/20 text-violet-200 border-violet-500/40" },
+                  };
+                  const theme = kindColors[msg.announcementKind || "platform"] ?? kindColors.platform;
+                  const mediaUrls = msg.announcementMediaUrls || [];
+                  const mediaTypes = msg.announcementMediaTypes || [];
+                  const position = msg.announcementMediaPosition || "below";
+
+                  const mediaBlock = mediaUrls.length > 0 ? (
+                    <div className={`grid gap-1.5 ${mediaUrls.length === 1 ? "" : "grid-cols-2"}`}>
+                      {mediaUrls.map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt={mediaTypes[i] === "gif" ? "Announcement GIF" : "Announcement image"}
+                          className="w-full rounded-lg object-cover max-h-48"
+                          data-testid={`img-announcement-media-chat-${msg.id}-${i}`}
+                        />
+                      ))}
+                    </div>
+                  ) : null;
+
+                  const bodyBlock = msg.announcementBody ? (
+                    <p className="text-[12px] text-white/75 leading-relaxed whitespace-pre-wrap">{msg.announcementBody}</p>
+                  ) : null;
+
+                  const bodyAfterBlock = msg.announcementBodyAfterMedia ? (
+                    <p className="text-[12px] text-white/75 leading-relaxed whitespace-pre-wrap">{msg.announcementBodyAfterMedia}</p>
+                  ) : null;
+
+                  return (
+                    <div key={msg.id} className={`rounded-xl border ${theme.border} ${theme.bg} p-3 space-y-2.5 my-1`} data-testid={`room-chat-${msg.id}`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full border ${theme.pill}`}>
+                          📣 Admin
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/50">{formatTime(msg.createdAt)}</span>
+                      </div>
+                      {msg.announcementTitle && (
+                        <p className={`text-[13px] font-bold leading-snug ${theme.accent}`}>{msg.announcementTitle}</p>
+                      )}
+                      {position === "above" && mediaBlock}
+                      {position === "above" ? bodyBlock : null}
+                      {position !== "above" && bodyBlock}
+                      {position !== "above" && position !== "between" && mediaBlock}
+                      {position === "between" && mediaBlock}
+                      {position === "between" && bodyAfterBlock}
+                      {position === "above" && bodyAfterBlock}
+                      {position === "below" && bodyAfterBlock}
+                    </div>
+                  );
+                }
+
                 if (msg.type === "system" && !showMentionsOnly) {
                   return (
                     <div key={msg.id} className="flex items-center justify-center gap-1.5 py-0.5" data-testid={`room-chat-${msg.id}`}>

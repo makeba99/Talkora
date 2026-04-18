@@ -333,6 +333,8 @@ export const announcements = pgTable("announcements", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   body: text("body").notNull(),
+  bodyAfterMedia: text("body_after_media"),
+  mediaPosition: varchar("media_position", { length: 20 }).notNull().default("below"),
   kind: varchar("kind", { length: 30 }).notNull().default("platform"),
   status: varchar("status", { length: 20 }).notNull().default("draft"),
   mediaUrls: text("media_urls").array().notNull().default(sql`'{}'::text[]`),
@@ -348,6 +350,8 @@ export const insertAnnouncementSchema = createInsertSchema(announcements)
   .extend({
     title: z.string().trim().min(3).max(140),
     body: z.string().trim().min(1).max(5000),
+    bodyAfterMedia: z.string().trim().max(5000).nullable().optional(),
+    mediaPosition: z.enum(["above", "below", "between"]).default("below"),
     kind: z.enum(["platform", "maintenance", "safety", "celebration"]).default("platform"),
     status: z.enum(["draft", "published"]).default("draft"),
     mediaUrls: z.array(z.string().startsWith("/uploads/")).max(4).default([]),

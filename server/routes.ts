@@ -1198,17 +1198,41 @@ export async function registerRoutes(
     }
   });
 
+  const emitAnnouncementChatToAllActiveRooms = (announcement: any) => {
+    for (const [roomId, participants] of roomParticipants.entries()) {
+      if (participants.size > 0) {
+        const msg = {
+          id: `ann-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          roomId,
+          userId: "system",
+          text: announcement.title || "",
+          type: "announcement" as const,
+          createdAt: new Date().toISOString(),
+          reactions: {},
+          replyTo: null,
+          announcementTitle: announcement.title,
+          announcementBody: announcement.body,
+          announcementBodyAfterMedia: announcement.bodyAfterMedia || null,
+          announcementMediaUrls: announcement.mediaUrls || [],
+          announcementMediaTypes: announcement.mediaTypes || [],
+          announcementMediaPosition: announcement.mediaPosition || "below",
+          announcementKind: announcement.kind || "platform",
+        };
+        io.to(roomId).emit("room:chat-message", msg);
+      }
+    }
+  };
+
   const broadcastAnnouncement = async (announcement: any) => {
-    const admin = await storage.getUser(announcement.createdById);
     const event = {
       ...announcement,
       message: announcement.body,
-      from: admin ? getDisplayName(admin) : "Platform Owner",
+      from: "Admin",
       createdAt: announcement.createdAt instanceof Date ? announcement.createdAt.toISOString() : announcement.createdAt,
       publishedAt: announcement.publishedAt instanceof Date ? announcement.publishedAt.toISOString() : announcement.publishedAt,
     };
     io.emit("admin:announcement", event);
-    emitSystemChatToAllActiveRooms(`📣 ${event.from}: ${announcement.title} — ${announcement.body.slice(0, 240)}`);
+    emitAnnouncementChatToAllActiveRooms(announcement);
   };
 
   app.post("/api/admin/announcements", isAuthenticated, isSuperAdmin, async (req: any, res) => {
@@ -1242,6 +1266,8 @@ export async function registerRoutes(
       const parsed = insertAnnouncementSchema.partial().safeParse({
         title: req.body.title,
         body: req.body.body,
+        bodyAfterMedia: req.body.bodyAfterMedia ?? existing.bodyAfterMedia,
+        mediaPosition: req.body.mediaPosition ?? existing.mediaPosition ?? "below",
         kind: req.body.kind,
         status: req.body.status,
         createdById: existing.createdById,

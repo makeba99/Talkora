@@ -73,6 +73,8 @@ export default function AdminPage() {
   const [announcementKind, setAnnouncementKind] = useState("platform");
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementBody, setAnnouncementBody] = useState("");
+  const [announcementBodyAfterMedia, setAnnouncementBodyAfterMedia] = useState("");
+  const [announcementMediaPosition, setAnnouncementMediaPosition] = useState<"above" | "below" | "between">("below");
   const [announcementMediaUrls, setAnnouncementMediaUrls] = useState<string[]>([]);
   const [announcementMediaTypes, setAnnouncementMediaTypes] = useState<("image" | "gif")[]>([]);
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
@@ -248,6 +250,8 @@ export default function AdminPage() {
   const resetAnnouncementForm = () => {
     setAnnouncementTitle("");
     setAnnouncementBody("");
+    setAnnouncementBodyAfterMedia("");
+    setAnnouncementMediaPosition("below");
     setAnnouncementKind("platform");
     setAnnouncementMediaUrls([]);
     setAnnouncementMediaTypes([]);
@@ -258,6 +262,8 @@ export default function AdminPage() {
     setEditingAnnouncementId(announcement.id);
     setAnnouncementTitle(announcement.title);
     setAnnouncementBody(announcement.body);
+    setAnnouncementBodyAfterMedia((announcement as any).bodyAfterMedia || "");
+    setAnnouncementMediaPosition(((announcement as any).mediaPosition as "above" | "below" | "between") || "below");
     setAnnouncementKind(announcement.kind);
     setAnnouncementMediaUrls(announcement.mediaUrls || []);
     setAnnouncementMediaTypes((announcement.mediaTypes || []) as ("image" | "gif")[]);
@@ -291,6 +297,8 @@ export default function AdminPage() {
       const payload = {
         title: announcementTitle,
         body: announcementBody,
+        bodyAfterMedia: announcementBodyAfterMedia || null,
+        mediaPosition: announcementMediaPosition,
         kind: announcementKind,
         status,
         mediaUrls: announcementMediaUrls,
@@ -973,6 +981,19 @@ export default function AdminPage() {
                         data-testid="textarea-announcement-message"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>Image / GIF placement in room chat</Label>
+                      <Select value={announcementMediaPosition} onValueChange={(v) => setAnnouncementMediaPosition(v as "above" | "below" | "between")}>
+                        <SelectTrigger data-testid="select-announcement-media-position">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="below">Below text</SelectItem>
+                          <SelectItem value="above">Above text</SelectItem>
+                          <SelectItem value="between">Between two text blocks</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <Label htmlFor="announcement-media">Images and GIFs</Label>
@@ -1016,6 +1037,20 @@ export default function AdminPage() {
                         </div>
                       )}
                     </div>
+                    {announcementMediaPosition === "between" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="announcement-body-after">Text after image / GIF</Label>
+                        <Textarea
+                          id="announcement-body-after"
+                          value={announcementBodyAfterMedia}
+                          onChange={(e) => setAnnouncementBodyAfterMedia(e.target.value)}
+                          rows={4}
+                          maxLength={5000}
+                          placeholder="Continues after the image..."
+                          data-testid="textarea-announcement-body-after"
+                        />
+                      </div>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
