@@ -1,0 +1,373 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 0 empty rooms for deletion
+5:49:34 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+5:49:41 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+5:49:41 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+5:49:41 PM [express] GET /api/rooms 200 in 17ms :: []
+5:49:41 PM [express] POST /api/rooms/votes/batch 200 in 22ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:49:41 PM [express] GET /api/announcements 200 in 35ms :: []
+5:49:42 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:49:42 PM [express] POST /api/users/badges/batch 200 in 6ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:49:42 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:49:42 PM [express] POST /api/users/badges/batch 200 in 4ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:49:42 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:49:42 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:49:55 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+5:49:56 PM [express] GET /api/rooms 200 in 13ms :: []
+5:49:56 PM [express] POST /api/rooms/votes/batch 200 in 18ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:49:56 PM [express] GET /api/announcements 200 in 18ms :: []
+5:49:56 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+5:49:56 PM [express] POST /api/users/badges/batch 200 in 3ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:49:56 PM [express] POST /api/users/badges/batch 200 in 3ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:49:56 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:49:56 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:49:56 PM [express] POST /api/users/badges/batch 200 in 3ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:49:56 PM [express] POST /api/users/badges/batch 200 in 1ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:50:01 PM [express] GET /api/rooms 304 in 3ms :: []
+5:50:06 PM [express] GET /api/rooms 304 in 3ms :: []
+5:50:06 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:50:11 PM [express] GET /api/rooms 304 in 2ms :: []
+5:50:16 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+5:50:16 PM [express] GET /api/rooms 304 in 2ms :: []
+5:50:22 PM [express] GET /api/rooms 304 in 2ms :: []
+5:50:26 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:50:26 PM [express] GET /api/announcements 304 in 2ms :: []
+5:50:27 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:50:27 PM [express] GET /api/rooms 304 in 3ms :: []
+5:50:32 PM [express] GET /api/rooms 304 in 2ms :: []
+5:50:37 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:50:37 PM [express] GET /api/rooms 304 in 2ms :: []
+5:50:43 PM [express] GET /api/rooms 304 in 1ms :: []
+5:50:47 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:50:48 PM [express] GET /api/rooms 304 in 3ms :: []
+5:50:53 PM [express] GET /api/rooms 304 in 3ms :: []
+5:50:56 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:50:56 PM [express] GET /api/announcements 304 in 3ms :: []
+5:50:57 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:50:58 PM [express] GET /api/rooms 304 in 9ms :: []
+5:51:04 PM [express] GET /api/rooms 304 in 2ms :: []
+5:51:08 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:51:09 PM [express] GET /api/rooms 304 in 3ms :: []
+5:51:14 PM [express] GET /api/rooms 304 in 2ms :: []
+5:51:18 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:51:19 PM [express] GET /api/rooms 304 in 2ms :: []
+5:51:25 PM [express] GET /api/rooms 304 in 2ms :: []
+5:51:27 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:51:27 PM [express] GET /api/announcements 304 in 3ms :: []
+5:51:28 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:51:30 PM [express] GET /api/rooms 304 in 3ms :: []
+5:51:35 PM [express] GET /api/rooms 304 in 2ms :: []
+5:51:38 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:51:40 PM [express] GET /api/rooms 304 in 3ms :: []
+5:51:45 PM [express] GET /api/rooms 304 in 3ms :: []
+5:51:49 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+5:52:16 PM [express] GET /api/rooms 304 in 11ms :: []
+5:52:19 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:52:21 PM [express] GET /api/rooms 304 in 2ms :: []
+5:52:26 PM [express] GET /api/rooms 304 in 3ms :: []
+5:52:27 PM [express] POST /api/rooms/votes/batch 200 in 3ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:52:27 PM [express] GET /api/announcements 304 in 2ms :: []
+5:52:29 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+5:52:31 PM [express] GET /api/rooms 304 in 2ms :: []
+5:52:37 PM [express] GET /api/rooms 304 in 3ms :: []
+5:52:39 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:52:42 PM [express] GET /api/rooms 304 in 3ms :: []
+5:52:47 PM [express] GET /api/rooms 304 in 2ms :: []
+5:52:49 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:52:52 PM [express] GET /api/rooms 304 in 2ms :: []
+5:52:57 PM [express] POST /api/rooms/votes/batch 200 in 4ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:52:57 PM [express] GET /api/announcements 304 in 2ms :: []
+5:52:58 PM [express] GET /api/rooms 304 in 2ms :: []
+5:53:00 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:53:03 PM [express] GET /api/rooms 304 in 3ms :: []
+5:53:08 PM [express] GET /api/rooms 304 in 3ms :: []
+5:53:10 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:53:13 PM [express] GET /api/rooms 304 in 2ms :: []
+5:53:19 PM [express] GET /api/rooms 304 in 2ms :: []
+5:53:20 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:53:24 PM [express] GET /api/rooms 304 in 3ms :: []
+5:53:27 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:53:27 PM [express] GET /api/announcements 304 in 11ms :: []
+5:53:29 PM [express] GET /api/rooms 304 in 2ms :: []
+5:53:30 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:53:34 PM [express] GET /api/rooms 304 in 2ms :: []
+5:53:40 PM [express] GET /api/rooms 304 in 3ms :: []
+5:53:41 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:53:45 PM [express] GET /api/rooms 304 in 2ms :: []
+5:53:50 PM [express] GET /api/rooms 304 in 2ms :: []
+5:53:51 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:53:55 PM [express] GET /api/rooms 304 in 5ms :: []
+5:53:57 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:53:58 PM [express] GET /api/announcements 304 in 2ms :: []
+5:54:01 PM [express] GET /api/rooms 304 in 2ms :: []
+5:54:01 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+5:54:06 PM [express] GET /api/rooms 304 in 2ms :: []
+5:54:11 PM [express] GET /api/rooms 304 in 2ms :: []
+5:54:11 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:57:28 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/pages/admin.tsx, /src/pages/teachers.tsx, /src/components/create-room-dialog.tsx, /src/components/social-panel.tsx, /src/components/room-card.tsx, /src/components/profile-dropdown.tsx, /src/components/voice-room.tsx, /src/components/user-badge-pips.tsx[22m
+[2m5:57:32 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/profile-dropdown.tsx[22m Could not Fast Refresh ("AVATAR_RINGS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m5:57:32 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/components/room-card.tsx, /src/components/voice-room.tsx[22m
+5:57:33 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+5:57:33 PM [express] POST /api/users/badges/batch 200 in 15ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:57:33 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:57:33 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:57:33 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:57:33 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:57:33 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:57:33 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/pages/admin.tsx, /src/pages/teachers.tsx, /src/components/create-room-dialog.tsx, /src/components/social-panel.tsx, /src/components/room-card.tsx, /src/components/profile-dropdown.tsx, /src/components/voice-room.tsx, /src/components/user-badge-pips.tsx[22m
+[2m5:57:38 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/profile-dropdown.tsx[22m Could not Fast Refresh ("AVATAR_RINGS" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m5:57:38 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/components/room-card.tsx, /src/components/voice-room.tsx[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:58:11 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:58:21 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:58:27 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin.tsx, /src/index.css[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:58:47 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin.tsx, /src/index.css[22m [33m(x4)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:58:57 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin.tsx, /src/index.css[22m [33m(x5)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:59:05 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:59:18 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m
+5:59:21 PM [express] POST /api/users/badges/batch 200 in 20ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:59:21 PM [express] POST /api/users/badges/batch 200 in 20ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:59:21 PM [express] POST /api/users/badges/batch 200 in 28ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:59:21 PM [express] POST /api/users/badges/batch 200 in 4ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:59:21 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+5:59:21 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:59:26 PM [express] GET /api/rooms 304 in 2ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m5:59:27 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x2)[39m
+5:59:35 PM [express] GET /api/rooms 304 in 2ms :: []
