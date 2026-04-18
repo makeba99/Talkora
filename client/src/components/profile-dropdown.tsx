@@ -454,6 +454,13 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
               Apply for Badge
             </DropdownMenuItem>
             <DropdownMenuItem
+              onClick={() => setBlockedOpen(true)}
+              data-testid="menu-blocked-users"
+            >
+              <Ban className="w-4 h-4 mr-2" />
+              Blocked Users
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => setAppearOffline(!appearOffline)}
               data-testid="menu-appear-offline"
               className="cursor-pointer"

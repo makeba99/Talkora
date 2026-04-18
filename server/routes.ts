@@ -509,6 +509,17 @@ export async function registerRoutes(
 
       const updated = await storage.updateRoom(roomId, updateData);
       io.emit("room:updated", updated);
+
+      if (updateData.welcomeMessage !== undefined && updateData.welcomeMessage) {
+        io.to(roomId).emit("room:welcome-message", {
+          welcomeMessage: updateData.welcomeMessage,
+          welcomeMediaUrls: updateData.welcomeMediaUrls ?? updated.welcomeMediaUrls ?? [],
+          welcomeMediaTypes: updateData.welcomeMediaTypes ?? updated.welcomeMediaTypes ?? [],
+          welcomeMediaPosition: updateData.welcomeMediaPosition ?? updated.welcomeMediaPosition ?? "below",
+          welcomeAccentColor: updateData.welcomeAccentColor ?? updated.welcomeAccentColor ?? "#8B5CF6",
+        });
+      }
+
       res.json(updated);
     } catch (err: any) {
       res.status(500).json({ message: err.message });

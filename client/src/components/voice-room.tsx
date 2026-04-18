@@ -523,6 +523,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [micError, setMicError] = useState(false);
   const [showMicHelp, setShowMicHelp] = useState(false);
   const [dismissedWelcomeIds, setDismissedWelcomeIds] = useState<Set<string>>(new Set());
+  const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [sidePanelTab, setSidePanelTab] = useState("chat");
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -761,6 +762,28 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     },
     onError: () => {
       toast({ title: "Failed to update theme", variant: "destructive" });
+    },
+  });
+
+  const updateWelcomeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, {
+        welcomeMessage: welcomeText || null,
+        welcomeMediaUrls: welcomeMediaUrlsState,
+        welcomeMediaTypes: welcomeMediaTypesState,
+        welcomeMediaPosition: welcomeMediaPositionState,
+        welcomeAccentColor: welcomeAccentColorState,
+      });
+      return await res.json();
+    },
+    onSuccess: (updatedRoom: any) => {
+      setRoomData((prev: any) => ({ ...prev, ...updatedRoom }));
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
+      setWelcomeDialogOpen(false);
+      toast({ title: "Welcome message saved & sent to all users in the room!" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update welcome message", variant: "destructive" });
     },
   });
 
@@ -2484,11 +2507,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       level: editLevel,
       maxUsers: editMaxUsers,
       roomTheme: editRoomTheme,
-      welcomeMessage: welcomeText || null,
-      welcomeMediaUrls: welcomeMediaUrlsState,
-      welcomeMediaTypes: welcomeMediaTypesState,
-      welcomeMediaPosition: welcomeMediaPositionState,
-      welcomeAccentColor: welcomeAccentColorState,
     });
   };
 
@@ -4092,108 +4110,133 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               )}
             </div>
 
-            {/* ── Welcome Message Section ── */}
-            <div className="space-y-3 rounded-xl border border-border/40 bg-muted/10 p-3">
-              <div className="flex items-center gap-2">
-                <span className="text-base">👋</span>
-                <span className="text-[13px] font-semibold text-foreground">Welcome Message</span>
-                <span className="ml-auto text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40 border border-border/30">Shown to new joiners</span>
-              </div>
-              <textarea
-                value={welcomeText}
-                onChange={(e) => setWelcomeText(e.target.value)}
-                placeholder="Write a greeting for new joiners…"
-                className="w-full resize-none rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-[12px] focus:outline-none focus:ring-1 focus:ring-primary/50 min-h-[72px]"
-                maxLength={500}
-                data-testid="input-welcome-message"
-              />
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">Media position:</span>
-                {(["above", "below", "between"] as const).map((pos) => (
-                  <button
-                    key={pos}
-                    type="button"
-                    onClick={() => setWelcomeMediaPositionState(pos)}
-                    className={`px-2 py-0.5 rounded-md text-[10px] border transition-colors capitalize ${welcomeMediaPositionState === pos ? "border-primary/60 bg-primary/20 text-primary" : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted/40"}`}
-                    data-testid={`button-welcome-position-${pos}`}
-                  >{pos}</button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">Accent color:</span>
-                {["#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#EC4899"].map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setWelcomeAccentColorState(c)}
-                    className={`w-5 h-5 rounded-full border-2 transition-transform ${welcomeAccentColorState === c ? "scale-125 border-white" : "border-transparent hover:scale-110"}`}
-                    style={{ background: c }}
-                    data-testid={`button-welcome-color-${c.replace("#", "")}`}
-                  />
-                ))}
-              </div>
-              {welcomeMediaUrlsState.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {welcomeMediaUrlsState.map((url, i) => (
-                    <div key={i} className="relative group">
-                      <img src={url} alt="welcome media" className="h-14 w-auto rounded-lg object-cover border border-border/40" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setWelcomeMediaUrlsState(prev => prev.filter((_, j) => j !== i));
-                          setWelcomeMediaTypesState(prev => prev.filter((_, j) => j !== i));
-                        }}
-                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        data-testid={`button-remove-welcome-media-${i}`}
-                      ><X className="w-2.5 h-2.5" /></button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div>
-                <label className={`inline-flex items-center gap-1.5 text-[11px] cursor-pointer px-2 py-1 rounded-lg border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors ${uploadingWelcomeMedia ? "opacity-50 pointer-events-none" : ""}`}>
-                  {uploadingWelcomeMedia ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
-                  {uploadingWelcomeMedia ? "Uploading…" : "Add Image / GIF"}
-                  <input
-                    type="file"
-                    accept="image/*,image/gif"
-                    className="hidden"
-                    multiple
-                    onChange={async (e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (!files.length) return;
-                      setUploadingWelcomeMedia(true);
-                      try {
-                        for (const file of files) {
-                          const fd = new FormData();
-                          fd.append("media", file);
-                          const res = await fetch(`/api/rooms/${room.id}/welcome-media`, { method: "POST", body: fd, credentials: "include" });
-                          if (res.ok) {
-                            const data = await res.json();
-                            setWelcomeMediaUrlsState(prev => [...prev, data.url]);
-                            setWelcomeMediaTypesState(prev => [...prev, data.type]);
-                          }
-                        }
-                      } finally {
-                        setUploadingWelcomeMedia(false);
-                        e.target.value = "";
-                      }
-                    }}
-                    data-testid="input-welcome-media-upload"
-                  />
-                </label>
-              </div>
-            </div>
-
             <Button
               type="submit"
               className="w-full"
-              disabled={!editTitle.trim() || updateRoomMutation.isPending || uploadingVideoVR || uploadingWelcomeMedia}
+              disabled={!editTitle.trim() || updateRoomMutation.isPending || uploadingVideoVR}
               data-testid="button-submit-edit-room"
             >
               {updateRoomMutation.isPending || uploadingVideoVR ? "Saving..." : "Save Changes"}
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Welcome Message Dialog (Host Only) ── */}
+      <Dialog open={welcomeDialogOpen} onOpenChange={setWelcomeDialogOpen}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-lg">👋</span> Welcome Message
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-[12px] text-muted-foreground">Write a message shown to users when they join your room. Saving will immediately send it to all users currently in the room.</p>
+            <div className="space-y-2">
+              <Label>Message</Label>
+              <textarea
+                value={welcomeText}
+                onChange={(e) => setWelcomeText(e.target.value)}
+                placeholder="Write a greeting for your room…"
+                className="w-full resize-none rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-primary/50 min-h-[96px]"
+                maxLength={500}
+                data-testid="input-welcome-message"
+              />
+              <p className="text-[10px] text-muted-foreground text-right">{welcomeText.length}/500</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">Accent color:</span>
+              {["#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#EC4899"].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setWelcomeAccentColorState(c)}
+                  className={`w-5 h-5 rounded-full border-2 transition-transform ${welcomeAccentColorState === c ? "scale-125 border-white" : "border-transparent hover:scale-110"}`}
+                  style={{ background: c }}
+                  data-testid={`button-welcome-color-${c.replace("#", "")}`}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">Media position:</span>
+              {(["above", "below", "between"] as const).map((pos) => (
+                <button
+                  key={pos}
+                  type="button"
+                  onClick={() => setWelcomeMediaPositionState(pos)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] border transition-colors capitalize ${welcomeMediaPositionState === pos ? "border-primary/60 bg-primary/20 text-primary" : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted/40"}`}
+                  data-testid={`button-welcome-position-${pos}`}
+                >{pos}</button>
+              ))}
+            </div>
+            {welcomeMediaUrlsState.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {welcomeMediaUrlsState.map((url, i) => (
+                  <div key={i} className="relative group">
+                    <img src={url} alt="welcome media" className="h-14 w-auto rounded-lg object-cover border border-border/40" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWelcomeMediaUrlsState(prev => prev.filter((_, j) => j !== i));
+                        setWelcomeMediaTypesState(prev => prev.filter((_, j) => j !== i));
+                      }}
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid={`button-remove-welcome-media-${i}`}
+                    ><X className="w-2.5 h-2.5" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className={`inline-flex items-center gap-1.5 text-[11px] cursor-pointer px-2 py-1 rounded-lg border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors ${uploadingWelcomeMedia ? "opacity-50 pointer-events-none" : ""}`}>
+              {uploadingWelcomeMedia ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+              {uploadingWelcomeMedia ? "Uploading…" : "Add Image / GIF"}
+              <input
+                type="file"
+                accept="image/*,image/gif"
+                className="hidden"
+                multiple
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  setUploadingWelcomeMedia(true);
+                  try {
+                    for (const file of files) {
+                      const fd = new FormData();
+                      fd.append("media", file);
+                      const res = await fetch(`/api/rooms/${room.id}/welcome-media`, { method: "POST", body: fd, credentials: "include" });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setWelcomeMediaUrlsState(prev => [...prev, data.url]);
+                        setWelcomeMediaTypesState(prev => [...prev, data.type]);
+                      }
+                    }
+                  } finally {
+                    setUploadingWelcomeMedia(false);
+                    e.target.value = "";
+                  }
+                }}
+                data-testid="input-welcome-media-upload"
+              />
+            </label>
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setWelcomeDialogOpen(false)}
+                data-testid="button-cancel-welcome"
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => updateWelcomeMutation.mutate()}
+                disabled={updateWelcomeMutation.isPending || uploadingWelcomeMedia}
+                data-testid="button-save-welcome"
+              >
+                {updateWelcomeMutation.isPending ? "Saving…" : "Save & Send to All"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -4284,6 +4327,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 );
               })()}
+
+              {/* Welcome Message (host only) */}
+              {isHost && (
+                <button
+                  onClick={() => setWelcomeDialogOpen(true)}
+                  data-testid="button-host-welcome"
+                  title="Welcome Message"
+                  className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
+                  style={welcomeText ? { background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.28)", color: "rgba(167,139,250,0.9)" } : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }}
+                >
+                  <span className="text-[13px] leading-none">👋</span>
+                </button>
+              )}
 
               {/* Settings */}
               {isHost && (
