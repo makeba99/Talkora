@@ -252,39 +252,42 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
           <div className="space-y-2">
             <Label>Card Theme</Label>
-            <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
-              {ROOM_THEMES.map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => setRoomTheme(theme.id)}
-                  className={`relative flex-shrink-0 w-[88px] rounded-lg overflow-hidden transition-all ${roomTheme === theme.id ? "ring-2 ring-white ring-offset-2 ring-offset-background scale-[1.06]" : "opacity-70 hover:opacity-100 hover:scale-[1.03]"}`}
-                  title={theme.label}
-                  data-testid={`button-create-theme-${theme.id}`}
-                >
-                  <img
-                    src={theme.img}
-                    alt={theme.label}
-                    className="w-full h-[52px] object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
-                      (e.currentTarget.nextSibling as HTMLElement).style.display = "flex";
-                    }}
-                  />
-                  <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white/90 leading-none px-1 truncate">
-                    {theme.label}
-                  </span>
-                  {roomTheme === theme.id && (
-                    <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white/90 flex items-center justify-center">
-                      <svg className="w-2 h-2 text-black" viewBox="0 0 12 12" fill="currentColor">
-                        <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                      </svg>
-                    </div>
-                  )}
-                </button>
-              ))}
+            <div className="-mx-1 px-1 overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+              <div className="flex gap-2 pb-2 pt-1" style={{ width: "max-content" }}>
+                {ROOM_THEMES.map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => setRoomTheme(theme.id)}
+                    className={`relative flex-shrink-0 w-[80px] rounded-lg overflow-hidden transition-all border-2 ${roomTheme === theme.id ? "border-white shadow-lg shadow-white/20" : "border-transparent opacity-70 hover:opacity-100"}`}
+                    title={theme.label}
+                    data-testid={`button-create-theme-${theme.id}`}
+                  >
+                    <img
+                      src={theme.img}
+                      alt={theme.label}
+                      className="w-full h-[50px] object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                        const fallback = e.currentTarget.nextSibling as HTMLElement;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                    <div className={`w-full h-[50px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-1 truncate">
+                      {theme.label}
+                    </span>
+                    {roomTheme === theme.id && (
+                      <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center">
+                        <svg className="w-2 h-2" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 6l3 3 5-5" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground" data-testid="text-create-theme-selected">
               Selected: {ROOM_THEMES.find((t) => t.id === roomTheme)?.label || "Default"}
