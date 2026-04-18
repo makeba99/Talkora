@@ -1041,7 +1041,15 @@ export async function registerRoutes(
         quote: badgeDef.quote,
       };
       io.emit("badge:awarded", badgeAwardPayload);
-      emitSystemChatToAllActiveRooms(`${badgeDef.emoji} ${targetName} was awarded ${badgeDef.label}: ${badgeDef.quote}`);
+      emitBadgeChatToAllActiveRooms({
+        badgeUserId: target.id,
+        badgeUserName: targetName,
+        badgeUserAvatar: target.profileImageUrl,
+        badgeEmoji: badgeDef.emoji,
+        badgeLabel: badgeDef.label,
+        badgeColor: badgeDef.color,
+        badgeQuote: badgeDef.quote,
+      });
 
       try {
         await storage.createNotification({ userId, fromUserId: (req.user as any).id, type: `badge_awarded:${badgeType}` });
@@ -1182,7 +1190,15 @@ export async function registerRoutes(
             quote: badgeDef.quote,
           };
           io.emit("badge:awarded", appBadgePayload);
-          emitSystemChatToAllActiveRooms(`${badgeDef.emoji} ${targetName} was awarded ${badgeDef.label}: ${badgeDef.quote}`);
+          emitBadgeChatToAllActiveRooms({
+            badgeUserId: target.id,
+            badgeUserName: targetName,
+            badgeUserAvatar: target.profileImageUrl,
+            badgeEmoji: badgeDef.emoji,
+            badgeLabel: badgeDef.label,
+            badgeColor: badgeDef.color,
+            badgeQuote: badgeDef.quote,
+          });
           try {
             await storage.createNotification({ userId: application.userId, fromUserId: (req.user as any).id, type: `badge_awarded:${application.badgeType}` });
             const userSocketId = userSockets.get(application.userId);
@@ -1475,6 +1491,41 @@ export async function registerRoutes(
     for (const [roomId, participants] of roomParticipants.entries()) {
       if (participants.size > 0) emitSystemChatMsg(roomId, text);
     }
+  };
+
+  const emitBadgeChatToAllActiveRooms = (payload: {
+    badgeUserId: string;
+    badgeUserName: string;
+    badgeUserAvatar?: string | null;
+    badgeEmoji: string;
+    badgeLabel: string;
+    badgeColor: string;
+    badgeQuote: string;
+  }) => {
+    setTimeout(() => {
+      for (const [roomId, participants] of roomParticipants.entries()) {
+        if (participants.size > 0) {
+          const msg = {
+            id: `badge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            roomId,
+            userId: "system",
+            text: `${payload.badgeEmoji} ${payload.badgeUserName} was awarded ${payload.badgeLabel}`,
+            type: "badge" as const,
+            createdAt: new Date().toISOString(),
+            reactions: {},
+            replyTo: null,
+            badgeUserId: payload.badgeUserId,
+            badgeUserName: payload.badgeUserName,
+            badgeUserAvatar: payload.badgeUserAvatar || null,
+            badgeEmoji: payload.badgeEmoji,
+            badgeLabel: payload.badgeLabel,
+            badgeColor: payload.badgeColor,
+            badgeQuote: payload.badgeQuote,
+          };
+          io.to(roomId).emit("room:chat-message", msg);
+        }
+      }
+    }, 2500);
   };
 
   function cancelRoomDeleteTimer(roomId: string) {

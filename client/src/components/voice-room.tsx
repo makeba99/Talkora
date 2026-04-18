@@ -50,7 +50,7 @@ interface ChatMessage {
   text: string;
   createdAt: string;
   user?: User;
-  type?: "message" | "system" | "announcement" | "welcome";
+  type?: "message" | "system" | "announcement" | "welcome" | "badge";
   reactions?: Record<string, string[]>;
   replyTo?: { id: string; userId: string; userName: string; text: string } | null;
   messageColor?: string;
@@ -69,6 +69,13 @@ interface ChatMessage {
   welcomeMediaTypes?: string[];
   welcomeMediaPosition?: "above" | "below" | "between";
   welcomeAccentColor?: string;
+  badgeUserId?: string;
+  badgeUserName?: string;
+  badgeUserAvatar?: string | null;
+  badgeEmoji?: string;
+  badgeLabel?: string;
+  badgeColor?: string;
+  badgeQuote?: string;
 }
 
 function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
@@ -2870,6 +2877,43 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         {wPosition === "below" && mediaBlock}
                         {wPosition === "between" && mediaBlock}
                       </div>
+                    </div>
+                  );
+                }
+
+                if (msg.type === "badge" && !showMentionsOnly) {
+                  const bColor = msg.badgeColor || "#8B5CF6";
+                  const bInitials = (msg.badgeUserName || "U").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+                  return (
+                    <div
+                      key={msg.id}
+                      className="rounded-xl border my-1.5 overflow-hidden"
+                      style={{ borderColor: `${bColor}40`, background: `${bColor}0d` }}
+                      data-testid={`room-chat-badge-${msg.id}`}
+                    >
+                      <div className="px-3 py-1.5 flex items-center gap-1.5 border-b" style={{ borderColor: `${bColor}25`, background: `${bColor}15` }}>
+                        <span className="text-sm">{msg.badgeEmoji}</span>
+                        <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: bColor }}>Achievement Unlocked</span>
+                      </div>
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <div className="relative flex-shrink-0">
+                          <Avatar className="w-10 h-10 ring-2" style={{ "--ring-color": bColor } as any}>
+                            <AvatarImage src={msg.badgeUserAvatar ?? undefined} />
+                            <AvatarFallback className="text-sm font-bold" style={{ background: `${bColor}25`, color: bColor }}>{bInitials}</AvatarFallback>
+                          </Avatar>
+                          <span className="absolute -bottom-0.5 -right-0.5 text-sm leading-none">{msg.badgeEmoji}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-bold text-white/90 truncate">{msg.badgeUserName}</p>
+                          <p className="text-[10px] text-white/50">was awarded</p>
+                          <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background: `${bColor}20`, border: `1px solid ${bColor}45`, color: bColor }}>
+                            {msg.badgeEmoji} {msg.badgeLabel}
+                          </span>
+                        </div>
+                      </div>
+                      {msg.badgeQuote && (
+                        <p className="px-3 pb-2.5 text-[11px] text-white/40 italic leading-relaxed">"{msg.badgeQuote}"</p>
+                      )}
                     </div>
                   );
                 }
