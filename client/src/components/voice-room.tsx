@@ -14,7 +14,7 @@ import {
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
-  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell, LockKeyhole,
+  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
@@ -30,6 +30,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, renderReplyPreview, uploadChatImage } from "@/components/chat-picker";
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
+import { UserNotePopover } from "@/components/social-panel";
 import type { Room, User, Follow } from "@shared/schema";
 
 interface VoiceRoomProps {
@@ -289,10 +290,15 @@ function ParticipantCard({
           </div>
 
           {!isMe && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className={`grid ${isFollowing ? "grid-cols-4" : "grid-cols-3"} gap-2`}>
                <Button variant="outline" size="sm" onClick={() => onNavigateDm && onNavigateDm(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
                   <MessageSquare className="w-3.5 h-3.5 mr-1 text-muted-foreground" /> PM
                </Button>
+               {isFollowing && (
+                 <div className="h-8 rounded-md border border-border bg-transparent hover:bg-muted flex items-center justify-center">
+                   <UserNotePopover userId={p.id} />
+                 </div>
+               )}
                <Button variant="outline" size="sm" onClick={() => isFollowing ? unfollowMutation.mutate(p.id) : followMutation.mutate(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
                   {isFollowing ? <UserCheck className="w-3.5 h-3.5 mr-1 text-blue-400" /> : <UserPlus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />} {isFollowing ? "Unf" : "Follow"}
                </Button>
@@ -565,6 +571,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [editMaxUsers, setEditMaxUsers] = useState(roomProp.maxUsers);
   const [themeDialogOpen, setThemeDialogOpen] = useState(false);
   const [editRoomTheme, setEditRoomTheme] = useState((roomProp as any).roomTheme || "none");
+  const [editThemeOffset, setEditThemeOffset] = useState(0);
   const [hologramPreviewVR, setHologramPreviewVR] = useState<string | null>(null);
   const [hologramFileVR, setHologramFileVR] = useState<File | null>(null);
   const [uploadingVideoVR, setUploadingVideoVR] = useState(false);
@@ -4167,6 +4174,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       >
                         <MessageSquare className="w-3 h-3" />
                       </button>
+                      {isFollowingUser && <UserNotePopover userId={u.id} />}
                       <button
                         data-testid={`button-follow-${u.id}`}
                         onClick={() => isFollowingUser ? unfollowMutation.mutate(u.id) : followMutation.mutate(u.id)}
@@ -4391,26 +4399,76 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Card Theme</Label>
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-border/30 bg-muted/10 p-1.5 space-y-1 app-scrollbar">
-                {ROOM_THEMES.map((theme) => (
+              <div className="flex items-center justify-between">
+                <Label>Card Theme</Label>
+                <span className="text-xs text-muted-foreground" data-testid="text-edit-theme-selected">
+                  {ROOM_THEMES.find((t) => t.id === editRoomTheme)?.label || "Default"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditThemeOffset((o) => Math.max(0, o - 4))}
+                  disabled={editThemeOffset === 0}
+                  className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  data-testid="button-edit-theme-prev"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="flex-1 grid grid-cols-4 gap-2">
+                  {ROOM_THEMES.slice(editThemeOffset, editThemeOffset + 4).map((theme) => (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => setEditRoomTheme(theme.id)}
+                      className={`relative rounded-lg overflow-hidden transition-all border-2 ${editRoomTheme === theme.id ? "border-white shadow-lg" : "border-transparent opacity-70 hover:opacity-100"}`}
+                      title={theme.label}
+                      data-testid={`button-edit-theme-${theme.id}`}
+                    >
+                      <img
+                        src={theme.img}
+                        alt={theme.label}
+                        className="w-full h-[52px] object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                          const fallback = e.currentTarget.nextSibling as HTMLElement;
+                          if (fallback) fallback.style.display = "flex";
+                        }}
+                      />
+                      <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                      <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-0.5 truncate">
+                        {theme.label}
+                      </span>
+                      {editRoomTheme === theme.id && (
+                        <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white flex items-center justify-center">
+                          <svg className="w-1.5 h-1.5" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 6l3 3 5-5" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditThemeOffset((o) => Math.min(Math.max(0, ROOM_THEMES.length - 4), o + 4))}
+                  disabled={editThemeOffset + 4 >= ROOM_THEMES.length}
+                  className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  data-testid="button-edit-theme-next"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex justify-center gap-1">
+                {Array.from({ length: Math.ceil(ROOM_THEMES.length / 4) }).map((_, i) => (
                   <button
-                    key={theme.id}
+                    key={i}
                     type="button"
-                    onClick={() => setEditRoomTheme(theme.id)}
-                    className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-all ${editRoomTheme === theme.id ? "bg-primary/15 ring-1 ring-primary/40" : "hover:bg-muted/30"}`}
-                    title={theme.label}
-                    data-testid={`button-theme-${theme.id}`}
-                  >
-                    <span className={`w-7 h-7 rounded-md flex-shrink-0 bg-gradient-to-br ${theme.preview} shadow-sm`} />
-                    <span className="flex flex-col gap-0.5 min-w-0">
-                      <span className={`text-[12px] font-medium truncate leading-tight ${editRoomTheme === theme.id ? "text-primary" : "text-foreground"}`}>{theme.label}</span>
-                      <span className="text-[10px] text-muted-foreground truncate leading-tight">{theme.description}</span>
-                    </span>
-                    {editRoomTheme === theme.id && (
-                      <span className="ml-auto flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
-                    )}
-                  </button>
+                    onClick={() => setEditThemeOffset(i * 4)}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${editThemeOffset === i * 4 ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
+                    data-testid={`button-edit-theme-page-${i}`}
+                  />
                 ))}
               </div>
             </div>
@@ -4790,7 +4848,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     setEditLanguage(room.language);
                     setEditLevel(room.level);
                     setEditMaxUsers(room.maxUsers);
-                    setEditRoomTheme((room as any).roomTheme || "none");
+                    const currentEditTheme = (room as any).roomTheme || "none";
+                    const themeIndex = ROOM_THEMES.findIndex((theme) => theme.id === currentEditTheme);
+                    setEditRoomTheme(currentEditTheme);
+                    setEditThemeOffset(Math.max(0, Math.floor(Math.max(0, themeIndex) / 4) * 4));
                     setEditDialogOpen(true);
                   }}
                   data-testid="button-host-settings"

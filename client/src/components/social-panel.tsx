@@ -44,7 +44,7 @@ function UserBadgePips({ userId }: { userId: string }) {
   );
 }
 
-function UserNotePopover({ userId }: { userId: string }) {
+export function UserNotePopover({ userId }: { userId: string }) {
   const [noteText, setNoteText] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
