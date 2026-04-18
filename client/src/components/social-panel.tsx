@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Search, UserPlus, UserCheck, MessageSquare, Phone } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Users, Search, UserPlus, UserCheck, MessageSquare, Phone, StickyNote } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -39,6 +41,76 @@ function UserBadgePips({ userId }: { userId: string }) {
       })}
       {badges.length > 3 && <span className="text-[10px] text-muted-foreground">+{badges.length - 3}</span>}
     </div>
+  );
+}
+
+function UserNotePopover({ userId }: { userId: string }) {
+  const [noteText, setNoteText] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const { data, isLoading } = useQuery<{ note: string }>({
+    queryKey: ["/api/notes", userId],
+    queryFn: () => fetch(`/api/notes/${userId}`).then(r => r.json()),
+    enabled: open,
+    staleTime: 30000,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (note: string) => {
+      await apiRequest("POST", `/api/notes/${userId}`, { note });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notes", userId] });
+    },
+  });
+
+  const currentNote = noteText ?? (data?.note ?? "");
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setNoteText(null); }}>
+      <PopoverTrigger asChild>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              data-testid={`button-note-${userId}`}
+              className={data?.note ? "text-amber-400" : ""}
+            >
+              <StickyNote className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Private note</TooltipContent>
+        </Tooltip>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="end" side="left">
+        <p className="text-xs font-medium mb-1.5">Private note (only you can see this)</p>
+        {isLoading ? (
+          <div className="h-20 bg-muted animate-pulse rounded" />
+        ) : (
+          <Textarea
+            className="text-xs resize-none h-24"
+            placeholder="Add a personal note about this person..."
+            value={currentNote}
+            onChange={(e) => setNoteText(e.target.value)}
+            maxLength={1000}
+            data-testid={`textarea-note-${userId}`}
+          />
+        )}
+        <div className="flex justify-between items-center mt-2">
+          <span className="text-[10px] text-muted-foreground">{currentNote.length}/1000</span>
+          <Button
+            size="sm"
+            className="h-7 text-xs"
+            disabled={saveMutation.isPending || isLoading}
+            onClick={() => saveMutation.mutate(currentNote)}
+            data-testid={`button-save-note-${userId}`}
+          >
+            {saveMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -201,6 +273,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
           >
             <MessageSquare className="w-4 h-4" />
           </Button>
+          {isFollowing && <UserNotePopover userId={u.id} />}
           <Button
             size="icon"
             variant="ghost"

@@ -12,6 +12,7 @@ import fs from "fs";
 import nodemailer from "nodemailer";
 import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
+import { setCleanupContext } from "./cleanup";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -1105,6 +1106,7 @@ export async function registerRoutes(
         restrictedReason: String(reason).slice(0, 500),
         restrictedById: (req.user as any).id,
       });
+      const adminId = (req.user as any).id;
       const socketId = userSockets.get(userId);
       if (socketId) {
         io.to(socketId).emit("admin:restricted", {
@@ -1113,6 +1115,7 @@ export async function registerRoutes(
         });
         io.to(socketId).emit("admin:notification", { type: "admin_restriction" });
       }
+      await storage.createNotification({ userId, fromUserId: adminId, type: "admin_restriction" });
       res.json(updated);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -1121,15 +1124,19 @@ export async function registerRoutes(
 
   app.delete("/api/admin/users/:userId/restrict", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
-      const updated = await storage.restrictUser(req.params.userId, {
+      const { userId } = req.params;
+      const adminId = (req.user as any).id;
+      const updated = await storage.restrictUser(userId, {
         restrictedUntil: null,
         restrictedReason: null,
         restrictedById: null,
       });
-      const socketId = userSockets.get(req.params.userId);
+      const socketId = userSockets.get(userId);
       if (socketId) {
         io.to(socketId).emit("admin:restriction-lifted");
+        io.to(socketId).emit("admin:notification", { type: "admin_restriction_lifted" });
       }
+      await storage.createNotification({ userId, fromUserId: adminId, type: "admin_restriction_lifted" });
       res.json(updated);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -1664,6 +1671,30 @@ export async function registerRoutes(
       const userId = (req.user as any).id;
       await storage.markNotificationsRead(userId);
       res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/notes/:subjectId", isAuthenticated, async (req: any, res) => {
+    try {
+      const authorId = (req.user as any).id;
+      const { subjectId } = req.params;
+      const note = await storage.getUserNote(authorId, subjectId);
+      res.json({ note: note?.note ?? "" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/notes/:subjectId", isAuthenticated, async (req: any, res) => {
+    try {
+      const authorId = (req.user as any).id;
+      const { subjectId } = req.params;
+      const { note } = req.body;
+      if (typeof note !== "string") return res.status(400).json({ message: "note must be a string" });
+      const result = await storage.upsertUserNote(authorId, subjectId, note.slice(0, 1000));
+      res.json({ note: result.note });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -2724,6 +2755,8 @@ export async function registerRoutes(
       }
     });
   });
+
+  setCleanupContext(io, storage, userSockets);
 
   return httpServer;
 }

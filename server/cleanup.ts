@@ -18,6 +18,8 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
+import type { Server as SocketIOServer } from "socket.io";
+import type { IStorage } from "./storage";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 
@@ -178,6 +180,43 @@ async function runCleanup(): Promise<void> {
   log("Cleanup complete.");
 }
 
+let _io: SocketIOServer | undefined;
+let _storage: IStorage | undefined;
+const userSocketsRef: Map<string, string> = new Map();
+
+export function setCleanupContext(io: SocketIOServer, storage: IStorage, userSockets: Map<string, string>): void {
+  _io = io;
+  _storage = storage;
+  // Copy reference so cleanup always reads the latest socket map
+  userSockets.forEach((v, k) => userSocketsRef.set(k, v));
+}
+
+async function handleExpiredRestrictions(): Promise<void> {
+  if (!_storage) return;
+  try {
+    const expired = await _storage.getExpiredRestrictions();
+    for (const user of expired) {
+      const adminId = user.restrictedById ?? user.id;
+      await _storage.restrictUser(user.id, {
+        restrictedUntil: null,
+        restrictedReason: null,
+        restrictedById: null,
+      });
+      await _storage.createNotification({ userId: user.id, fromUserId: adminId, type: "admin_restriction_lifted" });
+      if (_io) {
+        const socketId = userSocketsRef.get(user.id);
+        if (socketId) {
+          _io.to(socketId).emit("admin:restriction-lifted");
+          _io.to(socketId).emit("admin:notification", { type: "admin_restriction_lifted" });
+        }
+      }
+      log(`Cleared expired restriction for user ${user.id}`);
+    }
+  } catch (err: any) {
+    log(`ERROR handling expired restrictions: ${err.message}`);
+  }
+}
+
 export function startCleanupScheduler(): void {
   if (process.env.CLEANUP_ENABLED === "false") {
     log("Cleanup scheduler disabled via CLEANUP_ENABLED=false");
@@ -195,9 +234,14 @@ export function startCleanupScheduler(): void {
     `orphan_files=${getEnvDays("CLEANUP_ORPHAN_FILES_DAYS", 7)}d`
   );
 
-  runCleanup().catch((err) => log(`Startup cleanup error: ${err.message}`));
+  const runAll = async () => {
+    await runCleanup();
+    await handleExpiredRestrictions();
+  };
+
+  runAll().catch((err) => log(`Startup cleanup error: ${err.message}`));
 
   setInterval(() => {
-    runCleanup().catch((err) => log(`Interval cleanup error: ${err.message}`));
+    runAll().catch((err) => log(`Interval cleanup error: ${err.message}`));
   }, intervalMinutes * 60 * 1000);
 }

@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Award, Bell, Check, Crown, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Award, Bell, Check, Crown, Shield, ShieldAlert, ShieldCheck, Ban, ShieldOff } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -121,6 +121,8 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
       const label = badgeType.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
       return `🏆 Congratulations! You've been awarded the ${label} badge.`;
     }
+    if (notif.type === "admin_restriction") return "Your account has been temporarily restricted by the Platform Owner.";
+    if (notif.type === "admin_restriction_lifted") return "Your account restriction has been lifted. Full access restored.";
     if (notif.type === "security_suspicious_activity") return "Suspicious activity was detected on your account. Please review your recent sessions.";
     if (notif.type === "security_rate_limited") return "Your account hit a request rate limit. If this wasn't you, consider changing your password.";
     if (notif.type === "security_account_alert") return "A security alert has been logged on your account. Contact support if you need help.";
@@ -131,6 +133,8 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
     if (notif.type === "admin_promotion") return <ShieldCheck className="w-4 h-4 text-blue-300" />;
     if (notif.type === "admin_warning") return <AlertTriangle className="w-4 h-4 text-destructive" />;
     if (notif.type === "admin_removed") return <Crown className="w-4 h-4 text-amber-300" />;
+    if (notif.type === "admin_restriction") return <Ban className="w-4 h-4 text-orange-400" />;
+    if (notif.type === "admin_restriction_lifted") return <ShieldOff className="w-4 h-4 text-green-400" />;
     if (notif.type.startsWith("badge_awarded:")) return <Award className="w-4 h-4 text-amber-400" />;
     if (notif.type.startsWith("security_")) return <ShieldAlert className="w-4 h-4 text-red-400" />;
     return null;

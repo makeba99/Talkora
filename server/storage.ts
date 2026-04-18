@@ -10,12 +10,14 @@ import {
   type RoomMessage,
   type InsertRoomMessage,
   type Notification,
+  type UserNote,
   users,
   rooms,
   messages,
   follows,
   roomMessages,
   notifications,
+  userNotes,
   blocks,
   reports,
   roomVotes,
@@ -169,6 +171,10 @@ export interface IStorage {
   deletePaymentMethod(id: string, userId: string): Promise<void>;
   setDefaultPaymentMethod(id: string, userId: string): Promise<void>;
   getDefaultPaymentMethod(userId: string): Promise<PaymentMethod | undefined>;
+
+  getUserNote(authorId: string, subjectId: string): Promise<import("@shared/schema").UserNote | undefined>;
+  upsertUserNote(authorId: string, subjectId: string, note: string): Promise<import("@shared/schema").UserNote>;
+  getExpiredRestrictions(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1016,6 +1022,33 @@ export class DatabaseStorage implements IStorage {
   async getDefaultPaymentMethod(userId: string): Promise<PaymentMethod | undefined> {
     const [pm] = await db.select().from(paymentMethods).where(and(eq(paymentMethods.userId, userId), eq(paymentMethods.isDefault, true)));
     return pm;
+  }
+
+  async getUserNote(authorId: string, subjectId: string): Promise<UserNote | undefined> {
+    const [note] = await db
+      .select()
+      .from(userNotes)
+      .where(and(eq(userNotes.authorId, authorId), eq(userNotes.subjectId, subjectId)));
+    return note;
+  }
+
+  async upsertUserNote(authorId: string, subjectId: string, note: string): Promise<UserNote> {
+    const [result] = await db
+      .insert(userNotes)
+      .values({ authorId, subjectId, note, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [userNotes.authorId, userNotes.subjectId],
+        set: { note, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async getExpiredRestrictions(): Promise<User[]> {
+    return db
+      .select()
+      .from(users)
+      .where(sql`restricted_until IS NOT NULL AND restricted_until <= NOW()`);
   }
 }
 

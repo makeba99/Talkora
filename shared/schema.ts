@@ -118,6 +118,19 @@ export const notifications = pgTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 
+export const userNotes = pgTable("user_notes", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  authorId: varchar("author_id", { length: 36 }).notNull(),
+  subjectId: varchar("subject_id", { length: 36 }).notNull(),
+  note: text("note").notNull().default(""),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  userNotesAuthorSubjectIdx: uniqueIndex("user_notes_author_subject_idx").on(table.authorId, table.subjectId),
+  userNotesAuthorIdx: index("user_notes_author_idx").on(table.authorId),
+}));
+
+export type UserNote = typeof userNotes.$inferSelect;
+
 export const blocks = pgTable("blocks", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   blockerId: varchar("blocker_id", { length: 36 }).notNull(),

@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -81,6 +82,7 @@ export default function AdminPage() {
   const [announcementMediaTypes, setAnnouncementMediaTypes] = useState<("image" | "gif")[]>([]);
   const [announcementShowOnLobby, setAnnouncementShowOnLobby] = useState(false);
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
+  const [restrictDaysMap, setRestrictDaysMap] = useState<Record<string, number>>({});
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -683,9 +685,40 @@ export default function AdminPage() {
                               </Button>
                             )}
                             {isSuperAdmin && !isOwner && !isRestricted && (
-                              <Button size="sm" variant="destructive" onClick={() => restrictMutation.mutate({ userId: item.id, days: 1 })} disabled={restrictMutation.isPending} data-testid={`button-restrict-user-${item.id}`}>
-                                Restrict 1 day
-                              </Button>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button size="sm" variant="destructive" disabled={restrictMutation.isPending} data-testid={`button-restrict-user-${item.id}`}>
+                                    <Ban className="w-3 h-3 mr-1" />
+                                    Restrict
+                                    <ChevronDown className="w-3 h-3 ml-1" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-52 p-3" align="end">
+                                  <p className="text-xs font-medium mb-2">Restrict for how many days?</p>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      max={365}
+                                      value={restrictDaysMap[item.id] ?? 1}
+                                      onChange={(e) => setRestrictDaysMap((prev) => ({ ...prev, [item.id]: Math.max(1, parseInt(e.target.value) || 1) }))}
+                                      className="h-8 w-20 text-sm"
+                                      data-testid={`input-restrict-days-${item.id}`}
+                                    />
+                                    <span className="text-xs text-muted-foreground">day{(restrictDaysMap[item.id] ?? 1) !== 1 ? "s" : ""}</span>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="w-full mt-2"
+                                    disabled={restrictMutation.isPending}
+                                    onClick={() => restrictMutation.mutate({ userId: item.id, days: restrictDaysMap[item.id] ?? 1 })}
+                                    data-testid={`button-confirm-restrict-${item.id}`}
+                                  >
+                                    Confirm Restrict
+                                  </Button>
+                                </PopoverContent>
+                              </Popover>
                             )}
                             {isSuperAdmin && !isOwner && isRestricted && (
                               <Button size="sm" variant="outline" onClick={() => liftRestrictionMutation.mutate(item.id)} disabled={liftRestrictionMutation.isPending} data-testid={`button-lift-restriction-${item.id}`}>
