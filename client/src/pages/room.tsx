@@ -76,12 +76,16 @@ export default function RoomPage() {
   return (
     <VoiceRoom
       room={room}
-      onLeave={() => {
-        if (window.opener) {
+      onLeave={(reason) => {
+        if (reason === "joined-another-room") {
           window.close();
-        } else {
-          navigate("/");
+          window.setTimeout(() => {
+            if (!window.closed) navigate("/");
+          }, 150);
+          return;
         }
+        if (window.opener) window.close();
+        else navigate("/");
       }}
     />
   );

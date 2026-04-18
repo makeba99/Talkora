@@ -35,7 +35,7 @@ import type { Room, User, Follow } from "@shared/schema";
 
 interface VoiceRoomProps {
   room: Room;
-  onLeave: () => void;
+  onLeave: (reason?: "joined-another-room") => void;
 }
 
 interface Participant extends User {
@@ -1381,7 +1381,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket.on("room:joined-another-room", (data: { oldRoomId: string; newRoomId: string }) => {
       if (data.oldRoomId === room.id) {
         toast({ title: "You joined another room", description: "You were removed from this room automatically." });
-        handleLeave();
+        handleLeave("joined-another-room");
       }
     });
 
@@ -1906,7 +1906,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:hand", { roomId: room.id, userId: user?.id, raised: !handRaised });
   };
 
-  const handleLeave = () => {
+  const handleLeave = (reason?: "joined-another-room") => {
     localStream.current?.getTracks().forEach((t) => t.stop());
     screenStream.current?.getTracks().forEach((t) => t.stop());
     videoStream.current?.getTracks().forEach((t) => t.stop());
@@ -1918,7 +1918,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     });
     audioElements.current.clear();
     socket?.emit("room:leave", { roomId: room.id, userId: user?.id });
-    onLeave();
+    onLeave(reason);
   };
 
   const renderMicSettingsContent = () => (
