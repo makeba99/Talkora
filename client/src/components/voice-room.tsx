@@ -521,6 +521,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
   const [micError, setMicError] = useState(false);
+  const [showMicHelp, setShowMicHelp] = useState(false);
+  const [dismissedWelcomeIds, setDismissedWelcomeIds] = useState<Set<string>>(new Set());
   const [sidePanelTab, setSidePanelTab] = useState("chat");
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -1668,6 +1670,35 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:mute", { roomId: room.id, userId: user?.id, isMuted: !isMuted });
   };
 
+  const retryMicPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      localStream.current = stream;
+      stream.getAudioTracks().forEach((track) => { track.enabled = false; });
+      setMicError(false);
+      setShowMicHelp(false);
+      if (!audioContextRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) audioContextRef.current = new AudioContextClass();
+      }
+      if (audioContextRef.current && user) {
+        try {
+          const source = audioContextRef.current.createMediaStreamSource(stream);
+          const analyser = audioContextRef.current.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(analyser);
+          analysersRef.current.set(user.id, analyser);
+        } catch (e) {}
+      }
+      socket?.emit("room:mute", { roomId: room.id, userId: user?.id, isMuted: true });
+      toast({ title: "Microphone enabled", description: "You can now unmute to speak." });
+    } catch {
+      setShowMicHelp(true);
+    }
+  };
+
   const toggleHand = () => {
     setHandRaised(!handRaised);
     socket?.emit("room:hand", { roomId: room.id, userId: user?.id, raised: !handRaised });
@@ -2771,6 +2802,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 }
 
                 if (msg.type === "welcome" && !showMentionsOnly) {
+                  if (dismissedWelcomeIds.has(msg.id)) return null;
                   const wAccent = msg.welcomeAccentColor || "#8B5CF6";
                   const wMediaUrls = msg.welcomeMediaUrls || [];
                   const wMediaTypes = msg.welcomeMediaTypes || [];
@@ -2790,6 +2822,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <div className="px-3 py-1.5 flex items-center gap-1.5 border-b" style={{ borderColor: wAccent + "33", background: wAccent + "22" }}>
                         <span className="text-base">👋</span>
                         <span className="text-[11px] font-semibold" style={{ color: wAccent }}>Welcome Message</span>
+                        <button
+                          onClick={() => setDismissedWelcomeIds(prev => { const next = new Set(Array.from(prev)); next.add(msg.id); return next; })}
+                          className="ml-auto p-0.5 rounded hover:bg-black/20 transition-colors opacity-50 hover:opacity-100"
+                          title="Close"
+                          data-testid={`button-dismiss-welcome-${msg.id}`}
+                        >
+                          <X className="w-3 h-3" style={{ color: wAccent }} />
+                        </button>
                       </div>
                       <div className="px-3 py-2 flex flex-col gap-1.5">
                         {wPosition === "above" && mediaBlock}
@@ -3934,20 +3974,27 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
             <div className="space-y-2">
               <Label>Card Theme</Label>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-border/30 bg-muted/10 p-1.5 space-y-1 app-scrollbar">
                 {ROOM_THEMES.map((theme) => (
                   <button
                     key={theme.id}
                     type="button"
                     onClick={() => setEditRoomTheme(theme.id)}
-                    className={`relative h-8 rounded-md bg-gradient-to-br ${(theme as any).preview || "from-cyan-400 to-purple-500"} transition-all ${editRoomTheme === theme.id ? "ring-2 ring-white ring-offset-2 ring-offset-background scale-105" : "opacity-70 hover:opacity-100"}`}
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-all ${editRoomTheme === theme.id ? "bg-primary/15 ring-1 ring-primary/40" : "hover:bg-muted/30"}`}
                     title={theme.label}
-                  />
+                    data-testid={`button-theme-${theme.id}`}
+                  >
+                    <span className={`w-7 h-7 rounded-md flex-shrink-0 bg-gradient-to-br ${theme.preview} shadow-sm`} />
+                    <span className="flex flex-col gap-0.5 min-w-0">
+                      <span className={`text-[12px] font-medium truncate leading-tight ${editRoomTheme === theme.id ? "text-primary" : "text-foreground"}`}>{theme.label}</span>
+                      <span className="text-[10px] text-muted-foreground truncate leading-tight">{theme.description}</span>
+                    </span>
+                    {editRoomTheme === theme.id && (
+                      <span className="ml-auto flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+                    )}
+                  </button>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Selected: {ROOM_THEMES.find((t) => t.id === editRoomTheme)?.label || "Default"}
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -4326,9 +4373,41 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           </div>
 
           {micError && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-chart-4 bg-chart-4/10 rounded-md p-2">
-              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Microphone access denied. You can listen but not speak.</span>
+            <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-950/30 p-3 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span className="text-[12px] font-medium text-amber-200">Microphone access needed</span>
+              </div>
+              <p className="text-[11px] text-amber-200/70 leading-relaxed">
+                You can listen but not speak. Allow microphone access to participate.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={retryMicPermission}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/40 text-amber-200 text-[11px] font-medium transition-colors"
+                  data-testid="button-retry-mic"
+                >
+                  <Mic className="w-3 h-3" />
+                  Allow Microphone
+                </button>
+                <button
+                  onClick={() => setShowMicHelp(!showMicHelp)}
+                  className="text-[11px] text-amber-300/60 hover:text-amber-200 transition-colors underline underline-offset-2"
+                  data-testid="button-mic-help"
+                >
+                  How to enable
+                </button>
+              </div>
+              {showMicHelp && (
+                <div className="rounded-lg bg-black/30 border border-amber-500/20 px-3 py-2.5 space-y-1.5">
+                  <p className="text-[11px] font-semibold text-amber-200">Enable microphone in your browser:</p>
+                  <ol className="space-y-1 text-[10px] text-amber-200/60 leading-relaxed list-decimal list-inside">
+                    <li>Look for the <strong className="text-amber-200/80">camera/mic icon</strong> in your browser's address bar</li>
+                    <li>Click it and choose <strong className="text-amber-200/80">"Always allow"</strong> for this site</li>
+                    <li>Click <strong className="text-amber-200/80">Allow Microphone</strong> above to retry</li>
+                  </ol>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, Megaphone } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CommentThreadDialog } from "@/components/comment-thread-dialog";
@@ -844,54 +844,6 @@ export default function Lobby() {
 
       <div className="flex-1 overflow-auto app-scrollbar">
         <div className="max-w-7xl mx-auto p-3 sm:p-4 pb-8 space-y-5 animate-fade-in">
-          {announcements.length > 0 && (
-            <section className="rounded-3xl border border-cyan-300/25 bg-slate-950/75 p-4 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl" data-testid="section-platform-announcements">
-              <div className="mb-3 flex items-center gap-2">
-                <Megaphone className="h-5 w-5 text-cyan-300" />
-                <h2 className="text-lg font-semibold text-white" data-testid="text-announcements-heading">Platform updates</h2>
-              </div>
-              <div className="grid gap-3 lg:grid-cols-2">
-                {announcements.slice(0, 2).map((announcement) => (
-                  <article key={announcement.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]" data-testid={`card-announcement-${announcement.id}`}>
-                    {announcement.mediaUrls?.[0] && (
-                      <img src={announcement.mediaUrls[0]} alt={announcement.title} className="h-44 w-full object-cover" data-testid={`img-announcement-${announcement.id}`} />
-                    )}
-                    <div className="space-y-2 p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="border-cyan-300/30 bg-cyan-400/10 text-cyan-100" data-testid={`status-announcement-kind-${announcement.id}`}>{announcement.kind}</Badge>
-                        {announcement.publishedAt && (
-                          <span className="text-xs text-slate-400" data-testid={`text-announcement-date-${announcement.id}`}>
-                            {new Date(announcement.publishedAt).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-base font-semibold text-white" data-testid={`text-announcement-title-${announcement.id}`}>{announcement.title}</h3>
-                      <p className="line-clamp-3 text-sm text-slate-300" data-testid={`text-announcement-body-${announcement.id}`}>{announcement.body}</p>
-                      <div className="flex justify-end pt-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 text-xs text-slate-300 hover:text-white"
-                          onClick={() => {
-                            if (!user) {
-                              toast({ title: "Sign in to dismiss announcements", description: "Dismissed announcements are saved to your account." });
-                              return;
-                            }
-                            dismissAnnouncementMutation.mutate(announcement.id);
-                          }}
-                          disabled={dismissAnnouncementMutation.isPending}
-                          data-testid={`button-dismiss-announcement-${announcement.id}`}
-                        >
-                          Dismiss
-                        </Button>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />

@@ -612,20 +612,20 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
 }
 
 export const ROOM_THEMES = [
-  { id: "none", label: "Default", description: "Standard theme", bg: "" },
-  { id: "premium-atmosphere", label: "💎 Premium Atmosphere", description: "Transparent neon glass with luxury cosmic motion", bg: "premium-atmosphere" },
-  { id: "plasma", label: "⚡ Plasma", description: "Electric purple & blue plasma energy", bg: "plasma" },
-  { id: "neon", label: "🌆 Neon City", description: "Cyan & purple neon glow", bg: "neon" },
-  { id: "galaxy", label: "🌌 Galaxy", description: "Deep space starfield", bg: "galaxy" },
-  { id: "sunset", label: "🌅 Sunset", description: "Warm orange glow", bg: "sunset" },
-  { id: "forest", label: "🌿 Forest", description: "Green nature vibes", bg: "forest" },
-  { id: "cyberpunk", label: "🤖 Cyberpunk", description: "Yellow & cyan grid", bg: "cyberpunk" },
-  { id: "ocean", label: "🌊 Ocean", description: "Deep blue waves", bg: "ocean" },
-  { id: "cherry", label: "🌸 Cherry Blossom", description: "Pink floral dream", bg: "cherry" },
-  { id: "aurora", label: "🌌 Aurora", description: "Northern lights", bg: "aurora" },
-  { id: "matrix", label: "💻 Matrix", description: "Digital rain", bg: "matrix" },
-  { id: "storm", label: "⛈️ Thunderstorm", description: "Rain & lightning", bg: "storm" },
-  { id: "volcanic", label: "🌋 Volcanic", description: "Lava & embers", bg: "volcanic" },
+  { id: "none", label: "Default", description: "Standard theme", bg: "", preview: "from-slate-600 to-slate-800" },
+  { id: "premium-atmosphere", label: "💎 Premium Atmosphere", description: "Transparent neon glass with luxury cosmic motion", bg: "premium-atmosphere", preview: "from-purple-400 via-fuchsia-400 to-teal-400" },
+  { id: "plasma", label: "⚡ Plasma", description: "Electric purple & blue plasma energy", bg: "plasma", preview: "from-purple-600 via-violet-500 to-blue-500" },
+  { id: "neon", label: "🌆 Neon City", description: "Cyan & purple neon glow", bg: "neon", preview: "from-cyan-400 via-sky-500 to-purple-600" },
+  { id: "galaxy", label: "🌌 Galaxy", description: "Deep space starfield", bg: "galaxy", preview: "from-indigo-900 via-slate-800 to-purple-900" },
+  { id: "sunset", label: "🌅 Sunset", description: "Warm orange glow", bg: "sunset", preview: "from-orange-400 via-rose-400 to-pink-500" },
+  { id: "forest", label: "🌿 Forest", description: "Green nature vibes", bg: "forest", preview: "from-green-700 via-emerald-500 to-teal-400" },
+  { id: "cyberpunk", label: "🤖 Cyberpunk", description: "Yellow & cyan grid", bg: "cyberpunk", preview: "from-yellow-400 via-lime-400 to-cyan-400" },
+  { id: "ocean", label: "🌊 Ocean", description: "Deep blue waves", bg: "ocean", preview: "from-blue-800 via-blue-600 to-cyan-400" },
+  { id: "cherry", label: "🌸 Cherry Blossom", description: "Pink floral dream", bg: "cherry", preview: "from-pink-300 via-pink-400 to-rose-500" },
+  { id: "aurora", label: "🌌 Aurora", description: "Northern lights", bg: "aurora", preview: "from-green-400 via-teal-500 to-purple-600" },
+  { id: "matrix", label: "💻 Matrix", description: "Digital rain", bg: "matrix", preview: "from-green-900 via-green-700 to-green-500" },
+  { id: "storm", label: "⛈️ Thunderstorm", description: "Rain & lightning", bg: "storm", preview: "from-slate-700 via-slate-600 to-blue-700" },
+  { id: "volcanic", label: "🌋 Volcanic", description: "Lava & embers", bg: "volcanic", preview: "from-red-700 via-orange-500 to-yellow-500" },
 ] as const;
 
 export type RoomThemeId = typeof ROOM_THEMES[number]["id"];
