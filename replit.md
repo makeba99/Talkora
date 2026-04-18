@@ -115,6 +115,7 @@ shared/
 60. Owner-only powers — only the Platform Owner can send global announcements, restrict/unrestrict users, and view user emails in admin-facing user/application lists
 61. Restrictions — restricted users are blocked from creating rooms, joining rooms, sending room chat, and sending direct messages until the restriction expires
 62. Profile block list — users can view blocked users from the profile menu and unblock them
+63. Owner announcement management — Platform Owner can draft, edit, publish, and delete announcements with image/GIF attachments; published announcements appear in the lobby and are broadcast live to active users/rooms
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.
@@ -124,6 +125,7 @@ shared/
 - Restrictions: persist `restrictedUntil`, `restrictedReason`, and `restrictedById`; server routes and sockets enforce active restrictions.
 - Reports: stored in `reports` with reporter/reported metadata, category, reason, and status (`pending`, `reviewed`, `dismissed`).
 - Badge applications: stored in `badgeApplications` with status (`pending`, `approved`, `rejected`); approval awards the badge and broadcasts a celebration.
+- Announcements: stored in `announcements` with title, body, kind, status (`draft`/`published`), image/GIF attachment arrays, creator, and publish timestamps; all CRUD and media uploads are Platform Owner-only.
 - UI: `/admin` dashboard uses gated visibility, role badges, warning/restriction indicators, premium owner badge styling, and custom gradient scrollbars.
 
 ## User Model

@@ -329,6 +329,34 @@ export const insertBadgeApplicationSchema = createInsertSchema(badgeApplications
 export type InsertBadgeApplication = z.infer<typeof insertBadgeApplicationSchema>;
 export type BadgeApplication = typeof badgeApplications.$inferSelect;
 
+export const announcements = pgTable("announcements", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  kind: varchar("kind", { length: 30 }).notNull().default("platform"),
+  status: varchar("status", { length: 20 }).notNull().default("draft"),
+  mediaUrls: text("media_urls").array().notNull().default(sql`'{}'::text[]`),
+  mediaTypes: text("media_types").array().notNull().default(sql`'{}'::text[]`),
+  createdById: varchar("created_by_id", { length: 36 }).notNull(),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAnnouncementSchema = createInsertSchema(announcements)
+  .omit({ id: true, createdAt: true, updatedAt: true, publishedAt: true })
+  .extend({
+    title: z.string().trim().min(3).max(140),
+    body: z.string().trim().min(1).max(5000),
+    kind: z.enum(["platform", "maintenance", "safety", "celebration"]).default("platform"),
+    status: z.enum(["draft", "published"]).default("draft"),
+    mediaUrls: z.array(z.string().startsWith("/uploads/")).max(4).default([]),
+    mediaTypes: z.array(z.enum(["image", "gif"])).max(4).default([]),
+  });
+
+export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
+export type Announcement = typeof announcements.$inferSelect;
+
 export const LANGUAGES = [
   "All",
   "English",

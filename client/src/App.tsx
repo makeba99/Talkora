@@ -29,8 +29,9 @@ function GlobalSocketEvents() {
     const handleAnnouncement = (event: any) => {
       toast({
         title: event?.kind === "maintenance" ? "Maintenance announcement" : "Platform announcement",
-        description: event?.message || "New announcement from the Platform Owner.",
+        description: event?.title || event?.message || "New announcement from the Platform Owner.",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
     };
     const handleRestricted = (event: any) => {
       toast({

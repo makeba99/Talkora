@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, BADGE_TYPES } from "@shared/schema";
+import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
@@ -65,6 +65,24 @@ const uploadVideo = multer({
     const ext = allowed.test(path.extname(file.originalname).toLowerCase());
     const mimeAllowed = /video\/(mp4|webm|quicktime|ogg)/.test(file.mimetype);
     cb(null, ext || mimeAllowed);
+  },
+});
+
+const announcementMediaStorage = multer.diskStorage({
+  destination: uploadsDir,
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `announcement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
+  },
+});
+
+const uploadAnnouncementMedia = multer({
+  storage: announcementMediaStorage,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowedExt = /\.(jpe?g|png|gif|webp)$/i.test(file.originalname);
+    const allowedMime = /^image\/(jpeg|png|gif|webp)$/.test(file.mimetype);
+    cb(null, allowedExt && allowedMime);
   },
 });
 
@@ -756,6 +774,17 @@ export async function registerRoutes(
     next();
   };
 
+  app.post("/api/admin/announcements/media", isAuthenticated, isSuperAdmin, uploadAnnouncementMedia.single("media"), async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "Upload an image or GIF file." });
+      const url = `/uploads/${req.file.filename}`;
+      const type = req.file.mimetype === "image/gif" ? "gif" : "image";
+      res.json({ url, type });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.post("/api/reports", isAuthenticated, async (req: any, res) => {
     try {
       const parsed = insertReportSchema.safeParse(req.body);
@@ -1103,7 +1132,103 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/announcements", async (_req, res) => {
+    try {
+      res.json(await storage.getPublishedAnnouncements(5));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/announcements", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      res.json(await storage.getAnnouncements());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  const broadcastAnnouncement = async (announcement: any) => {
+    const admin = await storage.getUser(announcement.createdById);
+    const event = {
+      ...announcement,
+      message: announcement.body,
+      from: admin ? getDisplayName(admin) : "Platform Owner",
+      createdAt: announcement.createdAt instanceof Date ? announcement.createdAt.toISOString() : announcement.createdAt,
+      publishedAt: announcement.publishedAt instanceof Date ? announcement.publishedAt.toISOString() : announcement.publishedAt,
+    };
+    io.emit("admin:announcement", event);
+    emitSystemChatToAllActiveRooms(`📣 ${event.from}: ${announcement.title} — ${announcement.body.slice(0, 240)}`);
+  };
+
   app.post("/api/admin/announcements", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const parsed = insertAnnouncementSchema.safeParse({
+        ...req.body,
+        createdById: (req.user as any).id,
+        mediaUrls: Array.isArray(req.body.mediaUrls) ? req.body.mediaUrls : [],
+        mediaTypes: Array.isArray(req.body.mediaTypes) ? req.body.mediaTypes : [],
+      });
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid announcement data" });
+      }
+      if (parsed.data.mediaUrls.length !== parsed.data.mediaTypes.length) {
+        return res.status(400).json({ message: "Each media attachment must include a media type." });
+      }
+      const announcement = await storage.createAnnouncement(parsed.data);
+      if (announcement.status === "published") {
+        await broadcastAnnouncement(announcement);
+      }
+      res.status(201).json(announcement);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/announcements/:id", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const existing = await storage.getAnnouncement(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Announcement not found" });
+      const parsed = insertAnnouncementSchema.partial().safeParse({
+        title: req.body.title,
+        body: req.body.body,
+        kind: req.body.kind,
+        status: req.body.status,
+        createdById: existing.createdById,
+        mediaUrls: Array.isArray(req.body.mediaUrls) ? req.body.mediaUrls : existing.mediaUrls,
+        mediaTypes: Array.isArray(req.body.mediaTypes) ? req.body.mediaTypes : existing.mediaTypes,
+      });
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid announcement data" });
+      }
+      const nextStatus = parsed.data.status || existing.status;
+      const wasPublished = existing.status === "published";
+      const willPublishNow = nextStatus === "published" && !wasPublished;
+      const updated = await storage.updateAnnouncement(req.params.id, {
+        ...parsed.data,
+        status: nextStatus,
+        publishedAt: willPublishNow ? new Date() : existing.publishedAt,
+      });
+      if (!updated) return res.status(404).json({ message: "Announcement not found" });
+      if (willPublishNow) {
+        await broadcastAnnouncement(updated);
+      }
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/announcements/:id", isAuthenticated, isSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteAnnouncement(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/announcements/broadcast", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
       const message = String(req.body.message || "").trim();
       const kind = String(req.body.kind || "platform").trim();

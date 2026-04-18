@@ -44,6 +44,9 @@ import {
   badgeApplications,
   type BadgeApplication,
   type InsertBadgeApplication,
+  announcements,
+  type Announcement,
+  type InsertAnnouncement,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -135,6 +138,13 @@ export interface IStorage {
   getBadgeApplicationByUserAndType(userId: string, badgeType: string): Promise<BadgeApplication | undefined>;
   getBadgeApplications(userId?: string): Promise<BadgeApplication[]>;
   updateBadgeApplication(id: string, data: Partial<BadgeApplication>): Promise<BadgeApplication | undefined>;
+
+  createAnnouncement(data: InsertAnnouncement): Promise<Announcement>;
+  getAnnouncement(id: string): Promise<Announcement | undefined>;
+  getAnnouncements(): Promise<Announcement[]>;
+  getPublishedAnnouncements(limit?: number): Promise<Announcement[]>;
+  updateAnnouncement(id: string, data: Partial<Announcement>): Promise<Announcement | undefined>;
+  deleteAnnouncement(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -644,6 +654,45 @@ export class DatabaseStorage implements IStorage {
       .where(eq(badgeApplications.id, id))
       .returning();
     return application;
+  }
+
+  async createAnnouncement(data: InsertAnnouncement): Promise<Announcement> {
+    const [announcement] = await db.insert(announcements).values({
+      ...data,
+      publishedAt: data.status === "published" ? new Date() : null,
+    }).returning();
+    return announcement;
+  }
+
+  async getAnnouncement(id: string): Promise<Announcement | undefined> {
+    const [announcement] = await db.select().from(announcements).where(eq(announcements.id, id));
+    return announcement;
+  }
+
+  async getAnnouncements(): Promise<Announcement[]> {
+    return db.select().from(announcements).orderBy(desc(announcements.updatedAt));
+  }
+
+  async getPublishedAnnouncements(limit = 5): Promise<Announcement[]> {
+    return db
+      .select()
+      .from(announcements)
+      .where(eq(announcements.status, "published"))
+      .orderBy(desc(announcements.publishedAt))
+      .limit(limit);
+  }
+
+  async updateAnnouncement(id: string, data: Partial<Announcement>): Promise<Announcement | undefined> {
+    const [announcement] = await db
+      .update(announcements)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(announcements.id, id))
+      .returning();
+    return announcement;
+  }
+
+  async deleteAnnouncement(id: string): Promise<void> {
+    await db.delete(announcements).where(eq(announcements.id, id));
   }
 }
 

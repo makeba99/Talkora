@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName } from "@/lib/utils";
-import type { Report, User, TeacherApplication, UserBadge } from "@shared/schema";
+import type { Announcement, Report, User, TeacherApplication, UserBadge } from "@shared/schema";
 import { BADGE_TYPES } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -70,7 +70,11 @@ export default function AdminPage() {
   const [badgeUserId, setBadgeUserId] = useState("");
   const [badgeType, setBadgeType] = useState("");
   const [announcementKind, setAnnouncementKind] = useState("platform");
-  const [announcementMessage, setAnnouncementMessage] = useState("");
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
+  const [announcementMediaUrls, setAnnouncementMediaUrls] = useState<string[]>([]);
+  const [announcementMediaTypes, setAnnouncementMediaTypes] = useState<("image" | "gif")[]>([]);
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -95,6 +99,11 @@ export default function AdminPage() {
   const { data: badgeApplications = [], isLoading: badgeApplicationsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/badge-applications"],
     enabled: !!canAccess,
+  });
+
+  const { data: announcements = [], isLoading: announcementsLoading } = useQuery<Announcement[]>({
+    queryKey: ["/api/admin/announcements"],
+    enabled: !!isSuperAdmin,
   });
 
   const awardBadgeMutation = useMutation({
@@ -235,19 +244,104 @@ export default function AdminPage() {
     onError: (error: any) => toast({ title: "Failed to lift restriction", description: error.message, variant: "destructive" }),
   });
 
-  const announcementMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/admin/announcements", {
+  const resetAnnouncementForm = () => {
+    setAnnouncementTitle("");
+    setAnnouncementBody("");
+    setAnnouncementKind("platform");
+    setAnnouncementMediaUrls([]);
+    setAnnouncementMediaTypes([]);
+    setEditingAnnouncementId(null);
+  };
+
+  const startEditingAnnouncement = (announcement: Announcement) => {
+    setEditingAnnouncementId(announcement.id);
+    setAnnouncementTitle(announcement.title);
+    setAnnouncementBody(announcement.body);
+    setAnnouncementKind(announcement.kind);
+    setAnnouncementMediaUrls(announcement.mediaUrls || []);
+    setAnnouncementMediaTypes((announcement.mediaTypes || []) as ("image" | "gif")[]);
+  };
+
+  const uploadAnnouncementMediaMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("media", file);
+      const response = await fetch("/api/admin/announcements/media", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Upload failed");
+      }
+      return response.json() as Promise<{ url: string; type: "image" | "gif" }>;
+    },
+    onSuccess: (media) => {
+      setAnnouncementMediaUrls((current) => [...current, media.url].slice(0, 4));
+      setAnnouncementMediaTypes((current) => [...current, media.type].slice(0, 4));
+      toast({ title: "Media attached", description: "The image or GIF is ready for this announcement." });
+    },
+    onError: (error: any) => toast({ title: "Media upload failed", description: error.message, variant: "destructive" }),
+  });
+
+  const saveAnnouncementMutation = useMutation({
+    mutationFn: async (status: "draft" | "published") => {
+      const payload = {
+        title: announcementTitle,
+        body: announcementBody,
         kind: announcementKind,
-        message: announcementMessage,
+        status,
+        mediaUrls: announcementMediaUrls,
+        mediaTypes: announcementMediaTypes,
+      };
+      const res = editingAnnouncementId
+        ? await apiRequest("PATCH", `/api/admin/announcements/${editingAnnouncementId}`, payload)
+        : await apiRequest("POST", "/api/admin/announcements", payload);
+      return res.json();
+    },
+    onSuccess: (_data, status) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      resetAnnouncementForm();
+      toast({
+        title: status === "published" ? "Announcement published" : "Draft saved",
+        description: status === "published" ? "It is now visible in the lobby and sent to active users." : "The announcement is saved for later.",
+      });
+    },
+    onError: (error: any) => toast({ title: "Failed to save announcement", description: error.message, variant: "destructive" }),
+  });
+
+  const deleteAnnouncementMutation = useMutation({
+    mutationFn: async (announcementId: string) => {
+      await apiRequest("DELETE", `/api/admin/announcements/${announcementId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      toast({ title: "Announcement deleted" });
+    },
+    onError: (error: any) => toast({ title: "Failed to delete announcement", description: error.message, variant: "destructive" }),
+  });
+
+  const publishExistingAnnouncementMutation = useMutation({
+    mutationFn: async (announcement: Announcement) => {
+      const res = await apiRequest("PATCH", `/api/admin/announcements/${announcement.id}`, {
+        title: announcement.title,
+        body: announcement.body,
+        kind: announcement.kind,
+        status: "published",
+        mediaUrls: announcement.mediaUrls || [],
+        mediaTypes: announcement.mediaTypes || [],
       });
       return res.json();
     },
     onSuccess: () => {
-      setAnnouncementMessage("");
-      toast({ title: "Announcement sent", description: "It was posted globally and into all active room chats." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/announcements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      toast({ title: "Announcement published", description: "It is now visible in the lobby and sent to active users." });
     },
-    onError: (error: any) => toast({ title: "Failed to send announcement", description: error.message, variant: "destructive" }),
+    onError: (error: any) => toast({ title: "Failed to publish announcement", description: error.message, variant: "destructive" }),
   });
 
   const roleMutation = useMutation({
@@ -830,48 +924,182 @@ export default function AdminPage() {
 
           {isSuperAdmin && (
             <TabsContent value="announcements">
-              <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Megaphone className="w-5 h-5 text-cyan-300" />
-                    Platform Owner Announcements
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 max-w-2xl">
-                  <div className="space-y-2">
-                    <Label>Announcement type</Label>
-                    <Select value={announcementKind} onValueChange={setAnnouncementKind}>
-                      <SelectTrigger data-testid="select-announcement-kind">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="platform">Platform update</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="safety">Safety notice</SelectItem>
-                        <SelectItem value="celebration">Celebration</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Message</Label>
-                    <Textarea
-                      value={announcementMessage}
-                      onChange={(e) => setAnnouncementMessage(e.target.value)}
-                      rows={4}
-                      placeholder="Write an announcement for everyone..."
-                      data-testid="textarea-announcement-message"
-                    />
-                  </div>
-                  <Button
-                    onClick={() => announcementMutation.mutate()}
-                    disabled={announcementMessage.trim().length === 0 || announcementMutation.isPending}
-                    data-testid="button-send-announcement"
-                  >
-                    <Megaphone className="w-4 h-4 mr-2" />
-                    {announcementMutation.isPending ? "Sending..." : "Send to all users and rooms"}
-                  </Button>
-                </CardContent>
-              </Card>
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,520px)]">
+                <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Megaphone className="w-5 h-5 text-cyan-300" />
+                      Platform Owner Announcements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="announcement-title">Title</Label>
+                        <Input
+                          id="announcement-title"
+                          value={announcementTitle}
+                          onChange={(e) => setAnnouncementTitle(e.target.value)}
+                          maxLength={140}
+                          placeholder="What changed?"
+                          data-testid="input-announcement-title"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Announcement type</Label>
+                        <Select value={announcementKind} onValueChange={setAnnouncementKind}>
+                          <SelectTrigger data-testid="select-announcement-kind">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="platform">Platform update</SelectItem>
+                            <SelectItem value="maintenance">Maintenance</SelectItem>
+                            <SelectItem value="safety">Safety notice</SelectItem>
+                            <SelectItem value="celebration">Celebration</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="announcement-body">Message</Label>
+                      <Textarea
+                        id="announcement-body"
+                        value={announcementBody}
+                        onChange={(e) => setAnnouncementBody(e.target.value)}
+                        rows={7}
+                        maxLength={5000}
+                        placeholder="Write an update for everyone..."
+                        data-testid="textarea-announcement-message"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Label htmlFor="announcement-media">Images and GIFs</Label>
+                        <span className="text-xs text-muted-foreground" data-testid="text-announcement-media-count">{announcementMediaUrls.length}/4 attached</span>
+                      </div>
+                      <Input
+                        id="announcement-media"
+                        type="file"
+                        accept="image/png,image/jpeg,image/gif,image/webp"
+                        disabled={announcementMediaUrls.length >= 4 || uploadAnnouncementMediaMutation.isPending}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadAnnouncementMediaMutation.mutate(file);
+                          e.currentTarget.value = "";
+                        }}
+                        data-testid="input-announcement-media"
+                      />
+                      {announcementMediaUrls.length > 0 && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {announcementMediaUrls.map((url, index) => (
+                            <div key={url} className="overflow-hidden rounded-xl border border-border/70 bg-background/50" data-testid={`card-announcement-media-${index}`}>
+                              <img src={url} alt={`Announcement media ${index + 1}`} className="h-32 w-full object-cover" data-testid={`img-announcement-media-${index}`} />
+                              <div className="flex items-center justify-between p-2">
+                                <Badge variant="secondary" data-testid={`status-announcement-media-type-${index}`}>
+                                  {announcementMediaTypes[index] || "image"}
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setAnnouncementMediaUrls((current) => current.filter((_, i) => i !== index));
+                                    setAnnouncementMediaTypes((current) => current.filter((_, i) => i !== index));
+                                  }}
+                                  data-testid={`button-remove-announcement-media-${index}`}
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => saveAnnouncementMutation.mutate("draft")}
+                        disabled={announcementTitle.trim().length < 3 || announcementBody.trim().length === 0 || saveAnnouncementMutation.isPending}
+                        data-testid="button-save-announcement-draft"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {saveAnnouncementMutation.isPending ? "Saving..." : "Save draft"}
+                      </Button>
+                      <Button
+                        onClick={() => saveAnnouncementMutation.mutate("published")}
+                        disabled={announcementTitle.trim().length < 3 || announcementBody.trim().length === 0 || saveAnnouncementMutation.isPending}
+                        data-testid="button-publish-announcement"
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        {saveAnnouncementMutation.isPending ? "Publishing..." : "Publish"}
+                      </Button>
+                      {editingAnnouncementId && (
+                        <Button variant="ghost" onClick={resetAnnouncementForm} data-testid="button-cancel-announcement-edit">
+                          Cancel edit
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-violet-300" />
+                      Saved announcements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[620px] overflow-auto admin-scrollbar pr-2 space-y-3">
+                      {announcementsLoading ? (
+                        [1, 2, 3].map((item) => <Skeleton key={item} className="h-28 w-full" />)
+                      ) : announcements.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-12" data-testid="text-no-announcements">No announcements yet.</p>
+                      ) : (
+                        announcements.map((announcement) => (
+                          <div key={announcement.id} className="rounded-xl border border-border/70 bg-background/55 p-4 space-y-3" data-testid={`card-owner-announcement-${announcement.id}`}>
+                            {announcement.mediaUrls?.[0] && (
+                              <img src={announcement.mediaUrls[0]} alt={announcement.title} className="h-36 w-full rounded-lg object-cover" data-testid={`img-owner-announcement-${announcement.id}`} />
+                            )}
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge variant={announcement.status === "published" ? "default" : "outline"} data-testid={`status-owner-announcement-${announcement.id}`}>
+                                  {announcement.status}
+                                </Badge>
+                                <Badge variant="secondary" data-testid={`text-owner-announcement-kind-${announcement.id}`}>
+                                  {announcement.kind}
+                                </Badge>
+                              </div>
+                              <h3 className="font-semibold" data-testid={`text-owner-announcement-title-${announcement.id}`}>{announcement.title}</h3>
+                              <p className="text-sm text-muted-foreground line-clamp-3" data-testid={`text-owner-announcement-body-${announcement.id}`}>{announcement.body}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button size="sm" variant="outline" onClick={() => startEditingAnnouncement(announcement)} data-testid={`button-edit-announcement-${announcement.id}`}>
+                                <Edit3 className="w-3.5 h-3.5 mr-1.5" />
+                                Edit
+                              </Button>
+                              {announcement.status !== "published" && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => publishExistingAnnouncementMutation.mutate(announcement)}
+                                  disabled={publishExistingAnnouncementMutation.isPending}
+                                  data-testid={`button-publish-existing-announcement-${announcement.id}`}
+                                >
+                                  Publish
+                                </Button>
+                              )}
+                              <Button size="sm" variant="destructive" onClick={() => deleteAnnouncementMutation.mutate(announcement.id)} disabled={deleteAnnouncementMutation.isPending} data-testid={`button-delete-announcement-${announcement.id}`}>
+                                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           )}
         </Tabs>
