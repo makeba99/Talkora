@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Bell, Check, Crown, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Award, Bell, Check, Crown, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -74,6 +74,9 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
           variant: "destructive",
         });
       }
+      if (event?.type === "badge_awarded") {
+        queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      }
     };
 
     const handleWarning = (event: { message?: string }) => {
@@ -111,15 +114,21 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
   const getNotificationLabel = (notif: Notification, fromUser?: User) => {
     if (notif.type === "follow") return `${getUserDisplayName(fromUser)} followed you`;
     if (notif.type === "admin_promotion") return "You are now a Platform Admin! You can manage reports and moderate users.";
-    if (notif.type === "admin_warning") return "You’ve received a warning from Admin. Continued violations may lead to restrictions.";
+    if (notif.type === "admin_warning") return "You've received a warning from Admin. Continued violations may lead to restrictions.";
     if (notif.type === "admin_removed") return "Your Admin access was removed by the Platform Owner.";
+    if (notif.type.startsWith("badge_awarded:")) {
+      const badgeType = notif.type.split(":")[1] ?? "";
+      const label = badgeType.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      return `🏆 Congratulations! You've been awarded the ${label} badge.`;
+    }
     return notif.type;
   };
 
-  const getNotificationIcon = (notif: Notification, fromUser?: User) => {
+  const getNotificationIcon = (notif: Notification) => {
     if (notif.type === "admin_promotion") return <ShieldCheck className="w-4 h-4 text-blue-300" />;
     if (notif.type === "admin_warning") return <AlertTriangle className="w-4 h-4 text-destructive" />;
     if (notif.type === "admin_removed") return <Crown className="w-4 h-4 text-amber-300" />;
+    if (notif.type.startsWith("badge_awarded:")) return <Award className="w-4 h-4 text-amber-400" />;
     return null;
   };
 
@@ -160,17 +169,19 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
             <div className="p-1">
               {notifications.slice(0, 20).map((notif) => {
                 const fromUser = usersMap.get(notif.fromUserId);
-                const icon = getNotificationIcon(notif, fromUser);
+                const icon = getNotificationIcon(notif);
+                const isBadge = notif.type.startsWith("badge_awarded:");
                 return (
                   <div
                     key={notif.id}
-                    className={`flex items-center gap-3 p-2 rounded-md ${
-                      !notif.read ? "bg-primary/5" : ""
-                    }`}
+                    className={`flex items-center gap-3 p-2 rounded-md ${!notif.read ? "bg-primary/5" : ""}`}
                     data-testid={`notification-${notif.id}`}
                   >
                     {icon ? (
-                      <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={isBadge ? { background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)" } : { background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.2)" }}
+                      >
                         {icon}
                       </div>
                     ) : (
@@ -182,10 +193,10 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
                       </Avatar>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm">
+                      <p className="text-sm leading-snug">
                         {getNotificationLabel(notif, fromUser)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {formatTime(notif.createdAt)}
                       </p>
                     </div>

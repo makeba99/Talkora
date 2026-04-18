@@ -983,15 +983,24 @@ export async function registerRoutes(
       const badgeDef = BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES];
       const targetName = target.displayName || [target.firstName, target.lastName].filter(Boolean).join(" ") || target.email || "A user";
 
-      io.emit("badge:awarded", {
+      const badgeAwardPayload = {
         badge,
         badgeDef,
         userName: targetName,
         userAvatar: target.profileImageUrl,
         userId: target.id,
         quote: badgeDef.quote,
-      });
+      };
+      io.emit("badge:awarded", badgeAwardPayload);
       emitSystemChatToAllActiveRooms(`${badgeDef.emoji} ${targetName} was awarded ${badgeDef.label}: ${badgeDef.quote}`);
+
+      try {
+        await storage.createNotification({ userId, fromUserId: (req.user as any).id, type: `badge_awarded:${badgeType}` });
+        const userSocketId = userSockets.get(userId);
+        if (userSocketId) {
+          io.to(userSocketId).emit("admin:notification", { type: "badge_awarded", badge: badgeAwardPayload });
+        }
+      } catch (_) {}
 
       res.json(badge);
     } catch (err: any) {
@@ -1115,15 +1124,23 @@ export async function registerRoutes(
           });
           const badgeDef = BADGE_TYPES[application.badgeType as keyof typeof BADGE_TYPES];
           const targetName = getDisplayName(target);
-          io.emit("badge:awarded", {
+          const appBadgePayload = {
             badge,
             badgeDef,
             userName: targetName,
             userAvatar: target.profileImageUrl,
             userId: target.id,
             quote: badgeDef.quote,
-          });
+          };
+          io.emit("badge:awarded", appBadgePayload);
           emitSystemChatToAllActiveRooms(`${badgeDef.emoji} ${targetName} was awarded ${badgeDef.label}: ${badgeDef.quote}`);
+          try {
+            await storage.createNotification({ userId: application.userId, fromUserId: (req.user as any).id, type: `badge_awarded:${application.badgeType}` });
+            const userSocketId = userSockets.get(application.userId);
+            if (userSocketId) {
+              io.to(userSocketId).emit("admin:notification", { type: "badge_awarded", badge: appBadgePayload });
+            }
+          } catch (_) {}
         }
       }
       res.json(application);
