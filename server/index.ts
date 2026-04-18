@@ -5,11 +5,13 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { startCleanupScheduler } from "./cleanup";
+import { applySecurityMiddleware } from "./security";
 
 const app = express();
 const httpServer = createServer(app);
 
 app.use(compression());
+applySecurityMiddleware(app);
 
 declare module "http" {
   interface IncomingMessage {

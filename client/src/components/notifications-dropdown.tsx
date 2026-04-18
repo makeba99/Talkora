@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Award, Bell, Check, Crown, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Award, Bell, Check, Crown, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -121,6 +121,9 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
       const label = badgeType.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
       return `🏆 Congratulations! You've been awarded the ${label} badge.`;
     }
+    if (notif.type === "security_suspicious_activity") return "Suspicious activity was detected on your account. Please review your recent sessions.";
+    if (notif.type === "security_rate_limited") return "Your account hit a request rate limit. If this wasn't you, consider changing your password.";
+    if (notif.type === "security_account_alert") return "A security alert has been logged on your account. Contact support if you need help.";
     return notif.type;
   };
 
@@ -129,6 +132,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
     if (notif.type === "admin_warning") return <AlertTriangle className="w-4 h-4 text-destructive" />;
     if (notif.type === "admin_removed") return <Crown className="w-4 h-4 text-amber-300" />;
     if (notif.type.startsWith("badge_awarded:")) return <Award className="w-4 h-4 text-amber-400" />;
+    if (notif.type.startsWith("security_")) return <ShieldAlert className="w-4 h-4 text-red-400" />;
     return null;
   };
 
@@ -174,13 +178,13 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
                 return (
                   <div
                     key={notif.id}
-                    className={`flex items-center gap-3 p-2 rounded-md ${!notif.read ? "bg-primary/5" : ""}`}
+                    className={`flex items-center gap-3 p-2 rounded-md ${!notif.read ? (notif.type.startsWith("security_") ? "bg-red-500/8" : "bg-primary/5") : ""}`}
                     data-testid={`notification-${notif.id}`}
                   >
                     {icon ? (
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={isBadge ? { background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)" } : { background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.2)" }}
+                        style={isBadge ? { background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.3)" } : notif.type.startsWith("security_") ? { background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" } : { background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.2)" }}
                       >
                         {icon}
                       </div>

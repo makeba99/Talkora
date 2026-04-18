@@ -49,6 +49,8 @@ import {
   type InsertAnnouncement,
   announcementReceipts,
   type AnnouncementReceipt,
+  securityEvents,
+  type SecurityEvent,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -152,6 +154,10 @@ export interface IStorage {
   markAnnouncementViewed(announcementId: string, userId: string): Promise<AnnouncementReceipt>;
   dismissAnnouncement(announcementId: string, userId: string): Promise<AnnouncementReceipt>;
   getAnnouncementReceiptCounts(announcementIds: string[]): Promise<Record<string, { viewCount: number; dismissCount: number }>>;
+
+  getSecurityEvents(limit?: number, unresolvedOnly?: boolean): Promise<SecurityEvent[]>;
+  resolveSecurityEvent(id: string, resolvedById: string): Promise<SecurityEvent | undefined>;
+  getUnresolvedSecurityEventCount(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -836,6 +842,40 @@ export class DatabaseStorage implements IStorage {
         dismissCount: Number(row.dismissCount) || 0,
       },
     ]));
+  }
+
+  async getSecurityEvents(limit = 100, unresolvedOnly = false): Promise<SecurityEvent[]> {
+    let query = db
+      .select()
+      .from(securityEvents)
+      .orderBy(desc(securityEvents.createdAt))
+      .limit(limit) as any;
+    if (unresolvedOnly) {
+      query = db
+        .select()
+        .from(securityEvents)
+        .where(eq(securityEvents.resolved, false))
+        .orderBy(desc(securityEvents.createdAt))
+        .limit(limit);
+    }
+    return query;
+  }
+
+  async resolveSecurityEvent(id: string, resolvedById: string): Promise<SecurityEvent | undefined> {
+    const [event] = await db
+      .update(securityEvents)
+      .set({ resolved: true, resolvedById })
+      .where(eq(securityEvents.id, id))
+      .returning();
+    return event;
+  }
+
+  async getUnresolvedSecurityEventCount(): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(securityEvents)
+      .where(eq(securityEvents.resolved, false));
+    return Number(row?.count) || 0;
   }
 }
 

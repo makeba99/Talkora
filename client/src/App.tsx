@@ -18,10 +18,20 @@ import DmPage from "@/pages/dm";
 import AdminPage from "@/pages/admin";
 import TeachersPage from "@/pages/teachers";
 
+const SEVERITY_LABELS: Record<string, string> = {
+  critical: "CRITICAL",
+  high: "HIGH",
+  medium: "Medium",
+  low: "Low",
+};
+
 function GlobalSocketEvents() {
   const { socket } = useSocket();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [badgeEvent, setBadgeEvent] = useState<any | null>(null);
+
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin" || user?.email === "dj55jggg@gmail.com";
 
   useEffect(() => {
     if (!socket) return;
@@ -39,17 +49,33 @@ function GlobalSocketEvents() {
     const handleRestrictionLifted = () => {
       toast({ title: "Restriction lifted", description: "Your account can participate again." });
     };
+    const handleSecurityAdminAlert = (event: any) => {
+      if (!isAdmin) return;
+      const severity = event?.severity ?? "medium";
+      const label = SEVERITY_LABELS[severity] ?? severity;
+      const isCritical = severity === "critical" || severity === "high";
+      toast({
+        title: `Security Alert [${label}]`,
+        description: event?.description ?? "A security event was detected.",
+        variant: isCritical ? "destructive" : "default",
+        duration: isCritical ? 10000 : 6000,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/security-events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/security-events/count"] });
+    };
     socket.on("badge:awarded", handleBadgeAwarded);
     socket.on("admin:announcement", handleAnnouncement);
     socket.on("admin:restricted", handleRestricted);
     socket.on("admin:restriction-lifted", handleRestrictionLifted);
+    socket.on("security:admin_alert", handleSecurityAdminAlert);
     return () => {
       socket.off("badge:awarded", handleBadgeAwarded);
       socket.off("admin:announcement", handleAnnouncement);
       socket.off("admin:restricted", handleRestricted);
       socket.off("admin:restriction-lifted", handleRestrictionLifted);
+      socket.off("security:admin_alert", handleSecurityAdminAlert);
     };
-  }, [socket, toast]);
+  }, [socket, toast, isAdmin]);
 
   return <BadgeAnnouncement event={badgeEvent} onDismiss={() => setBadgeEvent(null)} />;
 }

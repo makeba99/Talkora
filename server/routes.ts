@@ -11,6 +11,7 @@ import path from "path";
 import fs from "fs";
 import nodemailer from "nodemailer";
 import { externalCache } from "./cache";
+import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -115,6 +116,33 @@ export async function registerRoutes(
     pingInterval: 25000,
     upgradeTimeout: 30000,
     allowUpgrades: true,
+  });
+
+  app.use("/api", apiRateLimiter);
+  app.use("/api/auth", authRateLimiter);
+  app.use("/api", threatDetectionMiddleware);
+  app.use("/api", privilegeCheckMiddleware);
+
+  securityBus.on("security:event", async (event) => {
+    try {
+      const adminUsers = await storage.getAllUsers();
+      const admins = adminUsers.filter(
+        (u) => u.role === "admin" || u.role === "superadmin" || u.email === "dj55jggg@gmail.com"
+      );
+      for (const admin of admins) {
+        const socketId = userSockets.get(admin.id);
+        if (socketId) {
+          io.to(socketId).emit("security:admin_alert", {
+            id: event.id,
+            eventType: event.eventType,
+            severity: event.severity,
+            description: event.description,
+            requestPath: event.requestPath,
+            createdAt: event.createdAt,
+          });
+        }
+      }
+    } catch {}
   });
 
   app.use("/uploads", (_req, res, next) => {
@@ -1230,6 +1258,43 @@ export async function registerRoutes(
         }
       }
       res.json(application);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/security-events", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const unresolvedOnly = req.query.unresolved === "true";
+      const limit = Math.min(parseInt(req.query.limit as string ?? "200", 10) || 200, 500);
+      const events = await storage.getSecurityEvents(limit, unresolvedOnly);
+      const userIds = [...new Set(events.filter(e => e.userId).map(e => e.userId as string))];
+      const userMap = userIds.length > 0 ? await storage.getUsersByIds(userIds) : new Map();
+      const enriched = events.map((e) => ({
+        ...e,
+        userName: e.userId ? (userMap.get(e.userId) ? getDisplayName(userMap.get(e.userId)!) : "Unknown user") : null,
+        userAvatar: e.userId ? (userMap.get(e.userId)?.profileImageUrl ?? null) : null,
+      }));
+      res.json(enriched);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/security-events/count", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const count = await storage.getUnresolvedSecurityEventCount();
+      res.json({ count });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/security-events/:id/resolve", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const event = await storage.resolveSecurityEvent(req.params.id, (req.user as any).id);
+      if (!event) return res.status(404).json({ message: "Event not found" });
+      res.json(event);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

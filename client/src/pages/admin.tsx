@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +109,32 @@ export default function AdminPage() {
   const { data: announcements = [], isLoading: announcementsLoading } = useQuery<OwnerAnnouncement[]>({
     queryKey: ["/api/admin/announcements"],
     enabled: !!isSuperAdmin,
+  });
+
+  const { data: securityEvents = [], isLoading: securityEventsLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/security-events"],
+    enabled: !!canAccess,
+    refetchInterval: 30000,
+  });
+
+  const { data: securityCountData } = useQuery<{ count: number }>({
+    queryKey: ["/api/admin/security-events/count"],
+    enabled: !!canAccess,
+    refetchInterval: 30000,
+  });
+  const securityEventCount = securityCountData?.count ?? 0;
+
+  const resolveSecurityEventMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("PATCH", `/api/admin/security-events/${id}/resolve`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/security-events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/security-events/count"] });
+      toast({ title: "Event resolved" });
+    },
+    onError: (err: any) => toast({ title: "Failed to resolve", description: err.message, variant: "destructive" }),
   });
 
   const awardBadgeMutation = useMutation({
@@ -482,7 +508,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-5xl grid-cols-6" : "max-w-3xl grid-cols-5"} bg-card/80 backdrop-blur`}>
+          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-6xl grid-cols-7" : "max-w-4xl grid-cols-6"} bg-card/80 backdrop-blur`}>
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -507,6 +533,15 @@ export default function AdminPage() {
             <TabsTrigger value="badges" data-testid="tab-admin-badges">
               <Award className="w-4 h-4 mr-2" />
               Badges
+            </TabsTrigger>
+            <TabsTrigger value="security" data-testid="tab-admin-security" className="relative">
+              <ShieldAlert className="w-4 h-4 mr-2" />
+              Security
+              {securityEventCount > 0 && (
+                <span className="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {securityEventCount > 9 ? "9+" : securityEventCount}
+                </span>
+              )}
             </TabsTrigger>
             {isSuperAdmin && (
               <TabsTrigger value="announcements" data-testid="tab-admin-announcements">
@@ -934,6 +969,91 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="security">
+            <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-red-400" />
+                  Security Events
+                  {securityEventCount > 0 && (
+                    <Badge className="bg-red-500/20 text-red-300 border border-red-500/30 text-xs">
+                      {securityEventCount} unresolved
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {securityEventsLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                  </div>
+                ) : securityEvents.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Shield className="w-12 h-12 text-green-400 mx-auto mb-3 opacity-60" />
+                    <p className="text-muted-foreground text-sm">No security events detected</p>
+                    <p className="text-muted-foreground text-xs mt-1">Your platform is clean</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {securityEvents.map((event: any) => {
+                      const severityColors: Record<string, string> = {
+                        critical: "bg-red-500/15 text-red-300 border-red-500/30",
+                        high: "bg-orange-500/15 text-orange-300 border-orange-500/30",
+                        medium: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
+                        low: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+                      };
+                      const severityClass = severityColors[event.severity] ?? severityColors.medium;
+                      const typeLabel = (event.eventType as string).replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+                      return (
+                        <div
+                          key={event.id}
+                          className={`flex items-start gap-3 p-3 rounded-lg border ${event.resolved ? "opacity-50 border-border/30 bg-muted/10" : "border-red-500/15 bg-red-500/5"}`}
+                          data-testid={`security-event-${event.id}`}
+                        >
+                          <div className="mt-0.5 flex-shrink-0">
+                            <ShieldAlert className={`w-4 h-4 ${event.resolved ? "text-muted-foreground" : "text-red-400"}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className={`text-[10px] px-1.5 py-0 border ${severityClass}`}>
+                                {event.severity.toUpperCase()}
+                              </Badge>
+                              <span className="text-sm font-medium">{typeLabel}</span>
+                              {event.resolved && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-green-400 border-green-500/30">
+                                  Resolved
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 leading-snug">{event.description}</p>
+                            <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground/70">
+                              {event.requestPath && <span>Path: <code className="font-mono">{event.requestPath}</code></span>}
+                              {event.userName && <span>User: {event.userName}</span>}
+                              <span>{new Date(event.createdAt).toLocaleString()}</span>
+                            </div>
+                          </div>
+                          {!event.resolved && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs shrink-0 text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                              onClick={() => resolveSecurityEventMutation.mutate(event.id)}
+                              disabled={resolveSecurityEventMutation.isPending}
+                              data-testid={`button-resolve-security-${event.id}`}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                              Resolve
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {isSuperAdmin && (

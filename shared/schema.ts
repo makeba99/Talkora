@@ -433,6 +433,29 @@ export const insertAnnouncementReceiptSchema = createInsertSchema(announcementRe
 export type InsertAnnouncementReceipt = z.infer<typeof insertAnnouncementReceiptSchema>;
 export type AnnouncementReceipt = typeof announcementReceipts.$inferSelect;
 
+export const securityEvents = pgTable("security_events", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }),
+  eventType: varchar("event_type", { length: 50 }).notNull(),
+  severity: varchar("severity", { length: 20 }).notNull().default("medium"),
+  description: text("description").notNull(),
+  userAgent: text("user_agent"),
+  requestPath: varchar("request_path", { length: 255 }),
+  resolved: boolean("resolved").notNull().default(false),
+  resolvedById: varchar("resolved_by_id", { length: 36 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  securityEventsUserIdx: index("security_events_user_id_idx").on(table.userId),
+  securityEventsTypeIdx: index("security_events_type_idx").on(table.eventType),
+  securityEventsSeverityIdx: index("security_events_severity_idx").on(table.severity),
+  securityEventsResolvedIdx: index("security_events_resolved_idx").on(table.resolved),
+  securityEventsCreatedAtIdx: index("security_events_created_at_idx").on(table.createdAt),
+}));
+
+export const insertSecurityEventSchema = createInsertSchema(securityEvents).omit({ id: true, createdAt: true, resolved: true, resolvedById: true });
+export type InsertSecurityEvent = z.infer<typeof insertSecurityEventSchema>;
+export type SecurityEvent = typeof securityEvents.$inferSelect;
+
 export const LANGUAGES = [
   "All",
   "English",
