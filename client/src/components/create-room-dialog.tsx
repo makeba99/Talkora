@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Hammer, Link, Loader2, Search, Video, X, Youtube } from "lucide-react";
+import { ChevronLeft, ChevronRight, Hammer, Link, Loader2, Search, Video, X, Youtube } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,6 +62,8 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   const [maxUsers, setMaxUsers] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
   const [roomTheme, setRoomTheme] = useState("premium-atmosphere");
+  const [themeOffset, setThemeOffset] = useState(0);
+  const THEMES_PER_PAGE = 4;
   const [videoTab, setVideoTab] = useState<"upload" | "youtube">("upload");
   const [hologramFile, setHologramFile] = useState<File | null>(null);
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);
@@ -251,36 +253,50 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
           </div>
 
           <div className="space-y-2">
-            <Label>Card Theme</Label>
-            <div className="-mx-1 px-1 overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
-              <div className="flex gap-2 pb-2 pt-1" style={{ width: "max-content" }}>
-                {ROOM_THEMES.map((theme) => (
+            <div className="flex items-center justify-between">
+              <Label>Card Theme</Label>
+              <span className="text-xs text-muted-foreground" data-testid="text-create-theme-selected">
+                {ROOM_THEMES.find((t) => t.id === roomTheme)?.label || "Default"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setThemeOffset((o) => Math.max(0, o - THEMES_PER_PAGE))}
+                disabled={themeOffset === 0}
+                className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                data-testid="button-theme-prev"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex-1 grid grid-cols-4 gap-2">
+                {ROOM_THEMES.slice(themeOffset, themeOffset + THEMES_PER_PAGE).map((theme) => (
                   <button
                     key={theme.id}
                     type="button"
                     onClick={() => setRoomTheme(theme.id)}
-                    className={`relative flex-shrink-0 w-[80px] rounded-lg overflow-hidden transition-all border-2 ${roomTheme === theme.id ? "border-white shadow-lg shadow-white/20" : "border-transparent opacity-70 hover:opacity-100"}`}
+                    className={`relative rounded-lg overflow-hidden transition-all border-2 ${roomTheme === theme.id ? "border-white shadow-lg" : "border-transparent opacity-70 hover:opacity-100"}`}
                     title={theme.label}
                     data-testid={`button-create-theme-${theme.id}`}
                   >
                     <img
                       src={theme.img}
                       alt={theme.label}
-                      className="w-full h-[50px] object-cover"
+                      className="w-full h-[52px] object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).style.display = "none";
                         const fallback = e.currentTarget.nextSibling as HTMLElement;
                         if (fallback) fallback.style.display = "flex";
                       }}
                     />
-                    <div className={`w-full h-[50px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
+                    <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-1 truncate">
+                    <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-0.5 truncate">
                       {theme.label}
                     </span>
                     {roomTheme === theme.id && (
-                      <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center">
-                        <svg className="w-2 h-2" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white flex items-center justify-center">
+                        <svg className="w-1.5 h-1.5" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M2 6l3 3 5-5" />
                         </svg>
                       </div>
@@ -288,10 +304,27 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => setThemeOffset((o) => Math.min(ROOM_THEMES.length - THEMES_PER_PAGE, o + THEMES_PER_PAGE))}
+                disabled={themeOffset + THEMES_PER_PAGE >= ROOM_THEMES.length}
+                className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                data-testid="button-theme-next"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-            <p className="text-xs text-muted-foreground" data-testid="text-create-theme-selected">
-              Selected: {ROOM_THEMES.find((t) => t.id === roomTheme)?.label || "Default"}
-            </p>
+            <div className="flex justify-center gap-1">
+              {Array.from({ length: Math.ceil(ROOM_THEMES.length / THEMES_PER_PAGE) }).map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setThemeOffset(i * THEMES_PER_PAGE)}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors ${themeOffset === i * THEMES_PER_PAGE ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
+                  data-testid={`button-theme-page-${i}`}
+                />
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
