@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, MessageSquare } from "lucide-react";
+import { ArrowLeft, Send, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useSocket } from "@/lib/socket";
@@ -253,15 +253,21 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         </Button>
       </form>
 
-      {!isAtBottom && unreadCount > 0 && (
+      {!isAtBottom && (
         <button
           type="button"
           onClick={scrollToBottom}
-          className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium shadow-lg hover:bg-primary/90 flex items-center gap-1.5 z-20 animate-in fade-in slide-in-from-bottom-2"
-          data-testid="button-new-messages-indicator"
+          className="absolute bottom-20 right-4 w-8 h-8 rounded-full shadow-lg flex items-center justify-center z-20 animate-in fade-in slide-in-from-bottom-2 transition-colors"
+          style={{ background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }}
+          data-testid="button-scroll-to-bottom"
+          aria-label="Scroll to bottom"
         >
-          <MessageSquare className="w-3.5 h-3.5" />
-          {unreadCount} new {unreadCount === 1 ? 'message' : 'messages'}
+          <ChevronDown className="w-4 h-4" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
       )}
     </div>

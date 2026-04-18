@@ -846,44 +846,74 @@ export default function Lobby() {
         <div className="max-w-7xl mx-auto p-3 sm:p-4 pb-8 space-y-5 animate-fade-in">
           {announcements.length > 0 && (
             <div className="space-y-2" data-testid="container-lobby-announcements">
-              {announcements.map((announcement) => (
-                <div
-                  key={announcement.id}
-                  className="relative flex gap-3 rounded-xl border px-4 py-3"
-                  style={{
-                    background: announcement.kind === "maintenance"
-                      ? "rgba(245,158,11,0.08)"
-                      : announcement.kind === "safety"
-                      ? "rgba(239,68,68,0.08)"
-                      : announcement.kind === "celebration"
-                      ? "rgba(167,139,250,0.08)"
-                      : "rgba(0,200,255,0.06)",
-                    borderColor: announcement.kind === "maintenance"
-                      ? "rgba(245,158,11,0.25)"
-                      : announcement.kind === "safety"
-                      ? "rgba(239,68,68,0.25)"
-                      : announcement.kind === "celebration"
-                      ? "rgba(167,139,250,0.25)"
-                      : "rgba(0,200,255,0.18)",
-                  }}
-                  data-testid={`card-lobby-announcement-${announcement.id}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold leading-snug" data-testid={`text-lobby-announcement-title-${announcement.id}`}>{announcement.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed line-clamp-2" data-testid={`text-lobby-announcement-body-${announcement.id}`}>{announcement.body}</p>
+              {announcements.map((announcement) => {
+                const kindTheme = {
+                  maintenance: { bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.28)", accent: "rgba(245,158,11,1)", pill: "rgba(245,158,11,0.18)" },
+                  safety:      { bg: "rgba(239,68,68,0.08)",  border: "rgba(239,68,68,0.28)",  accent: "rgba(239,68,68,1)",  pill: "rgba(239,68,68,0.18)" },
+                  celebration: { bg: "rgba(167,139,250,0.08)",border: "rgba(167,139,250,0.28)",accent: "rgba(167,139,250,1)",pill: "rgba(167,139,250,0.18)" },
+                  platform:    { bg: "rgba(0,200,255,0.06)",  border: "rgba(0,200,255,0.22)",  accent: "rgba(0,200,255,1)",  pill: "rgba(0,200,255,0.15)" },
+                }[announcement.kind] ?? { bg: "rgba(0,200,255,0.06)", border: "rgba(0,200,255,0.22)", accent: "rgba(0,200,255,1)", pill: "rgba(0,200,255,0.15)" };
+
+                const mediaUrls = (announcement as any).mediaUrls || [];
+                const mediaTypes = (announcement as any).mediaTypes || [];
+                const position = (announcement as any).mediaPosition || "below";
+                const bodyAfterMedia = (announcement as any).bodyAfterMedia;
+
+                const mediaBlock = mediaUrls.length > 0 ? (
+                  <div className={`grid gap-1.5 ${mediaUrls.length === 1 ? "" : "grid-cols-2"}`}>
+                    {mediaUrls.map((url: string, i: number) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={mediaTypes[i] === "gif" ? "Announcement GIF" : "Announcement image"}
+                        className="w-full rounded-lg object-cover max-h-52"
+                        data-testid={`img-lobby-announcement-media-${announcement.id}-${i}`}
+                      />
+                    ))}
                   </div>
-                  {user && (
-                    <button
-                      onClick={() => dismissAnnouncementMutation.mutate(announcement.id)}
-                      className="flex-shrink-0 self-start text-muted-foreground/50 hover:text-muted-foreground transition-colors mt-0.5"
-                      aria-label="Dismiss announcement"
-                      data-testid={`button-dismiss-lobby-announcement-${announcement.id}`}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
+                ) : null;
+
+                const bodyBlock = <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap" data-testid={`text-lobby-announcement-body-${announcement.id}`}>{announcement.body}</p>;
+                const bodyAfterBlock = bodyAfterMedia ? (
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{bodyAfterMedia}</p>
+                ) : null;
+
+                return (
+                  <div
+                    key={announcement.id}
+                    className="rounded-xl border p-4 space-y-2.5"
+                    style={{ background: kindTheme.bg, borderColor: kindTheme.border }}
+                    data-testid={`card-lobby-announcement-${announcement.id}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full border" style={{ background: kindTheme.pill, borderColor: kindTheme.border, color: kindTheme.accent }}>
+                          📣 Admin
+                        </span>
+                      </div>
+                      {user && (
+                        <button
+                          onClick={() => dismissAnnouncementMutation.mutate(announcement.id)}
+                          className="flex-shrink-0 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                          aria-label="Dismiss announcement"
+                          data-testid={`button-dismiss-lobby-announcement-${announcement.id}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-sm font-bold leading-snug" style={{ color: kindTheme.accent }} data-testid={`text-lobby-announcement-title-${announcement.id}`}>{announcement.title}</p>
+                    {position === "above" && mediaBlock}
+                    {position === "above" ? bodyBlock : null}
+                    {position !== "above" && bodyBlock}
+                    {position !== "above" && position !== "between" && mediaBlock}
+                    {position === "between" && mediaBlock}
+                    {position === "between" && bodyAfterBlock}
+                    {position === "above" && bodyAfterBlock}
+                    {position === "below" && bodyAfterBlock}
+                  </div>
+                );
+              })}
             </div>
           )}
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
