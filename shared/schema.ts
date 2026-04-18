@@ -16,6 +16,11 @@ export const rooms = pgTable("rooms", {
   activeUsers: integer("active_users").notNull().default(0),
   roomTheme: varchar("room_theme", { length: 50 }),
   hologramVideoUrl: varchar("hologram_video_url", { length: 500 }),
+  welcomeMessage: text("welcome_message"),
+  welcomeMediaUrls: text("welcome_media_urls").array().notNull().default(sql`'{}'::text[]`),
+  welcomeMediaTypes: text("welcome_media_types").array().notNull().default(sql`'{}'::text[]`),
+  welcomeMediaPosition: varchar("welcome_media_position", { length: 20 }).notNull().default("below"),
+  welcomeAccentColor: varchar("welcome_accent_color", { length: 30 }).notNull().default("#8B5CF6"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

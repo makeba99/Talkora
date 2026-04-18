@@ -86,6 +86,23 @@ const uploadAnnouncementMedia = multer({
   },
 });
 
+const welcomeMediaStorage = multer.diskStorage({
+  destination: uploadsDir,
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `welcome-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
+  },
+});
+const uploadWelcomeMedia = multer({
+  storage: welcomeMediaStorage,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowedExt = /\.(jpe?g|png|gif|webp)$/i.test(file.originalname);
+    const allowedMime = /^image\/(jpeg|png|gif|webp)$/.test(file.mimetype);
+    cb(null, allowedExt && allowedMime);
+  },
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -476,7 +493,7 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
-      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl } = req.body;
+      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor } = req.body;
       const updateData: any = {};
       if (title) updateData.title = title;
       if (language) updateData.language = language;
@@ -484,10 +501,31 @@ export async function registerRoutes(
       if (maxUsers) updateData.maxUsers = maxUsers;
       if (roomTheme !== undefined) updateData.roomTheme = roomTheme;
       if (hologramVideoUrl !== undefined) updateData.hologramVideoUrl = hologramVideoUrl;
+      if (welcomeMessage !== undefined) updateData.welcomeMessage = welcomeMessage;
+      if (welcomeMediaUrls !== undefined) updateData.welcomeMediaUrls = Array.isArray(welcomeMediaUrls) ? welcomeMediaUrls : [];
+      if (welcomeMediaTypes !== undefined) updateData.welcomeMediaTypes = Array.isArray(welcomeMediaTypes) ? welcomeMediaTypes : [];
+      if (welcomeMediaPosition !== undefined) updateData.welcomeMediaPosition = welcomeMediaPosition;
+      if (welcomeAccentColor !== undefined) updateData.welcomeAccentColor = welcomeAccentColor;
 
       const updated = await storage.updateRoom(roomId, updateData);
       io.emit("room:updated", updated);
       res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/rooms/:id/welcome-media", isAuthenticated, uploadWelcomeMedia.single("media"), async (req: any, res) => {
+    try {
+      const roomId = req.params.id;
+      const userId = (req.user as any).id;
+      const room = await storage.getRoom(roomId);
+      if (!room) return res.status(404).json({ message: "Room not found" });
+      if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can upload welcome media" });
+      if (!req.file) return res.status(400).json({ message: "Upload an image or GIF file." });
+      const url = `/uploads/${req.file.filename}`;
+      const type = req.file.mimetype === "image/gif" ? "gif" : "image";
+      res.json({ url, type });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -1878,6 +1916,15 @@ export async function registerRoutes(
       socket.emit("room:roles", Object.fromEntries(roles));
       if (!isRejoin) {
         socket.to(roomId).emit("room:user-joined", { user, participants: participantsWithStatus });
+        if (room.welcomeMessage && room.ownerId !== userId) {
+          socket.emit("room:welcome-message", {
+            welcomeMessage: room.welcomeMessage,
+            welcomeMediaUrls: room.welcomeMediaUrls || [],
+            welcomeMediaTypes: room.welcomeMediaTypes || [],
+            welcomeMediaPosition: room.welcomeMediaPosition || "below",
+            welcomeAccentColor: room.welcomeAccentColor || "#8B5CF6",
+          });
+        }
       }
       io.emit("room:participants-update", { roomId, participants });
 

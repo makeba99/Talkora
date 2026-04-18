@@ -15,7 +15,7 @@ import {
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, CornerUpLeft, Eye, Bell, LockKeyhole,
-  AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff
+  AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -50,7 +50,7 @@ interface ChatMessage {
   text: string;
   createdAt: string;
   user?: User;
-  type?: "message" | "system" | "announcement";
+  type?: "message" | "system" | "announcement" | "welcome";
   reactions?: Record<string, string[]>;
   replyTo?: { id: string; userId: string; userName: string; text: string } | null;
   messageColor?: string;
@@ -64,6 +64,11 @@ interface ChatMessage {
   announcementMediaTypes?: string[];
   announcementMediaPosition?: "above" | "below" | "between";
   announcementKind?: string;
+  welcomeMessage?: string;
+  welcomeMediaUrls?: string[];
+  welcomeMediaTypes?: string[];
+  welcomeMediaPosition?: "above" | "below" | "between";
+  welcomeAccentColor?: string;
 }
 
 function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
@@ -558,6 +563,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const videoInputVR = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
+  const [welcomeText, setWelcomeText] = useState((roomProp as any).welcomeMessage || "");
+  const [welcomeMediaUrlsState, setWelcomeMediaUrlsState] = useState<string[]>((roomProp as any).welcomeMediaUrls || []);
+  const [welcomeMediaTypesState, setWelcomeMediaTypesState] = useState<string[]>((roomProp as any).welcomeMediaTypes || []);
+  const [welcomeMediaPositionState, setWelcomeMediaPositionState] = useState<"above" | "below" | "between">((roomProp as any).welcomeMediaPosition || "below");
+  const [welcomeAccentColorState, setWelcomeAccentColorState] = useState((roomProp as any).welcomeAccentColor || "#8B5CF6");
+  const [uploadingWelcomeMedia, setUploadingWelcomeMedia] = useState(false);
   const [dmUserId, setDmUserId] = useState<string | null>(null);
   const [reportTargetUserId, setReportTargetUserId] = useState<string | null>(null);
   const [blockDialogUserId, setBlockDialogUserId] = useState<string | null>(null);
@@ -715,7 +726,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   });
 
   const updateRoomMutation = useMutation({
-    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme?: string }) => {
+    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme?: string; welcomeMessage?: string | null; welcomeMediaUrls?: string[]; welcomeMediaTypes?: string[]; welcomeMediaPosition?: string; welcomeAccentColor?: string }) => {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return await res.json();
     },
@@ -723,6 +734,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setRoomData((prev: any) => ({ ...prev, ...updatedRoom }));
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
       setEditDialogOpen(false);
+      if (updatedRoom.welcomeMessage !== undefined) setWelcomeText(updatedRoom.welcomeMessage || "");
+      if (updatedRoom.welcomeMediaUrls !== undefined) setWelcomeMediaUrlsState(updatedRoom.welcomeMediaUrls || []);
+      if (updatedRoom.welcomeMediaTypes !== undefined) setWelcomeMediaTypesState(updatedRoom.welcomeMediaTypes || []);
+      if (updatedRoom.welcomeMediaPosition !== undefined) setWelcomeMediaPositionState(updatedRoom.welcomeMediaPosition || "below");
+      if (updatedRoom.welcomeAccentColor !== undefined) setWelcomeAccentColorState(updatedRoom.welcomeAccentColor || "#8B5CF6");
       toast({ title: "Room settings updated" });
     },
     onError: () => {
@@ -1381,6 +1397,24 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/blocks"] });
     });
 
+    socket.on("room:welcome-message", (data: { welcomeMessage: string; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string }) => {
+      const welcomeMsg: ChatMessage = {
+        id: `welcome-${Date.now()}`,
+        userId: "system",
+        text: data.welcomeMessage,
+        createdAt: new Date().toISOString(),
+        type: "welcome",
+        reactions: {},
+        replyTo: null,
+        welcomeMessage: data.welcomeMessage,
+        welcomeMediaUrls: data.welcomeMediaUrls || [],
+        welcomeMediaTypes: data.welcomeMediaTypes || [],
+        welcomeMediaPosition: (data.welcomeMediaPosition as "above" | "below" | "between") || "below",
+        welcomeAccentColor: data.welcomeAccentColor || "#8B5CF6",
+      };
+      setChatMessages(prev => [welcomeMsg, ...prev.filter(m => m.type !== "welcome")]);
+    });
+
     return () => {
       cancelAnimationFrame(animationFrameId);
       document.removeEventListener("visibilitychange", handleVisibilityForRoom);
@@ -1413,6 +1447,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("room:host-transferred");
       socket.off("user:blocked");
       socket.off("user:unblocked");
+      socket.off("room:welcome-message");
       localStream.current?.getTracks().forEach((t) => t.stop());
       screenStream.current?.getTracks().forEach((t) => t.stop());
       videoStream.current?.getTracks().forEach((t) => t.stop());
@@ -2418,6 +2453,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       level: editLevel,
       maxUsers: editMaxUsers,
       roomTheme: editRoomTheme,
+      welcomeMessage: welcomeText || null,
+      welcomeMediaUrls: welcomeMediaUrlsState,
+      welcomeMediaTypes: welcomeMediaTypesState,
+      welcomeMediaPosition: welcomeMediaPositionState,
+      welcomeAccentColor: welcomeAccentColorState,
     });
   };
 
@@ -2726,6 +2766,37 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       {position === "between" && bodyAfterBlock}
                       {position === "above" && bodyAfterBlock}
                       {position === "below" && bodyAfterBlock}
+                    </div>
+                  );
+                }
+
+                if (msg.type === "welcome" && !showMentionsOnly) {
+                  const wAccent = msg.welcomeAccentColor || "#8B5CF6";
+                  const wMediaUrls = msg.welcomeMediaUrls || [];
+                  const wMediaTypes = msg.welcomeMediaTypes || [];
+                  const wPosition = msg.welcomeMediaPosition || "below";
+                  const mediaBlock = wMediaUrls.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {wMediaUrls.map((url, i) => (
+                        <img key={i} src={url} alt="welcome" className="max-h-40 rounded-lg object-cover" data-testid={`img-welcome-media-${msg.id}-${i}`} />
+                      ))}
+                    </div>
+                  ) : null;
+                  const bodyBlock = msg.welcomeMessage ? (
+                    <p className="text-[12px] text-white/80 leading-relaxed whitespace-pre-wrap">{msg.welcomeMessage}</p>
+                  ) : null;
+                  return (
+                    <div key={msg.id} className="mx-1 mb-2 rounded-xl border overflow-hidden" style={{ borderColor: wAccent + "55", background: wAccent + "15" }} data-testid={`room-chat-${msg.id}`}>
+                      <div className="px-3 py-1.5 flex items-center gap-1.5 border-b" style={{ borderColor: wAccent + "33", background: wAccent + "22" }}>
+                        <span className="text-base">👋</span>
+                        <span className="text-[11px] font-semibold" style={{ color: wAccent }}>Welcome Message</span>
+                      </div>
+                      <div className="px-3 py-2 flex flex-col gap-1.5">
+                        {wPosition === "above" && mediaBlock}
+                        {bodyBlock}
+                        {wPosition === "below" && mediaBlock}
+                        {wPosition === "between" && mediaBlock}
+                      </div>
                     </div>
                   );
                 }
@@ -3974,10 +4045,103 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               )}
             </div>
 
+            {/* ── Welcome Message Section ── */}
+            <div className="space-y-3 rounded-xl border border-border/40 bg-muted/10 p-3">
+              <div className="flex items-center gap-2">
+                <span className="text-base">👋</span>
+                <span className="text-[13px] font-semibold text-foreground">Welcome Message</span>
+                <span className="ml-auto text-[10px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40 border border-border/30">Shown to new joiners</span>
+              </div>
+              <textarea
+                value={welcomeText}
+                onChange={(e) => setWelcomeText(e.target.value)}
+                placeholder="Write a greeting for new joiners…"
+                className="w-full resize-none rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-[12px] focus:outline-none focus:ring-1 focus:ring-primary/50 min-h-[72px]"
+                maxLength={500}
+                data-testid="input-welcome-message"
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">Media position:</span>
+                {(["above", "below", "between"] as const).map((pos) => (
+                  <button
+                    key={pos}
+                    type="button"
+                    onClick={() => setWelcomeMediaPositionState(pos)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] border transition-colors capitalize ${welcomeMediaPositionState === pos ? "border-primary/60 bg-primary/20 text-primary" : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted/40"}`}
+                    data-testid={`button-welcome-position-${pos}`}
+                  >{pos}</button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">Accent color:</span>
+                {["#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#EC4899"].map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setWelcomeAccentColorState(c)}
+                    className={`w-5 h-5 rounded-full border-2 transition-transform ${welcomeAccentColorState === c ? "scale-125 border-white" : "border-transparent hover:scale-110"}`}
+                    style={{ background: c }}
+                    data-testid={`button-welcome-color-${c.replace("#", "")}`}
+                  />
+                ))}
+              </div>
+              {welcomeMediaUrlsState.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {welcomeMediaUrlsState.map((url, i) => (
+                    <div key={i} className="relative group">
+                      <img src={url} alt="welcome media" className="h-14 w-auto rounded-lg object-cover border border-border/40" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWelcomeMediaUrlsState(prev => prev.filter((_, j) => j !== i));
+                          setWelcomeMediaTypesState(prev => prev.filter((_, j) => j !== i));
+                        }}
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        data-testid={`button-remove-welcome-media-${i}`}
+                      ><X className="w-2.5 h-2.5" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div>
+                <label className={`inline-flex items-center gap-1.5 text-[11px] cursor-pointer px-2 py-1 rounded-lg border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors ${uploadingWelcomeMedia ? "opacity-50 pointer-events-none" : ""}`}>
+                  {uploadingWelcomeMedia ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                  {uploadingWelcomeMedia ? "Uploading…" : "Add Image / GIF"}
+                  <input
+                    type="file"
+                    accept="image/*,image/gif"
+                    className="hidden"
+                    multiple
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (!files.length) return;
+                      setUploadingWelcomeMedia(true);
+                      try {
+                        for (const file of files) {
+                          const fd = new FormData();
+                          fd.append("media", file);
+                          const res = await fetch(`/api/rooms/${room.id}/welcome-media`, { method: "POST", body: fd, credentials: "include" });
+                          if (res.ok) {
+                            const data = await res.json();
+                            setWelcomeMediaUrlsState(prev => [...prev, data.url]);
+                            setWelcomeMediaTypesState(prev => [...prev, data.type]);
+                          }
+                        }
+                      } finally {
+                        setUploadingWelcomeMedia(false);
+                        e.target.value = "";
+                      }
+                    }}
+                    data-testid="input-welcome-media-upload"
+                  />
+                </label>
+              </div>
+            </div>
+
             <Button
               type="submit"
               className="w-full"
-              disabled={!editTitle.trim() || updateRoomMutation.isPending || uploadingVideoVR}
+              disabled={!editTitle.trim() || updateRoomMutation.isPending || uploadingVideoVR || uploadingWelcomeMedia}
               data-testid="button-submit-edit-room"
             >
               {updateRoomMutation.isPending || uploadingVideoVR ? "Saving..." : "Save Changes"}
