@@ -16,9 +16,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
@@ -27,6 +30,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { PROFILE_DECORATIONS, ProfileDecoration } from "@/components/profile-decorations";
+import { BADGE_TYPES } from "@shared/schema";
 
 export const AVATAR_RINGS = [
   { id: "none", label: "None", className: "" },
@@ -236,6 +240,7 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
   const [editOpen, setEditOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [blockedOpen, setBlockedOpen] = useState(false);
+  const [badgeApplyOpen, setBadgeApplyOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
@@ -244,6 +249,8 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
   const [selectedRing, setSelectedRing] = useState<string>("none");
   const [selectedFlair, setSelectedFlair] = useState<string>("none");
   const [selectedDecoration, setSelectedDecoration] = useState<string>("none");
+  const [requestedBadge, setRequestedBadge] = useState("");
+  const [badgeReason, setBadgeReason] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [cropImgSrc, setCropImgSrc] = useState("");
@@ -263,6 +270,11 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
   const { data: blockedUsers = [], refetch: refetchBlockedUsers } = useQuery<any[]>({
     queryKey: ["/api/blocks/users"],
     enabled: blockedOpen,
+  });
+
+  const { data: badgeApplications = [] } = useQuery<any[]>({
+    queryKey: ["/api/badge-applications/my"],
+    enabled: badgeApplyOpen,
   });
 
   const unblockMutation = useMutation({
@@ -289,6 +301,25 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       setSettingsOpen(false);
       toast({ title: "Settings saved" });
+    },
+  });
+
+  const badgeApplicationMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/badge-applications", {
+        badgeType: requestedBadge,
+        reason: badgeReason,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/badge-applications/my"] });
+      setRequestedBadge("");
+      setBadgeReason("");
+      toast({ title: "Badge application sent", description: "Admins can now review your request." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Could not apply", description: err?.message, variant: "destructive" });
     },
   });
 
@@ -414,6 +445,13 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
             >
               <Bell className="w-4 h-4 mr-2" />
               Notifications
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setBadgeApplyOpen(true)}
+              data-testid="menu-apply-badge"
+            >
+              <Award className="w-4 h-4 mr-2" />
+              Apply for Badge
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setAppearOffline(!appearOffline)}
@@ -718,6 +756,73 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
               ))}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={badgeApplyOpen} onOpenChange={setBadgeApplyOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Award className="w-4 h-4 text-amber-400" /> Apply for a Badge
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Badge</Label>
+              <Select value={requestedBadge} onValueChange={setRequestedBadge}>
+                <SelectTrigger data-testid="select-apply-badge">
+                  <SelectValue placeholder="Choose a badge..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(BADGE_TYPES).map((badge) => (
+                    <SelectItem key={badge.id} value={badge.id} data-testid={`option-apply-badge-${badge.id}`}>
+                      {badge.emoji} {badge.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Why do you deserve it?</Label>
+              <Textarea
+                value={badgeReason}
+                onChange={(e) => setBadgeReason(e.target.value)}
+                placeholder="Share your contribution, progress, or reason..."
+                rows={4}
+                data-testid="textarea-badge-reason"
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={!requestedBadge || badgeReason.trim().length < 10 || badgeApplicationMutation.isPending}
+              onClick={() => badgeApplicationMutation.mutate()}
+              data-testid="button-submit-badge-application"
+            >
+              {badgeApplicationMutation.isPending ? "Sending..." : "Submit Application"}
+            </Button>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">My applications</p>
+              {badgeApplications.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No badge applications yet.</p>
+              ) : (
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {badgeApplications.map((application) => {
+                    const badge = BADGE_TYPES[application.badgeType as keyof typeof BADGE_TYPES];
+                    return (
+                      <div key={application.id} className="flex items-center justify-between rounded-lg border border-border p-2" data-testid={`card-my-badge-application-${application.id}`}>
+                        <span className="text-xs font-medium">
+                          {badge?.emoji} {badge?.label || application.badgeType}
+                        </span>
+                        <Badge variant={application.status === "pending" ? "secondary" : application.status === "approved" ? "default" : "outline"} data-testid={`status-my-badge-application-${application.id}`}>
+                          {application.status}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

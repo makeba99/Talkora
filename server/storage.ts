@@ -41,6 +41,9 @@ import {
   userBadges,
   type UserBadge,
   type InsertUserBadge,
+  badgeApplications,
+  type BadgeApplication,
+  type InsertBadgeApplication,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -89,6 +92,7 @@ export interface IStorage {
   getUserReportCount(userId: string): Promise<number>;
   warnUser(userId: string): Promise<User | undefined>;
   setUserRole(userId: string, role: string): Promise<User | undefined>;
+  restrictUser(userId: string, data: { restrictedUntil: Date | null; restrictedReason: string | null; restrictedById: string | null }): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
 
   addVote(roomId: string, userId: string): Promise<void>;
@@ -125,7 +129,12 @@ export interface IStorage {
 
   awardBadge(data: InsertUserBadge): Promise<UserBadge>;
   getUserBadges(userId: string): Promise<UserBadge[]>;
+  getBadgesForUsers(userIds: string[]): Promise<Record<string, UserBadge[]>>;
   removeBadge(badgeId: string): Promise<void>;
+  createBadgeApplication(data: InsertBadgeApplication): Promise<BadgeApplication>;
+  getBadgeApplicationByUserAndType(userId: string, badgeType: string): Promise<BadgeApplication | undefined>;
+  getBadgeApplications(userId?: string): Promise<BadgeApplication[]>;
+  updateBadgeApplication(id: string, data: Partial<BadgeApplication>): Promise<BadgeApplication | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -404,6 +413,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async restrictUser(userId: string, data: { restrictedUntil: Date | null; restrictedReason: string | null; restrictedById: string | null }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
@@ -575,8 +593,57 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(userBadges).where(eq(userBadges.userId, userId)).orderBy(desc(userBadges.createdAt));
   }
 
+  async getBadgesForUsers(userIds: string[]): Promise<Record<string, UserBadge[]>> {
+    if (userIds.length === 0) return {};
+    const rows = await db
+      .select()
+      .from(userBadges)
+      .where(inArray(userBadges.userId, userIds))
+      .orderBy(desc(userBadges.createdAt));
+    const grouped: Record<string, UserBadge[]> = {};
+    for (const id of userIds) grouped[id] = [];
+    for (const badge of rows) {
+      if (!grouped[badge.userId]) grouped[badge.userId] = [];
+      grouped[badge.userId].push(badge);
+    }
+    return grouped;
+  }
+
   async removeBadge(badgeId: string): Promise<void> {
     await db.delete(userBadges).where(eq(userBadges.id, badgeId));
+  }
+
+  async createBadgeApplication(data: InsertBadgeApplication): Promise<BadgeApplication> {
+    const [application] = await db.insert(badgeApplications).values(data).returning();
+    return application;
+  }
+
+  async getBadgeApplicationByUserAndType(userId: string, badgeType: string): Promise<BadgeApplication | undefined> {
+    const [application] = await db
+      .select()
+      .from(badgeApplications)
+      .where(and(eq(badgeApplications.userId, userId), eq(badgeApplications.badgeType, badgeType)))
+      .orderBy(desc(badgeApplications.createdAt));
+    return application;
+  }
+
+  async getBadgeApplications(userId?: string): Promise<BadgeApplication[]> {
+    const query = db.select().from(badgeApplications).orderBy(desc(badgeApplications.createdAt));
+    if (!userId) return query;
+    return db
+      .select()
+      .from(badgeApplications)
+      .where(eq(badgeApplications.userId, userId))
+      .orderBy(desc(badgeApplications.createdAt));
+  }
+
+  async updateBadgeApplication(id: string, data: Partial<BadgeApplication>): Promise<BadgeApplication | undefined> {
+    const [application] = await db
+      .update(badgeApplications)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(badgeApplications.id, id))
+      .returning();
+    return application;
   }
 }
 

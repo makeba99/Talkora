@@ -14,7 +14,6 @@ import { SocialPanel } from "@/components/social-panel";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { ThemePicker } from "@/components/theme-picker";
-import { BadgeAnnouncement } from "@/components/badge-announcement";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -418,7 +417,6 @@ export default function Lobby() {
   const [selectedLanguage, setSelectedLanguage] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
-  const [badgeEvent, setBadgeEvent] = useState<any | null>(null);
   const [languagesExpanded, setLanguagesExpanded] = useState(false);
   const [activeDiscovery, setActiveDiscovery] = useState<DiscoveryFilter>("rooms");
   const [speakerVotes, setSpeakerVotes] = useState<Set<string>>(new Set());
@@ -625,10 +623,6 @@ export default function Lobby() {
       });
     });
 
-    socket.on("badge:awarded", (event: any) => {
-      setBadgeEvent(event);
-    });
-
     return () => {
       socket.off("presence:online");
       socket.off("presence:update");
@@ -636,7 +630,6 @@ export default function Lobby() {
       socket.off("room:created");
       socket.off("room:deleted");
       socket.off("room:full");
-      socket.off("badge:awarded");
     };
   }, [socket, toast]);
 
@@ -712,7 +705,6 @@ export default function Lobby() {
 
   return (
     <div className="flex flex-col h-full">
-      <BadgeAnnouncement event={badgeEvent} onDismiss={() => setBadgeEvent(null)} />
       <header
         className="sticky top-0 z-50 bg-background/90 backdrop-blur-md"
         style={{

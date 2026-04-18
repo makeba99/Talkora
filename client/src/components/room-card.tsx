@@ -13,13 +13,14 @@ import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageS
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass } from "@/components/profile-decorations";
+import { UserBadgePips } from "@/components/user-badge-pips";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/lib/theme";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LANGUAGES, LEVELS } from "@shared/schema";
-import type { Room, User, Follow } from "@shared/schema";
+import type { Room, User, Follow, UserBadge } from "@shared/schema";
 
 interface RoomCardProps {
   room: Room;
@@ -124,7 +125,7 @@ function getFallbackTextClass(maxUsers: number): string {
   return "text-xs";
 }
 
-function ParticipantPopover({ participant, currentUserId, onOpenDm }: { participant: User; currentUserId?: string; onOpenDm?: (userId: string) => void }) {
+function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] }: { participant: User; currentUserId?: string; onOpenDm?: (userId: string) => void; badges?: UserBadge[] }) {
   const { data: following = [] } = useQuery<Follow[]>({
     queryKey: ["/api/follows/following", currentUserId],
     enabled: !!currentUserId,
@@ -178,6 +179,7 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm }: { particip
       </Avatar>
       <div className="text-center">
         <p className="font-bold text-sm" data-testid={`text-card-profile-name-${participant.id}`}>{getUserDisplayName(participant)}</p>
+        <UserBadgePips badges={badges} userId={participant.id} />
         {participant.bio && (
           <p className="text-xs text-muted-foreground mt-1 italic max-w-[160px]" data-testid={`text-card-profile-bio-${participant.id}`}>{participant.bio}</p>
         )}
@@ -328,6 +330,17 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   });
 
   const followerCounts = followerCountsOverride ?? fetchedFollowerCounts;
+
+  const { data: participantBadges = {} } = useQuery<Record<string, UserBadge[]>>({
+    queryKey: ["/api/users/badges/batch", ...participantIds],
+    queryFn: async () => {
+      if (participantIds.length === 0) return {};
+      const res = await apiRequest("POST", "/api/users/badges/batch", { userIds: participantIds });
+      return res.json();
+    },
+    enabled: participantIds.length > 0,
+    staleTime: 60000,
+  });
 
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -663,10 +676,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   const count = followerCounts[p.id] || 0;
                   const ringClass = getAvatarRingClass(p.avatarRing);
                   const hasRing = !!ringClass;
+                  const badges = participantBadges[p.id] || [];
 
                   const avatarEl = (
                     <div
-                      className={`rounded-full flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
+                      className={`relative rounded-full flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
                       style={{
                         width: circleSize + 6,
                         height: circleSize + 6,
@@ -683,6 +697,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                           {getUserInitials(p)}
                         </AvatarFallback>
                       </Avatar>
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
+                        <UserBadgePips badges={badges} userId={p.id} compact />
+                      </div>
                     </div>
                   );
 
@@ -720,7 +737,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-60 p-2" align="center">
-                        <ParticipantPopover participant={p} currentUserId={user?.id} onOpenDm={onOpenDm} />
+                        <ParticipantPopover participant={p} currentUserId={user?.id} onOpenDm={onOpenDm} badges={badges} />
                       </PopoverContent>
                     </Popover>
                   );

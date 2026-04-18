@@ -308,6 +308,27 @@ export const insertUserBadgeSchema = createInsertSchema(userBadges).pick({
 export type InsertUserBadge = z.infer<typeof insertUserBadgeSchema>;
 export type UserBadge = typeof userBadges.$inferSelect;
 
+export const badgeApplications = pgTable("badge_applications", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  badgeType: varchar("badge_type", { length: 50 }).notNull(),
+  reason: text("reason").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  reviewedById: varchar("reviewed_by_id", { length: 36 }),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBadgeApplicationSchema = createInsertSchema(badgeApplications).pick({
+  userId: true,
+  badgeType: true,
+  reason: true,
+});
+
+export type InsertBadgeApplication = z.infer<typeof insertBadgeApplicationSchema>;
+export type BadgeApplication = typeof badgeApplications.$inferSelect;
+
 export const LANGUAGES = [
   "All",
   "English",

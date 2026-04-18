@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -6,13 +7,55 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { AnimatedBackground } from "@/components/animated-background";
 import { SocketProvider } from "@/lib/socket";
+import { useSocket } from "@/lib/socket";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BadgeAnnouncement } from "@/components/badge-announcement";
 import Lobby from "@/pages/lobby";
 import RoomPage from "@/pages/room";
 import DmPage from "@/pages/dm";
 import AdminPage from "@/pages/admin";
 import TeachersPage from "@/pages/teachers";
+
+function GlobalSocketEvents() {
+  const { socket } = useSocket();
+  const { toast } = useToast();
+  const [badgeEvent, setBadgeEvent] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleBadgeAwarded = (event: any) => setBadgeEvent(event);
+    const handleAnnouncement = (event: any) => {
+      toast({
+        title: event?.kind === "maintenance" ? "Maintenance announcement" : "Platform announcement",
+        description: event?.message || "New announcement from the Platform Owner.",
+      });
+    };
+    const handleRestricted = (event: any) => {
+      toast({
+        title: "Account restricted",
+        description: event?.reason || "Your account is temporarily restricted.",
+        variant: "destructive",
+      });
+    };
+    const handleRestrictionLifted = () => {
+      toast({ title: "Restriction lifted", description: "Your account can participate again." });
+    };
+    socket.on("badge:awarded", handleBadgeAwarded);
+    socket.on("admin:announcement", handleAnnouncement);
+    socket.on("admin:restricted", handleRestricted);
+    socket.on("admin:restriction-lifted", handleRestrictionLifted);
+    return () => {
+      socket.off("badge:awarded", handleBadgeAwarded);
+      socket.off("admin:announcement", handleAnnouncement);
+      socket.off("admin:restricted", handleRestricted);
+      socket.off("admin:restriction-lifted", handleRestrictionLifted);
+    };
+  }, [socket, toast]);
+
+  return <BadgeAnnouncement event={badgeEvent} onDismiss={() => setBadgeEvent(null)} />;
+}
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -45,7 +88,12 @@ function AppContent() {
   );
 
   if (user) {
-    return <SocketProvider userId={user.id}>{content}</SocketProvider>;
+    return (
+      <SocketProvider userId={user.id}>
+        <GlobalSocketEvents />
+        {content}
+      </SocketProvider>
+    );
   }
 
   return content;

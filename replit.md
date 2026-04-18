@@ -14,7 +14,7 @@ Connect2Talk is a browser-based, real-time voice chat platform for language prac
 ## Project Structure
 ```
 client/src/
-  App.tsx              - Root component with providers
+  App.tsx              - Root component with providers and global socket events
   hooks/
     use-auth.ts         - Replit Auth hook (useAuth)
   lib/
@@ -23,13 +23,14 @@ client/src/
     utils.ts            - getUserDisplayName, getUserInitials helpers
     queryClient.ts      - TanStack Query client
   components/
-    room-card.tsx       - Voice room card with room-theme gradient border + participant decorations
+    room-card.tsx       - Voice room card with room-theme gradient border + participant decorations + badge pips
+    user-badge-pips.tsx - Compact badge display used on room avatars and popovers
     create-room-dialog.tsx - Room creation dialog
     voice-room.tsx      - Active voice room with WebRTC + chat + tools + room theme panel
     profile-decorations.tsx - ProfileDecoration component + ROOM_THEMES + getRoomThemeStyle helpers
     social-panel.tsx    - Friends/followers side panel
     dm-view.tsx         - Direct messaging view
-    profile-dropdown.tsx - Profile menu with decoration picker, avatar ring, flair badge
+    profile-dropdown.tsx - Profile menu with decoration picker, avatar ring, flair badge, blocked users, and badge applications
     notifications-dropdown.tsx - Notifications bell dropdown
     theme-toggle.tsx    - Dark/light mode toggle
   pages/
@@ -37,6 +38,7 @@ client/src/
     landing.tsx         - Landing page (unused, lobby is default)
     room.tsx            - Voice room page (auth required)
     dm.tsx              - Direct messages page (auth required)
+    admin.tsx           - Admin Command Center with reports, users, teacher apps, badges, announcements
 
 server/
   index.ts             - Express server entry
@@ -108,20 +110,31 @@ shared/
 55. Search discovery filters — lobby search now switches between Rooms, Top Speakers, and Famous Users; people filters show real users in a horizontal scroll list with follower counts, online/current-room indicators, follow tracking, and talk/message actions
 56. Teacher discovery preview — `/teachers` displays responsive sample teacher cards when no approved teacher records exist yet, matching the app's neon room-card visual language
 57. Global themed scrollbars — scrollable areas use thin cyan/violet gradient scrollbars with stable gutter spacing so controls such as Create Room remain accessible on smaller screens
+58. Badge system — user badges can be awarded by admins, displayed as premium badge pips on every room card avatar, and announced globally with in-room system chat messages across active rooms
+59. Badge applications — users can apply for badges from the profile menu; admins can approve/reject requests in the Admin badges tab, with approvals automatically awarding the badge
+60. Owner-only powers — only the Platform Owner can send global announcements, restrict/unrestrict users, and view user emails in admin-facing user/application lists
+61. Restrictions — restricted users are blocked from creating rooms, joining rooms, sending room chat, and sending direct messages until the restriction expires
+62. Profile block list — users can view blocked users from the profile menu and unblock them
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.
-- Platform Admins: assigned only by the Super Admin from `/admin`; can view users, review/dismiss reports, issue warnings, and bypass room capacity checks.
+- Platform Admins: assigned only by the Super Admin from `/admin`; can view users, review/dismiss reports, review badge/teacher applications, issue warnings, award badges, and bypass room capacity checks.
+- Platform Owner-only actions: view user emails, restrict/unrestrict users, send global announcements, and promote/demote platform admins.
 - Warnings: increment `users.warningCount`, create stored notifications, emit real-time warning events, and visually flag warned users in the admin UI.
+- Restrictions: persist `restrictedUntil`, `restrictedReason`, and `restrictedById`; server routes and sockets enforce active restrictions.
 - Reports: stored in `reports` with reporter/reported metadata, category, reason, and status (`pending`, `reviewed`, `dismissed`).
-- UI: `/admin` dashboard uses gated visibility, role badges, warning indicators, premium owner badge styling, and custom gradient scrollbars.
+- Badge applications: stored in `badgeApplications` with status (`pending`, `approved`, `rejected`); approval awards the badge and broadcasts a celebration.
+- UI: `/admin` dashboard uses gated visibility, role badges, warning/restriction indicators, premium owner badge styling, and custom gradient scrollbars.
 
 ## User Model
 Users table (shared/models/auth.ts):
-- id (varchar PK), email, firstName, lastName, displayName, profileImageUrl, bio, avatarRing, flairBadge, profileDecoration, status, createdAt, updatedAt
+- id (varchar PK), email, firstName, lastName, displayName, profileImageUrl, bio, avatarRing, flairBadge, profileDecoration, status, role, warningCount, restrictedUntil, restrictedReason, restrictedById, createdAt, updatedAt
 
 Rooms table (shared/schema.ts):
 - id, title, language, level, maxUsers, ownerId, isPublic, activeUsers, roomTheme (varchar 50), createdAt
+
+Badge applications table (shared/schema.ts):
+- id, userId, badgeType, reason, status, reviewedById, adminNotes, createdAt, updatedAt
 
 ## Design
 - Primary color: Cyan (195 100% 50%)
@@ -131,6 +144,7 @@ Rooms table (shared/schema.ts):
 - Gradient borders on room cards (cyan to purple)
 - Colored avatar gradient rings per participant
 - Animated pulse ring on speaking users
+- Premium badge pips use each badge color with subtle glow and tooltips
 
 ## User Preferences
 - No landing page gate - lobby always shown

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,6 +69,8 @@ export default function AdminPage() {
   const [rejectNotes, setRejectNotes] = useState("");
   const [badgeUserId, setBadgeUserId] = useState("");
   const [badgeType, setBadgeType] = useState("");
+  const [announcementKind, setAnnouncementKind] = useState("platform");
+  const [announcementMessage, setAnnouncementMessage] = useState("");
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -87,6 +89,11 @@ export default function AdminPage() {
 
   const { data: allBadges = [], isLoading: badgesLoading } = useQuery<(UserBadge & { userName: string; userAvatar: string | null })[]>({
     queryKey: ["/api/admin/badges"],
+    enabled: !!canAccess,
+  });
+
+  const { data: badgeApplications = [], isLoading: badgeApplicationsLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/badge-applications"],
     enabled: !!canAccess,
   });
 
@@ -114,6 +121,19 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/badges"] });
       toast({ title: "Badge removed" });
     },
+  });
+
+  const reviewBadgeApplicationMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
+      const res = await apiRequest("PATCH", `/api/admin/badge-applications/${id}`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/badge-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/badges"] });
+      toast({ title: "Badge application updated" });
+    },
+    onError: (err: any) => toast({ title: "Failed to review application", description: err.message, variant: "destructive" }),
   });
 
   const reportsByUser = useMemo(() => {
@@ -186,6 +206,48 @@ export default function AdminPage() {
       toast({ title: "Warning sent", description: "The user was notified immediately." });
     },
     onError: (error: any) => toast({ title: "Failed to warn user", description: error.message, variant: "destructive" }),
+  });
+
+  const restrictMutation = useMutation({
+    mutationFn: async ({ userId, days }: { userId: string; days: number }) => {
+      const res = await apiRequest("POST", `/api/admin/users/${userId}/restrict`, {
+        days,
+        reason: `Restricted by Platform Owner for ${days} day${days === 1 ? "" : "s"}.`,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "User restricted", description: "The user was notified immediately." });
+    },
+    onError: (error: any) => toast({ title: "Failed to restrict user", description: error.message, variant: "destructive" }),
+  });
+
+  const liftRestrictionMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/users/${userId}/restrict`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Restriction lifted" });
+    },
+    onError: (error: any) => toast({ title: "Failed to lift restriction", description: error.message, variant: "destructive" }),
+  });
+
+  const announcementMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/announcements", {
+        kind: announcementKind,
+        message: announcementMessage,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      setAnnouncementMessage("");
+      toast({ title: "Announcement sent", description: "It was posted globally and into all active room chats." });
+    },
+    onError: (error: any) => toast({ title: "Failed to send announcement", description: error.message, variant: "destructive" }),
   });
 
   const roleMutation = useMutation({
@@ -312,7 +374,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className="grid w-full max-w-3xl grid-cols-5 bg-card/80 backdrop-blur">
+          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-5xl grid-cols-6" : "max-w-3xl grid-cols-5"} bg-card/80 backdrop-blur`}>
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -338,6 +400,12 @@ export default function AdminPage() {
               <Award className="w-4 h-4 mr-2" />
               Badges
             </TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="announcements" data-testid="tab-admin-announcements">
+                <Megaphone className="w-4 h-4 mr-2" />
+                Announce
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="reports">
@@ -410,6 +478,8 @@ export default function AdminPage() {
                       const isOwner = item.email === OWNER_EMAIL || item.role === "superadmin";
                       const canEditRole = isSuperAdmin && !isOwner;
                       const canWarn = !isOwner && (isSuperAdmin || item.role !== "admin");
+                      const restrictedUntil = item.restrictedUntil ? new Date(item.restrictedUntil) : null;
+                      const isRestricted = !!restrictedUntil && restrictedUntil.getTime() > Date.now();
                       return (
                         <div key={item.id} className="rounded-xl border border-border/70 bg-background/55 p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4" data-testid={`card-user-${item.id}`}>
                           <div className="min-w-0 space-y-2">
@@ -422,12 +492,19 @@ export default function AdminPage() {
                                   {item.warningCount} warning{item.warningCount === 1 ? "" : "s"}
                                 </Badge>
                               )}
+                              {isRestricted && (
+                                <Badge className="bg-orange-500/15 text-orange-300 border border-orange-400/30" data-testid={`badge-restricted-${item.id}`}>
+                                  <Ban className="w-3 h-3 mr-1" />
+                                  Restricted
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-muted-foreground truncate" data-testid={`text-user-email-${item.id}`}>
-                              {item.email || item.id}
+                              {item.email || (isSuperAdmin ? item.id : "Email hidden")}
                             </p>
                             <p className="text-xs text-muted-foreground" data-testid={`text-user-meta-${item.id}`}>
                               {roleLabel(item)} · {reportsByUser.get(item.id) || 0} report{(reportsByUser.get(item.id) || 0) === 1 ? "" : "s"}
+                              {isRestricted && restrictedUntil ? ` · restricted until ${restrictedUntil.toLocaleDateString()}` : ""}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -444,6 +521,16 @@ export default function AdminPage() {
                             {canWarn && (
                               <Button size="sm" variant="destructive" onClick={() => warnMutation.mutate(item.id)} disabled={warnMutation.isPending} data-testid={`button-warn-user-${item.id}`}>
                                 Warn
+                              </Button>
+                            )}
+                            {isSuperAdmin && !isOwner && !isRestricted && (
+                              <Button size="sm" variant="destructive" onClick={() => restrictMutation.mutate({ userId: item.id, days: 1 })} disabled={restrictMutation.isPending} data-testid={`button-restrict-user-${item.id}`}>
+                                Restrict 1 day
+                              </Button>
+                            )}
+                            {isSuperAdmin && !isOwner && isRestricted && (
+                              <Button size="sm" variant="outline" onClick={() => liftRestrictionMutation.mutate(item.id)} disabled={liftRestrictionMutation.isPending} data-testid={`button-lift-restriction-${item.id}`}>
+                                Lift restriction
                               </Button>
                             )}
                           </div>
@@ -599,7 +686,7 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="badges">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -695,8 +782,98 @@ export default function AdminPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+                <CardHeader>
+                  <CardTitle>Badge Applications</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-[520px] overflow-auto admin-scrollbar pr-1 space-y-2">
+                    {badgeApplicationsLoading ? (
+                      [1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)
+                    ) : badgeApplications.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-10">No badge applications yet.</p>
+                    ) : (
+                      badgeApplications.map((application) => {
+                        const def = BADGE_TYPES[application.badgeType as keyof typeof BADGE_TYPES];
+                        return (
+                          <div key={application.id} data-testid={`card-badge-application-${application.id}`} className="p-3 rounded-xl border border-border/50 bg-background/40 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold truncate">{application.userName}</p>
+                                <p className="text-xs font-medium" style={{ color: def?.color }}>{def?.emoji} {def?.label || application.badgeType}</p>
+                              </div>
+                              <Badge variant={application.status === "pending" ? "secondary" : application.status === "approved" ? "default" : "outline"} data-testid={`status-badge-application-${application.id}`}>
+                                {application.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-3">{application.reason}</p>
+                            {application.status === "pending" && (
+                              <div className="flex gap-2">
+                                <Button size="sm" className="flex-1" onClick={() => reviewBadgeApplicationMutation.mutate({ id: application.id, status: "approved" })} disabled={reviewBadgeApplicationMutation.isPending} data-testid={`button-approve-badge-application-${application.id}`}>
+                                  Approve
+                                </Button>
+                                <Button size="sm" variant="outline" className="flex-1" onClick={() => reviewBadgeApplicationMutation.mutate({ id: application.id, status: "rejected" })} disabled={reviewBadgeApplicationMutation.isPending} data-testid={`button-reject-badge-application-${application.id}`}>
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
+
+          {isSuperAdmin && (
+            <TabsContent value="announcements">
+              <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Megaphone className="w-5 h-5 text-cyan-300" />
+                    Platform Owner Announcements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 max-w-2xl">
+                  <div className="space-y-2">
+                    <Label>Announcement type</Label>
+                    <Select value={announcementKind} onValueChange={setAnnouncementKind}>
+                      <SelectTrigger data-testid="select-announcement-kind">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="platform">Platform update</SelectItem>
+                        <SelectItem value="maintenance">Maintenance</SelectItem>
+                        <SelectItem value="safety">Safety notice</SelectItem>
+                        <SelectItem value="celebration">Celebration</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Message</Label>
+                    <Textarea
+                      value={announcementMessage}
+                      onChange={(e) => setAnnouncementMessage(e.target.value)}
+                      rows={4}
+                      placeholder="Write an announcement for everyone..."
+                      data-testid="textarea-announcement-message"
+                    />
+                  </div>
+                  <Button
+                    onClick={() => announcementMutation.mutate()}
+                    disabled={announcementMessage.trim().length === 0 || announcementMutation.isPending}
+                    data-testid="button-send-announcement"
+                  >
+                    <Megaphone className="w-4 h-4 mr-2" />
+                    {announcementMutation.isPending ? "Sending..." : "Send to all users and rooms"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Approve Dialog */}

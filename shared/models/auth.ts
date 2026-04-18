@@ -28,6 +28,9 @@ export const users = pgTable("users", {
   status: text("status").notNull().default("offline"),
   role: varchar("role", { length: 20 }).notNull().default("user"),
   warningCount: integer("warning_count").notNull().default(0),
+  restrictedUntil: timestamp("restricted_until"),
+  restrictedReason: text("restricted_reason"),
+  restrictedById: varchar("restricted_by_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

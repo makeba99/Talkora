@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, BADGE_TYPES } from "@shared/schema";
+import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, BADGE_TYPES } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
@@ -409,6 +409,9 @@ export async function registerRoutes(
     ownerId: z.string().min(1),
   });
 
+  const isUserRestricted = (user: User | undefined | null) =>
+    !!(user?.restrictedUntil && new Date(user.restrictedUntil).getTime() > Date.now());
+
   app.post("/api/rooms", isAuthenticated, async (req: any, res) => {
     try {
       const parsed = createRoomBody.safeParse(req.body);
@@ -417,6 +420,13 @@ export async function registerRoutes(
       }
 
       const ownerId = parsed.data.ownerId || (req.user as any).id;
+      const owner = await storage.getUser(ownerId);
+      if (isUserRestricted(owner)) {
+        return res.status(403).json({
+          message: owner?.restrictedReason || "Your account is temporarily restricted from creating rooms.",
+          restrictedUntil: owner?.restrictedUntil,
+        });
+      }
       const existingRooms = await storage.getRoomsByOwner(ownerId);
       if (existingRooms.length > 0) {
         return res.status(400).json({ message: "You can only host one room at a time. Please close your existing room first." });
@@ -511,6 +521,14 @@ export async function registerRoutes(
       const parsed = sendMessageBody.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid message data" });
+      }
+
+      const sender = await storage.getUser(parsed.data.fromId);
+      if (isUserRestricted(sender)) {
+        return res.status(403).json({
+          message: sender?.restrictedReason || "Your account is temporarily restricted from sending messages.",
+          restrictedUntil: sender?.restrictedUntil,
+        });
       }
 
       const msg = await storage.createMessage(parsed.data);
@@ -861,10 +879,58 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/users", isAuthenticated, isAdmin, async (_req, res) => {
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
+      const admin = await storage.getUser((req.user as any).id);
+      const canSeeEmails = admin?.role === "superadmin" || admin?.email === SUPER_ADMIN_EMAIL;
       const allUsers = await storage.getAllUsers();
-      res.json(allUsers);
+      res.json(canSeeEmails ? allUsers : allUsers.map((user) => ({ ...user, email: null })));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/users/:userId/restrict", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { days = 1, reason = "Restricted by Platform Owner" } = req.body;
+      const target = await storage.getUser(userId);
+      if (!target) return res.status(404).json({ message: "User not found" });
+      if (target.role === "superadmin" || target.email === SUPER_ADMIN_EMAIL) {
+        return res.status(403).json({ message: "Platform Owner cannot be restricted" });
+      }
+      const restrictedUntil = new Date(Date.now() + Math.max(1, Number(days) || 1) * 24 * 60 * 60 * 1000);
+      const updated = await storage.restrictUser(userId, {
+        restrictedUntil,
+        restrictedReason: String(reason).slice(0, 500),
+        restrictedById: (req.user as any).id,
+      });
+      const socketId = userSockets.get(userId);
+      if (socketId) {
+        io.to(socketId).emit("admin:restricted", {
+          restrictedUntil,
+          reason: updated?.restrictedReason,
+        });
+        io.to(socketId).emit("admin:notification", { type: "admin_restriction" });
+      }
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/users/:userId/restrict", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const updated = await storage.restrictUser(req.params.userId, {
+        restrictedUntil: null,
+        restrictedReason: null,
+        restrictedById: null,
+      });
+      const socketId = userSockets.get(req.params.userId);
+      if (socketId) {
+        io.to(socketId).emit("admin:restriction-lifted");
+      }
+      res.json(updated);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -896,6 +962,7 @@ export async function registerRoutes(
         userId: target.id,
         quote: badgeDef.quote,
       });
+      emitSystemChatToAllActiveRooms(`${badgeDef.emoji} ${targetName} was awarded ${badgeDef.label}: ${badgeDef.quote}`);
 
       res.json(badge);
     } catch (err: any) {
@@ -934,6 +1001,124 @@ export async function registerRoutes(
     try {
       const badges = await storage.getUserBadges(req.params.id);
       res.json(badges);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/users/badges/batch", async (req: any, res) => {
+    try {
+      const { userIds } = req.body;
+      if (!Array.isArray(userIds)) return res.status(400).json({ message: "userIds must be an array" });
+      const uniqueIds = Array.from(new Set(userIds.filter((id) => typeof id === "string"))).slice(0, 100);
+      res.json(await storage.getBadgesForUsers(uniqueIds));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/badge-applications/my", isAuthenticated, async (req: any, res) => {
+    try {
+      res.json(await storage.getBadgeApplications((req.user as any).id));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/badge-applications", isAuthenticated, async (req: any, res) => {
+    try {
+      const parsed = insertBadgeApplicationSchema.safeParse({
+        ...req.body,
+        userId: (req.user as any).id,
+      });
+      if (!parsed.success) return res.status(400).json({ message: "Invalid badge application data" });
+      if (!(parsed.data.badgeType in BADGE_TYPES)) return res.status(400).json({ message: "Invalid badge type" });
+      const reason = parsed.data.reason.trim();
+      if (reason.length < 10) return res.status(400).json({ message: "Please share a little more about why you are applying." });
+      const existing = await storage.getBadgeApplicationByUserAndType(parsed.data.userId, parsed.data.badgeType);
+      if (existing?.status === "pending") {
+        return res.status(400).json({ message: "You already have a pending application for this badge." });
+      }
+      const application = await storage.createBadgeApplication({
+        ...parsed.data,
+        reason: reason.slice(0, 1000),
+      });
+      res.json(application);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/badge-applications", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const applications = await storage.getBadgeApplications();
+      const enriched = await Promise.all(applications.map(async (application) => {
+        const applicant = await storage.getUser(application.userId);
+        return {
+          ...application,
+          userName: applicant ? getDisplayName(applicant) : "Unknown user",
+          userAvatar: applicant?.profileImageUrl ?? null,
+        };
+      }));
+      res.json(enriched);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/badge-applications/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { status, adminNotes } = req.body;
+      if (!["approved", "rejected"].includes(status)) return res.status(400).json({ message: "Invalid status" });
+      const application = await storage.updateBadgeApplication(req.params.id, {
+        status,
+        adminNotes: adminNotes || null,
+        reviewedById: (req.user as any).id,
+      });
+      if (!application) return res.status(404).json({ message: "Application not found" });
+      if (status === "approved") {
+        const target = await storage.getUser(application.userId);
+        if (target) {
+          const badge = await storage.awardBadge({
+            userId: application.userId,
+            badgeType: application.badgeType,
+            awardedById: (req.user as any).id,
+          });
+          const badgeDef = BADGE_TYPES[application.badgeType as keyof typeof BADGE_TYPES];
+          const targetName = getDisplayName(target);
+          io.emit("badge:awarded", {
+            badge,
+            badgeDef,
+            userName: targetName,
+            userAvatar: target.profileImageUrl,
+            userId: target.id,
+            quote: badgeDef.quote,
+          });
+          emitSystemChatToAllActiveRooms(`${badgeDef.emoji} ${targetName} was awarded ${badgeDef.label}: ${badgeDef.quote}`);
+        }
+      }
+      res.json(application);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/announcements", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const message = String(req.body.message || "").trim();
+      const kind = String(req.body.kind || "platform").trim();
+      if (!message) return res.status(400).json({ message: "Announcement message is required" });
+      const admin = await storage.getUser((req.user as any).id);
+      const announcement = {
+        id: `announcement-${Date.now()}`,
+        message: message.slice(0, 1000),
+        kind,
+        from: admin ? getDisplayName(admin) : "Platform Owner",
+        createdAt: new Date().toISOString(),
+      };
+      io.emit("admin:announcement", announcement);
+      emitSystemChatToAllActiveRooms(`📣 ${announcement.from}: ${announcement.message}`);
+      res.json(announcement);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -1020,6 +1205,26 @@ export async function registerRoutes(
 
   const getDisplayName = (u: User) =>
     u.displayName || (u.firstName ? `${u.firstName}${u.lastName ? " " + u.lastName : ""}`.trim() : null) || (u.email ? u.email.split("@")[0] : "User");
+
+  const emitSystemChatMsg = (roomId: string, text: string) => {
+    const msg = {
+      id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      roomId,
+      userId: "system",
+      text,
+      type: "system" as const,
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      replyTo: null,
+    };
+    io.to(roomId).emit("room:chat-message", msg);
+  };
+
+  const emitSystemChatToAllActiveRooms = (text: string) => {
+    for (const [roomId, participants] of roomParticipants.entries()) {
+      if (participants.size > 0) emitSystemChatMsg(roomId, text);
+    }
+  };
 
   function cancelRoomDeleteTimer(roomId: string) {
     const timer = roomDeleteTimers.get(roomId);
@@ -1260,13 +1465,15 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/teacher-applications", isAuthenticated, isAdmin, async (_req, res) => {
+  app.get("/api/admin/teacher-applications", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
+      const admin = await storage.getUser((req.user as any).id);
+      const canSeeEmails = admin?.role === "superadmin" || admin?.email === SUPER_ADMIN_EMAIL;
       const applications = await storage.getAllTeacherApplications();
       const enriched = await Promise.all(
         applications.map(async (app) => {
           const user = await storage.getUser(app.userId);
-          return { ...app, user: user ? { id: user.id, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, email: user.email, profileImageUrl: user.profileImageUrl } : null };
+          return { ...app, user: user ? { id: user.id, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, email: canSeeEmails ? user.email : null, profileImageUrl: user.profileImageUrl } : null };
         })
       );
       res.json(enriched);
@@ -1388,20 +1595,6 @@ export async function registerRoutes(
     socket.on("heartbeat", () => {
     });
 
-    const emitSystemChatMsg = (roomId: string, text: string) => {
-      const msg = {
-        id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        roomId,
-        userId: "system",
-        text,
-        type: "system" as const,
-        createdAt: new Date().toISOString(),
-        reactions: {},
-        replyTo: null,
-      };
-      io.to(roomId).emit("room:chat-message", msg);
-    };
-
     socket.on("room:join", async (data: { roomId: string; userId: string }) => {
       const { roomId, userId } = data;
 
@@ -1414,6 +1607,13 @@ export async function registerRoutes(
 
       const user = await storage.getUser(userId);
       if (!user) return;
+      if (isUserRestricted(user)) {
+        socket.emit("admin:restricted", {
+          restrictedUntil: user.restrictedUntil,
+          reason: user.restrictedReason || "Your account is temporarily restricted from joining rooms.",
+        });
+        return;
+      }
 
       const room = await storage.getRoom(roomId);
       if (!room) return;
@@ -1661,6 +1861,13 @@ export async function registerRoutes(
         const safeColor = /^#[0-9a-fA-F]{6}$/.test(data.messageColor || "") ? data.messageColor : undefined;
         const user = await storage.getUser(data.userId);
         if (!user) return;
+        if (isUserRestricted(user)) {
+          socket.emit("admin:restricted", {
+            restrictedUntil: user.restrictedUntil,
+            reason: user.restrictedReason || "Your account is temporarily restricted from room chat.",
+          });
+          return;
+        }
 
         if (data.privateToId && data.privateToId !== data.userId) {
           const participants = roomParticipants.get(data.roomId);
