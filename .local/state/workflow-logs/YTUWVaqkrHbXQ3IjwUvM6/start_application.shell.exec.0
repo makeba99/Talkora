@@ -1,0 +1,99 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[cleanup] 2026-04-18T19:29:22.013Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-04-18T19:29:22.013Z Retention: messages=90d, room_messages=30d, notifications=60d, reports=180d, orphan_files=7d
+[cleanup] 2026-04-18T19:29:22.014Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion
+[cleanup] 2026-04-18T19:29:22.103Z Cleanup complete.
+[2m7:29:22 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because lockfile has changed
+7:29:22 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+7:29:33 PM [express] GET /api/auth/user 401 in 3ms :: {"message":"Unauthorized"}
+7:29:33 PM [express] GET /api/rooms/participants 200 in 3ms :: {}
+7:29:33 PM [express] GET /api/rooms 200 in 22ms :: []
+7:29:33 PM [express] GET /api/announcements 200 in 18ms :: []
+7:29:33 PM [express] POST /api/rooms/votes/batch 200 in 8ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+7:29:34 PM [express] POST /api/users/badges/batch 200 in 9ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+7:29:34 PM [express] POST /api/users/badges/batch 200 in 14ms :: {"sample-user-4":[],"sample-user-5":[]}
+7:29:34 PM [express] POST /api/users/badges/batch 200 in 16ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+7:29:34 PM [express] POST /api/users/badges/batch 200 in 12ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+7:29:34 PM [express] POST /api/users/badges/batch 200 in 65ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+7:29:34 PM [express] POST /api/users/badges/batch 200 in 64ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+7:29:38 PM [express] GET /api/auth/user 401 in 3ms :: {"message":"Unauthorized"}
+7:29:38 PM [express] GET /api/announcements 304 in 8ms :: []
+7:29:38 PM [express] POST /api/rooms/votes/batch 200 in 7ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+7:29:38 PM [express] GET /api/rooms 200 in 4ms :: []
+7:29:38 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:29:38 PM [express] POST /api/users/badges/batch 200 in 6ms :: {"sample-user-4":[],"sample-user-5":[]}
+7:29:38 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+7:29:38 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+7:29:38 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+7:29:38 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+7:29:38 PM [express] POST /api/users/badges/batch 200 in 4ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+7:29:43 PM [express] GET /api/rooms 304 in 8ms :: []
+7:29:46 PM [express] GET /api/auth/user 401 in 1ms :: {"message":"Unauthorized"}
+7:29:48 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:29:49 PM [express] GET /api/rooms 304 in 5ms :: []
+7:29:54 PM [express] GET /api/rooms 304 in 3ms :: []
+7:29:59 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:29:59 PM [express] GET /api/rooms 304 in 5ms :: []
+7:30:04 PM [express] GET /api/rooms 304 in 2ms :: []
+7:30:08 PM [express] GET /api/announcements 304 in 6ms :: []
+7:30:08 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+7:30:09 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:30:10 PM [express] GET /api/rooms 304 in 3ms :: []
+7:30:15 PM [express] GET /api/rooms 304 in 4ms :: []
+7:30:19 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+7:30:21 PM [express] GET /api/rooms 304 in 4ms :: []
+7:31:16 PM [express] GET /api/rooms 304 in 14ms :: []
+7:31:19 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:31:21 PM [express] GET /api/rooms 304 in 2ms :: []
+7:31:27 PM [express] GET /api/rooms 304 in 6ms :: []
+7:31:30 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+7:31:32 PM [express] GET /api/rooms 304 in 4ms :: []
+7:31:37 PM [express] GET /api/rooms 304 in 3ms :: []
+7:31:38 PM [express] GET /api/announcements 304 in 3ms :: []
+7:31:39 PM [express] POST /api/rooms/votes/batch 200 in 3ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+7:31:40 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:31:43 PM [express] GET /api/rooms 304 in 4ms :: []
+7:31:48 PM [express] GET /api/rooms 304 in 2ms :: []
+7:31:50 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+7:31:53 PM [express] GET /api/rooms 304 in 2ms :: []
+7:31:58 PM [express] GET /api/rooms 304 in 3ms :: []
+7:32:00 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+7:32:04 PM [express] GET /api/rooms 304 in 2ms :: []
+7:32:09 PM [express] GET /api/announcements 304 in 2ms :: []
+7:32:09 PM [express] GET /api/rooms 304 in 2ms :: []
+7:32:09 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+7:32:11 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:32:14 PM [express] GET /api/rooms 304 in 2ms :: []
+7:32:19 PM [express] GET /api/rooms 304 in 2ms :: []
+7:32:21 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+7:32:25 PM [express] GET /api/rooms 304 in 2ms :: []
+7:32:30 PM [express] GET /api/rooms 304 in 3ms :: []
+7:32:31 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:32:35 PM [express] GET /api/rooms 304 in 2ms :: []
+7:32:39 PM [express] GET /api/announcements 304 in 5ms :: []
+7:32:39 PM [express] POST /api/rooms/votes/batch 200 in 2ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+7:32:40 PM [express] GET /api/rooms 304 in 1ms :: []
+7:32:41 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:32:46 PM [express] GET /api/rooms 304 in 2ms :: []
+7:32:51 PM [express] GET /api/rooms 304 in 4ms :: []
+7:32:52 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:32:56 PM [express] GET /api/rooms 304 in 2ms :: []
+7:33:01 PM [express] GET /api/rooms 304 in 4ms :: []
+7:33:02 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:33:07 PM [express] GET /api/rooms 304 in 1ms :: []
+7:33:09 PM [express] GET /api/announcements 304 in 2ms :: []
+7:33:09 PM [express] POST /api/rooms/votes/batch 200 in 3ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+7:33:12 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+7:33:12 PM [express] GET /api/rooms 304 in 2ms :: []
+7:33:18 PM [express] GET /api/rooms 304 in 2ms :: []
+7:33:22 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+7:33:23 PM [express] GET /api/rooms 304 in 2ms :: []

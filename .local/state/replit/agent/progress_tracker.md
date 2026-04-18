@@ -1,0 +1,10 @@
+[x] 1. Install the required packages
+[x] 2. Restart the workflow to see if the project is working
+[x] 3. Verify the project is working using the feedback tool
+[x] 4. Inform user the import is completed and they can start building, mark the import as completed using the complete_project_import tool
+[x] 5. Redesign the floating control panel - standardized muted button colors, premium spacing and styling, larger buttons, consistent color logic (only Leave is red)
+[x] 6. Premium Chat & YouTube panel redesign - color-coded tabs, elevated filter bar, premium empty states, refined message bubbles with hover backgrounds, frosted glass input, full-width 16:9 video cards with gradient overlays and play button reveal
+[x] 7. Side panel icon-only tab switcher row, remove duplicate panel toggles from control bar (keep only Chat + Settings), add plasma theme with purple/blue energy background gradient, chat panel glow, and animated orb overlay
+[x] 8. Database performance optimization: 20+ indexes added across all tables, connection pool tuned (max 20 connections, idle/connection timeouts), getConversations rewritten from full JS memory scan to efficient SQL CTE, automated cleanup scheduler with configurable retention via env vars
+[x] 9. Second wave of optimizations: gzip compression on all API responses, TTL in-memory cache for users/rooms/external APIs, fixed 4 N+1 query patterns (admin badges, blocked users, teacher reviews, bookings), YouTube/GIF results cached 5min, orphaned upload file cleanup added to scheduler
+[x] 10. Ultra-secure privacy notifications: security_events DB table; helmet security headers (CSP/HSTS/Referrer-Policy/Permissions-Policy); rate limiting on auth (30/15min), API (180/min), uploads (20/hr) keyed by session not IP; XSS & SQL injection pattern detection middleware; privilege escalation detection; securityBus for real-time admin socket alerts; admin Security Events tab in /admin with severity badges, resolve workflow, live count badge; security notification types in notifications dropdown; privacy-first (no IP stored anywhere)
