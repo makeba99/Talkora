@@ -1914,16 +1914,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     onLeave();
   };
 
-  const openDeleteRoomConfirmation = () => {
-    setEditTitle(room.title);
-    setEditLanguage(room.language);
-    setEditLevel(room.level);
-    setEditMaxUsers(room.maxUsers);
-    setEditRoomTheme((room as any).roomTheme || "none");
-    setDeleteRoomOpen(true);
-    setEditDialogOpen(true);
-  };
-
   const renderMicSettingsContent = () => (
     <div className="p-4 space-y-3">
       <div className="flex items-start gap-2">
@@ -4793,17 +4783,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               })()}
 
               {/* Settings */}
-              {isHost && (
-                <button
-                  onClick={openDeleteRoomConfirmation}
-                  data-testid="button-host-delete-room"
-                  title="Delete Room"
-                  className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
-                  style={{ background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.22)", color: "rgba(248,113,113,0.9)" }}
-                >
-                  <Trash2 className="w-[14px] h-[14px]" />
-                </button>
-              )}
               {isHost && (
                 <button
                   onClick={() => {
