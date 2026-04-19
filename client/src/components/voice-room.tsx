@@ -1846,6 +1846,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       return;
     }
 
+    if (true) {
+      return;
+    }
+
     const createPlayer = () => {
       const container = document.getElementById("yt-player-container");
       if (!container) return;
@@ -2817,9 +2821,40 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
   }, [sidePanelTab]);
 
+  const extractYoutubeVideoId = (value: string) => {
+    const trimmed = value.trim();
+    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/watch\?.*?[?&]v=([a-zA-Z0-9_-]{11})/,
+    ];
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern);
+      if (match?.[1]) return match[1];
+    }
+    return null;
+  };
+
+  const getYoutubeEmbedUrl = (videoId: string) => {
+    const origin = typeof window !== "undefined" ? encodeURIComponent(window.location.origin) : "";
+    return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1${origin ? `&origin=${origin}` : ""}`;
+  };
+
   const handleYoutubeSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setYoutubeResults([]);
+      return;
+    }
+    const directVideoId = extractYoutubeVideoId(query);
+    if (directVideoId) {
+      setYoutubeResults([{
+        id: directVideoId,
+        title: "Play pasted YouTube video",
+        thumbnail: `https://i.ytimg.com/vi/${directVideoId}/hqdefault.jpg`,
+        channelTitle: "YouTube link",
+        duration: "",
+      }]);
+      setYoutubeSearching(false);
       return;
     }
     setYoutubeSearching(true);
@@ -5458,7 +5493,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
           {activeYoutubeId && showYoutube && (
             <div className="flex-1 min-h-0 bg-black relative" data-testid="media-main-youtube">
-              <div id="yt-player-container" className="w-full h-full" />
+              <iframe
+                src={getYoutubeEmbedUrl(activeYoutubeId)}
+                title="Shared YouTube player"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
+                data-testid="iframe-youtube-player"
+              />
 
               {(() => {
                 const broadcaster = participants.find(p => p.id === youtubeStartedBy);
