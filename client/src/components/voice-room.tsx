@@ -675,6 +675,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const ytRemoteAction = useRef(false);
   const ytLastSyncVideoTime = useRef<number>(-999); // last video-time we broadcast a "play" sync
   const ytLastSyncWallTime = useRef<number>(0);     // wall-clock ms when we last broadcast
+  const socketRef = useRef<typeof socket>(null);    // always-fresh socket ref (avoids player restart on reconnect)
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [focusedUserId, setFocusedUserId] = useState<string | null>(null);
   const [participantVolumes, setParticipantVolumes] = useState<Record<string, number>>({});
@@ -750,6 +751,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   useEffect(() => {
     youtubeStartedByRef.current = youtubeStartedBy;
   }, [youtubeStartedBy]);
+
+  useEffect(() => {
+    socketRef.current = socket;
+  }, [socket]);
 
   useEffect(() => {
     isMutedRef.current = isMuted;
@@ -1572,17 +1577,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (data.from === user.id) return;
       const player = youtubePlayerRef.current;
       if (!player || !player.playVideo) return;
+      // Block any local state-change re-broadcasts for 3.5s (covers buffering delays)
       ytRemoteAction.current = true;
       try {
         if (data.action === "play") {
           if (data.time !== undefined) {
-            // Compensate for network latency using the broadcaster's timestamp
+            // Compensate for network latency using broadcaster timestamp
             const networkDelay = data.ts ? Math.min((Date.now() - data.ts) / 1000, 3) : 0.15;
             const targetTime = data.time + networkDelay;
             let currentTime = 0;
             try { currentTime = player.getCurrentTime() || 0; } catch (_) {}
+            // Only seek if drift > 2.5s — avoids disruptive micro-seeks during normal playback
             const drift = Math.abs(targetTime - currentTime);
-            if (drift > 1.5) {
+            if (drift > 2.5) {
               player.seekTo(targetTime, true);
             }
           }
@@ -1596,7 +1603,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           player.stopVideo();
         }
       } catch (e) {}
-      setTimeout(() => { ytRemoteAction.current = false; }, 800);
+      // 3500ms — enough time for seek + buffering to complete before re-enabling local broadcasts
+      setTimeout(() => { ytRemoteAction.current = false; }, 3500);
     });
 
     socket.on("room:roles", (roles: Record<string, string>) => {
@@ -1752,7 +1760,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           ytRemoteAction.current = true;
           youtubePlayerRef.current.seekTo(compensated, true);
           youtubePlayerRef.current.playVideo();
-          setTimeout(() => { ytRemoteAction.current = false; }, 800);
+          // 3500ms covers buffering after seek — prevents broadcaster re-emit loop
+          setTimeout(() => { ytRemoteAction.current = false; }, 3500);
         }
       } catch (_) {}
     };
@@ -1818,16 +1827,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
     const buildStateChangeHandler = (player: any, YT: any) => (event: any) => {
       const state = event.data;
+      // Always read fresh values via refs — no stale closures
       const isBroadcaster = user?.id === youtubeStartedByRef.current;
+      const sock = socketRef.current;
       if (state === YT.PlayerState.ENDED) {
         if (isBroadcaster) {
           try { player.seekTo(0, true); player.playVideo(); } catch (_) {}
-          socket?.emit("room:youtube-state", {
+          sock?.emit("room:youtube-state", {
             roomId: room.id, action: "play", time: 0, ts: Date.now(),
           });
         }
         return;
       }
+      // Ignore events that were triggered by a remote sync (prevent echo loops)
       if (ytRemoteAction.current) return;
       if (!isBroadcaster) return;
       if (state === YT.PlayerState.PLAYING) {
@@ -1835,17 +1847,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         const currentTime = player.getCurrentTime();
         const timeSinceLastSync = now - ytLastSyncWallTime.current;
         const positionJump = Math.abs(currentTime - ytLastSyncVideoTime.current);
+        // Only broadcast if >8s have passed OR user seeked more than 3s forward/back
         if (timeSinceLastSync > 8000 || positionJump > 3) {
           ytLastSyncVideoTime.current = currentTime;
           ytLastSyncWallTime.current = now;
-          socket?.emit("room:youtube-state", {
+          sock?.emit("room:youtube-state", {
             roomId: room.id, action: "play", time: currentTime, ts: Date.now(),
           });
         }
       } else if (state === YT.PlayerState.PAUSED) {
         ytLastSyncVideoTime.current = -999;
         ytLastSyncWallTime.current = 0;
-        socket?.emit("room:youtube-state", {
+        sock?.emit("room:youtube-state", {
           roomId: room.id, action: "pause", time: player.getCurrentTime(), ts: Date.now(),
         });
       }
@@ -1913,7 +1926,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         youtubePlayerRef.current = null;
       }
     };
-  }, [activeYoutubeId, showYoutube, socket, room.id]);
+  }, [activeYoutubeId, showYoutube]); // socket removed — handler uses socketRef to avoid player restart on reconnect
 
   useEffect(() => {
     if (!socket || !activeYoutubeId) return;
