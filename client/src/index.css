@@ -1476,8 +1476,8 @@ html.synthwave .neon-text {
 
 /* ── AI Tutor responsive face size ── */
 .ai-face-size {
-  width: min(220px, 55vw);
-  height: min(220px, 55vw);
+  width: clamp(132px, 32vw, 172px);
+  height: clamp(132px, 32vw, 172px);
 }
 
 .ai-liveportrait-face {
@@ -1606,16 +1606,16 @@ html.synthwave .neon-text {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(310px, 92vw);
-  margin-top: 140px;
+  width: min(286px, 92vw);
+  margin-top: 108px;
 }
 
 @media (min-width: 640px) {
   .ai-chat-panel-responsive {
     top: 50%;
-    left: calc(50% + 140px);
+    left: calc(50% + 112px);
     transform: translateY(-50%);
-    width: 310px;
+    width: 292px;
     margin-top: 0;
   }
 }

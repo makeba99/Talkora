@@ -42,10 +42,10 @@ interface VoiceRoomProps {
 }
 
 const AI_TUTOR_AVATARS = [
-  { id: "aurora", label: "Aurora", gender: "Female", hairStart: "#f7fbff", hairMid: "#b9d7ff", hairEnd: "#6a7cff", bang: "#f7fbff", eye: "#4aa3ff", suit: "#5856ff", skinStart: "#ffe5d8", skinMid: "#d89b86", skinEnd: "#7f4b5d" },
-  { id: "nova", label: "Nova", gender: "Male", hairStart: "#1de6ff", hairMid: "#172a63", hairEnd: "#050817", bang: "#1de6ff", eye: "#00e1ff", suit: "#00e1ff", skinStart: "#f1dccb", skinMid: "#c58d74", skinEnd: "#704659" },
-  { id: "ember", label: "Ember", gender: "Female", hairStart: "#ffd1e8", hairMid: "#ff7ab6", hairEnd: "#8b2dff", bang: "#ffd1e8", eye: "#ff72b6", suit: "#e879f9", skinStart: "#ffe0cf", skinMid: "#d18a70", skinEnd: "#84404f" },
-  { id: "onyx", label: "Onyx", gender: "Male", hairStart: "#ffe08a", hairMid: "#423166", hairEnd: "#050510", bang: "#ffd166", eye: "#ffd166", suit: "#f59e0b", skinStart: "#ead2bd", skinMid: "#ad785f", skinEnd: "#5f3749" },
+  { id: "aurora", label: "Maya", gender: "Female", hairStart: "#6f4637", hairMid: "#37201a", hairEnd: "#130b09", bang: "#7c5041", eye: "#6b4a2d", suit: "#2563eb", skinStart: "#ffe0cf", skinMid: "#cf8e73", skinEnd: "#7c4a45" },
+  { id: "nova", label: "Noah", gender: "Male", hairStart: "#3a2a22", hairMid: "#19120f", hairEnd: "#070504", bang: "#3a2a22", eye: "#3f5f6f", suit: "#0ea5e9", skinStart: "#f0d4bd", skinMid: "#b9785f", skinEnd: "#68413d" },
+  { id: "ember", label: "Elena", gender: "Female", hairStart: "#8a5b3f", hairMid: "#51311f", hairEnd: "#1a100b", bang: "#9a6849", eye: "#4f6f54", suit: "#7c3aed", skinStart: "#f7d4c1", skinMid: "#bd7b63", skinEnd: "#70403f" },
+  { id: "onyx", label: "Liam", gender: "Male", hairStart: "#4c3a2e", hairMid: "#201712", hairEnd: "#080604", bang: "#4c3a2e", eye: "#5b4635", suit: "#0f766e", skinStart: "#e8c6aa", skinMid: "#a96e55", skinEnd: "#5f3834" },
 ] as const;
 
 interface Participant extends User {
@@ -6707,7 +6707,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.38)" }}>LivePortrait</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
-                      {AI_TUTOR_AVATARS.map(avatar => (
+                      {AI_TUTOR_AVATARS.filter(avatar => avatar.gender === "Female").map(avatar => (
                         <button
                           key={avatar.id}
                           onClick={() => setAiTutorSettings(s => ({ ...s, avatarId: avatar.id }))}

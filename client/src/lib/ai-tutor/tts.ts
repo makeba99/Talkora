@@ -80,7 +80,7 @@ export class TtsEngine {
 
     const utter = new SpeechSynthesisUtterance(sentence);
     utter.rate = Math.max(0.5, Math.min(2, this.speed));
-    utter.pitch = this.voice === "Female" ? 1.15 : 0.85;
+    utter.pitch = this.voice === "Female" ? 1.08 : 0.85;
     utter.lang = "en-US";
 
     const voices = window.speechSynthesis.getVoices();
@@ -88,17 +88,19 @@ export class TtsEngine {
       const savedVoice = this.voiceId
         ? voices.find(v => v.voiceURI === this.voiceId || v.name === this.voiceId)
         : undefined;
+      const femaleVoice =
+        voices.find(v => /samantha|zira|google us english|google uk english female|microsoft aria|microsoft jenny|serena|victoria|karen|moira|tessa|susan|female/i.test(v.name) && v.lang.startsWith("en")) ??
+        voices.find(v => v.lang.startsWith("en") && !/daniel|david|alex|mark|george|male|fred|ralph|tom/i.test(v.name));
       const chosen =
         savedVoice ??
         (this.voice === "Female"
-          ? (voices.find(v => /samantha|zira|google us english/i.test(v.name) && v.lang.startsWith("en")) ??
-            voices.find(v => v.lang.startsWith("en")))
+          ? (femaleVoice ?? voices.find(v => v.lang.startsWith("en")))
           : (voices.find(v => /daniel|david|alex|mark/i.test(v.name) && v.lang.startsWith("en")) ??
             voices.find(v => v.lang.startsWith("en"))));
       if (chosen) {
         utter.voice = chosen;
         const stableVoiceId = chosen.voiceURI || chosen.name;
-        if (stableVoiceId && stableVoiceId !== this.voiceId) {
+        if (this.voiceId && stableVoiceId && stableVoiceId !== this.voiceId) {
           this.voiceId = stableVoiceId;
           this.callbacks.onVoiceId?.(stableVoiceId);
         }

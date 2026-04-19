@@ -68,12 +68,13 @@ function loadSavedAiSettings(): AiTutorSettings {
     const raw = window.localStorage.getItem(AI_SETTINGS_STORAGE_KEY);
     if (!raw) return DEFAULT_AI_SETTINGS;
     const parsed = JSON.parse(raw);
+    const savedAvatarId = typeof parsed.avatarId === "string" ? parsed.avatarId : DEFAULT_AI_SETTINGS.avatarId;
     return {
       ...DEFAULT_AI_SETTINGS,
       ...parsed,
-      voice: parsed.voice === "Male" ? "Male" : "Female",
-      voiceId: typeof parsed.voiceId === "string" ? parsed.voiceId : null,
-      avatarId: typeof parsed.avatarId === "string" ? parsed.avatarId : DEFAULT_AI_SETTINGS.avatarId,
+      voice: "Female",
+      voiceId: null,
+      avatarId: ["aurora", "ember"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
       speed: typeof parsed.speed === "number" ? Math.max(0.5, Math.min(2, parsed.speed)) : DEFAULT_AI_SETTINGS.speed,
       tone: typeof parsed.tone === "number" ? Math.max(0, Math.min(1, parsed.tone)) : DEFAULT_AI_SETTINGS.tone,
     };
@@ -162,7 +163,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       onEnd: onTtsEnd,
       onSentenceEnd: onTtsSentenceEnd,
       onViseme: (shape) => setCurrentViseme(shape),
-      onVoiceId: (voiceId) => setAiSettings(prev => prev.voiceId === voiceId ? prev : { ...prev, voiceId }),
+      onVoiceId: () => {},
     });
     return () => ttsRef.current?.cancel();
   }, [onTtsStart, onTtsEnd, onTtsSentenceEnd]);
