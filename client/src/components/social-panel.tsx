@@ -307,7 +307,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
           >
             <MessageSquare className="w-4 h-4" />
           </Button>
-          {isFollowing && <UserNotePopover userId={u.id} />}
+          <UserNotePopover userId={u.id} />
           <Button
             size="icon"
             variant="ghost"

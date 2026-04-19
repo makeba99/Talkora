@@ -4178,7 +4178,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <p className="text-xs font-semibold truncate leading-tight">{getUserDisplayName(u)}</p>
                       <p className="text-[10px] text-muted-foreground/60 truncate leading-tight">{u.bio || (u.status === "online" ? "Online" : "Offline")}</p>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         data-testid={`button-dm-${u.id}`}
                         onClick={() => {
@@ -4191,7 +4191,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       >
                         <MessageSquare className="w-3 h-3" />
                       </button>
-                      {isFollowingUser && <UserNotePopover userId={u.id} />}
+                      <UserNotePopover userId={u.id} />
                       <button
                         data-testid={`button-follow-${u.id}`}
                         onClick={() => isFollowingUser ? unfollowMutation.mutate(u.id) : followMutation.mutate(u.id)}
