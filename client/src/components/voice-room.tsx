@@ -6087,6 +6087,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                             <stop offset="65%" stopColor={aiTutorAvatar.skinMid} />
                             <stop offset="100%" stopColor={aiTutorAvatar.skinEnd} />
                           </radialGradient>
+                          <radialGradient id="aiIrisDepth" cx="42%" cy="36%" r="68%">
+                            <stop offset="0%" stopColor="#b9f6ff" />
+                            <stop offset="42%" stopColor={aiTutorAvatar.eye} />
+                            <stop offset="82%" stopColor="#11286f" />
+                            <stop offset="100%" stopColor="#071027" />
+                          </radialGradient>
+                          <linearGradient id="aiBrowHair" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="rgba(35,22,30,0.45)" />
+                            <stop offset="35%" stopColor="#2a1822" />
+                            <stop offset="100%" stopColor="rgba(35,22,30,0.60)" />
+                          </linearGradient>
                           <linearGradient id="aiHairFemale" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor={aiTutorAvatar.hairStart} />
                             <stop offset="45%" stopColor={aiTutorAvatar.hairMid} />
@@ -6109,6 +6120,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                               <feMergeNode in="SourceGraphic" />
                             </feMerge>
                           </filter>
+                          <filter id="aiSkinMicroTexture" x="-20%" y="-20%" width="140%" height="140%">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="17" result="skinNoise" />
+                            <feColorMatrix in="skinNoise" type="matrix" values="0 0 0 0 0.95 0 0 0 0 0.52 0 0 0 0 0.44 0 0 0 0.06 0" result="skinTint" />
+                            <feBlend in="SourceGraphic" in2="skinTint" mode="multiply" />
+                          </filter>
                         </defs>
                         <circle cx="120" cy="120" r="104" fill="rgba(0,225,255,0.06)" />
                         <ellipse cx="120" cy="204" rx="62" ry="22" fill="url(#aiSuitGlow)" opacity="0.28" filter="url(#aiSoftGlow)" />
@@ -6117,26 +6133,42 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         <path className="ai-avatar-hair-back" d={aiTutorFaceStyle === "Male" ? "M66 101c2-43 29-72 58-72 34 0 59 25 58 66-8-16-25-27-42-34-17 9-44 12-74 40z" : "M49 120c-1-53 27-91 72-91 43 0 72 35 70 88-1 38-20 67-28 87-10-24-21-38-43-38-21 0-35 13-45 38-10-22-25-48-26-84z"} fill={aiTutorFaceStyle === "Male" ? "url(#aiHairMale)" : "url(#aiHairFemale)"} opacity="0.96" />
                         <ellipse className="ai-avatar-ear" cx="70" cy="121" rx="12" ry="20" fill="#cc8b78" />
                         <ellipse className="ai-avatar-ear" cx="170" cy="121" rx="12" ry="20" fill="#cc8b78" />
-                        <ellipse className="ai-avatar-face" cx="120" cy="115" rx="52" ry="66" fill="url(#aiSkinGlow)" />
+                        <ellipse className="ai-avatar-face" cx="120" cy="115" rx="52" ry="66" fill="url(#aiSkinGlow)" filter="url(#aiSkinMicroTexture)" />
+                        <ellipse cx="103" cy="102" rx="25" ry="43" fill="rgba(255,255,255,0.14)" opacity="0.55" />
+                        <ellipse cx="145" cy="121" rx="18" ry="47" fill="rgba(78,38,52,0.15)" opacity="0.48" />
+                        <path d="M88 133c6 15 16 26 31 29 17 3 31-6 39-25" stroke="rgba(70,35,45,0.18)" strokeWidth="2" strokeLinecap="round" fill="none" />
+                        <path d="M106 86c8-5 23-6 34 0" stroke="rgba(255,255,255,0.18)" strokeWidth="2" strokeLinecap="round" fill="none" />
                         <path className="ai-avatar-hair-front" d={aiTutorFaceStyle === "Male" ? "M68 84c15-32 42-48 75-38 17 5 29 18 36 38-20-12-44-18-72-14-14 2-26 7-39 14z" : "M64 91c17-38 49-56 82-42 20 8 32 27 35 51-19-21-45-30-75-28-15 1-28 7-42 19z"} fill={aiTutorFaceStyle === "Male" ? "url(#aiHairMale)" : "url(#aiHairFemale)"} />
                         <path className="ai-avatar-bang" d={aiTutorFaceStyle === "Male" ? "M104 45c-10 19-20 34-39 47 27-9 52-17 79-8-9-17-21-30-40-39z" : "M103 43c-5 30-22 45-45 56 33-7 58-12 90-1-7-25-19-43-45-55z"} fill={aiTutorAvatar.bang} opacity="0.92" />
+                        <path d={aiTutorFaceStyle === "Male" ? "M78 80c18-16 40-23 70-19M91 70c22-10 44-11 65-2M112 53c-8 17-20 28-38 38" : "M73 82c20-19 46-25 78-17M91 69c24-9 50-6 70 10M104 48c-8 23-23 38-43 50"} stroke="rgba(255,255,255,0.26)" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.55" />
+                        <path d={aiTutorFaceStyle === "Male" ? "M150 63c11 7 20 15 27 25M87 76c-8 8-15 17-21 27" : "M151 66c13 9 23 22 29 39M84 76c-12 12-19 27-22 43"} stroke="rgba(10,12,30,0.22)" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.45" />
                         <g className="ai-avatar-expression">
-                          <path className="ai-avatar-brow ai-avatar-brow-left" d="M87 107c10-7 19-7 28-2" stroke="#3b2340" strokeWidth="5" strokeLinecap="round" fill="none" />
-                          <path className="ai-avatar-brow ai-avatar-brow-right" d="M126 105c9-5 18-5 28 2" stroke="#3b2340" strokeWidth="5" strokeLinecap="round" fill="none" />
+                          <path className="ai-avatar-brow ai-avatar-brow-left" d="M86 106c10-6 22-7 31-2" stroke="url(#aiBrowHair)" strokeWidth="4.2" strokeLinecap="round" fill="none" />
+                          <path className="ai-avatar-brow ai-avatar-brow-right" d="M124 104c10-5 22-4 31 2" stroke="url(#aiBrowHair)" strokeWidth="4.2" strokeLinecap="round" fill="none" />
+                          <path className="ai-avatar-brow ai-avatar-brow-left" d="M88 103c8-3 17-4 27-1" stroke="rgba(255,255,255,0.20)" strokeWidth="1" strokeLinecap="round" fill="none" />
+                          <path className="ai-avatar-brow ai-avatar-brow-right" d="M127 101c8-2 17-1 26 3" stroke="rgba(255,255,255,0.18)" strokeWidth="1" strokeLinecap="round" fill="none" />
                         </g>
                         <g className="ai-avatar-eyes">
-                          <ellipse cx="101" cy="121" rx="13" ry="8" fill="#f8fbff" />
-                          <ellipse cx="140" cy="121" rx="13" ry="8" fill="#f8fbff" />
-                          <circle cx="102" cy="121" r="6" fill={aiTutorAvatar.eye} />
-                          <circle cx="139" cy="121" r="6" fill={aiTutorAvatar.eye} />
-                          <circle cx="104" cy="119" r="2" fill="#fff" />
-                          <circle cx="141" cy="119" r="2" fill="#fff" />
+                          <path d="M88 120c5-8 19-10 29 0-7 7-22 7-29 0z" fill="#f8fbff" />
+                          <path d="M127 120c6-8 20-9 29 0-7 7-22 7-29 0z" fill="#f8fbff" />
+                          <path d="M88 119c6-10 20-11 29 0" stroke="rgba(45,20,34,0.55)" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+                          <path d="M127 119c6-10 20-11 29 0" stroke="rgba(45,20,34,0.55)" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+                          <circle cx="102" cy="121" r="6.6" fill="url(#aiIrisDepth)" />
+                          <circle cx="140" cy="121" r="6.6" fill="url(#aiIrisDepth)" />
+                          <circle cx="102" cy="121" r="3.1" fill="#050816" />
+                          <circle cx="140" cy="121" r="3.1" fill="#050816" />
+                          <circle cx="99.5" cy="118.5" r="1.8" fill="#fff" opacity="0.95" />
+                          <circle cx="137.5" cy="118.5" r="1.8" fill="#fff" opacity="0.95" />
+                          <circle cx="104.5" cy="123.5" r="0.9" fill="rgba(185,246,255,0.75)" />
+                          <circle cx="142.5" cy="123.5" r="0.9" fill="rgba(185,246,255,0.75)" />
                         </g>
                         <path className="ai-avatar-blink" d="M88 121c9 4 18 4 27 0M127 121c9 4 18 4 27 0" stroke="#3b2340" strokeWidth="4" strokeLinecap="round" fill="none" />
-                        <path d="M120 126c-4 10-7 17-10 25 6 4 14 4 20 0-3-8-6-15-10-25z" fill="rgba(120,70,80,0.28)" />
-                        <circle className="ai-avatar-cheek" cx="89" cy="142" r="11" fill="rgba(255,120,160,0.16)" />
-                        <circle className="ai-avatar-cheek" cx="151" cy="142" r="11" fill="rgba(255,120,160,0.16)" />
-                        <path className="ai-avatar-soft-smile" d="M104 156c9 8 23 8 32 0" stroke="rgba(95,34,52,0.38)" strokeWidth="3" strokeLinecap="round" fill="none" />
+                        <path d="M120 126c-4 10-7 17-10 25 6 4 14 4 20 0-3-8-6-15-10-25z" fill="rgba(120,70,80,0.22)" />
+                        <path d="M119 129c-2 9-5 16-8 21" stroke="rgba(255,255,255,0.16)" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+                        <path d="M113 151c5 2 10 2 15 0" stroke="rgba(70,35,45,0.22)" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+                        <circle className="ai-avatar-cheek" cx="89" cy="142" r="12" fill="rgba(255,120,160,0.12)" />
+                        <circle className="ai-avatar-cheek" cx="151" cy="142" r="12" fill="rgba(255,120,160,0.12)" />
+                        <path className="ai-avatar-soft-smile" d="M104 156c9 8 23 8 32 0" stroke="rgba(95,34,52,0.28)" strokeWidth="2.4" strokeLinecap="round" fill="none" />
                         <path d="M82 88c24-16 55-21 85 0" stroke="rgba(0,225,255,0.28)" strokeWidth="2" strokeLinecap="round" fill="none" />
                       </svg>
                       {/* Holographic scan-line overlay */}
