@@ -5271,7 +5271,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <iframe
                 key={activeYoutubeId}
                 ref={ytIframeRef}
-                src={`https://www.youtube-nocookie.com/embed/${activeYoutubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
+                src={`https://www.youtube.com/embed/${activeYoutubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`}
                 className="w-full h-full border-0"
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
