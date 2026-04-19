@@ -6069,7 +6069,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         viewBox="0 0 240 240"
                         role="img"
                         aria-label="Live AI Tutor avatar"
-                        className={`ai-liveportrait-face ${aiTutorFaceVoice === "Male" ? "ai-liveportrait-male" : "ai-liveportrait-female"} ${aiTutorDisplaySpeaking ? "ai-liveportrait-speaking" : aiTutorDisplayListening ? "ai-liveportrait-listening" : ""}`}
+                        className={`ai-liveportrait-face ${aiTutorFaceVoice === "Male" ? "ai-liveportrait-male" : "ai-liveportrait-female"} ${aiTutorDisplaySpeaking ? "ai-liveportrait-speaking" : aiTutorDisplayListening ? "ai-liveportrait-listening" : "ai-liveportrait-neutral"}`}
+                        data-expression={aiTutorDisplaySpeaking ? "engaged-speaking" : aiTutorDisplayListening ? "neutral-listening" : "neutral"}
                       >
                         <defs>
                           <radialGradient id="aiSkinGlow" cx="50%" cy="35%" r="65%">
@@ -6110,8 +6111,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         <ellipse className="ai-avatar-face" cx="120" cy="115" rx="52" ry="66" fill="url(#aiSkinGlow)" />
                         <path className="ai-avatar-hair-front" d={aiTutorFaceVoice === "Male" ? "M68 84c15-32 42-48 75-38 17 5 29 18 36 38-20-12-44-18-72-14-14 2-26 7-39 14z" : "M64 91c17-38 49-56 82-42 20 8 32 27 35 51-19-21-45-30-75-28-15 1-28 7-42 19z"} fill={aiTutorFaceVoice === "Male" ? "url(#aiHairMale)" : "url(#aiHairFemale)"} />
                         <path className="ai-avatar-bang" d={aiTutorFaceVoice === "Male" ? "M104 45c-10 19-20 34-39 47 27-9 52-17 79-8-9-17-21-30-40-39z" : "M103 43c-5 30-22 45-45 56 33-7 58-12 90-1-7-25-19-43-45-55z"} fill={aiTutorFaceVoice === "Male" ? "#1de6ff" : "#f7fbff"} opacity="0.92" />
-                        <path className="ai-avatar-brow" d="M87 107c10-7 19-7 28-2" stroke="#3b2340" strokeWidth="5" strokeLinecap="round" fill="none" />
-                        <path className="ai-avatar-brow" d="M126 105c9-5 18-5 28 2" stroke="#3b2340" strokeWidth="5" strokeLinecap="round" fill="none" />
+                        <g className="ai-avatar-expression">
+                          <path className="ai-avatar-brow ai-avatar-brow-left" d="M87 107c10-7 19-7 28-2" stroke="#3b2340" strokeWidth="5" strokeLinecap="round" fill="none" />
+                          <path className="ai-avatar-brow ai-avatar-brow-right" d="M126 105c9-5 18-5 28 2" stroke="#3b2340" strokeWidth="5" strokeLinecap="round" fill="none" />
+                        </g>
                         <g className="ai-avatar-eyes">
                           <ellipse cx="101" cy="121" rx="13" ry="8" fill="#f8fbff" />
                           <ellipse cx="140" cy="121" rx="13" ry="8" fill="#f8fbff" />
@@ -6122,8 +6125,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         </g>
                         <path className="ai-avatar-blink" d="M88 121c9 4 18 4 27 0M127 121c9 4 18 4 27 0" stroke="#3b2340" strokeWidth="4" strokeLinecap="round" fill="none" />
                         <path d="M120 126c-4 10-7 17-10 25 6 4 14 4 20 0-3-8-6-15-10-25z" fill="rgba(120,70,80,0.28)" />
-                        <circle cx="89" cy="142" r="11" fill="rgba(255,120,160,0.16)" />
-                        <circle cx="151" cy="142" r="11" fill="rgba(255,120,160,0.16)" />
+                        <circle className="ai-avatar-cheek" cx="89" cy="142" r="11" fill="rgba(255,120,160,0.16)" />
+                        <circle className="ai-avatar-cheek" cx="151" cy="142" r="11" fill="rgba(255,120,160,0.16)" />
+                        <path className="ai-avatar-soft-smile" d="M104 156c9 8 23 8 32 0" stroke="rgba(95,34,52,0.38)" strokeWidth="3" strokeLinecap="round" fill="none" />
                         <path d="M82 88c24-16 55-21 85 0" stroke="rgba(0,225,255,0.28)" strokeWidth="2" strokeLinecap="round" fill="none" />
                       </svg>
                       {/* Holographic scan-line overlay */}
@@ -6137,11 +6141,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       }} />
                       {/* Realistic viseme-driven SVG mouth */}
                       {(() => {
-                        // For the owner: use precise per-phoneme viseme shapes
-                        // For observers: use a simple 'open' shape while AI is speaking
-                        const visemeKey = isAiTutorOwner
-                          ? (aiTutorDisplaySpeaking ? currentViseme : "rest")
-                          : (aiTutorDisplaySpeaking ? "open" : "rest");
+                        // Mouth is driven by TTS viseme timing while speaking, then returns to rest.
+                        const visemeKey = aiTutorDisplaySpeaking ? currentViseme : "rest";
                         const shape = MOUTH_SHAPES[visemeKey];
                         return (
                           <svg

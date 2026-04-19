@@ -380,9 +380,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   // ── Observe AI message from another user in the room ─────────────────────
   const observeSpeakText = useCallback((text: string, voice: string, speed: number) => {
     const engine = new TtsEngine({
-      onStart: () => {},
-      onEnd: () => {},
+      onStart: () => setCurrentViseme("open"),
+      onEnd: () => setCurrentViseme("rest"),
       onSentenceEnd: () => {},
+      onViseme: shape => setCurrentViseme(shape),
     });
     engine.configure(voice as "Female" | "Male", speed);
     engine.enqueue(text);

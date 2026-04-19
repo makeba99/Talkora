@@ -1498,6 +1498,10 @@ html.synthwave .neon-text {
   animation: ai-liveportrait-listen 2.4s ease-in-out infinite;
 }
 
+.ai-liveportrait-neutral {
+  animation: ai-liveportrait-neutral 4s ease-in-out infinite;
+}
+
 .ai-avatar-hair-front,
 .ai-avatar-bang {
   animation: ai-liveportrait-hair 3.8s ease-in-out infinite;
@@ -1514,9 +1518,63 @@ html.synthwave .neon-text {
   animation: ai-liveportrait-blink 5.5s ease-in-out infinite;
 }
 
+.ai-avatar-brow,
+.ai-avatar-cheek,
+.ai-avatar-soft-smile,
+.ai-avatar-face {
+  transition: transform 180ms ease, opacity 180ms ease, filter 180ms ease;
+}
+
+.ai-liveportrait-listening .ai-avatar-brow-left {
+  transform: translateY(1px) rotate(-1deg);
+  transform-origin: 101px 106px;
+}
+
+.ai-liveportrait-listening .ai-avatar-brow-right {
+  transform: translateY(1px) rotate(1deg);
+  transform-origin: 140px 106px;
+}
+
+.ai-liveportrait-listening .ai-avatar-cheek {
+  opacity: 0.55;
+}
+
+.ai-liveportrait-listening .ai-avatar-soft-smile {
+  opacity: 0.22;
+}
+
+.ai-liveportrait-speaking .ai-avatar-brow-left {
+  transform: translateY(-4px) rotate(-5deg);
+  transform-origin: 101px 106px;
+}
+
+.ai-liveportrait-speaking .ai-avatar-brow-right {
+  transform: translateY(-4px) rotate(5deg);
+  transform-origin: 140px 106px;
+}
+
+.ai-liveportrait-speaking .ai-avatar-cheek {
+  opacity: 0.95;
+  filter: drop-shadow(0 0 7px rgba(255, 128, 170, 0.45));
+}
+
+.ai-liveportrait-speaking .ai-avatar-soft-smile {
+  opacity: 0.7;
+  transform: translateY(-1px);
+}
+
+.ai-liveportrait-speaking .ai-avatar-face {
+  filter: brightness(1.06) saturate(1.08);
+}
+
 @keyframes ai-liveportrait-speak {
   0%, 100% { transform: scale(1.06) translateY(0); }
   45% { transform: scale(1.075) translateY(-2px); }
+}
+
+@keyframes ai-liveportrait-neutral {
+  0%, 100% { transform: scale(1.055) translateY(0); }
+  50% { transform: scale(1.06) translateY(-0.5px); }
 }
 
 @keyframes ai-liveportrait-listen {
