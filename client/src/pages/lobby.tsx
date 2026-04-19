@@ -25,7 +25,10 @@ import { Button } from "@/components/ui/button";
 type DiscoveryFilter = "rooms" | "top-speakers" | "famous-users";
 type LobbyAnnouncement = Announcement & { viewedAt?: string | null; dismissedAt?: string | null };
 
-function makeSampleUser(id: string, firstName: string, lastName: string, portrait: string): User {
+function makeSampleUser(
+  id: string, firstName: string, lastName: string, portrait: string,
+  opts?: { ring?: string; flair?: string; decoration?: string; bio?: string; offline?: boolean }
+): User {
   return {
     id,
     email: null,
@@ -33,14 +36,14 @@ function makeSampleUser(id: string, firstName: string, lastName: string, portrai
     lastName,
     displayName: `${firstName} ${lastName}`,
     profileImageUrl: `https://randomuser.me/api/portraits/${portrait}.jpg`,
-    bio: null,
-    avatarRing: null,
-    flairBadge: null,
-    profileDecoration: null,
+    bio: opts?.bio || null,
+    avatarRing: opts?.ring || null,
+    flairBadge: opts?.flair || null,
+    profileDecoration: opts?.decoration || null,
     instagramUrl: null,
     linkedinUrl: null,
     facebookUrl: null,
-    status: "online",
+    status: opts?.offline ? "offline" : "online",
     role: "user",
     warningCount: 0,
     createdAt: new Date(),
@@ -49,148 +52,79 @@ function makeSampleUser(id: string, firstName: string, lastName: string, portrai
 }
 
 const SAMPLE_USERS = {
-  sofia:    makeSampleUser("sample-user-1",  "Sofia",    "Martinez", "women/32"),
-  liam:     makeSampleUser("sample-user-2",  "Liam",     "Chen",     "men/46"),
-  emma:     makeSampleUser("sample-user-3",  "Emma",     "Davis",    "women/28"),
-  carlos:   makeSampleUser("sample-user-4",  "Carlos",   "Rivera",   "men/14"),
-  aigerim:  makeSampleUser("sample-user-5",  "Aigerim",  "Bekova",   "women/61"),
-  marcus:   makeSampleUser("sample-user-6",  "Marcus",   "Williams", "men/88"),
-  anya:     makeSampleUser("sample-user-7",  "Anya",     "Petrova",  "women/52"),
-  james:    makeSampleUser("sample-user-8",  "James",    "O'Brien",  "men/67"),
-  nadia:    makeSampleUser("sample-user-9",  "Nadia",    "Hassan",   "women/77"),
-  kevin:    makeSampleUser("sample-user-10", "Kevin",    "Park",     "men/33"),
-  yuki:     makeSampleUser("sample-user-11", "Yuki",     "Tanaka",   "women/5"),
-  min:      makeSampleUser("sample-user-12", "Min",      "Ji-hoon",  "men/72"),
-  seo:      makeSampleUser("sample-user-13", "Seo",      "Yeon",     "women/44"),
-  pierre:   makeSampleUser("sample-user-14", "Pierre",   "Dupont",   "men/55"),
-  claire:   makeSampleUser("sample-user-15", "Claire",   "Bernard",  "women/17"),
-  hassan:   makeSampleUser("sample-user-16", "Hassan",   "Al-Amin",  "men/78"),
-  fatima:   makeSampleUser("sample-user-17", "Fatima",   "Zahra",    "women/90"),
-  takeshi:  makeSampleUser("sample-user-18", "Takeshi",  "Mori",     "men/36"),
-  hana:     makeSampleUser("sample-user-19", "Hana",     "Suzuki",   "women/26"),
-  lucas:    makeSampleUser("sample-user-20", "Lucas",    "Santos",   "men/22"),
+  sofia:    makeSampleUser("sample-user-1",  "Sofia",    "Martinez", "women/32",  { ring: "glow-pink",   flair: "crown",     decoration: "hearts",   bio: "Passionate about bridging cultures through language" }),
+  liam:     makeSampleUser("sample-user-2",  "Liam",     "Chen",     "men/46",    { ring: "pulse-cyan",  flair: "lightning",  decoration: "cosmic",   bio: "Daily English practice enthusiast & tech lover" }),
+  emma:     makeSampleUser("sample-user-3",  "Emma",     "Davis",    "women/28",  { ring: "glow-gold",   flair: "star",       decoration: "sparkles", bio: "Loves French cinema and casual Spanish conversation", offline: true }),
+  carlos:   makeSampleUser("sample-user-4",  "Carlos",   "Rivera",   "men/14",    { ring: "fire",        flair: "fox",        decoration: "fire",     bio: "Native speaker helping beginners get confident" }),
+  aigerim:  makeSampleUser("sample-user-5",  "Aigerim",  "Bekova",   "women/61",  { ring: "rainbow",     flair: "diamond",    decoration: "rainbow",  bio: "Trilingual and always looking for a language buddy" }),
+  marcus:   makeSampleUser("sample-user-6",  "Marcus",   "Williams", "men/88",    { ring: "glow-gold",   flair: "crown",      decoration: "stars",    bio: "Advanced English, advanced mindset, let's talk!" }),
+  anya:     makeSampleUser("sample-user-7",  "Anya",     "Petrova",  "women/52",  { ring: "ice",         flair: "cat",        decoration: "snow",     bio: "Russian soul, English dreams, talking daily", offline: true }),
+  james:    makeSampleUser("sample-user-8",  "James",    "O'Brien",  "men/67",    { ring: "glow-green",  flair: "bear",       decoration: "bubbles",  bio: "Join my room for casual conversation practice" }),
+  nadia:    makeSampleUser("sample-user-9",  "Nadia",    "Hassan",   "women/77",  { ring: "pulse-purple",flair: "heart",      decoration: "flowers",  bio: "Arabic & English fluent — DM me anytime", offline: true }),
+  kevin:    makeSampleUser("sample-user-10", "Kevin",    "Park",     "men/33",    { ring: "pulse-cyan",  flair: "dog",        decoration: "lightning",bio: "K-pop fan, Korean learner, English speaker" }),
+  yuki:     makeSampleUser("sample-user-11", "Yuki",     "Tanaka",   "women/5",   { ring: "glow-pink",   flair: "panda",      decoration: "flowers",  bio: "Anime lover learning English through stories" }),
+  min:      makeSampleUser("sample-user-12", "Min",      "Ji-hoon",  "men/72",    { ring: "fire",        flair: "wolf",       decoration: "stars",    bio: "Korean music producer, language enthusiast" }),
+  seo:      makeSampleUser("sample-user-13", "Seo",      "Yeon",     "women/44",  { ring: "rainbow",     flair: "cat",        decoration: "catears",  bio: "Sharing Korean culture one conversation at a time" }),
+  pierre:   makeSampleUser("sample-user-14", "Pierre",   "Dupont",   "men/55",    { ring: "glow-green",  flair: "star",       decoration: "sparkles", bio: "Parisian language coach and coffee enthusiast" }),
+  claire:   makeSampleUser("sample-user-15", "Claire",   "Bernard",  "women/17",  { ring: "ice",         flair: "heart",      decoration: "snow",     bio: "French literature lover, English practice daily" }),
+  hassan:   makeSampleUser("sample-user-16", "Hassan",   "Al-Amin",  "men/78",    { ring: "pulse-purple",flair: "diamond",    decoration: "cosmic",   bio: "Teaching Arabic, learning Spanish step by step" }),
+  fatima:   makeSampleUser("sample-user-17", "Fatima",   "Zahra",    "women/90",  { ring: "glow-pink",   flair: "fox",        decoration: "hearts",   bio: "Language is the map to every culture" }),
+  takeshi:  makeSampleUser("sample-user-18", "Takeshi",  "Mori",     "men/36",    { ring: "pulse-cyan",  flair: "bear",       decoration: "lightning",bio: "Kendo practitioner and Japanese calligraphy artist" }),
+  hana:     makeSampleUser("sample-user-19", "Hana",     "Suzuki",   "women/26",  { ring: "rainbow",     flair: "star",       decoration: "flowers",  bio: "Beginner English speaker, fluent in smiles" }),
+  lucas:    makeSampleUser("sample-user-20", "Lucas",    "Santos",   "men/22",    { ring: "glow-gold",   flair: "lightning",  decoration: "fire",     bio: "Brazilian rhythm, global mindset, let's talk!" }),
+  priya:    makeSampleUser("sample-user-21", "Priya",    "Sharma",   "women/13",  { ring: "glow-pink",   flair: "diamond",    decoration: "sparkles", bio: "Software engineer practicing English and French" }),
+  ivan:     makeSampleUser("sample-user-22", "Ivan",     "Petrov",   "men/19",    { ring: "ice",         flair: "wolf",       decoration: "snow",     bio: "Chess player and language lover from Moscow" }),
+  mei:      makeSampleUser("sample-user-23", "Mei",      "Lin",      "women/47",  { ring: "rainbow",     flair: "cat",        decoration: "catears",  bio: "Sharing Mandarin culture one chat at a time" }),
+  diego:    makeSampleUser("sample-user-24", "Diego",    "Torres",   "men/25",    { ring: "fire",        flair: "fox",        decoration: "fire",     bio: "Mexican cooking teacher turned language coach" }),
+  amara:    makeSampleUser("sample-user-25", "Amara",    "Osei",     "women/65",  { ring: "glow-gold",   flair: "heart",      decoration: "hearts",   bio: "Ghanaian storyteller, English and French fluent", offline: true }),
+  bjorn:    makeSampleUser("sample-user-26", "Bjorn",    "Andersen", "men/71",    { ring: "pulse-cyan",  flair: "bear",       decoration: "cosmic",   bio: "Scandinavian minimalist, maximalist in language" }),
+  isabela:  makeSampleUser("sample-user-27", "Isabela",  "Costa",    "women/38",  { ring: "pulse-purple",flair: "star",       decoration: "bubbles",  bio: "Rio native exploring Japanese and Korean" }),
+  kwame:    makeSampleUser("sample-user-28", "Kwame",    "Asante",   "men/85",    { ring: "glow-green",  flair: "lightning",  decoration: "lightning",bio: "Entrepreneur learning Mandarin for business" }),
+  natasha:  makeSampleUser("sample-user-29", "Natasha",  "Volkov",   "women/57",  { ring: "glow-pink",   flair: "panda",      decoration: "flowers",  bio: "Ballet dancer turned English teacher", offline: true }),
+  ryo:      makeSampleUser("sample-user-30", "Ryo",      "Nakamura", "men/8",     { ring: "rainbow",     flair: "dog",        decoration: "stars",    bio: "Game developer learning Spanish and Arabic" }),
 };
 
 const SAMPLE_ROOMS: Room[] = [
-  {
-    id: "sample-room-1",
-    title: "English Club 🇬🇧",
-    language: "English",
-    level: "Beginner",
-    maxUsers: 3,
-    ownerId: SAMPLE_USERS.sofia.id,
-    isPublic: false,
-    activeUsers: 3,
-    roomTheme: "neon",
-    hologramVideoUrl: null,
-    createdAt: new Date(),
-  },
-  {
-    id: "sample-room-2",
-    title: "Spanish Practice 🇪🇸",
-    language: "Spanish",
-    level: "Intermediate",
-    maxUsers: 2,
-    ownerId: SAMPLE_USERS.carlos.id,
-    isPublic: true,
-    activeUsers: 2,
-    roomTheme: "sunset",
-    hologramVideoUrl: null,
-    createdAt: new Date(),
-  },
-  {
-    id: "sample-room-3",
-    title: "Advanced English Talk",
-    language: "English",
-    level: "Advanced",
-    maxUsers: 5,
-    ownerId: SAMPLE_USERS.marcus.id,
-    isPublic: true,
-    activeUsers: 5,
-    roomTheme: "cosmic",
-    hologramVideoUrl: null,
-    createdAt: new Date(),
-  },
-  {
-    id: "sample-room-4",
-    title: "Korean Study Group 🇰🇷",
-    language: "Korean",
-    level: "Beginner",
-    maxUsers: 3,
-    ownerId: SAMPLE_USERS.min.id,
-    isPublic: true,
-    activeUsers: 3,
-    roomTheme: "hologram",
-    hologramVideoUrl: null,
-    createdAt: new Date(),
-  },
-  {
-    id: "sample-room-5",
-    title: "French Conversation 🇫🇷",
-    language: "French",
-    level: "Intermediate",
-    maxUsers: 3,
-    ownerId: SAMPLE_USERS.pierre.id,
-    isPublic: false,
-    activeUsers: 3,
-    roomTheme: "violet",
-    hologramVideoUrl: null,
-    createdAt: new Date(),
-  },
-  {
-    id: "sample-room-6",
-    title: "Japanese Practice 🇯🇵",
-    language: "Japanese",
-    level: "Beginner",
-    maxUsers: 4,
-    ownerId: SAMPLE_USERS.yuki.id,
-    isPublic: false,
-    activeUsers: 4,
-    roomTheme: "cherry",
-    hologramVideoUrl: null,
-    createdAt: new Date(),
-  },
+  { id: "sample-room-1", title: "English Club 🇬🇧",          language: "English",  level: "Beginner",     maxUsers: 3, ownerId: SAMPLE_USERS.sofia.id,   isPublic: false, activeUsers: 3, roomTheme: "neon",     hologramVideoUrl: null, createdAt: new Date() },
+  { id: "sample-room-2", title: "Spanish Practice 🇪🇸",      language: "Spanish",  level: "Intermediate", maxUsers: 2, ownerId: SAMPLE_USERS.carlos.id,  isPublic: true,  activeUsers: 2, roomTheme: "sunset",   hologramVideoUrl: null, createdAt: new Date() },
+  { id: "sample-room-3", title: "Advanced English Talk",      language: "English",  level: "Advanced",     maxUsers: 5, ownerId: SAMPLE_USERS.marcus.id,  isPublic: true,  activeUsers: 5, roomTheme: "cosmic",   hologramVideoUrl: null, createdAt: new Date() },
+  { id: "sample-room-4", title: "Korean Study Group 🇰🇷",    language: "Korean",   level: "Beginner",     maxUsers: 3, ownerId: SAMPLE_USERS.min.id,     isPublic: true,  activeUsers: 3, roomTheme: "hologram", hologramVideoUrl: null, createdAt: new Date() },
+  { id: "sample-room-5", title: "French Conversation 🇫🇷",   language: "French",   level: "Intermediate", maxUsers: 3, ownerId: SAMPLE_USERS.pierre.id,  isPublic: false, activeUsers: 3, roomTheme: "violet",   hologramVideoUrl: null, createdAt: new Date() },
+  { id: "sample-room-6", title: "Japanese Practice 🇯🇵",     language: "Japanese", level: "Beginner",     maxUsers: 4, ownerId: SAMPLE_USERS.yuki.id,    isPublic: false, activeUsers: 4, roomTheme: "cherry",   hologramVideoUrl: null, createdAt: new Date() },
+  { id: "sample-room-7", title: "Arabic Circle 🇸🇦",         language: "Arabic",   level: "Beginner",     maxUsers: 3, ownerId: SAMPLE_USERS.hassan.id,  isPublic: true,  activeUsers: 3, roomTheme: "neon",     hologramVideoUrl: null, createdAt: new Date() },
+  { id: "sample-room-8", title: "German Stammtisch 🇩🇪",     language: "German",   level: "Intermediate", maxUsers: 3, ownerId: SAMPLE_USERS.bjorn.id,   isPublic: true,  activeUsers: 2, roomTheme: "plasma",   hologramVideoUrl: null, createdAt: new Date() },
+  { id: "sample-room-9", title: "Hindi for Beginners 🇮🇳",   language: "Hindi",    level: "Beginner",     maxUsers: 4, ownerId: SAMPLE_USERS.priya.id,   isPublic: true,  activeUsers: 3, roomTheme: "sunset",   hologramVideoUrl: null, createdAt: new Date() },
 ];
 
-const SAMPLE_ROOM_PARTICIPANTS: Record<string, User[]> = {
+const BASE_SAMPLE_PARTICIPANTS: Record<string, User[]> = {
   "sample-room-1": [SAMPLE_USERS.sofia, SAMPLE_USERS.liam, SAMPLE_USERS.emma],
   "sample-room-2": [SAMPLE_USERS.carlos, SAMPLE_USERS.aigerim],
   "sample-room-3": [SAMPLE_USERS.marcus, SAMPLE_USERS.anya, SAMPLE_USERS.james, SAMPLE_USERS.nadia, SAMPLE_USERS.kevin],
   "sample-room-4": [SAMPLE_USERS.min, SAMPLE_USERS.seo, SAMPLE_USERS.hassan],
   "sample-room-5": [SAMPLE_USERS.pierre, SAMPLE_USERS.claire, SAMPLE_USERS.fatima],
   "sample-room-6": [SAMPLE_USERS.yuki, SAMPLE_USERS.takeshi, SAMPLE_USERS.hana, SAMPLE_USERS.lucas],
+  "sample-room-7": [SAMPLE_USERS.hassan, SAMPLE_USERS.fatima, SAMPLE_USERS.amara],
+  "sample-room-8": [SAMPLE_USERS.bjorn, SAMPLE_USERS.ivan],
+  "sample-room-9": [SAMPLE_USERS.priya, SAMPLE_USERS.diego, SAMPLE_USERS.kwame],
+};
+
+const BASE_SAMPLE_VOTE_COUNTS: Record<string, number> = {
+  "sample-room-1": 12, "sample-room-2": 7,  "sample-room-3": 24,
+  "sample-room-4": 18, "sample-room-5": 9,  "sample-room-6": 15,
+  "sample-room-7": 11, "sample-room-8": 6,  "sample-room-9": 14,
 };
 
 const SAMPLE_FOLLOWER_COUNTS: Record<string, number> = {
-  "sample-user-1":  145,
-  "sample-user-2":  89,
-  "sample-user-3":  203,
-  "sample-user-4":  67,
-  "sample-user-5":  312,
-  "sample-user-6":  421,
-  "sample-user-7":  156,
-  "sample-user-8":  78,
-  "sample-user-9":  234,
-  "sample-user-10": 91,
-  "sample-user-11": 189,
-  "sample-user-12": 342,
-  "sample-user-13": 127,
-  "sample-user-14": 56,
-  "sample-user-15": 98,
-  "sample-user-16": 213,
-  "sample-user-17": 176,
-  "sample-user-18": 144,
-  "sample-user-19": 267,
-  "sample-user-20": 83,
-};
-
-const SAMPLE_VOTE_COUNTS: Record<string, number> = {
-  "sample-room-1": 12,
-  "sample-room-2": 7,
-  "sample-room-3": 24,
-  "sample-room-4": 18,
-  "sample-room-5": 9,
-  "sample-room-6": 15,
+  "sample-user-1":  145, "sample-user-2":  89,  "sample-user-3":  203,
+  "sample-user-4":  67,  "sample-user-5":  312, "sample-user-6":  421,
+  "sample-user-7":  156, "sample-user-8":  78,  "sample-user-9":  234,
+  "sample-user-10": 91,  "sample-user-11": 189, "sample-user-12": 342,
+  "sample-user-13": 127, "sample-user-14": 56,  "sample-user-15": 98,
+  "sample-user-16": 213, "sample-user-17": 176, "sample-user-18": 144,
+  "sample-user-19": 267, "sample-user-20": 83,  "sample-user-21": 158,
+  "sample-user-22": 72,  "sample-user-23": 241, "sample-user-24": 119,
+  "sample-user-25": 305, "sample-user-26": 88,  "sample-user-27": 196,
+  "sample-user-28": 143, "sample-user-29": 221, "sample-user-30": 67,
 };
 
 const SAMPLE_SPEAKER_META: Record<string, { bio: string; languages: string[]; voteCount: number; commentCount: number; isOnline: boolean }> = {
@@ -204,9 +138,20 @@ const SAMPLE_SPEAKER_META: Record<string, { bio: string; languages: string[]; vo
   "sample-user-8":  { bio: "Join my room for casual conversation practice",        languages: ["English", "Irish"],    voteCount: 48,  commentCount: 15, isOnline: true  },
   "sample-user-9":  { bio: "Arabic & English fluent — DM me anytime",             languages: ["English", "Arabic"],   voteCount: 143, commentCount: 41, isOnline: false },
   "sample-user-10": { bio: "K-pop fan, Korean learner, English speaker",           languages: ["Korean", "English"],   voteCount: 58,  commentCount: 19, isOnline: true  },
+  "sample-user-21": { bio: "Software engineer practicing English and French",      languages: ["English", "French"],   voteCount: 76,  commentCount: 22, isOnline: true  },
+  "sample-user-22": { bio: "Chess player and language lover from Moscow",          languages: ["Russian", "English"],  voteCount: 38,  commentCount: 8,  isOnline: false },
+  "sample-user-23": { bio: "Sharing Mandarin culture one chat at a time",          languages: ["Chinese", "English"],  voteCount: 134, commentCount: 37, isOnline: true  },
+  "sample-user-24": { bio: "Mexican cooking teacher turned language coach",        languages: ["Spanish", "English"],  voteCount: 67,  commentCount: 18, isOnline: true  },
+  "sample-user-25": { bio: "Ghanaian storyteller, English and French fluent",      languages: ["English", "French"],   voteCount: 189, commentCount: 45, isOnline: false },
+  "sample-user-26": { bio: "Scandinavian minimalist, maximalist in language",      languages: ["German", "English"],   voteCount: 51,  commentCount: 13, isOnline: true  },
+  "sample-user-27": { bio: "Rio native exploring Japanese and Korean",             languages: ["Portuguese", "Japanese"], voteCount: 103, commentCount: 29, isOnline: true  },
+  "sample-user-28": { bio: "Entrepreneur learning Mandarin for business",          languages: ["English", "Chinese"],  voteCount: 82,  commentCount: 21, isOnline: true  },
+  "sample-user-29": { bio: "Ballet dancer turned English teacher",                 languages: ["Russian", "English"],  voteCount: 127, commentCount: 33, isOnline: false },
+  "sample-user-30": { bio: "Game developer learning Spanish and Arabic",           languages: ["Japanese", "Spanish"], voteCount: 44,  commentCount: 12, isOnline: true  },
 };
 
-const SAMPLE_PEOPLE = Object.values(SAMPLE_USERS).slice(0, 10);
+const ALL_SAMPLE_USERS = Object.values(SAMPLE_USERS);
+const SAMPLE_PEOPLE = ALL_SAMPLE_USERS.slice(0, 20);
 
 function getUserName(person: User) {
   return person.displayName || [person.firstName, person.lastName].filter(Boolean).join(" ") || person.email || "Language learner";
@@ -429,6 +374,49 @@ export default function Lobby() {
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const viewedAnnouncementIdsRef = useRef<Set<string>>(new Set());
+  const [liveVoteCounts, setLiveVoteCounts] = useState<Record<string, number>>({ ...BASE_SAMPLE_VOTE_COUNTS });
+  const [liveParticipants, setLiveParticipants] = useState<Record<string, User[]>>({ ...BASE_SAMPLE_PARTICIPANTS });
+  const [activityFlash, setActivityFlash] = useState<{ name: string; roomTitle: string; action: "joined" | "left" } | null>(null);
+
+  useEffect(() => {
+    const sampleRoomIds = SAMPLE_ROOMS.map((r) => r.id);
+    const interval = setInterval(() => {
+      const roll = Math.random();
+      const roomId = sampleRoomIds[Math.floor(Math.random() * sampleRoomIds.length)];
+      const room = SAMPLE_ROOMS.find((r) => r.id === roomId);
+      if (!room) return;
+
+      if (roll < 0.45) {
+        setLiveVoteCounts((prev) => {
+          const curr = prev[roomId] ?? BASE_SAMPLE_VOTE_COUNTS[roomId] ?? 0;
+          const delta = Math.floor(Math.random() * 3) + 1;
+          const direction = Math.random() > 0.35 ? 1 : -1;
+          const next = Math.max(1, curr + direction * delta);
+          return { ...prev, [roomId]: next };
+        });
+      } else if (roll < 0.82) {
+        setLiveParticipants((prev) => {
+          const currParts = prev[roomId] ?? BASE_SAMPLE_PARTICIPANTS[roomId] ?? [];
+          const maxUsers = room.maxUsers;
+          const allPool = ALL_SAMPLE_USERS.filter((u) => !currParts.some((p) => p.id === u.id));
+          if (currParts.length < maxUsers && allPool.length > 0 && Math.random() > 0.4) {
+            const newUser = allPool[Math.floor(Math.random() * allPool.length)];
+            const flash = { name: newUser.displayName || newUser.firstName || "Someone", roomTitle: room.title, action: "joined" as const };
+            setTimeout(() => { setActivityFlash(flash); setTimeout(() => setActivityFlash(null), 3500); }, 0);
+            return { ...prev, [roomId]: [...currParts, newUser] };
+          } else if (currParts.length > 1) {
+            const removeIdx = Math.floor(Math.random() * (currParts.length - 1)) + 1;
+            const removed = currParts[removeIdx];
+            const flash = { name: removed.displayName || removed.firstName || "Someone", roomTitle: room.title, action: "left" as const };
+            setTimeout(() => { setActivityFlash(flash); setTimeout(() => setActivityFlash(null), 3500); }, 0);
+            return { ...prev, [roomId]: currParts.filter((_, i) => i !== removeIdx) };
+          }
+          return prev;
+        });
+      }
+    }, 4500 + Math.random() * 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { data: fetchedRooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
@@ -474,7 +462,7 @@ export default function Lobby() {
   ];
 
   const allRoomParticipants = (base: Record<string, User[]>) => ({
-    ...SAMPLE_ROOM_PARTICIPANTS,
+    ...liveParticipants,
     ...base,
   });
 
@@ -1224,7 +1212,7 @@ export default function Lobby() {
                     onOpenDm={(userId) => setDmUserId(userId)}
                     isOwner={room.ownerId === user?.id}
                     isLoggedIn={!!user}
-                    voteCount={isSample ? SAMPLE_VOTE_COUNTS[room.id] ?? 0 : (voteData?.counts?.[room.id] || 0)}
+                    voteCount={isSample ? liveVoteCounts[room.id] ?? 0 : (voteData?.counts?.[room.id] || 0)}
                     hasVoted={voteData?.userVotes?.[room.id] || false}
                     onVote={isSample ? undefined : (user ? () => voteMutation.mutate({ roomId: room.id, hasVoted: voteData?.userVotes?.[room.id] || false }) : undefined)}
                     followerCountsOverride={isSample ? SAMPLE_FOLLOWER_COUNTS : undefined}
@@ -1250,6 +1238,25 @@ export default function Lobby() {
           onClose={() => setCommentTargetUser(null)}
         />
       )}
+
+      <div
+        className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ${activityFlash ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}
+        data-testid="activity-flash-toast"
+      >
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-2xl border text-sm font-medium"
+          style={{
+            background: "rgba(15,20,40,0.94)",
+            borderColor: activityFlash?.action === "joined" ? "rgba(0,220,100,0.4)" : "rgba(255,100,100,0.4)",
+            color: activityFlash?.action === "joined" ? "rgba(0,220,120,1)" : "rgba(255,120,100,1)",
+          }}>
+          <span className="text-base">{activityFlash?.action === "joined" ? "🟢" : "🔴"}</span>
+          <span>
+            <span className="text-white font-semibold">{activityFlash?.name}</span>
+            {" "}{activityFlash?.action === "joined" ? "joined" : "left"}{" "}
+            <span className="opacity-80">{activityFlash?.roomTitle}</span>
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
