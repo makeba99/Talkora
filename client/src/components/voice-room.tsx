@@ -549,6 +549,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [aiTutorLoading, setAiTutorLoading] = useState(false);
   const [aiTutorControlOpen, setAiTutorControlOpen] = useState(false);
   const [aiChatPanelOpen, setAiChatPanelOpen] = useState(false);
+  const [aiListening, setAiListening] = useState(false);
+  const aiRecognitionRef = useRef<any>(null);
+  const aiSpeakingRef = useRef(false);
+  const aiLoadingRef = useRef(false);
+  const aiActiveRef = useRef(false);
   const [aiConversation, setAiConversation] = useState<Array<{
     id: string;
     role: "ai" | "user";
@@ -1947,6 +1952,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const speakAiText = (text: string, voice: string, speed: number) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
+    // Stop listening while AI speaks so it won't pick up its own voice
+    try { aiRecognitionRef.current?.abort(); } catch {}
+    setAiListening(false);
+    aiSpeakingRef.current = true;
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = Math.max(0.5, Math.min(2, speed));
     utter.pitch = voice === "Female" ? 1.15 : 0.85;
@@ -1965,8 +1974,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         if (chosen) utter.voice = chosen;
       }
       setAiTutorSpeaking(true);
-      utter.onend = () => setAiTutorSpeaking(false);
-      utter.onerror = () => setAiTutorSpeaking(false);
+      utter.onend = () => {
+        setAiTutorSpeaking(false);
+        aiSpeakingRef.current = false;
+        // Restart listening after AI finishes speaking
+        setTimeout(() => {
+          if (aiActiveRef.current && !aiLoadingRef.current) {
+            startAiListening();
+          }
+        }, 400);
+      };
+      utter.onerror = () => {
+        setAiTutorSpeaking(false);
+        aiSpeakingRef.current = false;
+        setTimeout(() => {
+          if (aiActiveRef.current && !aiLoadingRef.current) {
+            startAiListening();
+          }
+        }, 400);
+      };
       window.speechSynthesis.speak(utter);
     };
     if (window.speechSynthesis.getVoices().length === 0) {
@@ -1994,6 +2020,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const sendAiMessage = async (text: string) => {
     if (!text.trim() || aiTutorLoading) return;
+    aiLoadingRef.current = true;
     const isFirstMessage = aiConversation.length === 0;
     const userMsg = { id: `u-${Date.now()}`, role: "user" as const, text: text.trim() };
     setAiConversation(prev => [...prev, userMsg]);
@@ -2024,8 +2051,71 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     } catch {
     } finally {
       setAiTutorLoading(false);
+      aiLoadingRef.current = false;
     }
   };
+
+  // Start speech recognition — listens continuously while AI tutor is active
+  const startAiListening = () => {
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec || !aiActiveRef.current || aiSpeakingRef.current || aiLoadingRef.current) return;
+    try { aiRecognitionRef.current?.abort(); } catch {}
+    const rec = new SpeechRec();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = "en-US";
+    aiRecognitionRef.current = rec;
+    rec.onstart = () => setAiListening(true);
+    rec.onresult = (e: any) => {
+      const transcript = Array.from(e.results as SpeechRecognitionResultList)
+        .filter((r: SpeechRecognitionResult) => r.isFinal)
+        .map((r: SpeechRecognitionResult) => r[0].transcript)
+        .join(" ")
+        .trim();
+      setAiListening(false);
+      if (transcript) sendAiMessage(transcript);
+    };
+    rec.onerror = (e: any) => {
+      if (e.error === "aborted" || e.error === "no-speech") {
+        // No-speech: just restart quietly
+        setAiListening(false);
+        setTimeout(() => {
+          if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
+        }, 300);
+        return;
+      }
+      setAiListening(false);
+      setTimeout(() => {
+        if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
+      }, 800);
+    };
+    rec.onend = () => {
+      setAiListening(false);
+      setTimeout(() => {
+        if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
+      }, 300);
+    };
+    try { rec.start(); } catch {}
+  };
+
+  // Keep refs in sync with state
+  useEffect(() => { aiSpeakingRef.current = aiTutorSpeaking; }, [aiTutorSpeaking]);
+  useEffect(() => { aiLoadingRef.current = aiTutorLoading; }, [aiTutorLoading]);
+
+  // Start/stop recognition when AI tutor activates/deactivates
+  useEffect(() => {
+    aiActiveRef.current = aiTutorActive;
+    if (aiTutorActive) {
+      // Small delay to let the intro speech start first
+      setTimeout(() => {
+        if (aiActiveRef.current && !aiSpeakingRef.current) startAiListening();
+      }, 600);
+    } else {
+      try { aiRecognitionRef.current?.abort(); } catch {}
+      aiRecognitionRef.current = null;
+      setAiListening(false);
+    }
+  }, [aiTutorActive]);
 
   const handleLeave = (reason?: "joined-another-room") => {
     localStream.current?.getTracks().forEach((t) => t.stop());
@@ -5921,15 +6011,228 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
               data-testid="ai-tutor-overlay"
             >
-              <div className="pointer-events-auto flex flex-col items-center gap-3" style={{ marginTop: -40 }}>
+              <div
+                className={`pointer-events-auto flex ${aiChatPanelOpen ? "flex-row items-center gap-8" : "flex-col items-center gap-3"}`}
+                style={{ marginTop: -40 }}
+              >
 
-                {/* ── Face Circle ── */}
-                {/* (face section starts below — holographic face first, then label, then chat) */}
+                {/* ── Center: Holographic Face (always first child = left in row, center in col) ── */}
+                <div className="flex flex-col items-center gap-4 ai-float" style={{ marginTop: 20 }}>
+                  <div className="relative" style={{ width: 220, height: 220 }}>
 
-                {/* ── Chat Panel (below face, shown only when aiChatPanelOpen) ── */}
+                    {/* Outer listen/speak pulse ring */}
+                    {(aiTutorSpeaking || aiListening) && (
+                      <div className="absolute inset-0 rounded-full animate-ping pointer-events-none"
+                        style={{
+                          background: aiTutorSpeaking ? "rgba(0,225,255,0.12)" : "rgba(0,255,160,0.10)",
+                          animationDuration: aiTutorSpeaking ? "1.3s" : "2s"
+                        }} />
+                    )}
+
+                    {/* Rotating gradient ring */}
+                    <div className="absolute rounded-full holo-ring-rotate pointer-events-none" style={{
+                      inset: -3,
+                      background: "conic-gradient(rgba(0,225,255,0.9) 0deg, rgba(80,120,255,0.4) 120deg, rgba(160,80,255,0.5) 200deg, rgba(0,225,255,0.9) 360deg)",
+                      borderRadius: "50%",
+                      padding: 2,
+                    }}>
+                      <div className="w-full h-full rounded-full" style={{ background: "rgba(6,10,30,0.95)" }} />
+                    </div>
+
+                    {/* Static glow border */}
+                    <div className="absolute inset-0 rounded-full pointer-events-none" style={{
+                      boxShadow: aiTutorSpeaking
+                        ? "0 0 40px rgba(0,225,255,0.65), 0 0 80px rgba(0,100,255,0.28), inset 0 0 30px rgba(0,120,255,0.15)"
+                        : aiListening
+                          ? "0 0 28px rgba(0,255,160,0.40), inset 0 0 20px rgba(0,180,120,0.10)"
+                          : "0 0 20px rgba(0,225,255,0.32), inset 0 0 18px rgba(0,80,200,0.12)",
+                      border: `2px solid ${aiTutorSpeaking ? "rgba(0,225,255,0.90)" : aiListening ? "rgba(0,255,160,0.60)" : "rgba(0,225,255,0.45)"}`,
+                      borderRadius: "50%",
+                    }} />
+
+                    {/* Face container */}
+                    <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center"
+                      style={{ background: "radial-gradient(ellipse at 45% 30%, rgba(20,30,80,0.95) 0%, rgba(4,8,24,0.99) 80%)" }}>
+                      <img
+                        src="/ai-face.png"
+                        alt="AI Tutor"
+                        className="w-full h-full object-cover object-top"
+                        style={{ transform: "scale(1.08)", transformOrigin: "center 35%" }}
+                      />
+                      {/* Holographic scan-line overlay */}
+                      <div className="absolute inset-0 pointer-events-none" style={{
+                        background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,225,255,0.015) 3px, rgba(0,225,255,0.015) 4px)",
+                        mixBlendMode: "screen",
+                      }} />
+                      {/* Cyan bottom fade for depth */}
+                      <div className="absolute bottom-0 inset-x-0 h-1/4 pointer-events-none" style={{
+                        background: "linear-gradient(to top, rgba(0,80,180,0.30) 0%, transparent 100%)",
+                      }} />
+                      {/* Animated mouth overlay — natural lip movement */}
+                      <div style={{
+                        position: "absolute",
+                        left: "50%",
+                        top: "70%",
+                        pointerEvents: "none",
+                        width: 44,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 0,
+                        transform: "translateX(-50%)",
+                      }}>
+                        {/* Upper lip arc */}
+                        <div style={{
+                          width: 44,
+                          height: 7,
+                          background: "linear-gradient(to bottom, rgba(220,140,140,0.80) 0%, rgba(190,100,100,0.60) 100%)",
+                          borderRadius: "50% 50% 0 0 / 100% 100% 0 0",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+                        }} />
+                        {/* Mouth opening — animates when speaking */}
+                        <div style={{
+                          position: "absolute",
+                          top: 4,
+                          left: "50%",
+                          width: 34,
+                          height: aiTutorSpeaking ? 14 : 3,
+                          background: aiTutorSpeaking
+                            ? "radial-gradient(ellipse at 50% 30%, rgba(40,10,10,0.95) 40%, rgba(80,20,20,0.85) 100%)"
+                            : "rgba(30,8,8,0.80)",
+                          borderRadius: aiTutorSpeaking ? "40% 40% 50% 50% / 30% 30% 70% 70%" : "0 0 50% 50% / 0 0 100% 100%",
+                          animation: aiTutorSpeaking ? "mouthTalk 0.28s ease-in-out infinite" : "none",
+                          transformOrigin: "center top",
+                          transition: "height 0.12s ease, border-radius 0.12s ease",
+                        }} />
+                        {/* Lower lip arc */}
+                        <div style={{
+                          width: 44,
+                          height: 6,
+                          background: "linear-gradient(to top, rgba(220,140,140,0.75) 0%, rgba(190,100,100,0.50) 100%)",
+                          borderRadius: "0 0 50% 50% / 0 0 100% 100%",
+                          boxShadow: "0 -1px 3px rgba(0,0,0,0.25)",
+                          marginTop: aiTutorSpeaking ? 10 : 2,
+                          transition: "margin-top 0.12s ease",
+                          animation: aiTutorSpeaking ? "mouthTalkLip 0.28s ease-in-out infinite" : "none",
+                          transformOrigin: "center bottom",
+                        }} />
+                      </div>
+                      {/* Speaking lip-sync shimmer */}
+                      {aiTutorSpeaking && (
+                        <div className="absolute inset-0 pointer-events-none rounded-full" style={{
+                          background: "radial-gradient(ellipse at 50% 72%, rgba(0,225,255,0.18) 0%, transparent 60%)",
+                          animation: "pulse 0.5s ease-in-out infinite alternate",
+                        }} />
+                      )}
+                    </div>
+
+                    {/* Speaking waveform */}
+                    {aiTutorSpeaking && (
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-[3px]">
+                        {[4,6,8,10,8,6,4].map((h,i) => (
+                          <div key={i} className="rounded-full" style={{
+                            width: 3, height: h * 2,
+                            background: "rgba(0,225,255,0.85)",
+                            animation: `pulse ${0.4+(i%3)*0.15}s ease-in-out infinite alternate`,
+                            animationDelay: `${i*0.08}s`,
+                          }} />
+                        ))}
+                      </div>
+                    )}
+                    {/* Listening indicator */}
+                    {aiListening && !aiTutorSpeaking && (
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-[3px]">
+                        {[3,5,4,6,4,5,3].map((h,i) => (
+                          <div key={i} className="rounded-full" style={{
+                            width: 3, height: h * 2,
+                            background: "rgba(0,255,160,0.80)",
+                            animation: `pulse ${0.5+(i%4)*0.12}s ease-in-out infinite alternate`,
+                            animationDelay: `${i*0.09}s`,
+                          }} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Label + chat toggle button */}
+                  <div className="flex flex-col items-center gap-2">
+                    {/* Platform glow */}
+                    <div className="holo-platform rounded-full" style={{
+                      width: 140, height: 10,
+                      background: "radial-gradient(ellipse at center, rgba(0,225,255,0.45) 0%, rgba(0,100,255,0.15) 60%, transparent 100%)",
+                      filter: "blur(5px)",
+                    }} />
+                    {/* Clickable AI Tutor button — opens/closes chat */}
+                    <button
+                      onClick={() => setAiChatPanelOpen(v => !v)}
+                      data-testid="button-ai-chat-toggle"
+                      className="flex items-center gap-2 px-5 py-2 rounded-full transition-all hover:scale-105 active:scale-95"
+                      style={{
+                        background: aiChatPanelOpen
+                          ? "rgba(0,80,180,0.80)"
+                          : "rgba(0,50,120,0.70)",
+                        border: `1.5px solid ${aiChatPanelOpen ? "rgba(0,225,255,0.70)" : "rgba(0,225,255,0.35)"}`,
+                        backdropFilter: "blur(10px)",
+                        boxShadow: aiChatPanelOpen
+                          ? "0 0 20px rgba(0,225,255,0.35), 0 4px 20px rgba(0,0,0,0.40)"
+                          : "0 4px 20px rgba(0,0,0,0.40)",
+                      }}
+                    >
+                      <BrainCircuit className="w-4 h-4" style={{ color: "rgba(0,225,255,0.90)" }} />
+                      <span className="text-[13px] font-bold" style={{ color: "rgba(255,255,255,0.95)" }}>AI Tutor</span>
+                      {aiChatPanelOpen
+                        ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />
+                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />}
+                    </button>
+                    {/* Status line */}
+                    <div className="flex items-center gap-1.5">
+                      {aiTutorSpeaking ? (
+                        <div className="flex items-end gap-[2px]">
+                          {[3,5,4,6,3,5,4].map((h,i) => (
+                            <div key={i} className="rounded-full" style={{
+                              width: 2.5, height: h,
+                              background: "rgba(0,225,255,0.85)",
+                              animation: `pulse ${0.3+(i%3)*0.1}s ease-in-out infinite alternate`,
+                              animationDelay: `${i*0.07}s`,
+                            }} />
+                          ))}
+                        </div>
+                      ) : aiListening ? (
+                        <div className="flex items-end gap-[2px]">
+                          {[3,4,3,5,3,4,3].map((h,i) => (
+                            <div key={i} className="rounded-full" style={{
+                              width: 2.5, height: h,
+                              background: "rgba(0,255,160,0.85)",
+                              animation: `pulse ${0.4+(i%3)*0.12}s ease-in-out infinite alternate`,
+                              animationDelay: `${i*0.09}s`,
+                            }} />
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                      )}
+                      <span className="text-[11px] font-medium" style={{
+                        color: aiTutorSpeaking ? "rgba(0,225,255,0.80)" : aiListening ? "rgba(0,255,160,0.85)" : "rgba(0,225,255,0.60)"
+                      }}>
+                        {aiTutorSpeaking ? "Speaking…" : aiListening ? "Listening…" : "Ready"}
+                      </span>
+                    </div>
+                    {/* Dismiss link */}
+                    <button
+                      onClick={toggleAiTutor}
+                      data-testid="button-dismiss-ai-tutor-label"
+                      className="text-[10px] mt-0.5 transition-colors hover:opacity-80"
+                      style={{ color: "rgba(255,120,120,0.60)" }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Chat Panel (shown when aiChatPanelOpen — to right in row, or below in col) ── */}
                 {aiChatPanelOpen && (
                 <div
-                  className="flex flex-col rounded-2xl overflow-hidden shadow-2xl order-last"
+                  className="flex flex-col rounded-2xl overflow-hidden shadow-2xl"
                   style={{
                     width: 310,
                     background: "rgba(8,12,32,0.93)",
@@ -6068,138 +6371,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 </div>
                 )}
 
-                {/* ── Center: Holographic Face ── */}
-                <div className="flex flex-col items-center gap-4 ai-float" style={{ marginTop: 20 }}>
-                  <div className="relative" style={{ width: 220, height: 220 }}>
-
-                    {/* Outer speak-ping */}
-                    {aiTutorSpeaking && (
-                      <div className="absolute inset-0 rounded-full animate-ping pointer-events-none"
-                        style={{ background: "rgba(0,225,255,0.12)", animationDuration: "1.3s" }} />
-                    )}
-
-                    {/* Rotating gradient ring */}
-                    <div className="absolute rounded-full holo-ring-rotate pointer-events-none" style={{
-                      inset: -3,
-                      background: "conic-gradient(rgba(0,225,255,0.9) 0deg, rgba(80,120,255,0.4) 120deg, rgba(160,80,255,0.5) 200deg, rgba(0,225,255,0.9) 360deg)",
-                      borderRadius: "50%",
-                      padding: 2,
-                    }}>
-                      <div className="w-full h-full rounded-full" style={{ background: "rgba(6,10,30,0.95)" }} />
-                    </div>
-
-                    {/* Static glow border */}
-                    <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-                      boxShadow: aiTutorSpeaking
-                        ? "0 0 40px rgba(0,225,255,0.65), 0 0 80px rgba(0,100,255,0.28), inset 0 0 30px rgba(0,120,255,0.15)"
-                        : "0 0 20px rgba(0,225,255,0.32), inset 0 0 18px rgba(0,80,200,0.12)",
-                      border: `2px solid ${aiTutorSpeaking ? "rgba(0,225,255,0.90)" : "rgba(0,225,255,0.45)"}`,
-                      borderRadius: "50%",
-                    }} />
-
-                    {/* Face container — real AI face image */}
-                    <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center"
-                      style={{ background: "radial-gradient(ellipse at 45% 30%, rgba(20,30,80,0.95) 0%, rgba(4,8,24,0.99) 80%)" }}>
-                      <img
-                        src="/ai-face.png"
-                        alt="AI Tutor"
-                        className="w-full h-full object-cover object-top"
-                        style={{ transform: "scale(1.08)", transformOrigin: "center 35%" }}
-                      />
-                      {/* Holographic scan-line overlay */}
-                      <div className="absolute inset-0 pointer-events-none" style={{
-                        background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,225,255,0.015) 3px, rgba(0,225,255,0.015) 4px)",
-                        mixBlendMode: "screen",
-                      }} />
-                      {/* Cyan bottom fade for depth */}
-                      <div className="absolute bottom-0 inset-x-0 h-1/4 pointer-events-none" style={{
-                        background: "linear-gradient(to top, rgba(0,80,180,0.30) 0%, transparent 100%)",
-                      }} />
-                      {/* Speaking lip-sync shimmer */}
-                      {aiTutorSpeaking && (
-                        <div className="absolute inset-0 pointer-events-none rounded-full" style={{
-                          background: "radial-gradient(ellipse at 50% 72%, rgba(0,225,255,0.18) 0%, transparent 60%)",
-                          animation: "pulse 0.5s ease-in-out infinite alternate",
-                        }} />
-                      )}
-                    </div>
-
-                    {/* Speaking waveform */}
-                    {aiTutorSpeaking && (
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-[3px]">
-                        {[4,6,8,10,8,6,4].map((h,i) => (
-                          <div key={i} className="rounded-full" style={{
-                            width: 3, height: h * 2,
-                            background: "rgba(0,225,255,0.85)",
-                            animation: `pulse ${0.4+(i%3)*0.15}s ease-in-out infinite alternate`,
-                            animationDelay: `${i*0.08}s`,
-                          }} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Label + chat toggle button */}
-                  <div className="flex flex-col items-center gap-2">
-                    {/* Platform glow */}
-                    <div className="holo-platform rounded-full" style={{
-                      width: 140, height: 10,
-                      background: "radial-gradient(ellipse at center, rgba(0,225,255,0.45) 0%, rgba(0,100,255,0.15) 60%, transparent 100%)",
-                      filter: "blur(5px)",
-                    }} />
-                    {/* Clickable AI Tutor button — opens/closes chat */}
-                    <button
-                      onClick={() => setAiChatPanelOpen(v => !v)}
-                      data-testid="button-ai-chat-toggle"
-                      className="flex items-center gap-2 px-5 py-2 rounded-full transition-all hover:scale-105 active:scale-95"
-                      style={{
-                        background: aiChatPanelOpen
-                          ? "rgba(0,80,180,0.80)"
-                          : "rgba(0,50,120,0.70)",
-                        border: `1.5px solid ${aiChatPanelOpen ? "rgba(0,225,255,0.70)" : "rgba(0,225,255,0.35)"}`,
-                        backdropFilter: "blur(10px)",
-                        boxShadow: aiChatPanelOpen
-                          ? "0 0 20px rgba(0,225,255,0.35), 0 4px 20px rgba(0,0,0,0.40)"
-                          : "0 4px 20px rgba(0,0,0,0.40)",
-                      }}
-                    >
-                      <BrainCircuit className="w-4 h-4" style={{ color: "rgba(0,225,255,0.90)" }} />
-                      <span className="text-[13px] font-bold" style={{ color: "rgba(255,255,255,0.95)" }}>AI Tutor</span>
-                      {aiChatPanelOpen
-                        ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />
-                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />}
-                    </button>
-                    {/* Status line */}
-                    <div className="flex items-center gap-1.5">
-                      {aiTutorSpeaking ? (
-                        <div className="flex items-end gap-[2px]">
-                          {[3,5,4,6,3,5,4].map((h,i) => (
-                            <div key={i} className="rounded-full" style={{
-                              width: 2.5, height: h,
-                              background: "rgba(0,225,255,0.85)",
-                              animation: `pulse ${0.3+(i%3)*0.1}s ease-in-out infinite alternate`,
-                              animationDelay: `${i*0.07}s`,
-                            }} />
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                      )}
-                      <span className="text-[11px] font-medium" style={{ color: "rgba(0,225,255,0.80)" }}>
-                        {aiTutorSpeaking ? "Speaking…" : "Listening"}
-                      </span>
-                    </div>
-                    {/* Dismiss link */}
-                    <button
-                      onClick={toggleAiTutor}
-                      data-testid="button-dismiss-ai-tutor-label"
-                      className="text-[10px] mt-0.5 transition-colors hover:opacity-80"
-                      style={{ color: "rgba(255,120,120,0.60)" }}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           )}
