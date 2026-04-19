@@ -548,7 +548,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [aiTutorSpeaking, setAiTutorSpeaking] = useState(false);
   const [aiTutorLoading, setAiTutorLoading] = useState(false);
   const [aiTutorControlOpen, setAiTutorControlOpen] = useState(false);
-  const [aiChatPanelOpen, setAiChatPanelOpen] = useState(true);
+  const [aiChatPanelOpen, setAiChatPanelOpen] = useState(false);
   const [aiConversation, setAiConversation] = useState<Array<{
     id: string;
     role: "ai" | "user";
@@ -1981,7 +1981,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       const introText = `Let's practice talking about your daily routine! What time do you usually wake up?`;
       setAiTutorActive(true);
       setAiTutorControlOpen(false);
-      setAiChatPanelOpen(true);
+      setAiChatPanelOpen(false);
       setAiConversation([{ id: "intro", role: "ai", text: introText }]);
       speakAiText(introText, aiTutorSettings.voice, aiTutorSettings.speed);
     } else {
@@ -5918,17 +5918,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {/* ── AI Tutor: Unified centered overlay ── */}
           {aiTutorActive && (
             <div
-              className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none animate-fade-in-up"
+              className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
               data-testid="ai-tutor-overlay"
             >
-              <div className="pointer-events-auto flex items-start gap-6" style={{ marginTop: 20 }}>
+              <div className="pointer-events-auto flex flex-col items-center gap-3" style={{ marginTop: -40 }}>
 
-                {/* ── Left: Chat Panel ── */}
+                {/* ── Face Circle ── */}
+                {/* (face section starts below — holographic face first, then label, then chat) */}
+
+                {/* ── Chat Panel (below face, shown only when aiChatPanelOpen) ── */}
+                {aiChatPanelOpen && (
                 <div
-                  className="flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+                  className="flex flex-col rounded-2xl overflow-hidden shadow-2xl order-last"
                   style={{
-                    width: 290,
-                    background: "rgba(8,12,32,0.92)",
+                    width: 310,
+                    background: "rgba(8,12,32,0.93)",
                     border: "1px solid rgba(0,225,255,0.18)",
                     backdropFilter: "blur(24px)",
                     boxShadow: "0 20px 60px rgba(0,0,0,0.70), 0 0 40px rgba(0,80,255,0.08)",
@@ -5937,75 +5941,41 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 >
                   {/* Chat header */}
                   <div
-                    className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
+                    className="flex items-center justify-between px-4 py-2.5 border-b flex-shrink-0"
                     style={{ borderColor: "rgba(0,225,255,0.12)" }}
                   >
                     <div className="flex items-center gap-2.5">
-                      {/* Mini face avatar — real image */}
-                      <div
-                        className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0"
-                        style={{ border: "1.5px solid rgba(0,225,255,0.55)", boxShadow: "0 0 10px rgba(0,225,255,0.35)" }}
-                      >
+                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
+                        style={{ border: "1.5px solid rgba(0,225,255,0.50)", boxShadow: "0 0 8px rgba(0,225,255,0.30)" }}>
                         <img src="/ai-face.png" alt="AI" className="w-full h-full object-cover object-top" />
                       </div>
                       <div>
-                        <span className="text-[13px] font-bold" style={{ color: "rgba(255,255,255,0.95)" }}>AI Tutor</span>
+                        <span className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>AI Tutor Chat</span>
                         <div className="flex items-center gap-1 mt-0.5">
-                          {aiTutorSpeaking ? (
-                            <div className="flex items-end gap-[2px]">
-                              {[3,5,4,6,4,5,3].map((h,i) => (
-                                <div key={i} className="rounded-full" style={{
-                                  width: 2, height: h,
-                                  background: "rgba(0,225,255,0.85)",
-                                  animation: `pulse ${0.3+(i%3)*0.1}s ease-in-out infinite alternate`,
-                                  animationDelay: `${i*0.06}s`,
-                                }} />
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                          )}
-                          <span className="text-[10px] ml-1" style={{ color: "rgba(0,225,255,0.75)" }}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                          <span className="text-[10px]" style={{ color: "rgba(0,225,255,0.70)" }}>
                             {aiTutorSpeaking ? "Speaking…" : "Listening"}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setAiTutorControlOpen(v => !v)}
+                      <button onClick={() => setAiTutorControlOpen(v => !v)}
                         data-testid="button-ai-tutor-gear"
                         className="w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
-                        style={{ color: "rgba(255,255,255,0.50)", border: "1px solid rgba(255,255,255,0.12)" }}
-                        title="Settings"
-                      >
+                        style={{ color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.10)" }} title="Settings">
                         <Settings className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => setAiChatPanelOpen(v => !v)}
-                        data-testid="button-ai-chat-toggle"
+                      <button onClick={() => setAiChatPanelOpen(false)}
+                        data-testid="button-close-chat"
                         className="w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
-                        style={{ color: "rgba(255,255,255,0.50)", border: "1px solid rgba(255,255,255,0.12)" }}
-                        title={aiChatPanelOpen ? "Hide chat" : "Show chat"}
-                      >
-                        {aiChatPanelOpen
-                          ? <ChevronDown className="w-3.5 h-3.5" />
-                          : <ChevronUp className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        onClick={toggleAiTutor}
-                        data-testid="button-dismiss-ai-tutor"
-                        className="w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-red-500/20"
-                        style={{ color: "rgba(255,100,100,0.70)", border: "1px solid rgba(255,100,100,0.20)" }}
-                        title="Dismiss AI Tutor"
-                      >
+                        style={{ color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.10)" }} title="Close chat">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Messages + Input (collapsible) */}
-                  {aiChatPanelOpen && (
+                  {/* Messages + Input */}
                   <div className="flex flex-col">
                   <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ minHeight: 180, maxHeight: 260 }} data-testid="ai-tutor-conversation">
                     {aiConversation.slice(-6).map((msg) => (
@@ -6095,8 +6065,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     </button>
                   </div>
                   </div>
-                  )}
                 </div>
+                )}
 
                 {/* ── Center: Holographic Face ── */}
                 <div className="flex flex-col items-center gap-4 ai-float" style={{ marginTop: 20 }}>
@@ -6169,25 +6139,65 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     )}
                   </div>
 
-                  {/* Label & status */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-full"
-                      style={{ background: "rgba(0,60,120,0.60)", border: "1px solid rgba(0,225,255,0.28)", backdropFilter: "blur(8px)" }}>
-                      <BrainCircuit className="w-4 h-4" style={{ color: "rgba(0,225,255,0.85)" }} />
-                      <span className="text-[13px] font-bold" style={{ color: "rgba(255,255,255,0.95)" }}>AI Tutor</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                      <span className="text-[11px] font-medium" style={{ color: "rgba(0,225,255,0.80)" }}>
-                        {aiTutorSpeaking ? "Speaking" : "Listening"}
-                      </span>
-                    </div>
+                  {/* Label + chat toggle button */}
+                  <div className="flex flex-col items-center gap-2">
                     {/* Platform glow */}
                     <div className="holo-platform rounded-full" style={{
-                      width: 130, height: 12, marginTop: 4,
-                      background: "radial-gradient(ellipse at center, rgba(0,225,255,0.40) 0%, rgba(0,100,255,0.15) 60%, transparent 100%)",
-                      filter: "blur(4px)",
+                      width: 140, height: 10,
+                      background: "radial-gradient(ellipse at center, rgba(0,225,255,0.45) 0%, rgba(0,100,255,0.15) 60%, transparent 100%)",
+                      filter: "blur(5px)",
                     }} />
+                    {/* Clickable AI Tutor button — opens/closes chat */}
+                    <button
+                      onClick={() => setAiChatPanelOpen(v => !v)}
+                      data-testid="button-ai-chat-toggle"
+                      className="flex items-center gap-2 px-5 py-2 rounded-full transition-all hover:scale-105 active:scale-95"
+                      style={{
+                        background: aiChatPanelOpen
+                          ? "rgba(0,80,180,0.80)"
+                          : "rgba(0,50,120,0.70)",
+                        border: `1.5px solid ${aiChatPanelOpen ? "rgba(0,225,255,0.70)" : "rgba(0,225,255,0.35)"}`,
+                        backdropFilter: "blur(10px)",
+                        boxShadow: aiChatPanelOpen
+                          ? "0 0 20px rgba(0,225,255,0.35), 0 4px 20px rgba(0,0,0,0.40)"
+                          : "0 4px 20px rgba(0,0,0,0.40)",
+                      }}
+                    >
+                      <BrainCircuit className="w-4 h-4" style={{ color: "rgba(0,225,255,0.90)" }} />
+                      <span className="text-[13px] font-bold" style={{ color: "rgba(255,255,255,0.95)" }}>AI Tutor</span>
+                      {aiChatPanelOpen
+                        ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />
+                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />}
+                    </button>
+                    {/* Status line */}
+                    <div className="flex items-center gap-1.5">
+                      {aiTutorSpeaking ? (
+                        <div className="flex items-end gap-[2px]">
+                          {[3,5,4,6,3,5,4].map((h,i) => (
+                            <div key={i} className="rounded-full" style={{
+                              width: 2.5, height: h,
+                              background: "rgba(0,225,255,0.85)",
+                              animation: `pulse ${0.3+(i%3)*0.1}s ease-in-out infinite alternate`,
+                              animationDelay: `${i*0.07}s`,
+                            }} />
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                      )}
+                      <span className="text-[11px] font-medium" style={{ color: "rgba(0,225,255,0.80)" }}>
+                        {aiTutorSpeaking ? "Speaking…" : "Listening"}
+                      </span>
+                    </div>
+                    {/* Dismiss link */}
+                    <button
+                      onClick={toggleAiTutor}
+                      data-testid="button-dismiss-ai-tutor-label"
+                      className="text-[10px] mt-0.5 transition-colors hover:opacity-80"
+                      style={{ color: "rgba(255,120,120,0.60)" }}
+                    >
+                      Dismiss
+                    </button>
                   </div>
                 </div>
               </div>
