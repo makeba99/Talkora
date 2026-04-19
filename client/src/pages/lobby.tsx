@@ -376,7 +376,6 @@ export default function Lobby() {
   const viewedAnnouncementIdsRef = useRef<Set<string>>(new Set());
   const [liveVoteCounts, setLiveVoteCounts] = useState<Record<string, number>>({ ...BASE_SAMPLE_VOTE_COUNTS });
   const [liveParticipants, setLiveParticipants] = useState<Record<string, User[]>>({ ...BASE_SAMPLE_PARTICIPANTS });
-  const [activityFlash, setActivityFlash] = useState<{ name: string; roomTitle: string; action: "joined" | "left" } | null>(null);
 
   useEffect(() => {
     const sampleRoomIds = SAMPLE_ROOMS.map((r) => r.id);
@@ -391,24 +390,17 @@ export default function Lobby() {
           const curr = prev[roomId] ?? BASE_SAMPLE_VOTE_COUNTS[roomId] ?? 0;
           const delta = Math.floor(Math.random() * 3) + 1;
           const direction = Math.random() > 0.35 ? 1 : -1;
-          const next = Math.max(1, curr + direction * delta);
-          return { ...prev, [roomId]: next };
+          return { ...prev, [roomId]: Math.max(1, curr + direction * delta) };
         });
       } else if (roll < 0.82) {
         setLiveParticipants((prev) => {
           const currParts = prev[roomId] ?? BASE_SAMPLE_PARTICIPANTS[roomId] ?? [];
-          const maxUsers = room.maxUsers;
           const allPool = ALL_SAMPLE_USERS.filter((u) => !currParts.some((p) => p.id === u.id));
-          if (currParts.length < maxUsers && allPool.length > 0 && Math.random() > 0.4) {
+          if (currParts.length < room.maxUsers && allPool.length > 0 && Math.random() > 0.4) {
             const newUser = allPool[Math.floor(Math.random() * allPool.length)];
-            const flash = { name: newUser.displayName || newUser.firstName || "Someone", roomTitle: room.title, action: "joined" as const };
-            setTimeout(() => { setActivityFlash(flash); setTimeout(() => setActivityFlash(null), 3500); }, 0);
             return { ...prev, [roomId]: [...currParts, newUser] };
           } else if (currParts.length > 1) {
             const removeIdx = Math.floor(Math.random() * (currParts.length - 1)) + 1;
-            const removed = currParts[removeIdx];
-            const flash = { name: removed.displayName || removed.firstName || "Someone", roomTitle: room.title, action: "left" as const };
-            setTimeout(() => { setActivityFlash(flash); setTimeout(() => setActivityFlash(null), 3500); }, 0);
             return { ...prev, [roomId]: currParts.filter((_, i) => i !== removeIdx) };
           }
           return prev;
@@ -1239,24 +1231,6 @@ export default function Lobby() {
         />
       )}
 
-      <div
-        className={`fixed bottom-6 left-6 z-50 transition-all duration-500 ${activityFlash ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}
-        data-testid="activity-flash-toast"
-      >
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-2xl border text-sm font-medium"
-          style={{
-            background: "rgba(15,20,40,0.94)",
-            borderColor: activityFlash?.action === "joined" ? "rgba(0,220,100,0.4)" : "rgba(255,100,100,0.4)",
-            color: activityFlash?.action === "joined" ? "rgba(0,220,120,1)" : "rgba(255,120,100,1)",
-          }}>
-          <span className="text-base">{activityFlash?.action === "joined" ? "🟢" : "🔴"}</span>
-          <span>
-            <span className="text-white font-semibold">{activityFlash?.name}</span>
-            {" "}{activityFlash?.action === "joined" ? "joined" : "left"}{" "}
-            <span className="opacity-80">{activityFlash?.roomTitle}</span>
-          </span>
-        </div>
-      </div>
     </div>
   );
 }
