@@ -61,20 +61,15 @@
   50% { opacity: 0.9; transform: scaleX(1.05); }
 }
 
-@keyframes mouthTalk {
-  0%   { transform: translateX(-50%) scaleY(0.15); }
-  25%  { transform: translateX(-50%) scaleY(1); }
-  50%  { transform: translateX(-50%) scaleY(0.3); }
-  75%  { transform: translateX(-50%) scaleY(0.9); }
-  100% { transform: translateX(-50%) scaleY(0.15); }
+@keyframes svgMouthOpen {
+  from { ry: 1; }
+  to   { ry: 9; }
 }
 
-@keyframes mouthTalkLip {
-  0%   { transform: translateX(-50%) scaleY(1); }
-  25%  { transform: translateX(-50%) scaleY(1.6); }
-  50%  { transform: translateX(-50%) scaleY(1.1); }
-  75%  { transform: translateX(-50%) scaleY(1.5); }
-  100% { transform: translateX(-50%) scaleY(1); }
+@keyframes svgLipSync {
+  0%   { d: path("M 8 14 C 18 19 42 19 52 14"); }
+  50%  { d: path("M 8 14 C 18 27 42 27 52 14"); }
+  100% { d: path("M 8 14 C 18 22 42 22 52 14"); }
 }
 
 @keyframes listenPulse {

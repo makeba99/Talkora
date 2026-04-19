@@ -554,6 +554,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const aiSpeakingRef = useRef(false);
   const aiLoadingRef = useRef(false);
   const aiActiveRef = useRef(false);
+  // Room-wide AI Tutor state
+  const [roomAiTutorSession, setRoomAiTutorSession] = useState<{
+    active: boolean; userId: string | null; username: string | null; speaking: boolean;
+  }>({ active: false, userId: null, username: null, speaking: false });
+  const [roomAiTutorEnabled, setRoomAiTutorEnabled] = useState(true);
   const [aiConversation, setAiConversation] = useState<Array<{
     id: string;
     role: "ai" | "user";
@@ -1608,6 +1613,44 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setChatMessages(prev => [welcomeMsg, ...prev.filter(m => m.type !== "welcome")]);
     });
 
+    // ── Room AI Tutor state listeners ──
+    socket.on("room:ai-tutor-state", (data: { active: boolean; userId: string | null; username: string | null; speaking: boolean }) => {
+      setRoomAiTutorSession(data);
+      // If someone else took the slot or host disabled it, dismiss our local AI tutor
+      if (!data.active && aiActiveRef.current) {
+        const isMine = data.userId === null;
+        if (isMine) {
+          // our session was forcibly ended
+          window.speechSynthesis?.cancel();
+          setAiTutorActive(false);
+          setAiChatPanelOpen(false);
+          setAiConversation([]);
+          aiActiveRef.current = false;
+          try { aiRecognitionRef.current?.abort(); } catch {}
+          setAiListening(false);
+        }
+      }
+    });
+    socket.on("room:ai-tutor-busy", (data: { userId: string; username: string }) => {
+      toast({ title: `AI Tutor is busy`, description: `${data.username} is currently using the AI Tutor. Please wait.`, variant: "destructive" });
+    });
+    socket.on("room:ai-tutor-disabled", () => {
+      toast({ title: "AI Tutor restricted", description: "The host has disabled the AI Tutor in this room.", variant: "destructive" });
+    });
+    socket.on("room:ai-tutor-enabled-changed", (data: { enabled: boolean }) => {
+      setRoomAiTutorEnabled(data.enabled);
+      if (!data.enabled && aiActiveRef.current) {
+        window.speechSynthesis?.cancel();
+        setAiTutorActive(false);
+        setAiChatPanelOpen(false);
+        setAiConversation([]);
+        aiActiveRef.current = false;
+        try { aiRecognitionRef.current?.abort(); } catch {}
+        setAiListening(false);
+        toast({ title: "AI Tutor disabled", description: "The host has turned off the AI Tutor.", variant: "destructive" });
+      }
+    });
+
     let roomBc: BroadcastChannel | null = null;
     try {
       roomBc = new BroadcastChannel(`connect-room-${user.id}`);
@@ -1655,6 +1698,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("user:blocked");
       socket.off("user:unblocked");
       socket.off("room:welcome-message");
+      socket.off("room:ai-tutor-state");
+      socket.off("room:ai-tutor-busy");
+      socket.off("room:ai-tutor-disabled");
+      socket.off("room:ai-tutor-enabled-changed");
       localStream.current?.getTracks().forEach((t) => t.stop());
       screenStream.current?.getTracks().forEach((t) => t.stop());
       videoStream.current?.getTracks().forEach((t) => t.stop());
@@ -1974,9 +2021,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         if (chosen) utter.voice = chosen;
       }
       setAiTutorSpeaking(true);
+      socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: true });
       utter.onend = () => {
         setAiTutorSpeaking(false);
         aiSpeakingRef.current = false;
+        socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: false });
         // Restart listening after AI finishes speaking
         setTimeout(() => {
           if (aiActiveRef.current && !aiLoadingRef.current) {
@@ -1987,6 +2036,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       utter.onerror = () => {
         setAiTutorSpeaking(false);
         aiSpeakingRef.current = false;
+        socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: false });
         setTimeout(() => {
           if (aiActiveRef.current && !aiLoadingRef.current) {
             startAiListening();
@@ -2004,7 +2054,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const toggleAiTutor = () => {
     if (!aiTutorActive) {
-      const introText = `Let's practice talking about your daily routine! What time do you usually wake up?`;
+      // Emit to server to claim the AI tutor slot
+      socket?.emit("room:ai-tutor-start", {
+        roomId: room.id,
+        userId: user?.id,
+        username: user?.displayName || user?.username || "User",
+      });
+      const lang = room.language || "English";
+      const intros = [
+        `Hi! Let's have a real conversation in ${lang}. What did you do today?`,
+        `Hey there! I'm your ${lang} practice buddy. Tell me something interesting about yourself!`,
+        `Hello! Ready to chat in ${lang}? What topic would you love to talk about?`,
+        `Great to meet you! Let's practice ${lang} together. What's been on your mind lately?`,
+        `Hi! Let's dive into some ${lang} conversation. How was your day so far?`,
+      ];
+      const introText = intros[Math.floor(Math.random() * intros.length)];
       setAiTutorActive(true);
       setAiTutorControlOpen(false);
       setAiChatPanelOpen(false);
@@ -2012,6 +2076,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       speakAiText(introText, aiTutorSettings.voice, aiTutorSettings.speed);
     } else {
       window.speechSynthesis?.cancel();
+      socket?.emit("room:ai-tutor-stop", { roomId: room.id, userId: user?.id });
       setAiTutorActive(false);
       setAiTutorControlOpen(false);
       setAiConversation([]);
@@ -6005,18 +6070,37 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           </div>
 
-          {/* ── AI Tutor: Unified centered overlay ── */}
+          {/* ── AI Tutor "in use" indicator for other participants ── */}
+          {!aiTutorActive && roomAiTutorSession?.active && roomAiTutorSession.userId !== user?.id && (
+            <div
+              className="fixed top-20 left-1/2 z-[58] -translate-x-1/2 flex items-center gap-2 px-3.5 py-1.5 rounded-full pointer-events-none"
+              style={{
+                background: "rgba(8,12,32,0.88)",
+                border: "1px solid rgba(0,225,255,0.25)",
+                backdropFilter: "blur(16px)",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.40)",
+              }}
+              data-testid="ai-tutor-in-use-badge"
+            >
+              <span className="w-1.5 h-1.5 rounded-full"
+                style={{ background: roomAiTutorSession.speaking ? "rgba(0,225,255,0.90)" : "rgba(0,200,100,0.80)", boxShadow: roomAiTutorSession.speaking ? "0 0 6px rgba(0,225,255,0.70)" : "none", animation: "pulse 1.2s ease-in-out infinite" }} />
+              <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>
+                <span style={{ color: "rgba(0,225,255,0.90)" }}>{roomAiTutorSession.username}</span>
+                {" "}is practicing with AI Tutor
+              </span>
+            </div>
+          )}
+
+          {/* ── AI Tutor: Face always fixed at screen center ── */}
           {aiTutorActive && (
             <div
               className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
               data-testid="ai-tutor-overlay"
             >
               <div
-                className={`pointer-events-auto flex ${aiChatPanelOpen ? "flex-row items-center gap-8" : "flex-col items-center gap-3"}`}
+                className="pointer-events-auto flex flex-col items-center gap-3"
                 style={{ marginTop: -40 }}
               >
-
-                {/* ── Center: Holographic Face (always first child = left in row, center in col) ── */}
                 <div className="flex flex-col items-center gap-4 ai-float" style={{ marginTop: 20 }}>
                   <div className="relative" style={{ width: 220, height: 220 }}>
 
@@ -6068,55 +6152,54 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <div className="absolute bottom-0 inset-x-0 h-1/4 pointer-events-none" style={{
                         background: "linear-gradient(to top, rgba(0,80,180,0.30) 0%, transparent 100%)",
                       }} />
-                      {/* Animated mouth overlay — natural lip movement */}
-                      <div style={{
-                        position: "absolute",
-                        left: "50%",
-                        top: "70%",
-                        pointerEvents: "none",
-                        width: 44,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 0,
-                        transform: "translateX(-50%)",
-                      }}>
-                        {/* Upper lip arc */}
-                        <div style={{
-                          width: 44,
-                          height: 7,
-                          background: "linear-gradient(to bottom, rgba(220,140,140,0.80) 0%, rgba(190,100,100,0.60) 100%)",
-                          borderRadius: "50% 50% 0 0 / 100% 100% 0 0",
-                          boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
-                        }} />
-                        {/* Mouth opening — animates when speaking */}
-                        <div style={{
+                      {/* Animated SVG mouth — precise lip sync */}
+                      <svg
+                        viewBox="0 0 60 28"
+                        style={{
                           position: "absolute",
-                          top: 4,
                           left: "50%",
-                          width: 34,
-                          height: aiTutorSpeaking ? 14 : 3,
-                          background: aiTutorSpeaking
-                            ? "radial-gradient(ellipse at 50% 30%, rgba(40,10,10,0.95) 40%, rgba(80,20,20,0.85) 100%)"
-                            : "rgba(30,8,8,0.80)",
-                          borderRadius: aiTutorSpeaking ? "40% 40% 50% 50% / 30% 30% 70% 70%" : "0 0 50% 50% / 0 0 100% 100%",
-                          animation: aiTutorSpeaking ? "mouthTalk 0.28s ease-in-out infinite" : "none",
-                          transformOrigin: "center top",
-                          transition: "height 0.12s ease, border-radius 0.12s ease",
-                        }} />
-                        {/* Lower lip arc */}
-                        <div style={{
-                          width: 44,
-                          height: 6,
-                          background: "linear-gradient(to top, rgba(220,140,140,0.75) 0%, rgba(190,100,100,0.50) 100%)",
-                          borderRadius: "0 0 50% 50% / 0 0 100% 100%",
-                          boxShadow: "0 -1px 3px rgba(0,0,0,0.25)",
-                          marginTop: aiTutorSpeaking ? 10 : 2,
-                          transition: "margin-top 0.12s ease",
-                          animation: aiTutorSpeaking ? "mouthTalkLip 0.28s ease-in-out infinite" : "none",
-                          transformOrigin: "center bottom",
-                        }} />
-                      </div>
+                          top: "70%",
+                          width: 52,
+                          height: 22,
+                          transform: "translateX(-50%)",
+                          pointerEvents: "none",
+                          filter: aiTutorSpeaking ? "drop-shadow(0 0 4px rgba(255,150,150,0.55))" : "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
+                          overflow: "visible",
+                        }}
+                      >
+                        {/* Dark inner mouth */}
+                        <ellipse
+                          cx="30" cy="16"
+                          rx={aiTutorSpeaking ? 18 : 14}
+                          ry={aiTutorSpeaking ? 7 : 1}
+                          fill="rgba(18,4,4,0.92)"
+                          style={{
+                            transition: "rx 0.08s ease, ry 0.08s ease",
+                            animation: aiTutorSpeaking ? "svgMouthOpen 0.25s ease-in-out infinite alternate" : "none",
+                          }}
+                        />
+                        {/* Upper lip — cupid's bow shape */}
+                        <path
+                          d="M 8 14 C 14 8 22 12 30 13 C 38 12 46 8 52 14"
+                          fill="rgba(215,125,125,0.88)"
+                          stroke="rgba(180,90,90,0.50)"
+                          strokeWidth="0.5"
+                        />
+                        {/* Lower lip */}
+                        <path
+                          d={aiTutorSpeaking
+                            ? "M 8 14 C 18 26 42 26 52 14"
+                            : "M 8 14 C 18 19 42 19 52 14"
+                          }
+                          fill="rgba(205,115,115,0.80)"
+                          stroke="rgba(180,90,90,0.35)"
+                          strokeWidth="0.5"
+                          style={{
+                            transition: "d 0.1s ease",
+                            animation: aiTutorSpeaking ? "svgLipSync 0.25s ease-in-out infinite alternate" : "none",
+                          }}
+                        />
+                      </svg>
                       {/* Speaking lip-sync shimmer */}
                       {aiTutorSpeaking && (
                         <div className="absolute inset-0 pointer-events-none rounded-full" style={{
@@ -6229,148 +6312,151 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 </div>
 
-                {/* ── Chat Panel (shown when aiChatPanelOpen — to right in row, or below in col) ── */}
-                {aiChatPanelOpen && (
-                <div
-                  className="flex flex-col rounded-2xl overflow-hidden shadow-2xl"
-                  style={{
-                    width: 310,
-                    background: "rgba(8,12,32,0.93)",
-                    border: "1px solid rgba(0,225,255,0.18)",
-                    backdropFilter: "blur(24px)",
-                    boxShadow: "0 20px 60px rgba(0,0,0,0.70), 0 0 40px rgba(0,80,255,0.08)",
-                  }}
-                  data-testid="ai-tutor-chat-panel"
-                >
-                  {/* Chat header */}
-                  <div
-                    className="flex items-center justify-between px-4 py-2.5 border-b flex-shrink-0"
-                    style={{ borderColor: "rgba(0,225,255,0.12)" }}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
-                        style={{ border: "1.5px solid rgba(0,225,255,0.50)", boxShadow: "0 0 8px rgba(0,225,255,0.30)" }}>
-                        <img src="/ai-face.png" alt="AI" className="w-full h-full object-cover object-top" />
-                      </div>
-                      <div>
-                        <span className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>AI Tutor Chat</span>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                          <span className="text-[10px]" style={{ color: "rgba(0,225,255,0.70)" }}>
-                            {aiTutorSpeaking ? "Speaking…" : "Listening"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => setAiTutorControlOpen(v => !v)}
-                        data-testid="button-ai-tutor-gear"
-                        className="w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
-                        style={{ color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.10)" }} title="Settings">
-                        <Settings className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setAiChatPanelOpen(false)}
-                        data-testid="button-close-chat"
-                        className="w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
-                        style={{ color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.10)" }} title="Close chat">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── AI Tutor Chat Panel — floats independently to the right of center ── */}
+          {aiTutorActive && aiChatPanelOpen && (
+            <div
+              className="fixed z-[61] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+              style={{
+                top: "50%",
+                left: "calc(50% + 140px)",
+                transform: "translateY(-50%)",
+                width: 310,
+                background: "rgba(8,12,32,0.93)",
+                border: "1px solid rgba(0,225,255,0.18)",
+                backdropFilter: "blur(24px)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.70), 0 0 40px rgba(0,80,255,0.08)",
+              }}
+              data-testid="ai-tutor-chat-panel"
+            >
+              {/* Chat header */}
+              <div
+                className="flex items-center justify-between px-4 py-2.5 border-b flex-shrink-0"
+                style={{ borderColor: "rgba(0,225,255,0.12)" }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
+                    style={{ border: "1.5px solid rgba(0,225,255,0.50)", boxShadow: "0 0 8px rgba(0,225,255,0.30)" }}>
+                    <img src="/ai-face.png" alt="AI" className="w-full h-full object-cover object-top" />
+                  </div>
+                  <div>
+                    <span className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>AI Tutor Chat</span>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                      <span className="text-[10px]" style={{ color: "rgba(0,225,255,0.70)" }}>
+                        {aiTutorSpeaking ? "Speaking…" : "Listening"}
+                      </span>
                     </div>
                   </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setAiTutorControlOpen(v => !v)}
+                    data-testid="button-ai-tutor-gear"
+                    className="w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
+                    style={{ color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.10)" }} title="Settings">
+                    <Settings className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setAiChatPanelOpen(false)}
+                    data-testid="button-close-chat"
+                    className="w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
+                    style={{ color: "rgba(255,255,255,0.45)", border: "1px solid rgba(255,255,255,0.10)" }} title="Close chat">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
 
-                  {/* Messages + Input */}
-                  <div className="flex flex-col">
-                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ minHeight: 180, maxHeight: 260 }} data-testid="ai-tutor-conversation">
-                    {aiConversation.slice(-6).map((msg) => (
-                      <div key={msg.id} className={`flex flex-col ${msg.role === "ai" ? "items-start" : "items-end"}`}>
+              {/* Messages + Input */}
+              <div className="flex flex-col">
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ minHeight: 180, maxHeight: 260 }} data-testid="ai-tutor-conversation">
+                  {aiConversation.slice(-6).map((msg) => (
+                    <div key={msg.id} className={`flex flex-col ${msg.role === "ai" ? "items-start" : "items-end"}`}>
+                      <div
+                        className="rounded-2xl px-3 py-2 text-[12px] leading-relaxed max-w-[240px]"
+                        style={msg.role === "ai" ? {
+                          background: "rgba(10,20,55,0.90)",
+                          border: "1px solid rgba(0,225,255,0.18)",
+                          color: "rgba(255,255,255,0.92)",
+                        } : {
+                          background: "rgba(40,50,100,0.85)",
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          color: "rgba(255,255,255,0.90)",
+                        }}
+                      >
+                        {msg.text}
+                      </div>
+                      {msg.correction && aiTutorSettings.correctionMode !== "off" && (
                         <div
-                          className="rounded-2xl px-3 py-2 text-[12px] leading-relaxed max-w-[240px]"
-                          style={msg.role === "ai" ? {
-                            background: "rgba(10,20,55,0.90)",
-                            border: "1px solid rgba(0,225,255,0.18)",
-                            color: "rgba(255,255,255,0.92)",
-                          } : {
-                            background: "rgba(40,50,100,0.85)",
-                            border: "1px solid rgba(255,255,255,0.10)",
-                            color: "rgba(255,255,255,0.90)",
+                          className="mt-1 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium"
+                          style={{
+                            background: "rgba(30,15,60,0.88)",
+                            border: "1px solid rgba(180,100,255,0.35)",
+                            color: "rgba(220,180,255,0.92)",
                           }}
                         >
-                          {msg.text}
+                          <Lightbulb className="w-3 h-3 flex-shrink-0" style={{ color: "rgba(255,200,60,0.90)" }} />
+                          {msg.correctionFixed && (
+                            <span style={{ color: "rgba(100,255,180,0.95)", fontStyle: "italic" }}>{msg.correctionFixed}</span>
+                          )}
                         </div>
-                        {msg.correction && aiTutorSettings.correctionMode !== "off" && (
-                          <div
-                            className="mt-1 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium"
-                            style={{
-                              background: "rgba(30,15,60,0.88)",
-                              border: "1px solid rgba(180,100,255,0.35)",
-                              color: "rgba(220,180,255,0.92)",
-                            }}
-                          >
-                            <Lightbulb className="w-3 h-3 flex-shrink-0" style={{ color: "rgba(255,200,60,0.90)" }} />
-                            {msg.correctionFixed && (
-                              <span style={{ color: "rgba(100,255,180,0.95)", fontStyle: "italic" }}>{msg.correctionFixed}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {aiTutorLoading && (
-                      <div className="flex gap-1.5 px-3 py-2 rounded-2xl w-fit"
-                        style={{ background: "rgba(10,20,55,0.90)", border: "1px solid rgba(0,225,255,0.18)" }}>
-                        {[0,1,2].map(i => (
-                          <div key={i} className="w-1.5 h-1.5 rounded-full bg-cyan-400"
-                            style={{ animation: "pulse 0.6s ease-in-out infinite alternate", animationDelay: `${i*0.2}s` }} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ))}
+                  {aiTutorLoading && (
+                    <div className="flex gap-1.5 px-3 py-2 rounded-2xl w-fit"
+                      style={{ background: "rgba(10,20,55,0.90)", border: "1px solid rgba(0,225,255,0.18)" }}>
+                      {[0,1,2].map(i => (
+                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-cyan-400"
+                          style={{ animation: "pulse 0.6s ease-in-out infinite alternate", animationDelay: `${i*0.2}s` }} />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                  {/* Input */}
-                  <div
-                    className="flex items-center gap-2 px-3 py-3 border-t flex-shrink-0"
-                    style={{ borderColor: "rgba(0,225,255,0.10)" }}
-                    data-testid="ai-tutor-input"
-                  >
-                    <input
-                      ref={aiInputRef}
-                      data-testid="input-ai-tutor-reply"
-                      className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-white/25 rounded-xl px-3 py-2"
-                      style={{
-                        color: "rgba(255,255,255,0.90)",
-                        background: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(0,225,255,0.15)",
-                      }}
-                      placeholder="Reply to AI Tutor…"
-                      onKeyDown={e => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          const val = aiInputRef.current?.value.trim();
-                          if (val) {
-                            sendAiMessage(val);
-                            if (aiInputRef.current) aiInputRef.current.value = "";
-                          }
-                        }
-                      }}
-                    />
-                    <button
-                      data-testid="button-ai-tutor-send"
-                      className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 flex-shrink-0"
-                      style={{ background: "rgba(0,180,255,0.25)", border: "1px solid rgba(0,225,255,0.40)" }}
-                      onClick={() => {
+                {/* Input */}
+                <div
+                  className="flex items-center gap-2 px-3 py-3 border-t flex-shrink-0"
+                  style={{ borderColor: "rgba(0,225,255,0.10)" }}
+                  data-testid="ai-tutor-input"
+                >
+                  <input
+                    ref={aiInputRef}
+                    data-testid="input-ai-tutor-reply"
+                    className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-white/25 rounded-xl px-3 py-2"
+                    style={{
+                      color: "rgba(255,255,255,0.90)",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(0,225,255,0.15)",
+                    }}
+                    placeholder="Reply to AI Tutor…"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
                         const val = aiInputRef.current?.value.trim();
                         if (val) {
                           sendAiMessage(val);
                           if (aiInputRef.current) aiInputRef.current.value = "";
                         }
-                      }}
-                    >
-                      <Send className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.90)" }} />
-                    </button>
-                  </div>
-                  </div>
+                      }
+                    }}
+                  />
+                  <button
+                    data-testid="button-ai-tutor-send"
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 flex-shrink-0"
+                    style={{ background: "rgba(0,180,255,0.25)", border: "1px solid rgba(0,225,255,0.40)" }}
+                    onClick={() => {
+                      const val = aiInputRef.current?.value.trim();
+                      if (val) {
+                        sendAiMessage(val);
+                        if (aiInputRef.current) aiInputRef.current.value = "";
+                      }
+                    }}
+                  >
+                    <Send className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.90)" }} />
+                  </button>
                 </div>
-                )}
-
               </div>
             </div>
           )}
@@ -6474,6 +6560,43 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       ))}
                     </div>
                   </div>
+
+                  {/* Host-only: Enable/Disable AI Tutor for room */}
+                  {isHost && (
+                    <div
+                      className="pt-2 border-t"
+                      style={{ borderColor: "rgba(255,255,255,0.08)" }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,200,80,0.90)" }}>Room AI Access</span>
+                          <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.40)" }}>Allow others to use AI Tutor</span>
+                        </div>
+                        <button
+                          data-testid="button-toggle-ai-tutor-enabled"
+                          onClick={() => {
+                            const newVal = !roomAiTutorEnabled;
+                            setRoomAiTutorEnabled(newVal);
+                            socket?.emit("room:ai-tutor-set-enabled", { roomId: room.id, enabled: newVal });
+                          }}
+                          className="w-10 h-5.5 rounded-full relative transition-all flex-shrink-0"
+                          style={{
+                            background: roomAiTutorEnabled ? "linear-gradient(90deg, rgba(0,200,100,0.85) 0%, rgba(0,160,80,0.80) 100%)" : "rgba(80,80,100,0.50)",
+                            border: "1px solid rgba(255,255,255,0.15)",
+                            width: 40, height: 22,
+                          }}
+                        >
+                          <span className="absolute w-4 h-4 rounded-full transition-all"
+                            style={{
+                              background: "rgba(255,255,255,0.95)",
+                              left: roomAiTutorEnabled ? "calc(100% - 18px)" : "2px",
+                              top: "50%", transform: "translateY(-50%)",
+                              boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                            }} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

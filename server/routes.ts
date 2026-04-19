@@ -27,6 +27,9 @@ const userCurrentRoom = new Map<string, string>();
 const roomDeleteTimers = new Map<string, NodeJS.Timeout>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
+// AI Tutor room state: one active session per room
+const roomAiTutorState = new Map<string, { userId: string; username: string; speaking: boolean } | null>();
+const roomAiTutorEnabled = new Map<string, boolean>(); // host can disable
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -2826,6 +2829,60 @@ export async function registerRoutes(
       }
     });
 
+    // ── AI Tutor room session management ──
+    socket.on("room:ai-tutor-start", ({ roomId, userId, username }: { roomId: string; userId: string; username: string }) => {
+      const enabled = roomAiTutorEnabled.get(roomId);
+      if (enabled === false) {
+        socket.emit("room:ai-tutor-disabled");
+        return;
+      }
+      const existing = roomAiTutorState.get(roomId);
+      if (existing && existing.userId !== userId) {
+        socket.emit("room:ai-tutor-busy", { userId: existing.userId, username: existing.username });
+        return;
+      }
+      roomAiTutorState.set(roomId, { userId, username, speaking: false });
+      io.to(roomId).emit("room:ai-tutor-state", { active: true, userId, username, speaking: false });
+    });
+
+    socket.on("room:ai-tutor-stop", ({ roomId, userId }: { roomId: string; userId: string }) => {
+      const existing = roomAiTutorState.get(roomId);
+      if (existing?.userId === userId) {
+        roomAiTutorState.delete(roomId);
+        io.to(roomId).emit("room:ai-tutor-state", { active: false, userId: null, username: null, speaking: false });
+      }
+    });
+
+    socket.on("room:ai-tutor-speaking", ({ roomId, userId, speaking }: { roomId: string; userId: string; speaking: boolean }) => {
+      const existing = roomAiTutorState.get(roomId);
+      if (existing?.userId === userId) {
+        existing.speaking = speaking;
+        io.to(roomId).emit("room:ai-tutor-state", { active: true, userId: existing.userId, username: existing.username, speaking });
+      }
+    });
+
+    socket.on("room:ai-tutor-set-enabled", ({ roomId, userId, enabled }: { roomId: string; userId: string; enabled: boolean }) => {
+      // Only host can toggle
+      const roles = roomRoles.get(roomId);
+      const role = roles?.get(userId) || "participant";
+      const participants = roomParticipants.get(roomId);
+      const isHost = participants?.has(userId) && (role === "host" || role === "moderator");
+      if (!isHost) {
+        socket.emit("room:error", { message: "Only the host can change AI Tutor settings." });
+        return;
+      }
+      roomAiTutorEnabled.set(roomId, enabled);
+      io.to(roomId).emit("room:ai-tutor-enabled-changed", { enabled });
+      // If disabling and someone is using it, kick them off
+      if (!enabled) {
+        const active = roomAiTutorState.get(roomId);
+        if (active) {
+          roomAiTutorState.delete(roomId);
+          io.to(roomId).emit("room:ai-tutor-state", { active: false, userId: null, username: null, speaking: false });
+        }
+      }
+    });
+
     socket.on("disconnect", async () => {
       if (currentUserId) {
         const disconnectingUserId = currentUserId;
@@ -2875,6 +2932,12 @@ export async function registerRoutes(
                 if (roomScreenShareStatus.get(roomId) === disconnectingUserId) {
                   roomScreenShareStatus.delete(roomId);
                   io.to(roomId).emit("room:screen-share", { userId: disconnectingUserId, active: false });
+                }
+
+                const aiTutorSession = roomAiTutorState.get(roomId);
+                if (aiTutorSession?.userId === disconnectingUserId) {
+                  roomAiTutorState.delete(roomId);
+                  io.to(roomId).emit("room:ai-tutor-state", { active: false, userId: null, username: null, speaking: false });
                 }
 
                 const ytState = roomYoutubeState.get(roomId);
