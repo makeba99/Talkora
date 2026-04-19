@@ -1473,3 +1473,28 @@ html.synthwave .neon-text {
 .hammer-btn:hover {
   animation-duration: 1s;
 }
+
+/* ── AI Tutor responsive face size ── */
+.ai-face-size {
+  width: min(220px, 55vw);
+  height: min(220px, 55vw);
+}
+
+/* ── AI Tutor chat panel responsive positioning ── */
+.ai-chat-panel-responsive {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(310px, 92vw);
+  margin-top: 140px;
+}
+
+@media (min-width: 640px) {
+  .ai-chat-panel-responsive {
+    top: 50%;
+    left: calc(50% + 140px);
+    transform: translateY(-50%);
+    width: 310px;
+    margin-top: 0;
+  }
+}

@@ -2395,12 +2395,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       boxShadow: "0 0 24px rgba(239,68,68,0.28), 0 4px 16px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.16)",
     };
 
-    const btnBase = "relative w-12 h-12 rounded-[18px] flex items-center justify-center transition-all duration-200 ease-out hover:-translate-y-[3px] hover:scale-[1.04] active:translate-y-0 active:scale-[0.97]";
-    const labelBase = "text-[9px] font-semibold leading-none tracking-wider uppercase";
+    const btnBase = "relative w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-[14px] sm:rounded-[18px] flex items-center justify-center transition-all duration-200 ease-out hover:-translate-y-[3px] hover:scale-[1.04] active:translate-y-0 active:scale-[0.97]";
+    const labelBase = "hidden sm:block text-[9px] font-semibold leading-none tracking-wider uppercase";
 
     return (
       <div
-        className="pointer-events-auto flex items-center gap-1.5 select-none"
+        className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 select-none"
         style={{
           background: "linear-gradient(180deg, rgba(18,22,36,0.97) 0%, rgba(9,11,22,0.95) 100%)",
           backdropFilter: "blur(40px) saturate(1.35)",
@@ -2408,12 +2408,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           border: "1px solid rgba(255,255,255,0.088)",
           borderRadius: "32px",
           boxShadow: "0 24px 56px rgba(0,0,0,0.52), 0 0 0 1px rgba(255,255,255,0.022), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.18)",
-          padding: "11px 16px",
+          padding: "8px 10px",
         }}
         data-testid="toolbar-room-controls"
       >
         {/* Mute */}
-        <div className="flex flex-col items-center gap-[7px]">
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <div className="relative group">
             <button
               onClick={toggleMute}
@@ -2424,10 +2424,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               style={isMuted ? ghostStyle : micLiveStyle}
             >
               {isMuted
-                ? <MicOff className="w-[18px] h-[18px]" />
+                ? <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                 : (
                   <span className="relative flex items-center justify-center">
-                    <Mic className="w-[18px] h-[18px]" />
+                    <Mic className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                     <span className="absolute -top-[3px] -right-[3px] w-[7px] h-[7px] rounded-full bg-green-400 border border-black/30 shadow-sm" />
                   </span>
                 )
@@ -2467,7 +2467,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </div>
 
         {/* Camera */}
-        <div className="flex flex-col items-center gap-[7px]">
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={toggleVideo}
             data-testid="button-toggle-video"
@@ -2475,7 +2475,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             className={btnBase}
             style={isVideoOn ? videoActiveStyle : ghostStyle}
           >
-            {isVideoOn ? <Video className="w-[18px] h-[18px]" /> : <VideoOff className="w-[18px] h-[18px]" />}
+            {isVideoOn ? <Video className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" /> : <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />}
           </button>
           <span className={labelBase} style={isVideoOn ? { color: "rgba(147,197,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             Camera
@@ -2483,7 +2483,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </div>
 
         {/* Share */}
-        <div className="flex flex-col items-center gap-[7px]">
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={handleScreenShare}
             data-testid="button-screen-share"
@@ -2491,7 +2491,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             className={btnBase}
             style={isScreenSharing ? screenShareActiveStyle : ghostStyle}
           >
-            <Monitor className="w-[18px] h-[18px]" />
+            <Monitor className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
           </button>
           <span className={labelBase} style={isScreenSharing ? { color: "rgba(196,181,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             Share
@@ -2499,11 +2499,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </div>
 
         {/* Hand — premium standout button */}
-        <div className="flex flex-col items-center gap-[7px]">
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <div className="relative">
             {handRaised && (
               <span
-                className="absolute inset-0 rounded-[18px] animate-ping"
+                className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
                 style={{ background: "rgba(251,191,36,0.28)", animationDuration: "1.4s" }}
               />
             )}
@@ -2514,7 +2514,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               className={btnBase}
               style={handRaised ? handRaisedStyle : ghostStyle}
             >
-              <Hand className="w-[18px] h-[18px]" style={handRaised ? { filter: "drop-shadow(0 0 4px rgba(251,191,36,0.6))" } : undefined} />
+              <Hand className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={handRaised ? { filter: "drop-shadow(0 0 4px rgba(251,191,36,0.6))" } : undefined} />
             </button>
           </div>
           <span className={labelBase} style={handRaised ? { color: "rgba(251,191,36,0.86)" } : { color: "rgba(255,255,255,0.32)" }}>
@@ -2523,17 +2523,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </div>
 
         {/* AI Tutor */}
-        <div className="flex flex-col items-center gap-[7px]">
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <div className="relative">
             {!aiTutorActive && (
               <span
-                className="absolute inset-0 rounded-[18px] animate-ping"
+                className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
                 style={{ background: "rgba(0,225,255,0.18)", animationDuration: "2.2s" }}
               />
             )}
             {aiTutorActive && (
               <span
-                className="absolute inset-0 rounded-[18px] animate-ping"
+                className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
                 style={{ background: "rgba(0,225,255,0.28)", animationDuration: "1.4s" }}
               />
             )}
@@ -2554,7 +2554,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 boxShadow: "0 0 16px rgba(0,225,255,0.22), 0 4px 12px rgba(0,0,0,0.24)",
               }}
             >
-              <BrainCircuit className="w-[18px] h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 5px rgba(0,225,255,0.8))" } : undefined} />
+              <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 5px rgba(0,225,255,0.8))" } : undefined} />
             </button>
           </div>
           <span className={labelBase} style={{ color: aiTutorActive ? "rgba(0,225,255,0.90)" : "rgba(0,200,255,0.55)" }}>
@@ -2562,10 +2562,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           </span>
         </div>
 
-        <div className="mx-0.5 h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
+        <div className="mx-0.5 h-7 sm:h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
 
         {/* Leave */}
-        <div className="flex flex-col items-center gap-[7px]">
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={handleLeave}
             data-testid="button-leave-room"
@@ -2573,7 +2573,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             className={btnBase}
             style={leaveStyle}
           >
-            <PhoneOff className="w-[18px] h-[18px]" />
+            <PhoneOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
           </button>
           <span className={labelBase} style={{ color: "rgba(252,165,165,0.72)" }}>
             Leave
@@ -6225,7 +6225,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 style={{ marginTop: -40 }}
               >
                 <div className="flex flex-col items-center gap-4 ai-float" style={{ marginTop: 20 }}>
-                  <div className="relative" style={{ width: 220, height: 220 }}>
+                  <div className="relative ai-face-size">
 
                     {/* Outer listen/speak pulse ring */}
                     {(aiTutorDisplaySpeaking || aiTutorDisplayListening) && (
@@ -6393,7 +6393,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     </button>
                     {lastAiBroadcast && (
                       <div
-                        className="max-w-[280px] rounded-2xl px-3 py-2 text-center text-[12px] leading-relaxed"
+                        className="max-w-[80vw] sm:max-w-[280px] rounded-2xl px-3 py-2 text-center text-[12px] leading-relaxed"
                         style={{
                           background: "rgba(8,12,32,0.76)",
                           border: "1px solid rgba(0,225,255,0.18)",
@@ -6458,12 +6458,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {/* ── AI Tutor Chat Panel — floats independently to the right of center ── */}
           {aiTutorActive && aiChatPanelOpen && (
             <div
-              className="fixed z-[61] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+              className="fixed z-[61] flex flex-col rounded-2xl overflow-hidden shadow-2xl ai-chat-panel-responsive"
               style={{
-                top: "50%",
-                left: "calc(50% + 140px)",
-                transform: "translateY(-50%)",
-                width: 310,
                 background: "rgba(8,12,32,0.93)",
                 border: "1px solid rgba(0,225,255,0.18)",
                 backdropFilter: "blur(24px)",
