@@ -570,6 +570,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [editLevel, setEditLevel] = useState(roomProp.level);
   const [editMaxUsers, setEditMaxUsers] = useState(roomProp.maxUsers);
   const [themeDialogOpen, setThemeDialogOpen] = useState(false);
+  const [themeDialogOffset, setThemeDialogOffset] = useState(0);
   const [editRoomTheme, setEditRoomTheme] = useState((roomProp as any).roomTheme || "none");
   const [editThemeOffset, setEditThemeOffset] = useState(0);
   const [hologramPreviewVR, setHologramPreviewVR] = useState<string | null>(null);
@@ -4311,21 +4312,79 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             <DialogTitle>🎨 Room Theme</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">Choose a visual theme for your room. All participants will see it.</p>
-          <div className="grid grid-cols-2 gap-3 mt-2">
-            {ROOM_THEMES.map((theme) => (
+          <div className="space-y-2 mt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Selected</span>
+              <span className="text-xs font-medium text-foreground" data-testid="text-theme-dialog-selected">
+                {ROOM_THEMES.find((t) => t.id === editRoomTheme)?.label || "Default"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
               <button
-                key={theme.id}
-                onClick={() => setEditRoomTheme(theme.id)}
-                className={`relative flex flex-col items-start gap-1 p-3 rounded-lg border-2 text-left transition-all
-                  ${editRoomTheme === theme.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 hover:bg-muted/50"}`}
+                type="button"
+                onClick={() => setThemeDialogOffset((o) => Math.max(0, o - 4))}
+                disabled={themeDialogOffset === 0}
+                className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                data-testid="button-theme-dialog-prev"
               >
-                <span className="font-semibold text-sm">{theme.label}</span>
-                <span className="text-xs text-muted-foreground">{theme.description}</span>
-                {editRoomTheme === theme.id && (
-                  <span className="absolute top-2 right-2 text-primary text-xs">✓</span>
-                )}
+                <ChevronLeft className="w-4 h-4" />
               </button>
-            ))}
+              <div className="flex-1 grid grid-cols-4 gap-2">
+                {ROOM_THEMES.slice(themeDialogOffset, themeDialogOffset + 4).map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => setEditRoomTheme(theme.id)}
+                    className={`relative rounded-lg overflow-hidden transition-all border-2 ${editRoomTheme === theme.id ? "border-white shadow-lg" : "border-transparent opacity-70 hover:opacity-100"}`}
+                    title={theme.label}
+                    data-testid={`button-theme-dialog-${theme.id}`}
+                  >
+                    <img
+                      src={theme.img}
+                      alt={theme.label}
+                      className="w-full h-[52px] object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                        const fallback = e.currentTarget.nextSibling as HTMLElement;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                    <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-0.5 truncate">
+                      {theme.label}
+                    </span>
+                    {editRoomTheme === theme.id && (
+                      <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white flex items-center justify-center">
+                        <svg className="w-1.5 h-1.5" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 6l3 3 5-5" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setThemeDialogOffset((o) => Math.min(Math.max(0, ROOM_THEMES.length - 4), o + 4))}
+                disabled={themeDialogOffset + 4 >= ROOM_THEMES.length}
+                className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                data-testid="button-theme-dialog-next"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex justify-center gap-1">
+              {Array.from({ length: Math.ceil(ROOM_THEMES.length / 4) }).map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setThemeDialogOffset(i * 4)}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors ${themeDialogOffset === i * 4 ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
+                  data-testid={`button-theme-dialog-page-${i}`}
+                />
+              ))}
+            </div>
           </div>
           <Button
             className="w-full mt-3"

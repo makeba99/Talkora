@@ -80,7 +80,7 @@ export default function RoomPage() {
         if (reason === "joined-another-room") {
           window.close();
           window.setTimeout(() => {
-            if (!window.closed) navigate("/");
+            navigate("/");
           }, 150);
           return;
         }

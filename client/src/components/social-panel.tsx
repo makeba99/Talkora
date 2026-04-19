@@ -50,7 +50,7 @@ export function UserNotePopover({ userId }: { userId: string }) {
 
   const { data, isLoading } = useQuery<{ note: string }>({
     queryKey: ["/api/notes", userId],
-    queryFn: () => fetch(`/api/notes/${userId}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/notes/${userId}`, { credentials: "include" }).then(r => r.json()),
     enabled: open,
     staleTime: 30000,
   });

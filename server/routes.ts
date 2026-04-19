@@ -2298,7 +2298,7 @@ export async function registerRoutes(
       if (existingRoomId && existingRoomId !== roomId) {
         const previousSocketId = userSockets.get(userId);
         const previousSocket = previousSocketId ? io.sockets.sockets.get(previousSocketId) : undefined;
-        if (previousSocketId && previousSocketId !== socket.id) {
+        if (previousSocketId) {
           io.to(previousSocketId).emit("room:joined-another-room", { oldRoomId: existingRoomId, newRoomId: roomId });
         }
         await leaveRoomState(existingRoomId, userId, previousSocketId === socket.id ? socket : previousSocket);
