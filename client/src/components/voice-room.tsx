@@ -1858,7 +1858,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         }
         const player = new YT.Player("yt-player-container", {
           videoId: activeYoutubeId,
-          playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
+          playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
           events: {
             onReady: () => {
               if (ytSyncTimeRef.current > 0) {
@@ -1867,8 +1867,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               }
             },
             onStateChange: (event: any) => {
-              if (ytRemoteAction.current) return;
               const state = event.data;
+              // Only the broadcaster emits sync events to avoid feedback loops
+              const isBroadcaster = user?.id === youtubeStartedByRef.current;
+              if (state === YT.PlayerState.ENDED) {
+                // Loop the video for everyone: broadcaster restarts from 0
+                if (isBroadcaster) {
+                  try { player.seekTo(0, true); player.playVideo(); } catch (_) {}
+                  socket?.emit("room:youtube-state", {
+                    roomId: room.id, action: "play", time: 0,
+                  });
+                }
+                return;
+              }
+              if (ytRemoteAction.current) return;
+              if (!isBroadcaster) return; // Non-broadcasters never emit sync events
               if (state === YT.PlayerState.PLAYING) {
                 socket?.emit("room:youtube-state", {
                   roomId: room.id,

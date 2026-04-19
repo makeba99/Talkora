@@ -303,51 +303,70 @@ export async function registerRoutes(
       ].join(" ");
 
       const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        console.warn("[AI Tutor] OPENAI_API_KEY is not set.");
+      }
       if (apiKey) {
-        const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [
-              { role: "system", content: systemPrompt },
-              ...history.slice(-6).map((m: any) => ({
-                role: m.role === "ai" ? "assistant" : "user",
-                content: m.text,
-              })),
-              { role: "user", content: message },
-            ],
-            max_tokens: 150,
-            temperature: 0.7,
-            response_format: { type: "json_object" },
-          }),
-        });
-        if (openaiRes.ok) {
-          const data = await openaiRes.json() as any;
-          const content = data.choices?.[0]?.message?.content || "{}";
-          try {
-            const parsed = JSON.parse(content);
-            return res.json({
-              reply: parsed.reply || "Great! Keep going.",
-              correction: parsed.correction || null,
-              correctionFixed: parsed.correctionFixed || null,
-            });
-          } catch {
-            return res.json({ reply: content, correction: null, correctionFixed: null });
+        try {
+          const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                ...history.slice(-6).map((m) => ({
+                  role: m.role === 'ai' ? 'assistant' : 'user',
+                  content: m.text,
+                })),
+                { role: 'user', content: message },
+              ],
+              max_tokens: 300,
+              temperature: 0.75,
+              response_format: { type: 'json_object' },
+            }),
+          });
+          if (openaiRes.ok) {
+            const data = await openaiRes.json();
+            const rawContent = data.choices?.[0]?.message?.content || '{}';
+            try {
+              const parsed = JSON.parse(rawContent);
+              return res.json({
+                reply: parsed.reply || 'That sounds interesting! Tell me more.',
+                correction: parsed.correction || null,
+                correctionFixed: parsed.correctionFixed || null,
+              });
+            } catch {
+              return res.json({ reply: rawContent, correction: null, correctionFixed: null });
+            }
+          } else {
+            const errText = await openaiRes.text().catch(() => '');
+            console.error(`[AI Tutor] OpenAI error ${openaiRes.status}: ${errText.slice(0, 200)}`);
           }
+        } catch (fetchErr) {
+          console.error('[AI Tutor] Network error calling OpenAI:', fetchErr);
         }
       }
 
-      const cleanMessage = message.trim().replace(/\s+/g, " ");
+      // Fallback when OpenAI is unavailable
+      const fallbackReplies = [
+        'That is great! Can you tell me more about that?',
+        'Interesting! How did that make you feel?',
+        'I would love to hear more - what happened next?',
+        'Really? What do you think about that?',
+        'Nice! Can you describe that in more detail?',
+        'That sounds fun! What else did you do?',
+      ];
       return res.json({
-        reply: `I understand: ${cleanMessage}. Say a little more, and I’ll help you express it naturally in ${language}.`,
+        reply: fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)],
         correction: null,
         correctionFixed: null,
       });
-    } catch (err) {
+
+          } catch (err) {
       console.error("AI tutor error:", err);
       return res.status(500).json({ reply: "Let's continue the conversation!", correction: null, correctionFixed: null });
     }
