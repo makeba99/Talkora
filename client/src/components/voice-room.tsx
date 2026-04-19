@@ -566,6 +566,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     correction?: string;
     correctionFixed?: string;
   }>>([]);
+  const [lastAiBroadcast, setLastAiBroadcast] = useState<string | null>(null);
   const [aiTutorSettings, setAiTutorSettings] = useState({
     correctionMode: "live" as "live" | "after" | "off",
     teachingStyle: "Conversation",
@@ -706,6 +707,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   }, [roomProp]);
 
   const isHost = room.ownerId === user?.id;
+  const isAiTutorOwner = aiTutorActive || roomAiTutorSession.userId === user?.id;
+  const aiTutorVisible = aiTutorActive || (!!roomAiTutorSession.active && roomAiTutorSession.userId !== user?.id);
+  const aiTutorDisplaySpeaking = isAiTutorOwner ? aiTutorSpeaking : roomAiTutorSession.speaking;
+  const aiTutorDisplayListening = isAiTutorOwner ? aiListening : (!!roomAiTutorSession.active && !roomAiTutorSession.speaking);
+  const aiTutorDisplayName = roomAiTutorSession.userId && roomAiTutorSession.userId !== user?.id
+    ? `${roomAiTutorSession.username || "Someone"}'s AI Tutor`
+    : "AI Tutor";
 
   useEffect(() => {
     selectedAudioDeviceIdRef.current = selectedAudioDeviceId;
@@ -1632,9 +1640,23 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
     });
     socket.on("room:ai-tutor-busy", (data: { userId: string; username: string }) => {
+      window.speechSynthesis?.cancel();
+      try { aiRecognitionRef.current?.abort(); } catch {}
+      setAiTutorActive(false);
+      setAiTutorSpeaking(false);
+      setAiListening(false);
+      setAiConversation([]);
+      setLastAiBroadcast(null);
       toast({ title: `AI Tutor is busy`, description: `${data.username} is currently using the AI Tutor. Please wait.`, variant: "destructive" });
     });
     socket.on("room:ai-tutor-disabled", () => {
+      window.speechSynthesis?.cancel();
+      try { aiRecognitionRef.current?.abort(); } catch {}
+      setAiTutorActive(false);
+      setAiTutorSpeaking(false);
+      setAiListening(false);
+      setAiConversation([]);
+      setLastAiBroadcast(null);
       toast({ title: "AI Tutor restricted", description: "The host has disabled the AI Tutor in this room.", variant: "destructive" });
     });
     socket.on("room:ai-tutor-enabled-changed", (data: { enabled: boolean }) => {
@@ -1649,6 +1671,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         setAiListening(false);
         toast({ title: "AI Tutor disabled", description: "The host has turned off the AI Tutor.", variant: "destructive" });
       }
+    });
+    socket.on("room:ai-tutor-message", (data: { userId: string; username: string; text: string; correction?: string | null; correctionFixed?: string | null; voice?: string; speed?: number }) => {
+      if (data.userId === user.id) return;
+      setLastAiBroadcast(data.text);
+      setAiConversation(prev => [...prev, {
+        id: `room-ai-${Date.now()}`,
+        role: "ai",
+        text: data.text,
+        correction: data.correction || undefined,
+        correctionFixed: data.correctionFixed || undefined,
+      }].slice(-8));
+      speakAiText(data.text, data.voice || aiTutorSettings.voice, data.speed || aiTutorSettings.speed, true);
     });
 
     let roomBc: BroadcastChannel | null = null;
@@ -1702,6 +1736,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("room:ai-tutor-busy");
       socket.off("room:ai-tutor-disabled");
       socket.off("room:ai-tutor-enabled-changed");
+      socket.off("room:ai-tutor-message");
       localStream.current?.getTracks().forEach((t) => t.stop());
       screenStream.current?.getTracks().forEach((t) => t.stop());
       videoStream.current?.getTracks().forEach((t) => t.stop());
@@ -1996,12 +2031,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:hand", { roomId: room.id, userId: user?.id, raised: !handRaised });
   };
 
-  const speakAiText = (text: string, voice: string, speed: number) => {
+  const speakAiText = (text: string, voice: string, speed: number, observerMode = false) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     // Stop listening while AI speaks so it won't pick up its own voice
-    try { aiRecognitionRef.current?.abort(); } catch {}
-    setAiListening(false);
+    if (!observerMode) {
+      try { aiRecognitionRef.current?.abort(); } catch {}
+      setAiListening(false);
+    }
     aiSpeakingRef.current = true;
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = Math.max(0.5, Math.min(2, speed));
@@ -2027,21 +2064,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         aiSpeakingRef.current = false;
         socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: false });
         // Restart listening after AI finishes speaking
-        setTimeout(() => {
-          if (aiActiveRef.current && !aiLoadingRef.current) {
-            startAiListening();
-          }
-        }, 400);
+        if (!observerMode) {
+          setTimeout(() => {
+            if (aiActiveRef.current && !aiLoadingRef.current) {
+              startAiListening();
+            }
+          }, 400);
+        }
       };
       utter.onerror = () => {
         setAiTutorSpeaking(false);
         aiSpeakingRef.current = false;
         socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: false });
-        setTimeout(() => {
-          if (aiActiveRef.current && !aiLoadingRef.current) {
-            startAiListening();
-          }
-        }, 400);
+        if (!observerMode) {
+          setTimeout(() => {
+            if (aiActiveRef.current && !aiLoadingRef.current) {
+              startAiListening();
+            }
+          }, 400);
+        }
       };
       window.speechSynthesis.speak(utter);
     };
@@ -2070,6 +2111,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       ];
       const introText = intros[Math.floor(Math.random() * intros.length)];
       setAiTutorActive(true);
+      setLastAiBroadcast(introText);
       setAiTutorControlOpen(false);
       setAiChatPanelOpen(false);
       setAiConversation([{ id: "intro", role: "ai", text: introText }]);
@@ -2080,6 +2122,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setAiTutorActive(false);
       setAiTutorControlOpen(false);
       setAiConversation([]);
+        setLastAiBroadcast(null);
     }
   };
 
@@ -2111,6 +2154,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           correction: data.correction || undefined,
           correctionFixed: data.correctionFixed || undefined,
         }]);
+        setLastAiBroadcast(data.reply);
+        socket?.emit("room:ai-tutor-message", {
+          roomId: room.id,
+          userId: user?.id,
+          text: data.reply,
+          correction: data.correction || null,
+          correctionFixed: data.correctionFixed || null,
+          voice: aiTutorSettings.voice,
+          speed: aiTutorSettings.speed,
+        });
         speakAiText(data.reply, aiTutorSettings.voice, aiTutorSettings.speed);
       }
     } catch {
@@ -2126,13 +2179,35 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (!SpeechRec || !aiActiveRef.current || aiSpeakingRef.current || aiLoadingRef.current) return;
     try { aiRecognitionRef.current?.abort(); } catch {}
     const rec = new SpeechRec();
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = false;
-    rec.lang = "en-US";
+    const speechLangMap: Record<string, string> = {
+      English: "en-US",
+      Spanish: "es-ES",
+      French: "fr-FR",
+      German: "de-DE",
+      Italian: "it-IT",
+      Portuguese: "pt-PT",
+      Russian: "ru-RU",
+      Arabic: "ar-SA",
+      Japanese: "ja-JP",
+      Korean: "ko-KR",
+      Chinese: "zh-CN",
+      Hindi: "hi-IN",
+      Turkish: "tr-TR",
+      Dutch: "nl-NL",
+      Polish: "pl-PL",
+      Vietnamese: "vi-VN",
+      Indonesian: "id-ID",
+      Thai: "th-TH",
+      Armenian: "hy-AM",
+    };
+    rec.lang = speechLangMap[room.language] || "en-US";
     aiRecognitionRef.current = rec;
     rec.onstart = () => setAiListening(true);
     rec.onresult = (e: any) => {
       const transcript = Array.from(e.results as SpeechRecognitionResultList)
+        .slice(e.resultIndex || 0)
         .filter((r: SpeechRecognitionResult) => r.isFinal)
         .map((r: SpeechRecognitionResult) => r[0].transcript)
         .join(" ")
@@ -6092,7 +6167,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           )}
 
           {/* ── AI Tutor: Face always fixed at screen center ── */}
-          {aiTutorActive && (
+          {aiTutorVisible && (
             <div
               className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
               data-testid="ai-tutor-overlay"
@@ -6105,11 +6180,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <div className="relative" style={{ width: 220, height: 220 }}>
 
                     {/* Outer listen/speak pulse ring */}
-                    {(aiTutorSpeaking || aiListening) && (
+                    {(aiTutorDisplaySpeaking || aiTutorDisplayListening) && (
                       <div className="absolute inset-0 rounded-full animate-ping pointer-events-none"
                         style={{
-                          background: aiTutorSpeaking ? "rgba(0,225,255,0.12)" : "rgba(0,255,160,0.10)",
-                          animationDuration: aiTutorSpeaking ? "1.3s" : "2s"
+                          background: aiTutorDisplaySpeaking ? "rgba(0,225,255,0.12)" : "rgba(0,255,160,0.10)",
+                          animationDuration: aiTutorDisplaySpeaking ? "1.3s" : "2s"
                         }} />
                     )}
 
@@ -6125,12 +6200,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
                     {/* Static glow border */}
                     <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-                      boxShadow: aiTutorSpeaking
+                      boxShadow: aiTutorDisplaySpeaking
                         ? "0 0 40px rgba(0,225,255,0.65), 0 0 80px rgba(0,100,255,0.28), inset 0 0 30px rgba(0,120,255,0.15)"
-                        : aiListening
+                        : aiTutorDisplayListening
                           ? "0 0 28px rgba(0,255,160,0.40), inset 0 0 20px rgba(0,180,120,0.10)"
                           : "0 0 20px rgba(0,225,255,0.32), inset 0 0 18px rgba(0,80,200,0.12)",
-                      border: `2px solid ${aiTutorSpeaking ? "rgba(0,225,255,0.90)" : aiListening ? "rgba(0,255,160,0.60)" : "rgba(0,225,255,0.45)"}`,
+                      border: `2px solid ${aiTutorDisplaySpeaking ? "rgba(0,225,255,0.90)" : aiTutorDisplayListening ? "rgba(0,255,160,0.60)" : "rgba(0,225,255,0.45)"}`,
                       borderRadius: "50%",
                     }} />
 
@@ -6163,19 +6238,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           height: 22,
                           transform: "translateX(-50%)",
                           pointerEvents: "none",
-                          filter: aiTutorSpeaking ? "drop-shadow(0 0 4px rgba(255,150,150,0.55))" : "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
+                          filter: aiTutorDisplaySpeaking ? "drop-shadow(0 0 4px rgba(255,150,150,0.55))" : "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
                           overflow: "visible",
                         }}
                       >
                         {/* Dark inner mouth */}
                         <ellipse
                           cx="30" cy="16"
-                          rx={aiTutorSpeaking ? 18 : 14}
-                          ry={aiTutorSpeaking ? 7 : 1}
+                          rx={aiTutorDisplaySpeaking ? 18 : 14}
+                          ry={aiTutorDisplaySpeaking ? 7 : 1}
                           fill="rgba(18,4,4,0.92)"
                           style={{
                             transition: "rx 0.08s ease, ry 0.08s ease",
-                            animation: aiTutorSpeaking ? "svgMouthOpen 0.25s ease-in-out infinite alternate" : "none",
+                            animation: aiTutorDisplaySpeaking ? "svgMouthOpen 0.25s ease-in-out infinite alternate" : "none",
                           }}
                         />
                         {/* Upper lip — cupid's bow shape */}
@@ -6187,7 +6262,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         />
                         {/* Lower lip */}
                         <path
-                          d={aiTutorSpeaking
+                          d={aiTutorDisplaySpeaking
                             ? "M 8 14 C 18 26 42 26 52 14"
                             : "M 8 14 C 18 19 42 19 52 14"
                           }
@@ -6196,12 +6271,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           strokeWidth="0.5"
                           style={{
                             transition: "d 0.1s ease",
-                            animation: aiTutorSpeaking ? "svgLipSync 0.25s ease-in-out infinite alternate" : "none",
+                            animation: aiTutorDisplaySpeaking ? "svgLipSync 0.25s ease-in-out infinite alternate" : "none",
                           }}
                         />
                       </svg>
                       {/* Speaking lip-sync shimmer */}
-                      {aiTutorSpeaking && (
+                      {aiTutorDisplaySpeaking && (
                         <div className="absolute inset-0 pointer-events-none rounded-full" style={{
                           background: "radial-gradient(ellipse at 50% 72%, rgba(0,225,255,0.18) 0%, transparent 60%)",
                           animation: "pulse 0.5s ease-in-out infinite alternate",
@@ -6210,7 +6285,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     </div>
 
                     {/* Speaking waveform */}
-                    {aiTutorSpeaking && (
+                    {aiTutorDisplaySpeaking && (
                       <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-[3px]">
                         {[4,6,8,10,8,6,4].map((h,i) => (
                           <div key={i} className="rounded-full" style={{
@@ -6223,7 +6298,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </div>
                     )}
                     {/* Listening indicator */}
-                    {aiListening && !aiTutorSpeaking && (
+                    {aiTutorDisplayListening && !aiTutorDisplaySpeaking && (
                       <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-[3px]">
                         {[3,5,4,6,4,5,3].map((h,i) => (
                           <div key={i} className="rounded-full" style={{
@@ -6237,7 +6312,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     )}
                   </div>
 
-                  {/* Label + chat toggle button */}
+                    {/* Label + chat toggle button */}
                   <div className="flex flex-col items-center gap-2">
                     {/* Platform glow */}
                     <div className="holo-platform rounded-full" style={{
@@ -6250,6 +6325,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       onClick={() => setAiChatPanelOpen(v => !v)}
                       data-testid="button-ai-chat-toggle"
                       className="flex items-center gap-2 px-5 py-2 rounded-full transition-all hover:scale-105 active:scale-95"
+                      disabled={!isAiTutorOwner}
                       style={{
                         background: aiChatPanelOpen
                           ? "rgba(0,80,180,0.80)"
@@ -6262,14 +6338,29 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       }}
                     >
                       <BrainCircuit className="w-4 h-4" style={{ color: "rgba(0,225,255,0.90)" }} />
-                      <span className="text-[13px] font-bold" style={{ color: "rgba(255,255,255,0.95)" }}>AI Tutor</span>
-                      {aiChatPanelOpen
+                      <span className="text-[13px] font-bold" style={{ color: "rgba(255,255,255,0.95)" }}>{aiTutorDisplayName}</span>
+                      {isAiTutorOwner && (aiChatPanelOpen
                         ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />
-                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />}
+                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />)}
                     </button>
+                    {lastAiBroadcast && (
+                      <div
+                        className="max-w-[280px] rounded-2xl px-3 py-2 text-center text-[12px] leading-relaxed"
+                        style={{
+                          background: "rgba(8,12,32,0.76)",
+                          border: "1px solid rgba(0,225,255,0.18)",
+                          color: "rgba(255,255,255,0.82)",
+                          backdropFilter: "blur(14px)",
+                          boxShadow: "0 8px 24px rgba(0,0,0,0.32)",
+                        }}
+                        data-testid="text-ai-tutor-live-caption"
+                      >
+                        {lastAiBroadcast}
+                      </div>
+                    )}
                     {/* Status line */}
                     <div className="flex items-center gap-1.5">
-                      {aiTutorSpeaking ? (
+                      {aiTutorDisplaySpeaking ? (
                         <div className="flex items-end gap-[2px]">
                           {[3,5,4,6,3,5,4].map((h,i) => (
                             <div key={i} className="rounded-full" style={{
@@ -6280,7 +6371,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                             }} />
                           ))}
                         </div>
-                      ) : aiListening ? (
+                      ) : aiTutorDisplayListening ? (
                         <div className="flex items-end gap-[2px]">
                           {[3,4,3,5,3,4,3].map((h,i) => (
                             <div key={i} className="rounded-full" style={{
@@ -6295,20 +6386,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
                       )}
                       <span className="text-[11px] font-medium" style={{
-                        color: aiTutorSpeaking ? "rgba(0,225,255,0.80)" : aiListening ? "rgba(0,255,160,0.85)" : "rgba(0,225,255,0.60)"
+                        color: aiTutorDisplaySpeaking ? "rgba(0,225,255,0.80)" : aiTutorDisplayListening ? "rgba(0,255,160,0.85)" : "rgba(0,225,255,0.60)"
                       }}>
-                        {aiTutorSpeaking ? "Speaking…" : aiListening ? "Listening…" : "Ready"}
+                        {aiTutorDisplaySpeaking ? "Speaking…" : aiTutorDisplayListening ? "Listening…" : "Ready"}
                       </span>
                     </div>
                     {/* Dismiss link */}
-                    <button
+                    {isAiTutorOwner && <button
                       onClick={toggleAiTutor}
                       data-testid="button-dismiss-ai-tutor-label"
                       className="text-[10px] mt-0.5 transition-colors hover:opacity-80"
                       style={{ color: "rgba(255,120,120,0.60)" }}
                     >
                       Dismiss
-                    </button>
+                    </button>}
                   </div>
                 </div>
 
@@ -6577,7 +6668,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           onClick={() => {
                             const newVal = !roomAiTutorEnabled;
                             setRoomAiTutorEnabled(newVal);
-                            socket?.emit("room:ai-tutor-set-enabled", { roomId: room.id, enabled: newVal });
+                            socket?.emit("room:ai-tutor-set-enabled", { roomId: room.id, userId: user?.id, enabled: newVal });
                           }}
                           className="w-10 h-5.5 rounded-full relative transition-all flex-shrink-0"
                           style={{

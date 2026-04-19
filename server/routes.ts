@@ -292,7 +292,9 @@ export async function registerRoutes(
       const systemPrompt = [
         `You are a language tutor helping someone practice ${language}.`,
         `Personality: ${personality}. Teaching style: ${teachingStyle}.`,
-        `Keep responses short (1-3 sentences). Stay conversational and encouraging.`,
+        `Listen to the user's latest message and answer it directly with a logical, contextual response.`,
+        `Do not use canned practice prompts or automated quiz questions. Only ask one natural follow-up question when it genuinely fits the conversation.`,
+        `Keep responses short (1-3 sentences) so the voice response feels real-time. Stay conversational and encouraging.`,
         correctionMode !== "off"
           ? `If the learner makes a grammar or vocabulary error, note it briefly but keep the conversation flowing.`
           : `Focus on conversation flow, do not correct errors.`,
@@ -339,22 +341,12 @@ export async function registerRoutes(
         }
       }
 
-      const practiceReplies = [
-        { reply: "That's great! What did you do after that?", correction: null, correctionFixed: null },
-        { reply: `Interesting! How long have you been learning ${language}?`, correction: null, correctionFixed: null },
-        { reply: "Can you tell me more about that? I'd love to hear the details.", correction: null, correctionFixed: null },
-        { reply: "Very good! Now try using that in a different sentence.", correction: null, correctionFixed: null },
-        { reply: "Nice work! What's your favorite thing to do on weekends?", correction: null, correctionFixed: null },
-        { reply: "I see! How would you describe that to a friend?", correction: null, correctionFixed: null },
-        {
-          reply: "Almost perfect! Let me help with a small thing.",
-          correction: "Small grammar adjustment",
-          correctionFixed: message.trim().split(" ").slice(0, 4).join(" "),
-        },
-      ];
-
-      const randomReply = practiceReplies[Math.floor(Math.random() * practiceReplies.length)];
-      return res.json(randomReply);
+      const cleanMessage = message.trim().replace(/\s+/g, " ");
+      return res.json({
+        reply: `I understand: ${cleanMessage}. Say a little more, and I’ll help you express it naturally in ${language}.`,
+        correction: null,
+        correctionFixed: null,
+      });
     } catch (err) {
       console.error("AI tutor error:", err);
       return res.status(500).json({ reply: "Let's continue the conversation!", correction: null, correctionFixed: null });
@@ -2859,6 +2851,28 @@ export async function registerRoutes(
         existing.speaking = speaking;
         io.to(roomId).emit("room:ai-tutor-state", { active: true, userId: existing.userId, username: existing.username, speaking });
       }
+    });
+
+    socket.on("room:ai-tutor-message", ({ roomId, userId, text, correction, correctionFixed, voice, speed }: {
+      roomId: string;
+      userId: string;
+      text: string;
+      correction?: string | null;
+      correctionFixed?: string | null;
+      voice?: string;
+      speed?: number;
+    }) => {
+      const existing = roomAiTutorState.get(roomId);
+      if (!existing || existing.userId !== userId || typeof text !== "string" || !text.trim()) return;
+      socket.to(roomId).emit("room:ai-tutor-message", {
+        userId,
+        username: existing.username,
+        text: text.trim().slice(0, 1200),
+        correction: correction || null,
+        correctionFixed: correctionFixed || null,
+        voice: voice === "Male" ? "Male" : "Female",
+        speed: typeof speed === "number" ? Math.max(0.5, Math.min(2, speed)) : 0.7,
+      });
     });
 
     socket.on("room:ai-tutor-set-enabled", ({ roomId, userId, enabled }: { roomId: string; userId: string; enabled: boolean }) => {

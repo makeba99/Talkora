@@ -124,6 +124,8 @@ shared/
 69. Owner-only account deletion — the Platform Owner can permanently delete non-admin user accounts from /admin, with server-side guards and cleanup across user-related records.
 70. Payment methods UI — users can save payment cards (stored as last 4 digits + brand + expiry, never raw card data) via a dedicated `/payment-methods` page and inline during booking; the BookingDialog is a 2-step flow (Session Details → Payment) with card brand detection (Visa/Mastercard/Amex/Discover), real-time formatting, expiry/CVV validation, saved card selection, and default card management.
 71. Sample room card images — lobby demo room participants use local generated SVG portrait images so room cards show avatars instead of blank initials and avoid external image dependencies.
+72. YouTube watch-together CSP support — security headers allow YouTube iframe API scripts and embeds so shared YouTube playback can load inside voice rooms.
+73. Room-observable AI Tutor — one participant can speak with AI Tutor while other room participants see the AI face, live caption, speaking state, and hear the same generated response through local speech synthesis.
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.

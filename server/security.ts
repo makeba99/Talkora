@@ -209,13 +209,13 @@ export function applySecurityMiddleware(app: Express): void {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.youtube.com", "https://s.ytimg.com"],
           styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
           imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
           mediaSrc: ["'self'", "blob:", "https:", "http:"],
           connectSrc: ["'self'", "wss:", "ws:", "https:"],
-          frameSrc: ["'none'"],
+          frameSrc: ["'self'", "https://www.youtube.com", "https://www.youtube-nocookie.com"],
           objectSrc: ["'none'"],
           upgradeInsecureRequests: [],
         },
