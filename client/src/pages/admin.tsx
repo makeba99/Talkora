@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,6 +83,8 @@ export default function AdminPage() {
   const [announcementShowOnLobby, setAnnouncementShowOnLobby] = useState(false);
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
   const [restrictDaysMap, setRestrictDaysMap] = useState<Record<string, number>>({});
+  const [userSearch, setUserSearch] = useState("");
+  const [newRegPeriod, setNewRegPeriod] = useState<"today" | "yesterday" | "week" | "month" | null>(null);
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -186,6 +188,54 @@ export default function AdminPage() {
     });
     return counts;
   }, [reports]);
+
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.toLowerCase().trim();
+    if (!q) return users;
+    return users.filter((u) => {
+      const name = getUserDisplayName(u).toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      const role = roleLabel(u).toLowerCase();
+      const id = u.id.toLowerCase();
+      return name.includes(q) || email.includes(q) || role.includes(q) || id.includes(q);
+    });
+  }, [users, userSearch]);
+
+  const newRegCounts = useMemo(() => {
+    const now = new Date();
+    const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const todayStart = startOf(now);
+    const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(todayStart.getDate() - 1);
+    const weekStart = new Date(todayStart); weekStart.setDate(todayStart.getDate() - 7);
+    const monthStart = new Date(todayStart); monthStart.setDate(todayStart.getDate() - 30);
+    const counts = { today: 0, yesterday: 0, week: 0, month: 0 };
+    for (const u of users) {
+      const t = new Date(u.createdAt).getTime();
+      if (t >= todayStart.getTime()) counts.today++;
+      else if (t >= yesterdayStart.getTime()) counts.yesterday++;
+      if (t >= weekStart.getTime()) counts.week++;
+      if (t >= monthStart.getTime()) counts.month++;
+    }
+    return counts;
+  }, [users]);
+
+  const newRegUsers = useMemo(() => {
+    if (!newRegPeriod) return [];
+    const now = new Date();
+    const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const todayStart = startOf(now);
+    const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(todayStart.getDate() - 1);
+    const weekStart = new Date(todayStart); weekStart.setDate(todayStart.getDate() - 7);
+    const monthStart = new Date(todayStart); monthStart.setDate(todayStart.getDate() - 30);
+    return users.filter((u) => {
+      const t = new Date(u.createdAt).getTime();
+      if (newRegPeriod === "today") return t >= todayStart.getTime();
+      if (newRegPeriod === "yesterday") return t >= yesterdayStart.getTime() && t < todayStart.getTime();
+      if (newRegPeriod === "week") return t >= weekStart.getTime();
+      if (newRegPeriod === "month") return t >= monthStart.getTime();
+      return false;
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [users, newRegPeriod]);
 
   const approveMutation = useMutation({
     mutationFn: async ({ id, rate, notes }: { id: string; rate: number; notes: string }) => {
@@ -627,15 +677,102 @@ export default function AdminPage() {
 
           <TabsContent value="users">
             <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
+              <CardHeader className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle>User Management</CardTitle>
+                  <span className="text-xs text-muted-foreground">{filteredUsers.length} of {users.length} user{users.length !== 1 ? "s" : ""}</span>
+                </div>
+                <div className="relative mt-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    data-testid="input-user-search"
+                    placeholder="Search by name, email, role, or ID…"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="pl-9 pr-9 h-9 text-sm bg-background/60"
+                  />
+                  {userSearch && (
+                    <button onClick={() => setUserSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" data-testid="button-clear-user-search">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="max-h-[620px] overflow-auto admin-scrollbar pr-2 space-y-3">
+              <CardContent className="space-y-4">
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5 text-emerald-400 flex-shrink-0">
+                      <UserPlus className="w-4 h-4" />
+                      <span className="text-sm font-semibold">New Registrations</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 ml-auto">
+                      {(["today", "yesterday", "week", "month"] as const).map((p) => {
+                        const labels = { today: "Today", yesterday: "Yesterday", week: "Last 7 days", month: "Last 30 days" };
+                        const count = newRegCounts[p];
+                        const active = newRegPeriod === p;
+                        return (
+                          <button
+                            key={p}
+                            data-testid={`button-newreg-${p}`}
+                            onClick={() => setNewRegPeriod(active ? null : p)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-150"
+                            style={active
+                              ? { background: "rgba(52,211,153,0.22)", color: "#34d399", border: "1px solid rgba(52,211,153,0.45)" }
+                              : { background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.10)" }
+                            }
+                          >
+                            {labels[p]}
+                            <span
+                              className="ml-0.5 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center"
+                              style={active
+                                ? { background: "rgba(52,211,153,0.35)", color: "#6ee7b7" }
+                                : { background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.50)" }
+                              }
+                            >
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {newRegPeriod && (
+                    <div className="space-y-2 pt-1 border-t border-emerald-500/15">
+                      {newRegUsers.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-2">No users registered in this period.</p>
+                      ) : (
+                        newRegUsers.map((u) => (
+                          <div key={u.id} data-testid={`card-newreg-${u.id}`} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                            <Avatar className="w-7 h-7 flex-shrink-0">
+                              <AvatarImage src={u.profileImageUrl ?? undefined} />
+                              <AvatarFallback className="text-[10px] font-semibold bg-emerald-900/50 text-emerald-200">{getUserDisplayName(u).slice(0, 2).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate text-foreground">{getUserDisplayName(u)}</p>
+                              <p className="text-[10px] text-muted-foreground/70 truncate">{u.email || u.id}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <RoleBadge user={u} />
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
+                                <CalendarDays className="w-3 h-3" />
+                                {new Date(u.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="max-h-[520px] overflow-auto admin-scrollbar pr-2 space-y-3">
                   {usersLoading ? (
                     [1, 2, 3, 4].map((item) => <Skeleton key={item} className="h-24 w-full" />)
+                  ) : filteredUsers.length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground text-sm" data-testid="text-no-users-found">
+                      No users match <span className="font-semibold text-foreground">"{userSearch}"</span>
+                    </div>
                   ) : (
-                    users.map((item) => {
+                    filteredUsers.map((item) => {
                       const isOwner = item.email === OWNER_EMAIL || item.role === "superadmin";
                       const canEditRole = isSuperAdmin && !isOwner;
                       const canWarn = !isOwner && (isSuperAdmin || item.role !== "admin");
