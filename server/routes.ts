@@ -280,7 +280,12 @@ export async function registerRoutes(
 
   // ── AI Tutor model routing ─────────────────────────────────────────────────
   // Priority: NVIDIA Nemotron → gpt-4o → gpt-4o-mini → context-aware fallback
-  const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+  const rawNvidiaApiKey = process.env.NVIDIA_API_KEY?.trim();
+  const invalidNvidiaApiKey = rawNvidiaApiKey && /^(postgresql|postgres|mysql|mongodb|redis):\/\//i.test(rawNvidiaApiKey);
+  if (invalidNvidiaApiKey) {
+    console.warn("[AI Tutor] Ignoring NVIDIA_API_KEY because it looks like a database connection string.");
+  }
+  const NVIDIA_API_KEY = invalidNvidiaApiKey ? undefined : rawNvidiaApiKey;
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
   function routeAiModel(messageLen: number, isRepetitive: boolean): { provider: string; model: string; baseUrl: string; key: string | undefined } {

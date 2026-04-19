@@ -1,0 +1,39 @@
+You are an expert AI avatar designer and voice interface developer. Your task is to solve two distinct technical problems:
+
+**Problem 1: Avatar Realism**
+
+The current AI avatar (reference: image.png) has a cartoonish, 2D aesthetic with simplified features: light brown textureless face, large round blue eyes with prominent white highlights, thick black arched eyebrows, simple thin line mouth, and stylized light blue/white hair. It's framed in a glowing blue-green circular UI.
+
+Your task: Provide a complete redesign brief and implementation strategy to transform this avatar into a photorealistic human face while maintaining the "AI Tutor" branding and circular UI framing. Include:
+- Specific visual characteristics for realistic facial features (skin texture, eye depth, eyebrow naturalism, mouth expressiveness, hair detail)
+- Recommended rendering techniques or tools (3D modeling, neural rendering, or photorealistic 2D illustration)
+- How to preserve the circular UI element and "AI Tutor" label
+- Implementation approach (whether this requires model switching, shader updates, or asset replacement)
+
+**Problem 2: Eyebrow Animation Fix**
+
+During the "Listening..." state (indicated by green sound wave bars), the eyebrows are animating unexpectedly and erratically. This appears to be triggered when the microphone enters listening mode.
+
+Your task: Diagnose the root cause and provide a fix. Include:
+- Common reasons eyebrow animations trigger unexpectedly during voice input states
+- Step-by-step debugging approach
+- Code-level solution (disable the animation during listening state, add conditional logic, or adjust animation triggers)
+- How to test that eyebrows remain static during microphone listening without breaking other avatar animations
+
+**Problem 3: Railway Deployment - NVIDIA API Key Configuration**
+
+The NVIDIA Agent works correctly on Replit but fails after deployment on Railway. The NVIDIA_API_KEY environment variable was added to Railway with this value:
+```
+postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{PGDATABASE}}
+```
+
+This is a database connection string, not an NVIDIA API key. This is the root cause of the connection failure.
+
+Your task: Provide a complete fix including:
+- Correct identification of what the actual NVIDIA API key should be (the legitimate key from NVIDIA's platform, not a database URL)
+- Step-by-step instructions to replace the incorrect value in Railway's environment variables
+- How to verify the NVIDIA Agent connects successfully after deployment
+- Explanation of why the code works on Replit (likely local environment variables or .env file configuration) but fails on Railway
+- Best practices for managing sensitive API keys across local and production deployments
+
+Deliver all three solutions in a clear, actionable format that can be immediately implemented.

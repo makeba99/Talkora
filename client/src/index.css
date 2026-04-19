@@ -1526,13 +1526,17 @@ html.synthwave .neon-text {
 }
 
 .ai-liveportrait-listening .ai-avatar-brow-left {
-  transform: translateY(1px) rotate(-1deg);
+  transform: none;
   transform-origin: 101px 106px;
 }
 
 .ai-liveportrait-listening .ai-avatar-brow-right {
-  transform: translateY(1px) rotate(1deg);
+  transform: none;
   transform-origin: 140px 106px;
+}
+
+.ai-liveportrait-listening .ai-avatar-brow {
+  animation: none;
 }
 
 .ai-liveportrait-listening .ai-avatar-cheek {
