@@ -569,6 +569,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     correctionFixed?: string;
   }>>([]);
   const [lastAiBroadcast, setLastAiBroadcast] = useState<string | null>(null);
+  const [aiTranscriptExpanded, setAiTranscriptExpanded] = useState(false);
   const [aiDebugOpen, setAiDebugOpen] = useState(false);
   const [aiInterimText, setAiInterimText] = useState<string | null>(null);
   const [aiAcknowledging, setAiAcknowledging] = useState(false);
@@ -2191,6 +2192,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setAiDebugLog([]);
       setAiInterimText(null);
       setAiAcknowledging(false);
+      setAiTranscriptExpanded(false);
     }
   };
 
@@ -6509,18 +6511,35 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         : <ChevronDown className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.70)" }} />)}
                     </button>
                     {lastAiBroadcast && (
-                      <div
-                        className="max-w-[80vw] sm:max-w-[280px] rounded-2xl px-3 py-2 text-center text-[12px] leading-relaxed"
-                        style={{
-                          background: "rgba(8,12,32,0.76)",
-                          border: "1px solid rgba(0,225,255,0.18)",
-                          color: "rgba(255,255,255,0.82)",
-                          backdropFilter: "blur(14px)",
-                          boxShadow: "0 8px 24px rgba(0,0,0,0.32)",
-                        }}
-                        data-testid="text-ai-tutor-live-caption"
-                      >
-                        {lastAiBroadcast}
+                      <div className="flex flex-col items-center gap-1.5">
+                        <button
+                          onClick={() => setAiTranscriptExpanded(v => !v)}
+                          data-testid="button-ai-transcript-toggle"
+                          className="flex items-center gap-1 px-2.5 py-0.5 rounded-full transition-colors hover:bg-white/10 text-[10px]"
+                          style={{
+                            color: aiTranscriptExpanded ? "rgba(0,225,255,0.80)" : "rgba(255,255,255,0.35)",
+                            border: `1px solid ${aiTranscriptExpanded ? "rgba(0,225,255,0.25)" : "rgba(255,255,255,0.10)"}`,
+                          }}
+                        >
+                          {aiTranscriptExpanded
+                            ? <><ChevronUp className="w-3 h-3" /><span>Hide</span></>
+                            : <><ChevronDown className="w-3 h-3" /><span>Show last message</span></>}
+                        </button>
+                        {aiTranscriptExpanded && (
+                          <div
+                            className="max-w-[80vw] sm:max-w-[280px] rounded-2xl px-3 py-2 text-center text-[12px] leading-relaxed"
+                            style={{
+                              background: "rgba(8,12,32,0.76)",
+                              border: "1px solid rgba(0,225,255,0.18)",
+                              color: "rgba(255,255,255,0.82)",
+                              backdropFilter: "blur(14px)",
+                              boxShadow: "0 8px 24px rgba(0,0,0,0.32)",
+                            }}
+                            data-testid="text-ai-tutor-live-caption"
+                          >
+                            {lastAiBroadcast}
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Status line */}
