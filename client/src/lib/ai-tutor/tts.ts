@@ -14,6 +14,7 @@ export type TtsCallbacks = {
   onEnd: () => void;
   onSentenceEnd: () => void;
   onViseme?: (shape: Viseme) => void;
+  onVoiceId?: (voiceId: string) => void;
 };
 
 export class TtsEngine {
@@ -23,6 +24,7 @@ export class TtsEngine {
   private visemeTimer: ReturnType<typeof setInterval> | null = null;
   private boundarySupported = true;
   private voice: "Female" | "Male" = "Female";
+  private voiceId: string | null = null;
   private speed = 0.7;
   private callbacks: TtsCallbacks;
 
@@ -30,9 +32,10 @@ export class TtsEngine {
     this.callbacks = callbacks;
   }
 
-  configure(voice: "Female" | "Male", speed: number) {
+  configure(voice: "Female" | "Male", speed: number, voiceId?: string | null) {
     this.voice = voice;
     this.speed = speed;
+    this.voiceId = voiceId || null;
   }
 
   /** Add a sentence fragment; auto-starts playback if idle */
@@ -82,13 +85,24 @@ export class TtsEngine {
 
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
+      const savedVoice = this.voiceId
+        ? voices.find(v => v.voiceURI === this.voiceId || v.name === this.voiceId)
+        : undefined;
       const chosen =
-        this.voice === "Female"
+        savedVoice ??
+        (this.voice === "Female"
           ? (voices.find(v => /samantha|zira|google us english/i.test(v.name) && v.lang.startsWith("en")) ??
             voices.find(v => v.lang.startsWith("en")))
           : (voices.find(v => /daniel|david|alex|mark/i.test(v.name) && v.lang.startsWith("en")) ??
-            voices.find(v => v.lang.startsWith("en")));
-      if (chosen) utter.voice = chosen;
+            voices.find(v => v.lang.startsWith("en"))));
+      if (chosen) {
+        utter.voice = chosen;
+        const stableVoiceId = chosen.voiceURI || chosen.name;
+        if (stableVoiceId && stableVoiceId !== this.voiceId) {
+          this.voiceId = stableVoiceId;
+          this.callbacks.onVoiceId?.(stableVoiceId);
+        }
+      }
     }
 
     // ── Word-boundary lipsync ───────────────────────────────────────────────

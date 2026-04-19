@@ -28,7 +28,7 @@ const roomDeleteTimers = new Map<string, NodeJS.Timeout>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
 // AI Tutor room state: one active session per room
-const roomAiTutorState = new Map<string, { userId: string; username: string; speaking: boolean } | null>();
+const roomAiTutorState = new Map<string, { userId: string; username: string; speaking: boolean; avatarId?: string | null; voice?: "Female" | "Male" | null; voiceId?: string | null } | null>();
 const roomAiTutorEnabled = new Map<string, boolean>(); // host can disable
 
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -3136,7 +3136,7 @@ export async function registerRoutes(
     });
 
     // ── AI Tutor room session management ──
-    socket.on("room:ai-tutor-start", ({ roomId, userId, username }: { roomId: string; userId: string; username: string }) => {
+    socket.on("room:ai-tutor-start", ({ roomId, userId, username, avatarId, voice, voiceId }: { roomId: string; userId: string; username: string; avatarId?: string; voice?: "Female" | "Male"; voiceId?: string | null }) => {
       const enabled = roomAiTutorEnabled.get(roomId);
       if (enabled === false) {
         socket.emit("room:ai-tutor-disabled");
@@ -3147,8 +3147,11 @@ export async function registerRoutes(
         socket.emit("room:ai-tutor-busy", { userId: existing.userId, username: existing.username });
         return;
       }
-      roomAiTutorState.set(roomId, { userId, username, speaking: false });
-      io.to(roomId).emit("room:ai-tutor-state", { active: true, userId, username, speaking: false });
+      const safeAvatarId = typeof avatarId === "string" ? avatarId.slice(0, 40) : "aurora";
+      const safeVoice = voice === "Male" ? "Male" : "Female";
+      const safeVoiceId = typeof voiceId === "string" ? voiceId.slice(0, 120) : null;
+      roomAiTutorState.set(roomId, { userId, username, speaking: existing?.speaking || false, avatarId: safeAvatarId, voice: safeVoice, voiceId: safeVoiceId });
+      io.to(roomId).emit("room:ai-tutor-state", { active: true, userId, username, speaking: existing?.speaking || false, avatarId: safeAvatarId, voice: safeVoice, voiceId: safeVoiceId });
     });
 
     socket.on("room:ai-tutor-stop", ({ roomId, userId }: { roomId: string; userId: string }) => {
@@ -3163,18 +3166,20 @@ export async function registerRoutes(
       const existing = roomAiTutorState.get(roomId);
       if (existing?.userId === userId) {
         existing.speaking = speaking;
-        io.to(roomId).emit("room:ai-tutor-state", { active: true, userId: existing.userId, username: existing.username, speaking });
+        io.to(roomId).emit("room:ai-tutor-state", { active: true, userId: existing.userId, username: existing.username, speaking, avatarId: existing.avatarId || "aurora", voice: existing.voice || "Female", voiceId: existing.voiceId || null });
       }
     });
 
-    socket.on("room:ai-tutor-message", ({ roomId, userId, text, correction, correctionFixed, voice, speed }: {
+    socket.on("room:ai-tutor-message", ({ roomId, userId, text, correction, correctionFixed, voice, voiceId, speed, avatarId }: {
       roomId: string;
       userId: string;
       text: string;
       correction?: string | null;
       correctionFixed?: string | null;
       voice?: string;
+      voiceId?: string | null;
       speed?: number;
+      avatarId?: string;
     }) => {
       const existing = roomAiTutorState.get(roomId);
       if (!existing || existing.userId !== userId || typeof text !== "string" || !text.trim()) return;
@@ -3185,6 +3190,8 @@ export async function registerRoutes(
         correction: correction || null,
         correctionFixed: correctionFixed || null,
         voice: voice === "Male" ? "Male" : "Female",
+        voiceId: typeof voiceId === "string" ? voiceId.slice(0, 120) : existing.voiceId || null,
+        avatarId: typeof avatarId === "string" ? avatarId.slice(0, 40) : existing.avatarId || "aurora",
         speed: typeof speed === "number" ? Math.max(0.5, Math.min(2, speed)) : 0.7,
       });
     });

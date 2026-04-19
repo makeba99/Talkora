@@ -60,6 +60,28 @@ const FALLBACK_RESPONSES = [
   "Keep going. I’m listening.",
 ];
 
+const AI_SETTINGS_STORAGE_KEY = "connect2talk-ai-tutor-settings-v1";
+
+function loadSavedAiSettings(): AiTutorSettings {
+  if (typeof window === "undefined") return DEFAULT_AI_SETTINGS;
+  try {
+    const raw = window.localStorage.getItem(AI_SETTINGS_STORAGE_KEY);
+    if (!raw) return DEFAULT_AI_SETTINGS;
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_AI_SETTINGS,
+      ...parsed,
+      voice: parsed.voice === "Male" ? "Male" : "Female",
+      voiceId: typeof parsed.voiceId === "string" ? parsed.voiceId : null,
+      avatarId: typeof parsed.avatarId === "string" ? parsed.avatarId : DEFAULT_AI_SETTINGS.avatarId,
+      speed: typeof parsed.speed === "number" ? Math.max(0.5, Math.min(2, parsed.speed)) : DEFAULT_AI_SETTINGS.speed,
+      tone: typeof parsed.tone === "number" ? Math.max(0, Math.min(1, parsed.tone)) : DEFAULT_AI_SETTINGS.tone,
+    };
+  } catch {
+    return DEFAULT_AI_SETTINGS;
+  }
+}
+
 export function useAiTutor(deps: AiTutorDeps) {
   const { socket, roomId, roomLanguage, userId, username, activeYoutubeId, showYoutube } = deps;
 
@@ -75,7 +97,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const [aiLastBroadcast, setAiLastBroadcast] = useState<string | null>(null);
   const [aiConversation, setAiConversation] = useState<ConversationEntry[]>([]);
   const [aiDebugLog, setAiDebugLog] = useState<DebugEntry[]>([]);
-  const [aiSettings, setAiSettings] = useState<AiTutorSettings>(DEFAULT_AI_SETTINGS);
+  const [aiSettings, setAiSettings] = useState<AiTutorSettings>(() => loadSavedAiSettings());
   const [aiRoomEnabled, setAiRoomEnabled] = useState(true);
   const [aiRoomSession, setAiRoomSession] = useState<RoomAiSession>({
     active: false, userId: null, username: null, speaking: false,
@@ -140,13 +162,30 @@ export function useAiTutor(deps: AiTutorDeps) {
       onEnd: onTtsEnd,
       onSentenceEnd: onTtsSentenceEnd,
       onViseme: (shape) => setCurrentViseme(shape),
+      onVoiceId: (voiceId) => setAiSettings(prev => prev.voiceId === voiceId ? prev : { ...prev, voiceId }),
     });
     return () => ttsRef.current?.cancel();
   }, [onTtsStart, onTtsEnd, onTtsSentenceEnd]);
 
   useEffect(() => {
-    ttsRef.current?.configure(aiSettings.voice, aiSettings.speed);
-  }, [aiSettings.voice, aiSettings.speed]);
+    ttsRef.current?.configure(aiSettings.voice, aiSettings.speed, aiSettings.voiceId);
+  }, [aiSettings.voice, aiSettings.speed, aiSettings.voiceId]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(aiSettings));
+    }
+    if (activeRef.current) {
+      socket?.emit("room:ai-tutor-start", {
+        roomId,
+        userId,
+        username,
+        avatarId: aiSettings.avatarId,
+        voice: aiSettings.voice,
+        voiceId: aiSettings.voiceId,
+      });
+    }
+  }, [aiSettings, socket, roomId, userId, username]);
 
   // ── STT Engine ────────────────────────────────────────────────────────────
   const sttRef = useRef<SttEngine | null>(null);
@@ -278,7 +317,7 @@ export function useAiTutor(deps: AiTutorDeps) {
               setAiLastBroadcast(fullReply);
               socket?.emit("room:ai-tutor-message", {
                 roomId, userId, text: fullReply,
-                voice: aiSettings.voice, speed: aiSettings.speed,
+                voice: aiSettings.voice, voiceId: aiSettings.voiceId, speed: aiSettings.speed, avatarId: aiSettings.avatarId,
               });
             }
           },
@@ -318,7 +357,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         };
         setAiConversation(prev => [...prev, fbMsg]);
         setAiLastBroadcast(fallback.reply);
-        socket?.emit("room:ai-tutor-message", { roomId, userId, text: fallback.reply, voice: aiSettings.voice, speed: aiSettings.speed });
+        socket?.emit("room:ai-tutor-message", { roomId, userId, text: fallback.reply, voice: aiSettings.voice, voiceId: aiSettings.voiceId, speed: aiSettings.speed, avatarId: aiSettings.avatarId });
         ttsRef.current?.enqueue(fallback.reply);
       } else {
         // Last resort: natural varied fallback
@@ -345,7 +384,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   // ── Toggle AI Tutor session ───────────────────────────────────────────────
   const toggleAiTutor = useCallback(() => {
     if (!aiActive) {
-      socket?.emit("room:ai-tutor-start", { roomId, userId, username });
+      socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId: aiSettings.avatarId, voice: aiSettings.voice, voiceId: aiSettings.voiceId });
       setAiActive(true);
       setAiChatPanelOpen(false);
       chatPanelOpenRef.current = false;
@@ -378,14 +417,14 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, [aiActive, socket, roomId, userId, username]);
 
   // ── Observe AI message from another user in the room ─────────────────────
-  const observeSpeakText = useCallback((text: string, voice: string, speed: number) => {
+  const observeSpeakText = useCallback((text: string, voice: string, speed: number, voiceId?: string | null) => {
     const engine = new TtsEngine({
       onStart: () => setCurrentViseme("open"),
       onEnd: () => setCurrentViseme("rest"),
       onSentenceEnd: () => {},
       onViseme: shape => setCurrentViseme(shape),
     });
-    engine.configure(voice as "Female" | "Male", speed);
+    engine.configure(voice as "Female" | "Male", speed, voiceId);
     engine.enqueue(text);
   }, []);
 
@@ -406,7 +445,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => {
     if (!socket) return;
 
-    const onState = (data: { active: boolean; userId: string | null; username: string | null; speaking: boolean }) => {
+    const onState = (data: { active: boolean; userId: string | null; username: string | null; speaking: boolean; avatarId?: string | null; voice?: "Female" | "Male" | null; voiceId?: string | null }) => {
       setAiRoomSession(data);
     };
 
@@ -426,7 +465,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     const onMessage = (data: {
       userId: string; username: string; text: string;
       correction?: string | null; correctionFixed?: string | null;
-      voice?: string; speed?: number;
+      voice?: string; voiceId?: string | null; speed?: number; avatarId?: string | null;
     }) => {
       if (data.userId === userId) return; // own message — already in conversation
       const msg: ConversationEntry = {
@@ -438,7 +477,8 @@ export function useAiTutor(deps: AiTutorDeps) {
       };
       setAiConversation(prev => [...prev, msg]);
       setAiLastBroadcast(data.text);
-      observeSpeakText(data.text, data.voice || "Female", data.speed || 0.7);
+      setAiRoomSession(prev => prev.active ? { ...prev, avatarId: data.avatarId ?? prev.avatarId, voice: data.voice === "Male" ? "Male" : "Female", voiceId: data.voiceId ?? prev.voiceId } : prev);
+      observeSpeakText(data.text, data.voice || "Female", data.speed || 0.7, data.voiceId);
     };
 
     socket.on("room:ai-tutor-state", onState);

@@ -3,6 +3,8 @@ export interface AiTutorSettings {
   teachingStyle: string;
   personality: string;
   voice: "Female" | "Male";
+  voiceId?: string | null;
+  avatarId: string;
   speed: number;
   tone: number;
 }
@@ -28,6 +30,9 @@ export interface RoomAiSession {
   userId: string | null;
   username: string | null;
   speaking: boolean;
+  avatarId?: string | null;
+  voice?: "Female" | "Male" | null;
+  voiceId?: string | null;
 }
 
 export interface AiState {
@@ -87,6 +92,8 @@ export const DEFAULT_AI_SETTINGS: AiTutorSettings = {
   teachingStyle: "Conversation",
   personality: "Friendly",
   voice: "Female",
+  voiceId: null,
+  avatarId: "aurora",
   speed: 0.7,
   tone: 0.7,
 };
