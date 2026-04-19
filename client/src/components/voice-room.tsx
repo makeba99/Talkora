@@ -1381,7 +1381,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
     socket.on("room:joined-another-room", (data: { oldRoomId: string; newRoomId: string }) => {
       if (data.oldRoomId === room.id) {
-        toast({ title: "You joined another room", description: "You were removed from this room automatically." });
         handleLeave("joined-another-room");
       }
     });
