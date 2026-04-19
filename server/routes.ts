@@ -288,7 +288,7 @@ export async function registerRoutes(
       // Nemotron Nano is fast and free-tier; use Super-49B for repetitive/complex inputs
       const model = (messageLen > 200 || isRepetitive)
         ? 'nvidia/llama-3.3-nemotron-super-49b-v1'
-        : 'nvidia/llama-3.1-nemotron-nano-8b-instruct';
+        : 'nvidia/llama-3.1-nemotron-nano-8b-v1';
       return { provider: 'nvidia', model, baseUrl: 'https://integrate.api.nvidia.com/v1', key: NVIDIA_API_KEY };
     }
     if (OPENAI_API_KEY) {
@@ -628,7 +628,7 @@ export async function registerRoutes(
       let streamed = false;
       const nvidiaModel = (message.length > 200 || isRepetitive)
         ? 'nvidia/llama-3.3-nemotron-super-49b-v1'
-        : 'nvidia/llama-3.1-nemotron-nano-8b-instruct';
+        : 'nvidia/llama-3.1-nemotron-nano-8b-v1';
 
       if (NVIDIA_API_KEY) {
         streamed = await streamTokens('nvidia', nvidiaModel, 'https://integrate.api.nvidia.com/v1', NVIDIA_API_KEY);
