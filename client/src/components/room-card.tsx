@@ -64,7 +64,7 @@ function LanguageFlag({ language }: { language: string }) {
 
 function getThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string; animated?: string } {
   switch (themeId) {
-    case "premium-atmosphere": return { from: "rgba(0,210,255,1)",    to: "rgba(255,92,49,1)",     ring: "rgba(0,210,255,0.95), rgba(255,0,184,0.95), rgba(255,150,40,0.95)", animated: "premium-atmosphere-border-wrap" };
+    case "premium-atmosphere": return { from: "rgba(0,210,255,1)",    to: "rgba(120,50,255,1)",     ring: "rgba(0,210,255,0.95), rgba(130,50,255,0.95), rgba(80,180,255,0.95)", animated: "premium-atmosphere-border-wrap" };
     /* ── Premium Animated Themes ── */
     case "cosmic":     return { from: "rgba(37,99,235,0.55)",  to: "rgba(239,68,68,0.45)",  ring: "rgba(37,99,235,0.5), rgba(239,68,68,0.4)",   animated: "cosmic-border-wrap" };
     case "plasma":     return { from: "rgba(155,130,255,0.55)", to: "rgba(99,102,241,0.50)", ring: "rgba(155,130,255,0.50), rgba(99,102,241,0.45)", animated: "plasma-border-wrap" };
@@ -548,10 +548,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
   /* ── elegant border gradient ── */
   const borderGradient = isPremiumAtmosphere
-    ? `linear-gradient(135deg, rgba(0,220,255,0.50) 0%, rgba(88,72,255,0.32) 28%, rgba(185,198,218,0.32) 52%, rgba(255,104,64,0.38) 78%, rgba(220,175,60,0.34) 100%)`
+    ? `linear-gradient(135deg, rgba(0,220,255,0.60) 0%, rgba(80,60,255,0.50) 28%, rgba(160,40,255,0.44) 52%, rgba(80,160,255,0.50) 76%, rgba(0,220,255,0.60) 100%)`
     : `linear-gradient(135deg, ${glow.from} 0%, rgba(80,100,200,0.08) 50%, ${glow.to} 100%)`;
   const outerGlow = isPremiumAtmosphere
-    ? "0 0 8px rgba(0,220,255,0.18), 0 0 18px rgba(175,190,210,0.10)"
+    ? "0 0 10px rgba(0,210,255,0.28), 0 0 22px rgba(110,50,255,0.18), 0 0 42px rgba(0,100,255,0.08)"
     : `0 0 10px ${glow.from.replace(/[\d.]+\)$/, "0.25)")}`;
 
   /* ── grid columns: always 2 rows, balanced ── */
@@ -579,7 +579,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         style={{
           borderRadius: "16px",
           background: isPremiumAtmosphere
-            ? "linear-gradient(145deg, rgba(4,7,22,0.86), rgba(7,8,27,0.78) 48%, rgba(7,4,17,0.88))"
+            ? "linear-gradient(145deg, rgba(3,6,22,0.88) 0%, rgba(6,8,28,0.80) 38%, rgba(5,3,20,0.90) 72%, rgba(8,4,25,0.86) 100%)"
             : "linear-gradient(160deg, rgba(8, 12, 32, 0.50) 0%, rgba(5, 8, 22, 0.58) 100%)",
           backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(24px) saturate(1.18)",
           WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(24px) saturate(1.18)",
@@ -666,7 +666,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         padding: 3,
                         background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
                         boxShadow: isPremiumAtmosphere
-                          ? `0 0 6px rgba(0,220,255,0.46), 0 0 11px rgba(255,0,200,0.26), 0 0 17px rgba(255,124,48,0.18)`
+                          ? `0 0 7px rgba(0,220,255,0.55), 0 0 14px rgba(120,50,255,0.35), 0 0 22px rgba(60,130,255,0.20)`
                           : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
                       }}
                     >
@@ -731,11 +731,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         width: circleSize + 6,
                         height: circleSize + 6,
                         background: isPremiumAtmosphere
-                          ? "conic-gradient(from 120deg, rgba(0,220,255,0.78), rgba(106,92,255,0.46), rgba(255,0,200,0.50), rgba(255,106,61,0.58), rgba(255,211,79,0.50), rgba(0,220,255,0.78))"
+                          ? "conic-gradient(from 120deg, rgba(0,220,255,0.82), rgba(100,60,255,0.68), rgba(170,30,255,0.65), rgba(60,140,255,0.68), rgba(0,200,255,0.72), rgba(0,220,255,0.82))"
                           : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
                         padding: 2,
                         boxShadow: isPremiumAtmosphere
-                          ? "0 0 5px rgba(0,220,255,0.38), 0 0 10px rgba(255,0,200,0.20), 0 0 14px rgba(255,117,49,0.16)"
+                          ? "0 0 6px rgba(0,220,255,0.42), 0 0 12px rgba(120,50,255,0.28), 0 0 18px rgba(60,130,255,0.18)"
                           : `0 0 8px ${glow.from}, 0 0 16px ${glow.to}`,
                       }}
                     >
@@ -811,7 +811,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 className="step-in-btn flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-white text-xs font-bold active:scale-95"
                 style={{
                   background: isPremiumAtmosphere
-                    ? "linear-gradient(90deg, #04d9ff 0%, #654cff 32%, #ff13c8 60%, #ff7138 82%, #ffd44d 100%)"
+                    ? "linear-gradient(90deg, #04d9ff 0%, #6040ff 28%, #b020ff 56%, #6080ff 80%, #04d9ff 100%)"
                     : `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
                 }}
                 data-testid={`button-signin-room-${room.id}`}
@@ -824,7 +824,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 className="step-in-btn flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white text-xs font-bold active:scale-95"
                 style={{
                   background: isPremiumAtmosphere
-                    ? "linear-gradient(90deg, #04d9ff 0%, #654cff 32%, #ff13c8 60%, #ff7138 82%, #ffd44d 100%)"
+                    ? "linear-gradient(90deg, #04d9ff 0%, #6040ff 28%, #b020ff 56%, #6080ff 80%, #04d9ff 100%)"
                     : `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
                 }}
                 onClick={() => onJoin(room.id)}
