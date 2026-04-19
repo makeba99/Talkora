@@ -230,7 +230,7 @@ export async function registerRoutes(
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
       const ytSearch = await import("youtube-search-api");
-      const featured = await ytSearch.GetListByKeyword("trending music 2024", false, 25);
+      const featured = await ytSearch.GetListByKeyword("language learning english conversation", false, 25);
       const videos = (featured.items || [])
         .filter((item: any) => item.type === "video")
         .slice(0, 20)

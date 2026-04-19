@@ -1880,7 +1880,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           videoId: activeYoutubeId,
           width: "100%",
           height: "100%",
-          playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+          playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, origin: window.location.origin },
           events: {
             onReady: () => {
               try {
@@ -1890,6 +1890,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 }
                 player.playVideo();
               } catch (_) {}
+            },
+            onError: (e: any) => {
+              console.warn("YouTube player error code:", e.data);
             },
             onStateChange: buildStateChangeHandler(player, YT),
           },
