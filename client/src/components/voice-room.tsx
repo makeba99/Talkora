@@ -32,6 +32,7 @@ import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageCon
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { UserNotePopover } from "@/components/social-panel";
+import { useAiTutor } from "@/hooks/use-ai-tutor";
 import type { Room, User, Follow } from "@shared/schema";
 
 interface VoiceRoomProps {
@@ -544,51 +545,50 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
-  const [aiTutorActive, setAiTutorActive] = useState(false);
-  const [aiTutorSpeaking, setAiTutorSpeaking] = useState(false);
-  const [aiTutorLoading, setAiTutorLoading] = useState(false);
-  const [aiTutorControlOpen, setAiTutorControlOpen] = useState(false);
-  const [aiChatPanelOpen, setAiChatPanelOpen] = useState(false);
-  const [aiListening, setAiListening] = useState(false);
-  const aiRecognitionRef = useRef<any>(null);
-  const aiSpeakingRef = useRef(false);
-  const aiLoadingRef = useRef(false);
-  const aiActiveRef = useRef(false);
-  const aiChatPanelOpenRef = useRef(false);
-  const aiSpeakWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const aiStreamAbortRef = useRef<AbortController | null>(null);
-  const aiTtsQueueRef = useRef<string[]>([]);
-  const aiTtsActiveRef = useRef(false);
-  // Room-wide AI Tutor state
-  const [roomAiTutorSession, setRoomAiTutorSession] = useState<{
-    active: boolean; userId: string | null; username: string | null; speaking: boolean;
-  }>({ active: false, userId: null, username: null, speaking: false });
-  const [roomAiTutorEnabled, setRoomAiTutorEnabled] = useState(true);
-  const [aiConversation, setAiConversation] = useState<Array<{
-    id: string;
-    role: "ai" | "user";
-    text: string;
-    correction?: string;
-    correctionFixed?: string;
-  }>>([]);
-  const [lastAiBroadcast, setLastAiBroadcast] = useState<string | null>(null);
-  const [aiTranscriptExpanded, setAiTranscriptExpanded] = useState(false);
-  const [aiDebugOpen, setAiDebugOpen] = useState(false);
-  const [aiInterimText, setAiInterimText] = useState<string | null>(null);
-  const [aiAcknowledging, setAiAcknowledging] = useState(false);
-  const [aiDebugLog, setAiDebugLog] = useState<Array<{
-    timestamp: string;
-    type: 'info' | 'warn' | 'error' | 'yt';
-    message: string;
-  }>>([]);
-  const [aiTutorSettings, setAiTutorSettings] = useState({
-    correctionMode: "live" as "live" | "after" | "off",
-    teachingStyle: "Conversation",
-    personality: "Friendly",
-    voice: "Female",
-    speed: 0.7,
-    tone: 0.7,
+  // ── AI Tutor (modular: STT / TTS / Stream / Avatar) ──────────────────────
+  const {
+    aiState,
+    voiceState,
+    mediaState: _aiMediaState,
+    setAiChatPanelOpen,
+    setAiControlOpen,
+    setAiDebugOpen,
+    setAiTranscriptExpanded,
+    setAiSettings: setAiTutorSettings,
+    clearDebugLog,
+    setRoomAiTutorEnabled,
+    toggleAiTutor,
+    sendAiMessage,
+    interruptAi,
+    addDebug: addAiDebugEntry,
+  } = useAiTutor({
+    socket,
+    roomId: room.id,
+    roomLanguage: room.language,
+    userId: user?.id ?? null,
+    username: user ? (user.displayName || user.firstName || user.email || "User") : null,
+    activeYoutubeId: null,
+    showYoutube: false,
   });
+
+  // Backward-compatible aliases so all existing JSX keeps working unchanged
+  const aiTutorActive = aiState.active;
+  const aiTutorSpeaking = aiState.speaking;
+  const aiTutorLoading = aiState.loading;
+  const aiListening = voiceState.listening;
+  const aiTutorControlOpen = aiState.controlOpen;
+  const setAiTutorControlOpen = setAiControlOpen;
+  const aiChatPanelOpen = aiState.chatPanelOpen;
+  const aiConversation = aiState.conversation;
+  const aiInterimText = aiState.interimText;
+  const aiAcknowledging = aiState.acknowledging;
+  const aiDebugLog = aiState.debugLog;
+  const aiDebugOpen = aiState.debugOpen;
+  const aiTranscriptExpanded = aiState.transcriptExpanded;
+  const lastAiBroadcast = aiState.lastBroadcast;
+  const aiTutorSettings = aiState.settings;
+  const roomAiTutorSession = aiState.roomSession;
+  const roomAiTutorEnabled = aiState.roomEnabled;
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
   const [chatText, setChatText] = useState("");
@@ -1648,69 +1648,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setChatMessages(prev => [welcomeMsg, ...prev.filter(m => m.type !== "welcome")]);
     });
 
-    // ── Room AI Tutor state listeners ──
-    socket.on("room:ai-tutor-state", (data: { active: boolean; userId: string | null; username: string | null; speaking: boolean }) => {
-      setRoomAiTutorSession(data);
-      // If someone else took the slot or host disabled it, dismiss our local AI tutor
-      if (!data.active && aiActiveRef.current) {
-        const isMine = data.userId === null;
-        if (isMine) {
-          // our session was forcibly ended
-          window.speechSynthesis?.cancel();
-          setAiTutorActive(false);
-          setAiChatPanelOpen(false);
-          setAiConversation([]);
-          aiActiveRef.current = false;
-          try { aiRecognitionRef.current?.abort(); } catch {}
-          setAiListening(false);
-        }
-      }
-    });
-    socket.on("room:ai-tutor-busy", (data: { userId: string; username: string }) => {
-      window.speechSynthesis?.cancel();
-      try { aiRecognitionRef.current?.abort(); } catch {}
-      setAiTutorActive(false);
-      setAiTutorSpeaking(false);
-      setAiListening(false);
-      setAiConversation([]);
-      setLastAiBroadcast(null);
-      toast({ title: `AI Tutor is busy`, description: `${data.username} is currently using the AI Tutor. Please wait.`, variant: "destructive" });
-    });
-    socket.on("room:ai-tutor-disabled", () => {
-      window.speechSynthesis?.cancel();
-      try { aiRecognitionRef.current?.abort(); } catch {}
-      setAiTutorActive(false);
-      setAiTutorSpeaking(false);
-      setAiListening(false);
-      setAiConversation([]);
-      setLastAiBroadcast(null);
-      toast({ title: "AI Tutor restricted", description: "The host has disabled the AI Tutor in this room.", variant: "destructive" });
-    });
-    socket.on("room:ai-tutor-enabled-changed", (data: { enabled: boolean }) => {
-      setRoomAiTutorEnabled(data.enabled);
-      if (!data.enabled && aiActiveRef.current) {
-        window.speechSynthesis?.cancel();
-        setAiTutorActive(false);
-        setAiChatPanelOpen(false);
-        setAiConversation([]);
-        aiActiveRef.current = false;
-        try { aiRecognitionRef.current?.abort(); } catch {}
-        setAiListening(false);
-        toast({ title: "AI Tutor disabled", description: "The host has turned off the AI Tutor.", variant: "destructive" });
-      }
-    });
-    socket.on("room:ai-tutor-message", (data: { userId: string; username: string; text: string; correction?: string | null; correctionFixed?: string | null; voice?: string; speed?: number }) => {
-      if (data.userId === user.id) return;
-      setLastAiBroadcast(data.text);
-      setAiConversation(prev => [...prev, {
-        id: `room-ai-${Date.now()}`,
-        role: "ai",
-        text: data.text,
-        correction: data.correction || undefined,
-        correctionFixed: data.correctionFixed || undefined,
-      }].slice(-8));
-      speakAiText(data.text, data.voice || aiTutorSettings.voice, data.speed || aiTutorSettings.speed, true);
-    });
+    // AI tutor socket events are handled by the useAiTutor hook.
 
     let roomBc: BroadcastChannel | null = null;
     try {
@@ -1759,11 +1697,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("user:blocked");
       socket.off("user:unblocked");
       socket.off("room:welcome-message");
-      socket.off("room:ai-tutor-state");
-      socket.off("room:ai-tutor-busy");
-      socket.off("room:ai-tutor-disabled");
-      socket.off("room:ai-tutor-enabled-changed");
-      socket.off("room:ai-tutor-message");
+      // AI tutor socket.off handled by useAiTutor hook cleanup.
       localStream.current?.getTracks().forEach((t) => t.stop());
       screenStream.current?.getTracks().forEach((t) => t.stop());
       videoStream.current?.getTracks().forEach((t) => t.stop());
@@ -2083,500 +2017,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:hand", { roomId: room.id, userId: user?.id, raised: !handRaised });
   };
 
-  const speakAiText = (text: string, voice: string, speed: number, observerMode = false) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    if (aiSpeakWatchdogRef.current) { clearInterval(aiSpeakWatchdogRef.current); aiSpeakWatchdogRef.current = null; }
-    // Stop listening while AI speaks so it won't pick up its own voice
-    if (!observerMode) {
-      try { aiRecognitionRef.current?.abort(); } catch {}
-      setAiListening(false);
-    }
-    aiSpeakingRef.current = true;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = Math.max(0.5, Math.min(2, speed));
-    utter.pitch = voice === "Female" ? 1.15 : 0.85;
-    utter.lang = "en-US";
-
-    const onSpeakEnd = (fromObserver = false) => {
-      if (aiSpeakWatchdogRef.current) { clearInterval(aiSpeakWatchdogRef.current); aiSpeakWatchdogRef.current = null; }
-      if (!aiSpeakingRef.current) return; // already handled
-      setAiTutorSpeaking(false);
-      aiSpeakingRef.current = false;
-      socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: false });
-      if (!observerMode && !fromObserver) {
-        setTimeout(() => {
-          if (aiActiveRef.current && !aiLoadingRef.current) startAiListening();
-        }, 400);
-      }
-    };
-
-    const trySpeak = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        let chosen: SpeechSynthesisVoice | undefined;
-        if (voice === "Female") {
-          chosen = voices.find(v => /samantha|zira|google us english|female/i.test(v.name) && v.lang.startsWith("en"))
-            ?? voices.find(v => v.lang.startsWith("en"));
-        } else {
-          chosen = voices.find(v => /daniel|david|male|alex/i.test(v.name) && v.lang.startsWith("en"))
-            ?? voices.find(v => v.lang.startsWith("en") && v.name !== (voices.find(v2 => /samantha|zira/i.test(v2.name))?.name));
-        }
-        if (chosen) utter.voice = chosen;
-      }
-      setAiTutorSpeaking(true);
-      socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: true });
-      utter.onend = () => onSpeakEnd();
-      utter.onerror = () => onSpeakEnd();
-      window.speechSynthesis.speak(utter);
-
-      // Chrome bug watchdog: speechSynthesis.onend sometimes never fires.
-      // Poll every 500ms; if speech has silently stopped, trigger cleanup manually.
-      const expectedDuration = Math.max(3000, (text.length / 14) * 1000 / Math.max(0.5, Math.min(2, speed)));
-      let elapsed = 0;
-      aiSpeakWatchdogRef.current = setInterval(() => {
-        elapsed += 500;
-        // Chrome bug: resume paused synthesis
-        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-        const stillSpeaking = window.speechSynthesis.speaking;
-        if (!stillSpeaking && elapsed > 1000) {
-          onSpeakEnd(true);
-          setTimeout(() => {
-            if (aiActiveRef.current && !aiLoadingRef.current) startAiListening();
-          }, 400);
-        } else if (elapsed > expectedDuration + 5000) {
-          // Hard timeout: something is seriously stuck
-          window.speechSynthesis.cancel();
-          onSpeakEnd(true);
-          setTimeout(() => {
-            if (aiActiveRef.current && !aiLoadingRef.current) startAiListening();
-          }, 400);
-        }
-      }, 500);
-    };
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = trySpeak;
-    } else {
-      trySpeak();
-    }
-  };
-
-  const toggleAiTutor = () => {
-    if (!aiTutorActive) {
-      // Emit to server to claim the AI tutor slot
-      socket?.emit("room:ai-tutor-start", {
-        roomId: room.id,
-        userId: user?.id,
-        username: user?.displayName || user?.username || "User",
-      });
-      const lang = room.language || "English";
-      const intros = [
-        `Hi! Let's have a real conversation in ${lang}. What did you do today?`,
-        `Hey there! I'm your ${lang} practice buddy. Tell me something interesting about yourself!`,
-        `Hello! Ready to chat in ${lang}? What topic would you love to talk about?`,
-        `Great to meet you! Let's practice ${lang} together. What's been on your mind lately?`,
-        `Hi! Let's dive into some ${lang} conversation. How was your day so far?`,
-      ];
-      const introText = intros[Math.floor(Math.random() * intros.length)];
-      setAiTutorActive(true);
-      setLastAiBroadcast(introText);
-      setAiTutorControlOpen(false);
-      setAiChatPanelOpen(false);
-      aiChatPanelOpenRef.current = false;
-      setAiConversation([{ id: "intro", role: "ai", text: introText }]);
-      speakAiText(introText, aiTutorSettings.voice, aiTutorSettings.speed);
-    } else {
-      window.speechSynthesis?.cancel();
-      socket?.emit("room:ai-tutor-stop", { roomId: room.id, userId: user?.id });
-      setAiTutorActive(false);
-      setAiTutorControlOpen(false);
-      setAiConversation([]);
-      setLastAiBroadcast(null);
-      setAiDebugLog([]);
-      setAiInterimText(null);
-      setAiAcknowledging(false);
-      setAiTranscriptExpanded(false);
-    }
-  };
-
-  const addAiDebugEntry = (type: 'info' | 'warn' | 'error' | 'yt', message: string) => {
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setAiDebugLog(prev => [...prev.slice(-19), { timestamp, type, message }]);
-  };
-
-  // Stop any in-progress stream + TTS so user can interrupt immediately
-  const interruptAi = () => {
-    aiStreamAbortRef.current?.abort();
-    aiStreamAbortRef.current = null;
-    aiTtsQueueRef.current = [];
-    aiTtsActiveRef.current = false;
-    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-    if (aiSpeakWatchdogRef.current) { clearInterval(aiSpeakWatchdogRef.current); aiSpeakWatchdogRef.current = null; }
-    aiSpeakingRef.current = false;
-    setAiTutorSpeaking(false);
-  };
-
-  // Play next sentence from TTS queue (called recursively via onend)
-  const playNextTts = () => {
-    if (aiTtsQueueRef.current.length === 0) {
-      aiTtsActiveRef.current = false;
-      setAiTutorSpeaking(false);
-      aiSpeakingRef.current = false;
-      socket?.emit('room:ai-tutor-speaking', { roomId: room.id, userId: user?.id, speaking: false });
-      if (aiActiveRef.current && !aiLoadingRef.current && aiChatPanelOpenRef.current) {
-        setTimeout(() => startAiListening(), 400);
-      }
-      return;
-    }
-    const sentence = aiTtsQueueRef.current.shift()!;
-    if (!sentence.trim()) { playNextTts(); return; }
-
-    aiTtsActiveRef.current = true;
-    aiSpeakingRef.current = true;
-    setAiTutorSpeaking(true);
-    socket?.emit('room:ai-tutor-speaking', { roomId: room.id, userId: user?.id, speaking: true });
-
-    const utter = new SpeechSynthesisUtterance(sentence);
-    utter.rate = Math.max(0.5, Math.min(2, aiTutorSettings.speed));
-    utter.pitch = aiTutorSettings.voice === 'Female' ? 1.15 : 0.85;
-    utter.lang = 'en-US';
-
-    const voices = typeof window !== 'undefined' ? window.speechSynthesis.getVoices() : [];
-    if (voices.length > 0) {
-      const chosen = aiTutorSettings.voice === 'Female'
-        ? (voices.find(v => /samantha|zira|google us english/i.test(v.name) && v.lang.startsWith('en')) ?? voices.find(v => v.lang.startsWith('en')))
-        : (voices.find(v => /daniel|david|alex|mark/i.test(v.name) && v.lang.startsWith('en')) ?? voices.find(v => v.lang.startsWith('en')));
-      if (chosen) utter.voice = chosen;
-    }
-
-    const onDone = () => {
-      if (aiSpeakWatchdogRef.current) { clearInterval(aiSpeakWatchdogRef.current); aiSpeakWatchdogRef.current = null; }
-      playNextTts();
-    };
-    utter.onend = onDone;
-    utter.onerror = onDone;
-
-    // Watchdog: Chrome sometimes silently swallows onend for short sentences
-    const expectedMs = Math.max(1500, (sentence.length / 14) * 1000 / Math.max(0.5, utter.rate));
-    let elapsed = 0;
-    aiSpeakWatchdogRef.current = setInterval(() => {
-      elapsed += 300;
-      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-      if (!window.speechSynthesis.speaking && elapsed > 800) { clearInterval(aiSpeakWatchdogRef.current!); aiSpeakWatchdogRef.current = null; playNextTts(); }
-      else if (elapsed > expectedMs + 3000) { clearInterval(aiSpeakWatchdogRef.current!); aiSpeakWatchdogRef.current = null; window.speechSynthesis.cancel(); playNextTts(); }
-    }, 300);
-
-    window.speechSynthesis.speak(utter);
-  };
-
-  // Add sentence to TTS queue; auto-starts playback if idle
-  const queueTts = (sentence: string) => {
-    if (!sentence.trim()) return;
-    aiTtsQueueRef.current.push(sentence.trim());
-    if (!aiTtsActiveRef.current) playNextTts();
-  };
-
-  const sendAiMessage = async (text: string) => {
-    if (!text.trim() || aiTutorLoading) return;
-
-    // Interrupt any in-progress stream or TTS immediately
-    interruptAi();
-
-    aiLoadingRef.current = true;
-    setAiInterimText(null);
-    const userMsg = { id: `u-${Date.now()}`, role: 'user' as const, text: text.trim() };
-    setAiConversation(prev => [...prev, userMsg]);
-    setAiTutorLoading(true);
-    setAiAcknowledging(true);
-
-    const ytActive = !!activeYoutubeId && showYoutube;
-    if (ytActive) addAiDebugEntry('yt', 'YouTube is active while AI is listening — potential audio conflict.');
-
-    const recentAiTexts = aiConversation.filter(m => m.role === 'ai').slice(-4).map(m => m.text.toLowerCase().trim());
-    if (recentAiTexts.length >= 2 && new Set(recentAiTexts).size < recentAiTexts.length) {
-      addAiDebugEntry('warn', 'Repetitive AI responses detected — requesting adaptive reply.');
-    }
-
-    addAiDebugEntry('info', `User said: "${text.trim().slice(0, 60)}${text.length > 60 ? '…' : ''}"`);
-    setTimeout(() => setAiAcknowledging(false), 600);
-
-    const abort = new AbortController();
-    aiStreamAbortRef.current = abort;
-
-    const streamingMsgId = `a-${Date.now()}`;
-    // Add a placeholder that will be updated as tokens stream in
-    setAiConversation(prev => [...prev, { id: streamingMsgId, role: 'ai' as const, text: '' }]);
-
-    let fullReply = '';
-    let sentenceBuffer = '';
-    let firstToken = true;
-    const t0 = Date.now();
-
-    try {
-      const res = await fetch('/api/ai-tutor/stream', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text.trim(),
-          history: aiConversation.slice(-8),
-          settings: aiTutorSettings,
-          language: room.language,
-          youtubeActive: ytActive,
-        }),
-        signal: abort.signal,
-      });
-
-      if (!res.ok || !res.body) {
-        addAiDebugEntry('error', `Stream request failed (${res.status}) — falling back to buffered mode.`);
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let sseBuffer = '';
-
-      // Stop listening while streaming (AI is "thinking/talking")
-      try { aiRecognitionRef.current?.abort(); } catch {}
-      setAiListening(false);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        sseBuffer += decoder.decode(value, { stream: true });
-        const lines = sseBuffer.split('\n');
-        sseBuffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-
-          try {
-            const event = JSON.parse(raw);
-
-            if (event.error) {
-              addAiDebugEntry('error', `Stream error: ${event.error}`);
-              break;
-            }
-
-            if (event.meta === 'switching_to_backup') {
-              addAiDebugEntry('warn', 'NVIDIA unavailable — switching to backup AI.');
-            }
-
-            if (event.token) {
-              if (firstToken) {
-                addAiDebugEntry('info', `First token in ${Date.now() - t0}ms`);
-                firstToken = false;
-              }
-              sentenceBuffer += event.token;
-              fullReply += event.token;
-
-              // Update streaming bubble in real-time
-              setAiConversation(prev => prev.map(m =>
-                m.id === streamingMsgId ? { ...m, text: fullReply } : m
-              ));
-
-              // Flush complete sentences to TTS queue as they arrive
-              let match: RegExpMatchArray | null;
-              while ((match = sentenceBuffer.match(/^(.*?[.!?])(\s+|$)/))) {
-                const sentence = match[1].trim();
-                sentenceBuffer = sentenceBuffer.slice(match[0].length);
-                if (sentence) queueTts(sentence);
-              }
-            }
-
-            if (event.done) {
-              const latencyMs = Date.now() - t0;
-              addAiDebugEntry('info', `Stream complete in ${latencyMs}ms · model: ${event.model || 'unknown'}`);
-
-              // Speak any remaining partial sentence
-              if (sentenceBuffer.trim()) queueTts(sentenceBuffer.trim());
-              sentenceBuffer = '';
-
-              // Broadcast full reply to room
-              if (fullReply.trim()) {
-                setLastAiBroadcast(fullReply);
-                socket?.emit('room:ai-tutor-message', {
-                  roomId: room.id,
-                  userId: user?.id,
-                  text: fullReply,
-                  voice: aiTutorSettings.voice,
-                  speed: aiTutorSettings.speed,
-                });
-              }
-            }
-          } catch {}
-        }
-      }
-
-      // If stream ended without any tokens, remove placeholder and fall back
-      if (!fullReply.trim()) {
-        setAiConversation(prev => prev.filter(m => m.id !== streamingMsgId));
-        throw new Error('Empty stream response');
-      }
-
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        addAiDebugEntry('info', 'Stream cancelled — user interrupted.');
-        // Remove empty placeholder if nothing was spoken yet
-        if (!fullReply.trim()) setAiConversation(prev => prev.filter(m => m.id !== streamingMsgId));
-      } else {
-        addAiDebugEntry('warn', `Streaming failed (${err?.message}) — using buffered fallback.`);
-        // Fallback to the blocking chat endpoint
-        try {
-          // Remove empty streaming placeholder first
-          setAiConversation(prev => prev.filter(m => m.id !== streamingMsgId));
-          const fbRes = await fetch('/api/ai-tutor/chat', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: text.trim(),
-              history: aiConversation.slice(-8),
-              settings: aiTutorSettings,
-              language: room.language,
-              youtubeActive: ytActive,
-            }),
-          });
-          if (fbRes.ok) {
-            const data = await fbRes.json();
-            const reply = data.reply || '';
-            addAiDebugEntry('info', `Buffered fallback: ${data.debug?.model || 'unknown'} in ${Date.now() - t0}ms`);
-            setAiConversation(prev => [...prev, {
-              id: `a-${Date.now()}`, role: 'ai' as const,
-              text: reply,
-              correction: data.correction || undefined,
-              correctionFixed: data.correctionFixed || undefined,
-            }]);
-            setLastAiBroadcast(reply);
-            socket?.emit('room:ai-tutor-message', { roomId: room.id, userId: user?.id, text: reply, voice: aiTutorSettings.voice, speed: aiTutorSettings.speed });
-            speakAiText(reply, aiTutorSettings.voice, aiTutorSettings.speed);
-          }
-        } catch (fbErr: any) {
-          addAiDebugEntry('error', `Fallback also failed: ${fbErr?.message}`);
-          setAiConversation(prev => prev.filter(m => m.id !== streamingMsgId));
-        }
-      }
-    } finally {
-      setAiTutorLoading(false);
-      setAiAcknowledging(false);
-      aiLoadingRef.current = false;
-      aiStreamAbortRef.current = null;
-    }
-  };
-
-  // Start speech recognition — listens continuously while AI tutor is active
-  const startAiListening = () => {
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec || !aiActiveRef.current || aiSpeakingRef.current || aiLoadingRef.current) return;
-    try { aiRecognitionRef.current?.abort(); } catch {}
-    const rec = new SpeechRec();
-    rec.continuous = true;
-    rec.interimResults = true;
-    const speechLangMap: Record<string, string> = {
-      English: "en-US",
-      Spanish: "es-ES",
-      French: "fr-FR",
-      German: "de-DE",
-      Italian: "it-IT",
-      Portuguese: "pt-PT",
-      Russian: "ru-RU",
-      Arabic: "ar-SA",
-      Japanese: "ja-JP",
-      Korean: "ko-KR",
-      Chinese: "zh-CN",
-      Hindi: "hi-IN",
-      Turkish: "tr-TR",
-      Dutch: "nl-NL",
-      Polish: "pl-PL",
-      Vietnamese: "vi-VN",
-      Indonesian: "id-ID",
-      Thai: "th-TH",
-      Armenian: "hy-AM",
-    };
-    rec.lang = speechLangMap[room.language] || "en-US";
-    aiRecognitionRef.current = rec;
-    rec.onstart = () => {
-      setAiListening(true);
-      addAiDebugEntry('info', `Mic started — listening in ${rec.lang}`);
-    };
-    rec.onresult = (e: any) => {
-      const results = Array.from(e.results as SpeechRecognitionResultList).slice(e.resultIndex || 0);
-      // Show interim transcript as "Heard: ..." feedback — only when panel is open
-      if (aiChatPanelOpenRef.current) {
-        const interim = results
-          .filter((r: SpeechRecognitionResult) => !r.isFinal)
-          .map((r: SpeechRecognitionResult) => r[0].transcript)
-          .join(' ')
-          .trim();
-        if (interim) setAiInterimText(interim);
-      }
-      // Capture final transcript and send
-      const transcript = results
-        .filter((r: SpeechRecognitionResult) => r.isFinal)
-        .map((r: SpeechRecognitionResult) => r[0].transcript)
-        .join(" ")
-        .trim();
-      if (transcript) {
-        setAiInterimText(null);
-        setAiListening(false);
-        // Only send if the chat panel is open — prevents transcripts being
-        // processed invisibly before the user has opened the panel
-        if (aiChatPanelOpenRef.current) {
-          addAiDebugEntry('info', `Recognized: "${transcript.slice(0, 80)}${transcript.length > 80 ? '…' : ''}"`);
-          // Interrupt any ongoing AI stream or TTS before sending new message
-          interruptAi();
-          sendAiMessage(transcript);
-        }
-      }
-    };
-    rec.onerror = (e: any) => {
-      setAiInterimText(null);
-      if (e.error === "aborted" || e.error === "no-speech") {
-        setAiListening(false);
-        if (e.error === "no-speech") addAiDebugEntry('info', 'No speech detected — restarting mic.');
-        setTimeout(() => {
-          if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
-        }, 300);
-        return;
-      }
-      addAiDebugEntry('error', `Speech recognition error: ${e.error}`);
-      setAiListening(false);
-      setTimeout(() => {
-        if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
-      }, 800);
-    };
-    rec.onend = () => {
-      setAiInterimText(null);
-      setAiListening(false);
-      setTimeout(() => {
-        if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
-      }, 300);
-    };
-    try { rec.start(); } catch {}
-  };
-
-  // Keep refs in sync with state
-  useEffect(() => { aiSpeakingRef.current = aiTutorSpeaking; }, [aiTutorSpeaking]);
-  useEffect(() => { aiLoadingRef.current = aiTutorLoading; }, [aiTutorLoading]);
-  useEffect(() => { aiChatPanelOpenRef.current = aiChatPanelOpen; }, [aiChatPanelOpen]);
-
-  // Start/stop recognition when AI tutor activates/deactivates
-  useEffect(() => {
-    aiActiveRef.current = aiTutorActive;
-    if (aiTutorActive) {
-      // Small delay to let the intro speech start first
-      setTimeout(() => {
-        if (aiActiveRef.current && !aiSpeakingRef.current) startAiListening();
-      }, 600);
-    } else {
-      try { aiRecognitionRef.current?.abort(); } catch {}
-      aiRecognitionRef.current = null;
-      setAiListening(false);
-    }
-  }, [aiTutorActive]);
+  // AI tutor logic is now fully handled by the useAiTutor hook above.
 
   const handleLeave = (reason?: "joined-another-room") => {
     localStream.current?.getTracks().forEach((t) => t.stop());
@@ -6969,7 +6410,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         AI Thoughts / Debug Script
                       </span>
                       <button
-                        onClick={() => setAiDebugLog([])}
+                        onClick={() => clearDebugLog()}
                         className="text-[8px] font-mono px-1.5 py-0.5 rounded transition-colors hover:bg-white/10"
                         style={{ color: "rgba(255,255,255,0.25)", border: "1px solid rgba(255,255,255,0.08)" }}
                         data-testid="button-clear-debug-log"
