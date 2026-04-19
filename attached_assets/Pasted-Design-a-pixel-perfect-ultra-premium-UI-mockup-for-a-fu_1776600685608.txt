@@ -1,0 +1,88 @@
+Design a **pixel-perfect, ultra-premium UI mockup** for a futuristic language learning platform featuring a **real-time AI Tutor inside a live conversation room**.
+
+STYLE & MOOD:
+Dark mode, cinematic lighting, glassmorphism + neumorphism hybrid, soft gradients (deep purple, electric blue, subtle magenta), floating particles, depth-rich layers, volumetric glow, ultra-clean modern SaaS aesthetic. Feels like a mix of Apple-level polish + next-gen AI product.
+
+LAYOUT (16:9 full desktop interface):
+
+1. TOP CONTROL BAR (centered, floating glass panel):
+
+* Rounded controls: Mute, Camera, Share, Hand
+* Prominent glowing CTA button: “Call AI Tutor”
+* CTA has animated waveform icon and soft cyan/blue glow
+* “Leave” button in red on the right
+* Subtle reflections, blur, and depth shadows
+
+2. MAIN STAGE (center focus):
+
+* Large AI Tutor avatar (slightly bigger than users)
+* Avatar is human-like, friendly, wearing headset, softly animated glow ring
+* Status indicator under avatar: “Listening ●” (green pulsing dot)
+* Ambient particle effects reacting to voice (small floating light orbs)
+
+3. AI MESSAGE BUBBLE (left of avatar):
+
+* Glass-style speech card
+* Text example:
+  “Let’s practice talking about your daily routine.
+  What time do you usually wake up?”
+* Clean typography, soft glow edges
+
+4. USER MESSAGE (bottom-left):
+
+* User avatar with “Owner” tag
+* Message bubble:
+  “I wake up at 7 am, then I wash my tooths and go to work.”
+
+5. AI MICRO-CORRECTION (IMPORTANT UX DETAIL):
+
+* Small floating correction hint (non-intrusive)
+* Example:
+  “💡 Small fix → I wash my teeth”
+* Subtle yellow/orange glow
+* Looks like a smart tooltip, not a chat message
+
+6. AI CONTROL PANEL (right floating card):
+   Glass panel with sections:
+
+* Correction Mode:
+  [Live] [After speaking] [Off] (Live selected)
+
+* Teaching Style:
+  Conversation (selected), Structured, Roleplay, Exam Prep
+
+* Tutor Personality:
+  Friendly (selected), Strict, Fun, Professional
+
+* Voice Settings:
+  Female (selected), speed slider, tone slider
+
+* Toggle switches with soft glow and smooth UI spacing
+
+7. RIGHT SIDEBAR (users list):
+
+* Search bar on top
+* Tabs: All / Friends / Following / Followers
+* List of users with avatars and “Offline” status
+* Clean spacing, subtle separators, modern typography
+
+VISUAL QUALITY:
+
+* Extremely sharp UI (no blur artifacts)
+* Perfect spacing, consistent padding (8px grid system)
+* Real product-level detail (not concept art)
+* Soft shadows, layered depth, glass reflections
+* Balanced composition, nothing cluttered
+
+LIGHTING:
+
+* Glow accents around interactive elements
+* AI avatar has subtle halo to emphasize intelligence
+* CTA button is brightest focal point
+
+FEELING:
+Professional, futuristic, intelligent, calm, inviting
+NOT cartoonish, NOT cluttered, NOT generic
+
+OUTPUT:
+High-resolution (at least 1920x1080), Dribbble/Behance-level product mockup, realistic and ready for production inspiration.
