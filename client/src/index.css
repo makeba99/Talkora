@@ -40,6 +40,37 @@
   }
 }
 
+@keyframes aiFloat {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-10px) scale(1.01); }
+}
+
+@keyframes holoRingRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes holoScan {
+  0% { top: -10%; opacity: 0.6; }
+  80% { opacity: 0.3; }
+  100% { top: 110%; opacity: 0; }
+}
+
+@keyframes holoPlatform {
+  0%, 100% { opacity: 0.6; transform: scaleX(1); }
+  50% { opacity: 0.9; transform: scaleX(1.05); }
+}
+
+.ai-float {
+  animation: aiFloat 3.5s ease-in-out infinite;
+}
+.holo-ring-rotate {
+  animation: holoRingRotate 8s linear infinite;
+}
+.holo-platform {
+  animation: holoPlatform 2.5s ease-in-out infinite;
+}
+
 
 /* LIGHT MODE */
 :root {
