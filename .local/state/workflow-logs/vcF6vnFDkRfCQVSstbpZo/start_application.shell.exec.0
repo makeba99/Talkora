@@ -1,0 +1,180 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStartup cleanup: scheduled 0 empty rooms for deletion
+5:59:41 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+5:59:54 PM [express] GET /api/auth/user 401 in 3ms :: {"message":"Unauthorized"}
+5:59:55 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+5:59:55 PM [express] POST /api/rooms/votes/batch 200 in 39ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+5:59:55 PM [express] GET /api/rooms 200 in 38ms :: []
+5:59:55 PM [express] GET /api/announcements 200 in 42ms :: []
+5:59:55 PM [express] POST /api/users/badges/batch 200 in 15ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+5:59:55 PM [express] POST /api/users/badges/batch 200 in 12ms :: {"sample-user-4":[],"sample-user-5":[]}
+5:59:55 PM [express] POST /api/users/badges/batch 200 in 8ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+5:59:55 PM [express] POST /api/users/badges/batch 200 in 4ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+5:59:55 PM [express] POST /api/users/badges/batch 200 in 63ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+5:59:55 PM [express] POST /api/users/badges/batch 200 in 73ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+6:00:01 PM [express] GET /api/auth/user 401 in 2ms :: {"message":"Unauthorized"}
+6:00:02 PM [express] GET /api/announcements 304 in 7ms :: []
+6:00:02 PM [express] POST /api/rooms/votes/batch 200 in 5ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+6:00:02 PM [express] GET /api/rooms/participants 304 in 0ms :: {}
+6:00:02 PM [express] GET /api/rooms 304 in 3ms :: []
+6:00:02 PM [express] POST /api/users/badges/batch 200 in 7ms :: {"sample-user-4":[],"sample-user-5":[]}
+6:00:02 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+6:00:02 PM [express] POST /api/users/badges/batch 200 in 5ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+6:00:02 PM [express] POST /api/users/badges/batch 200 in 4ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+6:00:02 PM [express] POST /api/users/badges/batch 200 in 3ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+6:00:02 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+6:00:23 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+6:00:23 PM [express] GET /api/rooms 304 in 13ms :: []
+6:00:28 PM [express] GET /api/rooms 304 in 4ms :: []
+6:00:32 PM [express] GET /api/announcements 304 in 6ms :: []
+6:00:32 PM [express] POST /api/rooms/votes/batch 200 in 4ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+6:00:33 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+6:00:33 PM [express] GET /api/rooms 304 in 2ms :: []
+6:00:38 PM [express] GET /api/rooms 304 in 4ms :: []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:01:45 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/dm-view.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:01:58 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/dm-view.tsx, /src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:02:24 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m
+6:06:30 PM [express] GET /api/rooms 304 in 17ms :: []
+6:06:30 PM [express] POST /api/rooms/votes/batch 200 in 16ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+6:06:30 PM [express] GET /api/rooms/participants 304 in 1ms :: {}
+6:06:30 PM [express] GET /api/announcements 304 in 3ms :: []
+6:06:35 PM [express] GET /api/rooms 304 in 3ms :: []
+6:06:41 PM [express] GET /api/login 302 in 189ms
+6:06:41 PM [express] GET /api/rooms/participants 304 in 2ms :: {}
+6:06:41 PM [express] GET /api/rooms 304 in 3ms :: []
+6:07:07 PM [express] GET /api/auth/user 401 in 0ms :: {"message":"Unauthorized"}
+6:07:08 PM [express] GET /api/rooms/participants 200 in 1ms :: {}
+6:07:08 PM [express] POST /api/rooms/votes/batch 200 in 16ms :: {"counts":{"sample-room-1":0,"sample-room-2":0,"sample-room-3":0,"sample-room-4":0,"sample-room-5":0,"sample-room-6":0},"userVotes":{}}
+6:07:08 PM [express] GET /api/announcements 200 in 22ms :: []
+6:07:08 PM [express] GET /api/rooms 200 in 19ms :: []
+6:07:08 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-12":[],"sample-user-13":[],"sample-user-16":[]}
+6:07:08 PM [express] POST /api/users/badges/batch 200 in 1ms :: {"sample-user-1":[],"sample-user-2":[],"sample-user-3":[]}
+6:07:08 PM [express] POST /api/users/badges/batch 200 in 1ms :: {"sample-user-4":[],"sample-user-5":[]}
+6:07:08 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-14":[],"sample-user-15":[],"sample-user-17":[]}
+6:07:08 PM [express] POST /api/users/badges/batch 200 in 1ms :: {"sample-user-11":[],"sample-user-18":[],"sample-user-19":[],"sample-user-20":[]}
+6:07:08 PM [express] POST /api/users/badges/batch 200 in 2ms :: {"sample-user-6":[],"sample-user-7":[],"sample-user-8":[],"sample-user-9":[],"sample-user-10":[]}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:09:50 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:10:13 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/voice-room.tsx[22m [33m(x2)[39m
