@@ -8,28 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { ChevronLeft, ChevronRight, Hammer, Link, Loader2, Search, Video, X, Youtube } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-
-const ROOM_THEMES = [
-  { id: "premium-atmosphere", label: "Premium", preview: "from-cyan-400 via-fuchsia-500 to-orange-400", img: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=160&h=90&fit=crop" },
-  { id: "cosmic", label: "Cosmic", preview: "from-blue-600 via-purple-500 to-red-500", img: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=160&h=90&fit=crop" },
-  { id: "plasma", label: "Plasma", preview: "from-pink-500 via-purple-600 to-indigo-500", img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=160&h=90&fit=crop" },
-  { id: "hologram", label: "Hologram", preview: "from-cyan-400 via-teal-500 to-emerald-400", img: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=160&h=90&fit=crop" },
-  { id: "inferno", label: "Inferno", preview: "from-orange-600 via-red-500 to-yellow-400", img: "https://images.unsplash.com/photo-1476611550555-bca9b4c1a2f7?w=160&h=90&fit=crop" },
-  { id: "sunset", label: "Sunset", preview: "from-orange-400 to-red-500", img: "https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?w=160&h=90&fit=crop" },
-  { id: "forest", label: "Forest", preview: "from-green-400 to-emerald-600", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=160&h=90&fit=crop" },
-  { id: "ocean", label: "Ocean", preview: "from-blue-400 to-cyan-600", img: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=160&h=90&fit=crop" },
-  { id: "cherry", label: "Cherry", preview: "from-pink-400 to-rose-500", img: "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=160&h=90&fit=crop" },
-  { id: "gold", label: "Gold", preview: "from-yellow-300 to-amber-500", img: "https://images.unsplash.com/photo-1610375461246-83df859d849d?w=160&h=90&fit=crop" },
-  { id: "neon", label: "Neon", preview: "from-cyan-400 to-purple-500", img: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=160&h=90&fit=crop" },
-  { id: "galaxy", label: "Galaxy", preview: "from-indigo-500 to-purple-700", img: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=160&h=90&fit=crop" },
-  { id: "cyberpunk", label: "Cyberpunk", preview: "from-yellow-400 to-cyan-400", img: "https://images.unsplash.com/photo-1620503374956-c942862f0372?w=160&h=90&fit=crop" },
-  { id: "aurora", label: "Aurora", preview: "from-teal-400 to-green-400", img: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=160&h=90&fit=crop" },
-  { id: "violet", label: "Violet", preview: "from-violet-400 to-fuchsia-600", img: "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=160&h=90&fit=crop" },
-  { id: "matrix", label: "Matrix", preview: "from-green-400 to-green-700", img: "https://images.unsplash.com/photo-1526378722484-bd91ca387e72?w=160&h=90&fit=crop" },
-  { id: "storm", label: "Storm", preview: "from-blue-500 to-slate-600", img: "https://images.unsplash.com/photo-1504370805625-d37c82b94a8e?w=160&h=90&fit=crop" },
-  { id: "volcanic", label: "Volcanic", preview: "from-red-500 to-orange-400", img: "https://images.unsplash.com/photo-1495953557-73f0ba4c50af?w=160&h=90&fit=crop" },
-  { id: "default", label: "Default", preview: "from-cyan-500 to-purple-500", img: "https://images.unsplash.com/photo-1497091071254-cc9b2ba7c48a?w=160&h=90&fit=crop" },
-];
+import { ROOM_THEMES } from "@/components/profile-decorations";
 
 function extractYoutubeId(url: string): string | null {
   const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
