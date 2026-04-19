@@ -554,6 +554,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const aiSpeakingRef = useRef(false);
   const aiLoadingRef = useRef(false);
   const aiActiveRef = useRef(false);
+  const aiSpeakWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Room-wide AI Tutor state
   const [roomAiTutorSession, setRoomAiTutorSession] = useState<{
     active: boolean; userId: string | null; username: string | null; speaking: boolean;
@@ -1565,7 +1566,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           player.stopVideo();
         }
       } catch (e) {}
-      setTimeout(() => { ytRemoteAction.current = false; }, 1000);
+      setTimeout(() => { ytRemoteAction.current = false; }, 3000);
     });
 
     socket.on("room:roles", (roles: Record<string, string>) => {
@@ -1846,10 +1847,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       return;
     }
 
-    if (true) {
-      return;
-    }
-
     const createPlayer = () => {
       const container = document.getElementById("yt-player-container");
       if (!container) return;
@@ -2038,6 +2035,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const speakAiText = (text: string, voice: string, speed: number, observerMode = false) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
+    if (aiSpeakWatchdogRef.current) { clearInterval(aiSpeakWatchdogRef.current); aiSpeakWatchdogRef.current = null; }
     // Stop listening while AI speaks so it won't pick up its own voice
     if (!observerMode) {
       try { aiRecognitionRef.current?.abort(); } catch {}
@@ -2048,6 +2046,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     utter.rate = Math.max(0.5, Math.min(2, speed));
     utter.pitch = voice === "Female" ? 1.15 : 0.85;
     utter.lang = "en-US";
+
+    const onSpeakEnd = (fromObserver = false) => {
+      if (aiSpeakWatchdogRef.current) { clearInterval(aiSpeakWatchdogRef.current); aiSpeakWatchdogRef.current = null; }
+      if (!aiSpeakingRef.current) return; // already handled
+      setAiTutorSpeaking(false);
+      aiSpeakingRef.current = false;
+      socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: false });
+      if (!observerMode && !fromObserver) {
+        setTimeout(() => {
+          if (aiActiveRef.current && !aiLoadingRef.current) startAiListening();
+        }, 400);
+      }
+    };
+
     const trySpeak = () => {
       const voices = window.speechSynthesis.getVoices();
       if (voices.length > 0) {
@@ -2063,32 +2075,33 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
       setAiTutorSpeaking(true);
       socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: true });
-      utter.onend = () => {
-        setAiTutorSpeaking(false);
-        aiSpeakingRef.current = false;
-        socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: false });
-        // Restart listening after AI finishes speaking
-        if (!observerMode) {
-          setTimeout(() => {
-            if (aiActiveRef.current && !aiLoadingRef.current) {
-              startAiListening();
-            }
-          }, 400);
-        }
-      };
-      utter.onerror = () => {
-        setAiTutorSpeaking(false);
-        aiSpeakingRef.current = false;
-        socket?.emit("room:ai-tutor-speaking", { roomId: room.id, userId: user?.id, speaking: false });
-        if (!observerMode) {
-          setTimeout(() => {
-            if (aiActiveRef.current && !aiLoadingRef.current) {
-              startAiListening();
-            }
-          }, 400);
-        }
-      };
+      utter.onend = () => onSpeakEnd();
+      utter.onerror = () => onSpeakEnd();
       window.speechSynthesis.speak(utter);
+
+      // Chrome bug watchdog: speechSynthesis.onend sometimes never fires.
+      // Poll every 500ms; if speech has silently stopped, trigger cleanup manually.
+      const expectedDuration = Math.max(3000, (text.length / 14) * 1000 / Math.max(0.5, Math.min(2, speed)));
+      let elapsed = 0;
+      aiSpeakWatchdogRef.current = setInterval(() => {
+        elapsed += 500;
+        // Chrome bug: resume paused synthesis
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        const stillSpeaking = window.speechSynthesis.speaking;
+        if (!stillSpeaking && elapsed > 1000) {
+          onSpeakEnd(true);
+          setTimeout(() => {
+            if (aiActiveRef.current && !aiLoadingRef.current) startAiListening();
+          }, 400);
+        } else if (elapsed > expectedDuration + 5000) {
+          // Hard timeout: something is seriously stuck
+          window.speechSynthesis.cancel();
+          onSpeakEnd(true);
+          setTimeout(() => {
+            if (aiActiveRef.current && !aiLoadingRef.current) startAiListening();
+          }, 400);
+        }
+      }, 500);
     };
     if (window.speechSynthesis.getVoices().length === 0) {
       window.speechSynthesis.onvoiceschanged = trySpeak;
@@ -5493,15 +5506,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
           {activeYoutubeId && showYoutube && (
             <div className="flex-1 min-h-0 bg-black relative" data-testid="media-main-youtube">
-              <iframe
-                src={getYoutubeEmbedUrl(activeYoutubeId)}
-                title="Shared YouTube player"
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
-                data-testid="iframe-youtube-player"
-              />
+              <div id="yt-player-container" className="w-full h-full border-0" data-testid="iframe-youtube-player" />
 
               {(() => {
                 const broadcaster = participants.find(p => p.id === youtubeStartedBy);
