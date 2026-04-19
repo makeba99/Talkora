@@ -503,6 +503,147 @@ export async function registerRoutes(
     }
   });
 
+  // ── AI Tutor Streaming (SSE) ─────────────────────────────────────────────
+  // Streams tokens from NVIDIA Nemotron → client for real-time TTS playback.
+  // Falls back to OpenAI streaming, then buffered fallback.
+  app.post("/api/ai-tutor/stream", isAuthenticated, async (req: any, res) => {
+    const startTime = Date.now();
+    // Disable compression so SSE tokens flush immediately
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Content-Encoding', 'identity');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    const sendEvent = (data: object) => {
+      try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {}
+    };
+
+    try {
+      const { message, history = [], settings = {}, language = "English", youtubeActive = false } = req.body;
+      if (!message || typeof message !== 'string') {
+        sendEvent({ error: 'message required' });
+        return res.end();
+      }
+
+      const correctionMode = settings.correctionMode || 'live';
+      const personality = settings.personality || 'Friendly';
+      const teachingStyle = settings.teachingStyle || 'Conversation';
+
+      const recentAiReplies = (history as any[])
+        .filter((m: any) => m.role === 'ai').slice(-4)
+        .map((m: any) => (m.text || '').toLowerCase().trim());
+      const isRepetitive = recentAiReplies.length >= 2 && new Set(recentAiReplies).size < recentAiReplies.length;
+      const temperature = isRepetitive ? 0.92 : 0.80;
+
+      const correctionLine = correctionMode !== 'off'
+        ? 'If you notice a grammar or vocabulary mistake, weave in the correction naturally as part of your reply.'
+        : 'Focus on the conversation — do not mention errors.';
+
+      const systemPrompt = [
+        `You are ${personality === 'Formal' ? 'a warm but professional' : 'a friendly, natural'} language conversation partner helping someone practice ${language}.`,
+        `Your style is ${teachingStyle === 'Grammar' ? 'grammar-focused but warm' : 'natural and conversational — like chatting with a fluent friend'}.`,
+        'React genuinely to what the person says. Keep replies SHORT — 1 to 3 sentences maximum.',
+        'Never start with "Great!", "Wow!", "Interesting!" or similar filler. Just respond naturally.',
+        'Never ask more than one question per reply.',
+        correctionLine,
+        isRepetitive ? 'IMPORTANT: You have been repeating yourself. Give a completely fresh response from a different angle.' : '',
+        youtubeActive ? 'The user is also watching a YouTube video — you may reference it if relevant.' : '',
+        'Reply in plain conversational text only — no JSON, no markdown.',
+      ].filter(Boolean).join(' ');
+
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...(history as any[]).slice(-10).map((m: any) => ({
+          role: m.role === 'ai' ? 'assistant' : 'user',
+          content: m.text,
+        })),
+        { role: 'user', content: message },
+      ];
+
+      const streamTokens = async (provider: string, model: string, baseUrl: string, key: string): Promise<boolean> => {
+        try {
+          const nvidiaRes = await fetch(`${baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, messages, max_tokens: 220, temperature, stream: true }),
+          });
+          if (!nvidiaRes.ok || !nvidiaRes.body) return false;
+
+          const reader = nvidiaRes.body.getReader();
+          const decoder = new TextDecoder();
+          let sseBuffer = '';
+          let firstToken = true;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            sseBuffer += decoder.decode(value, { stream: true });
+            const lines = sseBuffer.split('\n');
+            sseBuffer = lines.pop() || '';
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const raw = line.slice(6).trim();
+              if (!raw || raw === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(raw);
+                const token: string = parsed.choices?.[0]?.delta?.content || '';
+                if (token) {
+                  if (firstToken) {
+                    console.log(`[AI Stream] First token from ${provider}/${model} in ${Date.now() - startTime}ms`);
+                    firstToken = false;
+                  }
+                  sendEvent({ token });
+                }
+              } catch {}
+            }
+          }
+          return true;
+        } catch (err) {
+          console.error(`[AI Stream] ${provider} stream error:`, err);
+          return false;
+        }
+      };
+
+      let streamed = false;
+      const nvidiaModel = (message.length > 200 || isRepetitive)
+        ? 'nvidia/llama-3.3-nemotron-super-49b-v1'
+        : 'nvidia/llama-3.1-nemotron-nano-8b-instruct';
+
+      if (NVIDIA_API_KEY) {
+        streamed = await streamTokens('nvidia', nvidiaModel, 'https://integrate.api.nvidia.com/v1', NVIDIA_API_KEY);
+        if (!streamed && OPENAI_API_KEY) {
+          console.warn('[AI Stream] NVIDIA failed — retrying with OpenAI gpt-4o-mini');
+          sendEvent({ meta: 'switching_to_backup' });
+          streamed = await streamTokens('openai', 'gpt-4o-mini', 'https://api.openai.com/v1', OPENAI_API_KEY);
+        }
+      } else if (OPENAI_API_KEY) {
+        streamed = await streamTokens('openai', 'gpt-4o', 'https://api.openai.com/v1', OPENAI_API_KEY);
+      }
+
+      const model = NVIDIA_API_KEY ? nvidiaModel : 'gpt-4o';
+      if (streamed) {
+        sendEvent({ done: true, model, latencyMs: Date.now() - startTime });
+      } else {
+        // Ultimate fallback: return a context-aware canned reply
+        const userWords = message.trim().split(/\s+/).slice(0, 4).join(' ');
+        const fallbacks = [
+          `You said "${userWords}" — tell me more about that.`,
+          `That's interesting — what do you mean exactly?`,
+          `I'd love to hear more. What happened next?`,
+          `Say more — I'm following along.`,
+        ];
+        const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        sendEvent({ token: fallback });
+        sendEvent({ done: true, model: 'fallback', latencyMs: Date.now() - startTime });
+      }
+    } catch (err) {
+      console.error('[AI Stream] Unexpected error:', err);
+      sendEvent({ error: 'Server error — please try again.' });
+    }
+    res.end();
+  });
+
   const TENOR_KEY = process.env.TENOR_API_KEY || "LIVDSRZULELA";
 
   function mapTenorResults(items: any[]) {

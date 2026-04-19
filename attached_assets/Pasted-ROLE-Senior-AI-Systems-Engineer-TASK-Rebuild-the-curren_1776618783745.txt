@@ -1,0 +1,195 @@
+ROLE: Senior AI Systems Engineer
+
+TASK:
+Rebuild the current AI system to use NVIDIA Nemotron Nano as the primary model and implement a real-time voice interaction pipeline. Remove all unused or legacy logic from the previous GPT-4 implementation.
+
+GOAL:
+- Instant, real-time voice interaction
+- No repeated or generic responses
+- Clean, efficient architecture
+- Smooth YouTube/media coexistence (no conflicts)
+
+---
+
+CORE ARCHITECTURE:
+
+Implement a real-time voice pipeline:
+
+User Voice →
+Speech-to-Text (STT) →
+Nemotron Nano (LLM, streaming) →
+Text chunks →
+Text-to-Speech (TTS, streaming) →
+Audio output (plays immediately)
+
+---
+
+1. REMOVE LEGACY GPT-4 LOGIC
+
+- Remove:
+  - GPT-4 default routing
+  - Blocking (non-streaming) responses
+  - Redundant prompt wrappers
+  - Old retry loops tied to GPT behavior
+- Keep ONLY optional fallback hook (disabled by default)
+
+---
+
+2. NVIDIA NEMOTRON INTEGRATION
+
+- Model: nemotron-3-nano-30b
+- Endpoint: NVIDIA NIM API
+- Enable: stream = true
+
+Requirements:
+- Start receiving tokens immediately
+- Do NOT wait for full completion
+- Pass minimal, clean prompt (no heavy system overload)
+
+---
+
+3. REAL-TIME STREAMING ENGINE (CRITICAL)
+
+- Stream tokens from Nemotron
+- Buffer into small chunks (e.g., sentence or phrase level)
+- Send chunks instantly to TTS
+
+DO NOT:
+- Wait for full response
+- Block UI while generating
+
+TARGET:
+- First token < 300ms
+- Voice start < 700ms
+
+---
+
+4. TEXT-TO-SPEECH (TTS)
+
+- Integrate fast TTS engine (prefer NVIDIA Riva or equivalent)
+- Support:
+  - Low latency
+  - Natural voice
+  - Streaming playback
+
+Behavior:
+- Speak as chunks arrive
+- Interrupt previous speech if user speaks again
+
+---
+
+5. SPEECH-TO-TEXT (STT)
+
+- Real-time transcription
+- Detect end-of-speech quickly
+- Avoid long silence delays
+
+---
+
+6. INTERRUPT + LISTENING LOGIC
+
+- If user speaks while AI is talking:
+  → Immediately stop TTS
+  → Cancel current AI generation
+  → Process new input
+
+This is mandatory for natural conversation.
+
+---
+
+7. ANTI-REPETITION + CONTEXT FIX
+
+- Store last 5–10 messages
+- Add system rule:
+  "Always adapt responses. Do not repeat previous answers."
+
+- If response similarity > 80%:
+  → regenerate once
+
+---
+
+8. YOUTUBE / MEDIA CONFLICT FIX
+
+- Completely isolate AI logic from media player
+
+Rules:
+- AI updates must NOT trigger re-render of YouTube iframe
+- No shared state between:
+  - AI responses
+  - Video player
+
+- Use separate state containers:
+  aiState
+  mediaState
+
+---
+
+9. UI / UX REQUIREMENTS
+
+- Voice-first experience
+- Add:
+  🎤 “Start Talking” button
+  🔊 Live speaking indicator
+  🧠 “Show Debug” toggle (collapsed by default)
+
+Debug mode shows:
+- model used
+- latency
+- streaming status
+- errors (if any)
+
+---
+
+10. PERFORMANCE TARGETS
+
+- AI response start: < 500ms
+- Voice start: < 700ms
+- Full response: < 2–3 seconds
+- Zero UI freezing
+
+---
+
+11. FAILSAFE
+
+If NVIDIA fails:
+- Retry once
+- Then fallback to secondary model (optional)
+- Return clean message:
+  "Switching to backup AI for stability"
+
+---
+
+12. CLEAN CODE REQUIREMENTS
+
+- Modular services:
+  /stt
+  /llm
+  /tts
+  /stream
+- Environment variables for all keys
+- No hardcoded configs
+- Easy to swap models
+
+---
+
+DELIVERABLES:
+
+- Backend voice pipeline (API + streaming)
+- Nemotron integration
+- STT + TTS integration
+- Interrupt handling
+- Frontend voice UI hooks
+- Debug toggle system
+
+---
+
+PRIORITY ORDER:
+
+1. Speed (real-time feel)
+2. Voice responsiveness
+3. Stability
+4. Intelligence
+
+---
+
+END OF IMPLEMENTATION PROMPT

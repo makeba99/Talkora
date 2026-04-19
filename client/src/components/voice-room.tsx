@@ -556,6 +556,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const aiActiveRef = useRef(false);
   const aiChatPanelOpenRef = useRef(false);
   const aiSpeakWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const aiStreamAbortRef = useRef<AbortController | null>(null);
+  const aiTtsQueueRef = useRef<string[]>([]);
+  const aiTtsActiveRef = useRef(false);
   // Room-wide AI Tutor state
   const [roomAiTutorSession, setRoomAiTutorSession] = useState<{
     active: boolean; userId: string | null; username: string | null; speaking: boolean;
@@ -2201,38 +2204,119 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     setAiDebugLog(prev => [...prev.slice(-19), { timestamp, type, message }]);
   };
 
+  // Stop any in-progress stream + TTS so user can interrupt immediately
+  const interruptAi = () => {
+    aiStreamAbortRef.current?.abort();
+    aiStreamAbortRef.current = null;
+    aiTtsQueueRef.current = [];
+    aiTtsActiveRef.current = false;
+    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+    if (aiSpeakWatchdogRef.current) { clearInterval(aiSpeakWatchdogRef.current); aiSpeakWatchdogRef.current = null; }
+    aiSpeakingRef.current = false;
+    setAiTutorSpeaking(false);
+  };
+
+  // Play next sentence from TTS queue (called recursively via onend)
+  const playNextTts = () => {
+    if (aiTtsQueueRef.current.length === 0) {
+      aiTtsActiveRef.current = false;
+      setAiTutorSpeaking(false);
+      aiSpeakingRef.current = false;
+      socket?.emit('room:ai-tutor-speaking', { roomId: room.id, userId: user?.id, speaking: false });
+      if (aiActiveRef.current && !aiLoadingRef.current && aiChatPanelOpenRef.current) {
+        setTimeout(() => startAiListening(), 400);
+      }
+      return;
+    }
+    const sentence = aiTtsQueueRef.current.shift()!;
+    if (!sentence.trim()) { playNextTts(); return; }
+
+    aiTtsActiveRef.current = true;
+    aiSpeakingRef.current = true;
+    setAiTutorSpeaking(true);
+    socket?.emit('room:ai-tutor-speaking', { roomId: room.id, userId: user?.id, speaking: true });
+
+    const utter = new SpeechSynthesisUtterance(sentence);
+    utter.rate = Math.max(0.5, Math.min(2, aiTutorSettings.speed));
+    utter.pitch = aiTutorSettings.voice === 'Female' ? 1.15 : 0.85;
+    utter.lang = 'en-US';
+
+    const voices = typeof window !== 'undefined' ? window.speechSynthesis.getVoices() : [];
+    if (voices.length > 0) {
+      const chosen = aiTutorSettings.voice === 'Female'
+        ? (voices.find(v => /samantha|zira|google us english/i.test(v.name) && v.lang.startsWith('en')) ?? voices.find(v => v.lang.startsWith('en')))
+        : (voices.find(v => /daniel|david|alex|mark/i.test(v.name) && v.lang.startsWith('en')) ?? voices.find(v => v.lang.startsWith('en')));
+      if (chosen) utter.voice = chosen;
+    }
+
+    const onDone = () => {
+      if (aiSpeakWatchdogRef.current) { clearInterval(aiSpeakWatchdogRef.current); aiSpeakWatchdogRef.current = null; }
+      playNextTts();
+    };
+    utter.onend = onDone;
+    utter.onerror = onDone;
+
+    // Watchdog: Chrome sometimes silently swallows onend for short sentences
+    const expectedMs = Math.max(1500, (sentence.length / 14) * 1000 / Math.max(0.5, utter.rate));
+    let elapsed = 0;
+    aiSpeakWatchdogRef.current = setInterval(() => {
+      elapsed += 300;
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+      if (!window.speechSynthesis.speaking && elapsed > 800) { clearInterval(aiSpeakWatchdogRef.current!); aiSpeakWatchdogRef.current = null; playNextTts(); }
+      else if (elapsed > expectedMs + 3000) { clearInterval(aiSpeakWatchdogRef.current!); aiSpeakWatchdogRef.current = null; window.speechSynthesis.cancel(); playNextTts(); }
+    }, 300);
+
+    window.speechSynthesis.speak(utter);
+  };
+
+  // Add sentence to TTS queue; auto-starts playback if idle
+  const queueTts = (sentence: string) => {
+    if (!sentence.trim()) return;
+    aiTtsQueueRef.current.push(sentence.trim());
+    if (!aiTtsActiveRef.current) playNextTts();
+  };
+
   const sendAiMessage = async (text: string) => {
     if (!text.trim() || aiTutorLoading) return;
+
+    // Interrupt any in-progress stream or TTS immediately
+    interruptAi();
+
     aiLoadingRef.current = true;
     setAiInterimText(null);
-    const userMsg = { id: `u-${Date.now()}`, role: "user" as const, text: text.trim() };
+    const userMsg = { id: `u-${Date.now()}`, role: 'user' as const, text: text.trim() };
     setAiConversation(prev => [...prev, userMsg]);
     setAiTutorLoading(true);
     setAiAcknowledging(true);
 
-    // Detect YouTube conflict
     const ytActive = !!activeYoutubeId && showYoutube;
-    if (ytActive) {
-      addAiDebugEntry('yt', 'YouTube is active while AI is listening — potential audio conflict detected.');
-    }
+    if (ytActive) addAiDebugEntry('yt', 'YouTube is active while AI is listening — potential audio conflict.');
 
-    // Detect repetition in recent AI replies before sending
     const recentAiTexts = aiConversation.filter(m => m.role === 'ai').slice(-4).map(m => m.text.toLowerCase().trim());
-    const uniqueAiTexts = new Set(recentAiTexts);
-    if (recentAiTexts.length >= 2 && uniqueAiTexts.size < recentAiTexts.length) {
-      addAiDebugEntry('warn', 'Repetitive AI responses detected — requesting adaptive reply from server.');
+    if (recentAiTexts.length >= 2 && new Set(recentAiTexts).size < recentAiTexts.length) {
+      addAiDebugEntry('warn', 'Repetitive AI responses detected — requesting adaptive reply.');
     }
 
     addAiDebugEntry('info', `User said: "${text.trim().slice(0, 60)}${text.length > 60 ? '…' : ''}"`);
+    setTimeout(() => setAiAcknowledging(false), 600);
 
-    setTimeout(() => setAiAcknowledging(false), 800);
+    const abort = new AbortController();
+    aiStreamAbortRef.current = abort;
+
+    const streamingMsgId = `a-${Date.now()}`;
+    // Add a placeholder that will be updated as tokens stream in
+    setAiConversation(prev => [...prev, { id: streamingMsgId, role: 'ai' as const, text: '' }]);
+
+    let fullReply = '';
+    let sentenceBuffer = '';
+    let firstToken = true;
+    const t0 = Date.now();
 
     try {
-      const t0 = Date.now();
-      const res = await fetch("/api/ai-tutor/chat", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/ai-tutor/stream', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text.trim(),
           history: aiConversation.slice(-8),
@@ -2240,47 +2324,146 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           language: room.language,
           youtubeActive: ytActive,
         }),
+        signal: abort.signal,
       });
-      if (res.ok) {
-        const data = await res.json();
-        const latency = Date.now() - t0;
-        const dbg = data.debug || {};
-        addAiDebugEntry(
-          dbg.source === 'fallback' ? 'warn' : dbg.source === 'error' ? 'error' : 'info',
-          `Response from ${dbg.source || 'server'} in ${latency}ms` +
-          (dbg.model ? ` · model: ${dbg.model}` : '') +
-          (dbg.warnings?.length ? ` · ⚠ ${dbg.warnings.join(', ')}` : '')
-        );
-        if (dbg.source === 'fallback') {
-          addAiDebugEntry('warn', 'OpenAI unavailable — context-aware fallback used. Check OPENAI_API_KEY.');
-        }
-        setAiConversation(prev => [...prev, {
-          id: `a-${Date.now()}`,
-          role: "ai",
-          text: data.reply,
-          correction: data.correction || undefined,
-          correctionFixed: data.correctionFixed || undefined,
-        }]);
-        setLastAiBroadcast(data.reply);
-        socket?.emit("room:ai-tutor-message", {
-          roomId: room.id,
-          userId: user?.id,
-          text: data.reply,
-          correction: data.correction || null,
-          correctionFixed: data.correctionFixed || null,
-          voice: aiTutorSettings.voice,
-          speed: aiTutorSettings.speed,
-        });
-        speakAiText(data.reply, aiTutorSettings.voice, aiTutorSettings.speed);
-      } else {
-        addAiDebugEntry('error', `API request failed with status ${res.status}`);
+
+      if (!res.ok || !res.body) {
+        addAiDebugEntry('error', `Stream request failed (${res.status}) — falling back to buffered mode.`);
+        throw new Error(`HTTP ${res.status}`);
       }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+
+      // Stop listening while streaming (AI is "thinking/talking")
+      try { aiRecognitionRef.current?.abort(); } catch {}
+      setAiListening(false);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (!raw) continue;
+
+          try {
+            const event = JSON.parse(raw);
+
+            if (event.error) {
+              addAiDebugEntry('error', `Stream error: ${event.error}`);
+              break;
+            }
+
+            if (event.meta === 'switching_to_backup') {
+              addAiDebugEntry('warn', 'NVIDIA unavailable — switching to backup AI.');
+            }
+
+            if (event.token) {
+              if (firstToken) {
+                addAiDebugEntry('info', `First token in ${Date.now() - t0}ms`);
+                firstToken = false;
+              }
+              sentenceBuffer += event.token;
+              fullReply += event.token;
+
+              // Update streaming bubble in real-time
+              setAiConversation(prev => prev.map(m =>
+                m.id === streamingMsgId ? { ...m, text: fullReply } : m
+              ));
+
+              // Flush complete sentences to TTS queue as they arrive
+              let match: RegExpMatchArray | null;
+              while ((match = sentenceBuffer.match(/^(.*?[.!?])(\s+|$)/))) {
+                const sentence = match[1].trim();
+                sentenceBuffer = sentenceBuffer.slice(match[0].length);
+                if (sentence) queueTts(sentence);
+              }
+            }
+
+            if (event.done) {
+              const latencyMs = Date.now() - t0;
+              addAiDebugEntry('info', `Stream complete in ${latencyMs}ms · model: ${event.model || 'unknown'}`);
+
+              // Speak any remaining partial sentence
+              if (sentenceBuffer.trim()) queueTts(sentenceBuffer.trim());
+              sentenceBuffer = '';
+
+              // Broadcast full reply to room
+              if (fullReply.trim()) {
+                setLastAiBroadcast(fullReply);
+                socket?.emit('room:ai-tutor-message', {
+                  roomId: room.id,
+                  userId: user?.id,
+                  text: fullReply,
+                  voice: aiTutorSettings.voice,
+                  speed: aiTutorSettings.speed,
+                });
+              }
+            }
+          } catch {}
+        }
+      }
+
+      // If stream ended without any tokens, remove placeholder and fall back
+      if (!fullReply.trim()) {
+        setAiConversation(prev => prev.filter(m => m.id !== streamingMsgId));
+        throw new Error('Empty stream response');
+      }
+
     } catch (err: any) {
-      addAiDebugEntry('error', `Network error: ${err?.message || 'unknown'}`);
+      if (err?.name === 'AbortError') {
+        addAiDebugEntry('info', 'Stream cancelled — user interrupted.');
+        // Remove empty placeholder if nothing was spoken yet
+        if (!fullReply.trim()) setAiConversation(prev => prev.filter(m => m.id !== streamingMsgId));
+      } else {
+        addAiDebugEntry('warn', `Streaming failed (${err?.message}) — using buffered fallback.`);
+        // Fallback to the blocking chat endpoint
+        try {
+          // Remove empty streaming placeholder first
+          setAiConversation(prev => prev.filter(m => m.id !== streamingMsgId));
+          const fbRes = await fetch('/api/ai-tutor/chat', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: text.trim(),
+              history: aiConversation.slice(-8),
+              settings: aiTutorSettings,
+              language: room.language,
+              youtubeActive: ytActive,
+            }),
+          });
+          if (fbRes.ok) {
+            const data = await fbRes.json();
+            const reply = data.reply || '';
+            addAiDebugEntry('info', `Buffered fallback: ${data.debug?.model || 'unknown'} in ${Date.now() - t0}ms`);
+            setAiConversation(prev => [...prev, {
+              id: `a-${Date.now()}`, role: 'ai' as const,
+              text: reply,
+              correction: data.correction || undefined,
+              correctionFixed: data.correctionFixed || undefined,
+            }]);
+            setLastAiBroadcast(reply);
+            socket?.emit('room:ai-tutor-message', { roomId: room.id, userId: user?.id, text: reply, voice: aiTutorSettings.voice, speed: aiTutorSettings.speed });
+            speakAiText(reply, aiTutorSettings.voice, aiTutorSettings.speed);
+          }
+        } catch (fbErr: any) {
+          addAiDebugEntry('error', `Fallback also failed: ${fbErr?.message}`);
+          setAiConversation(prev => prev.filter(m => m.id !== streamingMsgId));
+        }
+      }
     } finally {
       setAiTutorLoading(false);
       setAiAcknowledging(false);
       aiLoadingRef.current = false;
+      aiStreamAbortRef.current = null;
     }
   };
 
@@ -2343,6 +2526,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         // processed invisibly before the user has opened the panel
         if (aiChatPanelOpenRef.current) {
           addAiDebugEntry('info', `Recognized: "${transcript.slice(0, 80)}${transcript.length > 80 ? '…' : ''}"`);
+          // Interrupt any ongoing AI stream or TTS before sending new message
+          interruptAi();
           sendAiMessage(transcript);
         }
       }
