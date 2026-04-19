@@ -1520,7 +1520,6 @@ html.synthwave .neon-text {
 
 .ai-avatar-brow,
 .ai-avatar-cheek,
-.ai-avatar-soft-smile,
 .ai-avatar-face {
   transition: transform 180ms ease, opacity 180ms ease, filter 180ms ease;
 }
@@ -1543,10 +1542,6 @@ html.synthwave .neon-text {
   opacity: 0.55;
 }
 
-.ai-liveportrait-listening .ai-avatar-soft-smile {
-  opacity: 0.22;
-}
-
 .ai-liveportrait-speaking .ai-avatar-brow-left {
   transform: translateY(-4px) rotate(-5deg);
   transform-origin: 101px 106px;
@@ -1560,11 +1555,6 @@ html.synthwave .neon-text {
 .ai-liveportrait-speaking .ai-avatar-cheek {
   opacity: 0.95;
   filter: drop-shadow(0 0 7px rgba(255, 128, 170, 0.45));
-}
-
-.ai-liveportrait-speaking .ai-avatar-soft-smile {
-  opacity: 0.7;
-  transform: translateY(-1px);
 }
 
 .ai-liveportrait-speaking .ai-avatar-face {
