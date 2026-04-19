@@ -672,6 +672,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const participantsRef = useRef<Participant[]>([]);
   const pendingCandidates = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const youtubePlayerRef = useRef<any>(null);
+  const ytIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const ytPlayheadRef = useRef<{ time: number; wallMs: number }>({ time: 0, wallMs: 0 });
   const ytRemoteAction = useRef(false);
   const ytLastSyncVideoTime = useRef<number>(-999); // last video-time we broadcast a "play" sync
   const ytLastSyncWallTime = useRef<number>(0);     // wall-clock ms when we last broadcast
@@ -1816,120 +1818,103 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
   }, [remoteScreenShareUserId]);
 
+  // Build a postMessage-based player proxy so all existing call sites stay unchanged
   useEffect(() => {
     if (!activeYoutubeId || !showYoutube) {
-      if (youtubePlayerRef.current) {
-        try { youtubePlayerRef.current.destroy(); } catch (e) {}
-        youtubePlayerRef.current = null;
-      }
+      youtubePlayerRef.current = null;
       return;
     }
 
-    const buildStateChangeHandler = (player: any, YT: any) => (event: any) => {
-      const state = event.data;
-      // Always read fresh values via refs — no stale closures
+    const postMsg = (func: string, args: any[] = []) => {
+      const iframe = ytIframeRef.current;
+      if (!iframe?.contentWindow) return;
+      try {
+        iframe.contentWindow.postMessage(JSON.stringify({ event: "command", func, args }), "*");
+      } catch (_) {}
+    };
+
+    youtubePlayerRef.current = {
+      playVideo: () => postMsg("playVideo"),
+      pauseVideo: () => postMsg("pauseVideo"),
+      stopVideo: () => postMsg("stopVideo"),
+      seekTo: (time: number, allowSeekAhead = true) => postMsg("seekTo", [time, allowSeekAhead]),
+      getCurrentTime: () => {
+        const { time, wallMs } = ytPlayheadRef.current;
+        return time + (Date.now() - wallMs) / 1000;
+      },
+      getVideoData: () => ({ video_id: activeYoutubeId }),
+      loadVideoById: () => { /* no-op: src change handled by React re-render */ },
+      destroy: () => {},
+    };
+  }, [activeYoutubeId, showYoutube]);
+
+  // Listen for YouTube postMessage events (state changes, ready, time tracking)
+  useEffect(() => {
+    if (!activeYoutubeId || !showYoutube) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      let data: any;
+      try {
+        data = typeof event.data === "string" ? JSON.parse(event.data) : null;
+      } catch { return; }
+      if (!data) return;
+
       const isBroadcaster = user?.id === youtubeStartedByRef.current;
       const sock = socketRef.current;
-      if (state === YT.PlayerState.ENDED) {
-        if (isBroadcaster) {
-          try { player.seekTo(0, true); player.playVideo(); } catch (_) {}
-          sock?.emit("room:youtube-state", {
-            roomId: room.id, action: "play", time: 0, ts: Date.now(),
-          });
-        }
-        return;
-      }
-      // Ignore events that were triggered by a remote sync (prevent echo loops)
-      if (ytRemoteAction.current) return;
-      if (!isBroadcaster) return;
-      if (state === YT.PlayerState.PLAYING) {
-        const now = Date.now();
-        const currentTime = player.getCurrentTime();
-        const timeSinceLastSync = now - ytLastSyncWallTime.current;
-        const positionJump = Math.abs(currentTime - ytLastSyncVideoTime.current);
-        // Only broadcast if >8s have passed OR user seeked more than 3s forward/back
-        if (timeSinceLastSync > 8000 || positionJump > 3) {
-          ytLastSyncVideoTime.current = currentTime;
-          ytLastSyncWallTime.current = now;
-          sock?.emit("room:youtube-state", {
-            roomId: room.id, action: "play", time: currentTime, ts: Date.now(),
-          });
-        }
-      } else if (state === YT.PlayerState.PAUSED) {
-        ytLastSyncVideoTime.current = -999;
-        ytLastSyncWallTime.current = 0;
-        sock?.emit("room:youtube-state", {
-          roomId: room.id, action: "pause", time: player.getCurrentTime(), ts: Date.now(),
-        });
-      }
-    };
 
-    const createPlayer = () => {
-      const container = document.getElementById("yt-player-container");
-      if (!container) return;
-      const YT = (window as any).YT;
-      if (!YT || !YT.Player) return;
+      // Track current playhead time from infoDelivery
+      if (data.event === "infoDelivery" && data.info?.currentTime !== undefined) {
+        ytPlayheadRef.current = { time: data.info.currentTime, wallMs: Date.now() };
+      }
 
-      // If a player already exists for a different video, use loadVideoById — no destroy/recreate
-      if (youtubePlayerRef.current) {
-        try {
-          const existingId = youtubePlayerRef.current.getVideoData?.()?.video_id;
-          if (existingId && existingId === activeYoutubeId) return; // already playing
-          youtubePlayerRef.current.loadVideoById({
-            videoId: activeYoutubeId,
-            startSeconds: ytSyncTimeRef.current > 0 ? ytSyncTimeRef.current : 0,
-          });
+      if (data.event === "onReady") {
+        const player = youtubePlayerRef.current;
+        if (!player) return;
+        if (ytSyncTimeRef.current > 0) {
+          player.seekTo(ytSyncTimeRef.current, true);
           ytSyncTimeRef.current = 0;
+        }
+        player.playVideo();
+      }
+
+      if (data.event === "onStateChange") {
+        const state = data.info; // 0=ended, 1=playing, 2=paused
+        const player = youtubePlayerRef.current;
+        if (!player) return;
+
+        if (state === 0) { // ENDED
+          if (isBroadcaster) {
+            player.seekTo(0, true);
+            player.playVideo();
+            sock?.emit("room:youtube-state", { roomId: room.id, action: "play", time: 0, ts: Date.now() });
+          }
           return;
-        } catch (_) {
-          try { youtubePlayerRef.current.destroy(); } catch (_2) {}
-          youtubePlayerRef.current = null;
+        }
+
+        if (ytRemoteAction.current) return;
+        if (!isBroadcaster) return;
+
+        if (state === 1) { // PLAYING
+          const now = Date.now();
+          const currentTime = player.getCurrentTime();
+          const timeSinceLastSync = now - ytLastSyncWallTime.current;
+          const positionJump = Math.abs(currentTime - ytLastSyncVideoTime.current);
+          if (timeSinceLastSync > 8000 || positionJump > 3) {
+            ytLastSyncVideoTime.current = currentTime;
+            ytLastSyncWallTime.current = now;
+            sock?.emit("room:youtube-state", { roomId: room.id, action: "play", time: currentTime, ts: Date.now() });
+          }
+        } else if (state === 2) { // PAUSED
+          ytLastSyncVideoTime.current = -999;
+          ytLastSyncWallTime.current = 0;
+          sock?.emit("room:youtube-state", { roomId: room.id, action: "pause", time: player.getCurrentTime(), ts: Date.now() });
         }
       }
-
-      try {
-        const player = new YT.Player("yt-player-container", {
-          videoId: activeYoutubeId,
-          playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
-          events: {
-            onReady: () => {
-              try {
-                if (ytSyncTimeRef.current > 0) {
-                  player.seekTo(ytSyncTimeRef.current, true);
-                  ytSyncTimeRef.current = 0;
-                }
-                player.playVideo();
-              } catch (_) {}
-            },
-            onStateChange: buildStateChangeHandler(player, YT),
-          },
-        });
-        youtubePlayerRef.current = player;
-      } catch (e) {
-        console.error("YouTube player error:", e);
-      }
     };
 
-    const YT = (window as any).YT;
-    if (YT && YT.Player) {
-      createPlayer();
-    } else {
-      if (!document.getElementById("yt-api-script")) {
-        const tag = document.createElement("script");
-        tag.id = "yt-api-script";
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
-      }
-      (window as any).onYouTubeIframeAPIReady = createPlayer;
-    }
-
-    return () => {
-      if (youtubePlayerRef.current) {
-        try { youtubePlayerRef.current.destroy(); } catch (e) {}
-        youtubePlayerRef.current = null;
-      }
-    };
-  }, [activeYoutubeId, showYoutube]); // socket removed — handler uses socketRef to avoid player restart on reconnect
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [activeYoutubeId, showYoutube, room.id]);
 
   useEffect(() => {
     if (!socket || !activeYoutubeId) return;
@@ -5283,7 +5268,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
           {activeYoutubeId && showYoutube && (
             <div className="flex-1 min-h-0 bg-black relative" data-testid="media-main-youtube">
-              <div id="yt-player-container" className="w-full h-full border-0" data-testid="iframe-youtube-player" />
+              <iframe
+                key={activeYoutubeId}
+                ref={ytIframeRef}
+                src={`https://www.youtube-nocookie.com/embed/${activeYoutubeId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`}
+                className="w-full h-full border-0"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                data-testid="iframe-youtube-player"
+              />
 
               {(() => {
                 const broadcaster = participants.find(p => p.id === youtubeStartedBy);
