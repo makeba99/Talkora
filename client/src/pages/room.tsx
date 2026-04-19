@@ -79,7 +79,7 @@ export default function RoomPage() {
       onLeave={(reason) => {
         if (reason === "joined-another-room") {
           window.close();
-          window.location.href = "/";
+          setTimeout(() => { window.location.href = "/"; }, 300);
           return;
         }
         if (window.opener) window.close();

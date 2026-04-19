@@ -1210,6 +1210,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
       socket.emit("room:join", { roomId: room.id, userId: user.id });
       socket.emit("room:mute", { roomId: room.id, userId: user.id, isMuted: true });
+      try {
+        const bc = new BroadcastChannel(`connect-room-${user.id}`);
+        bc.postMessage({ type: "room-joined", roomId: room.id });
+        bc.close();
+      } catch {}
     };
 
     initMedia();
@@ -1577,7 +1582,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setChatMessages(prev => [welcomeMsg, ...prev.filter(m => m.type !== "welcome")]);
     });
 
+    let roomBc: BroadcastChannel | null = null;
+    try {
+      roomBc = new BroadcastChannel(`connect-room-${user.id}`);
+      roomBc.onmessage = (ev) => {
+        if (ev.data?.type === "room-joined" && ev.data?.roomId !== room.id) {
+          handleLeave("joined-another-room");
+        }
+      };
+    } catch {}
+
     return () => {
+      roomBc?.close();
       cancelAnimationFrame(animationFrameId);
       document.removeEventListener("visibilitychange", handleVisibilityForRoom);
       socket.emit("room:leave", { roomId: room.id, userId: user.id });
