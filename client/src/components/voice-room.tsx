@@ -568,6 +568,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     correctionFixed?: string;
   }>>([]);
   const [lastAiBroadcast, setLastAiBroadcast] = useState<string | null>(null);
+  const [aiDebugOpen, setAiDebugOpen] = useState(false);
+  const [aiInterimText, setAiInterimText] = useState<string | null>(null);
+  const [aiAcknowledging, setAiAcknowledging] = useState(false);
+  const [aiDebugLog, setAiDebugLog] = useState<Array<{
+    timestamp: string;
+    type: 'info' | 'warn' | 'error' | 'yt';
+    message: string;
+  }>>([]);
   const [aiTutorSettings, setAiTutorSettings] = useState({
     correctionMode: "live" as "live" | "after" | "off",
     teachingStyle: "Conversation",
@@ -2177,31 +2185,71 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setAiTutorActive(false);
       setAiTutorControlOpen(false);
       setAiConversation([]);
-        setLastAiBroadcast(null);
+      setLastAiBroadcast(null);
+      setAiDebugLog([]);
+      setAiInterimText(null);
+      setAiAcknowledging(false);
     }
+  };
+
+  const addAiDebugEntry = (type: 'info' | 'warn' | 'error' | 'yt', message: string) => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setAiDebugLog(prev => [...prev.slice(-19), { timestamp, type, message }]);
   };
 
   const sendAiMessage = async (text: string) => {
     if (!text.trim() || aiTutorLoading) return;
     aiLoadingRef.current = true;
-    const isFirstMessage = aiConversation.length === 0;
+    setAiInterimText(null);
     const userMsg = { id: `u-${Date.now()}`, role: "user" as const, text: text.trim() };
     setAiConversation(prev => [...prev, userMsg]);
     setAiTutorLoading(true);
+    setAiAcknowledging(true);
+
+    // Detect YouTube conflict
+    const ytActive = !!activeYoutubeId && showYoutube;
+    if (ytActive) {
+      addAiDebugEntry('yt', 'YouTube is active while AI is listening — potential audio conflict detected.');
+    }
+
+    // Detect repetition in recent AI replies before sending
+    const recentAiTexts = aiConversation.filter(m => m.role === 'ai').slice(-4).map(m => m.text.toLowerCase().trim());
+    const uniqueAiTexts = new Set(recentAiTexts);
+    if (recentAiTexts.length >= 2 && uniqueAiTexts.size < recentAiTexts.length) {
+      addAiDebugEntry('warn', 'Repetitive AI responses detected — requesting adaptive reply from server.');
+    }
+
+    addAiDebugEntry('info', `User said: "${text.trim().slice(0, 60)}${text.length > 60 ? '…' : ''}"`);
+
+    setTimeout(() => setAiAcknowledging(false), 800);
+
     try {
+      const t0 = Date.now();
       const res = await fetch("/api/ai-tutor/chat", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text.trim(),
-          history: aiConversation.slice(-6),
+          history: aiConversation.slice(-8),
           settings: aiTutorSettings,
           language: room.language,
+          youtubeActive: ytActive,
         }),
       });
       if (res.ok) {
         const data = await res.json();
+        const latency = Date.now() - t0;
+        const dbg = data.debug || {};
+        addAiDebugEntry(
+          dbg.source === 'fallback' ? 'warn' : dbg.source === 'error' ? 'error' : 'info',
+          `Response from ${dbg.source || 'server'} in ${latency}ms` +
+          (dbg.model ? ` · model: ${dbg.model}` : '') +
+          (dbg.warnings?.length ? ` · ⚠ ${dbg.warnings.join(', ')}` : '')
+        );
+        if (dbg.source === 'fallback') {
+          addAiDebugEntry('warn', 'OpenAI unavailable — context-aware fallback used. Check OPENAI_API_KEY.');
+        }
         setAiConversation(prev => [...prev, {
           id: `a-${Date.now()}`,
           role: "ai",
@@ -2220,10 +2268,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           speed: aiTutorSettings.speed,
         });
         speakAiText(data.reply, aiTutorSettings.voice, aiTutorSettings.speed);
+      } else {
+        addAiDebugEntry('error', `API request failed with status ${res.status}`);
       }
-    } catch {
+    } catch (err: any) {
+      addAiDebugEntry('error', `Network error: ${err?.message || 'unknown'}`);
     } finally {
       setAiTutorLoading(false);
+      setAiAcknowledging(false);
       aiLoadingRef.current = false;
     }
   };
@@ -2235,7 +2287,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     try { aiRecognitionRef.current?.abort(); } catch {}
     const rec = new SpeechRec();
     rec.continuous = true;
-    rec.interimResults = false;
+    rec.interimResults = true;
     const speechLangMap: Record<string, string> = {
       English: "en-US",
       Spanish: "es-ES",
@@ -2259,32 +2311,50 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     };
     rec.lang = speechLangMap[room.language] || "en-US";
     aiRecognitionRef.current = rec;
-    rec.onstart = () => setAiListening(true);
+    rec.onstart = () => {
+      setAiListening(true);
+      addAiDebugEntry('info', `Mic started — listening in ${rec.lang}`);
+    };
     rec.onresult = (e: any) => {
-      const transcript = Array.from(e.results as SpeechRecognitionResultList)
-        .slice(e.resultIndex || 0)
+      const results = Array.from(e.results as SpeechRecognitionResultList).slice(e.resultIndex || 0);
+      // Show interim transcript as "Heard: ..." feedback
+      const interim = results
+        .filter((r: SpeechRecognitionResult) => !r.isFinal)
+        .map((r: SpeechRecognitionResult) => r[0].transcript)
+        .join(' ')
+        .trim();
+      if (interim) setAiInterimText(interim);
+      // Capture final transcript and send
+      const transcript = results
         .filter((r: SpeechRecognitionResult) => r.isFinal)
         .map((r: SpeechRecognitionResult) => r[0].transcript)
         .join(" ")
         .trim();
-      setAiListening(false);
-      if (transcript) sendAiMessage(transcript);
+      if (transcript) {
+        setAiInterimText(null);
+        setAiListening(false);
+        addAiDebugEntry('info', `Recognized: "${transcript.slice(0, 80)}${transcript.length > 80 ? '…' : ''}"`);
+        sendAiMessage(transcript);
+      }
     };
     rec.onerror = (e: any) => {
+      setAiInterimText(null);
       if (e.error === "aborted" || e.error === "no-speech") {
-        // No-speech: just restart quietly
         setAiListening(false);
+        if (e.error === "no-speech") addAiDebugEntry('info', 'No speech detected — restarting mic.');
         setTimeout(() => {
           if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
         }, 300);
         return;
       }
+      addAiDebugEntry('error', `Speech recognition error: ${e.error}`);
       setAiListening(false);
       setTimeout(() => {
         if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
       }, 800);
     };
     rec.onend = () => {
+      setAiInterimText(null);
       setAiListening(false);
       setTimeout(() => {
         if (aiActiveRef.current && !aiSpeakingRef.current && !aiLoadingRef.current) startAiListening();
@@ -6520,12 +6590,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <div className="flex items-center gap-1 mt-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                       <span className="text-[10px]" style={{ color: "rgba(0,225,255,0.70)" }}>
-                        {aiTutorSpeaking ? "Speaking…" : "Listening"}
+                        {aiTutorSpeaking ? "Speaking…" : aiAcknowledging ? "Processing…" : aiListening ? "Listening…" : "Ready"}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setAiDebugOpen(v => !v)}
+                    data-testid="button-ai-debug-toggle"
+                    className="h-5 rounded-full px-2 flex items-center gap-1 transition-colors hover:bg-white/10 text-[9px] font-mono"
+                    style={{
+                      color: aiDebugOpen ? "rgba(100,255,180,0.90)" : "rgba(255,255,255,0.30)",
+                      border: `1px solid ${aiDebugOpen ? "rgba(100,255,180,0.35)" : "rgba(255,255,255,0.10)"}`,
+                    }}
+                    title="Show AI Thoughts / Debug Script"
+                  >
+                    <span>{aiDebugOpen ? "▲" : "▼"}</span>
+                    <span>Debug</span>
+                  </button>
                   <button onClick={() => setAiTutorControlOpen(v => !v)}
                     data-testid="button-ai-tutor-gear"
                     className="w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
@@ -6577,13 +6660,38 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       )}
                     </div>
                   ))}
+                  {/* Interim transcript — shows what mic is hearing in real-time */}
+                  {aiInterimText && !aiTutorLoading && (
+                    <div className="flex flex-col items-end">
+                      <div
+                        className="rounded-2xl px-3 py-2 text-[12px] leading-relaxed max-w-[240px] italic"
+                        style={{
+                          background: "rgba(40,50,100,0.50)",
+                          border: "1px dashed rgba(255,255,255,0.18)",
+                          color: "rgba(255,255,255,0.50)",
+                        }}
+                      >
+                        Heard: {aiInterimText}
+                      </div>
+                    </div>
+                  )}
                   {aiTutorLoading && (
-                    <div className="flex gap-1.5 px-3 py-2 rounded-2xl w-fit"
-                      style={{ background: "rgba(10,20,55,0.90)", border: "1px solid rgba(0,225,255,0.18)" }}>
-                      {[0,1,2].map(i => (
-                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-cyan-400"
-                          style={{ animation: "pulse 0.6s ease-in-out infinite alternate", animationDelay: `${i*0.2}s` }} />
-                      ))}
+                    <div className="flex flex-col items-start gap-1">
+                      {aiAcknowledging && (
+                        <div
+                          className="text-[10px] px-2 mb-0.5"
+                          style={{ color: "rgba(0,225,255,0.55)" }}
+                        >
+                          Got it, thinking…
+                        </div>
+                      )}
+                      <div className="flex gap-1.5 px-3 py-2 rounded-2xl w-fit"
+                        style={{ background: "rgba(10,20,55,0.90)", border: "1px solid rgba(0,225,255,0.18)" }}>
+                        {[0,1,2].map(i => (
+                          <div key={i} className="w-1.5 h-1.5 rounded-full bg-cyan-400"
+                            style={{ animation: "pulse 0.6s ease-in-out infinite alternate", animationDelay: `${i*0.2}s` }} />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -6630,6 +6738,63 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <Send className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.90)" }} />
                   </button>
                 </div>
+
+                {/* Debug / AI Thoughts panel — hidden by default, shown on toggle */}
+                {aiDebugOpen && (
+                  <div
+                    className="border-t px-3 py-2 flex flex-col gap-1"
+                    data-testid="ai-debug-panel"
+                    style={{
+                      borderColor: "rgba(100,255,180,0.15)",
+                      background: "rgba(0,0,0,0.40)",
+                      maxHeight: 160,
+                      overflowY: "auto",
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-mono font-bold tracking-widest uppercase" style={{ color: "rgba(100,255,180,0.70)" }}>
+                        AI Thoughts / Debug Script
+                      </span>
+                      <button
+                        onClick={() => setAiDebugLog([])}
+                        className="text-[8px] font-mono px-1.5 py-0.5 rounded transition-colors hover:bg-white/10"
+                        style={{ color: "rgba(255,255,255,0.25)", border: "1px solid rgba(255,255,255,0.08)" }}
+                        data-testid="button-clear-debug-log"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    {/* System state snapshot */}
+                    <div className="text-[9px] font-mono leading-relaxed mb-1 rounded px-2 py-1"
+                      style={{ background: "rgba(0,180,255,0.07)", color: "rgba(180,230,255,0.60)" }}>
+                      mic:{aiListening ? "on" : "off"}
+                      {" · "}speak:{aiTutorSpeaking ? "on" : "off"}
+                      {" · "}loading:{aiTutorLoading ? "on" : "off"}
+                      {" · "}yt:{(!!activeYoutubeId && showYoutube) ? "active⚠" : "idle"}
+                      {" · "}turns:{aiConversation.length}
+                    </div>
+                    {aiDebugLog.length === 0 && (
+                      <div className="text-[9px] font-mono" style={{ color: "rgba(255,255,255,0.20)" }}>
+                        No events yet — start a conversation to see real-time reasoning.
+                      </div>
+                    )}
+                    {[...aiDebugLog].reverse().map((entry, i) => (
+                      <div key={i} className="flex gap-1.5 text-[9px] font-mono leading-relaxed">
+                        <span style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>{entry.timestamp}</span>
+                        <span style={{
+                          flexShrink: 0,
+                          color: entry.type === 'error' ? "rgba(255,100,100,0.90)"
+                            : entry.type === 'warn' ? "rgba(255,200,60,0.90)"
+                            : entry.type === 'yt' ? "rgba(255,80,80,0.85)"
+                            : "rgba(100,255,180,0.80)",
+                        }}>
+                          {entry.type === 'error' ? '✖' : entry.type === 'warn' ? '⚠' : entry.type === 'yt' ? '▶' : '●'}
+                        </span>
+                        <span style={{ color: "rgba(255,255,255,0.55)", wordBreak: "break-word" }}>{entry.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

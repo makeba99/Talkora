@@ -279,8 +279,9 @@ export async function registerRoutes(
   });
 
   app.post("/api/ai-tutor/chat", isAuthenticated, async (req: any, res) => {
+    const startTime = Date.now();
     try {
-      const { message, history = [], settings = {}, language = "English" } = req.body;
+      const { message, history = [], settings = {}, language = "English", youtubeActive = false } = req.body;
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "message required" });
       }
@@ -289,18 +290,41 @@ export async function registerRoutes(
       const personality = settings.personality || "Friendly";
       const teachingStyle = settings.teachingStyle || "Conversation";
 
+      // Detect if recent AI replies are repetitive (same phrase appearing 2+ times in last 4 turns)
+      const recentAiReplies = (history as any[])
+        .filter((m: any) => m.role === 'ai')
+        .slice(-4)
+        .map((m: any) => (m.text || '').toLowerCase().trim());
+      const uniqueReplies = new Set(recentAiReplies);
+      const isRepetitive = recentAiReplies.length >= 2 && uniqueReplies.size < recentAiReplies.length;
+
+      const warnings: string[] = [];
+      if (isRepetitive) warnings.push('repetitive_responses_detected');
+      if (youtubeActive) warnings.push('youtube_active_during_session');
+
+      const antiRepetitionInstruction = isRepetitive
+        ? `IMPORTANT: Your recent responses have been repetitive. You MUST respond with a completely different approach — change the topic, ask a specific question about something the user mentioned, or share a relevant example. Do NOT reuse any phrases from recent turns.`
+        : '';
+
+      const youtubeInstruction = youtubeActive
+        ? `Note: The user is also watching a YouTube video in the room. You may reference it naturally if the user mentions it, but do not let it distract from the language practice.`
+        : '';
+
       const systemPrompt = [
         `You are a language tutor helping someone practice ${language}.`,
         `Personality: ${personality}. Teaching style: ${teachingStyle}.`,
-        `Listen to the user's latest message and answer it directly with a logical, contextual response.`,
-        `Do not use canned practice prompts or automated quiz questions. Only ask one natural follow-up question when it genuinely fits the conversation.`,
-        `Keep responses short (1-3 sentences) so the voice response feels real-time. Stay conversational and encouraging.`,
+        `Listen carefully to the user's latest message. Respond DIRECTLY to what they said — address their specific words, topic, or question.`,
+        `Never give generic or automated-sounding responses. Be genuinely engaged and contextually aware.`,
+        `Do not use canned practice prompts or quiz questions. Ask one natural follow-up only when it genuinely fits.`,
+        `Keep responses short (1-3 sentences) so voice playback feels real-time. Be warm, encouraging, and precise.`,
         correctionMode !== "off"
           ? `If the learner makes a grammar or vocabulary error, note it briefly but keep the conversation flowing.`
-          : `Focus on conversation flow, do not correct errors.`,
-        `If you notice a grammatical error in the user's message, include a "correction" field with a brief note of what was wrong, and a "correctionFixed" field with the corrected phrase (just the corrected portion, max 5 words).`,
-        `Always reply in JSON format: { "reply": "...", "correction": "..." | null, "correctionFixed": "..." | null }`,
-      ].join(" ");
+          : `Focus on conversation flow. Do not correct errors.`,
+        `If you notice a grammatical error, include a "correction" field with a brief note and a "correctionFixed" field with the corrected phrase (max 5 words).`,
+        antiRepetitionInstruction,
+        youtubeInstruction,
+        `Reply ONLY in JSON: { "reply": "...", "correction": "..." | null, "correctionFixed": "..." | null }`,
+      ].filter(Boolean).join(' ');
 
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) {
@@ -318,57 +342,83 @@ export async function registerRoutes(
               model: 'gpt-4o-mini',
               messages: [
                 { role: 'system', content: systemPrompt },
-                ...history.slice(-6).map((m) => ({
+                ...history.slice(-8).map((m: any) => ({
                   role: m.role === 'ai' ? 'assistant' : 'user',
                   content: m.text,
                 })),
                 { role: 'user', content: message },
               ],
               max_tokens: 300,
-              temperature: 0.75,
+              temperature: isRepetitive ? 0.95 : 0.75,
               response_format: { type: 'json_object' },
             }),
           });
           if (openaiRes.ok) {
             const data = await openaiRes.json();
             const rawContent = data.choices?.[0]?.message?.content || '{}';
+            const latencyMs = Date.now() - startTime;
             try {
               const parsed = JSON.parse(rawContent);
               return res.json({
                 reply: parsed.reply || 'That sounds interesting! Tell me more.',
                 correction: parsed.correction || null,
                 correctionFixed: parsed.correctionFixed || null,
+                debug: {
+                  source: 'openai',
+                  model: 'gpt-4o-mini',
+                  latencyMs,
+                  warnings,
+                  temperature: isRepetitive ? 0.95 : 0.75,
+                  historyUsed: Math.min(history.length, 8),
+                },
               });
             } catch {
-              return res.json({ reply: rawContent, correction: null, correctionFixed: null });
+              return res.json({
+                reply: rawContent,
+                correction: null,
+                correctionFixed: null,
+                debug: { source: 'openai', model: 'gpt-4o-mini', latencyMs, warnings, parseError: true },
+              });
             }
           } else {
             const errText = await openaiRes.text().catch(() => '');
             console.error(`[AI Tutor] OpenAI error ${openaiRes.status}: ${errText.slice(0, 200)}`);
+            warnings.push(`openai_http_error_${openaiRes.status}`);
           }
         } catch (fetchErr) {
           console.error('[AI Tutor] Network error calling OpenAI:', fetchErr);
+          warnings.push('openai_network_error');
         }
+      } else {
+        warnings.push('no_api_key');
       }
 
-      // Fallback when OpenAI is unavailable
-      const fallbackReplies = [
-        'That is great! Can you tell me more about that?',
-        'Interesting! How did that make you feel?',
-        'I would love to hear more - what happened next?',
-        'Really? What do you think about that?',
-        'Nice! Can you describe that in more detail?',
-        'That sounds fun! What else did you do?',
+      // Fallback when OpenAI is unavailable — context-aware, never repeats
+      const userWords = message.toLowerCase().split(' ').slice(0, 3).join(' ');
+      const contextFallbacks = [
+        `You mentioned "${userWords}" — can you tell me more about that?`,
+        `That's interesting! What made you think of that?`,
+        `I hear you. What happened next?`,
+        `Really? How did that make you feel?`,
+        `Tell me more — I want to understand what you mean.`,
+        `That's a great point. What else comes to mind about it?`,
       ];
+      const latencyMs = Date.now() - startTime;
       return res.json({
-        reply: fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)],
+        reply: contextFallbacks[Math.floor(Math.random() * contextFallbacks.length)],
         correction: null,
         correctionFixed: null,
+        debug: { source: 'fallback', latencyMs, warnings },
       });
 
-          } catch (err) {
+    } catch (err) {
       console.error("AI tutor error:", err);
-      return res.status(500).json({ reply: "Let's continue the conversation!", correction: null, correctionFixed: null });
+      return res.status(500).json({
+        reply: "Let's continue the conversation!",
+        correction: null,
+        correctionFixed: null,
+        debug: { source: 'error', warnings: ['server_error'] },
+      });
     }
   });
 
