@@ -71,6 +71,7 @@ export class SttEngine {
     rec.onresult = (e: any) => {
       const results = Array.from(e.results as SpeechRecognitionResultList).slice(e.resultIndex || 0);
 
+      // Always show interim text in the chat panel when it's open
       if (this.panelOpenRef.current) {
         const interim = results
           .filter((r: SpeechRecognitionResult) => !r.isFinal)
@@ -86,7 +87,8 @@ export class SttEngine {
         .join(" ")
         .trim();
 
-      if (transcript && this.panelOpenRef.current) {
+      // Always process final transcripts — AI listens regardless of panel state
+      if (transcript) {
         this.callbacks.onFinal(transcript);
       }
     };

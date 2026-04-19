@@ -122,7 +122,8 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: false });
-    if (activeRef.current && !loadingRef.current && chatPanelOpenRef.current) {
+    // Always restart listening when AI finishes speaking — not gated on panel state
+    if (activeRef.current && !loadingRef.current) {
       setTimeout(() => sttRef.current?.startListening(), 400);
     }
   }, [socket, roomId, userId]);
@@ -327,6 +328,12 @@ export function useAiTutor(deps: AiTutorDeps) {
       setAiAcknowledging(false);
       loadingRef.current = false;
       abortRef.current = null;
+      // Safety: if TTS never fires onEnd (empty response), restart listening anyway
+      setTimeout(() => {
+        if (activeRef.current && !speakingRef.current && !loadingRef.current) {
+          sttRef.current?.startListening();
+        }
+      }, 1200);
     }
   }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi]);
 
@@ -335,6 +342,8 @@ export function useAiTutor(deps: AiTutorDeps) {
     if (!aiActive) {
       socket?.emit("room:ai-tutor-start", { roomId, userId, username });
       setAiActive(true);
+      setAiChatPanelOpen(true); // Auto-open chat so user sees conversation immediately
+      chatPanelOpenRef.current = true;
       setAiConversation([]);
       setAiDebugLog([]);
       setAiLastBroadcast(null);
