@@ -735,30 +735,31 @@ export default function Lobby() {
   return (
     <div className="flex flex-col h-full">
       <header
-        className="sticky top-0 z-50 bg-background/90 backdrop-blur-md"
+        className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl transition-all duration-300"
         style={{
-          borderBottom: "1px solid rgba(0,220,255,0.12)",
-          boxShadow: "0 1px 0 rgba(0,220,255,0.08), 0 4px 24px rgba(0,0,0,0.35)",
+          borderBottom: "1px solid transparent",
+          borderImage: "linear-gradient(to right, transparent, rgba(var(--primary), 0.2), transparent) 1",
         }}
       >
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 max-w-7xl mx-auto">
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              className="w-10 h-10 rounded-[14px] flex items-center justify-center flex-shrink-0 relative group"
               style={{
-                background: "linear-gradient(135deg, rgba(0,200,255,0.18) 0%, rgba(110,60,255,0.18) 100%)",
-                border: "1px solid rgba(0,210,255,0.28)",
-                boxShadow: "0 0 14px rgba(0,210,255,0.15), inset 0 1px 0 rgba(255,255,255,0.08)",
+                background: "linear-gradient(135deg, rgba(var(--primary), 0.15) 0%, rgba(var(--secondary), 0.15) 100%)",
+                border: "1px solid rgba(var(--primary), 0.3)",
+                boxShadow: "0 0 20px rgba(var(--primary), 0.15), inset 0 1px 0 rgba(255,255,255,0.1)",
               }}
             >
-              <Mic className="w-4.5 h-4.5 text-cyan-400" />
+              <div className="absolute inset-0 rounded-[14px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-[rgba(var(--primary),0.3)] to-[rgba(var(--secondary),0.3)] blur-md"></div>
+              <Mic className="w-5 h-5 text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.8)] relative z-10" />
             </div>
-            <div className="min-w-0 hidden sm:block">
-              <h1 className="text-[15px] font-extrabold leading-tight tracking-tight">
-                Connect<span style={{ color: "#22d3ee" }}>2</span>Talk
+            <div className="min-w-0 hidden sm:flex flex-col justify-center">
+              <h1 className="text-lg font-bold leading-none tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 drop-shadow-sm">
+                Connect<span className="text-primary">2</span>Talk
               </h1>
-              <p className="text-[10px] text-muted-foreground leading-tight tracking-widest uppercase opacity-70">
-                Language Practice Community
+              <p className="text-[10px] text-muted-foreground leading-none mt-1" style={{ letterSpacing: "0.12em", fontWeight: 600 }}>
+                LANGUAGE PRACTICE COMMUNITY
               </p>
             </div>
           </div>
