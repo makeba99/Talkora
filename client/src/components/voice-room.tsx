@@ -15,7 +15,8 @@ import {
   Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
-  AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon
+  AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
+  BrainCircuit, Lightbulb, ChevronDown
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -544,6 +545,26 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [sidePanelTab, setSidePanelTab] = useState("chat");
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+
+  const [aiTutorActive, setAiTutorActive] = useState(false);
+  const [aiTutorSpeaking, setAiTutorSpeaking] = useState(false);
+  const [aiTutorLoading, setAiTutorLoading] = useState(false);
+  const [aiTutorControlOpen, setAiTutorControlOpen] = useState(false);
+  const [aiConversation, setAiConversation] = useState<Array<{
+    id: string;
+    role: "ai" | "user";
+    text: string;
+    correction?: string;
+    correctionFixed?: string;
+  }>>([]);
+  const [aiTutorSettings, setAiTutorSettings] = useState({
+    correctionMode: "live" as "live" | "after" | "off",
+    teachingStyle: "Conversation",
+    personality: "Friendly",
+    voice: "Female",
+    speed: 0.7,
+    tone: 0.7,
+  });
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
   const [chatText, setChatText] = useState("");
@@ -1923,6 +1944,59 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:hand", { roomId: room.id, userId: user?.id, raised: !handRaised });
   };
 
+  const toggleAiTutor = () => {
+    if (!aiTutorActive) {
+      setAiTutorActive(true);
+      setAiTutorControlOpen(true);
+      setAiConversation([{
+        id: "intro",
+        role: "ai",
+        text: "Let's practice talking about your daily routine! What time do you usually wake up?",
+      }]);
+      setAiTutorSpeaking(true);
+      setTimeout(() => setAiTutorSpeaking(false), 3500);
+    } else {
+      setAiTutorActive(false);
+      setAiTutorControlOpen(false);
+      setAiConversation([]);
+    }
+  };
+
+  const sendAiMessage = async (text: string) => {
+    if (!text.trim() || aiTutorLoading) return;
+    const userMsg = { id: `u-${Date.now()}`, role: "user" as const, text: text.trim() };
+    setAiConversation(prev => [...prev, userMsg]);
+    setAiTutorLoading(true);
+    try {
+      const res = await fetch("/api/ai-tutor/chat", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text.trim(),
+          history: aiConversation.slice(-6),
+          settings: aiTutorSettings,
+          language: room.language,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiConversation(prev => [...prev, {
+          id: `a-${Date.now()}`,
+          role: "ai",
+          text: data.reply,
+          correction: data.correction || undefined,
+          correctionFixed: data.correctionFixed || undefined,
+        }]);
+        setAiTutorSpeaking(true);
+        setTimeout(() => setAiTutorSpeaking(false), 3000);
+      }
+    } catch {
+    } finally {
+      setAiTutorLoading(false);
+    }
+  };
+
   const handleLeave = (reason?: "joined-another-room") => {
     localStream.current?.getTracks().forEach((t) => t.stop());
     screenStream.current?.getTracks().forEach((t) => t.stop());
@@ -2168,6 +2242,46 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           </div>
           <span className={labelBase} style={handRaised ? { color: "rgba(251,191,36,0.86)" } : { color: "rgba(255,255,255,0.32)" }}>
             Hand
+          </span>
+        </div>
+
+        {/* AI Tutor */}
+        <div className="flex flex-col items-center gap-[7px]">
+          <div className="relative">
+            {!aiTutorActive && (
+              <span
+                className="absolute inset-0 rounded-[18px] animate-ping"
+                style={{ background: "rgba(0,225,255,0.18)", animationDuration: "2.2s" }}
+              />
+            )}
+            {aiTutorActive && (
+              <span
+                className="absolute inset-0 rounded-[18px] animate-ping"
+                style={{ background: "rgba(0,225,255,0.28)", animationDuration: "1.4s" }}
+              />
+            )}
+            <button
+              onClick={toggleAiTutor}
+              data-testid="button-toggle-ai-tutor"
+              title={aiTutorActive ? "Dismiss AI Tutor" : "Call AI Tutor"}
+              className={btnBase}
+              style={aiTutorActive ? {
+                background: "linear-gradient(145deg, rgba(0,200,255,0.28) 0%, rgba(0,120,200,0.18) 100%)",
+                border: "1px solid rgba(0,225,255,0.55)",
+                color: "rgba(0,225,255,0.97)",
+                boxShadow: "0 0 26px rgba(0,225,255,0.40), 0 4px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.12)",
+              } : {
+                background: "linear-gradient(145deg, rgba(0,180,255,0.16) 0%, rgba(0,100,200,0.10) 100%)",
+                border: "1px solid rgba(0,225,255,0.38)",
+                color: "rgba(0,225,255,0.90)",
+                boxShadow: "0 0 16px rgba(0,225,255,0.22), 0 4px 12px rgba(0,0,0,0.24)",
+              }}
+            >
+              <BrainCircuit className="w-[18px] h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 5px rgba(0,225,255,0.8))" } : undefined} />
+            </button>
+          </div>
+          <span className={labelBase} style={{ color: aiTutorActive ? "rgba(0,225,255,0.90)" : "rgba(0,200,255,0.55)" }}>
+            {aiTutorActive ? "AI On" : "AI Tutor"}
           </span>
         </div>
 
@@ -5611,8 +5725,455 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 );
               })}
+
+              {/* ── AI Tutor participant card ── */}
+              {aiTutorActive && (
+                <div
+                  className="flex flex-col items-center gap-2 group relative"
+                  data-testid="card-ai-tutor"
+                >
+                  <div className="relative flex flex-col items-center">
+                    {/* Outer glow ring */}
+                    <div className="relative">
+                      {aiTutorSpeaking && (
+                        <span
+                          className="absolute inset-0 rounded-full animate-ping"
+                          style={{ background: "rgba(0,225,255,0.22)", animationDuration: "1.1s" }}
+                        />
+                      )}
+                      <div
+                        className="w-20 h-20 rounded-full flex items-center justify-center relative overflow-hidden"
+                        style={{
+                          background: "radial-gradient(ellipse at 40% 35%, rgba(0,80,180,0.85) 0%, rgba(5,10,35,0.95) 70%)",
+                          border: aiTutorSpeaking
+                            ? "2px solid rgba(0,225,255,0.85)"
+                            : "2px solid rgba(0,225,255,0.40)",
+                          boxShadow: aiTutorSpeaking
+                            ? "0 0 32px rgba(0,225,255,0.55), 0 0 60px rgba(0,100,255,0.20), inset 0 0 20px rgba(0,120,255,0.15)"
+                            : "0 0 18px rgba(0,225,255,0.22), inset 0 0 14px rgba(0,80,200,0.12)",
+                        }}
+                      >
+                        <BrainCircuit
+                          className="w-9 h-9"
+                          style={{
+                            color: "rgba(0,225,255,0.90)",
+                            filter: aiTutorSpeaking ? "drop-shadow(0 0 8px rgba(0,225,255,0.9))" : "drop-shadow(0 0 4px rgba(0,225,255,0.5))",
+                          }}
+                        />
+                        {/* Subtle inner shimmer */}
+                        <div
+                          className="absolute inset-0 rounded-full pointer-events-none"
+                          style={{ background: "radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.08) 0%, transparent 60%)" }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Audio waveform bars */}
+                    {aiTutorSpeaking && (
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-end gap-[2px]">
+                        {[4, 6, 5, 7, 4, 6, 5].map((h, i) => (
+                          <div
+                            key={i}
+                            className="w-[2px] rounded-full"
+                            style={{
+                              height: h * 2,
+                              background: "rgba(0,225,255,0.82)",
+                              animation: `pulse ${0.5 + (i % 3) * 0.15}s ease-in-out infinite alternate`,
+                              animationDelay: `${i * 0.07}s`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[12px] font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>AI Tutor</span>
+                      <BrainCircuit className="w-3 h-3" style={{ color: "rgba(0,225,255,0.75)" }} />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                      <span className="text-[10px]" style={{ color: "rgba(0,225,255,0.75)" }}>
+                        {aiTutorSpeaking ? "Speaking" : "Listening"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Settings gear on hover */}
+                  <button
+                    onClick={() => setAiTutorControlOpen(!aiTutorControlOpen)}
+                    data-testid="button-ai-tutor-gear"
+                    className="absolute -top-2 right-0 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    style={{ background: "rgba(15,23,42,0.92)", border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.75)" }}
+                  >
+                    <Settings className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* ── AI Tutor: Conversation overlay ── */}
+          {aiTutorActive && aiConversation.length > 0 && (
+            <div
+              className="fixed left-4 z-[60] flex flex-col gap-2 max-w-[300px]"
+              style={{ pointerEvents: "none", top: "90px" }}
+              data-testid="ai-tutor-conversation"
+            >
+              {aiConversation.slice(-4).map((msg) => (
+                <div key={msg.id} className={`flex flex-col ${msg.role === "ai" ? "items-start" : "items-end"}`}>
+                  {msg.role === "ai" && (
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(0,80,200,0.80)", border: "1px solid rgba(0,225,255,0.50)" }}
+                      >
+                        <BrainCircuit className="w-3 h-3" style={{ color: "rgba(0,225,255,0.90)" }} />
+                      </div>
+                      <span className="text-[10px] font-semibold" style={{ color: "rgba(0,225,255,0.80)" }}>AI Tutor</span>
+                    </div>
+                  )}
+                  <div
+                    className="rounded-2xl px-3 py-2 text-[12px] leading-relaxed max-w-[260px]"
+                    style={msg.role === "ai" ? {
+                      background: "rgba(12,20,50,0.88)",
+                      border: "1px solid rgba(0,225,255,0.20)",
+                      color: "rgba(255,255,255,0.90)",
+                      backdropFilter: "blur(12px)",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.40)",
+                    } : {
+                      background: "rgba(30,40,80,0.82)",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      color: "rgba(255,255,255,0.88)",
+                      backdropFilter: "blur(12px)",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.40)",
+                    }}
+                  >
+                    {msg.text}
+                  </div>
+                  {/* Grammar correction hint */}
+                  {msg.correction && aiTutorSettings.correctionMode !== "off" && (
+                    <div
+                      className="mt-1 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium"
+                      style={{
+                        background: "rgba(30,15,60,0.88)",
+                        border: "1px solid rgba(180,100,255,0.35)",
+                        color: "rgba(220,180,255,0.92)",
+                        backdropFilter: "blur(10px)",
+                        boxShadow: "0 2px 12px rgba(0,0,0,0.30)",
+                        pointerEvents: "auto",
+                      }}
+                    >
+                      <Lightbulb className="w-3 h-3 flex-shrink-0" style={{ color: "rgba(255,200,60,0.90)" }} />
+                      <span>Small fix</span>
+                      {msg.correctionFixed && (
+                        <>
+                          <span style={{ color: "rgba(255,255,255,0.30)" }}>—</span>
+                          <span style={{ color: "rgba(100,255,180,0.95)", fontStyle: "italic" }}>{msg.correctionFixed}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {aiTutorLoading && (
+                <div className="flex items-center gap-2 mt-1">
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(0,80,200,0.80)", border: "1px solid rgba(0,225,255,0.50)" }}
+                  >
+                    <BrainCircuit className="w-3 h-3" style={{ color: "rgba(0,225,255,0.90)" }} />
+                  </div>
+                  <div
+                    className="flex items-center gap-1 rounded-2xl px-3 py-2"
+                    style={{ background: "rgba(12,20,50,0.88)", border: "1px solid rgba(0,225,255,0.20)" }}
+                  >
+                    {[0, 1, 2].map(i => (
+                      <div
+                        key={i}
+                        className="w-1.5 h-1.5 rounded-full bg-cyan-400"
+                        style={{ animation: `pulse 0.6s ease-in-out infinite alternate`, animationDelay: `${i * 0.2}s` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── AI Tutor: Quick-reply input strip ── */}
+          {aiTutorActive && (() => {
+            return (
+              <div
+                className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[61] flex items-center gap-2"
+                data-testid="ai-tutor-input"
+                style={{ pointerEvents: "auto" }}
+              >
+                <div
+                  className="flex items-center gap-2 rounded-2xl px-3 py-2"
+                  style={{
+                    background: "rgba(10,15,35,0.90)",
+                    border: "1px solid rgba(0,225,255,0.25)",
+                    backdropFilter: "blur(16px)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.50)",
+                    width: 320,
+                  }}
+                >
+                  <BrainCircuit className="w-4 h-4 flex-shrink-0" style={{ color: "rgba(0,225,255,0.60)" }} />
+                  <input
+                    data-testid="input-ai-tutor-reply"
+                    className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-white/25"
+                    style={{ color: "rgba(255,255,255,0.88)" }}
+                    placeholder="Reply to AI Tutor…"
+                    onChange={e => { aiReplyText = e.target.value; }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val) {
+                          sendAiMessage(val);
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    data-testid="button-ai-tutor-send"
+                    className="w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+                    style={{ background: "rgba(0,180,255,0.22)", border: "1px solid rgba(0,225,255,0.40)" }}
+                    onClick={e => {
+                      const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                      const val = input?.value.trim();
+                      if (val) { sendAiMessage(val); input.value = ""; }
+                    }}
+                  >
+                    <Send className="w-3.5 h-3.5" style={{ color: "rgba(0,225,255,0.90)" }} />
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── AI Tutor Control Panel ── */}
+          {aiTutorActive && aiTutorControlOpen && (
+            <div
+              className="fixed right-4 bottom-28 z-[62]"
+              data-testid="ai-tutor-control-panel"
+            >
+              <div
+                className="rounded-2xl overflow-hidden shadow-2xl"
+                style={{
+                  background: "rgba(10,14,35,0.94)",
+                  border: "1px solid rgba(0,225,255,0.18)",
+                  backdropFilter: "blur(24px)",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.60), 0 0 0 1px rgba(255,255,255,0.04)",
+                  width: 260,
+                }}
+              >
+                {/* Header */}
+                <div
+                  className="flex items-center justify-between px-4 py-3 border-b"
+                  style={{ borderColor: "rgba(0,225,255,0.12)" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <BrainCircuit className="w-4 h-4" style={{ color: "rgba(0,225,255,0.80)" }} />
+                    <span className="text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.90)" }}>
+                      AI Tutor <span style={{ color: "rgba(0,225,255,0.75)" }}>Control</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setAiTutorControlOpen(false)}
+                      className="w-6 h-6 rounded-full flex items-center justify-center transition-colors hover:bg-white/10"
+                      style={{ color: "rgba(255,255,255,0.40)" }}
+                      data-testid="button-ai-control-close"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-4 flex flex-col gap-4">
+                  {/* Correction Mode */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.70)" }}>Correction Mode</span>
+                      <div
+                        className="w-9 h-5 rounded-full relative cursor-pointer transition-colors"
+                        style={{
+                          background: aiTutorSettings.correctionMode !== "off"
+                            ? "linear-gradient(90deg, rgba(0,200,100,0.85) 0%, rgba(0,160,80,0.80) 100%)"
+                            : "rgba(80,80,100,0.50)",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                        }}
+                        onClick={() => setAiTutorSettings(s => ({
+                          ...s,
+                          correctionMode: s.correctionMode === "off" ? "live" : "off",
+                        }))}
+                        data-testid="toggle-correction-mode"
+                      >
+                        <div
+                          className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
+                          style={{
+                            background: "rgba(255,255,255,0.95)",
+                            left: aiTutorSettings.correctionMode !== "off" ? "calc(100% - 18px)" : "2px",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {(["live", "after", "off"] as const).map(mode => (
+                        <button
+                          key={mode}
+                          onClick={() => setAiTutorSettings(s => ({ ...s, correctionMode: mode }))}
+                          data-testid={`button-correction-${mode}`}
+                          className="flex-1 py-1 rounded-lg text-[10px] font-semibold capitalize transition-all"
+                          style={aiTutorSettings.correctionMode === mode ? {
+                            background: "rgba(0,180,255,0.20)",
+                            border: "1px solid rgba(0,225,255,0.45)",
+                            color: "rgba(0,225,255,0.95)",
+                          } : {
+                            background: "rgba(255,255,255,0.04)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            color: "rgba(255,255,255,0.40)",
+                          }}
+                        >
+                          {mode === "after" ? "After" : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Teaching Style */}
+                  <div>
+                    <span className="text-[11px] font-semibold mb-2 block" style={{ color: "rgba(255,255,255,0.70)" }}>Teaching Style</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {["Conversation", "Structured", "Roleplay", "Exam Prep"].map(style => (
+                        <button
+                          key={style}
+                          onClick={() => setAiTutorSettings(s => ({ ...s, teachingStyle: style }))}
+                          data-testid={`button-style-${style.toLowerCase().replace(" ", "-")}`}
+                          className="py-1.5 rounded-lg text-[10px] font-semibold transition-all"
+                          style={aiTutorSettings.teachingStyle === style ? {
+                            background: "rgba(0,180,255,0.20)",
+                            border: "1px solid rgba(0,225,255,0.45)",
+                            color: "rgba(0,225,255,0.95)",
+                          } : {
+                            background: "rgba(255,255,255,0.04)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            color: "rgba(255,255,255,0.40)",
+                          }}
+                        >
+                          {style}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tutor Personality */}
+                  <div>
+                    <span className="text-[11px] font-semibold mb-2 block" style={{ color: "rgba(255,255,255,0.70)" }}>Tutor Personality</span>
+                    <div className="flex gap-1.5">
+                      {["Friendly", "Strict", "Fun"].map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setAiTutorSettings(s => ({ ...s, personality: p }))}
+                          data-testid={`button-personality-${p.toLowerCase()}`}
+                          className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
+                          style={aiTutorSettings.personality === p ? {
+                            background: "rgba(0,180,255,0.20)",
+                            border: "1px solid rgba(0,225,255,0.45)",
+                            color: "rgba(0,225,255,0.95)",
+                          } : {
+                            background: "rgba(255,255,255,0.04)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            color: "rgba(255,255,255,0.40)",
+                          }}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Voice + Speed */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.70)" }}>Tutor Voice</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setAiTutorSettings(s => ({ ...s, voice: s.voice === "Female" ? "Male" : "Female" }))}
+                        data-testid="button-voice-toggle"
+                        className="text-[11px] font-semibold px-2 py-0.5 rounded-md transition-all"
+                        style={{
+                          background: "rgba(0,180,255,0.15)",
+                          border: "1px solid rgba(0,225,255,0.35)",
+                          color: "rgba(0,225,255,0.90)",
+                        }}
+                      >
+                        {aiTutorSettings.voice}
+                      </button>
+                      <div
+                        className="text-[10px] px-1.5 py-0.5 rounded-md"
+                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.45)" }}
+                      >
+                        Speed {Math.round(aiTutorSettings.speed * 100)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tone slider */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.70)" }}>Tone</span>
+                      <div
+                        className="w-9 h-5 rounded-full relative cursor-pointer transition-colors"
+                        style={{
+                          background: "linear-gradient(90deg, rgba(0,200,100,0.85) 0%, rgba(0,160,80,0.80) 100%)",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                        }}
+                        data-testid="toggle-tone"
+                      >
+                        <div
+                          className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full"
+                          style={{ background: "rgba(255,255,255,0.95)", boxShadow: "0 1px 4px rgba(0,0,0,0.3)" }}
+                        />
+                      </div>
+                    </div>
+                    <div
+                      className="w-full h-1.5 rounded-full relative cursor-pointer"
+                      style={{ background: "rgba(255,255,255,0.10)" }}
+                      data-testid="slider-tone"
+                    >
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${aiTutorSettings.tone * 100}%`,
+                          background: "linear-gradient(90deg, rgba(0,200,100,0.80) 0%, rgba(0,225,255,0.80) 100%)",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Dismiss button */}
+                  <button
+                    onClick={toggleAiTutor}
+                    data-testid="button-dismiss-ai-tutor"
+                    className="w-full py-2 rounded-xl text-[12px] font-semibold transition-all hover:opacity-80"
+                    style={{
+                      background: "rgba(239,68,68,0.12)",
+                      border: "1px solid rgba(239,68,68,0.30)",
+                      color: "rgba(252,165,165,0.85)",
+                    }}
+                  >
+                    Dismiss AI Tutor
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

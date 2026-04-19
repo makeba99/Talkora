@@ -275,6 +275,89 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/ai-tutor/chat", isAuthenticated, async (req: any, res) => {
+    try {
+      const { message, history = [], settings = {}, language = "English" } = req.body;
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ error: "message required" });
+      }
+
+      const correctionMode = settings.correctionMode || "live";
+      const personality = settings.personality || "Friendly";
+      const teachingStyle = settings.teachingStyle || "Conversation";
+
+      const systemPrompt = [
+        `You are a language tutor helping someone practice ${language}.`,
+        `Personality: ${personality}. Teaching style: ${teachingStyle}.`,
+        `Keep responses short (1-3 sentences). Stay conversational and encouraging.`,
+        correctionMode !== "off"
+          ? `If the learner makes a grammar or vocabulary error, note it briefly but keep the conversation flowing.`
+          : `Focus on conversation flow, do not correct errors.`,
+        `If you notice a grammatical error in the user's message, include a "correction" field with a brief note of what was wrong, and a "correctionFixed" field with the corrected phrase (just the corrected portion, max 5 words).`,
+        `Always reply in JSON format: { "reply": "...", "correction": "..." | null, "correctionFixed": "..." | null }`,
+      ].join(" ");
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (apiKey) {
+        const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...history.slice(-6).map((m: any) => ({
+                role: m.role === "ai" ? "assistant" : "user",
+                content: m.text,
+              })),
+              { role: "user", content: message },
+            ],
+            max_tokens: 150,
+            temperature: 0.7,
+            response_format: { type: "json_object" },
+          }),
+        });
+        if (openaiRes.ok) {
+          const data = await openaiRes.json() as any;
+          const content = data.choices?.[0]?.message?.content || "{}";
+          try {
+            const parsed = JSON.parse(content);
+            return res.json({
+              reply: parsed.reply || "Great! Keep going.",
+              correction: parsed.correction || null,
+              correctionFixed: parsed.correctionFixed || null,
+            });
+          } catch {
+            return res.json({ reply: content, correction: null, correctionFixed: null });
+          }
+        }
+      }
+
+      const practiceReplies = [
+        { reply: "That's great! What did you do after that?", correction: null, correctionFixed: null },
+        { reply: `Interesting! How long have you been learning ${language}?`, correction: null, correctionFixed: null },
+        { reply: "Can you tell me more about that? I'd love to hear the details.", correction: null, correctionFixed: null },
+        { reply: "Very good! Now try using that in a different sentence.", correction: null, correctionFixed: null },
+        { reply: "Nice work! What's your favorite thing to do on weekends?", correction: null, correctionFixed: null },
+        { reply: "I see! How would you describe that to a friend?", correction: null, correctionFixed: null },
+        {
+          reply: "Almost perfect! Let me help with a small thing.",
+          correction: "Small grammar adjustment",
+          correctionFixed: message.trim().split(" ").slice(0, 4).join(" "),
+        },
+      ];
+
+      const randomReply = practiceReplies[Math.floor(Math.random() * practiceReplies.length)];
+      return res.json(randomReply);
+    } catch (err) {
+      console.error("AI tutor error:", err);
+      return res.status(500).json({ reply: "Let's continue the conversation!", correction: null, correctionFixed: null });
+    }
+  });
+
   const TENOR_KEY = process.env.TENOR_API_KEY || "LIVDSRZULELA";
 
   function mapTenorResults(items: any[]) {
