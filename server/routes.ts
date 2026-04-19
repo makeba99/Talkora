@@ -278,6 +278,86 @@ export async function registerRoutes(
     }
   });
 
+  // ── AI Tutor model routing ─────────────────────────────────────────────────
+  // Priority: NVIDIA Nemotron → gpt-4o → gpt-4o-mini → context-aware fallback
+  const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+  function routeAiModel(messageLen: number, isRepetitive: boolean): { provider: string; model: string; baseUrl: string; key: string | undefined } {
+    if (NVIDIA_API_KEY) {
+      // Nemotron Nano is fast and free-tier; use Super-49B for repetitive/complex inputs
+      const model = (messageLen > 200 || isRepetitive)
+        ? 'nvidia/llama-3.3-nemotron-super-49b-v1'
+        : 'nvidia/llama-3.1-nemotron-nano-8b-instruct';
+      return { provider: 'nvidia', model, baseUrl: 'https://integrate.api.nvidia.com/v1', key: NVIDIA_API_KEY };
+    }
+    if (OPENAI_API_KEY) {
+      // Use gpt-4o for better conversation quality; mini only as last resort
+      return { provider: 'openai', model: 'gpt-4o', baseUrl: 'https://api.openai.com/v1', key: OPENAI_API_KEY };
+    }
+    return { provider: 'none', model: 'fallback', baseUrl: '', key: undefined };
+  }
+
+  async function callAiModel(
+    route: ReturnType<typeof routeAiModel>,
+    systemPrompt: string,
+    history: any[],
+    message: string,
+    temperature: number
+  ): Promise<{ raw: string; ok: boolean; status?: number }> {
+    if (!route.key) return { raw: '', ok: false };
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...history.slice(-10).map((m: any) => ({
+        role: m.role === 'ai' ? 'assistant' : 'user',
+        content: m.text,
+      })),
+      { role: 'user', content: message },
+    ];
+    const body: any = {
+      model: route.model,
+      messages,
+      max_tokens: 400,
+      temperature,
+    };
+    // JSON mode: OpenAI supports response_format; NVIDIA models need prompt-level enforcement
+    if (route.provider === 'openai') {
+      body.response_format = { type: 'json_object' };
+    }
+    const r = await fetch(`${route.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${route.key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const text = await r.text();
+    return { raw: text, ok: r.ok, status: r.status };
+  }
+
+  function parseAiResponse(raw: string): { reply: string; correction: string | null; correctionFixed: string | null } {
+    // Try direct JSON parse first
+    try {
+      const j = JSON.parse(raw);
+      const data = j.choices?.[0]?.message?.content ? JSON.parse(j.choices[0].message.content) : j;
+      if (data.reply) return { reply: data.reply, correction: data.correction || null, correctionFixed: data.correctionFixed || null };
+    } catch {}
+    // Try extracting JSON block from markdown/text (for models that don't follow JSON mode)
+    try {
+      const jsonMatch = raw.match(/\{[\s\S]*?"reply"[\s\S]*?\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.reply) return { reply: parsed.reply, correction: parsed.correction || null, correctionFixed: parsed.correctionFixed || null };
+      }
+    } catch {}
+    // Try extracting the choices content as plain text
+    try {
+      const parsed = JSON.parse(raw);
+      const content = parsed.choices?.[0]?.message?.content || '';
+      if (content && content.length > 0) return { reply: content, correction: null, correctionFixed: null };
+    } catch {}
+    return { reply: '', correction: null, correctionFixed: null };
+  }
+  // ───────────────────────────────────────────────────────────────────────────
+
   app.post("/api/ai-tutor/chat", isAuthenticated, async (req: any, res) => {
     const startTime = Date.now();
     try {
@@ -290,7 +370,7 @@ export async function registerRoutes(
       const personality = settings.personality || "Friendly";
       const teachingStyle = settings.teachingStyle || "Conversation";
 
-      // Detect if recent AI replies are repetitive (same phrase appearing 2+ times in last 4 turns)
+      // Anti-repetition: detect same or very similar AI replies in last 4 turns
       const recentAiReplies = (history as any[])
         .filter((m: any) => m.role === 'ai')
         .slice(-4)
@@ -302,119 +382,120 @@ export async function registerRoutes(
       if (isRepetitive) warnings.push('repetitive_responses_detected');
       if (youtubeActive) warnings.push('youtube_active_during_session');
 
-      const antiRepetitionInstruction = isRepetitive
-        ? `IMPORTANT: Your recent responses have been repetitive. You MUST respond with a completely different approach — change the topic, ask a specific question about something the user mentioned, or share a relevant example. Do NOT reuse any phrases from recent turns.`
+      // Route to the best available model
+      const route = routeAiModel(message.length, isRepetitive);
+      const temperature = isRepetitive ? 0.92 : 0.80;
+
+      // System prompt — natural, human-like conversation partner
+      const correctionLine = correctionMode !== "off"
+        ? `When you spot a grammar or vocabulary mistake, gently weave in the correction naturally ("Oh, you mean...") and move on.`
+        : `Focus on the conversation — do not mention or correct any errors.`;
+
+      const antiRepeatLine = isRepetitive
+        ? `CRITICAL: You have been repeating yourself. This response must take a completely fresh angle — pick up on a specific detail the user shared, share a brief personal-sounding anecdote, or pivot to a related topic naturally.`
         : '';
 
-      const youtubeInstruction = youtubeActive
-        ? `Note: The user is also watching a YouTube video in the room. You may reference it naturally if the user mentions it, but do not let it distract from the language practice.`
-        : '';
+      const jsonInstruction = route.provider === 'nvidia'
+        ? `You MUST reply with ONLY a raw JSON object — no markdown, no explanation, no code fences. Example: {"reply":"Great! What happened after that?","correction":null,"correctionFixed":null}`
+        : `Reply ONLY in JSON: {"reply":"...","correction":"..."|null,"correctionFixed":"..."|null}`;
 
       const systemPrompt = [
-        `You are a language tutor helping someone practice ${language}.`,
-        `Personality: ${personality}. Teaching style: ${teachingStyle}.`,
-        `Listen carefully to the user's latest message. Respond DIRECTLY to what they said — address their specific words, topic, or question.`,
-        `Never give generic or automated-sounding responses. Be genuinely engaged and contextually aware.`,
-        `Do not use canned practice prompts or quiz questions. Ask one natural follow-up only when it genuinely fits.`,
-        `Keep responses short (1-3 sentences) so voice playback feels real-time. Be warm, encouraging, and precise.`,
-        correctionMode !== "off"
-          ? `If the learner makes a grammar or vocabulary error, note it briefly but keep the conversation flowing.`
-          : `Focus on conversation flow. Do not correct errors.`,
-        `If you notice a grammatical error, include a "correction" field with a brief note and a "correctionFixed" field with the corrected phrase (max 5 words).`,
-        antiRepetitionInstruction,
-        youtubeInstruction,
-        `Reply ONLY in JSON: { "reply": "...", "correction": "..." | null, "correctionFixed": "..." | null }`,
+        `You are ${personality === 'Formal' ? 'a warm but professional' : 'a friendly, upbeat'} language conversation partner helping someone practice ${language}.`,
+        `Your style is ${teachingStyle === 'Grammar' ? 'grammar-focused but still warm' : 'natural and conversational — like chatting with a fluent friend'}.`,
+        `React genuinely to what the person says. If they share something interesting, respond with curiosity or a brief reaction before asking anything. Never sound scripted or robotic.`,
+        `Keep replies SHORT — 1 to 3 sentences maximum. You're speaking aloud, so be concise and natural.`,
+        `Never ask more than one question. Ask none if your reply feels complete on its own.`,
+        `Never start with "Great!", "Wow!", "Interesting!" or any hollow filler phrase — just respond naturally.`,
+        correctionLine,
+        antiRepeatLine,
+        `If you correct something, set "correction" to a brief note and "correctionFixed" to just the corrected phrase (≤5 words). Otherwise both are null.`,
+        jsonInstruction,
       ].filter(Boolean).join(' ');
 
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) {
-        console.warn("[AI Tutor] OPENAI_API_KEY is not set.");
-      }
-      if (apiKey) {
+      // Try primary model
+      if (route.provider !== 'none') {
         try {
-          const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                ...history.slice(-8).map((m: any) => ({
-                  role: m.role === 'ai' ? 'assistant' : 'user',
-                  content: m.text,
-                })),
-                { role: 'user', content: message },
-              ],
-              max_tokens: 300,
-              temperature: isRepetitive ? 0.95 : 0.75,
-              response_format: { type: 'json_object' },
-            }),
-          });
-          if (openaiRes.ok) {
-            const data = await openaiRes.json();
-            const rawContent = data.choices?.[0]?.message?.content || '{}';
+          const { raw, ok, status } = await callAiModel(route, systemPrompt, history, message, temperature);
+          if (ok) {
+            const parsed = parseAiResponse(raw);
             const latencyMs = Date.now() - startTime;
-            try {
-              const parsed = JSON.parse(rawContent);
+            if (parsed.reply) {
+              console.log(`[AI Tutor] ${route.provider}/${route.model} → ${latencyMs}ms`);
               return res.json({
-                reply: parsed.reply || 'That sounds interesting! Tell me more.',
-                correction: parsed.correction || null,
-                correctionFixed: parsed.correctionFixed || null,
-                debug: {
-                  source: 'openai',
-                  model: 'gpt-4o-mini',
-                  latencyMs,
-                  warnings,
-                  temperature: isRepetitive ? 0.95 : 0.75,
-                  historyUsed: Math.min(history.length, 8),
-                },
-              });
-            } catch {
-              return res.json({
-                reply: rawContent,
-                correction: null,
-                correctionFixed: null,
-                debug: { source: 'openai', model: 'gpt-4o-mini', latencyMs, warnings, parseError: true },
+                reply: parsed.reply,
+                correction: parsed.correction,
+                correctionFixed: parsed.correctionFixed,
+                debug: { source: route.provider, model: route.model, latencyMs, warnings, temperature, historyUsed: Math.min(history.length, 10) },
               });
             }
           } else {
-            const errText = await openaiRes.text().catch(() => '');
-            console.error(`[AI Tutor] OpenAI error ${openaiRes.status}: ${errText.slice(0, 200)}`);
-            warnings.push(`openai_http_error_${openaiRes.status}`);
+            console.error(`[AI Tutor] ${route.provider} error ${status}: ${raw.slice(0, 200)}`);
+            warnings.push(`${route.provider}_error_${status}`);
+            // Retry once with gpt-4o-mini if primary was NVIDIA
+            if (route.provider === 'nvidia' && OPENAI_API_KEY) {
+              warnings.push('nvidia_failed_retrying_openai');
+              const fallbackRoute = { provider: 'openai', model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1', key: OPENAI_API_KEY };
+              const fallbackBody = {
+                model: 'gpt-4o-mini',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  ...history.slice(-10).map((m: any) => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
+                  { role: 'user', content: message },
+                ],
+                max_tokens: 400,
+                temperature,
+                response_format: { type: 'json_object' },
+              };
+              const fbRes = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(fallbackBody),
+              });
+              if (fbRes.ok) {
+                const fbRaw = await fbRes.text();
+                const fbParsed = parseAiResponse(fbRaw);
+                const latencyMs = Date.now() - startTime;
+                if (fbParsed.reply) {
+                  return res.json({
+                    reply: fbParsed.reply,
+                    correction: fbParsed.correction,
+                    correctionFixed: fbParsed.correctionFixed,
+                    debug: { source: 'openai-fallback', model: 'gpt-4o-mini', latencyMs, warnings },
+                  });
+                }
+              }
+            }
           }
-        } catch (fetchErr) {
-          console.error('[AI Tutor] Network error calling OpenAI:', fetchErr);
-          warnings.push('openai_network_error');
+        } catch (err) {
+          console.error('[AI Tutor] Model call failed:', err);
+          warnings.push('model_call_exception');
         }
       } else {
-        warnings.push('no_api_key');
+        if (!NVIDIA_API_KEY) warnings.push('no_nvidia_key');
+        if (!OPENAI_API_KEY) warnings.push('no_openai_key');
       }
 
-      // Fallback when OpenAI is unavailable — context-aware, never repeats
-      const userWords = message.toLowerCase().split(' ').slice(0, 3).join(' ');
-      const contextFallbacks = [
-        `You mentioned "${userWords}" — can you tell me more about that?`,
-        `That's interesting! What made you think of that?`,
-        `I hear you. What happened next?`,
-        `Really? How did that make you feel?`,
-        `Tell me more — I want to understand what you mean.`,
-        `That's a great point. What else comes to mind about it?`,
+      // Context-aware fallback — echoes back the user's words so it never feels generic
+      const userWords = message.trim().split(/\s+/).slice(0, 4).join(' ');
+      const fallbacks = [
+        `You said "${userWords}" — tell me more about that.`,
+        `Interesting — what do you mean by that exactly?`,
+        `I'd love to hear more. What happened next?`,
+        `That's worth exploring. How did that make you feel?`,
+        `Say more — I'm following along.`,
       ];
       const latencyMs = Date.now() - startTime;
       return res.json({
-        reply: contextFallbacks[Math.floor(Math.random() * contextFallbacks.length)],
+        reply: fallbacks[Math.floor(Math.random() * fallbacks.length)],
         correction: null,
         correctionFixed: null,
         debug: { source: 'fallback', latencyMs, warnings },
       });
 
     } catch (err) {
-      console.error("AI tutor error:", err);
+      console.error('[AI Tutor] Unexpected error:', err);
       return res.status(500).json({
-        reply: "Let's continue the conversation!",
+        reply: "Let's keep going — what were you saying?",
         correction: null,
         correctionFixed: null,
         debug: { source: 'error', warnings: ['server_error'] },

@@ -1,0 +1,154 @@
+ROLE: Senior AI Engineer
+
+TASK: Integrate NVIDIA Nemotron (Nano or similar fast model) into our platform as the primary AI engine, replacing GPT-4 for most requests while keeping optional fallback support.
+
+GOAL:
+- Ultra-fast responses (near real-time)
+- Reduce API cost to near-zero
+- Maintain good conversational quality
+- Fix current issues: AI not listening, repeated responses, YouTube conflicts
+
+---
+
+SYSTEM ARCHITECTURE:
+
+1. MODEL ROUTING LAYER (CRITICAL)
+
+Implement a routing function:
+
+function routeModel(input) {
+  if (input.length < 150 && !isComplex(input)) {
+    return "nvidia-fast";   // Nemotron Nano
+  }
+  if (isMediumComplex(input)) {
+    return "nvidia-standard";
+  }
+  return "gpt-4-fallback";  // Only for complex reasoning
+}
+
+- Default = NVIDIA model
+- GPT-4 only used when absolutely necessary
+
+---
+
+2. NVIDIA API INTEGRATION
+
+- Use NVIDIA AI endpoints (NIM / hosted API)
+- Ensure low latency streaming responses
+- Enable token streaming (IMPORTANT for UX)
+
+Example structure:
+
+POST /api/chat
+{
+  model: "nemotron-nano",
+  messages: [...],
+  stream: true
+}
+
+---
+
+3. STREAMING RESPONSE HANDLER
+
+- Stream tokens to frontend in real-time
+- Do NOT wait for full completion
+- Improves perceived speed significantly
+
+---
+
+4. ANTI-REPETITION + CONTEXT FIX
+
+Implement:
+
+- Conversation memory (last 5–10 messages)
+- Deduplication check:
+  - If response similarity > 80%, regenerate
+- Add system instruction:
+  "Avoid repeating previous answers. Always adapt to current input."
+
+---
+
+5. AI LISTENING FIX
+
+- Ensure input binding is correct:
+  - No dropped events
+  - Debounce input (300ms max)
+- Always log:
+  - user_input
+  - model_used
+  - response_time
+
+---
+
+6. YOUTUBE CONFLICT FIX
+
+Problem: AI + YouTube scripts may conflict
+
+Solution:
+- Run AI requests in isolated async thread
+- Ensure YouTube iframe is not re-rendered on AI response
+- Prevent global state overwrite
+
+Frontend rules:
+- DO NOT reload video player on AI message update
+- Separate AI state from media state
+
+---
+
+7. DEBUG MODE (HIDDEN BY DEFAULT)
+
+Implement UI toggle:
+
+"Show AI Debug"
+
+Default: OFF
+
+When ON, show:
+- model used
+- latency
+- routing decision
+- detected issue (if any)
+
+---
+
+8. PERFORMANCE TARGETS
+
+- Response start time: < 500ms
+- First token: < 300ms (streaming)
+- Full response: < 2s average
+
+---
+
+9. FAILSAFE
+
+If NVIDIA API fails:
+- Retry once
+- Then fallback to GPT-4
+- Return graceful message:
+  "Switching to backup model for better accuracy."
+
+---
+
+10. CLEAN CODE REQUIREMENTS
+
+- Modular architecture
+- Environment-based API keys
+- No hardcoded configs
+- Easy model switching
+
+---
+
+DELIVERABLES:
+
+- Backend API endpoint (/chat)
+- Model routing logic
+- Streaming implementation
+- Frontend integration guide
+- Debug toggle UI logic
+
+---
+
+PRIORITY:
+Speed > Cost > Intelligence (but maintain acceptable quality)
+
+END

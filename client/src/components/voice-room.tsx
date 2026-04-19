@@ -2177,8 +2177,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setAiTutorActive(true);
       setLastAiBroadcast(introText);
       setAiTutorControlOpen(false);
-      setAiChatPanelOpen(true);
-      aiChatPanelOpenRef.current = true;
+      setAiChatPanelOpen(false);
+      aiChatPanelOpenRef.current = false;
       setAiConversation([{ id: "intro", role: "ai", text: introText }]);
       speakAiText(introText, aiTutorSettings.voice, aiTutorSettings.speed);
     } else {
