@@ -33,6 +33,7 @@ import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-drop
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
+import { MOUTH_SHAPES } from "@/lib/ai-tutor/lipsync";
 import type { Room, User, Follow } from "@shared/schema";
 
 interface VoiceRoomProps {
@@ -550,6 +551,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     aiState,
     voiceState,
     mediaState: _aiMediaState,
+    currentViseme,
     setAiChatPanelOpen,
     setAiControlOpen,
     setAiDebugOpen,
@@ -6034,54 +6036,60 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <div className="absolute bottom-0 inset-x-0 h-1/4 pointer-events-none" style={{
                         background: "linear-gradient(to top, rgba(0,80,180,0.30) 0%, transparent 100%)",
                       }} />
-                      {/* Animated SVG mouth — precise lip sync */}
-                      <svg
-                        viewBox="0 0 60 28"
-                        style={{
-                          position: "absolute",
-                          left: "50%",
-                          top: "70%",
-                          width: 52,
-                          height: 22,
-                          transform: "translateX(-50%)",
-                          pointerEvents: "none",
-                          filter: aiTutorDisplaySpeaking ? "drop-shadow(0 0 4px rgba(255,150,150,0.55))" : "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
-                          overflow: "visible",
-                        }}
-                      >
-                        {/* Dark inner mouth */}
-                        <ellipse
-                          cx="30" cy="16"
-                          rx={aiTutorDisplaySpeaking ? 18 : 14}
-                          ry={aiTutorDisplaySpeaking ? 7 : 1}
-                          fill="rgba(18,4,4,0.92)"
-                          style={{
-                            transition: "rx 0.08s ease, ry 0.08s ease",
-                            animation: aiTutorDisplaySpeaking ? "svgMouthOpen 0.25s ease-in-out infinite alternate" : "none",
-                          }}
-                        />
-                        {/* Upper lip — cupid's bow shape */}
-                        <path
-                          d="M 8 14 C 14 8 22 12 30 13 C 38 12 46 8 52 14"
-                          fill="rgba(215,125,125,0.88)"
-                          stroke="rgba(180,90,90,0.50)"
-                          strokeWidth="0.5"
-                        />
-                        {/* Lower lip */}
-                        <path
-                          d={aiTutorDisplaySpeaking
-                            ? "M 8 14 C 18 26 42 26 52 14"
-                            : "M 8 14 C 18 19 42 19 52 14"
-                          }
-                          fill="rgba(205,115,115,0.80)"
-                          stroke="rgba(180,90,90,0.35)"
-                          strokeWidth="0.5"
-                          style={{
-                            transition: "d 0.1s ease",
-                            animation: aiTutorDisplaySpeaking ? "svgLipSync 0.25s ease-in-out infinite alternate" : "none",
-                          }}
-                        />
-                      </svg>
+                      {/* Realistic viseme-driven SVG mouth */}
+                      {(() => {
+                        // For the owner: use precise per-phoneme viseme shapes
+                        // For observers: use a simple 'open' shape while AI is speaking
+                        const visemeKey = isAiTutorOwner
+                          ? (aiTutorDisplaySpeaking ? currentViseme : "rest")
+                          : (aiTutorDisplaySpeaking ? "open" : "rest");
+                        const shape = MOUTH_SHAPES[visemeKey];
+                        return (
+                          <svg
+                            viewBox="0 0 60 28"
+                            style={{
+                              position: "absolute",
+                              left: "50%",
+                              top: "70%",
+                              width: 52,
+                              height: 22,
+                              transform: "translateX(-50%)",
+                              pointerEvents: "none",
+                              filter: aiTutorDisplaySpeaking
+                                ? "drop-shadow(0 0 5px rgba(255,140,140,0.60))"
+                                : "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
+                              overflow: "visible",
+                              transition: "filter 0.15s ease",
+                            }}
+                          >
+                            {/* Dark inner mouth cavity */}
+                            <ellipse
+                              cx="30"
+                              cy={shape.innerCy}
+                              rx={shape.innerRx}
+                              ry={shape.innerRy}
+                              fill={shape.innerFill}
+                              style={{ transition: "cx 0.08s ease, cy 0.08s ease, rx 0.08s ease, ry 0.08s ease" }}
+                            />
+                            {/* Upper lip — cupid's bow */}
+                            <path
+                              d={shape.upperLip}
+                              fill={shape.upperFill}
+                              stroke="rgba(170,80,80,0.45)"
+                              strokeWidth="0.5"
+                              style={{ transition: "d 0.09s ease" }}
+                            />
+                            {/* Lower lip */}
+                            <path
+                              d={shape.lowerLip}
+                              fill={shape.lowerFill}
+                              stroke="rgba(170,80,80,0.30)"
+                              strokeWidth="0.5"
+                              style={{ transition: "d 0.09s ease" }}
+                            />
+                          </svg>
+                        );
+                      })()}
                       {/* Speaking lip-sync shimmer */}
                       {aiTutorDisplaySpeaking && (
                         <div className="absolute inset-0 pointer-events-none rounded-full" style={{

@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TtsEngine, extractSentences } from "@/lib/ai-tutor/tts";
 import { SttEngine } from "@/lib/ai-tutor/stt";
+import type { Viseme } from "@/lib/ai-tutor/lipsync";
 import { streamTokens, fetchBufferedReply } from "@/lib/ai-tutor/stream";
 import {
   DEFAULT_AI_SETTINGS,
@@ -85,6 +86,9 @@ export function useAiTutor(deps: AiTutorDeps) {
   const [voiceInterimText, setVoiceInterimText] = useState<string | null>(null);
   const [voiceBargeInActive, setVoiceBargeInActive] = useState(false);
 
+  // ── Lipsync State ─────────────────────────────────────────────────────────
+  const [currentViseme, setCurrentViseme] = useState<Viseme>("rest");
+
   // ── Refs (mutable, never cause re-renders) ────────────────────────────────
   const activeRef = useRef(false);
   const speakingRef = useRef(false);
@@ -135,6 +139,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       onStart: onTtsStart,
       onEnd: onTtsEnd,
       onSentenceEnd: onTtsSentenceEnd,
+      onViseme: (shape) => setCurrentViseme(shape),
     });
     return () => ttsRef.current?.cancel();
   }, [onTtsStart, onTtsEnd, onTtsSentenceEnd]);
@@ -489,6 +494,9 @@ export function useAiTutor(deps: AiTutorDeps) {
     aiState,
     voiceState,
     mediaState,
+
+    // Lipsync
+    currentViseme,
 
     // Setters (for UI controls)
     setAiChatPanelOpen,

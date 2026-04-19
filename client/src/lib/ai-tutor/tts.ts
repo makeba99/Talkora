@@ -1,19 +1,27 @@
 /**
  * TTS Module — streams sentences to the browser's speechSynthesis engine.
  * Starts speaking as soon as the first sentence arrives; no full-response wait.
- * Includes a watchdog timer for Chrome's silent onend bug.
+ * Includes:
+ *   - Watchdog timer for Chrome's silent onend bug
+ *   - Viseme callbacks via SpeechSynthesisUtterance.onboundary for realistic lipsync
+ *   - Fallback random animation when boundary events are unsupported
  */
+
+import { getWordViseme, getNextActiveViseme, type Viseme } from "./lipsync";
 
 export type TtsCallbacks = {
   onStart: () => void;
   onEnd: () => void;
   onSentenceEnd: () => void;
+  onViseme?: (shape: Viseme) => void;
 };
 
 export class TtsEngine {
   private queue: string[] = [];
   private active = false;
   private watchdog: ReturnType<typeof setInterval> | null = null;
+  private visemeTimer: ReturnType<typeof setInterval> | null = null;
+  private boundarySupported = true;
   private voice: "Female" | "Male" = "Female";
   private speed = 0.7;
   private callbacks: TtsCallbacks;
@@ -38,17 +46,25 @@ export class TtsEngine {
   cancel() {
     this.queue = [];
     this.active = false;
-    if (this.watchdog) { clearInterval(this.watchdog); this.watchdog = null; }
+    this._clearTimers();
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+    // Return to rest position immediately
+    this.callbacks.onViseme?.("rest");
   }
 
   get isActive() { return this.active; }
 
+  private _clearTimers() {
+    if (this.watchdog) { clearInterval(this.watchdog); this.watchdog = null; }
+    if (this.visemeTimer) { clearInterval(this.visemeTimer); this.visemeTimer = null; }
+  }
+
   private playNext() {
     if (this.queue.length === 0) {
       this.active = false;
+      this.callbacks.onViseme?.("rest");
       this.callbacks.onEnd();
       return;
     }
@@ -75,8 +91,19 @@ export class TtsEngine {
       if (chosen) utter.voice = chosen;
     }
 
+    // ── Word-boundary lipsync ───────────────────────────────────────────────
+    let boundaryFired = false;
+    utter.onboundary = (e: SpeechSynthesisEvent) => {
+      if (e.name !== "word") return;
+      boundaryFired = true;
+      const word = sentence.slice(e.charIndex, e.charIndex + (e.charLength || 6));
+      const viseme = getWordViseme(word);
+      this.callbacks.onViseme?.(viseme);
+    };
+
     const onDone = () => {
-      if (this.watchdog) { clearInterval(this.watchdog); this.watchdog = null; }
+      this._clearTimers();
+      this.callbacks.onViseme?.("rest");
       this.callbacks.onSentenceEnd();
       this.playNext();
     };
@@ -84,12 +111,23 @@ export class TtsEngine {
     utter.onend = onDone;
     utter.onerror = onDone;
 
-    // Watchdog: Chrome silently drops onend for short sentences
+    // ── Watchdog: Chrome silently drops onend for short sentences ──────────
     const expectedMs = Math.max(1500, (sentence.length / 14) * 1000 / Math.max(0.5, utter.rate));
     let elapsed = 0;
     this.watchdog = setInterval(() => {
       elapsed += 300;
       if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+
+      // Start fallback animation if boundary events didn't fire within 600ms
+      if (!boundaryFired && elapsed >= 600 && !this.visemeTimer) {
+        this.boundarySupported = false;
+        this.visemeTimer = setInterval(() => {
+          if (this.active) {
+            this.callbacks.onViseme?.(getNextActiveViseme());
+          }
+        }, 140);
+      }
+
       if (!window.speechSynthesis.speaking && elapsed > 800) {
         clearInterval(this.watchdog!); this.watchdog = null;
         this.playNext();
