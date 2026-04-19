@@ -1860,9 +1860,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
     const createPlayer = () => {
       const container = ytContainerRef.current;
-      if (!container) return;
+      console.log("[YT] createPlayer — container:", !!container, "videoId:", activeYoutubeId);
+      if (!container) { console.warn("[YT] container ref is null, aborting"); return; }
       const YT = (window as any).YT;
-      if (!YT || !YT.Player) return;
+      if (!YT || !YT.Player) { console.warn("[YT] YT.Player not ready"); return; }
 
       // Destroy old player if any
       if (youtubePlayerRef.current) {
@@ -1870,40 +1871,64 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         youtubePlayerRef.current = null;
       }
 
-      // Create an unmanaged inner div so React never conflicts with the YT iframe
+      // Create an unmanaged inner element with a stable ID so YT API can reference it
       container.innerHTML = "";
+      const innerId = "yt-inner-player";
       const innerDiv = document.createElement("div");
+      innerDiv.id = innerId;
+      innerDiv.style.width = "100%";
+      innerDiv.style.height = "100%";
       container.appendChild(innerDiv);
 
+      console.log("[YT] Constructing YT.Player for", innerId, "video:", activeYoutubeId);
       try {
-        const player = new YT.Player(innerDiv, {
+        const player = new YT.Player(innerId, {
           videoId: activeYoutubeId,
           width: "100%",
           height: "100%",
-          playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1, origin: window.location.origin },
+          playerVars: { autoplay: 1, mute: 1, rel: 0, modestbranding: 1, playsinline: 1, origin: window.location.origin },
           events: {
-            onReady: () => {
+            onReady: (event: any) => {
+              console.log("[YT] onReady fired — calling playVideo then unMute");
               try {
                 if (ytSyncTimeRef.current > 0) {
-                  player.seekTo(ytSyncTimeRef.current, true);
+                  event.target.seekTo(ytSyncTimeRef.current, true);
                   ytSyncTimeRef.current = 0;
                 }
-                player.playVideo();
-              } catch (_) {}
+                event.target.playVideo();
+                // Unmute immediately — starts muted to satisfy browser autoplay policy,
+                // then unmutes right away so the user hears the video
+                event.target.unMute();
+                event.target.setVolume(100);
+              } catch (err) { console.error("[YT] playVideo/unMute error:", err); }
             },
             onError: (e: any) => {
-              console.warn("YouTube player error code:", e.data);
+              console.warn("[YT] player error code:", e.data);
             },
-            onStateChange: buildStateChangeHandler(player, YT),
+            onStateChange: (event: any) => {
+              console.log("[YT] state change:", event.data);
+              // Belt-and-suspenders unmute: in case onReady unmute didn't take effect
+              if (event.data === YT.PlayerState.PLAYING) {
+                try {
+                  if (event.target.isMuted()) {
+                    event.target.unMute();
+                    event.target.setVolume(100);
+                  }
+                } catch (_) {}
+              }
+              buildStateChangeHandler(player, YT)(event);
+            },
           },
         });
         youtubePlayerRef.current = player;
+        console.log("[YT] Player instance created");
       } catch (e) {
-        console.error("YouTube player error:", e);
+        console.error("[YT] YT.Player constructor threw:", e);
       }
     };
 
     const YT = (window as any).YT;
+    console.log("[YT] effect — YT loaded:", !!YT, "YT.Player:", !!(YT?.Player), "videoId:", activeYoutubeId);
     if (YT && YT.Player) {
       createPlayer();
     } else {
@@ -1912,8 +1937,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         tag.id = "yt-api-script";
         tag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(tag);
+        console.log("[YT] Added YT API script tag");
       }
-      (window as any).onYouTubeIframeAPIReady = createPlayer;
+      (window as any).onYouTubeIframeAPIReady = () => {
+        console.log("[YT] onYouTubeIframeAPIReady fired");
+        createPlayer();
+      };
     }
 
     return () => {
