@@ -130,6 +130,7 @@ shared/
 75. AI Tutor avatar realism step 1 — the existing circular SVG avatar now uses skin micro-texture, realistic facial depth highlights/shadows, layered natural brows, hair strand lighting, deeper iris/pupil rendering, and subtle nose/cheek contouring while preserving the holographic AI Tutor frame and viseme-driven lip-sync overlay.
 76. AI Tutor compact voice/visual update — AI Tutor now resets to the Female voice on load, stops saving browser auto-selected voice IDs that could drift to male voices, avoids common male TTS voices when choosing a female voice, limits visible avatar presets to female human options, uses more natural hair/eye/skin colors, and renders in a smaller responsive overlay with a narrower chat panel.
 77. AI Tutor mouth placement fix — removed the static painted smile that created a duplicate mouth, simplified the nose shading so it cannot read as a second mouth, repositioned the single viseme-driven mouth to the correct lower-face area, softened lip colors, and tuned the default female avatar closer to the silver-hair/blue-eye reference.
+78. AI Tutor reference-style face and listening eyes — the avatar now includes a glowing headset, darker high-collar suit, additional silver hair strands, separated iris/pupil highlights, natural blink timing, and listening-only eye tracking while keeping brows static and the mouth closed unless speaking.
 
 ## Admin System
 - Super Admin / Platform Owner: hardcoded by email (`dj55jggg@gmail.com`) and automatically elevated on auth user fetch.

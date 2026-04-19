@@ -1509,13 +1509,18 @@ html.synthwave .neon-text {
 }
 
 .ai-avatar-eyes {
-  animation: ai-liveportrait-eyes 5.5s ease-in-out infinite;
+  animation: ai-liveportrait-eyes 5.8s ease-in-out infinite;
   transform-origin: 120px 121px;
+}
+
+.ai-avatar-eye-mimic {
+  transform-origin: 121px 121px;
+  transition: transform 260ms ease;
 }
 
 .ai-avatar-blink {
   opacity: 0;
-  animation: ai-liveportrait-blink 5.5s ease-in-out infinite;
+  animation: ai-liveportrait-blink 5.8s ease-in-out infinite;
 }
 
 .ai-avatar-brow,
@@ -1540,6 +1545,18 @@ html.synthwave .neon-text {
 
 .ai-liveportrait-listening .ai-avatar-cheek {
   opacity: 0.55;
+}
+
+.ai-liveportrait-listening .ai-avatar-eye-mimic {
+  animation: ai-liveportrait-eye-track 4.2s ease-in-out infinite;
+}
+
+.ai-liveportrait-listening .ai-avatar-eyes {
+  animation-duration: 4.8s;
+}
+
+.ai-liveportrait-listening .ai-avatar-face {
+  filter: brightness(1.02) saturate(1.03);
 }
 
 .ai-liveportrait-speaking .ai-avatar-brow-left {
@@ -1582,13 +1599,21 @@ html.synthwave .neon-text {
 }
 
 @keyframes ai-liveportrait-eyes {
-  0%, 90%, 100% { opacity: 1; }
-  92%, 95% { opacity: 0; }
+  0%, 7%, 9%, 63%, 65%, 100% { opacity: 1; }
+  8%, 64% { opacity: 0; }
 }
 
 @keyframes ai-liveportrait-blink {
-  0%, 90%, 100% { opacity: 0; }
-  92%, 95% { opacity: 1; }
+  0%, 7%, 9%, 63%, 65%, 100% { opacity: 0; }
+  8%, 64% { opacity: 1; }
+}
+
+@keyframes ai-liveportrait-eye-track {
+  0%, 100% { transform: translate(0, 0); }
+  18% { transform: translate(1.7px, -0.4px); }
+  36% { transform: translate(-1.4px, 0.3px); }
+  56% { transform: translate(0.6px, 0.7px); }
+  78% { transform: translate(-0.6px, -0.5px); }
 }
 
 /* ── AI Tutor chat panel responsive positioning ── */
