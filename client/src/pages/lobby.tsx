@@ -694,6 +694,11 @@ export default function Lobby() {
       try {
         const res = await apiRequest("POST", `/api/rooms/${encodeURIComponent(roomId)}/access-link`, {});
         const data = await res.json();
+        try {
+          const bc = new BroadcastChannel(`connect-room-${user.id}`);
+          bc.postMessage({ type: "room-joined", roomId });
+          bc.close();
+        } catch {}
         window.open(data.path || `/room/${roomId}`, "_blank");
       } catch (error: any) {
         toast({

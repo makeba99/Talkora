@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Users, Search, UserPlus, UserCheck, MessageSquare, Phone, StickyNote } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
@@ -66,51 +66,78 @@ export function UserNotePopover({ userId }: { userId: string }) {
 
   const currentNote = noteText ?? (data?.note ?? "");
 
+  const handleClose = () => {
+    setOpen(false);
+    setNoteText(null);
+  };
+
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setNoteText(null); }}>
-      <PopoverTrigger asChild>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              data-testid={`button-note-${userId}`}
-              className={data?.note ? "text-amber-400" : ""}
-            >
-              <StickyNote className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Private note</TooltipContent>
-        </Tooltip>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-3" align="end" side="left">
-        <p className="text-xs font-medium mb-1.5">Private note (only you can see this)</p>
-        {isLoading ? (
-          <div className="h-20 bg-muted animate-pulse rounded" />
-        ) : (
-          <Textarea
-            className="text-xs resize-none h-24"
-            placeholder="Add a personal note about this person..."
-            value={currentNote}
-            onChange={(e) => setNoteText(e.target.value)}
-            maxLength={1000}
-            data-testid={`textarea-note-${userId}`}
-          />
-        )}
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-[10px] text-muted-foreground">{currentNote.length}/1000</span>
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <Button
-            size="sm"
-            className="h-7 text-xs"
-            disabled={saveMutation.isPending || isLoading}
-            onClick={() => saveMutation.mutate(currentNote)}
-            data-testid={`button-save-note-${userId}`}
+            size="icon"
+            variant="ghost"
+            data-testid={`button-note-${userId}`}
+            className={data?.note ? "text-amber-400" : ""}
+            onClick={() => setOpen(true)}
           >
-            {saveMutation.isPending ? "Saving..." : "Save"}
+            <StickyNote className="w-4 h-4" />
           </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+        </TooltipTrigger>
+        <TooltipContent>Private note</TooltipContent>
+      </Tooltip>
+
+      <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+        <DialogContent className="sm:max-w-lg w-full p-0 overflow-hidden" data-testid={`dialog-note-${userId}`}>
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border/40">
+            <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
+              <StickyNote className="w-4 h-4 text-amber-400" />
+              Private Note
+            </DialogTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Only you can see this — not visible to anyone else</p>
+          </DialogHeader>
+          <div className="px-5 py-4 space-y-3">
+            {isLoading ? (
+              <div className="h-52 bg-muted animate-pulse rounded-lg" />
+            ) : (
+              <Textarea
+                className="resize-none h-52 text-sm leading-relaxed bg-muted/30 border-border/50 focus-visible:ring-amber-400/40 placeholder:text-muted-foreground/50"
+                placeholder="Write your personal notes about this person here... (only you can read this)"
+                value={currentNote}
+                onChange={(e) => setNoteText(e.target.value)}
+                maxLength={1000}
+                autoFocus
+                data-testid={`textarea-note-${userId}`}
+              />
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] text-muted-foreground">{currentNote.length} / 1000</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-xs"
+                  onClick={handleClose}
+                  data-testid={`button-cancel-note-${userId}`}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs bg-amber-500 hover:bg-amber-400 text-black"
+                  disabled={saveMutation.isPending || isLoading}
+                  onClick={() => saveMutation.mutate(currentNote)}
+                  data-testid={`button-save-note-${userId}`}
+                >
+                  {saveMutation.isPending ? "Saving..." : "Save Note"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -196,6 +223,13 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
 
   const handleJoinRoom = (roomId: string) => {
     setOpen(false);
+    if (user?.id) {
+      try {
+        const bc = new BroadcastChannel(`connect-room-${user.id}`);
+        bc.postMessage({ type: "room-joined", roomId });
+        bc.close();
+      } catch {}
+    }
     window.open(`/room/${roomId}`, "_blank");
   };
 

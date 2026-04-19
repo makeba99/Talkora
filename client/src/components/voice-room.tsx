@@ -1587,7 +1587,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       roomBc = new BroadcastChannel(`connect-room-${user.id}`);
       roomBc.onmessage = (ev) => {
         if (ev.data?.type === "room-joined" && ev.data?.roomId !== room.id) {
-          handleLeave("joined-another-room");
+          window.close();
+          setTimeout(() => handleLeave("joined-another-room"), 50);
         }
       };
     } catch {}
