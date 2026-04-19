@@ -1,0 +1,209 @@
+SYSTEM / IMPLEMENTATION PROMPT
+
+ROLE:
+Senior AI Architect & Real-Time Voice Avatar Engineer
+
+MISSION:
+Build a real-time AI avatar system powered by NVIDIA Nemotron-3 Nano 30B, capable of voice conversation + speech recognition + realistic talking face animation with ultra-low latency.
+
+PRIMARY GOAL:
+Create an instant-response AI tutor/avatar that listens, thinks, speaks, and animates a human-like face in real time.
+
+---
+
+🧠 1. AI BRAIN (CORE LLM)
+
+MODEL:
+Nemotron-3 Nano 30B (NVIDIA)
+
+REQUIREMENTS:
+- Must use streaming responses (token-by-token)
+- No full-response waiting allowed
+- Optimize for latency over complexity
+- Maintain short, conversational outputs
+
+RULES:
+- Always respond in real-time streaming mode
+- Avoid repetitive or generic answers
+- Keep responses conversational and natural
+
+---
+
+🎤 2. SPEECH-TO-TEXT (STT MODULE)
+
+MODEL OPTIONS:
+- Whisper (OpenAI open-source)
+- faster-whisper (RECOMMENDED for speed)
+
+REQUIREMENTS:
+- Real-time transcription (not batch)
+- Detect end-of-speech automatically
+- Low latency input processing (<300ms target)
+
+RULES:
+- Continuously listen when session is active
+- Immediately send finalized text to AI brain
+
+---
+
+🗣️ 3. TEXT-TO-SPEECH (TTS MODULE)
+
+OPTION A (RECOMMENDED - SPEED FIRST):
+- Piper TTS (local, ultra-fast, fully free)
+
+OPTION B (QUALITY MODE):
+- Coqui TTS (more natural but slower)
+
+REQUIREMENTS:
+- Must support streaming audio output
+- Must start speaking before full sentence completes
+- Must support interruption (barge-in enabled)
+
+RULES:
+- Start speaking immediately when first chunk arrives
+- Do NOT wait for full AI response
+
+---
+
+🎭 4. TALKING FACE / AVATAR SYSTEM
+
+PRIMARY OPTION:
+- LivePortrait (best free realistic face animation)
+
+ALTERNATIVE:
+- Wav2Lip (stable lip sync fallback)
+
+REQUIREMENTS:
+- Audio-driven facial animation
+- Real-time or near-real-time lip sync
+- Smooth expression transitions
+
+RULES:
+- Avatar animation must sync with TTS output
+- No lag between speech and mouth movement
+- Must support continuous streaming updates
+
+---
+
+⚡ 5. REAL-TIME PIPELINE (CRITICAL FLOW)
+
+USER VOICE →
+STT (Whisper / faster-whisper) →
+Nemotron-3 Nano (streaming LLM) →
+Chunked text output →
+Piper TTS (streaming voice) →
+LivePortrait (lip sync face animation)
+
+---
+
+🔁 6. STREAMING + INTERRUPT LOGIC
+
+MANDATORY BEHAVIOR:
+- Everything must be streaming (no full waits)
+- AI must be interruptible at any time
+
+IF user speaks:
+→ immediately stop TTS
+→ cancel AI generation
+→ restart pipeline with new input
+
+---
+
+🧠 7. MEMORY & CONTEXT
+
+- Store last 5–10 messages only
+- Avoid long context bloat
+- Prevent repeated answers
+
+RULE:
+If response similarity > 80%:
+→ regenerate response once
+
+---
+
+🎥 8. PERFORMANCE REQUIREMENTS
+
+TARGETS:
+- STT latency: <300ms
+- AI first token: <500ms
+- Voice start: <700ms
+- Full response feel: real-time
+
+---
+
+🎨 9. UI / AVATAR LAYER
+
+- Add holographic style UI overlay:
+  - glow effect
+  - subtle scanlines
+  - floating avatar motion
+
+- Avatar must be centered and reactive to speech
+
+---
+
+🔇 10. MEDIA ISOLATION RULE (IMPORTANT)
+
+- AI system must NOT interfere with:
+  - video players (YouTube or others)
+  - UI media components
+
+RULE:
+- Separate state containers:
+  aiState
+  voiceState
+  mediaState
+
+---
+
+🧪 11. DEBUG MODE (HIDDEN DEFAULT)
+
+Toggle: "Show AI Debug"
+
+WHEN ENABLED:
+- show model used
+- latency timing
+- STT/TTS status
+- streaming state
+
+---
+
+🛑 12. FAILSAFE LOGIC
+
+If any module fails:
+1. retry once
+2. switch fallback module
+3. return stable response:
+   "Reconnecting AI system for stability..."
+
+---
+
+📦 13. CODE STRUCTURE REQUIREMENTS
+
+Must be modular:
+
+/stt
+/llm
+/tts
+/avatar
+/stream
+/core
+
+ENV VARIABLES ONLY:
+- API keys
+- model configs
+- endpoints
+
+NO hardcoded credentials.
+
+---
+
+PRIORITY ORDER:
+1. Speed (real-time feel)
+2. Voice responsiveness
+3. Avatar sync
+4. Intelligence depth
+
+---
+
+END OF PROMPT
