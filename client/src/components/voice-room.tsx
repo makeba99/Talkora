@@ -554,6 +554,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const aiSpeakingRef = useRef(false);
   const aiLoadingRef = useRef(false);
   const aiActiveRef = useRef(false);
+  const aiChatPanelOpenRef = useRef(false);
   const aiSpeakWatchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Room-wide AI Tutor state
   const [roomAiTutorSession, setRoomAiTutorSession] = useState<{
@@ -2176,7 +2177,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setAiTutorActive(true);
       setLastAiBroadcast(introText);
       setAiTutorControlOpen(false);
-      setAiChatPanelOpen(false);
+      setAiChatPanelOpen(true);
+      aiChatPanelOpenRef.current = true;
       setAiConversation([{ id: "intro", role: "ai", text: introText }]);
       speakAiText(introText, aiTutorSettings.voice, aiTutorSettings.speed);
     } else {
@@ -2317,13 +2319,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     };
     rec.onresult = (e: any) => {
       const results = Array.from(e.results as SpeechRecognitionResultList).slice(e.resultIndex || 0);
-      // Show interim transcript as "Heard: ..." feedback
-      const interim = results
-        .filter((r: SpeechRecognitionResult) => !r.isFinal)
-        .map((r: SpeechRecognitionResult) => r[0].transcript)
-        .join(' ')
-        .trim();
-      if (interim) setAiInterimText(interim);
+      // Show interim transcript as "Heard: ..." feedback — only when panel is open
+      if (aiChatPanelOpenRef.current) {
+        const interim = results
+          .filter((r: SpeechRecognitionResult) => !r.isFinal)
+          .map((r: SpeechRecognitionResult) => r[0].transcript)
+          .join(' ')
+          .trim();
+        if (interim) setAiInterimText(interim);
+      }
       // Capture final transcript and send
       const transcript = results
         .filter((r: SpeechRecognitionResult) => r.isFinal)
@@ -2333,8 +2337,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (transcript) {
         setAiInterimText(null);
         setAiListening(false);
-        addAiDebugEntry('info', `Recognized: "${transcript.slice(0, 80)}${transcript.length > 80 ? '…' : ''}"`);
-        sendAiMessage(transcript);
+        // Only send if the chat panel is open — prevents transcripts being
+        // processed invisibly before the user has opened the panel
+        if (aiChatPanelOpenRef.current) {
+          addAiDebugEntry('info', `Recognized: "${transcript.slice(0, 80)}${transcript.length > 80 ? '…' : ''}"`);
+          sendAiMessage(transcript);
+        }
       }
     };
     rec.onerror = (e: any) => {
@@ -2366,6 +2374,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   // Keep refs in sync with state
   useEffect(() => { aiSpeakingRef.current = aiTutorSpeaking; }, [aiTutorSpeaking]);
   useEffect(() => { aiLoadingRef.current = aiTutorLoading; }, [aiTutorLoading]);
+  useEffect(() => { aiChatPanelOpenRef.current = aiChatPanelOpen; }, [aiChatPanelOpen]);
 
   // Start/stop recognition when AI tutor activates/deactivates
   useEffect(() => {
