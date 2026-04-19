@@ -2978,16 +2978,17 @@ export async function registerRoutes(
       } else {
         roomYoutubeState.delete(data.roomId);
       }
-      io.to(data.roomId).emit("room:youtube", { videoId: data.videoId, startedBy: currentUserId });
+      socket.to(data.roomId).emit("room:youtube", { videoId: data.videoId, startedBy: currentUserId });
     });
 
-    socket.on("room:youtube-state", (data: { roomId: string; action: string; time?: number }) => {
+    socket.on("room:youtube-state", (data: { roomId: string; action: string; time?: number; ts?: number }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
       socket.to(data.roomId).emit("room:youtube-state", {
         action: data.action,
         time: data.time,
+        ts: data.ts,
         from: currentUserId,
       });
     });
