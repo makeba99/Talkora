@@ -1945,14 +1945,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const toggleAiTutor = () => {
     if (!aiTutorActive) {
       setAiTutorActive(true);
-      setAiTutorControlOpen(true);
-      setAiConversation([{
-        id: "intro",
-        role: "ai",
-        text: "Let's practice talking about your daily routine! What time do you usually wake up?",
-      }]);
-      setAiTutorSpeaking(true);
-      setTimeout(() => setAiTutorSpeaking(false), 3500);
+      setAiTutorControlOpen(false);
+      setAiConversation([]);
     } else {
       setAiTutorActive(false);
       setAiTutorControlOpen(false);
@@ -1962,6 +1956,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const sendAiMessage = async (text: string) => {
     if (!text.trim() || aiTutorLoading) return;
+    const isFirstMessage = aiConversation.length === 0;
     const userMsg = { id: `u-${Date.now()}`, role: "user" as const, text: text.trim() };
     setAiConversation(prev => [...prev, userMsg]);
     setAiTutorLoading(true);
@@ -5731,53 +5726,122 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   data-testid="card-ai-tutor"
                 >
                   <div className="relative flex flex-col items-center">
-                    {/* Outer glow ring */}
-                    <div className="relative">
-                      {aiTutorSpeaking && (
-                        <span
-                          className="absolute inset-0 rounded-full animate-ping"
-                          style={{ background: "rgba(0,225,255,0.22)", animationDuration: "1.1s" }}
-                        />
+                    {/* Outer ping when speaking */}
+                    {aiTutorSpeaking && (
+                      <span
+                        className="absolute inset-0 rounded-full animate-ping"
+                        style={{ background: "rgba(0,225,255,0.18)", animationDuration: "1.2s", borderRadius: "50%" }}
+                      />
+                    )}
+
+                    {/* Holographic face circle */}
+                    <div
+                      className="relative rounded-full overflow-hidden flex items-center justify-center"
+                      style={{
+                        width: 88, height: 88,
+                        background: aiTutorSettings.voice === "Male"
+                          ? "radial-gradient(ellipse at 45% 38%, rgba(10,50,100,0.96) 0%, rgba(4,10,30,0.98) 70%)"
+                          : "radial-gradient(ellipse at 45% 38%, rgba(30,15,70,0.96) 0%, rgba(4,8,28,0.98) 70%)",
+                        border: aiTutorSpeaking
+                          ? "2.5px solid rgba(0,225,255,0.90)"
+                          : "2px solid rgba(0,225,255,0.45)",
+                        boxShadow: aiTutorSpeaking
+                          ? "0 0 28px rgba(0,225,255,0.60), 0 0 55px rgba(0,100,255,0.22), inset 0 0 22px rgba(0,120,255,0.14)"
+                          : "0 0 14px rgba(0,225,255,0.28), inset 0 0 12px rgba(0,80,200,0.10)",
+                      }}
+                    >
+                      {/* Holographic scan line overlay */}
+                      <div className="absolute inset-0 pointer-events-none" style={{
+                        background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,225,255,0.025) 3px, rgba(0,225,255,0.025) 4px)",
+                        borderRadius: "50%",
+                      }} />
+                      {/* Top shine */}
+                      <div className="absolute pointer-events-none" style={{
+                        top: 0, left: "10%", right: "10%", height: "35%",
+                        background: "linear-gradient(180deg, rgba(255,255,255,0.07) 0%, transparent 100%)",
+                        borderRadius: "50%",
+                      }} />
+
+                      {/* SVG Face */}
+                      {aiTutorSettings.voice === "Male" ? (
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+                          {/* Hair */}
+                          <ellipse cx="50" cy="33" rx="26" ry="18" fill="#2e3a52"/>
+                          <rect x="24" y="35" width="52" height="8" fill="#2e3a52"/>
+                          {/* Face */}
+                          <ellipse cx="50" cy="60" rx="22" ry="25" fill="#f0ddc8"/>
+                          {/* Eyebrows */}
+                          <path d="M34 47 Q39 44 44 46.5" stroke="#2a2a3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                          <path d="M56 46.5 Q61 44 66 47" stroke="#2a2a3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                          {/* Eyes */}
+                          <ellipse cx="40" cy="55" rx="5.5" ry="5.5" fill="#1a7aee"/>
+                          <ellipse cx="60" cy="55" rx="5.5" ry="5.5" fill="#1a7aee"/>
+                          <path d="M34.5 52 Q40 48.5 45.5 52" stroke="#111122" strokeWidth="1.8" fill="none"/>
+                          <path d="M54.5 52 Q60 48.5 65.5 52" stroke="#111122" strokeWidth="1.8" fill="none"/>
+                          <circle cx="40" cy="56" r="3" fill="#082050"/>
+                          <circle cx="60" cy="56" r="3" fill="#082050"/>
+                          <circle cx="42" cy="53" r="1.5" fill="white"/>
+                          <circle cx="62" cy="53" r="1.5" fill="white"/>
+                          {/* Nose */}
+                          <path d="M47 65 Q50 70 53 65" stroke="#c49a80" strokeWidth="1" fill="none" opacity="0.7"/>
+                          {/* Mouth */}
+                          <path d="M45 75 Q50 79 55 75" stroke="#b47060" strokeWidth="1.3" fill="none"/>
+                          {/* Headphones */}
+                          <path d="M27 52 Q27 30 50 29 Q73 30 73 52" fill="none" stroke="#10a0b8" strokeWidth="4" strokeLinecap="round"/>
+                          <rect x="22" y="48" width="10" height="12" rx="4" fill="#0a7888"/>
+                          <rect x="68" y="48" width="10" height="12" rx="4" fill="#0a7888"/>
+                          <rect x="24" y="50" width="6" height="8" rx="2" fill="#20d0e8"/>
+                          <rect x="70" y="50" width="6" height="8" rx="2" fill="#20d0e8"/>
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+                          {/* Hair long silver */}
+                          <ellipse cx="50" cy="34" rx="26" ry="20" fill="#c8d0e4"/>
+                          <path d="M25 50 Q21 72 27 88" stroke="#c8d0e4" strokeWidth="8" fill="none" strokeLinecap="round"/>
+                          <path d="M75 50 Q79 72 73 88" stroke="#c8d0e4" strokeWidth="8" fill="none" strokeLinecap="round"/>
+                          {/* Face */}
+                          <ellipse cx="50" cy="60" rx="22" ry="26" fill="#f8e8d8"/>
+                          {/* Eyebrows */}
+                          <path d="M35 47 Q40 44.5 44.5 46.5" stroke="#8090a8" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                          <path d="M55.5 46.5 Q60 44.5 65 47" stroke="#8090a8" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                          {/* Eyes anime large */}
+                          <ellipse cx="40" cy="55" rx="5.5" ry="6.5" fill="#2070ee"/>
+                          <ellipse cx="60" cy="55" rx="5.5" ry="6.5" fill="#2070ee"/>
+                          <path d="M34.5 51.5 Q40 48 45.5 51.5" stroke="#111122" strokeWidth="1.6" fill="none"/>
+                          <path d="M54.5 51.5 Q60 48 65.5 51.5" stroke="#111122" strokeWidth="1.6" fill="none"/>
+                          <circle cx="40" cy="56" r="3.2" fill="#0a2870"/>
+                          <circle cx="60" cy="56" r="3.2" fill="#0a2870"/>
+                          <circle cx="42" cy="52.5" r="1.8" fill="white"/>
+                          <circle cx="62" cy="52.5" r="1.8" fill="white"/>
+                          {/* Blush */}
+                          <ellipse cx="31" cy="64" rx="5" ry="2.5" fill="#ff9090" opacity="0.38"/>
+                          <ellipse cx="69" cy="64" rx="5" ry="2.5" fill="#ff9090" opacity="0.38"/>
+                          {/* Nose hint */}
+                          <path d="M47 67 Q50 71 53 67" stroke="#d4a090" strokeWidth="0.8" fill="none" opacity="0.5"/>
+                          {/* Mouth */}
+                          <path d="M44 76 Q50 81 56 76" stroke="#c47070" strokeWidth="1.3" fill="none"/>
+                          {/* Headphones */}
+                          <path d="M27 51 Q27 30 50 29 Q73 30 73 51" fill="none" stroke="#4060cc" strokeWidth="4" strokeLinecap="round"/>
+                          <rect x="22" y="47" width="10" height="12" rx="4" fill="#3050aa"/>
+                          <rect x="68" y="47" width="10" height="12" rx="4" fill="#3050aa"/>
+                          <rect x="24" y="49" width="6" height="8" rx="2" fill="#7090ff"/>
+                          <rect x="70" y="49" width="6" height="8" rx="2" fill="#7090ff"/>
+                        </svg>
                       )}
-                      <div
-                        className="w-20 h-20 rounded-full flex items-center justify-center relative overflow-hidden"
-                        style={{
-                          background: "radial-gradient(ellipse at 40% 35%, rgba(0,80,180,0.85) 0%, rgba(5,10,35,0.95) 70%)",
-                          border: aiTutorSpeaking
-                            ? "2px solid rgba(0,225,255,0.85)"
-                            : "2px solid rgba(0,225,255,0.40)",
-                          boxShadow: aiTutorSpeaking
-                            ? "0 0 32px rgba(0,225,255,0.55), 0 0 60px rgba(0,100,255,0.20), inset 0 0 20px rgba(0,120,255,0.15)"
-                            : "0 0 18px rgba(0,225,255,0.22), inset 0 0 14px rgba(0,80,200,0.12)",
-                        }}
-                      >
-                        <BrainCircuit
-                          className="w-9 h-9"
-                          style={{
-                            color: "rgba(0,225,255,0.90)",
-                            filter: aiTutorSpeaking ? "drop-shadow(0 0 8px rgba(0,225,255,0.9))" : "drop-shadow(0 0 4px rgba(0,225,255,0.5))",
-                          }}
-                        />
-                        {/* Subtle inner shimmer */}
-                        <div
-                          className="absolute inset-0 rounded-full pointer-events-none"
-                          style={{ background: "radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.08) 0%, transparent 60%)" }}
-                        />
-                      </div>
                     </div>
 
                     {/* Audio waveform bars */}
                     {aiTutorSpeaking && (
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-end gap-[2px]">
-                        {[4, 6, 5, 7, 4, 6, 5].map((h, i) => (
+                        {[3, 5, 4, 7, 4, 5, 3].map((h, i) => (
                           <div
                             key={i}
                             className="w-[2px] rounded-full"
                             style={{
                               height: h * 2,
-                              background: "rgba(0,225,255,0.82)",
-                              animation: `pulse ${0.5 + (i % 3) * 0.15}s ease-in-out infinite alternate`,
-                              animationDelay: `${i * 0.07}s`,
+                              background: "rgba(0,225,255,0.85)",
+                              animation: `pulse ${0.45 + (i % 3) * 0.15}s ease-in-out infinite alternate`,
+                              animationDelay: `${i * 0.08}s`,
                             }}
                           />
                         ))}
@@ -5788,7 +5852,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <div className="flex flex-col items-center gap-0.5">
                     <div className="flex items-center gap-1">
                       <span className="text-[12px] font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>AI Tutor</span>
-                      <BrainCircuit className="w-3 h-3" style={{ color: "rgba(0,225,255,0.75)" }} />
+                      <span className="text-[10px]" style={{ color: "rgba(0,225,255,0.60)" }}>
+                        {aiTutorSettings.voice === "Male" ? "♂" : "♀"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
