@@ -1893,10 +1893,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
           events: {
             onReady: () => {
-              if (ytSyncTimeRef.current > 0) {
-                try { player.seekTo(ytSyncTimeRef.current, true); player.playVideo(); } catch (_) {}
-                ytSyncTimeRef.current = 0;
-              }
+              try {
+                if (ytSyncTimeRef.current > 0) {
+                  player.seekTo(ytSyncTimeRef.current, true);
+                  ytSyncTimeRef.current = 0;
+                }
+                player.playVideo();
+              } catch (_) {}
             },
             onStateChange: buildStateChangeHandler(player, YT),
           },
