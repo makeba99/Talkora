@@ -9,10 +9,10 @@ import { ReportDialog } from "@/components/report-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
-import { ProfileDecoration, getRoomThemeBorderClass } from "@/components/profile-decorations";
+import { ProfileDecoration, getRoomThemeBorderClass, ROOM_THEMES } from "@/components/profile-decorations";
 import { UserBadgePips } from "@/components/user-badge-pips";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -87,28 +87,6 @@ function getThemeGlowColor(themeId: string | null | undefined): { from: string; 
   }
 }
 
-const ROOM_THEMES = [
-  { id: "premium-atmosphere", label: "✦ Premium Atmosphere", from: "from-cyan-400", to: "to-orange-400", preview: "from-cyan-400 via-fuchsia-500 to-orange-400" },
-  /* ── Premium Animated (top section) ── */
-  { id: "cosmic",   label: "✦ Cosmic",   from: "from-blue-600",   to: "to-red-500",      preview: "from-blue-600 via-purple-500 to-red-500" },
-  { id: "plasma",   label: "✦ Plasma",   from: "from-pink-500",   to: "to-indigo-500",   preview: "from-pink-500 via-purple-600 to-indigo-500" },
-  { id: "hologram", label: "✦ Hologram", from: "from-cyan-400",   to: "to-emerald-400",  preview: "from-cyan-400 via-teal-500 to-emerald-400" },
-  { id: "inferno",  label: "✦ Inferno",  from: "from-orange-600", to: "to-yellow-400",   preview: "from-orange-600 via-red-500 to-yellow-400" },
-  /* ── Standard ── */
-  { id: "default",  label: "Default",    from: "from-cyan-500",   to: "to-purple-500",   preview: "from-cyan-500 to-purple-500" },
-  { id: "neon",     label: "Neon",       from: "from-cyan-400",   to: "to-purple-500",   preview: "from-cyan-400 to-purple-500" },
-  { id: "galaxy",   label: "Galaxy",     from: "from-indigo-500", to: "to-purple-700",   preview: "from-indigo-500 to-purple-700" },
-  { id: "sunset",   label: "Sunset",     from: "from-orange-400", to: "to-red-500",      preview: "from-orange-400 to-red-500" },
-  { id: "forest",   label: "Forest",     from: "from-green-400",  to: "to-emerald-600",  preview: "from-green-400 to-emerald-600" },
-  { id: "cyberpunk",label: "Cyberpunk",  from: "from-yellow-400", to: "to-cyan-400",     preview: "from-yellow-400 to-cyan-400" },
-  { id: "ocean",    label: "Ocean",      from: "from-blue-400",   to: "to-cyan-600",     preview: "from-blue-400 to-cyan-600" },
-  { id: "cherry",   label: "Cherry",     from: "from-pink-400",   to: "to-rose-500",     preview: "from-pink-400 to-rose-500" },
-  { id: "gold",     label: "Gold",       from: "from-yellow-300", to: "to-amber-500",    preview: "from-yellow-300 to-amber-500" },
-  { id: "violet",   label: "Violet",     from: "from-violet-400", to: "to-fuchsia-600",  preview: "from-violet-400 to-fuchsia-600" },
-  { id: "aurora",   label: "Aurora",     from: "from-teal-400",   to: "to-green-400",    preview: "from-teal-400 to-green-400" },
-  { id: "storm",    label: "Storm",      from: "from-blue-500",   to: "to-slate-600",    preview: "from-blue-500 to-slate-600" },
-  { id: "volcanic", label: "Volcanic",   from: "from-red-500",    to: "to-orange-400",   preview: "from-red-500 to-orange-400" },
-];
 
 function getAvatarSizeClass(maxUsers: number): string {
   if (maxUsers <= 2) return "w-16 h-16";
@@ -349,7 +327,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const [editLanguage, setEditLanguage] = useState(room.language);
   const [editLevel, setEditLevel] = useState(room.level);
   const [editMaxUsers, setEditMaxUsers] = useState(room.maxUsers);
-  const [editTheme, setEditTheme] = useState((room as any).roomTheme || "cosmic");
+  const [editTheme, setEditTheme] = useState((room as any).roomTheme || "premium-atmosphere");
+  const [editThemeOffset, setEditThemeOffset] = useState(0);
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);
   const [hologramFile, setHologramFile] = useState<File | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -939,21 +918,74 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             </div>
 
             <div className="space-y-2">
-              <Label>Card Theme</Label>
-              <div className="grid grid-cols-5 gap-2">
-                {ROOM_THEMES.map((theme) => (
+              <div className="flex items-center justify-between">
+                <Label>Card Theme</Label>
+                <span className="text-xs text-muted-foreground">
+                  {ROOM_THEMES.find((t) => t.id === editTheme)?.label || "Default"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditThemeOffset((o) => Math.max(0, o - 4))}
+                  disabled={editThemeOffset === 0}
+                  className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="flex-1 grid grid-cols-4 gap-2">
+                  {ROOM_THEMES.slice(editThemeOffset, editThemeOffset + 4).map((theme) => (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => setEditTheme(theme.id)}
+                      className={`relative rounded-lg overflow-hidden transition-all border-2 ${editTheme === theme.id ? "border-white shadow-lg" : "border-transparent opacity-70 hover:opacity-100"}`}
+                      title={theme.label}
+                    >
+                      <img
+                        src={theme.img}
+                        alt={theme.label}
+                        className="w-full h-[52px] object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                          const fallback = e.currentTarget.nextSibling as HTMLElement;
+                          if (fallback) fallback.style.display = "flex";
+                        }}
+                      />
+                      <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                      <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-0.5 truncate">
+                        {theme.label}
+                      </span>
+                      {editTheme === theme.id && (
+                        <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white flex items-center justify-center">
+                          <svg className="w-1.5 h-1.5" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 6l3 3 5-5" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditThemeOffset((o) => Math.min(Math.max(0, ROOM_THEMES.length - 4), o + 4))}
+                  disabled={editThemeOffset + 4 >= ROOM_THEMES.length}
+                  className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex justify-center gap-1">
+                {Array.from({ length: Math.ceil(ROOM_THEMES.length / 4) }).map((_, i) => (
                   <button
-                    key={theme.id}
+                    key={i}
                     type="button"
-                    onClick={() => setEditTheme(theme.id)}
-                    className={`relative h-8 rounded-md bg-gradient-to-br ${theme.preview} transition-all ${editTheme === theme.id ? "ring-2 ring-white ring-offset-2 ring-offset-background scale-105" : "opacity-70 hover:opacity-100"}`}
-                    title={theme.label}
+                    onClick={() => setEditThemeOffset(i * 4)}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${editThemeOffset === i * 4 ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
                   />
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Selected: {ROOM_THEMES.find((t) => t.id === editTheme)?.label || "Default"}
-              </p>
             </div>
 
             <div className="space-y-2">
