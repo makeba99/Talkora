@@ -44,20 +44,20 @@ export interface AiTutorDeps {
 }
 
 const INTRO_TEXTS = [
-  "Hey! Ready to practice? What would you like to work on today?",
-  "Hi there! AI Tutor activated. What language skill shall we focus on?",
-  "Hello! I'm here to help you practice. What's on your mind?",
-  "Good to see you! Let's get some practice in. What topic interests you?",
-  "Hi! I'm listening. Tell me something and let's take it from there!",
+  "I'm listening. What do you want to practice?",
+  "Tell me something, and I'll help.",
+  "Ready. What should we work on?",
+  "I'm here. Say a sentence.",
+  "Let's practice. What's first?",
 ];
 
 const FALLBACK_RESPONSES = [
-  "That's interesting — could you tell me more?",
-  "I'd love to hear your thoughts on that.",
-  "Great point! What made you think of that?",
-  "Interesting! How would you explain that to someone else?",
-  "Can you say that in a different way?",
-  "Tell me more — I'm all ears!",
+  "I heard you. Say that one more way?",
+  "Got it. What part matters most?",
+  "I’m following. Give me one more detail.",
+  "Say it again, a little slower.",
+  "What do you mean exactly?",
+  "Keep going. I’m listening.",
 ];
 
 export function useAiTutor(deps: AiTutorDeps) {
@@ -347,8 +347,8 @@ export function useAiTutor(deps: AiTutorDeps) {
     if (!aiActive) {
       socket?.emit("room:ai-tutor-start", { roomId, userId, username });
       setAiActive(true);
-      setAiChatPanelOpen(true); // Auto-open chat so user sees conversation immediately
-      chatPanelOpenRef.current = true;
+      setAiChatPanelOpen(false);
+      chatPanelOpenRef.current = false;
       setAiConversation([]);
       setAiDebugLog([]);
       setAiLastBroadcast(null);

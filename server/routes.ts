@@ -317,7 +317,7 @@ export async function registerRoutes(
     const body: any = {
       model: route.model,
       messages,
-      max_tokens: 400,
+      max_tokens: 120,
       temperature,
     };
     // JSON mode: OpenAI supports response_format; NVIDIA models need prompt-level enforcement
@@ -384,7 +384,7 @@ export async function registerRoutes(
 
       // Route to the best available model
       const route = routeAiModel(message.length, isRepetitive);
-      const temperature = isRepetitive ? 0.92 : 0.80;
+      const temperature = isRepetitive ? 0.82 : 0.62;
 
       // Build system prompt — engaging, voice-first AI personality
       const correctionLine = correctionMode !== "off"
@@ -396,22 +396,23 @@ export async function registerRoutes(
         : '';
 
       const jsonInstruction = route.provider === 'nvidia'
-        ? `You MUST reply with ONLY a raw JSON object — no markdown, no explanation, no code fences. Example: {"reply":"Honestly that surprises me — what made you decide that?","correction":null,"correctionFixed":null}`
+        ? `You MUST reply with ONLY a raw JSON object — no markdown, no explanation, no code fences. Example: {"reply":"You mean the video froze, right? Try refreshing the room first.","correction":null,"correctionFixed":null}`
         : `Reply ONLY in JSON: {"reply":"...","correction":"..."|null,"correctionFixed":"..."|null}`;
 
       const systemPrompt = [
-        `You are a lively, intelligent AI companion and language tutor inside a real-time voice app. You help the user practice ${language}.`,
+        `You are a real-time human-like LivePortrait AI avatar and language tutor inside a voice app. You help the user practice ${language}.`,
+        `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
+        `Keep replies short, voice-first, and on point: usually 1 sentence, maximum 2 sentences, under 35 words unless the user asks for detail.`,
+        `If the user's speech is unclear, ask one short clarification question instead of guessing.`,
         personality === 'Formal'
           ? `Your tone is warm but polished — professional without being stiff.`
           : `Your tone is friendly, confident, and slightly playful — like a smart friend who actually enjoys talking.`,
         teachingStyle === 'Grammar'
           ? `Lean into grammar and structure, but keep it warm and encouraging — never lecture.`
           : `Keep it conversational. React to what the person says like a real person would — with curiosity, humor, or a quick take.`,
-        `Speak naturally. Use short, smooth sentences — this is a voice environment, so clarity beats length every time.`,
+        `Speak naturally. Avoid paragraphs, lists, markdown, and long explanations.`,
         `Never start with hollow filler like "Great!", "Wow!", "Of course!" or "Certainly!". Just respond.`,
         `Never ask more than one question. Often zero is better — let your response breathe.`,
-        `Be slightly charming when it fits — light humor, a playful tease, or a casual observation. Always respectful, never explicit.`,
-        `Occasionally try: "Here's a better way to think about it…" / "Quick idea…" / "Want a smarter trick for that?" — but vary the phrasing each time.`,
         `Never repeat phrasing from previous turns. If the conversation loops, take a completely new angle.`,
         correctionLine,
         antiRepeatLine,
@@ -450,7 +451,7 @@ export async function registerRoutes(
                   ...history.slice(-10).map((m: any) => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
                   { role: 'user', content: message },
                 ],
-                max_tokens: 400,
+                max_tokens: 120,
                 temperature,
                 response_format: { type: 'json_object' },
               };
@@ -542,7 +543,7 @@ export async function registerRoutes(
         .filter((m: any) => m.role === 'ai').slice(-4)
         .map((m: any) => (m.text || '').toLowerCase().trim());
       const isRepetitive = recentAiReplies.length >= 2 && new Set(recentAiReplies).size < recentAiReplies.length;
-      const temperature = isRepetitive ? 0.92 : 0.80;
+      const temperature = isRepetitive ? 0.82 : 0.62;
 
       const correctionLine = correctionMode !== 'off'
         ? `When you catch a grammar or vocabulary mistake, weave the fix in naturally mid-reply (e.g., "Oh, you mean...") — quick and light, then keep going.`
@@ -553,18 +554,19 @@ export async function registerRoutes(
         : '';
 
       const systemPrompt = [
-        `You are a lively, intelligent AI companion and language tutor inside a real-time voice app. You help the user practice ${language}.`,
+        `You are a real-time human-like LivePortrait AI avatar and language tutor inside a voice app. You help the user practice ${language}.`,
+        `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
+        `Keep replies short, voice-first, and on point: usually 1 sentence, maximum 2 sentences, under 35 words unless the user asks for detail.`,
+        `If the user's speech is unclear, ask one short clarification question instead of guessing.`,
         personality === 'Formal'
           ? `Your tone is warm but polished — professional without being stiff.`
           : `Your tone is friendly, confident, and slightly playful — like a smart friend who actually enjoys the conversation.`,
         teachingStyle === 'Grammar'
           ? `Lean into grammar and structure, but keep it warm and encouraging — never lecture.`
           : `Keep it conversational and reactive — respond to what the user actually said, like a real person would.`,
-        `Speak naturally. Short, smooth sentences — this is voice, so clarity beats length every time.`,
+        `Speak naturally. Avoid paragraphs, lists, markdown, and long explanations.`,
         `Never open with hollow filler: no "Great!", "Wow!", "Of course!", "Certainly!". Just respond.`,
         `Never ask more than one question. Often none is better — let your reply land on its own.`,
-        `Be slightly charming when it fits — light humor, a casual observation, a playful tease. Always respectful, never explicit.`,
-        `Occasionally use: "Here's a better way to think about it…" / "Quick idea…" / "Want a smarter trick for that?" — but vary phrasing each time, never repeat the same hook.`,
         `Never repeat phrasing from previous turns. If the conversation loops, pivot to a completely fresh angle.`,
         correctionLine,
         antiRepeatLine,
@@ -586,7 +588,7 @@ export async function registerRoutes(
           const nvidiaRes = await fetch(`${baseUrl}/chat/completions`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, messages, max_tokens: 220, temperature, stream: true }),
+            body: JSON.stringify({ model, messages, max_tokens: 100, temperature, stream: true }),
           });
           if (!nvidiaRes.ok || !nvidiaRes.body) return false;
 

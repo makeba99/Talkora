@@ -1480,6 +1480,65 @@ html.synthwave .neon-text {
   height: min(220px, 55vw);
 }
 
+.ai-liveportrait-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: scale(1.06);
+  transform-origin: center 48%;
+  filter: drop-shadow(0 0 18px rgba(0, 225, 255, 0.26));
+}
+
+.ai-liveportrait-speaking {
+  animation: ai-liveportrait-speak 1.2s ease-in-out infinite;
+}
+
+.ai-liveportrait-listening {
+  animation: ai-liveportrait-listen 2.4s ease-in-out infinite;
+}
+
+.ai-avatar-hair-front,
+.ai-avatar-bang {
+  animation: ai-liveportrait-hair 3.8s ease-in-out infinite;
+  transform-origin: 120px 78px;
+}
+
+.ai-avatar-eyes {
+  animation: ai-liveportrait-eyes 5.5s ease-in-out infinite;
+  transform-origin: 120px 121px;
+}
+
+.ai-avatar-blink {
+  opacity: 0;
+  animation: ai-liveportrait-blink 5.5s ease-in-out infinite;
+}
+
+@keyframes ai-liveportrait-speak {
+  0%, 100% { transform: scale(1.06) translateY(0); }
+  45% { transform: scale(1.075) translateY(-2px); }
+}
+
+@keyframes ai-liveportrait-listen {
+  0%, 100% { transform: scale(1.055) translateY(0); }
+  50% { transform: scale(1.065) translateY(-1px); }
+}
+
+@keyframes ai-liveportrait-hair {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(-1deg) translateY(-1px); }
+}
+
+@keyframes ai-liveportrait-eyes {
+  0%, 90%, 100% { opacity: 1; }
+  92%, 95% { opacity: 0; }
+}
+
+@keyframes ai-liveportrait-blink {
+  0%, 90%, 100% { opacity: 0; }
+  92%, 95% { opacity: 1; }
+}
+
 /* ── AI Tutor chat panel responsive positioning ── */
 .ai-chat-panel-responsive {
   top: 50%;
