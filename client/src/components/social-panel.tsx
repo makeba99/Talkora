@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Search, UserPlus, UserCheck, MessageSquare, Phone, StickyNote } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Users, Search, UserPlus, UserCheck, MessageSquare, Phone, StickyNote, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -79,8 +80,8 @@ export function UserNotePopover({ userId }: { userId: string }) {
             size="icon"
             variant="ghost"
             data-testid={`button-note-${userId}`}
-            className={data?.note ? "text-amber-400" : ""}
-            onClick={() => setOpen(true)}
+            className={`h-8 w-8 ${data?.note ? "text-amber-400" : "text-muted-foreground hover:text-foreground"}`}
+            onClick={(e) => { e.stopPropagation(); setOpen(true); }}
           >
             <StickyNote className="w-4 h-4" />
           </Button>
@@ -141,6 +142,122 @@ export function UserNotePopover({ userId }: { userId: string }) {
   );
 }
 
+interface UserProfileDialogProps {
+  user: User;
+  open: boolean;
+  onClose: () => void;
+  isFollowing: boolean;
+  onFollow: () => void;
+  onUnfollow: () => void;
+  onMessage: () => void;
+  onJoinRoom?: () => void;
+  inRoomId?: string;
+  isOnline: boolean;
+}
+
+function UserProfileDialog({
+  user: u,
+  open,
+  onClose,
+  isFollowing,
+  onFollow,
+  onUnfollow,
+  onMessage,
+  onJoinRoom,
+  inRoomId,
+  isOnline,
+}: UserProfileDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent
+        className="sm:max-w-sm w-full p-0 overflow-hidden"
+        data-testid={`dialog-profile-${u.id}`}
+      >
+        <div className="relative">
+          <div className="h-16 bg-gradient-to-br from-primary/30 via-primary/10 to-transparent" />
+          <div className="absolute top-8 left-4">
+            <Avatar className="w-16 h-16 border-4 border-background shadow-lg">
+              <AvatarImage src={u.profileImageUrl || undefined} alt={getUserDisplayName(u)} />
+              <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                {getUserInitials(u)}
+              </AvatarFallback>
+            </Avatar>
+            <div
+              className={`absolute bottom-1 right-1 w-3 h-3 rounded-full border-2 border-background ${
+                isOnline ? "bg-green-500" : "bg-muted-foreground/40"
+              }`}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 pt-10 pb-4 space-y-3">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-semibold text-base leading-tight">{getUserDisplayName(u)}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {isOnline ? "Online" : "Offline"}
+                  {inRoomId && (
+                    <span className="ml-1.5 text-primary font-medium">• In a room</span>
+                  )}
+                </p>
+              </div>
+              {isFollowing && (
+                <Badge variant="secondary" className="text-[10px] h-5 shrink-0">Following</Badge>
+              )}
+            </div>
+            {u.bio && (
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed line-clamp-3">{u.bio}</p>
+            )}
+            <UserBadgePips userId={u.id} />
+          </div>
+
+          <div className="border-t border-border/40 pt-3">
+            <p className="text-[11px] text-muted-foreground mb-2 font-medium uppercase tracking-wide">Private Note</p>
+            <UserNotePopover userId={u.id} />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            {inRoomId && onJoinRoom && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-8 text-xs"
+                onClick={() => { onJoinRoom(); onClose(); }}
+                data-testid={`button-join-room-profile-${u.id}`}
+              >
+                <Phone className="w-3.5 h-3.5 mr-1.5" /> Join Room
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 h-8 text-xs"
+              onClick={() => { onMessage(); onClose(); }}
+              data-testid={`button-message-profile-${u.id}`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Message
+            </Button>
+            <Button
+              size="sm"
+              variant={isFollowing ? "outline" : "default"}
+              className="flex-1 h-8 text-xs"
+              onClick={() => { isFollowing ? onUnfollow() : onFollow(); }}
+              data-testid={`button-follow-profile-${u.id}`}
+            >
+              {isFollowing ? (
+                <><UserCheck className="w-3.5 h-3.5 mr-1.5 text-primary" /> Following</>
+              ) : (
+                <><UserPlus className="w-3.5 h-3.5 mr-1.5" /> Follow</>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface SocialPanelProps {
   onOpenDm?: (userId: string) => void;
   onlineUsers: Set<string>;
@@ -151,6 +268,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
 
   const { data: allUsers = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -244,8 +362,13 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
         className="flex items-center gap-3 p-2 rounded-md hover-elevate"
         data-testid={`social-user-${u.id}`}
       >
-        <div className="relative flex-shrink-0">
-          <Avatar className="w-9 h-9">
+        <button
+          className="relative flex-shrink-0 focus:outline-none"
+          onClick={() => setProfileUser(u)}
+          data-testid={`button-avatar-${u.id}`}
+          aria-label={`View ${getUserDisplayName(u)}'s profile`}
+        >
+          <Avatar className="w-9 h-9 hover:ring-2 hover:ring-primary/50 transition-all rounded-full">
             <AvatarImage src={u.profileImageUrl || undefined} alt={getUserDisplayName(u)} />
             <AvatarFallback className="text-sm bg-primary/10 text-primary">
               {getUserInitials(u)}
@@ -256,10 +379,17 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
               isOnline ? "bg-status-online" : "bg-status-offline"
             }`}
           />
-        </div>
-        <div className="flex-1 min-w-0">
+        </button>
+
+        <button
+          className="flex-1 min-w-0 text-left focus:outline-none"
+          onClick={() => setProfileUser(u)}
+          data-testid={`button-name-${u.id}`}
+        >
           <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium truncate">{getUserDisplayName(u)}</p>
+            <p className="text-sm font-medium truncate hover:text-primary transition-colors">
+              {getUserDisplayName(u)}
+            </p>
             {inRoomId && (
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium flex-shrink-0">
                 In Room
@@ -274,7 +404,8 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
             </p>
           )}
           <UserBadgePips userId={u.id} />
-        </div>
+        </button>
+
         <div className="flex items-center gap-1 flex-shrink-0">
           {inRoomId && (
             <Tooltip>
@@ -284,7 +415,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
                   variant="ghost"
                   onClick={() => handleJoinRoom(inRoomId)}
                   data-testid={`button-join-room-${u.id}`}
-                  className="text-primary"
+                  className="text-primary w-8 h-8"
                 >
                   <Phone className="w-4 h-4" />
                 </Button>
@@ -292,124 +423,155 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
               <TooltipContent>Join their room</TooltipContent>
             </Tooltip>
           )}
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => {
-              if (onOpenDm) {
-                onOpenDm(u.id);
-              } else {
-                setLocation(`/messages/${u.id}`);
-              }
-              setOpen(false);
-            }}
-            data-testid={`button-dm-${u.id}`}
-          >
-            <MessageSquare className="w-4 h-4" />
-          </Button>
-          <UserNotePopover userId={u.id} />
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() =>
-              isFollowing
-                ? unfollowMutation.mutate(u.id)
-                : followMutation.mutate(u.id)
-            }
-            data-testid={`button-follow-${u.id}`}
-          >
-            {isFollowing ? (
-              <UserCheck className="w-4 h-4 text-primary" />
-            ) : (
-              <UserPlus className="w-4 h-4" />
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="w-8 h-8"
+                onClick={() => {
+                  if (onOpenDm) {
+                    onOpenDm(u.id);
+                  } else {
+                    setLocation(`/messages/${u.id}`);
+                  }
+                  setOpen(false);
+                }}
+                data-testid={`button-dm-${u.id}`}
+              >
+                <MessageSquare className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Message</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="w-8 h-8"
+                onClick={() =>
+                  isFollowing
+                    ? unfollowMutation.mutate(u.id)
+                    : followMutation.mutate(u.id)
+                }
+                data-testid={`button-follow-${u.id}`}
+              >
+                {isFollowing ? (
+                  <UserCheck className="w-4 h-4 text-primary" />
+                ) : (
+                  <UserPlus className="w-4 h-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isFollowing ? "Unfollow" : "Follow"}</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     );
   };
 
+  const profileTarget = profileUser;
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button size="icon" variant="ghost" data-testid="button-social-panel">
-          <Users className="w-4 h-4" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="w-80 sm:w-96 p-0 flex flex-col">
-        <SheetHeader className="p-4 pb-0">
-          <SheetTitle>People</SheetTitle>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button size="icon" variant="ghost" data-testid="button-social-panel">
+            <Users className="w-4 h-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-80 sm:w-96 p-0 flex flex-col">
+          <SheetHeader className="p-4 pb-0">
+            <SheetTitle>People</SheetTitle>
+          </SheetHeader>
 
-        <div className="px-4 py-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-              data-testid="input-search-users"
-            />
-          </div>
-        </div>
-
-        <Tabs defaultValue="all" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-4 grid grid-cols-4">
-            <TabsTrigger value="all" data-testid="tab-all">All</TabsTrigger>
-            <TabsTrigger value="friends" data-testid="tab-friends">
-              Friends
-            </TabsTrigger>
-            <TabsTrigger value="following" data-testid="tab-following">
-              Following
-            </TabsTrigger>
-            <TabsTrigger value="followers" data-testid="tab-followers">
-              Followers
-            </TabsTrigger>
-          </TabsList>
-
-          <ScrollArea className="flex-1 mt-2">
-            <div className="px-4 pb-4">
-              <TabsContent value="all" className="mt-0 space-y-1">
-                {filterBySearch(connectedUsers).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No connections yet. Follow someone to see them here.
-                  </p>
-                ) : (
-                  filterBySearch(connectedUsers).map(renderUser)
-                )}
-              </TabsContent>
-              <TabsContent value="friends" className="mt-0 space-y-1">
-                {filterBySearch(friends).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No friends yet
-                  </p>
-                ) : (
-                  filterBySearch(friends).map(renderUser)
-                )}
-              </TabsContent>
-              <TabsContent value="following" className="mt-0 space-y-1">
-                {filterBySearch(followingUsers).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Not following anyone
-                  </p>
-                ) : (
-                  filterBySearch(followingUsers).map(renderUser)
-                )}
-              </TabsContent>
-              <TabsContent value="followers" className="mt-0 space-y-1">
-                {filterBySearch(followerUsers).length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No followers yet
-                  </p>
-                ) : (
-                  filterBySearch(followerUsers).map(renderUser)
-                )}
-              </TabsContent>
+          <div className="px-4 py-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+                data-testid="input-search-users"
+              />
             </div>
-          </ScrollArea>
-        </Tabs>
-      </SheetContent>
-    </Sheet>
+          </div>
+
+          <Tabs defaultValue="all" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="mx-4 grid grid-cols-4 text-[11px]">
+              <TabsTrigger value="all" className="text-[11px]" data-testid="tab-all">All</TabsTrigger>
+              <TabsTrigger value="friends" className="text-[11px]" data-testid="tab-friends">Friends</TabsTrigger>
+              <TabsTrigger value="following" className="text-[11px]" data-testid="tab-following">Following</TabsTrigger>
+              <TabsTrigger value="followers" className="text-[11px]" data-testid="tab-followers">Followers</TabsTrigger>
+            </TabsList>
+
+            <ScrollArea className="flex-1 mt-2">
+              <div className="px-4 pb-4">
+                <TabsContent value="all" className="mt-0 space-y-1">
+                  {filterBySearch(connectedUsers).length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No connections yet. Follow someone to see them here.
+                    </p>
+                  ) : (
+                    filterBySearch(connectedUsers).map(renderUser)
+                  )}
+                </TabsContent>
+                <TabsContent value="friends" className="mt-0 space-y-1">
+                  {filterBySearch(friends).length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No friends yet
+                    </p>
+                  ) : (
+                    filterBySearch(friends).map(renderUser)
+                  )}
+                </TabsContent>
+                <TabsContent value="following" className="mt-0 space-y-1">
+                  {filterBySearch(followingUsers).length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Not following anyone
+                    </p>
+                  ) : (
+                    filterBySearch(followingUsers).map(renderUser)
+                  )}
+                </TabsContent>
+                <TabsContent value="followers" className="mt-0 space-y-1">
+                  {filterBySearch(followerUsers).length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No followers yet
+                    </p>
+                  ) : (
+                    filterBySearch(followerUsers).map(renderUser)
+                  )}
+                </TabsContent>
+              </div>
+            </ScrollArea>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
+
+      {profileTarget && (
+        <UserProfileDialog
+          user={profileTarget}
+          open={!!profileTarget}
+          onClose={() => setProfileUser(null)}
+          isFollowing={followingIds.has(profileTarget.id)}
+          onFollow={() => followMutation.mutate(profileTarget.id)}
+          onUnfollow={() => unfollowMutation.mutate(profileTarget.id)}
+          onMessage={() => {
+            if (onOpenDm) {
+              onOpenDm(profileTarget.id);
+            } else {
+              setLocation(`/messages/${profileTarget.id}`);
+            }
+            setOpen(false);
+          }}
+          onJoinRoom={userRooms[profileTarget.id] ? () => handleJoinRoom(userRooms[profileTarget.id]) : undefined}
+          inRoomId={userRooms[profileTarget.id]}
+          isOnline={onlineUsers.has(profileTarget.id)}
+        />
+      )}
+    </>
   );
 }
