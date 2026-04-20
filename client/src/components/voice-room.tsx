@@ -589,6 +589,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const aiTutorSpeaking = aiState.speaking;
   const aiTutorLoading = aiState.loading;
   const aiListening = voiceState.listening;
+  const aiMicError = voiceState.micError;
   const aiTutorControlOpen = aiState.controlOpen;
   const setAiTutorControlOpen = setAiControlOpen;
   const aiChatPanelOpen = aiState.chatPanelOpen;
@@ -6737,6 +6738,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         {aiTutorDisplaySpeaking ? "Speaking…" : aiTutorDisplayListening ? "Listening…" : "Ready"}
                       </span>
                     </div>
+                    {/* Mic error warning */}
+                    {isAiTutorOwner && aiMicError && (
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg mt-1" style={{ background: "rgba(255,60,60,0.15)", border: "1px solid rgba(255,80,80,0.30)" }}>
+                        <MicOff className="w-3 h-3 flex-shrink-0" style={{ color: "rgba(255,120,120,0.90)" }} />
+                        <span className="text-[10px] leading-tight" style={{ color: "rgba(255,160,160,0.90)" }}>
+                          {aiMicError}
+                        </span>
+                      </div>
+                    )}
                     {/* Dismiss link */}
                     {isAiTutorOwner && <button
                       onClick={toggleAiTutor}

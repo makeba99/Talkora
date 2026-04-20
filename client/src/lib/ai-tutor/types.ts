@@ -58,6 +58,7 @@ export interface VoiceState {
   listening: boolean;
   interimText: string | null;
   bargeInActive: boolean;
+  micError: string | null;
 }
 
 export interface MediaState {

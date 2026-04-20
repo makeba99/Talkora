@@ -117,6 +117,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceInterimText, setVoiceInterimText] = useState<string | null>(null);
   const [voiceBargeInActive, setVoiceBargeInActive] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
 
   // ── Lipsync State ─────────────────────────────────────────────────────────
   const [currentViseme, setCurrentViseme] = useState<Viseme>("rest");
@@ -127,6 +128,9 @@ export function useAiTutor(deps: AiTutorDeps) {
   const loadingRef = useRef(false);
   const chatPanelOpenRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  // Latest-version refs prevent stale closures in STT/TTS callbacks
+  const sendAiMessageRef = useRef<((text: string) => void) | null>(null);
+  const interruptAiRef = useRef<(() => void) | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => { activeRef.current = aiActive; }, [aiActive]);
@@ -200,23 +204,24 @@ export function useAiTutor(deps: AiTutorDeps) {
   // ── STT Engine ────────────────────────────────────────────────────────────
   const sttRef = useRef<SttEngine | null>(null);
 
+  // Stable callbacks that always call the latest function via ref
   const onBargeIn = useCallback(() => {
     addDebug("info", "Barge-in detected — interrupting AI.");
     setVoiceBargeInActive(false);
-    interruptAi();
-    // Give a short gap then restart full listening
+    interruptAiRef.current?.();
     setTimeout(() => {
       if (activeRef.current) sttRef.current?.startListening();
     }, 150);
-  }, [addDebug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [addDebug]);
 
   const onFinalTranscript = useCallback((text: string) => {
     setVoiceInterimText(null);
     setVoiceListening(false);
     addDebug("info", `Recognized: "${text.slice(0, 80)}${text.length > 80 ? "…" : ""}"`);
-    interruptAi();
-    sendAiMessage(text);
-  }, [addDebug]); // eslint-disable-line react-hooks/exhaustive-deps
+    interruptAiRef.current?.();
+    // Use ref to avoid stale closure — sendAiMessage changes when aiConversation changes
+    sendAiMessageRef.current?.(text);
+  }, [addDebug]);
 
   useEffect(() => {
     sttRef.current = new SttEngine(
@@ -226,6 +231,10 @@ export function useAiTutor(deps: AiTutorDeps) {
         onStart: () => { setVoiceListening(true); addDebug("info", `Mic started — listening in ${roomLanguage}`); },
         onStop: () => { setVoiceListening(false); setVoiceInterimText(null); },
         onBargeIn,
+        onError: msg => {
+          addDebug("error", `STT: ${msg}`);
+          setMicError(msg);
+        },
       },
       {
         panelOpen: chatPanelOpenRef,
@@ -391,6 +400,10 @@ export function useAiTutor(deps: AiTutorDeps) {
     }
   }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi]);
 
+  // Keep latest-version refs in sync so STT callbacks never call a stale closure
+  useEffect(() => { sendAiMessageRef.current = sendAiMessage; }, [sendAiMessage]);
+  useEffect(() => { interruptAiRef.current = interruptAi; }, [interruptAi]);
+
   // ── Start with a specific persona (voice + name, locked for session) ──────
   const startWithPersona = useCallback((voice: "Female" | "Male", pName: string) => {
     if (aiActive) return;
@@ -402,6 +415,10 @@ export function useAiTutor(deps: AiTutorDeps) {
     setAiSettings(s => ({ ...s, voice, voiceId: null }));
     // Also configure TTS immediately (don't wait for React state cycle)
     ttsRef.current?.configure(voice, aiSettings.speed, null);
+
+    // Clear any previous mic error
+    setMicError(null);
+    sttRef.current?.resetMicDenied();
 
     socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId: DEFAULT_AI_SETTINGS.avatarId, voice, voiceId: null });
     setAiActive(true);
@@ -564,6 +581,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     listening: voiceListening,
     interimText: voiceInterimText,
     bargeInActive: voiceBargeInActive,
+    micError,
   };
 
   const mediaState: MediaState = {
