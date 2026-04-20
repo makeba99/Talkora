@@ -554,11 +554,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   // ── AI Tutor (modular: STT / TTS / Stream / Avatar) ──────────────────────
+  const [aiPersonaPickerOpen, setAiPersonaPickerOpen] = useState(false);
+
   const {
     aiState,
     voiceState,
     mediaState: _aiMediaState,
     currentViseme,
+    personaName: aiPersonaName,
     setAiChatPanelOpen,
     setAiControlOpen,
     setAiDebugOpen,
@@ -567,6 +570,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     clearDebugLog,
     setRoomAiTutorEnabled,
     toggleAiTutor,
+    startWithPersona,
     sendAiMessage,
     interruptAi,
     addDebug: addAiDebugEntry,
@@ -745,7 +749,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const aiTutorDisplayListening = isAiTutorOwner ? aiListening : (!!roomAiTutorSession.active && !roomAiTutorSession.speaking);
   const aiTutorDisplayName = roomAiTutorSession.userId && roomAiTutorSession.userId !== user?.id
     ? `${roomAiTutorSession.username || "Someone"}'s AI Tutor`
-    : "AI Tutor";
+    : aiPersonaName;
   const aiTutorAvatarId = isAiTutorOwner ? aiTutorSettings.avatarId : roomAiTutorSession.avatarId || "aurora";
   const aiTutorAvatar = AI_TUTOR_AVATARS.find(avatar => avatar.id === aiTutorAvatarId) || AI_TUTOR_AVATARS[0];
   const aiTutorFaceStyle = aiTutorAvatar.gender;
@@ -2382,9 +2386,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               />
             )}
             <button
-              onClick={toggleAiTutor}
+              onClick={aiTutorActive ? toggleAiTutor : () => setAiPersonaPickerOpen(true)}
               data-testid="button-toggle-ai-tutor"
-              title={aiTutorActive ? "Dismiss AI Tutor" : "Call AI Tutor"}
+              title={aiTutorActive ? `Dismiss ${aiPersonaName}` : "Call AI Tutor"}
               className={btnBase}
               style={aiTutorActive ? {
                 background: "linear-gradient(145deg, rgba(0,200,255,0.28) 0%, rgba(0,120,200,0.18) 100%)",
@@ -2402,7 +2406,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </button>
           </div>
           <span className={labelBase} style={{ color: aiTutorActive ? "rgba(0,225,255,0.90)" : "rgba(0,200,255,0.55)" }}>
-            {aiTutorActive ? "AI On" : "AI Tutor"}
+            {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
         </div>
 
@@ -6281,6 +6285,114 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
+          {/* ── AI Tutor Persona Picker Overlay ── */}
+          {aiPersonaPickerOpen && !aiTutorActive && (
+            <div
+              className="fixed inset-0 z-[80] flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)" }}
+              data-testid="ai-persona-picker-overlay"
+              onClick={() => setAiPersonaPickerOpen(false)}
+            >
+              <div
+                className="relative flex flex-col items-center rounded-3xl overflow-hidden shadow-2xl mx-4"
+                style={{
+                  background: "rgba(8,12,32,0.97)",
+                  border: "1px solid rgba(0,225,255,0.22)",
+                  boxShadow: "0 30px 80px rgba(0,0,0,0.80), 0 0 60px rgba(0,100,255,0.08)",
+                  width: "min(90vw, 420px)",
+                  padding: "32px 28px 28px",
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Close */}
+                <button
+                  onClick={() => setAiPersonaPickerOpen(false)}
+                  className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-white/10"
+                  style={{ color: "rgba(255,255,255,0.40)" }}
+                  data-testid="button-persona-picker-close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-2">
+                  <BrainCircuit className="w-5 h-5" style={{ color: "rgba(0,225,255,0.80)" }} />
+                  <span className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>Choose Your Tutor</span>
+                </div>
+                <p className="text-[12px] text-center mb-8" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  Which tutor would you like? Your choice is locked for the session.
+                </p>
+
+                {/* Persona buttons */}
+                <div className="flex flex-col gap-3 w-full">
+                  {/* Female — Afik */}
+                  <button
+                    data-testid="button-persona-female"
+                    onClick={() => {
+                      setAiPersonaPickerOpen(false);
+                      startWithPersona("Female", "Afik");
+                    }}
+                    className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(255,100,180,0.14) 0%, rgba(200,80,220,0.10) 100%)",
+                      border: "1.5px solid rgba(255,120,200,0.35)",
+                      boxShadow: "0 4px 20px rgba(255,80,180,0.10)",
+                    }}
+                  >
+                    {/* Avatar circle */}
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
+                      style={{ background: "linear-gradient(135deg, rgba(255,120,200,0.50) 0%, rgba(180,60,220,0.40) 100%)", border: "2px solid rgba(255,140,210,0.50)" }}>
+                      ♀
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-[16px] font-bold" style={{ color: "rgba(255,180,220,0.95)" }}>Afik</span>
+                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>Female tutor · Natural, encouraging voice</span>
+                    </div>
+                    <div className="ml-auto">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(255,120,200,0.20)", border: "1px solid rgba(255,140,210,0.35)" }}>
+                        <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(255,180,220,0.80)" }} />
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Male — Dude Lebowski */}
+                  <button
+                    data-testid="button-persona-male"
+                    onClick={() => {
+                      setAiPersonaPickerOpen(false);
+                      startWithPersona("Male", "Dude");
+                    }}
+                    className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(60,140,255,0.14) 0%, rgba(40,100,220,0.10) 100%)",
+                      border: "1.5px solid rgba(80,160,255,0.35)",
+                      boxShadow: "0 4px 20px rgba(60,140,255,0.10)",
+                    }}
+                  >
+                    {/* Avatar circle */}
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
+                      style={{ background: "linear-gradient(135deg, rgba(60,140,255,0.50) 0%, rgba(30,80,200,0.40) 100%)", border: "2px solid rgba(80,160,255,0.50)" }}>
+                      ♂
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-[16px] font-bold" style={{ color: "rgba(140,190,255,0.95)" }}>Dude Lebowski</span>
+                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>Male tutor · Laid-back, conversational voice</span>
+                    </div>
+                    <div className="ml-auto">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(60,140,255,0.20)", border: "1px solid rgba(80,160,255,0.35)" }}>
+                        <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(140,190,255,0.80)" }} />
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                <p className="text-[10px] mt-5" style={{ color: "rgba(255,255,255,0.25)" }}>
+                  Voice selection is locked once the session starts
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ── AI Tutor: Face always fixed at screen center ── */}
           {aiTutorVisible && (
             <div
@@ -6952,14 +7064,23 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       ))}
                     </div>
                   </div>
-                  {/* Tutor Voice */}
+                  {/* Tutor Voice — locked during active session */}
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.70)" }}>Tutor Voice</span>
-                    <button onClick={() => setAiTutorSettings(s => ({ ...s, voice: s.voice === "Female" ? "Male" : "Female", voiceId: null }))}
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-semibold" style={{ color: "rgba(255,255,255,0.70)" }}>Tutor Voice</span>
+                      {aiTutorActive && <span className="text-[9px] mt-0.5" style={{ color: "rgba(255,200,80,0.65)" }}>Locked for this session</span>}
+                    </div>
+                    <button
+                      onClick={() => !aiTutorActive && setAiTutorSettings(s => ({ ...s, voice: s.voice === "Female" ? "Male" : "Female", voiceId: null }))}
                       data-testid="button-voice-toggle"
+                      disabled={aiTutorActive}
                       className="text-[11px] font-semibold px-3 py-1 rounded-md transition-all"
-                      style={{ background: "rgba(0,180,255,0.15)", border: "1px solid rgba(0,225,255,0.35)", color: "rgba(0,225,255,0.90)" }}>
-                      {aiTutorSettings.voice === "Female" ? "♀ Female" : "♂ Male"}
+                      style={aiTutorActive
+                        ? { background: "rgba(80,80,100,0.30)", border: "1px solid rgba(255,200,80,0.25)", color: "rgba(255,200,80,0.70)", cursor: "not-allowed" }
+                        : { background: "rgba(0,180,255,0.15)", border: "1px solid rgba(0,225,255,0.35)", color: "rgba(0,225,255,0.90)", cursor: "pointer" }}>
+                      {aiTutorActive
+                        ? (aiTutorSettings.voice === "Female" ? `♀ ${aiPersonaName}` : `♂ ${aiPersonaName}`)
+                        : (aiTutorSettings.voice === "Female" ? "♀ Female" : "♂ Male")}
                     </button>
                   </div>
                   <div>

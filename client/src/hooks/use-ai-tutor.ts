@@ -8,6 +8,7 @@
  *   mediaState — External media conflicts (YouTube active, video ID)
  *
  * Implements:
+ *  - Persona selection: Female (Afik) or Male (Dude Lebowski) — locked per session
  *  - Streaming pipeline: SSE tokens → sentence queue → TTS (speaks before full response)
  *  - True barge-in: parallel barge-in recognizer stops AI mid-sentence when user speaks
  *  - Interrupt logic: AbortController cancels in-flight stream; TTS queue drained
@@ -43,21 +44,25 @@ export interface AiTutorDeps {
   showYoutube: boolean;
 }
 
-const INTRO_TEXTS = [
-  "I'm listening. What do you want to practice?",
-  "Tell me something, and I'll help.",
-  "Ready. What should we work on?",
-  "I'm here. Say a sentence.",
-  "Let's practice. What's first?",
+const FEMALE_INTROS = [
+  "Hi! I'm Afik, your language tutor. What would you like to practice today?",
+  "Hey there! Afik here — ready to help you practice. What should we work on?",
+  "Hello! I'm Afik. Tell me something and let's get started!",
+];
+
+const MALE_INTROS = [
+  "Hey man, I'm Dude — your tutor. What are we practicing today?",
+  "What's up! Dude here. Say something and let's roll.",
+  "Hey! It's Dude. Ready when you are — what do you want to work on?",
 ];
 
 const FALLBACK_RESPONSES = [
   "I heard you. Say that one more way?",
   "Got it. What part matters most?",
-  "I’m following. Give me one more detail.",
+  "I'm following. Give me one more detail.",
   "Say it again, a little slower.",
   "What do you mean exactly?",
-  "Keep going. I’m listening.",
+  "Keep going. I'm listening.",
 ];
 
 const AI_SETTINGS_STORAGE_KEY = "connect2talk-ai-tutor-settings-v1";
@@ -104,6 +109,10 @@ export function useAiTutor(deps: AiTutorDeps) {
     active: false, userId: null, username: null, speaking: false,
   });
 
+  // ── Persona State (locked per session) ────────────────────────────────────
+  const [personaName, setPersonaName] = useState<string>("AI Tutor");
+  const personaLockedRef = useRef(false);
+
   // ── Voice State ───────────────────────────────────────────────────────────
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceInterimText, setVoiceInterimText] = useState<string | null>(null);
@@ -149,9 +158,9 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: false });
-    // Always restart listening when AI finishes speaking — not gated on panel state
+    // Restart listening quickly (200ms) when AI finishes speaking
     if (activeRef.current && !loadingRef.current) {
-      setTimeout(() => sttRef.current?.startListening(), 400);
+      setTimeout(() => sttRef.current?.startListening(), 200);
     }
   }, [socket, roomId, userId]);
 
@@ -198,7 +207,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     // Give a short gap then restart full listening
     setTimeout(() => {
       if (activeRef.current) sttRef.current?.startListening();
-    }, 200);
+    }, 150);
   }, [addDebug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onFinalTranscript = useCallback((text: string) => {
@@ -273,7 +282,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     let firstToken = true;
     const t0 = Date.now();
 
-    setTimeout(() => setAiAcknowledging(false), 600);
+    setTimeout(() => setAiAcknowledging(false), 400);
 
     // Stop primary listening while streaming
     sttRef.current?.stopListening();
@@ -378,13 +387,41 @@ export function useAiTutor(deps: AiTutorDeps) {
         if (activeRef.current && !speakingRef.current && !loadingRef.current) {
           sttRef.current?.startListening();
         }
-      }, 1200);
+      }, 1000);
     }
   }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi]);
 
-  // ── Toggle AI Tutor session ───────────────────────────────────────────────
+  // ── Start with a specific persona (voice + name, locked for session) ──────
+  const startWithPersona = useCallback((voice: "Female" | "Male", pName: string) => {
+    if (aiActive) return;
+    // Lock the persona for this session
+    personaLockedRef.current = true;
+    setPersonaName(pName);
+
+    // Update voice setting without triggering the settings effect broadcast
+    setAiSettings(s => ({ ...s, voice, voiceId: null }));
+
+    socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId: DEFAULT_AI_SETTINGS.avatarId, voice, voiceId: null });
+    setAiActive(true);
+    setAiChatPanelOpen(false);
+    chatPanelOpenRef.current = false;
+    setAiConversation([]);
+    setAiDebugLog([]);
+    setAiLastBroadcast(null);
+
+    // Persona-specific intro
+    const intros = voice === "Female" ? FEMALE_INTROS : MALE_INTROS;
+    const intro = intros[Math.floor(Math.random() * intros.length)];
+    const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
+    setAiConversation([introMsg]);
+    setTimeout(() => ttsRef.current?.enqueue(intro), 300);
+    addDebug("info", `Session started with persona: ${pName} (${voice})`);
+  }, [aiActive, socket, roomId, userId, username, addDebug]);
+
+  // ── Toggle AI Tutor session (stop only — use startWithPersona to start) ──
   const toggleAiTutor = useCallback(() => {
     if (!aiActive) {
+      // Default start (no persona selection — use current settings)
       socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId: aiSettings.avatarId, voice: aiSettings.voice, voiceId: aiSettings.voiceId });
       setAiActive(true);
       setAiChatPanelOpen(false);
@@ -392,12 +429,14 @@ export function useAiTutor(deps: AiTutorDeps) {
       setAiConversation([]);
       setAiDebugLog([]);
       setAiLastBroadcast(null);
-      const intro = INTRO_TEXTS[Math.floor(Math.random() * INTRO_TEXTS.length)];
+      const intros = aiSettings.voice === "Male" ? MALE_INTROS : FEMALE_INTROS;
+      const intro = intros[Math.floor(Math.random() * intros.length)];
       const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
       setAiConversation([introMsg]);
       setTimeout(() => ttsRef.current?.enqueue(intro), 300);
     } else {
-      // Stop session
+      // Stop session — unlock persona
+      personaLockedRef.current = false;
       sttRef.current?.stopAll();
       ttsRef.current?.cancel();
       abortRef.current?.abort();
@@ -414,8 +453,9 @@ export function useAiTutor(deps: AiTutorDeps) {
       setVoiceBargeInActive(false);
       setAiAcknowledging(false);
       setAiTranscriptExpanded(false);
+      setPersonaName("AI Tutor");
     }
-  }, [aiActive, socket, roomId, userId, username]);
+  }, [aiActive, socket, roomId, userId, username, aiSettings]);
 
   // ── Observe AI message from another user in the room ─────────────────────
   const observeSpeakText = useCallback((text: string, voice: string, speed: number, voiceId?: string | null) => {
@@ -433,9 +473,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => {
     if (aiActive) {
       activeRef.current = true;
+      // Reduced to 700ms for faster initial capture
       setTimeout(() => {
         if (activeRef.current && !speakingRef.current) sttRef.current?.startListening();
-      }, 1500);
+      }, 700);
     } else {
       activeRef.current = false;
       sttRef.current?.stopAll();
@@ -537,6 +578,10 @@ export function useAiTutor(deps: AiTutorDeps) {
     voiceState,
     mediaState,
 
+    // Persona
+    personaName,
+    personaLocked: personaLockedRef.current,
+
     // Lipsync
     currentViseme,
 
@@ -551,6 +596,7 @@ export function useAiTutor(deps: AiTutorDeps) {
 
     // Core actions
     toggleAiTutor,
+    startWithPersona,
     sendAiMessage,
     interruptAi,
     addDebug,
