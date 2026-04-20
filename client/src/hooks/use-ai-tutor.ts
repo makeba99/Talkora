@@ -398,8 +398,10 @@ export function useAiTutor(deps: AiTutorDeps) {
     personaLockedRef.current = true;
     setPersonaName(pName);
 
-    // Update voice setting without triggering the settings effect broadcast
+    // Update voice setting
     setAiSettings(s => ({ ...s, voice, voiceId: null }));
+    // Also configure TTS immediately (don't wait for React state cycle)
+    ttsRef.current?.configure(voice, aiSettings.speed, null);
 
     socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId: DEFAULT_AI_SETTINGS.avatarId, voice, voiceId: null });
     setAiActive(true);
@@ -416,7 +418,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     setAiConversation([introMsg]);
     setTimeout(() => ttsRef.current?.enqueue(intro), 300);
     addDebug("info", `Session started with persona: ${pName} (${voice})`);
-  }, [aiActive, socket, roomId, userId, username, addDebug]);
+  }, [aiActive, socket, roomId, userId, username, aiSettings, addDebug]);
 
   // ── Toggle AI Tutor session (stop only — use startWithPersona to start) ──
   const toggleAiTutor = useCallback(() => {

@@ -78,9 +78,12 @@ export class TtsEngine {
     this.active = true;
     this.callbacks.onStart();
 
+    const isFemale = this.voice === "Female";
     const utter = new SpeechSynthesisUtterance(sentence);
     utter.rate = Math.max(0.5, Math.min(2, this.speed));
-    utter.pitch = this.voice === "Female" ? 1.08 : 0.85;
+    // Wide pitch gap so the two personas sound distinctly different
+    // even when the browser falls back to a single default voice
+    utter.pitch = isFemale ? 1.65 : 0.60;
     utter.lang = "en-US";
 
     const voices = window.speechSynthesis.getVoices();
@@ -88,15 +91,25 @@ export class TtsEngine {
       const savedVoice = this.voiceId
         ? voices.find(v => v.voiceURI === this.voiceId || v.name === this.voiceId)
         : undefined;
+
+      // Prefer an explicitly female-named voice for Afik
       const femaleVoice =
-        voices.find(v => /samantha|zira|google us english|google uk english female|microsoft aria|microsoft jenny|serena|victoria|karen|moira|tessa|susan|female/i.test(v.name) && v.lang.startsWith("en")) ??
-        voices.find(v => v.lang.startsWith("en") && !/daniel|david|alex|mark|george|male|fred|ralph|tom/i.test(v.name));
+        voices.find(v => v.name === "Google UK English Female") ??
+        voices.find(v => v.name === "Google US English") ??
+        voices.find(v => /samantha|zira|female|aria|jenny|serena|victoria|karen|moira|tessa|susan|siri|amelie|fiona|yelena|nora|alice/i.test(v.name) && v.lang.startsWith("en")) ??
+        voices.find(v => v.lang.startsWith("en-") && !/daniel|david|alex|mark|george|fred|ralph|tom|oliver|james|arthur|male/i.test(v.name));
+
+      // Prefer an explicitly male-named voice for Dude
+      const maleVoice =
+        voices.find(v => v.name === "Google UK English Male") ??
+        voices.find(v => /daniel|david|alex|mark|george|fred|ralph|tom|oliver|james|arthur|male/i.test(v.name) && v.lang.startsWith("en"));
+
       const chosen =
         savedVoice ??
-        (this.voice === "Female"
+        (isFemale
           ? (femaleVoice ?? voices.find(v => v.lang.startsWith("en")))
-          : (voices.find(v => /daniel|david|alex|mark/i.test(v.name) && v.lang.startsWith("en")) ??
-            voices.find(v => v.lang.startsWith("en"))));
+          : (maleVoice ?? femaleVoice ?? voices.find(v => v.lang.startsWith("en"))));
+
       if (chosen) {
         utter.voice = chosen;
         const stableVoiceId = chosen.voiceURI || chosen.name;
