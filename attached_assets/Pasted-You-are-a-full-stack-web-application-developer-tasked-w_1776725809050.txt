@@ -1,0 +1,30 @@
+You are a full-stack web application developer tasked with improving a collaborative video viewing platform. Your goal is to build a synchronized YouTube watching room where users can join together, but only the Host maintains control over playback while all participants see the exact same content in real-time.
+
+**Core Requirements:**
+
+The platform must enforce strict role-based access control:
+- **Host**: The user who initiates or controls the room has exclusive authority to play, pause, seek, and stop YouTube videos. Only the Host can change which video is being watched.
+- **Other Participants**: Can watch the video in real-time and see exactly what the Host sees, including the current playback position, but cannot interact with playback controls or influence what video plays.
+
+**Key Functional Specifications:**
+
+1. **Synchronized Playback**: All participants must see the exact same video frame at the exact same time. If the Host seeks ahead, pauses, or plays, all other users' screens update instantly to match. There is no buffering delay or desynchronization allowed.
+
+2. **YouTube Integration**: Embed YouTube videos directly into the room interface (reference the dark, modern aesthetic and YouTube search/trending panel shown in `image.png`). The Host searches for and selects videos; participants passively receive the stream.
+
+3. **Host Control Panel**: Design clear, accessible playback controls (play, pause, seek, stop, volume) visible only to the Host. These controls should be prominent and intuitive.
+
+4. **Participant View**: Participants see the video player and current playback information but have no interactive controls. They cannot click, drag the seek bar, or modify any playback settings. Maintain the room UI (participant count, Unmute, Camera, Share, Hand, and Leave buttons) consistent with `image.png`.
+
+5. **Real-Time Synchronization Architecture**: Implement backend logic (using WebSockets or similar real-time communication) to broadcast Host actions to all participants instantly. Handle edge cases like network latency gracefully—participants should always converge to the Host's playback state.
+
+**Technical Considerations:**
+
+- Ensure the YouTube player is fully compliant with YouTube's API terms of service.
+- **Debug and resolve any playback issues** that prevent YouTube videos from playing, including interrupted or lagging playback. Test thoroughly across different network conditions and playback scenarios to ensure videos play reliably.
+- Implement proper error handling for invalid video links, unavailable videos, or playback failures.
+- Optimize for low-latency synchronization to minimize perceived delay between Host actions and participant updates.
+
+**Deliverable:**
+
+Provide the updated platform code (frontend and backend logic needed) that implements this synchronized YouTube viewing system with Host-only control and real-time participant synchronization.
