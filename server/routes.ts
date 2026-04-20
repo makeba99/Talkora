@@ -3000,6 +3000,9 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
+      // Only the room host (owner) can start or stop videos
+      const room = await storage.getRoom(data.roomId);
+      if (!room || room.ownerId !== currentUserId) return;
       if (data.videoId) {
         roomYoutubeState.set(data.roomId, { videoId: data.videoId, startedBy: currentUserId });
       } else {
@@ -3012,6 +3015,9 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
+      // Only the broadcaster (the one who started the video) can emit state changes
+      const ytState = roomYoutubeState.get(data.roomId);
+      if (ytState && ytState.startedBy !== currentUserId) return;
       socket.to(data.roomId).emit("room:youtube-state", {
         action: data.action,
         time: data.time,

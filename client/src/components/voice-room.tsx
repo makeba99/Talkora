@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Mic, MicOff, PhoneOff, Hand, Globe, AlertCircle, MessageSquare,
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
-  Video, VideoOff, LogIn, LogOut, Search, Play, Loader2, Pencil, Shield, Crown,
+  Video, VideoOff, LogIn, LogOut, Search, Play, Pause, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
@@ -723,6 +723,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const sidePanelTabRef = useRef(sidePanelTab);
   const ytSyncTimeRef = useRef<number>(0);
   const youtubeStartedByRef = useRef<string | null>(null);
+  const [ytIsPlaying, setYtIsPlaying] = useState(false);
+  const [ytCurrentTime, setYtCurrentTime] = useState(0);
+  const [ytDuration, setYtDuration] = useState(0);
+  const [ytVolume, setYtVolume] = useState(100);
 
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ mouseX: 0, mouseY: 0, playerX: 0, playerY: 0 });
@@ -1843,11 +1847,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       const isBroadcaster = user?.id === youtubeStartedByRef.current;
       const sock = socketRef.current;
       if (state === YT.PlayerState.ENDED) {
+        setYtIsPlaying(false);
         if (isBroadcaster) {
           try { player.seekTo(0, true); player.playVideo(); } catch (_) {}
           sock?.emit("room:youtube-state", { roomId: room.id, action: "play", time: 0, ts: Date.now() });
         }
         return;
+      }
+      if (state === YT.PlayerState.PLAYING) {
+        setYtIsPlaying(true);
+        try { const d = player.getDuration(); if (d > 0) setYtDuration(d); } catch (_) {}
+      } else if (state === YT.PlayerState.PAUSED) {
+        setYtIsPlaying(false);
+        try { setYtCurrentTime(player.getCurrentTime() || 0); } catch (_) {}
+      } else if (state === YT.PlayerState.BUFFERING) {
+        // keep current ytIsPlaying state during buffering
       }
       if (ytRemoteAction.current) return;
       if (!isBroadcaster) return;
@@ -1910,6 +1924,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 // then unmutes right away so the user hears the video
                 event.target.unMute();
                 event.target.setVolume(100);
+                setYtVolume(100);
+                const d = event.target.getDuration();
+                if (d > 0) setYtDuration(d);
               } catch (err) { console.error("[YT] playVideo/unMute error:", err); }
             },
             onError: (e: any) => {
@@ -1961,8 +1978,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         youtubePlayerRef.current = null;
       }
       if (ytContainerRef.current) ytContainerRef.current.innerHTML = "";
+      setYtIsPlaying(false);
+      setYtCurrentTime(0);
+      setYtDuration(0);
     };
   }, [activeYoutubeId, showYoutube]);
+
+  // Poll current playback time every second while playing (for host seek bar)
+  useEffect(() => {
+    if (!ytIsPlaying || !showYoutube) return;
+    const id = setInterval(() => {
+      try {
+        const t = youtubePlayerRef.current?.getCurrentTime?.() || 0;
+        const d = youtubePlayerRef.current?.getDuration?.() || 0;
+        setYtCurrentTime(t);
+        if (d > 0) setYtDuration(d);
+      } catch (_) {}
+    }, 1000);
+    return () => clearInterval(id);
+  }, [ytIsPlaying, showYoutube]);
 
   useEffect(() => {
     if (!socket || !activeYoutubeId) return;
@@ -2712,16 +2746,67 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     setYoutubeResults([]);
   };
 
+  const formatYtTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
   const handleStopYoutube = () => {
     setActiveYoutubeId(null);
     setShowYoutube(false);
     setMiniPlayerMode(false);
     setFocusedUserId(null);
     setYoutubeWatchers(new Set());
+    setYtIsPlaying(false);
+    setYtCurrentTime(0);
+    setYtDuration(0);
     youtubePlayerRef.current?.destroy();
     youtubePlayerRef.current = null;
     socket?.emit("room:youtube", { roomId: room.id, videoId: null });
   };
+
+  const handleYtPlayPause = useCallback(() => {
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+    try {
+      if (ytIsPlaying) {
+        player.pauseVideo();
+        socket?.emit("room:youtube-state", { roomId: room.id, action: "pause", time: player.getCurrentTime(), ts: Date.now() });
+      } else {
+        player.playVideo();
+        const time = player.getCurrentTime();
+        socket?.emit("room:youtube-state", { roomId: room.id, action: "play", time, ts: Date.now() });
+      }
+    } catch (_) {}
+  }, [ytIsPlaying, socket, room.id]);
+
+  const handleYtSeek = useCallback((seconds: number) => {
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+    ytRemoteAction.current = true;
+    try {
+      player.seekTo(seconds, true);
+      setYtCurrentTime(seconds);
+      const action = ytIsPlaying ? "play" : "pause";
+      socket?.emit("room:youtube-state", { roomId: room.id, action, time: seconds, ts: Date.now() });
+    } catch (_) {}
+    setTimeout(() => { ytRemoteAction.current = false; }, 3500);
+  }, [ytIsPlaying, socket, room.id]);
+
+  const handleYtVolume = useCallback((vol: number) => {
+    const player = youtubePlayerRef.current;
+    if (!player) return;
+    try {
+      if (vol === 0) {
+        player.mute();
+      } else {
+        player.unMute();
+        player.setVolume(vol);
+      }
+      setYtVolume(vol);
+    } catch (_) {}
+  }, []);
 
   const handleParticipantClick = (peerId: string) => {
     const isClickingOther = peerId !== user?.id;
@@ -3836,119 +3921,204 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "youtube" ? "flex" : "none" }}>
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0 space-y-2">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-              <Input
-                value={youtubeSearch}
-                onChange={(e) => handleYoutubeSearchInput(e.target.value)}
-                placeholder="Search YouTube…"
-                className="pl-9 text-[13px] rounded-xl bg-muted/30 border-border/50 placeholder:text-muted-foreground/40 focus-visible:ring-red-400/30 focus-visible:border-red-400/40 h-9"
-                data-testid="input-youtube-search"
-              />
-              {youtubeSearching && (
-                <Loader2 className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 animate-spin" />
+
+          {/* ── HOST VIEW: search + stop controls ── */}
+          {isHost && (
+            <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0 space-y-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+                <Input
+                  value={youtubeSearch}
+                  onChange={(e) => handleYoutubeSearchInput(e.target.value)}
+                  placeholder="Search YouTube…"
+                  className="pl-9 text-[13px] rounded-xl bg-muted/30 border-border/50 placeholder:text-muted-foreground/40 focus-visible:ring-red-400/30 focus-visible:border-red-400/40 h-9"
+                  data-testid="input-youtube-search"
+                />
+                {youtubeSearching && (
+                  <Loader2 className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 animate-spin" />
+                )}
+              </div>
+              {activeYoutubeId && (
+                <button
+                  onClick={handleStopYoutube}
+                  title="Stop playback for everyone"
+                  data-testid="button-stop-youtube-panel"
+                  className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
+                >
+                  <StopCircle className="w-3.5 h-3.5" />
+                  Stop playback for everyone
+                </button>
               )}
             </div>
-            {activeYoutubeId && (
-              <button
-                onClick={handleStopYoutube}
-                title="Stop playback"
-                data-testid="button-stop-youtube-panel"
-                className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
-              >
-                <StopCircle className="w-3.5 h-3.5" />
-                Stop playback
-              </button>
-            )}
-          </div>
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="p-3 space-y-3">
-              {youtubeResults.length > 0 && (
-                <div className="space-y-2" data-testid="youtube-search-results">
-                  <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest px-0.5">Results</p>
-                  {youtubeResults.map((video: any) => (
-                    <button
-                      key={video.id}
-                      onClick={() => handleSelectYoutubeVideo(video.id)}
-                      className="w-full rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:bg-muted/25 hover:border-border/60 transition-all duration-150 text-left group"
-                      data-testid={`button-youtube-result-${video.id}`}
-                    >
-                      <div className="relative w-full aspect-video bg-muted overflow-hidden">
-                        <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                        {video.duration && (
-                          <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5" />{video.duration}
-                          </span>
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-                            <Play className="w-4 h-4 text-white fill-white ml-0.5" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-2.5">
-                        <p className="text-[12px] font-medium line-clamp-2 leading-snug">{video.title}</p>
-                        {video.channelTitle && (
-                          <span className="text-[10px] text-muted-foreground/60 mt-1 block truncate">{video.channelTitle}</span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {youtubeSearch.trim() && !youtubeSearching && youtubeResults.length === 0 && (
-                <div className="flex flex-col items-center gap-2 py-10">
-                  <Youtube className="w-8 h-8 text-muted-foreground/20" />
-                  <p className="text-[11px] text-muted-foreground/50">No results found</p>
-                </div>
-              )}
-              {!youtubeSearch.trim() && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 px-0.5">
-                    <TrendingUp className="w-3 h-3 text-red-400/70" />
-                    <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
-                      {youtubeFeaturedLoading ? "Loading…" : "Trending Now"}
-                    </p>
+          )}
+
+          {/* ── PARTICIPANT VIEW: now watching card ── */}
+          {!isHost && activeYoutubeId && (() => {
+            const broadcaster = participants.find(p => p.id === youtubeStartedBy);
+            const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
+            const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
+            return (
+              <div className="m-3 rounded-xl border border-red-500/25 bg-red-500/5 overflow-hidden flex-shrink-0 space-y-0">
+                {/* Thumbnail */}
+                <div className="relative w-full aspect-video bg-muted overflow-hidden">
+                  <img
+                    src={`https://i.ytimg.com/vi/${activeYoutubeId}/hqdefault.jpg`}
+                    alt="Now playing"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-[10px] font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+                    LIVE SYNC
                   </div>
-                  {youtubeFeaturedLoading && (
-                    <div className="flex items-center justify-center py-10">
-                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/30" />
+                </div>
+                <div className="p-3 space-y-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Youtube className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                    <p className="text-xs font-semibold text-foreground">Watch Together</p>
+                  </div>
+                  {broadcaster && (
+                    <div className="flex items-center gap-2">
+                      <div className={`w-5 h-5 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-red-500/50 bg-gradient-to-br ${bGradient}`}>
+                        {broadcaster.profileImageUrl ? (
+                          <img src={broadcaster.profileImageUrl} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className={`w-full h-full bg-gradient-to-br ${bGradient} flex items-center justify-center`}>
+                            <span className="text-[8px] font-bold text-white">{getUserInitials(broadcaster)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">
+                        <span className="font-medium text-foreground">{getUserDisplayName(broadcaster)}</span> is hosting
+                      </span>
                     </div>
                   )}
-                  {!youtubeFeaturedLoading && youtubeFeatured.map((video: any) => (
+                  {youtubeWatchers.size > 0 && (
+                    <p className="text-[10px] text-muted-foreground/70">
+                      {youtubeWatchers.size} {youtubeWatchers.size === 1 ? "person" : "people"} watching
+                    </p>
+                  )}
+                  {!showYoutube && (
                     <button
-                      key={video.id}
-                      onClick={() => handleSelectYoutubeVideo(video.id)}
-                      className="w-full rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:bg-muted/25 hover:border-border/60 transition-all duration-150 text-left group"
+                      onClick={() => { setShowYoutube(true); setSidePanelOpen(false); }}
+                      className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] font-semibold hover:bg-red-500/25 transition-colors"
+                      data-testid="button-join-watch-party"
                     >
-                      <div className="relative w-full aspect-video bg-muted overflow-hidden">
-                        <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                        {video.duration && (
-                          <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5" />{video.duration}
-                          </span>
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-                            <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                      <Play className="w-3.5 h-3.5 fill-red-400" /> Join Watch Party
+                    </button>
+                  )}
+                  {showYoutube && (
+                    <div className="flex items-center justify-center gap-1.5 py-1 text-[11px] text-green-500 font-medium">
+                      <Eye className="w-3.5 h-3.5" /> You're watching
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── PARTICIPANT VIEW: no video active ── */}
+          {!isHost && !activeYoutubeId && (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center">
+                <Youtube className="w-6 h-6 text-muted-foreground/30" />
+              </div>
+              <p className="text-[12px] font-medium text-muted-foreground/60">No video playing</p>
+              <p className="text-[11px] text-muted-foreground/40">The host will start a video for everyone to watch together.</p>
+            </div>
+          )}
+
+          {/* ── HOST VIEW: search results + trending ── */}
+          {isHost && (
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="p-3 space-y-3">
+                {youtubeResults.length > 0 && (
+                  <div className="space-y-2" data-testid="youtube-search-results">
+                    <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest px-0.5">Results</p>
+                    {youtubeResults.map((video: any) => (
+                      <button
+                        key={video.id}
+                        onClick={() => handleSelectYoutubeVideo(video.id)}
+                        className="w-full rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:bg-muted/25 hover:border-border/60 transition-all duration-150 text-left group"
+                        data-testid={`button-youtube-result-${video.id}`}
+                      >
+                        <div className="relative w-full aspect-video bg-muted overflow-hidden">
+                          <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                          {video.duration && (
+                            <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />{video.duration}
+                            </span>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                              <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                            </div>
                           </div>
                         </div>
+                        <div className="p-2.5">
+                          <p className="text-[12px] font-medium line-clamp-2 leading-snug">{video.title}</p>
+                          {video.channelTitle && (
+                            <span className="text-[10px] text-muted-foreground/60 mt-1 block truncate">{video.channelTitle}</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {youtubeSearch.trim() && !youtubeSearching && youtubeResults.length === 0 && (
+                  <div className="flex flex-col items-center gap-2 py-10">
+                    <Youtube className="w-8 h-8 text-muted-foreground/20" />
+                    <p className="text-[11px] text-muted-foreground/50">No results found</p>
+                  </div>
+                )}
+                {!youtubeSearch.trim() && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 px-0.5">
+                      <TrendingUp className="w-3 h-3 text-red-400/70" />
+                      <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
+                        {youtubeFeaturedLoading ? "Loading…" : "Trending Now"}
+                      </p>
+                    </div>
+                    {youtubeFeaturedLoading && (
+                      <div className="flex items-center justify-center py-10">
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/30" />
                       </div>
-                      <div className="p-2.5">
-                        <p className="text-[12px] font-medium line-clamp-2 leading-snug">{video.title}</p>
-                        {video.channelTitle && (
-                          <span className="text-[10px] text-muted-foreground/60 mt-1 block truncate">{video.channelTitle}</span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+                    )}
+                    {!youtubeFeaturedLoading && youtubeFeatured.map((video: any) => (
+                      <button
+                        key={video.id}
+                        onClick={() => handleSelectYoutubeVideo(video.id)}
+                        className="w-full rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:bg-muted/25 hover:border-border/60 transition-all duration-150 text-left group"
+                      >
+                        <div className="relative w-full aspect-video bg-muted overflow-hidden">
+                          <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                          {video.duration && (
+                            <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />{video.duration}
+                            </span>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                              <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-2.5">
+                          <p className="text-[12px] font-medium line-clamp-2 leading-snug">{video.title}</p>
+                          {video.channelTitle && (
+                            <span className="text-[10px] text-muted-foreground/60 mt-1 block truncate">{video.channelTitle}</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+
         </div>
       </div>
 
@@ -5314,21 +5484,27 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          {activeYoutubeId && showYoutube && (
-            <div className="flex-1 min-h-0 bg-black relative" data-testid="media-main-youtube">
-              <div
-                ref={ytContainerRef}
-                className="w-full h-full border-0"
-                data-testid="iframe-youtube-player"
-              />
+          {activeYoutubeId && showYoutube && (() => {
+            const isYoutubeHost = user?.id === youtubeStartedBy;
+            const broadcaster = participants.find(p => p.id === youtubeStartedBy);
+            const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
+            const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
+            return (
+              <div className="flex-1 min-h-0 bg-black relative group/ytplayer" data-testid="media-main-youtube">
+                <div
+                  ref={ytContainerRef}
+                  className="w-full h-full border-0"
+                  data-testid="iframe-youtube-player"
+                />
 
-              {(() => {
-                const broadcaster = participants.find(p => p.id === youtubeStartedBy);
-                if (!broadcaster) return null;
-                const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
-                const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
-                return (
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
+                {/* Participant blocking overlay — prevents non-host from interacting with the iframe */}
+                {!isYoutubeHost && (
+                  <div className="absolute inset-0 z-10 cursor-default" style={{ pointerEvents: "all" }} />
+                )}
+
+                {/* Broadcaster pill — bottom-left */}
+                {broadcaster && (
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-20">
                     <div className={`w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-red-500/70 bg-gradient-to-br ${bGradient}`}>
                       {broadcaster.profileImageUrl ? (
                         <img src={broadcaster.profileImageUrl} className="w-full h-full object-cover" />
@@ -5342,15 +5518,92 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <span className="text-white text-[11px] font-semibold">{getUserDisplayName(broadcaster)}</span>
                       <span className="text-red-400 text-[9px] flex items-center gap-0.5 font-medium">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-                        Playing
+                        {isYoutubeHost ? "You're hosting" : "Playing"}
                       </span>
                     </div>
                   </div>
-                );
-              })()}
+                )}
 
-            </div>
-          )}
+                {/* Host control bar — only visible to the broadcaster, revealed on hover */}
+                {isYoutubeHost && (
+                  <div
+                    className="absolute bottom-0 left-0 right-0 z-20 flex flex-col gap-2.5 px-4 pt-8 pb-3 opacity-0 group-hover/ytplayer:opacity-100 transition-opacity duration-200"
+                    style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)" }}
+                    data-testid="youtube-host-controls"
+                  >
+                    {/* Seek bar */}
+                    <input
+                      type="range"
+                      min={0}
+                      max={ytDuration || 100}
+                      step={1}
+                      value={ytCurrentTime}
+                      onChange={(e) => handleYtSeek(Number(e.target.value))}
+                      className="w-full h-1.5 cursor-pointer rounded-full appearance-none"
+                      style={{ accentColor: "#ef4444" }}
+                      data-testid="input-yt-seek"
+                    />
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        {/* Play / Pause */}
+                        <button
+                          onClick={handleYtPlayPause}
+                          className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/28 border border-white/20 flex items-center justify-center transition-colors shadow-lg"
+                          data-testid="button-yt-playpause"
+                        >
+                          {ytIsPlaying
+                            ? <Pause className="w-4 h-4 text-white" />
+                            : <Play className="w-4 h-4 text-white fill-white ml-0.5" />}
+                        </button>
+                        {/* Stop */}
+                        <button
+                          onClick={handleStopYoutube}
+                          className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-500/60 border border-white/15 flex items-center justify-center transition-colors shadow-lg"
+                          title="Stop video"
+                          data-testid="button-yt-stop"
+                        >
+                          <StopCircle className="w-3.5 h-3.5 text-white" />
+                        </button>
+                        {/* Time */}
+                        <span className="text-white/70 text-[11px] font-mono tabular-nums" data-testid="text-yt-time">
+                          {formatYtTime(ytCurrentTime)} / {formatYtTime(ytDuration)}
+                        </span>
+                      </div>
+                      {/* Volume */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleYtVolume(ytVolume > 0 ? 0 : 100)}
+                          className="text-white/60 hover:text-white transition-colors flex-shrink-0"
+                          title={ytVolume === 0 ? "Unmute" : "Mute"}
+                          data-testid="button-yt-mute"
+                        >
+                          {ytVolume === 0 ? <VolumeX className="w-4 h-4" /> : ytVolume < 50 ? <Volume1 className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                        </button>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={ytVolume}
+                          onChange={(e) => handleYtVolume(Number(e.target.value))}
+                          className="w-20 h-1.5 cursor-pointer rounded-full appearance-none"
+                          style={{ accentColor: "#ffffff" }}
+                          data-testid="input-yt-volume"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Participant info banner — non-host viewers see a subtle "watching" badge */}
+                {!isYoutubeHost && (
+                  <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white/70 text-[11px] px-2.5 py-1 rounded-full border border-white/10">
+                    <Eye className="w-3 h-3" /> Watching
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {showEReader && selectedBook && (
             <div
