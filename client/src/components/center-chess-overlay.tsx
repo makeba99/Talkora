@@ -3,7 +3,7 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Crown, Flag, Minus, RotateCcw, Trophy, X } from "lucide-react";
+import { Crown, Flag, Minus, Palette, RotateCcw, Trophy, X } from "lucide-react";
 import type { Socket } from "socket.io-client";
 import type { ChessRoomState } from "@/components/chess-panel";
 
@@ -14,11 +14,35 @@ interface Props {
 }
 
 const POS_KEY_PREFIX = "c2t-chess-overlay-pos:";
+const THEME_KEY = "c2t-chess-overlay-theme";
+
+type BoardTheme = {
+  id: string;
+  name: string;
+  light: string;
+  dark: string;
+  highlight: string; // last move highlight color
+  check: string;
+};
+
+const BOARD_THEMES: BoardTheme[] = [
+  { id: "classic", name: "Classic Green", light: "#eeeed2", dark: "#769656", highlight: "rgba(255, 235, 59, 0.55)", check: "rgba(255, 80, 80, 0.55)" },
+  { id: "ocean",   name: "Ocean Blue",    light: "#dee3e6", dark: "#8ca2ad", highlight: "rgba(100, 200, 255, 0.55)", check: "rgba(255, 80, 80, 0.55)" },
+  { id: "walnut",  name: "Walnut Wood",   light: "#f0d9b5", dark: "#b58863", highlight: "rgba(255, 200, 80, 0.55)", check: "rgba(255, 80, 80, 0.6)" },
+  { id: "midnight",name: "Midnight",      light: "#9aa3b8", dark: "#3b3f54", highlight: "rgba(180, 140, 255, 0.6)", check: "rgba(255, 90, 90, 0.6)" },
+];
 
 export function CenterChessOverlay({ socket, roomId, userId }: Props) {
   const [state, setState] = useState<ChessRoomState | null>(null);
   const [minimized, setMinimized] = useState(false);
   const [winnerBanner, setWinnerBanner] = useState<{ name: string; reason: string } | null>(null);
+  const [themeId, setThemeId] = useState<string>(() => {
+    if (typeof window === "undefined") return "classic";
+    try { return localStorage.getItem(THEME_KEY) || "classic"; } catch { return "classic"; }
+  });
+  const [themeOpen, setThemeOpen] = useState(false);
+  const theme = useMemo(() => BOARD_THEMES.find(t => t.id === themeId) || BOARD_THEMES[0], [themeId]);
+  useEffect(() => { try { localStorage.setItem(THEME_KEY, themeId); } catch {} }, [themeId]);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -56,6 +80,32 @@ export function CenterChessOverlay({ socket, roomId, userId }: Props) {
     socket.emit("room:chess-sync-request", { roomId });
     return () => { socket.off("room:chess-state", onState); };
   }, [socket, roomId]);
+
+  // Compute square highlights for last-move + king-in-check
+  const customSquareStyles = useMemo(() => {
+    const styles: Record<string, React.CSSProperties> = {};
+    const last = state?.lastMove;
+    if (last?.from) styles[last.from] = { background: theme.highlight, boxShadow: `inset 0 0 0 3px ${theme.highlight}` };
+    if (last?.to)   styles[last.to]   = { background: theme.highlight, boxShadow: `inset 0 0 0 3px ${theme.highlight}` };
+    try {
+      const g = chessRef.current;
+      if (g.inCheck()) {
+        const turn = g.turn();
+        const board = g.board();
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const sq = board[r][c];
+            if (sq && sq.type === "k" && sq.color === turn) {
+              const file = "abcdefgh"[c];
+              const rank = 8 - r;
+              styles[`${file}${rank}`] = { background: theme.check, boxShadow: `inset 0 0 0 4px ${theme.check}` };
+            }
+          }
+        }
+      }
+    } catch {}
+    return styles;
+  }, [state?.lastMove, state?.fen, theme]);
 
   const myColor: "white" | "black" | null = useMemo(() => {
     if (state?.white?.userId === userId) return "white";
@@ -190,13 +240,32 @@ export function CenterChessOverlay({ socket, roomId, userId }: Props) {
               onPointerUp={onPointerUp}
               data-testid="chess-overlay-drag-handle"
             >
-              <div className="flex items-center gap-2 text-amber-200 font-semibold text-xs">
-                <Crown className="w-3.5 h-3.5" />
-                Chess · {state?.status === "playing" ? (isMyTurn ? "Your move" : `${state.turn === "w" ? state.white?.username : state.black?.username || "Player"} to move`) : "Game ended"}
+              <div className="flex items-center gap-2 text-amber-200 font-semibold text-xs min-w-0">
+                <Crown className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">
+                  Chess · {state?.status === "playing"
+                    ? (isMyTurn ? "Your move" : `${(state.turn === "w" ? state.white?.username : state.black?.username) || "Player"} to move`)
+                    : "Game ended"}
+                  {state?.lastMove?.san && (
+                    <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-200/15 border border-amber-200/25 text-amber-100">
+                      last: {state.lastMove.san}
+                    </span>
+                  )}
+                </span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
-                  onClick={() => setMinimized(m => !m)}
+                  onClick={(e) => { e.stopPropagation(); setThemeOpen(o => !o); }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="rounded p-1 text-amber-200/80 hover:bg-amber-200/10"
+                  data-testid="button-chess-theme"
+                  title="Board theme"
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMinimized(m => !m); }}
+                  onPointerDown={(e) => e.stopPropagation()}
                   className="rounded p-1 text-amber-200/80 hover:bg-amber-200/10"
                   data-testid="button-chess-minimize"
                   title={minimized ? "Expand" : "Minimize"}
@@ -233,15 +302,44 @@ export function CenterChessOverlay({ socket, roomId, userId }: Props) {
                   )}
                 </div>
 
-                <div className="rounded-lg overflow-hidden border border-amber-200/20 bg-[#312e2b]">
+                <div className="relative rounded-lg overflow-hidden border border-amber-200/20" style={{ background: theme.dark }}>
                   <Chessboard
                     position={state?.fen || "start"}
                     onPieceDrop={onPieceDrop}
                     boardOrientation={myColor === "black" ? "black" : "white"}
                     arePiecesDraggable={!!isMyTurn}
                     customBoardStyle={{ borderRadius: "0px" }}
+                    customLightSquareStyle={{ backgroundColor: theme.light }}
+                    customDarkSquareStyle={{ backgroundColor: theme.dark }}
+                    customSquareStyles={customSquareStyles}
                     boardWidth={Math.min(360, Math.max(260, window.innerWidth - 100))}
                   />
+                  {themeOpen && (
+                    <div
+                      className="absolute top-2 right-2 z-10 rounded-lg p-2 shadow-2xl"
+                      style={{ background: "rgba(20,18,15,0.96)", border: "1px solid rgba(255,200,120,0.35)", backdropFilter: "blur(8px)" }}
+                      data-testid="chess-theme-picker"
+                    >
+                      <div className="text-[10px] uppercase tracking-wider text-amber-200/70 mb-1.5 px-1">Board Theme</div>
+                      <div className="flex flex-col gap-1">
+                        {BOARD_THEMES.map(t => (
+                          <button
+                            key={t.id}
+                            onClick={() => { setThemeId(t.id); setThemeOpen(false); }}
+                            className={`flex items-center gap-2 rounded px-2 py-1.5 hover:bg-amber-200/10 ${themeId === t.id ? "bg-amber-200/15" : ""}`}
+                            data-testid={`button-theme-${t.id}`}
+                          >
+                            <div className="flex w-7 h-5 rounded overflow-hidden border border-white/15">
+                              <div style={{ flex: 1, background: t.light }} />
+                              <div style={{ flex: 1, background: t.dark }} />
+                            </div>
+                            <span className="text-xs text-amber-100">{t.name}</span>
+                            {themeId === t.id && <span className="ml-auto text-[10px] text-amber-300">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* White player on bottom */}

@@ -2029,22 +2029,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           }, 10000);
         }
       }
-      if (ytRemoteAction.current) return;
-      if (state === YT.PlayerState.PLAYING) {
-        const now = Date.now();
-        const currentTime = player.getCurrentTime();
-        const timeSinceLastSync = now - ytLastSyncWallTime.current;
-        const positionJump = Math.abs(currentTime - ytLastSyncVideoTime.current);
-        if (timeSinceLastSync > 5000 || positionJump > 2) {
-          ytLastSyncVideoTime.current = currentTime;
-          ytLastSyncWallTime.current = now;
-          sock?.emit("room:youtube-state", { roomId: room.id, action: "play", time: currentTime, ts: Date.now() });
-        }
-      } else if (state === YT.PlayerState.PAUSED) {
-        ytLastSyncVideoTime.current = -999;
-        ytLastSyncWallTime.current = 0;
-        sock?.emit("room:youtube-state", { roomId: room.id, action: "pause", time: player.getCurrentTime(), ts: Date.now() });
-      }
+      // IMPORTANT (free4talk-style sync): we deliberately do NOT broadcast state from
+      // auto-fired YT.PlayerState events. Auto play/pause/buffering events on each client
+      // would otherwise create an emit cascade (one client buffers → emits pause → all
+      // pause → recovers → emits play → all seek → buffers again, forever).
+      // Only explicit user actions (handleYtPlayPause, handleYtSeek, video click) emit.
     };
 
     const createPlayer = () => {
