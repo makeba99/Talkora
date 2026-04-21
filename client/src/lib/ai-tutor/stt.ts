@@ -98,6 +98,8 @@ export class SttEngine {
     this.primary = rec;
 
     let finalBuffer = "";
+    // Tracks whether onerror already scheduled a restart so onend doesn't overwrite it
+    let errorHandled = false;
 
     // Flush accumulated text to the AI after 750ms of silence
     const flush = () => {
@@ -143,6 +145,7 @@ export class SttEngine {
 
       if (err === "not-allowed" || err === "service-not-allowed") {
         this.micDenied = true;
+        errorHandled = true;
         this.callbacks.onStop();
         this.callbacks.onError?.("Microphone access denied. Please allow microphone access in your browser and refresh.");
         return;
@@ -150,14 +153,17 @@ export class SttEngine {
 
       if (err === "aborted") {
         // Intentional abort from stopListening() — don't restart from here
+        errorHandled = true;
         return;
       }
 
       this.callbacks.onStop();
+      errorHandled = true; // onend will see this and skip its own restart
 
       if (err === "no-speech") {
-        // No speech detected — restart quickly to keep the session alive
-        this.scheduleRestart(150);
+        // No speech detected — restart after a short pause to keep session alive.
+        // 300ms (not 50ms) prevents a tight spin loop if Chrome keeps ending immediately.
+        this.scheduleRestart(300);
         return;
       }
 
@@ -177,14 +183,20 @@ export class SttEngine {
       // If there's buffered text (session ended before silence timer fired), send it now
       const text = finalBuffer.trim();
       finalBuffer = "";
+
+      // If onerror already handled this session end (and scheduled its own restart),
+      // don't call onStop again or overwrite the restart timer.
+      if (errorHandled) return;
+
       this.callbacks.onStop();
       if (text && this.activeRef.current && !this.loadingRef.current) {
         this.callbacks.onFinal(text);
         // sendAiMessage will restart listening after AI responds
         return;
       }
-      // Continuous session ended without new text — restart immediately
-      this.scheduleRestart(50);
+      // Session ended cleanly with no new text (browser timeout / end of utterance).
+      // Use 300ms to avoid a spin loop — fast enough to feel seamless.
+      this.scheduleRestart(300);
     };
 
     try {
