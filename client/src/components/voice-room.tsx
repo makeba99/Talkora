@@ -6001,6 +6001,52 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 </div>
 
 
+                {/* Watchers stack — sits ABOVE the broadcaster pill */}
+                {(() => {
+                  const watcherIds = Array.from(youtubeWatchers).filter(id => id !== youtubeStartedBy);
+                  if (watcherIds.length === 0) return null;
+                  const visible = watcherIds.slice(0, 6);
+                  const extra = watcherIds.length - visible.length;
+                  return (
+                    <div
+                      className="absolute left-3 z-20 pointer-events-none flex flex-col-reverse items-start gap-1.5"
+                      style={{ bottom: 56 }}
+                      data-testid="youtube-watchers-stack"
+                    >
+                      {visible.map((wid) => {
+                        const w = participants.find(p => p.id === wid);
+                        if (!w) return null;
+                        const idx = participants.findIndex(p => p.id === wid);
+                        const grad = getAvatarGradient(idx >= 0 ? idx : 0);
+                        return (
+                          <div
+                            key={wid}
+                            className="flex items-center gap-2 bg-black/55 backdrop-blur-sm rounded-full pl-0.5 pr-2.5 py-0.5 shadow-md border border-white/10"
+                            data-testid={`youtube-watcher-${wid}`}
+                          >
+                            <div className={`w-6 h-6 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-white/30 bg-gradient-to-br ${grad}`}>
+                              {w.profileImageUrl ? (
+                                <img src={w.profileImageUrl} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className={`w-full h-full bg-gradient-to-br ${grad} flex items-center justify-center`}>
+                                  <span className="text-[9px] font-bold text-white">{getUserInitials(w)}</span>
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-white text-[10px] font-medium leading-none">{getUserDisplayName(w)}</span>
+                            <Eye className="w-2.5 h-2.5 text-white/60" />
+                          </div>
+                        );
+                      })}
+                      {extra > 0 && (
+                        <div className="flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-md border border-white/10">
+                          <span className="text-white text-[10px] font-semibold">+{extra} more</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Broadcaster pill — bottom-left */}
                 {broadcaster && (
                   <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-20 pointer-events-none">
