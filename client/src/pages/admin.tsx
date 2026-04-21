@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,213 @@ function RoleBadge({ user }: { user: User }) {
     <Badge variant="outline" data-testid={`badge-user-${user.id}`}>
       User
     </Badge>
+  );
+}
+
+type CleanupRunRecord = {
+  ts: number;
+  trigger: "scheduled" | "manual";
+  filesDeleted: number;
+  bytesFreed: number;
+  messagesDeleted: number;
+  roomMessagesDeleted: number;
+  notificationsDeleted: number;
+  reportsDeleted: number;
+  durationMs: number;
+};
+
+type CleanupStats = {
+  enabled: boolean;
+  intervalMinutes: number;
+  retention: {
+    messagesDays: number;
+    roomMessagesDays: number;
+    notificationsDays: number;
+    reportsDays: number;
+    orphanFilesDays: number;
+  };
+  totals: {
+    runs: number;
+    filesDeleted: number;
+    bytesFreed: number;
+    messagesDeleted: number;
+    roomMessagesDeleted: number;
+    notificationsDeleted: number;
+    reportsDeleted: number;
+  };
+  lastRun: CleanupRunRecord | null;
+  history: CleanupRunRecord[];
+  uploads: { totalFiles: number; totalBytes: number };
+  isRunning: boolean;
+};
+
+function formatBytes(bytes: number): string {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let n = bytes;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(n < 10 && i > 0 ? 2 : 1)} ${units[i]}`;
+}
+
+function formatRelative(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
+function StorageTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const { toast } = useToast();
+  const { data: stats, isLoading } = useQuery<CleanupStats>({
+    queryKey: ["/api/admin/cleanup/stats"],
+    refetchInterval: 15_000,
+  });
+
+  const runMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/cleanup/run");
+      return res.json() as Promise<{ record: CleanupRunRecord; stats: CleanupStats }>;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/admin/cleanup/stats"], data.stats);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/cleanup/stats"] });
+      const r = data.record;
+      toast({
+        title: "Cleanup complete",
+        description: `Removed ${r.filesDeleted} file${r.filesDeleted !== 1 ? "s" : ""} (${formatBytes(r.bytesFreed)}) in ${r.durationMs}ms.`,
+      });
+    },
+    onError: (err: any) => {
+      toast({ title: "Cleanup failed", description: err?.message || "Unknown error", variant: "destructive" });
+    },
+  });
+
+  if (isLoading || !stats) {
+    return (
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent>
+      </Card>
+    );
+  }
+
+  const pendingOrphans = Math.max(0, stats.uploads.totalFiles - (stats.lastRun?.filesDeleted ?? 0));
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HardDrive className="w-5 h-5 text-cyan-300" />
+            Auto-Cleanup
+            <Badge variant={stats.enabled ? "default" : "outline"} className="ml-2" data-testid="badge-cleanup-status">
+              {stats.enabled ? "Enabled" : "Disabled"}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-border/70 bg-background/55 p-4">
+              <p className="text-xs text-muted-foreground">Total files cleaned</p>
+              <p className="text-2xl font-bold" data-testid="text-cleanup-total-files">{stats.totals.filesDeleted}</p>
+              <p className="text-xs text-muted-foreground mt-1">{formatBytes(stats.totals.bytesFreed)} freed</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/55 p-4">
+              <p className="text-xs text-muted-foreground">Cleanup runs</p>
+              <p className="text-2xl font-bold" data-testid="text-cleanup-runs">{stats.totals.runs}</p>
+              <p className="text-xs text-muted-foreground mt-1">every {stats.intervalMinutes} min</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/55 p-4">
+              <p className="text-xs text-muted-foreground">Last run</p>
+              <p className="text-2xl font-bold" data-testid="text-cleanup-last-run">
+                {stats.lastRun ? formatRelative(stats.lastRun.ts) : "never"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.lastRun ? `${stats.lastRun.filesDeleted} files · ${formatBytes(stats.lastRun.bytesFreed)}` : "no runs yet"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/55 p-4">
+              <p className="text-xs text-muted-foreground">Uploads on disk</p>
+              <p className="text-2xl font-bold" data-testid="text-uploads-total">{stats.uploads.totalFiles}</p>
+              <p className="text-xs text-muted-foreground mt-1">{formatBytes(stats.uploads.totalBytes)}</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border/70 bg-background/40 p-4 text-sm space-y-2">
+            <p className="font-medium flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-cyan-300" />
+              Retention policy
+            </p>
+            <ul className="text-xs text-muted-foreground grid gap-1 sm:grid-cols-2">
+              <li>Direct messages older than <span className="text-foreground font-medium">{stats.retention.messagesDays}d</span> are deleted</li>
+              <li>Room messages older than <span className="text-foreground font-medium">{stats.retention.roomMessagesDays}d</span> are deleted</li>
+              <li>Read notifications older than <span className="text-foreground font-medium">{stats.retention.notificationsDays}d</span> are deleted</li>
+              <li>Resolved reports older than <span className="text-foreground font-medium">{stats.retention.reportsDays}d</span> are deleted</li>
+              <li>Unreferenced upload files older than <span className="text-foreground font-medium">{stats.retention.orphanFilesDays}d</span> are removed</li>
+            </ul>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="text-xs text-muted-foreground">
+              {stats.uploads.totalFiles} file{stats.uploads.totalFiles !== 1 ? "s" : ""} currently in <code className="font-mono">/uploads</code>.
+              {pendingOrphans > 0 && <> Up to {pendingOrphans} may be eligible for cleanup at the next run.</>}
+            </div>
+            {isSuperAdmin ? (
+              <Button
+                onClick={() => runMutation.mutate()}
+                disabled={runMutation.isPending || stats.isRunning}
+                data-testid="button-run-cleanup-now"
+              >
+                {(runMutation.isPending || stats.isRunning) ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Running…</>
+                ) : (
+                  <><Trash2 className="w-4 h-4 mr-2" /> Run cleanup now</>
+                )}
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">Only the platform owner can trigger a manual run.</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader>
+          <CardTitle className="text-base">Recent runs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {stats.history.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8" data-testid="text-no-cleanup-history">
+              No cleanup runs recorded yet.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-[420px] overflow-auto admin-scrollbar pr-2">
+              {stats.history.map((r) => (
+                <div
+                  key={r.ts}
+                  className="rounded-lg border border-border/60 bg-background/55 p-3 flex flex-wrap items-center gap-3 text-sm"
+                  data-testid={`row-cleanup-history-${r.ts}`}
+                >
+                  <Badge variant={r.trigger === "manual" ? "default" : "secondary"} className="capitalize">
+                    {r.trigger}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{new Date(r.ts).toLocaleString()}</span>
+                  <span className="text-xs">·</span>
+                  <span><span className="font-semibold">{r.filesDeleted}</span> file{r.filesDeleted !== 1 ? "s" : ""}</span>
+                  <span className="text-muted-foreground">({formatBytes(r.bytesFreed)})</span>
+                  {r.messagesDeleted > 0 && <span className="text-xs text-muted-foreground">{r.messagesDeleted} DM</span>}
+                  {r.roomMessagesDeleted > 0 && <span className="text-xs text-muted-foreground">{r.roomMessagesDeleted} room msg</span>}
+                  {r.notificationsDeleted > 0 && <span className="text-xs text-muted-foreground">{r.notificationsDeleted} notif</span>}
+                  {r.reportsDeleted > 0 && <span className="text-xs text-muted-foreground">{r.reportsDeleted} report</span>}
+                  <span className="ml-auto text-xs text-muted-foreground">{r.durationMs}ms</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -587,7 +794,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-6xl grid-cols-7" : "max-w-4xl grid-cols-6"} bg-card/80 backdrop-blur`}>
+          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-6xl grid-cols-8" : "max-w-5xl grid-cols-7"} bg-card/80 backdrop-blur`}>
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -621,6 +828,10 @@ export default function AdminPage() {
                   {securityEventCount > 9 ? "9+" : securityEventCount}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="storage" data-testid="tab-admin-storage">
+              <HardDrive className="w-4 h-4 mr-2" />
+              Storage
             </TabsTrigger>
             {isSuperAdmin && (
               <TabsTrigger value="announcements" data-testid="tab-admin-announcements">
@@ -1274,6 +1485,10 @@ export default function AdminPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="storage">
+            <StorageTab isSuperAdmin={isSuperAdmin} />
           </TabsContent>
 
           {isSuperAdmin && (

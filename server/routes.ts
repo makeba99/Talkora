@@ -12,7 +12,7 @@ import fs from "fs";
 import nodemailer from "nodemailer";
 import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
-import { setCleanupContext } from "./cleanup";
+import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -1655,6 +1655,24 @@ export async function registerRoutes(
     }
     next();
   };
+
+  // ── Cleanup / Storage admin endpoints ───────────────────────────────────
+  app.get("/api/admin/cleanup/stats", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      res.json(getCleanupStats());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/cleanup/run", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const record = await runCleanupNow();
+      res.json({ record, stats: getCleanupStats() });
+    } catch (err: any) {
+      res.status(409).json({ message: err.message });
+    }
+  });
 
   app.post("/api/admin/announcements/media", isAuthenticated, isSuperAdmin, uploadAnnouncementMedia.single("media"), async (req: any, res) => {
     try {

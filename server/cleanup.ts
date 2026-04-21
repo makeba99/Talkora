@@ -85,13 +85,14 @@ async function getReferencedUploads(): Promise<Set<string>> {
   return referenced;
 }
 
-async function cleanOrphanedFiles(orphanDays: number): Promise<void> {
-  if (!fs.existsSync(uploadsDir)) return;
+async function cleanOrphanedFiles(orphanDays: number): Promise<{ deleted: number; bytes: number }> {
+  if (!fs.existsSync(uploadsDir)) return { deleted: 0, bytes: 0 };
+  let deleted = 0;
+  let bytes = 0;
   try {
     const cutoff = daysAgo(orphanDays).getTime();
     const referenced = await getReferencedUploads();
     const files = fs.readdirSync(uploadsDir);
-    let deleted = 0;
     for (const filename of files) {
       if (referenced.has(filename)) continue;
       const filepath = path.join(uploadsDir, filename);
@@ -99,85 +100,219 @@ async function cleanOrphanedFiles(orphanDays: number): Promise<void> {
         const stat = fs.statSync(filepath);
         if (!stat.isFile()) continue;
         if (stat.mtimeMs > cutoff) continue;
+        const size = stat.size;
         fs.unlinkSync(filepath);
         deleted++;
-        log(`Deleted orphaned file: ${filename} (modified ${new Date(stat.mtimeMs).toISOString()})`);
+        bytes += size;
+        log(`Deleted orphaned file: ${filename} (${size} bytes, modified ${new Date(stat.mtimeMs).toISOString()})`);
       } catch {
         /* skip files that can't be read/deleted */
       }
     }
     if (deleted > 0) {
-      log(`Deleted ${deleted} orphaned upload file(s) older than ${orphanDays} days`);
+      log(`Deleted ${deleted} orphaned upload file(s) (${bytes} bytes) older than ${orphanDays} days`);
     }
   } catch (err: any) {
     log(`ERROR cleaning orphaned files: ${err.message}`);
   }
+  return { deleted, bytes };
 }
 
-async function runCleanup(): Promise<void> {
-  const messagesDays       = getEnvDays("CLEANUP_MESSAGES_DAYS",       7);
-  const roomMessagesDays   = getEnvDays("CLEANUP_ROOM_MESSAGES_DAYS",  7);
-  const notificationsDays  = getEnvDays("CLEANUP_NOTIFICATIONS_DAYS",  14);
-  const reportsDays        = getEnvDays("CLEANUP_REPORTS_DAYS",        30);
-  const orphanFilesDays    = getEnvDays("CLEANUP_ORPHAN_FILES_DAYS",   7);
+export type CleanupRunRecord = {
+  ts: number;
+  trigger: "scheduled" | "manual";
+  filesDeleted: number;
+  bytesFreed: number;
+  messagesDeleted: number;
+  roomMessagesDeleted: number;
+  notificationsDeleted: number;
+  reportsDeleted: number;
+  durationMs: number;
+};
 
-  log("Starting scheduled data cleanup...");
+export type CleanupStats = {
+  enabled: boolean;
+  intervalMinutes: number;
+  retention: {
+    messagesDays: number;
+    roomMessagesDays: number;
+    notificationsDays: number;
+    reportsDays: number;
+    orphanFilesDays: number;
+  };
+  totals: {
+    runs: number;
+    filesDeleted: number;
+    bytesFreed: number;
+    messagesDeleted: number;
+    roomMessagesDeleted: number;
+    notificationsDeleted: number;
+    reportsDeleted: number;
+  };
+  lastRun: CleanupRunRecord | null;
+  history: CleanupRunRecord[];
+  uploads: {
+    totalFiles: number;
+    totalBytes: number;
+  };
+  isRunning: boolean;
+};
+
+const stats: Omit<CleanupStats, "retention" | "intervalMinutes" | "enabled" | "uploads" | "isRunning"> = {
+  totals: {
+    runs: 0,
+    filesDeleted: 0,
+    bytesFreed: 0,
+    messagesDeleted: 0,
+    roomMessagesDeleted: 0,
+    notificationsDeleted: 0,
+    reportsDeleted: 0,
+  },
+  lastRun: null,
+  history: [],
+};
+
+let isRunning = false;
+
+function getRetention() {
+  return {
+    messagesDays:      getEnvDays("CLEANUP_MESSAGES_DAYS", 7),
+    roomMessagesDays:  getEnvDays("CLEANUP_ROOM_MESSAGES_DAYS", 7),
+    notificationsDays: getEnvDays("CLEANUP_NOTIFICATIONS_DAYS", 14),
+    reportsDays:       getEnvDays("CLEANUP_REPORTS_DAYS", 30),
+    orphanFilesDays:   getEnvDays("CLEANUP_ORPHAN_FILES_DAYS", 7),
+  };
+}
+
+function measureUploads(): { totalFiles: number; totalBytes: number } {
+  let totalFiles = 0;
+  let totalBytes = 0;
+  try {
+    if (!fs.existsSync(uploadsDir)) return { totalFiles, totalBytes };
+    const files = fs.readdirSync(uploadsDir);
+    for (const filename of files) {
+      try {
+        const s = fs.statSync(path.join(uploadsDir, filename));
+        if (s.isFile()) { totalFiles++; totalBytes += s.size; }
+      } catch {}
+    }
+  } catch {}
+  return { totalFiles, totalBytes };
+}
+
+export function getCleanupStats(): CleanupStats {
+  return {
+    enabled: process.env.CLEANUP_ENABLED !== "false",
+    intervalMinutes: getEnvDays("CLEANUP_INTERVAL_MINUTES", 60),
+    retention: getRetention(),
+    totals: { ...stats.totals },
+    lastRun: stats.lastRun,
+    history: [...stats.history],
+    uploads: measureUploads(),
+    isRunning,
+  };
+}
+
+async function runCleanup(trigger: "scheduled" | "manual" = "scheduled"): Promise<CleanupRunRecord> {
+  const ret = getRetention();
+  const startedAt = Date.now();
+  log(`Starting ${trigger} data cleanup...`);
+
+  isRunning = true;
+  let messagesDeleted = 0;
+  let roomMessagesDeleted = 0;
+  let notificationsDeleted = 0;
+  let reportsDeleted = 0;
 
   try {
-    const cutoffMessages = daysAgo(messagesDays);
+    const cutoffMessages = daysAgo(ret.messagesDays);
     const msgResult = await db.execute(
       sql`DELETE FROM messages WHERE created_at < ${cutoffMessages}`
     );
-    const msgCount = (msgResult as any).rowCount ?? 0;
-    if (msgCount > 0) {
-      log(`Deleted ${msgCount} direct message(s) older than ${messagesDays} days (before ${cutoffMessages.toISOString()})`);
+    messagesDeleted = (msgResult as any).rowCount ?? 0;
+    if (messagesDeleted > 0) {
+      log(`Deleted ${messagesDeleted} direct message(s) older than ${ret.messagesDays} days`);
     }
   } catch (err: any) {
     log(`ERROR cleaning messages: ${err.message}`);
   }
 
   try {
-    const cutoffRoomMessages = daysAgo(roomMessagesDays);
+    const cutoffRoomMessages = daysAgo(ret.roomMessagesDays);
     const rmResult = await db.execute(
       sql`DELETE FROM room_messages WHERE created_at < ${cutoffRoomMessages}`
     );
-    const rmCount = (rmResult as any).rowCount ?? 0;
-    if (rmCount > 0) {
-      log(`Deleted ${rmCount} room message(s) older than ${roomMessagesDays} days (before ${cutoffRoomMessages.toISOString()})`);
+    roomMessagesDeleted = (rmResult as any).rowCount ?? 0;
+    if (roomMessagesDeleted > 0) {
+      log(`Deleted ${roomMessagesDeleted} room message(s) older than ${ret.roomMessagesDays} days`);
     }
   } catch (err: any) {
     log(`ERROR cleaning room_messages: ${err.message}`);
   }
 
   try {
-    const cutoffNotifications = daysAgo(notificationsDays);
+    const cutoffNotifications = daysAgo(ret.notificationsDays);
     const notifResult = await db.execute(
       sql`DELETE FROM notifications WHERE read = true AND created_at < ${cutoffNotifications}`
     );
-    const notifCount = (notifResult as any).rowCount ?? 0;
-    if (notifCount > 0) {
-      log(`Deleted ${notifCount} read notification(s) older than ${notificationsDays} days (before ${cutoffNotifications.toISOString()})`);
+    notificationsDeleted = (notifResult as any).rowCount ?? 0;
+    if (notificationsDeleted > 0) {
+      log(`Deleted ${notificationsDeleted} read notification(s) older than ${ret.notificationsDays} days`);
     }
   } catch (err: any) {
     log(`ERROR cleaning notifications: ${err.message}`);
   }
 
   try {
-    const cutoffReports = daysAgo(reportsDays);
+    const cutoffReports = daysAgo(ret.reportsDays);
     const reportsResult = await db.execute(
       sql`DELETE FROM reports WHERE status IN ('resolved', 'dismissed') AND created_at < ${cutoffReports}`
     );
-    const reportsCount = (reportsResult as any).rowCount ?? 0;
-    if (reportsCount > 0) {
-      log(`Deleted ${reportsCount} resolved/dismissed report(s) older than ${reportsDays} days (before ${cutoffReports.toISOString()})`);
+    reportsDeleted = (reportsResult as any).rowCount ?? 0;
+    if (reportsDeleted > 0) {
+      log(`Deleted ${reportsDeleted} resolved/dismissed report(s) older than ${ret.reportsDays} days`);
     }
   } catch (err: any) {
     log(`ERROR cleaning reports: ${err.message}`);
   }
 
-  await cleanOrphanedFiles(orphanFilesDays);
+  const fileResult = await cleanOrphanedFiles(ret.orphanFilesDays);
 
-  log("Cleanup complete.");
+  const record: CleanupRunRecord = {
+    ts: Date.now(),
+    trigger,
+    filesDeleted: fileResult.deleted,
+    bytesFreed: fileResult.bytes,
+    messagesDeleted,
+    roomMessagesDeleted,
+    notificationsDeleted,
+    reportsDeleted,
+    durationMs: Date.now() - startedAt,
+  };
+
+  stats.totals.runs += 1;
+  stats.totals.filesDeleted += record.filesDeleted;
+  stats.totals.bytesFreed += record.bytesFreed;
+  stats.totals.messagesDeleted += record.messagesDeleted;
+  stats.totals.roomMessagesDeleted += record.roomMessagesDeleted;
+  stats.totals.notificationsDeleted += record.notificationsDeleted;
+  stats.totals.reportsDeleted += record.reportsDeleted;
+  stats.lastRun = record;
+  stats.history.unshift(record);
+  if (stats.history.length > 20) stats.history.length = 20;
+
+  isRunning = false;
+  log(`Cleanup complete in ${record.durationMs}ms — files=${record.filesDeleted} (${record.bytesFreed} bytes)`);
+  return record;
+}
+
+export async function runCleanupNow(): Promise<CleanupRunRecord> {
+  if (isRunning) {
+    throw new Error("Cleanup is already running");
+  }
+  const record = await runCleanup("manual");
+  await handleExpiredRestrictions();
+  return record;
 }
 
 let _io: SocketIOServer | undefined;
