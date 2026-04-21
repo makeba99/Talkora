@@ -1512,8 +1512,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         setShowYoutube(false);
         setMiniPlayerMode(false);
         setYoutubeWatchers(new Set());
-      } else if (data.startedBy !== user.id) {
-         setShowYoutube(false);
+      } else {
+        // Auto-open for everyone — broadcaster AND watchers all see the player immediately
+        setShowYoutube(true);
       }
     });
 
@@ -1608,9 +1609,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             const targetTime = data.time + networkDelay;
             let currentTime = 0;
             try { currentTime = player.getCurrentTime() || 0; } catch (_) {}
-            // Only seek if drift > 2.5s — avoids disruptive micro-seeks during normal playback
+            // Only seek if drift > 1.5s — keeps watchers tightly locked to broadcaster
             const drift = Math.abs(targetTime - currentTime);
-            if (drift > 2.5) {
+            if (drift > 1.5) {
               player.seekTo(targetTime, true);
             }
           }
@@ -1769,12 +1770,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (user.id !== youtubeStartedByRef.current) return;
       try {
         const time = youtubePlayerRef.current?.getCurrentTime?.() || 0;
-        socket.emit("room:youtube-time-respond", { roomId: room.id, time, requesterId });
+        socket.emit("room:youtube-time-respond", { roomId: room.id, time, requesterId, ts: Date.now() });
       } catch (_) {}
     };
-    const handleTimeResponded = ({ time }: { time: number }) => {
-      // Compensate ~150ms expected round-trip latency so viewer is in sync
-      const compensated = time + 0.15;
+    const handleTimeResponded = ({ time, ts }: { time: number; ts?: number }) => {
+      // Dynamic one-way latency compensation using broadcaster timestamp
+      const networkDelay = ts ? Math.min((Date.now() - ts) / 1000, 3) : 0.15;
+      const compensated = time + networkDelay;
       ytSyncTimeRef.current = compensated;
       try {
         if (youtubePlayerRef.current?.seekTo) {
@@ -1875,7 +1877,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         const currentTime = player.getCurrentTime();
         const timeSinceLastSync = now - ytLastSyncWallTime.current;
         const positionJump = Math.abs(currentTime - ytLastSyncVideoTime.current);
-        if (timeSinceLastSync > 8000 || positionJump > 3) {
+        if (timeSinceLastSync > 5000 || positionJump > 2) {
           ytLastSyncVideoTime.current = currentTime;
           ytLastSyncWallTime.current = now;
           sock?.emit("room:youtube-state", { roomId: room.id, action: "play", time: currentTime, ts: Date.now() });
@@ -1932,6 +1934,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 setYtVolume(100);
                 const d = event.target.getDuration();
                 if (d > 0) setYtDuration(d);
+                // If watcher: request exact sync time from broadcaster now that player is ready
+                if (user?.id !== youtubeStartedByRef.current && socketRef.current) {
+                  socketRef.current.emit("room:youtube-time-request", { roomId: room.id, requesterId: user?.id });
+                }
               } catch (err) { console.error("[YT] playVideo/unMute error:", err); }
             },
             onError: (e: any) => {

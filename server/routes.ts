@@ -3044,11 +3044,11 @@ export async function registerRoutes(
       }
     });
 
-    socket.on("room:youtube-time-respond", (data: { roomId: string; time: number; requesterId: string }) => {
+    socket.on("room:youtube-time-respond", (data: { roomId: string; time: number; requesterId: string; ts?: number }) => {
       if (!currentUserId) return;
       const requesterSocketId = userSockets.get(data.requesterId);
       if (requesterSocketId) {
-        io.to(requesterSocketId).emit("room:youtube-time-responded", { time: data.time });
+        io.to(requesterSocketId).emit("room:youtube-time-responded", { time: data.time, ts: data.ts ?? Date.now() });
       }
     });
 
