@@ -25,7 +25,8 @@ export class TtsEngine {
   private boundarySupported = true;
   private voice: "Female" | "Male" = "Female";
   private voiceId: string | null = null;
-  private speed = 0.7;
+  // Natural conversational pace — 0.7 was robotically slow.
+  private speed = 0.95;
   private callbacks: TtsCallbacks;
   // Eagerly cached voice list — avoids Chrome returning empty on first playback
   private cachedVoices: SpeechSynthesisVoice[] = [];
@@ -94,9 +95,11 @@ export class TtsEngine {
     const isFemale = this.voice === "Female";
     const utter = new SpeechSynthesisUtterance(sentence);
     utter.rate = Math.max(0.5, Math.min(2, this.speed));
-    // Wide pitch gap so the two personas sound distinctly different
-    // even when the browser falls back to a single default voice
-    utter.pitch = isFemale ? 1.65 : 0.60;
+    // Mature, natural-sounding adult female: pitch close to 1.0 (default).
+    // 1.65 was childish/cartoonish. Male stays distinctly lower at 0.85.
+    utter.pitch = isFemale ? 1.05 : 0.85;
+    // Subtle volume normalization — speech engines often output a touch hot.
+    utter.volume = 1.0;
     utter.lang = "en-US";
 
     // Use cached voices (loaded in constructor) so the correct voice is
@@ -109,17 +112,42 @@ export class TtsEngine {
         ? voices.find(v => v.voiceURI === this.voiceId || v.name === this.voiceId)
         : undefined;
 
-      // Prefer an explicitly female-named voice for Afik
-      const femaleVoice =
-        voices.find(v => v.name === "Google UK English Female") ??
-        voices.find(v => v.name === "Google US English") ??
-        voices.find(v => /samantha|zira|female|aria|jenny|serena|victoria|karen|moira|tessa|susan|siri|amelie|fiona|yelena|nora|alice/i.test(v.name) && v.lang.startsWith("en")) ??
-        voices.find(v => v.lang.startsWith("en-") && !/daniel|david|alex|mark|george|fred|ralph|tom|oliver|james|arthur|male/i.test(v.name));
+      // ── Pick the most natural / native-sounding female voice available ──
+      // Priority order:
+      //   1. Modern neural / cloud voices (Microsoft Online Natural, Google WaveNet, Apple Premium)
+      //   2. High-quality classic voices known to sound mature and native (Samantha, Aria, Jenny, Serena)
+      //   3. Any en-US/en-GB female voice
+      //   4. Any English voice that isn't obviously male/novelty
+      const isNovelty = (v: SpeechSynthesisVoice) =>
+        /albert|bahh|bells|boing|bubbles|cellos|deranged|hysterical|good news|bad news|jester|organ|trinoids|whisper|zarvox|wobble|kathy|junior|princess|ralph|bruce|fred|grandma|grandpa/i.test(v.name);
+      const isLikelyMale = (v: SpeechSynthesisVoice) =>
+        /\bmale\b|daniel|david|alex|mark|george|tom|oliver|james|arthur|guy|aaron|brian|christopher|eric|justin|liam|matthew|michael|paul|ravi|ryan|stephen|thomas|william|diego/i.test(v.name);
+
+      // Tier 1 — modern neural/online natural voices (sound like real people)
+      const naturalFemale =
+        voices.find(v => /aria.*online|jenny.*online|libby.*online|sonia.*online|emma.*online|natural/i.test(v.name) && v.lang.startsWith("en")) ??
+        voices.find(v => /(google).*(us|uk).*english/i.test(v.name) && !isLikelyMale(v));
+
+      // Tier 2 — high-quality classic mature female voices
+      const matureFemale =
+        voices.find(v => /\b(samantha|victoria|serena|kate|allison|ava|susan)\b/i.test(v.name) && v.lang.startsWith("en")) ??
+        voices.find(v => /\b(aria|jenny|libby|sonia|emma|nora|clara|eva|olivia|amelia)\b/i.test(v.name) && v.lang.startsWith("en")) ??
+        voices.find(v => /\b(zira|hazel|catherine|linda|heather|michelle)\b/i.test(v.name) && v.lang.startsWith("en"));
+
+      // Tier 3 — any voice obviously labelled female / known-female names
+      const anyFemale =
+        voices.find(v => /female|woman|girl|moira|tessa|fiona|karen|siri|amelie|yelena|alice|vicki|princess/i.test(v.name) && v.lang.startsWith("en") && !isNovelty(v));
+
+      // Tier 4 — any English voice that isn't male or novelty
+      const fallbackFemale =
+        voices.find(v => v.lang.startsWith("en-") && !isLikelyMale(v) && !isNovelty(v));
+
+      const femaleVoice = naturalFemale ?? matureFemale ?? anyFemale ?? fallbackFemale;
 
       // Prefer an explicitly male-named voice for Dude
       const maleVoice =
-        voices.find(v => v.name === "Google UK English Male") ??
-        voices.find(v => /daniel|david|alex|mark|george|fred|ralph|tom|oliver|james|arthur|male/i.test(v.name) && v.lang.startsWith("en"));
+        voices.find(v => /\b(daniel|david|alex|guy|brian|mark|microsoft.*male|google uk english male)\b/i.test(v.name) && v.lang.startsWith("en") && !isNovelty(v)) ??
+        voices.find(v => isLikelyMale(v) && v.lang.startsWith("en") && !isNovelty(v));
 
       const chosen =
         savedVoice ??
