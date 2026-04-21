@@ -783,32 +783,52 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (typeof window === "undefined") return null;
     try { const r = localStorage.getItem(AI_FACE_POS_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
   });
-  const aiFaceDragRef = useRef<{ active: boolean; sx: number; sy: number; bx: number; by: number }>({
-    active: false, sx: 0, sy: 0, bx: 0, by: 0,
+  const aiFaceDragRef = useRef<{ armed: boolean; dragging: boolean; sx: number; sy: number; bx: number; by: number; pointerId: number }>({
+    armed: false, dragging: false, sx: 0, sy: 0, bx: 0, by: 0, pointerId: -1,
   });
   const aiFaceWrapperRef = useRef<HTMLDivElement | null>(null);
+  const DRAG_THRESHOLD = 5;
   const onAiFacePointerDown = (e: React.PointerEvent) => {
     if (!aiFaceWrapperRef.current) return;
+    // Don't start a drag on interactive controls (buttons, links, inputs, etc.)
+    const target = e.target as HTMLElement | null;
+    if (target && target.closest('button, a, input, textarea, select, [role="button"], [data-no-drag]')) {
+      return;
+    }
     const r = aiFaceWrapperRef.current.getBoundingClientRect();
-    aiFaceDragRef.current = { active: true, sx: e.clientX, sy: e.clientY, bx: r.left, by: r.top };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    aiFaceDragRef.current = {
+      armed: true, dragging: false,
+      sx: e.clientX, sy: e.clientY, bx: r.left, by: r.top,
+      pointerId: e.pointerId,
+    };
   };
   const onAiFacePointerMove = (e: React.PointerEvent) => {
-    if (!aiFaceDragRef.current.active) return;
-    const dx = e.clientX - aiFaceDragRef.current.sx;
-    const dy = e.clientY - aiFaceDragRef.current.sy;
+    const s = aiFaceDragRef.current;
+    if (!s.armed) return;
+    const dx = e.clientX - s.sx;
+    const dy = e.clientY - s.sy;
+    if (!s.dragging) {
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      s.dragging = true;
+      try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+    }
     const rect = aiFaceWrapperRef.current?.getBoundingClientRect();
     const w = rect?.width || 220;
     const h = rect?.height || 220;
-    const x = Math.max(8, Math.min(window.innerWidth - w - 8, aiFaceDragRef.current.bx + dx));
-    const y = Math.max(8, Math.min(window.innerHeight - h - 8, aiFaceDragRef.current.by + dy));
+    const x = Math.max(8, Math.min(window.innerWidth - w - 8, s.bx + dx));
+    const y = Math.max(8, Math.min(window.innerHeight - h - 8, s.by + dy));
     setAiFacePos({ x, y });
   };
   const onAiFacePointerUp = (e: React.PointerEvent) => {
-    if (!aiFaceDragRef.current.active) return;
-    aiFaceDragRef.current.active = false;
-    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
-    if (aiFacePos) { try { localStorage.setItem(AI_FACE_POS_KEY, JSON.stringify(aiFacePos)); } catch {} }
+    const s = aiFaceDragRef.current;
+    if (!s.armed) return;
+    const wasDragging = s.dragging;
+    s.armed = false;
+    s.dragging = false;
+    if (wasDragging) {
+      try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+      if (aiFacePos) { try { localStorage.setItem(AI_FACE_POS_KEY, JSON.stringify(aiFacePos)); } catch {} }
+    }
   };
   
   const audioContextRef = useRef<AudioContext | null>(null);
