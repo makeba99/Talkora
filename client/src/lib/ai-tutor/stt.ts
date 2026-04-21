@@ -196,8 +196,11 @@ export class SttEngine {
   }
 
   /**
-   * Start barge-in detector: runs even while AI is speaking.
-   * Any detected speech immediately triggers an interrupt.
+   * Start barge-in detector: runs while AI is speaking.
+   * Two guards prevent the AI's own voice (echo from speakers) from triggering a loop:
+   *   1. 1800ms grace period — ignore all audio for the first 1.8s of AI speech
+   *      (the AI's voice is loudest at the start; real user interruptions come later)
+   *   2. Minimum 3 words — single words/syllables are almost always echo artifacts
    */
   startBargeIn() {
     if (!SpeechRec || this.micDenied) return;
@@ -210,10 +213,22 @@ export class SttEngine {
     rec.lang = this.lang;
     this.bargeIn = rec;
 
+    const activatedAt = Date.now();
+
     rec.onresult = (e: any) => {
+      // Grace period: ignore all audio for the first 1800ms.
+      // The AI's own TTS voice comes out of the speakers and would be picked up
+      // immediately — this window lets that echo pass without triggering.
+      if (Date.now() - activatedAt < 1800) return;
+
       const results = Array.from(e.results as SpeechRecognitionResultList);
-      const hasAny = results.some((r: SpeechRecognitionResult) => r[0].transcript.trim().length > 0);
-      if (hasAny) {
+      // Require at least 3 words — brief sounds and single words are echo artifacts.
+      const wordCount = results.reduce(
+        (sum, r: SpeechRecognitionResult) =>
+          sum + r[0].transcript.trim().split(/\s+/).filter(Boolean).length,
+        0
+      );
+      if (wordCount >= 3) {
         this.callbacks.onBargeIn();
         this.stopBargeIn();
       }

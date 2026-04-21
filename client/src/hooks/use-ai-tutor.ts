@@ -162,9 +162,9 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: false });
-    // Restart listening quickly (200ms) when AI finishes speaking
+    // 500ms delay — lets room echo fully fade before reopening the mic
     if (activeRef.current && !loadingRef.current) {
-      setTimeout(() => sttRef.current?.startListening(), 200);
+      setTimeout(() => sttRef.current?.startListening(), 500);
     }
   }, [socket, roomId, userId]);
 
@@ -209,18 +209,25 @@ export function useAiTutor(deps: AiTutorDeps) {
     addDebug("info", "Barge-in detected — interrupting AI.");
     setVoiceBargeInActive(false);
     interruptAiRef.current?.();
+    // 600ms — lets room echo fade so the mic doesn't immediately re-capture AI audio
     setTimeout(() => {
-      if (activeRef.current) sttRef.current?.startListening();
-    }, 150);
+      if (activeRef.current && !speakingRef.current && !loadingRef.current) {
+        sttRef.current?.startListening();
+      }
+    }, 600);
   }, [addDebug]);
 
   const onFinalTranscript = useCallback((text: string) => {
+    const trimmed = text.trim();
+    // Ignore fragments shorter than 3 characters — these are almost always echo
+    // artifacts or noise picked up right after the AI finishes speaking
+    if (trimmed.length < 3) return;
     setVoiceInterimText(null);
     setVoiceListening(false);
-    addDebug("info", `Recognized: "${text.slice(0, 80)}${text.length > 80 ? "…" : ""}"`);
+    addDebug("info", `Recognized: "${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…" : ""}"`);
     interruptAiRef.current?.();
     // Use ref to avoid stale closure — sendAiMessage changes when aiConversation changes
-    sendAiMessageRef.current?.(text);
+    sendAiMessageRef.current?.(trimmed);
   }, [addDebug]);
 
   useEffect(() => {
