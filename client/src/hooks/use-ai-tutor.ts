@@ -77,9 +77,8 @@ function loadSavedAiSettings(): AiTutorSettings {
     return {
       ...DEFAULT_AI_SETTINGS,
       ...parsed,
-      voice: "Female",
       voiceId: null,
-      avatarId: ["aurora", "ember"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
+      avatarId: ["aurora", "ember", "nova", "onyx"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
       speed: typeof parsed.speed === "number" ? Math.max(0.5, Math.min(2, parsed.speed)) : DEFAULT_AI_SETTINGS.speed,
       tone: typeof parsed.tone === "number" ? Math.max(0, Math.min(1, parsed.tone)) : DEFAULT_AI_SETTINGS.tone,
     };
@@ -431,8 +430,9 @@ export function useAiTutor(deps: AiTutorDeps) {
     personaLockedRef.current = true;
     setPersonaName(pName);
 
-    // Update voice setting
-    setAiSettings(s => ({ ...s, voice, voiceId: null }));
+    // Update voice + avatar settings together so face matches gender
+    const avatarId = voice === "Male" ? "nova" : "aurora";
+    setAiSettings(s => ({ ...s, voice, voiceId: null, avatarId }));
     // Also configure TTS immediately (don't wait for React state cycle)
     ttsRef.current?.configure(voice, aiSettings.speed, null);
 
@@ -440,7 +440,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     setMicError(null);
     sttRef.current?.resetMicDenied();
 
-    socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId: DEFAULT_AI_SETTINGS.avatarId, voice, voiceId: null });
+    socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId, voice, voiceId: null });
     setAiActive(true);
     setAiChatPanelOpen(false);
     chatPanelOpenRef.current = false;

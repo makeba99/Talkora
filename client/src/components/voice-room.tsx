@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import femaleAvatarImg from "../assets/avatar-female.png";
-import maleAvatarImg from "../assets/avatar-male.png";
+import { AiTutorFace } from "@/components/ai-tutor-face";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +34,6 @@ import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-drop
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
-import { MOUTH_SHAPES } from "@/lib/ai-tutor/lipsync";
 import type { Room, User, Follow } from "@shared/schema";
 
 interface VoiceRoomProps {
@@ -6469,147 +6467,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <div className="absolute inset-0 rounded-full overflow-hidden">
 
                       {/* ── Gender-distinct SVG face with integrated lip-sync mouth ── */}
-                      {(() => {
-                        const visemeKey = aiTutorDisplaySpeaking ? currentViseme : "rest";
-                        const ms = MOUTH_SHAPES[visemeKey];
-                        const isMale = aiTutorFaceStyle === "Male";
-                        return isMale ? (
-                          <svg viewBox="0 0 200 220" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
-                            <defs>
-                              <radialGradient id="mBg" cx="50%" cy="45%" r="60%">
-                                <stop offset="0%" stopColor="#061020"/>
-                                <stop offset="100%" stopColor="#020610"/>
-                              </radialGradient>
-                              <radialGradient id="mSkin" cx="46%" cy="36%" r="70%">
-                                <stop offset="0%" stopColor="#f2d0b0"/>
-                                <stop offset="55%" stopColor="#d8a882"/>
-                                <stop offset="100%" stopColor="#a86848"/>
-                              </radialGradient>
-                              <radialGradient id="mHair" cx="50%" cy="18%" r="55%">
-                                <stop offset="0%" stopColor="#4a3828"/>
-                                <stop offset="50%" stopColor="#221a14"/>
-                                <stop offset="100%" stopColor="#0c0906"/>
-                              </radialGradient>
-                            </defs>
-                            <rect width="200" height="220" fill="url(#mBg)"/>
-                            <rect x="84" y="178" width="32" height="42" rx="6" fill="#c89870"/>
-                            <path d="M 55 220 L 60 188 Q 100 202 140 188 L 145 220 Z" fill="#0d1a2e"/>
-                            <path d="M 88 220 L 92 200 L 100 210 L 108 200 L 112 220 Z" fill="#1a2840"/>
-                            <ellipse cx="100" cy="74" rx="62" ry="50" fill="url(#mHair)"/>
-                            <rect x="38" y="82" width="12" height="34" rx="5" fill="#221a14"/>
-                            <rect x="150" y="82" width="12" height="34" rx="5" fill="#221a14"/>
-                            <path d="M 55 70 Q 68 58 80 62" stroke="#3a2e22" strokeWidth="1.2" fill="none" opacity="0.5"/>
-                            <path d="M 145 70 Q 132 58 120 62" stroke="#3a2e22" strokeWidth="1.2" fill="none" opacity="0.5"/>
-                            <ellipse cx="100" cy="120" rx="57" ry="72" fill="url(#mSkin)"/>
-                            <path d="M 50 145 Q 52 180 100 190 Q 148 180 150 145 Q 128 165 100 168 Q 72 165 50 145 Z" fill="url(#mSkin)"/>
-                            <ellipse cx="57" cy="126" rx="18" ry="40" fill="rgba(0,0,0,0.10)" opacity="0.85"/>
-                            <ellipse cx="143" cy="126" rx="18" ry="40" fill="rgba(0,0,0,0.10)" opacity="0.85"/>
-                            <ellipse cx="100" cy="160" rx="44" ry="22" fill="rgba(70,45,25,0.20)"/>
-                            <path d="M 66 92 Q 78 87 91 89.5" stroke="#241a12" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                            <path d="M 109 89.5 Q 122 87 134 92" stroke="#241a12" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                            <ellipse cx="79" cy="103" rx="11" ry="9.5" fill="white"/>
-                            <ellipse cx="79" cy="103" rx="9" ry="8.5" fill="#3d607c"/>
-                            <ellipse cx="79" cy="103" rx="5.2" ry="5.2" fill="#0d1e2c"/>
-                            <circle cx="82" cy="100" r="1.9" fill="white" opacity="0.85"/>
-                            <circle cx="76" cy="106" r="0.7" fill="white" opacity="0.4"/>
-                            <path d="M 68 99 Q 79 94 90 99" stroke="#0e0c08" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-                            <ellipse cx="121" cy="103" rx="11" ry="9.5" fill="white"/>
-                            <ellipse cx="121" cy="103" rx="9" ry="8.5" fill="#3d607c"/>
-                            <ellipse cx="121" cy="103" rx="5.2" ry="5.2" fill="#0d1e2c"/>
-                            <circle cx="124" cy="100" r="1.9" fill="white" opacity="0.85"/>
-                            <circle cx="118" cy="106" r="0.7" fill="white" opacity="0.4"/>
-                            <path d="M 110 99 Q 121 94 132 99" stroke="#0e0c08" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-                            <ellipse className="ai-avatar-blink" cx="79" cy="103" rx="11" ry="9.5" fill="#d8a882"/>
-                            <ellipse className="ai-avatar-blink" cx="121" cy="103" rx="11" ry="9.5" fill="#d8a882" style={{ animationDelay: "0.06s" }}/>
-                            <path d="M 95 124 Q 100 137 105 124" stroke="#b88060" strokeWidth="1.6" fill="none" opacity="0.75"/>
-                            <ellipse cx="95.5" cy="134.5" rx="4" ry="2.2" fill="rgba(130,80,50,0.28)"/>
-                            <ellipse cx="104.5" cy="134.5" rx="4" ry="2.2" fill="rgba(130,80,50,0.28)"/>
-                            <g transform="translate(75, 142) scale(0.833, 0.714)">
-                              <ellipse cx="30" cy={ms.innerCy} rx={ms.innerRx} ry={ms.innerRy} fill={ms.innerFill}/>
-                              <path d={ms.upperLip} fill="rgba(180,90,75,0.74)" stroke="rgba(100,40,30,0.2)" strokeWidth="0.5"/>
-                              <path d={ms.lowerLip} fill="rgba(168,82,68,0.66)" stroke="rgba(100,40,30,0.15)" strokeWidth="0.5"/>
-                            </g>
-                            <path d="M 30 105 Q 30 58 100 54 Q 170 58 170 105" fill="none" stroke="#10a0b8" strokeWidth="5.5" strokeLinecap="round"/>
-                            <rect x="24" y="100" width="14" height="18" rx="5" fill="#0a7888"/>
-                            <rect x="26" y="102" width="10" height="14" rx="3" fill="#20d0e8"/>
-                            <rect x="162" y="100" width="14" height="18" rx="5" fill="#0a7888"/>
-                            <rect x="164" y="102" width="10" height="14" rx="3" fill="#20d0e8"/>
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 200 220" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
-                            <defs>
-                              <radialGradient id="fBg" cx="50%" cy="45%" r="60%">
-                                <stop offset="0%" stopColor="#18083a"/>
-                                <stop offset="100%" stopColor="#050212"/>
-                              </radialGradient>
-                              <radialGradient id="fSkin" cx="46%" cy="36%" r="68%">
-                                <stop offset="0%" stopColor="#fce0c8"/>
-                                <stop offset="55%" stopColor="#edbe9a"/>
-                                <stop offset="100%" stopColor="#c8906a"/>
-                              </radialGradient>
-                              <radialGradient id="fHair" cx="50%" cy="20%" r="60%">
-                                <stop offset="0%" stopColor="#eef4ff"/>
-                                <stop offset="50%" stopColor="#b8c8e8"/>
-                                <stop offset="100%" stopColor="#6878a8"/>
-                              </radialGradient>
-                            </defs>
-                            <rect width="200" height="220" fill="url(#fBg)"/>
-                            <rect x="83" y="177" width="34" height="43" rx="8" fill="#edbe9a"/>
-                            <path d="M 55 220 L 62 188 Q 100 204 138 188 L 145 220 Z" fill="#1e1248"/>
-                            <path d="M 88 220 L 94 202 L 100 212 L 106 202 L 112 220 Z" fill="#2a1a60"/>
-                            <ellipse cx="100" cy="80" rx="66" ry="58" fill="url(#fHair)" opacity="0.95"/>
-                            <path d="M 36 105 Q 22 152 28 215 L 46 215 Q 40 158 50 108 Z" fill="#b8c8e8"/>
-                            <path d="M 164 105 Q 178 152 172 215 L 154 215 Q 160 158 150 108 Z" fill="#b8c8e8"/>
-                            <path d="M 42 105 Q 30 155 34 210" stroke="#e0ecff" strokeWidth="2" fill="none" opacity="0.5"/>
-                            <path d="M 158 105 Q 170 155 166 210" stroke="#e0ecff" strokeWidth="2" fill="none" opacity="0.5"/>
-                            <ellipse cx="100" cy="115" rx="58" ry="72" fill="url(#fSkin)"/>
-                            <ellipse cx="100" cy="176" rx="36" ry="14" fill="url(#fSkin)"/>
-                            <ellipse cx="55" cy="120" rx="18" ry="42" fill="rgba(0,0,0,0.07)" opacity="0.8"/>
-                            <ellipse cx="145" cy="120" rx="18" ry="42" fill="rgba(0,0,0,0.07)" opacity="0.8"/>
-                            <path d="M 34 100 Q 48 48 100 42 Q 152 48 166 100 Q 150 68 100 66 Q 50 68 34 100 Z" fill="url(#fHair)" opacity="0.92"/>
-                            <path d="M 52 68 Q 62 54 78 56" stroke="#d8e8f8" strokeWidth="1.5" fill="none" opacity="0.55"/>
-                            <path d="M 148 68 Q 138 54 122 56" stroke="#d8e8f8" strokeWidth="1.5" fill="none" opacity="0.55"/>
-                            <path d="M 44 78 Q 52 64 66 66" stroke="#c8daf0" strokeWidth="1" fill="none" opacity="0.4"/>
-                            <path d="M 67 90 Q 80 85 91 87.5" stroke="#7888a8" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-                            <path d="M 109 87.5 Q 120 85 133 90" stroke="#7888a8" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-                            <ellipse cx="79" cy="100" rx="12" ry="11" fill="white"/>
-                            <ellipse cx="79" cy="100" rx="10" ry="10" fill="#2568da"/>
-                            <ellipse cx="79" cy="100" rx="5.8" ry="5.8" fill="#0a1e60"/>
-                            <circle cx="83" cy="96.5" r="2.4" fill="white" opacity="0.9"/>
-                            <circle cx="76.5" cy="104" r="0.8" fill="white" opacity="0.38"/>
-                            <path d="M 67 96 Q 79 91 91 96" stroke="#0e0c12" strokeWidth="1.9" fill="none" strokeLinecap="round"/>
-                            <path d="M 67 96 L 66 93" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
-                            <path d="M 70 94 L 69.5 91" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
-                            <path d="M 91 96 L 92 93" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
-                            <ellipse cx="121" cy="100" rx="12" ry="11" fill="white"/>
-                            <ellipse cx="121" cy="100" rx="10" ry="10" fill="#2568da"/>
-                            <ellipse cx="121" cy="100" rx="5.8" ry="5.8" fill="#0a1e60"/>
-                            <circle cx="125" cy="96.5" r="2.4" fill="white" opacity="0.9"/>
-                            <circle cx="118.5" cy="104" r="0.8" fill="white" opacity="0.38"/>
-                            <path d="M 109 96 Q 121 91 133 96" stroke="#0e0c12" strokeWidth="1.9" fill="none" strokeLinecap="round"/>
-                            <path d="M 109 96 L 108 93" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
-                            <path d="M 133 96 L 134 93" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
-                            <path d="M 130 94.5 L 130.5 91.5" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
-                            <ellipse className="ai-avatar-blink" cx="79" cy="100" rx="12" ry="11" fill="#edbe9a"/>
-                            <ellipse className="ai-avatar-blink" cx="121" cy="100" rx="12" ry="11" fill="#edbe9a" style={{ animationDelay: "0.06s" }}/>
-                            <ellipse cx="60" cy="118" rx="15" ry="7" fill="#ff8888" opacity="0.22"/>
-                            <ellipse cx="140" cy="118" rx="15" ry="7" fill="#ff8888" opacity="0.22"/>
-                            <path d="M 96 120 Q 100 132 104 120" stroke="#c89878" strokeWidth="1.1" fill="none" opacity="0.65"/>
-                            <ellipse cx="96.5" cy="130.5" rx="3.5" ry="2" fill="rgba(150,100,75,0.22)"/>
-                            <ellipse cx="103.5" cy="130.5" rx="3.5" ry="2" fill="rgba(150,100,75,0.22)"/>
-                            <g transform="translate(75, 139) scale(0.833, 0.714)">
-                              <ellipse cx="30" cy={ms.innerCy} rx={ms.innerRx} ry={ms.innerRy} fill={ms.innerFill}/>
-                              <path d={ms.upperLip} fill={ms.upperFill} stroke="rgba(105,36,48,0.2)" strokeWidth="0.5"/>
-                              <path d={ms.lowerLip} fill={ms.lowerFill} stroke="rgba(105,36,48,0.15)" strokeWidth="0.5"/>
-                            </g>
-                            <path d="M 30 102 Q 30 56 100 52 Q 170 56 170 102" fill="none" stroke="#5060cc" strokeWidth="5.5" strokeLinecap="round"/>
-                            <rect x="24" y="97" width="14" height="18" rx="5" fill="#3848a8"/>
-                            <rect x="26" y="99" width="10" height="14" rx="3" fill="#7088ff"/>
-                            <rect x="162" y="97" width="14" height="18" rx="5" fill="#3848a8"/>
-                            <rect x="164" y="99" width="10" height="14" rx="3" fill="#7088ff"/>
-                          </svg>
-                        );
-                      })()}
+                      <AiTutorFace gender={aiTutorFaceStyle} viseme={currentViseme} speaking={aiTutorDisplaySpeaking} />
 
                       {/* Speaking shimmer glow */}
                       {aiTutorDisplaySpeaking && (
