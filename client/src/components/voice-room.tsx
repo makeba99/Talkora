@@ -706,6 +706,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [ytQualityState, setYtQualityState] = useState<"good" | "slow">("good");
   const [ytPlayerLoading, setYtPlayerLoading] = useState(false);
   const [ytPlayerReady, setYtPlayerReady] = useState(false);
+  // Error / retry state for the YT player so we never get stuck on the spinner.
+  const [ytPlayerError, setYtPlayerError] = useState<null | { code?: number; message: string }>(null);
+  const [ytRetryNonce, setYtRetryNonce] = useState(0);
+  const ytHostFallbackRef = useRef(false);
+  const ytLoadTimeoutRef = useRef<number | null>(null);
 
   const [bookReaders, setBookReaders] = useState<Set<string>>(new Set());
   const [goLiveOpen, setGoLiveOpen] = useState(false);
@@ -2008,10 +2013,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (ytContainerRef.current) ytContainerRef.current.innerHTML = "";
       setYtPlayerLoading(false);
       setYtPlayerReady(false);
+      setYtPlayerError(null);
+      ytHostFallbackRef.current = false;
+      if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); ytLoadTimeoutRef.current = null; }
       return;
     }
     setYtPlayerLoading(true);
     setYtPlayerReady(false);
+    setYtPlayerError(null);
+
+    // Hard timeout: if onReady never fires within 12s, surface an error so the
+    // user sees a retry button instead of a forever spinner. Common causes:
+    // ad-blocker blocking youtube-nocookie.com, blocked third-party scripts,
+    // or a non-embeddable video that fails silently before onError fires.
+    if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); }
+    ytLoadTimeoutRef.current = window.setTimeout(() => {
+      console.warn("[YT] Load timeout — onReady never fired in 12s");
+      setYtPlayerLoading(false);
+      setYtPlayerError({ message: "Video took too long to load. Try again or open it on YouTube." });
+    }, 12000);
 
     // Network-aware autoplay + quality strategy:
     // - Fast networks (4g / unknown / wifi-class): NO quality cap → let YT auto-pick HD for the smoothest experience.
@@ -2105,13 +2125,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       innerDiv.style.height = "100%";
       container.appendChild(innerDiv);
 
-      console.log("[YT] Constructing YT.Player for", innerId, "video:", activeYoutubeId);
+      // Host fallback: start with privacy-friendly youtube-nocookie.com.
+      // If that fails (blocker / restriction), we retry on www.youtube.com.
+      const ytHost = ytHostFallbackRef.current
+        ? "https://www.youtube.com"
+        : "https://www.youtube-nocookie.com";
+      console.log("[YT] Constructing YT.Player for", innerId, "video:", activeYoutubeId, "host:", ytHost);
       try {
         const player = new YT.Player(innerId, {
           videoId: activeYoutubeId,
           width: "100%",
           height: "100%",
-          host: "https://www.youtube-nocookie.com",
+          host: ytHost,
           playerVars: {
             autoplay: isSlowNet ? 0 : 1,
             mute: 1,
@@ -2127,6 +2152,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           events: {
             onReady: (event: any) => {
               console.log("[YT] onReady fired — quality:", initialQuality, "slowNet:", isSlowNet);
+              if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); ytLoadTimeoutRef.current = null; }
+              setYtPlayerError(null);
               try {
                 // Apply network-aware quality cap only on slow networks; on fast networks let YT auto-pick HD
                 if (initialQuality) {
@@ -2155,6 +2182,24 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             },
             onError: (e: any) => {
               console.warn("[YT] player error code:", e.data);
+              if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); ytLoadTimeoutRef.current = null; }
+              // YT error codes:
+              //   2   – invalid video id
+              //   5   – HTML5 player error
+              //   100 – video not found / private / removed
+              //   101 / 150 – embed disabled by owner
+              const code = Number(e?.data);
+              const messages: Record<number, string> = {
+                2:   "Invalid video ID.",
+                5:   "Playback error in this browser. Try a refresh.",
+                100: "Video not found or has been removed.",
+                101: "The owner of this video has disabled embedded playback.",
+                150: "The owner of this video has disabled embedded playback.",
+              };
+              const msg = messages[code] ?? `Video could not be played (code ${code || "?"}).`;
+              setYtPlayerLoading(false);
+              setYtPlayerReady(false);
+              setYtPlayerError({ code, message: msg });
             },
             onStateChange: (event: any) => {
               console.log("[YT] state change:", event.data);
@@ -2183,10 +2228,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (YT && YT.Player) {
       createPlayer();
     } else {
-      if (!document.getElementById("yt-api-script")) {
-        const tag = document.createElement("script");
+      let tag = document.getElementById("yt-api-script") as HTMLScriptElement | null;
+      if (!tag) {
+        tag = document.createElement("script");
         tag.id = "yt-api-script";
         tag.src = "https://www.youtube.com/iframe_api";
+        tag.async = true;
+        // If the IFrame API script itself fails to load (ad blocker, network),
+        // surface an error instead of leaving the spinner forever.
+        tag.onerror = () => {
+          console.warn("[YT] IFrame API script failed to load");
+          if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); ytLoadTimeoutRef.current = null; }
+          setYtPlayerLoading(false);
+          setYtPlayerError({ message: "Couldn't load YouTube player. Disable ad blocker for this site or open the video on YouTube." });
+        };
         document.head.appendChild(tag);
         console.log("[YT] Added YT API script tag");
       }
@@ -2206,12 +2261,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setYtCurrentTime(0);
       setYtDuration(0);
     };
-    // CRITICAL: Only re-create the player when the video ID itself changes.
+    // CRITICAL: Only re-create the player when the video ID itself changes,
+    // OR when the user explicitly hits Retry (ytRetryNonce bumps).
     // Toggling showYoutube (panel open/close, avatar focus, etc.) must NOT destroy the player —
     // the persistent fixed-position wrapper handles visibility via CSS, and rebuilding the player
     // restarts buffering and causes severe lag.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeYoutubeId]);
+  }, [activeYoutubeId, ytRetryNonce]);
+
+  // User-facing retry: switch host on second attempt to dodge ad-blockers, then rebuild.
+  const handleRetryYoutube = () => {
+    ytHostFallbackRef.current = !ytHostFallbackRef.current;
+    setYtPlayerError(null);
+    setYtRetryNonce((n) => n + 1);
+  };
 
   // Poll current playback time every second — but ONLY for the broadcaster (the only one who
   // sees the seek bar). Watchers don't need state updates that re-render the whole room.
@@ -8069,11 +8132,42 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 style={{ opacity: ytPlayerReady ? 1 : 0 }}
                 data-testid="iframe-youtube-player"
               />
-              {ytPlayerLoading && !ytPlayerReady && !showAsHidden && (
+              {ytPlayerLoading && !ytPlayerReady && !ytPlayerError && !showAsHidden && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-black pointer-events-none" data-testid="youtube-loading-overlay">
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     <span className="text-[11px] text-white/70">Loading video…</span>
+                  </div>
+                </div>
+              )}
+              {ytPlayerError && !showAsHidden && (
+                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/95 px-4" data-testid="youtube-error-overlay">
+                  <div className="flex flex-col items-center gap-3 text-center max-w-sm">
+                    <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                      <X className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div className="text-sm text-white/90 leading-snug">{ytPlayerError.message}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        className="px-3 py-1.5 text-[12px] font-semibold bg-blue-500 hover:bg-blue-400 text-white rounded-full transition-colors"
+                        onClick={(e) => { e.stopPropagation(); handleRetryYoutube(); }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        data-testid="button-youtube-retry"
+                      >
+                        Retry
+                      </button>
+                      <a
+                        className="px-3 py-1.5 text-[12px] font-semibold bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+                        href={`https://www.youtube.com/watch?v=${activeYoutubeId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        data-testid="link-youtube-open"
+                      >
+                        Open on YouTube
+                      </a>
+                    </div>
                   </div>
                 </div>
               )}
