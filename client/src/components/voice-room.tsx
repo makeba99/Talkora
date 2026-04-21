@@ -6160,28 +6160,36 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       {/* SVG Face */}
                       {aiTutorSettings.voice === "Male" ? (
                         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="80" height="80">
-                          {/* Hair */}
-                          <ellipse cx="50" cy="33" rx="26" ry="18" fill="#2e3a52"/>
-                          <rect x="24" y="35" width="52" height="8" fill="#2e3a52"/>
-                          {/* Face */}
-                          <ellipse cx="50" cy="60" rx="22" ry="25" fill="#f0ddc8"/>
-                          {/* Eyebrows */}
-                          <path d="M34 47 Q39 44 44 46.5" stroke="#2a2a3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                          <path d="M56 46.5 Q61 44 66 47" stroke="#2a2a3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                          {/* Eyes */}
-                          <ellipse cx="40" cy="55" rx="5.5" ry="5.5" fill="#1a7aee"/>
-                          <ellipse cx="60" cy="55" rx="5.5" ry="5.5" fill="#1a7aee"/>
-                          <path d="M34.5 52 Q40 48.5 45.5 52" stroke="#111122" strokeWidth="1.8" fill="none"/>
-                          <path d="M54.5 52 Q60 48.5 65.5 52" stroke="#111122" strokeWidth="1.8" fill="none"/>
-                          <circle cx="40" cy="56" r="3" fill="#082050"/>
-                          <circle cx="60" cy="56" r="3" fill="#082050"/>
-                          <circle cx="42" cy="53" r="1.5" fill="white"/>
-                          <circle cx="62" cy="53" r="1.5" fill="white"/>
+                          {/* Short dark hair */}
+                          <ellipse cx="50" cy="30" rx="28" ry="20" fill="#221a12"/>
+                          <rect x="22" y="32" width="56" height="10" fill="#221a12"/>
+                          <rect x="22" y="38" width="10" height="16" rx="4" fill="#1a1410"/>
+                          <rect x="68" y="38" width="10" height="16" rx="4" fill="#1a1410"/>
+                          {/* Face - warmer, square-ish */}
+                          <ellipse cx="50" cy="62" rx="21" ry="25" fill="#e8c0a0"/>
+                          {/* Square jaw hint */}
+                          <path d="M31 72 Q33 84 50 88 Q67 84 69 72 Q60 80 50 80 Q40 80 31 72 Z" fill="#d8a882"/>
+                          {/* Jaw shadow / stubble */}
+                          <ellipse cx="50" cy="78" rx="18" ry="9" fill="rgba(80,50,25,0.18)"/>
+                          {/* Eyebrows — thick, flat, masculine */}
+                          <path d="M33 46 Q39 43 45 44.5" stroke="#1a1008" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+                          <path d="M55 44.5 Q61 43 67 46" stroke="#1a1008" strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+                          {/* Eyes — steely blue, slightly smaller */}
+                          <ellipse cx="40" cy="54" rx="5" ry="4.5" fill="white"/>
+                          <ellipse cx="40" cy="54" rx="4" ry="4" fill="#3a6080"/>
+                          <circle cx="40" cy="54" r="2.4" fill="#0c1c28"/>
+                          <circle cx="42" cy="52" r="1.3" fill="white" opacity="0.85"/>
+                          <path d="M35 51 Q40 47.5 45 51" stroke="#0e0c08" strokeWidth="1.9" fill="none" strokeLinecap="round"/>
+                          <ellipse cx="60" cy="54" rx="5" ry="4.5" fill="white"/>
+                          <ellipse cx="60" cy="54" rx="4" ry="4" fill="#3a6080"/>
+                          <circle cx="60" cy="54" r="2.4" fill="#0c1c28"/>
+                          <circle cx="62" cy="52" r="1.3" fill="white" opacity="0.85"/>
+                          <path d="M55 51 Q60 47.5 65 51" stroke="#0e0c08" strokeWidth="1.9" fill="none" strokeLinecap="round"/>
                           {/* Nose */}
-                          <path d="M47 65 Q50 70 53 65" stroke="#c49a80" strokeWidth="1" fill="none" opacity="0.7"/>
-                          {/* Mouth */}
-                          <path d="M45 75 Q50 79 55 75" stroke="#b47060" strokeWidth="1.3" fill="none"/>
-                          {/* Headphones */}
+                          <path d="M47 64 Q50 69 53 64" stroke="#b88060" strokeWidth="1.2" fill="none" opacity="0.7"/>
+                          {/* Mouth — thinner, neutral */}
+                          <path d="M44 74 Q50 77 56 74" stroke="#a86850" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+                          {/* Headphones — teal */}
                           <path d="M27 52 Q27 30 50 29 Q73 30 73 52" fill="none" stroke="#10a0b8" strokeWidth="4" strokeLinecap="round"/>
                           <rect x="22" y="48" width="10" height="12" rx="4" fill="#0a7888"/>
                           <rect x="68" y="48" width="10" height="12" rx="4" fill="#0a7888"/>
@@ -6190,37 +6198,49 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         </svg>
                       ) : (
                         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="80" height="80">
-                          {/* Hair long silver */}
-                          <ellipse cx="50" cy="34" rx="26" ry="20" fill="#c8d0e4"/>
-                          <path d="M25 50 Q21 72 27 88" stroke="#c8d0e4" strokeWidth="8" fill="none" strokeLinecap="round"/>
-                          <path d="M75 50 Q79 72 73 88" stroke="#c8d0e4" strokeWidth="8" fill="none" strokeLinecap="round"/>
-                          {/* Face */}
-                          <ellipse cx="50" cy="60" rx="22" ry="26" fill="#f8e8d8"/>
-                          {/* Eyebrows */}
-                          <path d="M35 47 Q40 44.5 44.5 46.5" stroke="#8090a8" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                          <path d="M55.5 46.5 Q60 44.5 65 47" stroke="#8090a8" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                          {/* Eyes anime large */}
-                          <ellipse cx="40" cy="55" rx="5.5" ry="6.5" fill="#2070ee"/>
-                          <ellipse cx="60" cy="55" rx="5.5" ry="6.5" fill="#2070ee"/>
-                          <path d="M34.5 51.5 Q40 48 45.5 51.5" stroke="#111122" strokeWidth="1.6" fill="none"/>
-                          <path d="M54.5 51.5 Q60 48 65.5 51.5" stroke="#111122" strokeWidth="1.6" fill="none"/>
-                          <circle cx="40" cy="56" r="3.2" fill="#0a2870"/>
-                          <circle cx="60" cy="56" r="3.2" fill="#0a2870"/>
-                          <circle cx="42" cy="52.5" r="1.8" fill="white"/>
-                          <circle cx="62" cy="52.5" r="1.8" fill="white"/>
+                          {/* Long silver hair back */}
+                          <ellipse cx="50" cy="32" rx="28" ry="22" fill="#c8d0e4"/>
+                          <path d="M24 48 Q20 70 26 90" stroke="#c8d0e4" strokeWidth="9" fill="none" strokeLinecap="round"/>
+                          <path d="M76 48 Q80 70 74 90" stroke="#c8d0e4" strokeWidth="9" fill="none" strokeLinecap="round"/>
+                          {/* Hair shine */}
+                          <path d="M38 28 Q44 22 52 22" stroke="#eef4ff" strokeWidth="1.5" fill="none" opacity="0.6"/>
+                          {/* Face — oval, light, feminine */}
+                          <ellipse cx="50" cy="60" rx="21" ry="26" fill="#f8e0d0"/>
+                          {/* Soft chin */}
+                          <ellipse cx="50" cy="82" rx="14" ry="6" fill="#f8e0d0"/>
+                          {/* Bangs */}
+                          <path d="M23 48 Q26 24 50 20 Q74 24 77 48 Q64 34 50 33 Q36 34 23 48 Z" fill="#c8d0e4" opacity="0.9"/>
+                          {/* Eyebrows — thin, arched */}
+                          <path d="M34 46 Q40 43 45.5 44.5" stroke="#7888a8" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+                          <path d="M54.5 44.5 Q60 43 66 46" stroke="#7888a8" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+                          {/* Eyes — large, blue */}
+                          <ellipse cx="40" cy="54.5" rx="6" ry="6" fill="white"/>
+                          <ellipse cx="40" cy="54.5" rx="5" ry="5" fill="#2568da"/>
+                          <circle cx="40" cy="54.5" r="2.8" fill="#0a1e60"/>
+                          <circle cx="42.5" cy="52" r="1.7" fill="white" opacity="0.9"/>
+                          <path d="M34 51 Q40 47 46 51" stroke="#0e0c12" strokeWidth="1.7" fill="none" strokeLinecap="round"/>
+                          <path d="M34 51 L33 48.5" stroke="#0e0c12" strokeWidth="0.9" fill="none" strokeLinecap="round"/>
+                          <path d="M46 51 L47 48.5" stroke="#0e0c12" strokeWidth="0.9" fill="none" strokeLinecap="round"/>
+                          <ellipse cx="60" cy="54.5" rx="6" ry="6" fill="white"/>
+                          <ellipse cx="60" cy="54.5" rx="5" ry="5" fill="#2568da"/>
+                          <circle cx="60" cy="54.5" r="2.8" fill="#0a1e60"/>
+                          <circle cx="62.5" cy="52" r="1.7" fill="white" opacity="0.9"/>
+                          <path d="M54 51 Q60 47 66 51" stroke="#0e0c12" strokeWidth="1.7" fill="none" strokeLinecap="round"/>
+                          <path d="M54 51 L53 48.5" stroke="#0e0c12" strokeWidth="0.9" fill="none" strokeLinecap="round"/>
+                          <path d="M66 51 L67 48.5" stroke="#0e0c12" strokeWidth="0.9" fill="none" strokeLinecap="round"/>
                           {/* Blush */}
-                          <ellipse cx="31" cy="64" rx="5" ry="2.5" fill="#ff9090" opacity="0.38"/>
-                          <ellipse cx="69" cy="64" rx="5" ry="2.5" fill="#ff9090" opacity="0.38"/>
+                          <ellipse cx="31" cy="63" rx="6" ry="3" fill="#ff8080" opacity="0.28"/>
+                          <ellipse cx="69" cy="63" rx="6" ry="3" fill="#ff8080" opacity="0.28"/>
                           {/* Nose hint */}
-                          <path d="M47 67 Q50 71 53 67" stroke="#d4a090" strokeWidth="0.8" fill="none" opacity="0.5"/>
-                          {/* Mouth */}
-                          <path d="M44 76 Q50 81 56 76" stroke="#c47070" strokeWidth="1.3" fill="none"/>
-                          {/* Headphones */}
-                          <path d="M27 51 Q27 30 50 29 Q73 30 73 51" fill="none" stroke="#4060cc" strokeWidth="4" strokeLinecap="round"/>
-                          <rect x="22" y="47" width="10" height="12" rx="4" fill="#3050aa"/>
-                          <rect x="68" y="47" width="10" height="12" rx="4" fill="#3050aa"/>
-                          <rect x="24" y="49" width="6" height="8" rx="2" fill="#7090ff"/>
-                          <rect x="70" y="49" width="6" height="8" rx="2" fill="#7090ff"/>
+                          <path d="M47 66 Q50 70.5 53 66" stroke="#c89878" strokeWidth="0.9" fill="none" opacity="0.55"/>
+                          {/* Mouth — full lips, pink */}
+                          <path d="M43 75 Q50 80 57 75" stroke="#c06870" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+                          {/* Headphones — purple/blue */}
+                          <path d="M27 51 Q27 30 50 29 Q73 30 73 51" fill="none" stroke="#5060cc" strokeWidth="4" strokeLinecap="round"/>
+                          <rect x="22" y="47" width="10" height="12" rx="4" fill="#3848a8"/>
+                          <rect x="68" y="47" width="10" height="12" rx="4" fill="#3848a8"/>
+                          <rect x="24" y="49" width="6" height="8" rx="2" fill="#7088ff"/>
+                          <rect x="70" y="49" width="6" height="8" rx="2" fill="#7088ff"/>
                         </svg>
                       )}
                     </div>
@@ -6448,100 +6468,145 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     {/* Face container — photo-based realistic avatar */}
                     <div className="absolute inset-0 rounded-full overflow-hidden">
 
-                      {/* Realistic portrait photo */}
-                      <img
-                        src={aiTutorFaceStyle === "Male" ? maleAvatarImg : femaleAvatarImg}
-                        alt="AI Tutor"
-                        draggable={false}
-                        className={`absolute inset-0 w-full h-full object-cover select-none pointer-events-none
-                          ${aiTutorDisplaySpeaking ? "ai-photo-speaking" : aiTutorDisplayListening ? "ai-photo-listening" : "ai-photo-neutral"}`}
-                        style={{ filter: aiTutorDisplaySpeaking ? "brightness(1.06) saturate(1.08)" : "brightness(0.94) saturate(0.96)" }}
-                      />
-
-                      {/* Vignette — blends photo edges into the dark holographic ring */}
-                      <div className="absolute inset-0 pointer-events-none" style={{
-                        background: "radial-gradient(ellipse at 50% 44%, transparent 35%, rgba(0,4,18,0.58) 66%, rgba(0,2,10,0.96) 100%)"
-                      }} />
-
-                      {/* Sci-fi cyan tint layer */}
-                      <div className="absolute inset-0 pointer-events-none" style={{
-                        background: "linear-gradient(175deg, rgba(0,160,255,0.05) 0%, transparent 45%, rgba(0,80,210,0.11) 80%, rgba(0,40,160,0.22) 100%)",
-                        mixBlendMode: "screen",
-                      }} />
-
-                      {/* Holographic scan-line overlay */}
-                      <div className="absolute inset-0 pointer-events-none" style={{
-                        background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,225,255,0.010) 3px, rgba(0,225,255,0.010) 4px)",
-                        mixBlendMode: "screen",
-                      }} />
-
-                      {/* Eye blink overlays — skin-toned lids that animate shut every ~4s */}
-                      <div className="absolute pointer-events-none ai-photo-blink-left" style={{
-                        left: "24%",
-                        top: aiTutorFaceStyle === "Male" ? "34%" : "30%",
-                        width: "22%", height: "7%",
-                        background: aiTutorFaceStyle === "Male"
-                          ? "linear-gradient(to bottom, #b07a60 55%, rgba(150,90,68,0.15) 100%)"
-                          : "linear-gradient(to bottom, #c8906e 55%, rgba(185,118,90,0.15) 100%)",
-                        borderRadius: "50%",
-                        transformOrigin: "50% 0%",
-                      }} />
-                      <div className="absolute pointer-events-none ai-photo-blink-right" style={{
-                        left: "54%",
-                        top: aiTutorFaceStyle === "Male" ? "34%" : "30%",
-                        width: "22%", height: "7%",
-                        background: aiTutorFaceStyle === "Male"
-                          ? "linear-gradient(to bottom, #b07a60 55%, rgba(150,90,68,0.15) 100%)"
-                          : "linear-gradient(to bottom, #c8906e 55%, rgba(185,118,90,0.15) 100%)",
-                        borderRadius: "50%",
-                        transformOrigin: "50% 0%",
-                      }} />
-
-                      {/* Mouth base plate — covers the photo's static lips so the animated mouth blends naturally */}
-                      <div className="absolute pointer-events-none" style={{
-                        left: "25%",
-                        top: aiTutorFaceStyle === "Male" ? "62%" : "59%",
-                        width: "50%", height: "10%",
-                        background: aiTutorFaceStyle === "Male"
-                          ? "radial-gradient(ellipse, rgba(168,100,76,0.82) 0%, rgba(148,86,64,0.50) 55%, transparent 100%)"
-                          : "radial-gradient(ellipse, rgba(195,130,106,0.78) 0%, rgba(170,108,86,0.45) 55%, transparent 100%)",
-                        borderRadius: "50%",
-                      }} />
-
-                      {/* ── Viseme-driven animated mouth overlay ── */}
+                      {/* ── Gender-distinct SVG face with integrated lip-sync mouth ── */}
                       {(() => {
                         const visemeKey = aiTutorDisplaySpeaking ? currentViseme : "rest";
-                        const shape = MOUTH_SHAPES[visemeKey];
-                        return (
-                          <svg
-                            viewBox="0 0 60 28"
-                            style={{
-                              position: "absolute",
-                              left: "50%",
-                              top: aiTutorFaceStyle === "Male" ? "65.5%" : "62.5%",
-                              width: "46%",
-                              height: "auto",
-                              transform: "translate(-50%, -50%)",
-                              pointerEvents: "none",
-                              filter: aiTutorDisplaySpeaking
-                                ? "drop-shadow(0 0 3px rgba(120,40,55,0.35))"
-                                : "drop-shadow(0 1px 1px rgba(0,0,0,0.28))",
-                              overflow: "visible",
-                              transition: "filter 0.15s ease",
-                            }}
-                          >
-                            <ellipse cx="30" cy={shape.innerCy} rx={shape.innerRx} ry={shape.innerRy}
-                              fill={shape.innerFill}
-                              style={{ transition: "cx 0.08s ease, cy 0.08s ease, rx 0.08s ease, ry 0.08s ease" }}
-                            />
-                            <path d={shape.upperLip} fill={shape.upperFill}
-                              stroke="rgba(105,36,48,0.28)" strokeWidth="0.45"
-                              style={{ transition: "d 0.09s ease" }}
-                            />
-                            <path d={shape.lowerLip} fill={shape.lowerFill}
-                              stroke="rgba(105,36,48,0.20)" strokeWidth="0.45"
-                              style={{ transition: "d 0.09s ease" }}
-                            />
+                        const ms = MOUTH_SHAPES[visemeKey];
+                        const isMale = aiTutorFaceStyle === "Male";
+                        return isMale ? (
+                          <svg viewBox="0 0 200 220" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+                            <defs>
+                              <radialGradient id="mBg" cx="50%" cy="45%" r="60%">
+                                <stop offset="0%" stopColor="#061020"/>
+                                <stop offset="100%" stopColor="#020610"/>
+                              </radialGradient>
+                              <radialGradient id="mSkin" cx="46%" cy="36%" r="70%">
+                                <stop offset="0%" stopColor="#f2d0b0"/>
+                                <stop offset="55%" stopColor="#d8a882"/>
+                                <stop offset="100%" stopColor="#a86848"/>
+                              </radialGradient>
+                              <radialGradient id="mHair" cx="50%" cy="18%" r="55%">
+                                <stop offset="0%" stopColor="#4a3828"/>
+                                <stop offset="50%" stopColor="#221a14"/>
+                                <stop offset="100%" stopColor="#0c0906"/>
+                              </radialGradient>
+                            </defs>
+                            <rect width="200" height="220" fill="url(#mBg)"/>
+                            <rect x="84" y="178" width="32" height="42" rx="6" fill="#c89870"/>
+                            <path d="M 55 220 L 60 188 Q 100 202 140 188 L 145 220 Z" fill="#0d1a2e"/>
+                            <path d="M 88 220 L 92 200 L 100 210 L 108 200 L 112 220 Z" fill="#1a2840"/>
+                            <ellipse cx="100" cy="74" rx="62" ry="50" fill="url(#mHair)"/>
+                            <rect x="38" y="82" width="12" height="34" rx="5" fill="#221a14"/>
+                            <rect x="150" y="82" width="12" height="34" rx="5" fill="#221a14"/>
+                            <path d="M 55 70 Q 68 58 80 62" stroke="#3a2e22" strokeWidth="1.2" fill="none" opacity="0.5"/>
+                            <path d="M 145 70 Q 132 58 120 62" stroke="#3a2e22" strokeWidth="1.2" fill="none" opacity="0.5"/>
+                            <ellipse cx="100" cy="120" rx="57" ry="72" fill="url(#mSkin)"/>
+                            <path d="M 50 145 Q 52 180 100 190 Q 148 180 150 145 Q 128 165 100 168 Q 72 165 50 145 Z" fill="url(#mSkin)"/>
+                            <ellipse cx="57" cy="126" rx="18" ry="40" fill="rgba(0,0,0,0.10)" opacity="0.85"/>
+                            <ellipse cx="143" cy="126" rx="18" ry="40" fill="rgba(0,0,0,0.10)" opacity="0.85"/>
+                            <ellipse cx="100" cy="160" rx="44" ry="22" fill="rgba(70,45,25,0.20)"/>
+                            <path d="M 66 92 Q 78 87 91 89.5" stroke="#241a12" strokeWidth="4" fill="none" strokeLinecap="round"/>
+                            <path d="M 109 89.5 Q 122 87 134 92" stroke="#241a12" strokeWidth="4" fill="none" strokeLinecap="round"/>
+                            <ellipse cx="79" cy="103" rx="11" ry="9.5" fill="white"/>
+                            <ellipse cx="79" cy="103" rx="9" ry="8.5" fill="#3d607c"/>
+                            <ellipse cx="79" cy="103" rx="5.2" ry="5.2" fill="#0d1e2c"/>
+                            <circle cx="82" cy="100" r="1.9" fill="white" opacity="0.85"/>
+                            <circle cx="76" cy="106" r="0.7" fill="white" opacity="0.4"/>
+                            <path d="M 68 99 Q 79 94 90 99" stroke="#0e0c08" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+                            <ellipse cx="121" cy="103" rx="11" ry="9.5" fill="white"/>
+                            <ellipse cx="121" cy="103" rx="9" ry="8.5" fill="#3d607c"/>
+                            <ellipse cx="121" cy="103" rx="5.2" ry="5.2" fill="#0d1e2c"/>
+                            <circle cx="124" cy="100" r="1.9" fill="white" opacity="0.85"/>
+                            <circle cx="118" cy="106" r="0.7" fill="white" opacity="0.4"/>
+                            <path d="M 110 99 Q 121 94 132 99" stroke="#0e0c08" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+                            <ellipse className="ai-avatar-blink" cx="79" cy="103" rx="11" ry="9.5" fill="#d8a882"/>
+                            <ellipse className="ai-avatar-blink" cx="121" cy="103" rx="11" ry="9.5" fill="#d8a882" style={{ animationDelay: "0.06s" }}/>
+                            <path d="M 95 124 Q 100 137 105 124" stroke="#b88060" strokeWidth="1.6" fill="none" opacity="0.75"/>
+                            <ellipse cx="95.5" cy="134.5" rx="4" ry="2.2" fill="rgba(130,80,50,0.28)"/>
+                            <ellipse cx="104.5" cy="134.5" rx="4" ry="2.2" fill="rgba(130,80,50,0.28)"/>
+                            <g transform="translate(75, 142) scale(0.833, 0.714)">
+                              <ellipse cx="30" cy={ms.innerCy} rx={ms.innerRx} ry={ms.innerRy} fill={ms.innerFill}/>
+                              <path d={ms.upperLip} fill="rgba(180,90,75,0.74)" stroke="rgba(100,40,30,0.2)" strokeWidth="0.5"/>
+                              <path d={ms.lowerLip} fill="rgba(168,82,68,0.66)" stroke="rgba(100,40,30,0.15)" strokeWidth="0.5"/>
+                            </g>
+                            <path d="M 30 105 Q 30 58 100 54 Q 170 58 170 105" fill="none" stroke="#10a0b8" strokeWidth="5.5" strokeLinecap="round"/>
+                            <rect x="24" y="100" width="14" height="18" rx="5" fill="#0a7888"/>
+                            <rect x="26" y="102" width="10" height="14" rx="3" fill="#20d0e8"/>
+                            <rect x="162" y="100" width="14" height="18" rx="5" fill="#0a7888"/>
+                            <rect x="164" y="102" width="10" height="14" rx="3" fill="#20d0e8"/>
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 200 220" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+                            <defs>
+                              <radialGradient id="fBg" cx="50%" cy="45%" r="60%">
+                                <stop offset="0%" stopColor="#18083a"/>
+                                <stop offset="100%" stopColor="#050212"/>
+                              </radialGradient>
+                              <radialGradient id="fSkin" cx="46%" cy="36%" r="68%">
+                                <stop offset="0%" stopColor="#fce0c8"/>
+                                <stop offset="55%" stopColor="#edbe9a"/>
+                                <stop offset="100%" stopColor="#c8906a"/>
+                              </radialGradient>
+                              <radialGradient id="fHair" cx="50%" cy="20%" r="60%">
+                                <stop offset="0%" stopColor="#eef4ff"/>
+                                <stop offset="50%" stopColor="#b8c8e8"/>
+                                <stop offset="100%" stopColor="#6878a8"/>
+                              </radialGradient>
+                            </defs>
+                            <rect width="200" height="220" fill="url(#fBg)"/>
+                            <rect x="83" y="177" width="34" height="43" rx="8" fill="#edbe9a"/>
+                            <path d="M 55 220 L 62 188 Q 100 204 138 188 L 145 220 Z" fill="#1e1248"/>
+                            <path d="M 88 220 L 94 202 L 100 212 L 106 202 L 112 220 Z" fill="#2a1a60"/>
+                            <ellipse cx="100" cy="80" rx="66" ry="58" fill="url(#fHair)" opacity="0.95"/>
+                            <path d="M 36 105 Q 22 152 28 215 L 46 215 Q 40 158 50 108 Z" fill="#b8c8e8"/>
+                            <path d="M 164 105 Q 178 152 172 215 L 154 215 Q 160 158 150 108 Z" fill="#b8c8e8"/>
+                            <path d="M 42 105 Q 30 155 34 210" stroke="#e0ecff" strokeWidth="2" fill="none" opacity="0.5"/>
+                            <path d="M 158 105 Q 170 155 166 210" stroke="#e0ecff" strokeWidth="2" fill="none" opacity="0.5"/>
+                            <ellipse cx="100" cy="115" rx="58" ry="72" fill="url(#fSkin)"/>
+                            <ellipse cx="100" cy="176" rx="36" ry="14" fill="url(#fSkin)"/>
+                            <ellipse cx="55" cy="120" rx="18" ry="42" fill="rgba(0,0,0,0.07)" opacity="0.8"/>
+                            <ellipse cx="145" cy="120" rx="18" ry="42" fill="rgba(0,0,0,0.07)" opacity="0.8"/>
+                            <path d="M 34 100 Q 48 48 100 42 Q 152 48 166 100 Q 150 68 100 66 Q 50 68 34 100 Z" fill="url(#fHair)" opacity="0.92"/>
+                            <path d="M 52 68 Q 62 54 78 56" stroke="#d8e8f8" strokeWidth="1.5" fill="none" opacity="0.55"/>
+                            <path d="M 148 68 Q 138 54 122 56" stroke="#d8e8f8" strokeWidth="1.5" fill="none" opacity="0.55"/>
+                            <path d="M 44 78 Q 52 64 66 66" stroke="#c8daf0" strokeWidth="1" fill="none" opacity="0.4"/>
+                            <path d="M 67 90 Q 80 85 91 87.5" stroke="#7888a8" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                            <path d="M 109 87.5 Q 120 85 133 90" stroke="#7888a8" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                            <ellipse cx="79" cy="100" rx="12" ry="11" fill="white"/>
+                            <ellipse cx="79" cy="100" rx="10" ry="10" fill="#2568da"/>
+                            <ellipse cx="79" cy="100" rx="5.8" ry="5.8" fill="#0a1e60"/>
+                            <circle cx="83" cy="96.5" r="2.4" fill="white" opacity="0.9"/>
+                            <circle cx="76.5" cy="104" r="0.8" fill="white" opacity="0.38"/>
+                            <path d="M 67 96 Q 79 91 91 96" stroke="#0e0c12" strokeWidth="1.9" fill="none" strokeLinecap="round"/>
+                            <path d="M 67 96 L 66 93" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
+                            <path d="M 70 94 L 69.5 91" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
+                            <path d="M 91 96 L 92 93" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
+                            <ellipse cx="121" cy="100" rx="12" ry="11" fill="white"/>
+                            <ellipse cx="121" cy="100" rx="10" ry="10" fill="#2568da"/>
+                            <ellipse cx="121" cy="100" rx="5.8" ry="5.8" fill="#0a1e60"/>
+                            <circle cx="125" cy="96.5" r="2.4" fill="white" opacity="0.9"/>
+                            <circle cx="118.5" cy="104" r="0.8" fill="white" opacity="0.38"/>
+                            <path d="M 109 96 Q 121 91 133 96" stroke="#0e0c12" strokeWidth="1.9" fill="none" strokeLinecap="round"/>
+                            <path d="M 109 96 L 108 93" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
+                            <path d="M 133 96 L 134 93" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
+                            <path d="M 130 94.5 L 130.5 91.5" stroke="#0e0c12" strokeWidth="1" fill="none" strokeLinecap="round"/>
+                            <ellipse className="ai-avatar-blink" cx="79" cy="100" rx="12" ry="11" fill="#edbe9a"/>
+                            <ellipse className="ai-avatar-blink" cx="121" cy="100" rx="12" ry="11" fill="#edbe9a" style={{ animationDelay: "0.06s" }}/>
+                            <ellipse cx="60" cy="118" rx="15" ry="7" fill="#ff8888" opacity="0.22"/>
+                            <ellipse cx="140" cy="118" rx="15" ry="7" fill="#ff8888" opacity="0.22"/>
+                            <path d="M 96 120 Q 100 132 104 120" stroke="#c89878" strokeWidth="1.1" fill="none" opacity="0.65"/>
+                            <ellipse cx="96.5" cy="130.5" rx="3.5" ry="2" fill="rgba(150,100,75,0.22)"/>
+                            <ellipse cx="103.5" cy="130.5" rx="3.5" ry="2" fill="rgba(150,100,75,0.22)"/>
+                            <g transform="translate(75, 139) scale(0.833, 0.714)">
+                              <ellipse cx="30" cy={ms.innerCy} rx={ms.innerRx} ry={ms.innerRy} fill={ms.innerFill}/>
+                              <path d={ms.upperLip} fill={ms.upperFill} stroke="rgba(105,36,48,0.2)" strokeWidth="0.5"/>
+                              <path d={ms.lowerLip} fill={ms.lowerFill} stroke="rgba(105,36,48,0.15)" strokeWidth="0.5"/>
+                            </g>
+                            <path d="M 30 102 Q 30 56 100 52 Q 170 56 170 102" fill="none" stroke="#5060cc" strokeWidth="5.5" strokeLinecap="round"/>
+                            <rect x="24" y="97" width="14" height="18" rx="5" fill="#3848a8"/>
+                            <rect x="26" y="99" width="10" height="14" rx="3" fill="#7088ff"/>
+                            <rect x="162" y="97" width="14" height="18" rx="5" fill="#3848a8"/>
+                            <rect x="164" y="99" width="10" height="14" rx="3" fill="#7088ff"/>
                           </svg>
                         );
                       })()}
