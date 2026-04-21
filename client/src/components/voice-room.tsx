@@ -1911,12 +1911,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     setYtPlayerLoading(true);
     setYtPlayerReady(false);
 
-    // Network-aware initial quality + autoplay decision
+    // Network-aware autoplay + quality strategy:
+    // - Fast networks (4g / unknown / wifi-class): NO quality cap → let YT auto-pick HD for the smoothest experience.
+    // - Slow networks (3g / 2g / save-data): cap to 240p so playback starts instantly.
     const conn: any = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
     const effType: string = conn?.effectiveType || "4g";
     const saveData: boolean = !!conn?.saveData;
-    const isSlowNet = saveData || effType === "slow-2g" || effType === "2g" || effType === "3g";
-    const initialQuality = isSlowNet ? "small" : "large"; // 480p on fast, 240p on slow
+    const downlink: number = typeof conn?.downlink === "number" ? conn.downlink : 10;
+    const isSlowNet = saveData || effType === "slow-2g" || effType === "2g" || effType === "3g" || downlink < 1.5;
+    const initialQuality: string | null = isSlowNet ? "small" : null; // null = let YT auto-pick
 
     const buildStateChangeHandler = (player: any, YT: any) => (event: any) => {
       const state = event.data;
@@ -2034,8 +2037,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             onReady: (event: any) => {
               console.log("[YT] onReady fired — quality:", initialQuality, "slowNet:", isSlowNet);
               try {
-                // Apply network-aware quality cap immediately so playback starts at a stable level
-                try { event.target.setPlaybackQuality?.(initialQuality); } catch (_) {}
+                // Apply network-aware quality cap only on slow networks; on fast networks let YT auto-pick HD
+                if (initialQuality) {
+                  try { event.target.setPlaybackQuality?.(initialQuality); } catch (_) {}
+                }
                 if (ytSyncTimeRef.current > 0) {
                   event.target.seekTo(ytSyncTimeRef.current, true);
                   ytSyncTimeRef.current = 0;
@@ -2110,11 +2115,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setYtCurrentTime(0);
       setYtDuration(0);
     };
-  }, [activeYoutubeId, showYoutube]);
+    // CRITICAL: Only re-create the player when the video ID itself changes.
+    // Toggling showYoutube (panel open/close, avatar focus, etc.) must NOT destroy the player —
+    // the persistent fixed-position wrapper handles visibility via CSS, and rebuilding the player
+    // restarts buffering and causes severe lag.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeYoutubeId]);
 
-  // Poll current playback time every second while playing (for host seek bar)
+  // Poll current playback time every second — but ONLY for the broadcaster (the only one who
+  // sees the seek bar). Watchers don't need state updates that re-render the whole room.
   useEffect(() => {
     if (!ytIsPlaying || !showYoutube) return;
+    const isBroadcaster = user?.id === youtubeStartedBy;
+    if (!isBroadcaster) return;
     const id = setInterval(() => {
       try {
         const t = youtubePlayerRef.current?.getCurrentTime?.() || 0;
@@ -2124,7 +2137,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       } catch (_) {}
     }, 1000);
     return () => clearInterval(id);
-  }, [ytIsPlaying, showYoutube]);
+  }, [ytIsPlaying, showYoutube, user?.id, youtubeStartedBy]);
 
   useEffect(() => {
     if (!socket || !activeYoutubeId) return;
