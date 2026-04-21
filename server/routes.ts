@@ -3134,6 +3134,20 @@ export async function registerRoutes(
       });
     });
 
+    // Host-only force stop of someone else's screen share. Server checks the requester
+    // is the room owner before relaying the stop request to the target user's socket.
+    socket.on("room:screen-share-force-stop", async (data: { roomId: string; targetUserId: string }) => {
+      if (!currentUserId) return;
+      try {
+        const room = await storage.getRoom(data.roomId);
+        if (!room || room.ownerId !== currentUserId) return;
+      } catch (_) { return; }
+      const targetSocketId = userSockets.get(data.targetUserId);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("room:screen-share-force-stop", { byUserId: currentUserId });
+      }
+    });
+
     socket.on("room:screen-share", (data: { roomId: string; userId: string; active: boolean }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);

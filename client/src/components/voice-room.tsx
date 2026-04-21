@@ -1576,6 +1576,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       });
     });
 
+    // Host has force-stopped my screen share — stop it immediately and let everyone know.
+    socket.on("room:screen-share-force-stop", () => {
+      if (screenStream.current) {
+        try { stopMyScreenShare(); } catch (_) {}
+        toast({ title: "Screen sharing stopped", description: "The room host stopped your screen share." });
+      }
+    });
+
     socket.on("room:screen-watchers-update", (data: { userId: string; watching: boolean; sharerId: string }) => {
       setScreenWatchers(prev => {
         const next = new Set(prev);
@@ -1737,6 +1745,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("room:youtube-watchers-update");
       socket.off("room:book-watchers-update");
       socket.off("room:screen-share");
+      socket.off("room:screen-share-force-stop");
+      socket.off("room:screen-watchers-update");
       socket.off("room:video-status");
       socket.off("room:youtube-state");
       socket.off("room:roles");
@@ -2654,13 +2664,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
   };
 
+  const stopMyScreenShare = async () => {
+    await removeScreenTracksFromPeers();
+    screenStream.current?.getTracks().forEach((t) => t.stop());
+    screenStream.current = null;
+    setIsScreenSharing(false);
+    socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
+  };
+
   const handleScreenShare = async () => {
     if (isScreenSharing) {
-      await removeScreenTracksFromPeers();
-      screenStream.current?.getTracks().forEach((t) => t.stop());
-      screenStream.current = null;
-      setIsScreenSharing(false);
-      socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
+      await stopMyScreenShare();
       return;
     }
     try {
@@ -6042,10 +6056,26 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 playsInline
                 className="w-full h-full object-contain"
               />
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/15 rounded-full px-3 py-1 shadow-lg z-10">
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0" />
-                <Monitor className="w-3 h-3 text-blue-400 flex-shrink-0" />
-                <span className="text-white text-xs">{getUserDisplayName(participants.find(p => p.id === remoteScreenShareUserId))} is sharing screen</span>
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+                <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/15 rounded-full px-3 py-1 shadow-lg">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0" />
+                  <Monitor className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                  <span className="text-white text-xs">{getUserDisplayName(participants.find(p => p.id === remoteScreenShareUserId))} is sharing screen</span>
+                </div>
+                {isHost && remoteScreenShareUserId && (
+                  <button
+                    onClick={() => {
+                      socket?.emit("room:screen-share-force-stop", { roomId: room.id, targetUserId: remoteScreenShareUserId });
+                      toast({ title: "Stopping share", description: "Asked the participant to stop sharing." });
+                    }}
+                    className="flex items-center gap-1.5 bg-red-600/90 hover:bg-red-500 text-white text-[11px] font-semibold px-3 py-1 rounded-full shadow-lg border border-red-300/30 transition-colors"
+                    title="Stop sharing for everyone (host)"
+                    data-testid="button-host-force-stop-screen"
+                  >
+                    <StopCircle className="w-3 h-3" />
+                    Stop Sharing
+                  </button>
+                )}
               </div>
               {(() => {
                 const sharer = participants.find(p => p.id === remoteScreenShareUserId);
