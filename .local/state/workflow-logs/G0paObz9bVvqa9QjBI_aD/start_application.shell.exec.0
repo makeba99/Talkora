@@ -1,0 +1,87 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[cleanup] 2026-04-21T01:37:49.746Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-04-21T01:37:49.747Z Retention: messages=90d, room_messages=30d, notifications=60d, reports=180d, orphan_files=7d
+[cleanup] 2026-04-21T01:37:49.747Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 1 empty rooms for deletion
+[cleanup] 2026-04-21T01:37:49.789Z Cleanup complete.
+1:37:50 AM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+[BABEL] Note: The code generator has deoptimised the styling of /home/runner/workspace/client/src/components/voice-room.tsx as it exceeds the max of 500KB.
+1:38:05 AM [express] GET /api/auth/user 401 in 2ms
+1:38:05 AM [express] GET /api/rooms/participants 200 in 1ms
+1:38:05 AM [express] GET /api/rooms 200 in 23ms
+1:38:05 AM [express] GET /api/announcements 200 in 19ms
+1:38:05 AM [express] POST /api/rooms/votes/batch 200 in 7ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 9ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 11ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 12ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 7ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 8ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 3ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 3ms
+1:38:06 AM [express] POST /api/rooms/votes/batch 200 in 4ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 36ms
+1:38:06 AM [express] POST /api/users/badges/batch 200 in 31ms
+1:38:14 AM [express] GET /api/auth/user 200 in 6ms
+1:38:15 AM [express] GET /api/users/rooms 200 in 7ms
+1:38:15 AM [express] GET /api/users 304 in 20ms
+1:38:15 AM [express] GET /api/follows/followers/57984278 304 in 20ms
+1:38:15 AM [express] GET /api/follows/following/57984278 304 in 25ms
+1:38:15 AM [express] GET /api/messages/conversations 304 in 19ms
+1:38:15 AM [express] GET /api/messages/unread/count 304 in 21ms
+1:38:15 AM [express] GET /api/notifications 304 in 7ms
+1:38:15 AM [express] GET /api/rooms 304 in 8ms
+1:38:15 AM [express] GET /api/rooms/participants 200 in 5ms
+1:38:15 AM [express] GET /api/announcements 304 in 9ms
+1:38:15 AM [express] POST /api/rooms/votes/batch 200 in 10ms
+1:38:15 AM [express] POST /api/follows/counts 200 in 5ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 6ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 7ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 7ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 9ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 7ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 7ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 5ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 7ms
+1:38:16 AM [express] POST /api/rooms/votes/batch 200 in 8ms
+1:38:16 AM [express] POST /api/users/badges/batch 200 in 8ms
+1:38:20 AM [express] POST /api/users/badges/batch 200 in 6ms
+1:38:25 AM [express] POST /api/users/badges/batch 200 in 5ms
+1:38:29 AM [express] POST /api/users/badges/batch 200 in 5ms
+1:38:34 AM [express] POST /api/users/badges/batch 200 in 7ms
+1:38:38 AM [express] POST /api/users/badges/batch 200 in 5ms
+1:38:48 AM [express] POST /api/users/badges/batch 200 in 68ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m1:39:16 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/voice-room.tsx, /src/index.css[22m
+[BABEL] Note: The code generator has deoptimised the styling of /home/runner/workspace/client/src/components/voice-room.tsx as it exceeds the max of 500KB.
+1:39:20 AM [express] GET /api/rooms/participants 304 in 12ms
+1:39:20 AM [express] GET /api/rooms 200 in 15ms
