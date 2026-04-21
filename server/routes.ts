@@ -30,6 +30,21 @@ const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
 // AI Tutor room state: one active session per room
 const roomAiTutorState = new Map<string, { userId: string; username: string; speaking: boolean; avatarId?: string | null; voice?: "Female" | "Male" | null; voiceId?: string | null } | null>();
 const roomAiTutorEnabled = new Map<string, boolean>(); // host can disable
+// Chess: one active built-in match per room
+type ChessSeat = { userId: string; username: string; avatar?: string | null } | null;
+const roomChessState = new Map<string, {
+  fen: string;
+  pgn: string;
+  white: ChessSeat;
+  black: ChessSeat;
+  turn: "w" | "b";
+  status: "waiting" | "playing" | "ended";
+  winner?: "white" | "black" | "draw" | null;
+  endReason?: string | null;
+  startedAt: number;
+}>();
+// Lichess shared embed per room (URL string of game/study/tv)
+const roomLichessState = new Map<string, { url: string; sharedBy: string } | null>();
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
@@ -1029,6 +1044,30 @@ export async function registerRoutes(
       } else {
         io.to(roomId).emit("room:book-watchers-update", { userId, watching: false });
       }
+    }
+
+    // Chess: if the leaving user was a seated player, end the match
+    const chState = roomChessState.get(roomId);
+    if (chState) {
+      if (chState.white?.userId === userId || chState.black?.userId === userId) {
+        const wasWhite = chState.white?.userId === userId;
+        chState.status = "ended";
+        chState.endReason = "left_room";
+        chState.winner = wasWhite ? "black" : "white";
+        io.to(roomId).emit("room:chess-state", chState);
+        // Auto-clear after 5s so a new match can start
+        setTimeout(() => {
+          if (roomChessState.get(roomId)?.endReason === "left_room") {
+            roomChessState.delete(roomId);
+            io.to(roomId).emit("room:chess-state", null);
+          }
+        }, 5000);
+      }
+    }
+    const lichessState = roomLichessState.get(roomId);
+    if (lichessState && lichessState.sharedBy === userId) {
+      roomLichessState.delete(roomId);
+      io.to(roomId).emit("room:lichess", null);
     }
 
     if (!roomParticipants.has(roomId)) return [];
@@ -3097,6 +3136,139 @@ export async function registerRoutes(
       if (requesterSocketId) {
         io.to(requesterSocketId).emit("room:youtube-time-responded", { time: data.time, ts: data.ts ?? Date.now() });
       }
+    });
+
+    // ---------- Chess (built-in board, two seats per room, others spectate) ----------
+    socket.on("room:chess-sync-request", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      socket.emit("room:chess-state", roomChessState.get(data.roomId) || null);
+      socket.emit("room:lichess", roomLichessState.get(data.roomId) || null);
+    });
+
+    socket.on("room:chess-claim-seat", async (data: { roomId: string; color: "white" | "black" }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const me = await storage.getUser(currentUserId);
+      if (!me) return;
+      let state = roomChessState.get(data.roomId);
+      if (!state) {
+        state = {
+          fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          pgn: "",
+          white: null,
+          black: null,
+          turn: "w",
+          status: "waiting",
+          startedAt: Date.now(),
+        };
+        roomChessState.set(data.roomId, state);
+      }
+      if (state.status === "ended") {
+        // Reset on new claim
+        state.fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        state.pgn = "";
+        state.turn = "w";
+        state.status = "waiting";
+        state.winner = null;
+        state.endReason = null;
+        state.white = null;
+        state.black = null;
+        state.startedAt = Date.now();
+      }
+      const displayName = me.displayName || me.firstName || (me.email ? me.email.split("@")[0] : null) || "Player";
+      const seat: ChessSeat = { userId: currentUserId, username: displayName, avatar: me.profileImageUrl || null };
+      if (data.color === "white") {
+        if (state.white && state.white.userId !== currentUserId) return;
+        if (state.black?.userId === currentUserId) state.black = null;
+        state.white = seat;
+      } else {
+        if (state.black && state.black.userId !== currentUserId) return;
+        if (state.white?.userId === currentUserId) state.white = null;
+        state.black = seat;
+      }
+      if (state.white && state.black) state.status = "playing";
+      io.to(data.roomId).emit("room:chess-state", state);
+    });
+
+    socket.on("room:chess-leave-seat", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const state = roomChessState.get(data.roomId);
+      if (!state) return;
+      let changed = false;
+      if (state.white?.userId === currentUserId) { state.white = null; changed = true; }
+      if (state.black?.userId === currentUserId) { state.black = null; changed = true; }
+      if (changed) {
+        if (state.status === "playing") {
+          state.status = "ended";
+          state.endReason = "abandoned";
+          state.winner = state.white ? "white" : (state.black ? "black" : "draw");
+        } else {
+          state.status = "waiting";
+        }
+        io.to(data.roomId).emit("room:chess-state", state);
+      }
+    });
+
+    socket.on("room:chess-move", (data: { roomId: string; fen: string; pgn: string; turn: "w" | "b"; lastMove?: { from: string; to: string; san: string }; status?: "playing" | "ended"; winner?: "white" | "black" | "draw" | null; endReason?: string | null }) => {
+      if (!currentUserId) return;
+      const state = roomChessState.get(data.roomId);
+      if (!state || state.status !== "playing") return;
+      // Verify the mover holds the seat for the side that just moved (turn flipped).
+      // If it's now black's turn, white just moved → must be the white player.
+      const moverSide = data.turn === "b" ? "white" : "black";
+      const moverSeat = moverSide === "white" ? state.white : state.black;
+      if (!moverSeat || moverSeat.userId !== currentUserId) return;
+      state.fen = data.fen;
+      state.pgn = data.pgn;
+      state.turn = data.turn;
+      if (data.status === "ended") {
+        state.status = "ended";
+        state.winner = data.winner ?? null;
+        state.endReason = data.endReason ?? null;
+      }
+      io.to(data.roomId).emit("room:chess-state", state);
+    });
+
+    socket.on("room:chess-resign", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const state = roomChessState.get(data.roomId);
+      if (!state || state.status !== "playing") return;
+      const isWhite = state.white?.userId === currentUserId;
+      const isBlack = state.black?.userId === currentUserId;
+      if (!isWhite && !isBlack) return;
+      state.status = "ended";
+      state.endReason = "resign";
+      state.winner = isWhite ? "black" : "white";
+      io.to(data.roomId).emit("room:chess-state", state);
+    });
+
+    socket.on("room:chess-new-game", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const state = roomChessState.get(data.roomId);
+      if (!state) return;
+      const isPlayer = state.white?.userId === currentUserId || state.black?.userId === currentUserId;
+      if (!isPlayer && state.status !== "ended") return;
+      roomChessState.delete(data.roomId);
+      io.to(data.roomId).emit("room:chess-state", null);
+    });
+
+    // ---------- Lichess shared embed (any participant can share a Lichess URL) ----------
+    socket.on("room:lichess", (data: { roomId: string; url: string | null }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      if (!data.url) {
+        const cur = roomLichessState.get(data.roomId);
+        if (cur && cur.sharedBy !== currentUserId) return; // only sharer can clear
+        roomLichessState.delete(data.roomId);
+        io.to(data.roomId).emit("room:lichess", null);
+        return;
+      }
+      // Whitelist Lichess URLs only
+      if (!/^https?:\/\/(www\.)?lichess\.org\//i.test(data.url)) return;
+      roomLichessState.set(data.roomId, { url: data.url, sharedBy: currentUserId });
+      io.to(data.roomId).emit("room:lichess", { url: data.url, sharedBy: currentUserId });
     });
 
     socket.on("room:book", (data: { roomId: string; book: any | null }) => {

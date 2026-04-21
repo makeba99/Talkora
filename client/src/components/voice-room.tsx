@@ -30,6 +30,7 @@ import { LANGUAGES, LEVELS } from "@shared/schema";
 import { DmDialog } from "@/components/dm-dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, renderReplyPreview, uploadChatImage } from "@/components/chat-picker";
+import { ChessPanel } from "@/components/chess-panel";
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { UserNotePopover } from "@/components/social-panel";
@@ -4486,20 +4487,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       </div>
 
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chess" ? "flex" : "none" }}>
+        {user?.id && socket && (
+          <ChessPanel socket={socket} roomId={room.id} userId={user.id} />
+        )}
+      </div>
+      {false && (<div className="hidden">
         <div className="p-3 pb-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold">Chess.com</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Play with your Chess.com account</p>
+              <p className="text-sm font-semibold">Legacy</p>
             </div>
-            <a
-              href="https://www.chess.com/play/online"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              Open <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
         </div>
         <div className="flex-1 min-h-0 flex flex-col p-4 gap-4 overflow-y-auto">
@@ -4563,7 +4560,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             ))}
           </div>
         </div>
-      </div>
+      </div>)}
 
       {/* ── Go Live Panel ── */}
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "golive" ? "flex" : "none" }}>
