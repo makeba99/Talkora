@@ -45,9 +45,15 @@ export interface AiTutorDeps {
 }
 
 const FEMALE_INTROS = [
-  "Hi! I'm Afik, your language tutor. What would you like to practice today?",
-  "Hey there! Afik here — ready to help you practice. What should we work on?",
-  "Hello! I'm Afik. Tell me something and let's get started!",
+  "Heeey, I'm Afi K — pronounced Afi Key, don't laugh. What do you wanna do, gorgeous?",
+  "Hiii! Afi K here. I welcome you to the room — talk to me, sing to me, anything goes.",
+  "Oh hey, you called? Afi K, at your service. Are you okay? You seem like trouble — I like it.",
+  "Afi K reporting in. What do you mean huh — what are we doing today, hmm?",
+];
+
+const AFIK_WELCOME_TEMPLATES = [
+  "[SYSTEM: a new user named {name} just joined the room — give them a warm flirty welcome by name in 1-2 sentences and maybe invite them to sing or chat]",
+  "[SYSTEM: {name} just walked into the room — welcome them in your charming Afi K voice in 1-2 sentences]",
 ];
 
 const MALE_INTROS = [
@@ -432,7 +438,7 @@ export function useAiTutor(deps: AiTutorDeps) {
 
     // Update voice + avatar settings together so face matches gender
     const avatarId = voice === "Male" ? "nova" : "aurora";
-    setAiSettings(s => ({ ...s, voice, voiceId: null, avatarId }));
+    setAiSettings(s => ({ ...s, voice, voiceId: null, avatarId, personaName: pName }));
     // Also configure TTS immediately (don't wait for React state cycle)
     ttsRef.current?.configure(voice, aiSettings.speed, null);
 
@@ -612,6 +618,14 @@ export function useAiTutor(deps: AiTutorDeps) {
   const clearDebugLog = useCallback(() => setAiDebugLog([]), []);
   const setRoomAiTutorEnabled = useCallback((val: boolean) => setAiRoomEnabled(val), []);
 
+  // ── Welcome a new joiner via AI (used by Afi K personality) ──────────────
+  const welcomeUser = useCallback((name: string) => {
+    if (!activeRef.current) return;
+    const tpl = AFIK_WELCOME_TEMPLATES[Math.floor(Math.random() * AFIK_WELCOME_TEMPLATES.length)];
+    const sysMsg = tpl.replace("{name}", name);
+    sendAiMessageRef.current?.(sysMsg);
+  }, []);
+
   return {
     // State containers (as per spec)
     aiState,
@@ -639,6 +653,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     startWithPersona,
     sendAiMessage,
     interruptAi,
+    welcomeUser,
     addDebug,
   };
 }

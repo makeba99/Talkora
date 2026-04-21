@@ -7,6 +7,7 @@ export interface AiTutorSettings {
   avatarId: string;
   speed: number;
   tone: number;
+  personaName?: string;
 }
 
 export interface ConversationEntry {

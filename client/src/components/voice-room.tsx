@@ -31,6 +31,7 @@ import { DmDialog } from "@/components/dm-dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, renderReplyPreview, uploadChatImage } from "@/components/chat-picker";
 import { ChessPanel } from "@/components/chess-panel";
+import { CenterChessOverlay, ChessPlayerBadge } from "@/components/center-chess-overlay";
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { UserNotePopover } from "@/components/social-panel";
@@ -574,6 +575,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     startWithPersona,
     sendAiMessage,
     interruptAi,
+    welcomeUser,
     addDebug: addAiDebugEntry,
   } = useAiTutor({
     socket,
@@ -747,6 +749,48 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ mouseX: 0, mouseY: 0, playerX: 0, playerY: 0 });
+
+  // Latest-version refs so socket listeners don't capture stale values
+  const aiTutorActiveRef = useRef(false);
+  const aiPersonaNameRef = useRef("");
+  const welcomeUserRef = useRef<((name: string) => void) | null>(null);
+  useEffect(() => { aiTutorActiveRef.current = aiState.active; }, [aiState.active]);
+  useEffect(() => { aiPersonaNameRef.current = aiPersonaName; }, [aiPersonaName]);
+  useEffect(() => { welcomeUserRef.current = welcomeUser; }, [welcomeUser]);
+
+  // ── AI Face draggable position (persisted per room) ──────────────────────
+  const AI_FACE_POS_KEY = `c2t-ai-face-pos:${room.id}`;
+  const [aiFacePos, setAiFacePos] = useState<{ x: number; y: number } | null>(() => {
+    if (typeof window === "undefined") return null;
+    try { const r = localStorage.getItem(AI_FACE_POS_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
+  });
+  const aiFaceDragRef = useRef<{ active: boolean; sx: number; sy: number; bx: number; by: number }>({
+    active: false, sx: 0, sy: 0, bx: 0, by: 0,
+  });
+  const aiFaceWrapperRef = useRef<HTMLDivElement | null>(null);
+  const onAiFacePointerDown = (e: React.PointerEvent) => {
+    if (!aiFaceWrapperRef.current) return;
+    const r = aiFaceWrapperRef.current.getBoundingClientRect();
+    aiFaceDragRef.current = { active: true, sx: e.clientX, sy: e.clientY, bx: r.left, by: r.top };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onAiFacePointerMove = (e: React.PointerEvent) => {
+    if (!aiFaceDragRef.current.active) return;
+    const dx = e.clientX - aiFaceDragRef.current.sx;
+    const dy = e.clientY - aiFaceDragRef.current.sy;
+    const rect = aiFaceWrapperRef.current?.getBoundingClientRect();
+    const w = rect?.width || 220;
+    const h = rect?.height || 220;
+    const x = Math.max(8, Math.min(window.innerWidth - w - 8, aiFaceDragRef.current.bx + dx));
+    const y = Math.max(8, Math.min(window.innerHeight - h - 8, aiFaceDragRef.current.by + dy));
+    setAiFacePos({ x, y });
+  };
+  const onAiFacePointerUp = (e: React.PointerEvent) => {
+    if (!aiFaceDragRef.current.active) return;
+    aiFaceDragRef.current.active = false;
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
+    if (aiFacePos) { try { localStorage.setItem(AI_FACE_POS_KEY, JSON.stringify(aiFacePos)); } catch {} }
+  };
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analysersRef = useRef<Map<string, AnalyserNode>>(new Map());
@@ -1347,6 +1391,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         const name = getUserDisplayName(data.user);
         addSystemMessage(`${name} joined the room`);
         playNotificationSound("join");
+        // Afi K personality: only the AI session owner triggers the welcome so it broadcasts once
+        if (aiTutorActiveRef.current && /afi\s*k|afik/i.test(aiPersonaNameRef.current)) {
+          welcomeUserRef.current?.(name);
+        }
       }
     });
 
@@ -4936,6 +4984,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   return (
     <div className="flex h-full relative overflow-hidden" style={getRoomThemeStyle(currentTheme)}>
       <RoomThemeOverlay themeId={currentTheme} />
+      <CenterChessOverlay socket={socket} roomId={room.id} userId={user?.id ?? ""} />
 
       <Dialog open={goLiveOpen} onOpenChange={setGoLiveOpen}>
         <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
@@ -6753,12 +6802,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
                 {/* Persona buttons */}
                 <div className="flex flex-col gap-3 w-full">
-                  {/* Female — Afik */}
+                  {/* Female — Afi K */}
                   <button
                     data-testid="button-persona-female"
                     onClick={() => {
                       setAiPersonaPickerOpen(false);
-                      startWithPersona("Female", "Afik");
+                      startWithPersona("Female", "Afi K");
                     }}
                     className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     style={{
@@ -6773,8 +6822,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       ♀
                     </div>
                     <div className="flex flex-col items-start">
-                      <span className="text-[16px] font-bold" style={{ color: "rgba(255,180,220,0.95)" }}>Afik</span>
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>Female tutor · Natural, encouraging voice</span>
+                      <span className="text-[16px] font-bold" style={{ color: "rgba(255,180,220,0.95)" }}>Afi K</span>
+                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>Funny · flirty · welcomes joiners by name</span>
                     </div>
                     <div className="ml-auto">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(255,120,200,0.20)", border: "1px solid rgba(255,140,210,0.35)" }}>
@@ -6821,15 +6870,23 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          {/* ── AI Tutor: Face always fixed at screen center ── */}
+          {/* ── AI Tutor: Face draggable (defaults to screen center) ── */}
           {aiTutorVisible && (
             <div
-              className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
+              ref={aiFaceWrapperRef}
+              className="fixed z-[60] flex items-center justify-center"
+              style={aiFacePos
+                ? { left: aiFacePos.x, top: aiFacePos.y, pointerEvents: "none" }
+                : { inset: 0, pointerEvents: "none" }}
               data-testid="ai-tutor-overlay"
             >
               <div
-                className="pointer-events-auto flex flex-col items-center gap-3"
-                style={{ marginTop: -40 }}
+                className="pointer-events-auto flex flex-col items-center gap-3 cursor-grab active:cursor-grabbing touch-none"
+                style={{ marginTop: aiFacePos ? 0 : -40 }}
+                onPointerDown={onAiFacePointerDown}
+                onPointerMove={onAiFacePointerMove}
+                onPointerUp={onAiFacePointerUp}
+                title="Drag to move"
               >
                 <div className="flex flex-col items-center gap-4 ai-float" style={{ marginTop: 20 }}>
                   <div className="relative ai-face-size">
