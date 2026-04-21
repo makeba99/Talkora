@@ -224,13 +224,27 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/youtube/featured", isAuthenticated, async (_req: any, res) => {
+  app.get("/api/youtube/featured", isAuthenticated, async (req: any, res) => {
     try {
-      const cacheKey = "yt:featured";
+      const categoryQueries: Record<string, string> = {
+        conversation: "english conversation practice",
+        vocabulary: "english vocabulary lesson",
+        grammar: "english grammar lesson",
+        pronunciation: "english pronunciation practice",
+        music: "english songs with lyrics learning",
+        news: "english news for learners",
+        movies: "english movie clips with subtitles",
+        kids: "english for kids learning",
+        ielts: "ielts speaking practice",
+        business: "business english lesson",
+      };
+      const rawCategory = String(req.query.category || "conversation").toLowerCase().trim();
+      const category = Object.prototype.hasOwnProperty.call(categoryQueries, rawCategory) ? rawCategory : "conversation";
+      const cacheKey = `yt:featured:${category}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
       const ytSearch = await import("youtube-search-api");
-      const featured = await ytSearch.GetListByKeyword("language learning english conversation", false, 25);
+      const featured = await ytSearch.GetListByKeyword(categoryQueries[category], false, 25);
       const videos = (featured.items || [])
         .filter((item: any) => item.type === "video")
         .slice(0, 20)

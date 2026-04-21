@@ -17,7 +17,7 @@ import {
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -646,6 +646,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const videoInputVR = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
+  const [youtubeCategory, setYoutubeCategory] = useState<string>("conversation");
   const [welcomeText, setWelcomeText] = useState((roomProp as any).welcomeMessage || "");
   const [welcomeMediaUrlsState, setWelcomeMediaUrlsState] = useState<string[]>((roomProp as any).welcomeMediaUrls || []);
   const [welcomeMediaTypesState, setWelcomeMediaTypesState] = useState<string[]>((roomProp as any).welcomeMediaTypes || []);
@@ -1917,7 +1918,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           videoId: activeYoutubeId,
           width: "100%",
           height: "100%",
-          playerVars: { autoplay: 1, mute: 1, rel: 0, modestbranding: 1, playsinline: 1, origin: window.location.origin },
+          playerVars: { autoplay: 1, mute: 1, rel: 0, modestbranding: 1, playsinline: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, origin: window.location.origin },
           events: {
             onReady: (event: any) => {
               console.log("[YT] onReady fired — calling playVideo then unMute");
@@ -2679,15 +2680,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   useEffect(() => {
-    if (sidePanelTab === "youtube" && youtubeFeatured.length === 0 && !youtubeFeaturedLoading) {
-      setYoutubeFeaturedLoading(true);
-      fetch("/api/youtube/featured", { credentials: "include" })
-        .then((r) => r.ok ? r.json() : [])
-        .then((data) => setYoutubeFeatured(Array.isArray(data) ? data : []))
-        .catch(() => {})
-        .finally(() => setYoutubeFeaturedLoading(false));
-    }
-  }, [sidePanelTab]);
+    if (sidePanelTab !== "youtube") return;
+    setYoutubeFeaturedLoading(true);
+    fetch(`/api/youtube/featured?category=${encodeURIComponent(youtubeCategory)}`, { credentials: "include" })
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setYoutubeFeatured(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setYoutubeFeaturedLoading(false));
+  }, [sidePanelTab, youtubeCategory]);
 
   const extractYoutubeVideoId = (value: string) => {
     const trimmed = value.trim();
@@ -4090,6 +4090,34 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">
                         {youtubeFeaturedLoading ? "Loading…" : "Trending Now"}
                       </p>
+                    </div>
+                    <div className="flex flex-wrap gap-1" data-testid="youtube-category-filter">
+                      {[
+                        { id: "conversation", label: "Conversation" },
+                        { id: "vocabulary", label: "Vocabulary" },
+                        { id: "grammar", label: "Grammar" },
+                        { id: "pronunciation", label: "Pronunciation" },
+                        { id: "music", label: "Music" },
+                        { id: "news", label: "News" },
+                        { id: "movies", label: "Movies" },
+                        { id: "kids", label: "Kids" },
+                        { id: "ielts", label: "IELTS" },
+                        { id: "business", label: "Business" },
+                      ].map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setYoutubeCategory(c.id)}
+                          className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
+                            youtubeCategory === c.id
+                              ? "border-red-500/50 bg-red-500/15 text-red-400"
+                              : "border-border/40 bg-muted/15 text-muted-foreground hover:bg-muted/30"
+                          }`}
+                          data-testid={`button-yt-category-${c.id}`}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
                     </div>
                     {youtubeFeaturedLoading && (
                       <div className="flex items-center justify-center py-10">
@@ -5574,6 +5602,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           {ytIsPlaying
                             ? <Pause className="w-4 h-4 text-white" />
                             : <Play className="w-4 h-4 text-white fill-white ml-0.5" />}
+                        </button>
+                        {/* Reload — recovers from frozen frame while audio still plays */}
+                        <button
+                          onClick={() => {
+                            const player = youtubePlayerRef.current;
+                            if (!player) return;
+                            try {
+                              const t = player.getCurrentTime?.() || 0;
+                              ytSyncTimeRef.current = Math.max(0, t);
+                              const id = activeYoutubeId;
+                              setActiveYoutubeId(null);
+                              setTimeout(() => setActiveYoutubeId(id), 60);
+                            } catch (_) {}
+                          }}
+                          className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 border border-white/15 flex items-center justify-center transition-colors shadow-lg"
+                          title="Reload video (fixes frozen frame)"
+                          data-testid="button-yt-reload"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-white" />
                         </button>
                         {/* Stop */}
                         <button
