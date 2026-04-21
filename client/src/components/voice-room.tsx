@@ -1967,6 +1967,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setYtSlotRect(null);
       return;
     }
+    let rafId = 0;
     const measure = () => {
       const el = ytSlotRef.current;
       if (!el) { setYtSlotRect(null); return; }
@@ -1976,18 +1977,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         return { top: r.top, left: r.left, width: r.width, height: r.height };
       });
     };
+    // rAF-throttle so a burst of scroll/resize events coalesces to one measure per frame.
+    const scheduleMeasure = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        measure();
+      });
+    };
     measure();
-    const ro = new ResizeObserver(measure);
+    // Observe only the slot itself — observing document.body fires on every layout change in the app.
+    const ro = new ResizeObserver(scheduleMeasure);
     if (ytSlotRef.current) ro.observe(ytSlotRef.current);
-    ro.observe(document.body);
-    window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
-    const interval = window.setInterval(measure, 500);
+    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("scroll", scheduleMeasure, { capture: true, passive: true });
     return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
       ro.disconnect();
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
-      window.clearInterval(interval);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("scroll", scheduleMeasure, true);
     };
   }, [activeYoutubeId, showYoutube, miniPlayerMode, sidePanelOpen, sidePanelTab, mobileSheetOpen]);
 
