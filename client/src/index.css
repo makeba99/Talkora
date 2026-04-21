@@ -1616,6 +1616,51 @@ html.synthwave .neon-text {
   78% { transform: translate(-0.6px, -0.5px); }
 }
 
+/* ── AI Tutor photo-based avatar animations ── */
+
+/* Subtle breathing / idle head movement for the portrait photo */
+.ai-photo-neutral {
+  animation: ai-photo-breath 5.5s ease-in-out infinite;
+  transform-origin: 50% 88%;
+}
+.ai-photo-listening {
+  animation: ai-photo-listen 3.8s ease-in-out infinite;
+  transform-origin: 50% 88%;
+}
+.ai-photo-speaking {
+  animation: ai-photo-speak 1.6s ease-in-out infinite;
+  transform-origin: 50% 88%;
+}
+
+@keyframes ai-photo-breath {
+  0%, 100% { transform: scale(1)     translateY(0px)    rotate(0deg); }
+  50%       { transform: scale(1.007) translateY(-1.2px) rotate(0deg); }
+}
+@keyframes ai-photo-listen {
+  0%, 100% { transform: scale(1)     translateY(0px)    rotate(0deg);   }
+  28%       { transform: scale(1.005) translateY(-0.6px) rotate(-0.5deg); }
+  72%       { transform: scale(1.003) translateY(0.4px)  rotate(0.4deg);  }
+}
+@keyframes ai-photo-speak {
+  0%, 100% { transform: scale(1)     translateY(0px)    rotate(0deg);   }
+  22%       { transform: scale(1.006) translateY(-1px)   rotate(0.4deg);  }
+  68%       { transform: scale(1.004) translateY(0.5px)  rotate(-0.3deg); }
+}
+
+/* Eye blink — left and right lids animate together every ~4.5 seconds */
+.ai-photo-blink-left {
+  animation: ai-photo-blink 4.5s ease-in-out infinite;
+}
+.ai-photo-blink-right {
+  /* 60ms offset for natural asymmetry */
+  animation: ai-photo-blink 4.5s ease-in-out 0.06s infinite;
+}
+
+@keyframes ai-photo-blink {
+  0%, 93%, 100% { transform: scaleY(0);    opacity: 0.9; }
+  96.5%          { transform: scaleY(1);    opacity: 1;   }
+}
+
 /* ── AI Tutor chat panel responsive positioning ── */
 .ai-chat-panel-responsive {
   top: 50%;

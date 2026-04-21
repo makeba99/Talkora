@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "Y3Zqr9arAIdv1EQBp-W4-"
+uri = "file://client/src/assets/avatar-female.png"
+type = "image"
+title = "female ai tutor portrait"
+
+[[generated]]
+id = "wEGHd3IG2yfHvhhMVxg8H"
+uri = "file://client/src/assets/avatar-male.png"
+type = "image"
+title = "male ai tutor portrait"
