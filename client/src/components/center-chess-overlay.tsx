@@ -11,6 +11,12 @@ interface Props {
   socket: Socket | null;
   roomId: string;
   userId: string;
+  /** Externally controlled visibility for spectators (e.g. opened by clicking a player). */
+  forceOpen?: boolean;
+  /** Called when the user closes the overlay (so the parent can clear forceOpen). */
+  onClose?: () => void;
+  /** Called once when the game transitions into "ended" — used by the parent to announce the winner in room chat. */
+  onGameEnded?: (info: { winner: "white" | "black" | "draw"; whiteName: string; blackName: string; reason: string }) => void;
 }
 
 const POS_KEY_PREFIX = "c2t-chess-overlay-pos:";
@@ -32,7 +38,7 @@ const BOARD_THEMES: BoardTheme[] = [
   { id: "midnight",name: "Midnight",      light: "#9aa3b8", dark: "#3b3f54", highlight: "rgba(180, 140, 255, 0.6)", check: "rgba(255, 90, 90, 0.6)" },
 ];
 
-export function CenterChessOverlay({ socket, roomId, userId }: Props) {
+export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose, onGameEnded }: Props) {
   const [state, setState] = useState<ChessRoomState | null>(null);
   const [minimized, setMinimized] = useState(false);
   const [winnerBanner, setWinnerBanner] = useState<{ name: string; reason: string } | null>(null);
@@ -73,6 +79,12 @@ export function CenterChessOverlay({ socket, roomId, userId }: Props) {
         else name = "Draw";
         setWinnerBanner({ name, reason: s.endReason || "game over" });
         setTimeout(() => setWinnerBanner(null), 8000);
+        onGameEnded?.({
+          winner: (s.winner as any) || "draw",
+          whiteName: s.white?.username || "White",
+          blackName: s.black?.username || "Black",
+          reason: s.endReason || "game over",
+        });
       }
       if (s && s.status === "playing") setMinimized(false);
     };
@@ -173,8 +185,12 @@ export function CenterChessOverlay({ socket, roomId, userId }: Props) {
     }
   };
 
-  // Show overlay only while a game is in progress or just ended
-  const showOverlay = !!state && (state.status === "playing" || state.status === "ended");
+  // Show overlay automatically only for the seated players. Spectators only see
+  // the board when they explicitly open it (parent passes forceOpen=true, e.g. by
+  // clicking on a player who is currently in a game).
+  const isSeatedPlayer = myColor !== null;
+  const gameLive = !!state && (state.status === "playing" || state.status === "ended");
+  const showOverlay = gameLive && (isSeatedPlayer || !!forceOpen);
 
   return (
     <>
@@ -272,7 +288,19 @@ export function CenterChessOverlay({ socket, roomId, userId }: Props) {
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
-                {state?.status === "ended" && (
+                {/* Spectators get a close button so they can dismiss after opening from a profile click */}
+                {!isSeatedPlayer && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onClose?.(); }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="rounded p-1 text-amber-200/80 hover:bg-amber-200/10"
+                    data-testid="button-chess-close-spectator"
+                    title="Close"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {isSeatedPlayer && state?.status === "ended" && (
                   <button
                     onClick={closeGame}
                     className="rounded p-1 text-amber-200/80 hover:bg-amber-200/10"

@@ -750,6 +750,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ mouseX: 0, mouseY: 0, playerX: 0, playerY: 0 });
 
+  // ── Chess: spectator overlay control + seated-player tracking ─────────────
+  const [chessSpectatorOpen, setChessSpectatorOpen] = useState(false);
+  const [chessSeatedIds, setChessSeatedIds] = useState<{ white: string | null; black: string | null; status: string | null }>({ white: null, black: null, status: null });
+
   // Latest-version refs so socket listeners don't capture stale values
   const aiTutorActiveRef = useRef(false);
   const aiPersonaNameRef = useRef("");
@@ -757,6 +761,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   useEffect(() => { aiTutorActiveRef.current = aiState.active; }, [aiState.active]);
   useEffect(() => { aiPersonaNameRef.current = aiPersonaName; }, [aiPersonaName]);
   useEffect(() => { welcomeUserRef.current = welcomeUser; }, [welcomeUser]);
+
+  // Track who is seated at the chess board so participant tiles can show a "spectate" badge
+  useEffect(() => {
+    if (!socket) return;
+    const onState = (s: any) => {
+      setChessSeatedIds({
+        white: s?.white?.userId || null,
+        black: s?.black?.userId || null,
+        status: s?.status || null,
+      });
+    };
+    socket.on("room:chess-state", onState);
+    socket.emit("room:chess-sync-request", { roomId: room.id });
+    return () => { socket.off("room:chess-state", onState); };
+  }, [socket, room.id]);
 
   // ── AI Face draggable position (persisted per room) ──────────────────────
   const AI_FACE_POS_KEY = `c2t-ai-face-pos:${room.id}`;
@@ -3015,6 +3034,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const handleParticipantClick = (peerId: string) => {
     const isClickingOther = peerId !== user?.id;
 
+    // If the clicked participant is currently playing chess (and we're not them and not seated),
+    // open the centered chess overlay so we can spectate the game.
+    const isChessPlayer = peerId === chessSeatedIds.white || peerId === chessSeatedIds.black;
+    const meSeated = user?.id === chessSeatedIds.white || user?.id === chessSeatedIds.black;
+    const liveGame = chessSeatedIds.status === "playing" || chessSeatedIds.status === "ended";
+    if (isClickingOther && isChessPlayer && liveGame && !meSeated) {
+      setChessSpectatorOpen(true);
+      return;
+    }
+
     // If clicked participant is reading and we're not yet reading, join the read session
     if (isClickingOther && bookReaders.has(peerId) && sharedBook && !showEReader) {
       handleJoinReadTogether(sharedBook);
@@ -4975,7 +5004,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   return (
     <div className="flex h-full relative overflow-hidden" style={getRoomThemeStyle(currentTheme)}>
       <RoomThemeOverlay themeId={currentTheme} />
-      <CenterChessOverlay socket={socket} roomId={room.id} userId={user?.id ?? ""} />
+      <CenterChessOverlay
+        socket={socket}
+        roomId={room.id}
+        userId={user?.id ?? ""}
+        forceOpen={chessSpectatorOpen}
+        onClose={() => setChessSpectatorOpen(false)}
+        onGameEnded={({ winner, whiteName, blackName, reason }) => {
+          const text = winner === "draw"
+            ? `♟️ Chess game ended in a draw between ${whiteName} and ${blackName} (${reason}).`
+            : `♟️ ${winner === "white" ? whiteName : blackName} defeated ${winner === "white" ? blackName : whiteName} at chess by ${reason}!`;
+          addSystemMessage(text);
+          setChessSpectatorOpen(false);
+        }}
+      />
 
       <Dialog open={goLiveOpen} onOpenChange={setGoLiveOpen}>
         <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
