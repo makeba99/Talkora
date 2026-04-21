@@ -87,6 +87,24 @@
   animation: holoPlatform 2.5s ease-in-out infinite;
 }
 
+/* When YouTube is actively playing, suspend the AI's continuous decorative
+   animations so the GPU/main thread is free for video decode. */
+.ai-overlay-quiet .ai-float,
+.ai-overlay-quiet .holo-ring-rotate,
+.ai-overlay-quiet .holo-platform {
+  animation: none !important;
+}
+.ai-overlay-quiet .animate-ping,
+.ai-overlay-quiet .animate-pulse {
+  animation: none !important;
+}
+
+/* Isolate the AI overlay from the rest of the room so its repaints/reflows
+   stay inside the overlay and never invalidate the YouTube slot layout. */
+.ai-overlay-isolate {
+  contain: layout paint style;
+}
+
 
 /* LIGHT MODE */
 :root {

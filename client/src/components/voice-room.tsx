@@ -6959,7 +6959,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {aiTutorVisible && (
             <div
               ref={aiFaceWrapperRef}
-              className="fixed z-[60] flex items-center justify-center"
+              className={`fixed z-[60] flex items-center justify-center ai-overlay-isolate${(ytIsPlaying && showYoutube) ? " ai-overlay-quiet" : ""}`}
               style={aiFacePos
                 ? { left: aiFacePos.x, top: aiFacePos.y, pointerEvents: "none" }
                 : { inset: 0, pointerEvents: "none" }}
