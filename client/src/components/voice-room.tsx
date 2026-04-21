@@ -699,6 +699,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const ytSlotRef = useRef<HTMLDivElement | null>(null);
   const [ytSlotRect, setYtSlotRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [youtubeWatchers, setYoutubeWatchers] = useState<Set<string>>(new Set());
+  const [screenWatchers, setScreenWatchers] = useState<Set<string>>(new Set());
+  const [ytQualityState, setYtQualityState] = useState<"good" | "slow">("good");
 
   const [bookReaders, setBookReaders] = useState<Set<string>>(new Set());
   const [goLiveOpen, setGoLiveOpen] = useState(false);
@@ -1574,6 +1576,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       });
     });
 
+    socket.on("room:screen-watchers-update", (data: { userId: string; watching: boolean; sharerId: string }) => {
+      setScreenWatchers(prev => {
+        const next = new Set(prev);
+        if (data.watching) next.add(data.userId);
+        else next.delete(data.userId);
+        return next;
+      });
+    });
+
     socket.on("room:screen-share", (data: { userId: string; active: boolean }) => {
       if (data.userId === user.id) return;
       if (data.active) {
@@ -1917,6 +1928,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             if (next && next !== cur) {
               player.setPlaybackQuality?.(next);
               console.log(`[YT] slow internet — quality ${cur} → ${next}`);
+              setYtQualityState("slow");
             }
           } catch (_) {}
           ytBufferTimerRef.current = window.setTimeout(downgrade, 5000);
@@ -1927,6 +1939,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         if (ytBufferTimerRef.current) {
           window.clearTimeout(ytBufferTimerRef.current);
           ytBufferTimerRef.current = null;
+        }
+        // After 10 seconds of uninterrupted playback, mark connection as good again.
+        if (state === YT.PlayerState.PLAYING) {
+          ytBufferTimerRef.current = window.setTimeout(() => {
+            setYtQualityState("good");
+          }, 10000);
         }
       }
       if (ytRemoteAction.current) return;
@@ -2988,12 +3006,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (remoteScreenShareUserId === peerId) {
       setRemoteScreenShareUserId(null);
       if (remoteScreenRef.current) remoteScreenRef.current.srcObject = null;
+      socket?.emit("room:screen-watching", { roomId: room.id, watching: false, sharerId: peerId });
     } else {
+      // If we were already watching someone else, mark ourselves no longer watching them.
+      if (remoteScreenShareUserId) {
+        socket?.emit("room:screen-watching", { roomId: room.id, watching: false, sharerId: remoteScreenShareUserId });
+      }
       const stream = remoteScreenStreams.current.get(peerId);
       setRemoteScreenShareUserId(peerId);
       if (stream && remoteScreenRef.current) {
         remoteScreenRef.current.srcObject = stream;
       }
+      socket?.emit("room:screen-watching", { roomId: room.id, watching: true, sharerId: peerId });
     }
   };
 
@@ -5721,6 +5745,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 )}
 
+                {/* Connection quality badge — auto-shown when slow internet triggers a quality downgrade */}
+                <div
+                  className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 backdrop-blur-sm text-[10px] font-medium px-2 py-1 rounded-full border shadow-md transition-colors ${
+                    ytQualityState === "slow"
+                      ? "bg-amber-500/85 border-amber-300/50 text-white"
+                      : "bg-emerald-600/70 border-emerald-300/40 text-white"
+                  }`}
+                  data-testid="badge-yt-connection"
+                  title={ytQualityState === "slow" ? "Slow connection — quality reduced to keep playing" : "Connection good"}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${ytQualityState === "slow" ? "bg-white animate-pulse" : "bg-white"}`} />
+                  {ytQualityState === "slow" ? "Slow" : "Good"}
+                </div>
+
                 {/* Participant blocking overlay — prevents non-host from interacting with the iframe.
                     Sits below host controls (z-20) but above the iframe (which is mounted via portal). */}
                 {!isYoutubeHost && (
@@ -6094,6 +6132,41 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     className="flex flex-col items-center gap-2 group relative"
                     data-testid={`card-participant-${p.id}`}
                   >
+                    {/* Screen-share watcher pills — same look as YouTube watchers */}
+                    {(remoteScreenShareUserId === p.id || (isMe && isScreenSharing)) && screenWatchers.size > 0 && (
+                      <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`screen-watchers-card-${p.id}`}>
+                        <div className="flex items-center">
+                          {Array.from(screenWatchers).slice(0, 4).map((watcherId, wi) => {
+                            const watcher = participants.find(wp => wp.id === watcherId);
+                            const wIndex = participants.findIndex(wp => wp.id === watcherId);
+                            const wGrad = getAvatarGradient(wIndex >= 0 ? wIndex : wi);
+                            return (
+                              <div
+                                key={watcherId}
+                                className="w-5 h-5 rounded-full border border-background overflow-hidden flex items-center justify-center shadow-sm"
+                                style={{ marginLeft: wi === 0 ? 0 : -6, zIndex: 4 - wi }}
+                                title={watcher ? getUserDisplayName(watcher) : watcherId}
+                              >
+                                {watcher?.profileImageUrl ? (
+                                  <img src={watcher.profileImageUrl} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
+                                    <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {screenWatchers.size > 4 && (
+                            <div className="w-5 h-5 rounded-full border border-background bg-slate-700 flex items-center justify-center shadow-sm text-[7px] font-bold text-white" style={{ marginLeft: -6, zIndex: 0 }}>
+                              +{screenWatchers.size - 4}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[8px] text-muted-foreground">{screenWatchers.size} watching</span>
+                      </div>
+                    )}
+
                     {p.id === youtubeStartedBy && youtubeWatchers.size > 0 && (
                       <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`youtube-watchers-card-${p.id}`}>
                         <div className="flex items-center">

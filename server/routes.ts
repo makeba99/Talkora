@@ -3070,6 +3070,17 @@ export async function registerRoutes(
       });
     });
 
+    // Screen-share watcher tracking — mirrors the YouTube watcher pattern so that the
+    // sharer's avatar can show "X people watching" pills, just like with shared videos.
+    socket.on("room:screen-watching", (data: { roomId: string; watching: boolean; sharerId: string }) => {
+      if (!currentUserId) return;
+      socket.to(data.roomId).emit("room:screen-watchers-update", {
+        userId: currentUserId,
+        watching: data.watching,
+        sharerId: data.sharerId,
+      });
+    });
+
     socket.on("room:youtube-time-request", (data: { roomId: string; requesterId: string }) => {
       if (!currentUserId) return;
       const ytState = roomYoutubeState.get(data.roomId);
