@@ -4488,7 +4488,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chess" ? "flex" : "none" }}>
         {user?.id && socket && (
-          <ChessPanel socket={socket} roomId={room.id} userId={user.id} />
+          <ChessPanel socket={socket} roomId={room.id} userId={user.id} participants={participants} />
         )}
       </div>
       {false && (<div className="hidden">

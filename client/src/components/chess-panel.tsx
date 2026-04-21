@@ -5,10 +5,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Flag, Crown, RotateCcw, X, Link as LinkIcon, Trophy, Users } from "lucide-react";
+import { ExternalLink, Flag, Crown, RotateCcw, X, Link as LinkIcon, Trophy, Users, Swords, Check } from "lucide-react";
 import type { Socket } from "socket.io-client";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 type ChessSeat = { userId: string; username: string; avatar?: string | null } | null;
+
+export interface ChessParticipant {
+  id: string;
+  displayName?: string | null;
+  firstName?: string | null;
+  email?: string | null;
+  profileImageUrl?: string | null;
+}
+
+interface IncomingChallenge {
+  fromUserId: string;
+  fromUsername: string;
+  fromAvatar?: string | null;
+  color: "white" | "black" | "random";
+  challengeId: string;
+}
 
 export interface ChessRoomState {
   fen: string;
@@ -31,6 +49,11 @@ interface Props {
   socket: Socket | null;
   roomId: string;
   userId: string;
+  participants: ChessParticipant[];
+}
+
+function nameOf(p: ChessParticipant) {
+  return p.displayName || p.firstName || (p.email ? p.email.split("@")[0] : null) || "Player";
 }
 
 function extractLichessUrl(input: string): string | null {
@@ -50,12 +73,16 @@ function lichessEmbedUrl(rawUrl: string): string {
   return `https://lichess.org/embed/game/${gameId}?theme=auto&bg=auto`;
 }
 
-export function ChessPanel({ socket, roomId, userId }: Props) {
+export function ChessPanel({ socket, roomId, userId, participants }: Props) {
+  const { toast } = useToast();
   const [tab, setTab] = useState<"quick" | "lichess">("quick");
   const [state, setState] = useState<ChessRoomState | null>(null);
   const [lichess, setLichess] = useState<LichessShare | null>(null);
   const [lichessInput, setLichessInput] = useState("");
   const [lichessError, setLichessError] = useState<string | null>(null);
+  const [incoming, setIncoming] = useState<IncomingChallenge | null>(null);
+  const [pendingTo, setPendingTo] = useState<{ userId: string; username: string } | null>(null);
+  const [showChallengeList, setShowChallengeList] = useState(false);
   const chessRef = useRef<Chess>(new Chess());
 
   // Sync from server
@@ -70,14 +97,57 @@ export function ChessPanel({ socket, roomId, userId }: Props) {
       }
     };
     const onLichess = (l: LichessShare | null) => setLichess(l);
+    const onChallenge = (c: IncomingChallenge) => {
+      setIncoming(c);
+    };
+    const onDeclined = (d: { byUserId: string; byUsername: string }) => {
+      if (pendingTo?.userId === d.byUserId) setPendingTo(null);
+      toast({ title: "Challenge declined", description: `${d.byUsername} declined your chess challenge.` });
+    };
+    const onAccepted = () => {
+      setPendingTo(null);
+      setShowChallengeList(false);
+      toast({ title: "Challenge accepted!", description: "Game starting now." });
+    };
     socket.on("room:chess-state", onState);
     socket.on("room:lichess", onLichess);
+    socket.on("room:chess-challenge", onChallenge);
+    socket.on("room:chess-challenge-declined", onDeclined);
+    socket.on("room:chess-challenge-accepted", onAccepted);
     socket.emit("room:chess-sync-request", { roomId });
     return () => {
       socket.off("room:chess-state", onState);
       socket.off("room:lichess", onLichess);
+      socket.off("room:chess-challenge", onChallenge);
+      socket.off("room:chess-challenge-declined", onDeclined);
+      socket.off("room:chess-challenge-accepted", onAccepted);
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, pendingTo?.userId, toast]);
+
+  const sendChallenge = (target: ChessParticipant, color: "white" | "black" | "random") => {
+    if (!socket) return;
+    socket.emit("room:chess-challenge", { roomId, targetUserId: target.id, color });
+    setPendingTo({ userId: target.id, username: nameOf(target) });
+    toast({ title: "Challenge sent", description: `Waiting for ${nameOf(target)} to respond…` });
+    // Auto-clear pending after 30s
+    setTimeout(() => setPendingTo((p) => (p?.userId === target.id ? null : p)), 30000);
+  };
+
+  const respondChallenge = (accept: boolean) => {
+    if (!incoming || !socket) return;
+    const wantedColor = incoming.color === "white" ? "black" : incoming.color === "black" ? "white" : "random";
+    socket.emit("room:chess-challenge-respond", {
+      roomId,
+      fromUserId: incoming.fromUserId,
+      accept,
+      color: incoming.color,
+    });
+    setIncoming(null);
+    if (accept) {
+      setShowChallengeList(false);
+      setTab("quick");
+    }
+  };
 
   const myColor: "white" | "black" | null = useMemo(() => {
     if (state?.white?.userId === userId) return "white";
@@ -266,7 +336,75 @@ export function ChessPanel({ socket, roomId, userId }: Props) {
                 <RotateCcw className="w-3.5 h-3.5 mr-1" /> New Game
               </Button>
             )}
+            {(!state || state.status !== "playing") && (
+              <Button
+                size="sm"
+                variant="default"
+                className="flex-1 h-8 text-xs"
+                onClick={() => setShowChallengeList((s) => !s)}
+                data-testid="button-chess-challenge-toggle"
+              >
+                <Swords className="w-3.5 h-3.5 mr-1" /> Challenge a player
+              </Button>
+            )}
           </div>
+
+          {pendingTo && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-300 flex items-center justify-between" data-testid="text-pending-challenge">
+              <span>Waiting for {pendingTo.username}…</span>
+              <button
+                onClick={() => setPendingTo(null)}
+                className="text-amber-300/70 hover:text-amber-200"
+                data-testid="button-cancel-pending"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
+          {showChallengeList && (!state || state.status !== "playing") && (
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-2 space-y-1.5" data-testid="list-challenge-targets">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                Players in this room
+              </p>
+              {participants.filter((p) => p.id !== userId).length === 0 ? (
+                <p className="text-[11px] text-muted-foreground p-2 text-center">
+                  No one else is here yet — invite a friend!
+                </p>
+              ) : (
+                participants
+                  .filter((p) => p.id !== userId)
+                  .map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-muted/40"
+                      data-testid={`row-challenge-${p.id}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar className="w-7 h-7">
+                          {p.profileImageUrl ? <AvatarImage src={p.profileImageUrl} /> : null}
+                          <AvatarFallback className="text-[10px]">{nameOf(p)[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs truncate">{nameOf(p)}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[11px] px-2"
+                        disabled={!!pendingTo}
+                        onClick={() => sendChallenge(p, "random")}
+                        data-testid={`button-challenge-${p.id}`}
+                      >
+                        <Swords className="w-3 h-3 mr-1" /> Challenge
+                      </Button>
+                    </div>
+                  ))
+              )}
+              <p className="text-[10px] text-muted-foreground/70 px-1 pt-1">
+                Colors are randomly assigned. Game starts the moment they accept.
+              </p>
+            </div>
+          )}
 
           {!myColor && state?.status === "playing" && (
             <Badge variant="secondary" className="w-full justify-center text-[10px] py-1">
@@ -342,6 +480,43 @@ export function ChessPanel({ socket, roomId, userId }: Props) {
           )}
         </div>
       )}
+
+      <Dialog open={!!incoming} onOpenChange={(o) => { if (!o) respondChallenge(false); }}>
+        <DialogContent className="sm:max-w-sm" data-testid="dialog-incoming-challenge">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Swords className="w-4 h-4 text-primary" /> Chess challenge
+            </DialogTitle>
+            <DialogDescription>
+              {incoming && (
+                <span className="flex items-center gap-2 mt-2">
+                  <Avatar className="w-8 h-8">
+                    {incoming.fromAvatar ? <AvatarImage src={incoming.fromAvatar} /> : null}
+                    <AvatarFallback>{incoming.fromUsername?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <span>
+                    <strong className="text-foreground">{incoming.fromUsername}</strong> wants to play chess with you
+                    {incoming.color !== "random" && (
+                      <span className="block text-[11px] mt-0.5">
+                        They’ll play <strong>{incoming.color}</strong> — you’ll play{" "}
+                        <strong>{incoming.color === "white" ? "black" : "white"}</strong>.
+                      </span>
+                    )}
+                  </span>
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => respondChallenge(false)} data-testid="button-decline-challenge">
+              <X className="w-4 h-4 mr-1" /> Decline
+            </Button>
+            <Button onClick={() => respondChallenge(true)} data-testid="button-accept-challenge">
+              <Check className="w-4 h-4 mr-1" /> Accept & play
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

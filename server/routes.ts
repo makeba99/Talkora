@@ -3243,6 +3243,75 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:chess-state", state);
     });
 
+    socket.on("room:chess-challenge", async (data: { roomId: string; targetUserId: string; color?: "white" | "black" | "random" }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId) || !participants.has(data.targetUserId)) return;
+      if (data.targetUserId === currentUserId) return;
+      const existing = roomChessState.get(data.roomId);
+      if (existing && existing.status === "playing") return; // game in progress
+      const challenger = await storage.getUser(currentUserId);
+      if (!challenger) return;
+      const targetSocketId = userSockets.get(data.targetUserId);
+      if (!targetSocketId) return;
+      const challengerName = challenger.displayName || challenger.firstName || (challenger.email ? challenger.email.split("@")[0] : null) || "Someone";
+      io.to(targetSocketId).emit("room:chess-challenge", {
+        roomId: data.roomId,
+        fromUserId: currentUserId,
+        fromUsername: challengerName,
+        fromAvatar: challenger.profileImageUrl || null,
+        color: data.color || "random",
+        challengeId: `${currentUserId}-${Date.now()}`,
+      });
+    });
+
+    socket.on("room:chess-challenge-respond", async (data: { roomId: string; fromUserId: string; accept: boolean; color?: "white" | "black" | "random" }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId) || !participants.has(data.fromUserId)) return;
+      const challengerSocketId = userSockets.get(data.fromUserId);
+      const responder = await storage.getUser(currentUserId);
+      const responderName = responder ? (responder.displayName || responder.firstName || (responder.email ? responder.email.split("@")[0] : null) || "Player") : "Player";
+      if (!data.accept) {
+        if (challengerSocketId) {
+          io.to(challengerSocketId).emit("room:chess-challenge-declined", { byUserId: currentUserId, byUsername: responderName });
+        }
+        return;
+      }
+      // Accept: seat both players and start the game.
+      const challenger = await storage.getUser(data.fromUserId);
+      if (!challenger || !responder) return;
+      const challengerName = challenger.displayName || challenger.firstName || (challenger.email ? challenger.email.split("@")[0] : null) || "Player";
+      let challengerColor: "white" | "black";
+      const requested = data.color || "random";
+      if (requested === "white") challengerColor = "white";
+      else if (requested === "black") challengerColor = "black";
+      else challengerColor = Math.random() < 0.5 ? "white" : "black";
+      const whiteSeat: ChessSeat = challengerColor === "white"
+        ? { userId: data.fromUserId, username: challengerName, avatar: challenger.profileImageUrl || null }
+        : { userId: currentUserId, username: responderName, avatar: responder.profileImageUrl || null };
+      const blackSeat: ChessSeat = challengerColor === "white"
+        ? { userId: currentUserId, username: responderName, avatar: responder.profileImageUrl || null }
+        : { userId: data.fromUserId, username: challengerName, avatar: challenger.profileImageUrl || null };
+      const newState = {
+        fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        pgn: "",
+        white: whiteSeat,
+        black: blackSeat,
+        turn: "w" as const,
+        status: "playing" as const,
+        winner: null,
+        endReason: null,
+        startedAt: Date.now(),
+      };
+      roomChessState.set(data.roomId, newState);
+      io.to(data.roomId).emit("room:chess-state", newState);
+      io.to(data.roomId).emit("room:chess-challenge-accepted", {
+        white: whiteSeat,
+        black: blackSeat,
+      });
+    });
+
     socket.on("room:chess-new-game", (data: { roomId: string }) => {
       if (!currentUserId) return;
       const state = roomChessState.get(data.roomId);
