@@ -139,9 +139,20 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => { chatPanelOpenRef.current = aiChatPanelOpen; }, [aiChatPanelOpen]);
 
   // ── Debug logger ──────────────────────────────────────────────────────────
+  // Consecutive identical messages are collapsed into one with a repeat count
+  // so the debug panel stays readable during mic-restart cycles.
   const addDebug = useCallback((type: DebugEntryType, message: string) => {
     const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    setAiDebugLog(prev => [...prev.slice(-19), { timestamp, type, message }]);
+    setAiDebugLog(prev => {
+      const last = prev[prev.length - 1];
+      if (last && last.message.replace(/ \(×\d+\)$/, "") === message && last.type === type) {
+        // Same message — update the repeat count in place
+        const count = (last.message.match(/\(×(\d+)\)$/) ? parseInt(last.message.match(/\(×(\d+)\)$/)![1]) : 1) + 1;
+        const updated = { ...last, timestamp, message: `${message} (×${count})` };
+        return [...prev.slice(0, -1), updated];
+      }
+      return [...prev.slice(-19), { timestamp, type, message }];
+    });
   }, []);
 
   // ── TTS Engine ────────────────────────────────────────────────────────────

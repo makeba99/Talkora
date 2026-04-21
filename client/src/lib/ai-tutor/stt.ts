@@ -1,14 +1,17 @@
 /**
  * STT Module — Web Speech API wrapper with barge-in support.
  *
- * Primary recognizer: runs in CONTINUOUS mode with a 750ms silence timer.
+ * Primary recognizer: runs in CONTINUOUS mode with a 500ms silence timer.
  *   - Continuous mode captures fast speech and long sentences without cutting off.
- *   - A silence timer (750ms after last isFinal) flushes the accumulated buffer.
- *   - Auto-restarts within 50ms after session ends so the gap between sentences
- *     is imperceptible.
+ *   - A silence timer (500ms after last speech activity) flushes the accumulated buffer.
+ *   - "lastInterim" fallback: Chrome often skips isFinal for short utterances and
+ *     fires onend directly — we capture the best interim result seen and use it as
+ *     the user's message when no isFinal data was collected.
  *
- * Barge-in recognizer: lightweight always-on mic that detects ANY voice
- *   while AI is speaking and immediately cancels the TTS pipeline.
+ * Barge-in recognizer: lightweight always-on mic that detects voice while AI is
+ *   speaking and cancels the TTS pipeline. Two guards prevent echo loops:
+ *   1. 1800ms grace period after AI starts speaking.
+ *   2. Minimum 3 words to trigger (single words are almost always echo artifacts).
  */
 
 import { SPEECH_LANG_MAP } from "./types";
@@ -78,8 +81,12 @@ export class SttEngine {
 
   /**
    * Start primary recognition in CONTINUOUS mode.
-   * Accumulates isFinal results into a buffer and flushes when the user
-   * pauses for 750ms — this captures fast speech and long sentences fully.
+   *
+   * Chrome's continuous mode behaviour:
+   *  - Long utterances: fires isFinal=true progressively → accumulated in finalBuffer.
+   *  - Short utterances: often fires only interim results, then ends the session without
+   *    ever sending isFinal=true. We track "lastInterim" and use it as a fallback so
+   *    these short phrases aren't silently dropped.
    */
   startListening() {
     if (!SpeechRec) return;
@@ -91,21 +98,26 @@ export class SttEngine {
     this.primary = null;
 
     const rec = new SpeechRec();
-    rec.continuous = true;         // continuous — no early cut-off on mid-sentence pauses
+    rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
     rec.lang = this.lang;
     this.primary = rec;
 
     let finalBuffer = "";
-    // Tracks whether onerror already scheduled a restart so onend doesn't overwrite it
+    // Best interim result seen this session — used as fallback when Chrome ends a
+    // short utterance session without sending any isFinal=true events.
+    let lastInterim = "";
+    // Set to true by onerror so onend doesn't schedule a second competing restart.
     let errorHandled = false;
 
-    // Flush accumulated text to the AI after 750ms of silence
+    // Flush accumulated speech to the AI after 500ms of silence.
     const flush = () => {
       this.clearSilenceTimer();
-      const text = finalBuffer.trim();
+      // Use finals first; fall back to the best interim Chrome sent before ending.
+      const text = (finalBuffer || lastInterim).trim();
       finalBuffer = "";
+      lastInterim = "";
       if (text && this.activeRef.current && !this.loadingRef.current) {
         this.callbacks.onFinal(text);
       }
@@ -113,7 +125,7 @@ export class SttEngine {
 
     const resetSilence = () => {
       this.clearSilenceTimer();
-      this.silenceTimer = setTimeout(flush, 750);
+      this.silenceTimer = setTimeout(flush, 500);
     };
 
     rec.onstart = () => {
@@ -128,13 +140,16 @@ export class SttEngine {
           const word = result[0].transcript.trim();
           if (word) {
             finalBuffer += (finalBuffer ? " " : "") + word;
-            resetSilence(); // reset the 750ms silence window after each final chunk
+            lastInterim = ""; // finals arrived — clear the interim fallback
+            resetSilence();
           }
         } else {
           interim += result[0].transcript;
         }
       }
-      // Show the running transcript (finals + current interim) to the user
+      // Always track the latest interim so onend can use it if isFinal never arrives.
+      if (interim.trim()) lastInterim = interim.trim();
+
       const display = (finalBuffer + (interim ? " " + interim : "")).trim();
       if (display) this.callbacks.onInterim(display);
     };
@@ -152,17 +167,17 @@ export class SttEngine {
       }
 
       if (err === "aborted") {
-        // Intentional abort from stopListening() — don't restart from here
+        // Intentional abort from stopListening() — don't restart from here.
         errorHandled = true;
         return;
       }
 
       this.callbacks.onStop();
-      errorHandled = true; // onend will see this and skip its own restart
+      errorHandled = true; // onend fires right after — skip its restart logic.
 
       if (err === "no-speech") {
         // No speech detected — restart after a short pause to keep session alive.
-        // 300ms (not 50ms) prevents a tight spin loop if Chrome keeps ending immediately.
+        // 300ms prevents a tight spin loop if Chrome keeps ending immediately.
         this.scheduleRestart(300);
         return;
       }
@@ -173,29 +188,28 @@ export class SttEngine {
         return;
       }
 
-      // Other errors — restart after a brief pause
       this.callbacks.onError?.(`Speech recognition error: ${err}`);
       this.scheduleRestart(600);
     };
 
     rec.onend = () => {
       this.clearSilenceTimer();
-      // If there's buffered text (session ended before silence timer fired), send it now
-      const text = finalBuffer.trim();
-      finalBuffer = "";
 
-      // If onerror already handled this session end (and scheduled its own restart),
-      // don't call onStop again or overwrite the restart timer.
+      // onerror already handled this — don't double-fire onStop or overwrite the timer.
       if (errorHandled) return;
+
+      // Use finals first; fall back to best interim seen (Chrome short-utterance path).
+      const text = (finalBuffer || lastInterim).trim();
+      finalBuffer = "";
+      lastInterim = "";
 
       this.callbacks.onStop();
       if (text && this.activeRef.current && !this.loadingRef.current) {
         this.callbacks.onFinal(text);
-        // sendAiMessage will restart listening after AI responds
+        // sendAiMessage will restart listening after the AI responds.
         return;
       }
-      // Session ended cleanly with no new text (browser timeout / end of utterance).
-      // Use 300ms to avoid a spin loop — fast enough to feel seamless.
+      // Session ended with no speech — restart after a short pause.
       this.scheduleRestart(300);
     };
 
@@ -210,9 +224,8 @@ export class SttEngine {
   /**
    * Start barge-in detector: runs while AI is speaking.
    * Two guards prevent the AI's own voice (echo from speakers) from triggering a loop:
-   *   1. 1800ms grace period — ignore all audio for the first 1.8s of AI speech
-   *      (the AI's voice is loudest at the start; real user interruptions come later)
-   *   2. Minimum 3 words — single words/syllables are almost always echo artifacts
+   *   1. 1800ms grace period — ignore all audio for the first 1.8s of AI speech.
+   *   2. Minimum 3 words — single words/syllables are almost always echo artifacts.
    */
   startBargeIn() {
     if (!SpeechRec || this.micDenied) return;
@@ -228,13 +241,9 @@ export class SttEngine {
     const activatedAt = Date.now();
 
     rec.onresult = (e: any) => {
-      // Grace period: ignore all audio for the first 1800ms.
-      // The AI's own TTS voice comes out of the speakers and would be picked up
-      // immediately — this window lets that echo pass without triggering.
       if (Date.now() - activatedAt < 1800) return;
 
       const results = Array.from(e.results as SpeechRecognitionResultList);
-      // Require at least 3 words — brief sounds and single words are echo artifacts.
       const wordCount = results.reduce(
         (sum, r: SpeechRecognitionResult) =>
           sum + r[0].transcript.trim().split(/\s+/).filter(Boolean).length,
