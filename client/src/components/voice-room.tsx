@@ -696,6 +696,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [participantVolumes, setParticipantVolumes] = useState<Record<string, number>>({});
   const [miniPlayerMode, setMiniPlayerMode] = useState(false);
   const [miniPlayerPos, setMiniPlayerPos] = useState({ x: 16, y: 80 });
+  const ytSlotRef = useRef<HTMLDivElement | null>(null);
+  const [ytSlotRect, setYtSlotRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [youtubeWatchers, setYoutubeWatchers] = useState<Set<string>>(new Set());
 
   const [bookReaders, setBookReaders] = useState<Set<string>>(new Set());
@@ -1840,8 +1842,39 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
   }, [remoteScreenShareUserId]);
 
+  // Track the YT slot's bounding rect so the persistent (fixed-position) player can
+  // overlay it perfectly. Re-measures on resize, scroll, and layout-affecting state changes.
   useEffect(() => {
-    if (!activeYoutubeId || !showYoutube) {
+    if (!activeYoutubeId || !showYoutube || miniPlayerMode) {
+      setYtSlotRect(null);
+      return;
+    }
+    const measure = () => {
+      const el = ytSlotRef.current;
+      if (!el) { setYtSlotRect(null); return; }
+      const r = el.getBoundingClientRect();
+      setYtSlotRect(prev => {
+        if (prev && prev.top === r.top && prev.left === r.left && prev.width === r.width && prev.height === r.height) return prev;
+        return { top: r.top, left: r.left, width: r.width, height: r.height };
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (ytSlotRef.current) ro.observe(ytSlotRef.current);
+    ro.observe(document.body);
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    const interval = window.setInterval(measure, 500);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+      window.clearInterval(interval);
+    };
+  }, [activeYoutubeId, showYoutube, miniPlayerMode, sidePanelOpen, sidePanelTab, mobileSheetOpen]);
+
+  useEffect(() => {
+    if (!activeYoutubeId) {
       if (youtubePlayerRef.current) {
         try { youtubePlayerRef.current.destroy(); } catch (_) {}
         youtubePlayerRef.current = null;
@@ -2871,7 +2904,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         return;
       }
 
+      // Watcher: keep video alive in mini-player while they look at someone else.
       setShowYoutube(false);
+      setMiniPlayerMode(true);
       if (!clickedBroadcaster) {
         setFocusedUserId(peerId);
       }
@@ -5538,39 +5573,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
             const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
             return (
-              <div className="flex-1 min-h-0 bg-black relative group/ytplayer" data-testid="media-main-youtube">
-                <div
-                  ref={ytContainerRef}
-                  className="w-full h-full border-0"
-                  data-testid="iframe-youtube-player"
-                />
-
-                {/* Participant blocking overlay — prevents non-host from interacting with the iframe */}
-                {!isYoutubeHost && (
-                  <div className="absolute inset-0 z-10 cursor-default" style={{ pointerEvents: "all" }} />
-                )}
-
-                {/* Broadcaster pill — bottom-left */}
-                {broadcaster && (
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-20">
-                    <div className={`w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-red-500/70 bg-gradient-to-br ${bGradient}`}>
-                      {broadcaster.profileImageUrl ? (
-                        <img src={broadcaster.profileImageUrl} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className={`w-full h-full bg-gradient-to-br ${bGradient} flex items-center justify-center`}>
-                          <span className="text-[10px] font-bold text-white">{getUserInitials(broadcaster)}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col leading-none">
-                      <span className="text-white text-[11px] font-semibold">{getUserDisplayName(broadcaster)}</span>
-                      <span className="text-red-400 text-[9px] flex items-center gap-0.5 font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-                        {isYoutubeHost ? "You're hosting" : "Playing"}
-                      </span>
-                    </div>
-                  </div>
-                )}
+              <div
+                ref={ytSlotRef}
+                className="flex-1 min-h-0 bg-black relative group/ytplayer"
+                data-testid="media-main-youtube"
+                data-yt-slot="true"
+              >
+                {/* Persistent player is mounted at top-level (see ytPersistentWrapper).
+                    This slot just reserves the visual area; overlays render with the player. */}
 
                 {/* Host control bar — only visible to the broadcaster, revealed on hover */}
                 {isYoutubeHost && (
@@ -5666,6 +5676,34 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 {!isYoutubeHost && (
                   <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white/70 text-[11px] px-2.5 py-1 rounded-full border border-white/10">
                     <Eye className="w-3 h-3" /> Watching
+                  </div>
+                )}
+
+                {/* Participant blocking overlay — prevents non-host from interacting with the iframe.
+                    Sits below host controls (z-20) but above the iframe (which is mounted via portal). */}
+                {!isYoutubeHost && (
+                  <div className="absolute inset-0 z-10 cursor-default" style={{ pointerEvents: "all" }} />
+                )}
+
+                {/* Broadcaster pill — bottom-left */}
+                {broadcaster && (
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-20 pointer-events-none">
+                    <div className={`w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-red-500/70 bg-gradient-to-br ${bGradient}`}>
+                      {broadcaster.profileImageUrl ? (
+                        <img src={broadcaster.profileImageUrl} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className={`w-full h-full bg-gradient-to-br ${bGradient} flex items-center justify-center`}>
+                          <span className="text-[10px] font-bold text-white">{getUserInitials(broadcaster)}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col leading-none">
+                      <span className="text-white text-[11px] font-semibold">{getUserDisplayName(broadcaster)}</span>
+                      <span className="text-red-400 text-[9px] flex items-center gap-0.5 font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+                        {isYoutubeHost ? "You're hosting" : "Playing"}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -7551,44 +7589,65 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </div>
       )}
 
-      {miniPlayerMode && activeYoutubeId && (
-        <div
-          className="fixed z-50 select-none"
-          style={{ left: miniPlayerPos.x, top: miniPlayerPos.y, width: 220, height: 130 }}
-          data-testid="youtube-mini-player"
-        >
+      {/* Persistent YouTube player wrapper.
+          Mounted whenever activeYoutubeId is set, so playback never restarts when a viewer
+          clicks an avatar, opens a panel, or otherwise hides the player view.
+            - showYoutube + slot rect available  → matches the slot's bounding rect
+            - miniPlayerMode (or no slot rect)   → small floating mini player
+            - neither                            → 1×1 hidden but still playing audio */}
+      {activeYoutubeId && (() => {
+        const isMini = !showYoutube || miniPlayerMode || !ytSlotRect;
+        const isYoutubeHost = user?.id === youtubeStartedBy;
+        const showAsHidden = !showYoutube && !miniPlayerMode;
+        const wrapperStyle: React.CSSProperties = showAsHidden
+          ? { left: -9999, top: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }
+          : isMini
+            ? { left: miniPlayerPos.x, top: miniPlayerPos.y, width: 220, height: 130 }
+            : { left: ytSlotRect!.left, top: ytSlotRect!.top, width: ytSlotRect!.width, height: ytSlotRect!.height };
+        return (
           <div
-            className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black cursor-grab active:cursor-grabbing group"
-            onMouseDown={handleMiniPlayerMouseDown}
+            className="fixed select-none"
+            style={{ ...wrapperStyle, zIndex: isMini ? 50 : 5 }}
+            data-testid={isMini ? "youtube-mini-player" : "youtube-persistent-player"}
           >
-            <img
-              src={`https://img.youtube.com/vi/${activeYoutubeId}/hqdefault.jpg`}
-              alt="YouTube mini player"
-              className="w-full h-full object-cover"
-              draggable={false}
-            />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-              <button
-                className="bg-blue-500 hover:bg-blue-400 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-lg transition-colors flex items-center gap-1.5"
-                onClick={(e) => { e.stopPropagation(); handleExpandMiniPlayer(); }}
-                onMouseDown={(e) => e.stopPropagation()}
-                data-testid="button-mini-player-expand"
-              >
-                <Maximize2 className="w-3 h-3" />
-                Click to Zoom
-              </button>
-            </div>
-            <button
-              className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-10"
-              onClick={(e) => { e.stopPropagation(); handleStopYoutube(); setMiniPlayerMode(false); }}
-              onMouseDown={(e) => e.stopPropagation()}
-              data-testid="button-mini-player-close"
+            <div
+              className={`relative w-full h-full overflow-hidden bg-black ${isMini ? "rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing group" : ""}`}
+              onMouseDown={isMini && !showAsHidden ? handleMiniPlayerMouseDown : undefined}
             >
-              <X className="w-3 h-3 text-white" />
-            </button>
+              <div ref={ytContainerRef} className="w-full h-full border-0" data-testid="iframe-youtube-player" />
+              {/* Block iframe interaction for non-host viewers */}
+              {!isYoutubeHost && (
+                <div className="absolute inset-0 z-10 cursor-default" style={{ pointerEvents: "all" }} />
+              )}
+              {isMini && !showAsHidden && (
+                <>
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-20 pointer-events-none">
+                    <button
+                      className="bg-blue-500 hover:bg-blue-400 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-lg transition-colors flex items-center gap-1.5 pointer-events-auto"
+                      onClick={(e) => { e.stopPropagation(); handleExpandMiniPlayer(); }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      data-testid="button-mini-player-expand"
+                    >
+                      <Maximize2 className="w-3 h-3" />
+                      Click to Zoom
+                    </button>
+                  </div>
+                  {isYoutubeHost && (
+                    <button
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+                      onClick={(e) => { e.stopPropagation(); handleStopYoutube(); setMiniPlayerMode(false); }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      data-testid="button-mini-player-close"
+                    >
+                      <X className="w-3 h-3 text-white" />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
         <SheetContent side="right" className="w-[85vw] max-w-80 p-0 flex flex-col md:hidden" data-testid="sheet-side-panel">
