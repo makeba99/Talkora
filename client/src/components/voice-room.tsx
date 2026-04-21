@@ -1876,11 +1876,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   }, [socket, user, room.id]);
 
   useEffect(() => {
-    if (!socket || !user || !activeYoutubeId || !youtubeStartedBy) return;
-    if (showYoutube && user.id !== youtubeStartedBy) {
+    // Free4talk-style sync: when this user opens the player, ask the server for the
+    // current authoritative playhead. The server replies with room:youtube-state which
+    // already includes elapsed-time compensation.
+    if (!socket || !user || !activeYoutubeId) return;
+    if (showYoutube) {
       socket.emit("room:youtube-time-request", { roomId: room.id, requesterId: user.id });
     }
-  }, [showYoutube]);
+  }, [showYoutube, activeYoutubeId]);
 
   useEffect(() => {
     if (sidePanelTab === "read" && readBooks.length === 0 && !readLoading) {
@@ -1975,7 +1978,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
     const buildStateChangeHandler = (player: any, YT: any) => (event: any) => {
       const state = event.data;
-      const isBroadcaster = user?.id === youtubeStartedByRef.current;
+      // Free4talk-style: anyone in the room can drive playback
+      const isBroadcaster = !!user?.id;
       const sock = socketRef.current;
       if (state === YT.PlayerState.ENDED) {
         setYtIsPlaying(false);
@@ -2026,7 +2030,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         }
       }
       if (ytRemoteAction.current) return;
-      if (!isBroadcaster) return;
       if (state === YT.PlayerState.PLAYING) {
         const now = Date.now();
         const currentTime = player.getCurrentTime();
@@ -2178,8 +2181,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   // sees the seek bar). Watchers don't need state updates that re-render the whole room.
   useEffect(() => {
     if (!ytIsPlaying || !showYoutube) return;
-    const isBroadcaster = user?.id === youtubeStartedBy;
-    if (!isBroadcaster) return;
+    // Free4talk-style: anyone watching the player should see their own seek bar update
     const id = setInterval(() => {
       try {
         const t = youtubePlayerRef.current?.getCurrentTime?.() || 0;

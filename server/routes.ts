@@ -18,7 +18,7 @@ const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
 const roomVideoStatus = new Map<string, Set<string>>();
 const roomScreenShareStatus = new Map<string, string | null>();
-const roomYoutubeState = new Map<string, { videoId: string; startedBy: string }>();
+const roomYoutubeState = new Map<string, { videoId: string; startedBy: string; playing: boolean; lastTime: number; lastTs: number }>();
 const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
 const roomRoles = new Map<string, Map<string, string>>();
 const roomMuteStatus = new Map<string, Map<string, boolean>>();
@@ -2989,6 +2989,14 @@ export async function registerRoutes(
       const ytState = roomYoutubeState.get(roomId);
       if (ytState) {
         socket.emit("room:youtube", { videoId: ytState.videoId, startedBy: ytState.startedBy });
+        // Send authoritative playhead so newcomer can seek to the right spot without ping-pong
+        const elapsed = ytState.playing ? Math.max(0, (Date.now() - ytState.lastTs) / 1000) : 0;
+        socket.emit("room:youtube-state", {
+          action: ytState.playing ? "play" : "pause",
+          time: ytState.lastTime + elapsed,
+          ts: Date.now(),
+          from: ytState.startedBy,
+        });
       }
 
       const bookState = roomBookState.get(roomId);
@@ -3221,28 +3229,39 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      // Only the room host (owner) can start or stop videos
-      const room = await storage.getRoom(data.roomId);
-      if (!room || room.ownerId !== currentUserId) return;
+      // Free4talk-style: anyone in the room can start or change the video
       if (data.videoId) {
-        roomYoutubeState.set(data.roomId, { videoId: data.videoId, startedBy: currentUserId });
+        roomYoutubeState.set(data.roomId, {
+          videoId: data.videoId,
+          startedBy: currentUserId,
+          playing: true,
+          lastTime: 0,
+          lastTs: Date.now(),
+        });
       } else {
         roomYoutubeState.delete(data.roomId);
       }
-      socket.to(data.roomId).emit("room:youtube", { videoId: data.videoId, startedBy: currentUserId });
+      // Broadcast to EVERYONE including sender so all clients agree on state
+      io.to(data.roomId).emit("room:youtube", { videoId: data.videoId, startedBy: currentUserId });
     });
 
     socket.on("room:youtube-state", (data: { roomId: string; action: string; time?: number; ts?: number }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      // Only the broadcaster (the one who started the video) can emit state changes
+      // Free4talk-style: anyone in the room can play / pause / seek the shared video
       const ytState = roomYoutubeState.get(data.roomId);
-      if (ytState && ytState.startedBy !== currentUserId) return;
+      if (!ytState) return;
+      const t = typeof data.time === "number" ? data.time : ytState.lastTime;
+      ytState.lastTime = t;
+      ytState.lastTs = Date.now();
+      if (data.action === "play") ytState.playing = true;
+      else if (data.action === "pause") ytState.playing = false;
+      // "seek" keeps current playing state but updates the time anchor
       socket.to(data.roomId).emit("room:youtube-state", {
         action: data.action,
-        time: data.time,
-        ts: data.ts,
+        time: t,
+        ts: data.ts ?? Date.now(),
         from: currentUserId,
       });
     });
@@ -3266,23 +3285,23 @@ export async function registerRoutes(
       });
     });
 
+    // Free4talk-style: any joining client receives the authoritative playhead snapshot via
+    // room:youtube-state right after room:youtube on join, so per-client time-ping requests
+    // are no longer necessary. Keep handlers as no-ops for backward compatibility.
     socket.on("room:youtube-time-request", (data: { roomId: string; requesterId: string }) => {
       if (!currentUserId) return;
       const ytState = roomYoutubeState.get(data.roomId);
       if (!ytState) return;
-      const broadcasterSocketId = userSockets.get(ytState.startedBy);
-      if (broadcasterSocketId) {
-        io.to(broadcasterSocketId).emit("room:youtube-time-request", { requesterId: data.requesterId });
-      }
-    });
-
-    socket.on("room:youtube-time-respond", (data: { roomId: string; time: number; requesterId: string; ts?: number }) => {
-      if (!currentUserId) return;
+      const elapsed = ytState.playing ? Math.max(0, (Date.now() - ytState.lastTs) / 1000) : 0;
       const requesterSocketId = userSockets.get(data.requesterId);
       if (requesterSocketId) {
-        io.to(requesterSocketId).emit("room:youtube-time-responded", { time: data.time, ts: data.ts ?? Date.now() });
+        io.to(requesterSocketId).emit("room:youtube-time-responded", {
+          time: ytState.lastTime + elapsed,
+          ts: Date.now(),
+        });
       }
     });
+    socket.on("room:youtube-time-respond", () => {});
 
     // ---------- Chess (built-in board, two seats per room, others spectate) ----------
     socket.on("room:chess-sync-request", (data: { roomId: string }) => {
