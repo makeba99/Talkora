@@ -7,6 +7,7 @@
 import type { AiTutorSettings, ConversationEntry } from "./types";
 
 export interface StreamOptions {
+  roomId: string;
   message: string;
   history: ConversationEntry[];
   settings: AiTutorSettings;
@@ -42,6 +43,7 @@ export async function streamTokens(
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      roomId: options.roomId,
       message: options.message,
       history: options.history.slice(-8),
       settings: options.settings,
@@ -110,6 +112,7 @@ export async function fetchBufferedReply(
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        roomId: options.roomId,
         message: options.message,
         history: options.history.slice(-8),
         settings: options.settings,

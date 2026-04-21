@@ -366,9 +366,19 @@ export async function registerRoutes(
   app.post("/api/ai-tutor/chat", isAuthenticated, async (req: any, res) => {
     const startTime = Date.now();
     try {
-      const { message, history = [], settings = {}, language = "English", youtubeActive = false } = req.body;
+      const { message, history = [], settings = {}, language = "English", youtubeActive = false, roomId } = req.body;
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "message required" });
+      }
+
+      // Only the user who owns the active AI session in this room may get responses.
+      // This prevents other room participants from hijacking or distracting the session.
+      if (roomId) {
+        const session = roomAiTutorState.get(roomId);
+        const callerId = (req.user as any).id;
+        if (!session || session.userId !== callerId) {
+          return res.status(403).json({ error: "not-active-session" });
+        }
       }
 
       const correctionMode = settings.correctionMode || "live";
@@ -535,10 +545,20 @@ export async function registerRoutes(
     };
 
     try {
-      const { message, history = [], settings = {}, language = "English", youtubeActive = false } = req.body;
+      const { message, history = [], settings = {}, language = "English", youtubeActive = false, roomId } = req.body;
       if (!message || typeof message !== 'string') {
         sendEvent({ error: 'message required' });
         return res.end();
+      }
+
+      // Only the active AI session holder for this room may receive responses.
+      if (roomId) {
+        const session = roomAiTutorState.get(roomId);
+        const callerId = (req.user as any).id;
+        if (!session || session.userId !== callerId) {
+          sendEvent({ error: 'not-active-session' });
+          return res.end();
+        }
       }
 
       const correctionMode = settings.correctionMode || 'live';

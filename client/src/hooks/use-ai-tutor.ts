@@ -299,6 +299,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     try {
       const gotTokens = await streamTokens(
         {
+          roomId,
           message: text.trim(),
           history: aiConversation.slice(-8),
           settings: aiSettings,
@@ -360,6 +361,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       setAiConversation(prev => prev.filter(m => m.id !== streamingId));
 
       const fallback = await fetchBufferedReply({
+        roomId,
         message: text.trim(),
         history: aiConversation.slice(-8),
         settings: aiSettings,
