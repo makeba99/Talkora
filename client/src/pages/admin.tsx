@@ -403,9 +403,20 @@ export default function AdminPage() {
         mediaTypes: announcementMediaTypes,
         showOnLobby: announcementShowOnLobby,
       };
-      const res = editingAnnouncementId
-        ? await apiRequest("PATCH", `/api/admin/announcements/${editingAnnouncementId}`, payload)
-        : await apiRequest("POST", "/api/admin/announcements", payload);
+      let res: Response;
+      if (editingAnnouncementId) {
+        try {
+          res = await apiRequest("PATCH", `/api/admin/announcements/${editingAnnouncementId}`, payload);
+        } catch (err: any) {
+          if (typeof err?.message === "string" && err.message.startsWith("404")) {
+            res = await apiRequest("POST", "/api/admin/announcements", payload);
+          } else {
+            throw err;
+          }
+        }
+      } else {
+        res = await apiRequest("POST", "/api/admin/announcements", payload);
+      }
       return res.json();
     },
     onSuccess: (_data, status) => {
@@ -1360,7 +1371,7 @@ export default function AdminPage() {
                           data-testid="input-announcement-media"
                         />
                         <div className="flex items-center gap-1.5 text-sm border border-border/60 bg-muted/20 rounded-md px-2 py-1 flex-shrink-0">
-                          <span className="text-muted-foreground text-xs">🎁 Gift / GIF</span>
+                          <span className="text-muted-foreground text-xs">GIF</span>
                           <GifPickerButton
                             onGifSelect={(gifUrl) => {
                               if (announcementMediaUrls.length >= 4) return;

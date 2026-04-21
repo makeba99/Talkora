@@ -5209,7 +5209,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 />
               </label>
               <div className="flex items-center gap-1.5 text-[11px] border border-border/40 bg-muted/20 rounded-lg overflow-hidden">
-                <span className="pl-2 text-muted-foreground flex items-center gap-1">🎁 Gift / GIF</span>
+                <span className="pl-2 text-muted-foreground flex items-center gap-1">GIF</span>
                 <GifPickerButton
                   onGifSelect={(gifUrl) => {
                     setWelcomeMediaUrlsState(prev => [...prev, gifUrl]);
