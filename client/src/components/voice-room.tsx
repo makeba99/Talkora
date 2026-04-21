@@ -5159,21 +5159,30 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               ))}
             </div>
             {welcomeMediaUrlsState.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {welcomeMediaUrlsState.map((url, i) => (
-                  <div key={i} className="relative group">
-                    <img src={url} alt="welcome media" className="h-14 w-auto rounded-lg object-cover border border-border/40" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setWelcomeMediaUrlsState(prev => prev.filter((_, j) => j !== i));
-                        setWelcomeMediaTypesState(prev => prev.filter((_, j) => j !== i));
-                      }}
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      data-testid={`button-remove-welcome-media-${i}`}
-                    ><X className="w-2.5 h-2.5" /></button>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground">Attached media</span>
+                  <span className="text-[10px] text-muted-foreground" data-testid="text-welcome-media-count">{welcomeMediaUrlsState.length} attached</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {welcomeMediaUrlsState.map((url, i) => (
+                    <div key={i} className="relative group overflow-hidden rounded-lg border border-border/50 bg-background/60" data-testid={`card-welcome-media-${i}`}>
+                      <img src={url} alt={`welcome media ${i + 1}`} className="h-20 w-full object-cover" data-testid={`img-welcome-media-${i}`} />
+                      {welcomeMediaTypesState[i] === "gif" && (
+                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-pink-500/90 text-white text-[9px] font-bold uppercase tracking-wide">gif</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWelcomeMediaUrlsState(prev => prev.filter((_, j) => j !== i));
+                          setWelcomeMediaTypesState(prev => prev.filter((_, j) => j !== i));
+                        }}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500/90 hover:bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        data-testid={`button-remove-welcome-media-${i}`}
+                      ><X className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             <div className="flex items-center gap-2 flex-wrap">
