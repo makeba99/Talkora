@@ -701,6 +701,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [youtubeWatchers, setYoutubeWatchers] = useState<Set<string>>(new Set());
   const [screenWatchers, setScreenWatchers] = useState<Set<string>>(new Set());
   const [ytQualityState, setYtQualityState] = useState<"good" | "slow">("good");
+  const [ytPlayerLoading, setYtPlayerLoading] = useState(false);
+  const [ytPlayerReady, setYtPlayerReady] = useState(false);
 
   const [bookReaders, setBookReaders] = useState<Set<string>>(new Set());
   const [goLiveOpen, setGoLiveOpen] = useState(false);
@@ -1902,8 +1904,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         youtubePlayerRef.current = null;
       }
       if (ytContainerRef.current) ytContainerRef.current.innerHTML = "";
+      setYtPlayerLoading(false);
+      setYtPlayerReady(false);
       return;
     }
+    setYtPlayerLoading(true);
+    setYtPlayerReady(false);
+
+    // Network-aware initial quality + autoplay decision
+    const conn: any = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    const effType: string = conn?.effectiveType || "4g";
+    const saveData: boolean = !!conn?.saveData;
+    const isSlowNet = saveData || effType === "slow-2g" || effType === "2g" || effType === "3g";
+    const initialQuality = isSlowNet ? "small" : "large"; // 480p on fast, 240p on slow
 
     const buildStateChangeHandler = (player: any, YT: any) => (event: any) => {
       const state = event.data;
@@ -2004,11 +2017,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           videoId: activeYoutubeId,
           width: "100%",
           height: "100%",
-          playerVars: { autoplay: 1, mute: 1, rel: 0, modestbranding: 1, playsinline: 1, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, origin: window.location.origin },
+          host: "https://www.youtube-nocookie.com",
+          playerVars: {
+            autoplay: isSlowNet ? 0 : 1,
+            mute: 1,
+            rel: 0,
+            modestbranding: 1,
+            playsinline: 1,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            iv_load_policy: 3,
+            origin: window.location.origin,
+          },
           events: {
             onReady: (event: any) => {
-              console.log("[YT] onReady fired — calling playVideo then unMute");
+              console.log("[YT] onReady fired — quality:", initialQuality, "slowNet:", isSlowNet);
               try {
+                // Apply network-aware quality cap immediately so playback starts at a stable level
+                try { event.target.setPlaybackQuality?.(initialQuality); } catch (_) {}
                 if (ytSyncTimeRef.current > 0) {
                   event.target.seekTo(ytSyncTimeRef.current, true);
                   ytSyncTimeRef.current = 0;
@@ -2021,6 +2048,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 setYtVolume(100);
                 const d = event.target.getDuration();
                 if (d > 0) setYtDuration(d);
+                setYtPlayerLoading(false);
+                setYtPlayerReady(true);
+                if (isSlowNet) setYtQualityState("slow");
                 // If watcher: request exact sync time from broadcaster now that player is ready
                 if (user?.id !== youtubeStartedByRef.current && socketRef.current) {
                   socketRef.current.emit("room:youtube-time-request", { roomId: room.id, requesterId: user?.id });
@@ -7759,7 +7789,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               className={`relative w-full h-full overflow-hidden bg-black ${isMini ? "rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing group" : ""}`}
               onMouseDown={isMini && !showAsHidden ? handleMiniPlayerMouseDown : undefined}
             >
-              <div ref={ytContainerRef} className="w-full h-full border-0" data-testid="iframe-youtube-player" />
+              <div
+                ref={ytContainerRef}
+                className="w-full h-full border-0 transition-opacity duration-300"
+                style={{ opacity: ytPlayerReady ? 1 : 0 }}
+                data-testid="iframe-youtube-player"
+              />
+              {ytPlayerLoading && !ytPlayerReady && !showAsHidden && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black pointer-events-none" data-testid="youtube-loading-overlay">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="text-[11px] text-white/70">Loading video…</span>
+                  </div>
+                </div>
+              )}
               {/* Block iframe interaction for non-host viewers */}
               {!isYoutubeHost && (
                 <div className="absolute inset-0 z-10 cursor-default" style={{ pointerEvents: "all" }} />
