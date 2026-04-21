@@ -730,6 +730,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
   const sidePanelTabRef = useRef(sidePanelTab);
   const ytSyncTimeRef = useRef<number>(0);
+  const ytBufferTimerRef = useRef<number | null>(null);
   const youtubeStartedByRef = useRef<string | null>(null);
   const [ytIsPlaying, setYtIsPlaying] = useState(false);
   const [ytCurrentTime, setYtCurrentTime] = useState(0);
@@ -1902,7 +1903,31 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         setYtIsPlaying(false);
         try { setYtCurrentTime(player.getCurrentTime() || 0); } catch (_) {}
       } else if (state === YT.PlayerState.BUFFERING) {
-        // keep current ytIsPlaying state during buffering
+        // Slow-internet adaptation: if buffering lasts >4s, downgrade quality one step.
+        // Repeat every 5s of continuous buffering until we hit "small" (the lowest tier).
+        if (ytBufferTimerRef.current) window.clearTimeout(ytBufferTimerRef.current);
+        const downgrade = () => {
+          try {
+            const levels = ["hd1080", "hd720", "large", "medium", "small"];
+            const cur = player.getPlaybackQuality?.() || "default";
+            const idx = levels.indexOf(cur);
+            const next = idx >= 0 && idx < levels.length - 1
+              ? levels[idx + 1]
+              : (cur === "default" || cur === "auto") ? "medium" : "small";
+            if (next && next !== cur) {
+              player.setPlaybackQuality?.(next);
+              console.log(`[YT] slow internet — quality ${cur} → ${next}`);
+            }
+          } catch (_) {}
+          ytBufferTimerRef.current = window.setTimeout(downgrade, 5000);
+        };
+        ytBufferTimerRef.current = window.setTimeout(downgrade, 4000);
+      } else {
+        // Any non-buffering state cancels the downgrade timer
+        if (ytBufferTimerRef.current) {
+          window.clearTimeout(ytBufferTimerRef.current);
+          ytBufferTimerRef.current = null;
+        }
       }
       if (ytRemoteAction.current) return;
       if (!isBroadcaster) return;
@@ -2164,6 +2189,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   // AI tutor logic is now fully handled by the useAiTutor hook above.
 
   const handleLeave = (reason?: "joined-another-room") => {
+    // If AI Tutor is active, stop it cleanly (same as if the user clicked the AI off button).
+    // This cancels TTS, stops mic listening, and emits room:ai-tutor-stop so the avatar
+    // closes for everyone in the room — no orphaned AI session left behind.
+    try { if (aiState.active) toggleAiTutor(); } catch (_) {}
     localStream.current?.getTracks().forEach((t) => t.stop());
     screenStream.current?.getTracks().forEach((t) => t.stop());
     videoStream.current?.getTracks().forEach((t) => t.stop());
@@ -2177,6 +2206,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:leave", { roomId: room.id, userId: user?.id });
     onLeave(reason);
   };
+
+  // Also stop AI Tutor automatically if the voice-room component unmounts for any reason
+  // (e.g. user closes the browser tab or navigates away without clicking "Leave").
+  // We use refs to ensure the cleanup sees the latest state, not the initial closure.
+  const aiActiveRef = useRef(false);
+  const toggleAiTutorRef = useRef(toggleAiTutor);
+  useEffect(() => { aiActiveRef.current = aiState.active; }, [aiState.active]);
+  useEffect(() => { toggleAiTutorRef.current = toggleAiTutor; }, [toggleAiTutor]);
+  useEffect(() => {
+    return () => {
+      try { if (aiActiveRef.current) toggleAiTutorRef.current?.(); } catch (_) {}
+    };
+  }, []);
 
   const renderMicSettingsContent = () => (
     <div className="p-4 space-y-3">
