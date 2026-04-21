@@ -322,7 +322,7 @@ export async function registerRoutes(
     const body: any = {
       model: route.model,
       messages,
-      max_tokens: 120,
+      max_tokens: 160,
       temperature,
     };
     // JSON mode: OpenAI supports response_format; NVIDIA models need prompt-level enforcement
@@ -405,19 +405,20 @@ export async function registerRoutes(
         : `Reply ONLY in JSON: {"reply":"...","correction":"..."|null,"correctionFixed":"..."|null}`;
 
       const systemPrompt = [
-        `You are a real-time human-like LivePortrait AI avatar and language tutor inside a voice app. You help the user practice ${language}.`,
+        `You are a real-time human-like AI avatar and language tutor inside a voice app. You help the user practice ${language}.`,
+        `TRANSCRIPTION RULES (critical): The user's message is a literal speech transcription. Do NOT interpret or add emotions, tone indicators, symbols, or emojis. Do NOT guess or add words the user did not say. Do NOT paraphrase their input — respond to exactly the words they used.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
-        `Keep replies short, voice-first, and on point: usually 1 sentence, maximum 2 sentences, under 35 words unless the user asks for detail.`,
-        `If the user's speech is unclear, ask one short clarification question instead of guessing.`,
+        `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
+        `If the user's speech is genuinely unclear, ask one short clarification question instead of guessing.`,
         personality === 'Formal'
           ? `Your tone is warm but polished — professional without being stiff.`
           : `Your tone is friendly, confident, and slightly playful — like a smart friend who actually enjoys talking.`,
         teachingStyle === 'Grammar'
           ? `Lean into grammar and structure, but keep it warm and encouraging — never lecture.`
           : `Keep it conversational. React to what the person says like a real person would — with curiosity, humor, or a quick take.`,
-        `Speak naturally. Avoid paragraphs, lists, markdown, and long explanations.`,
+        `Speak naturally. Avoid markdown, bullet lists, and academic-style explanations.`,
         `Never start with hollow filler like "Great!", "Wow!", "Of course!" or "Certainly!". Just respond.`,
-        `Never ask more than one question. Often zero is better — let your response breathe.`,
+        `Never ask more than one question at a time. Often zero questions is better.`,
         `Never repeat phrasing from previous turns. If the conversation loops, take a completely new angle.`,
         correctionLine,
         antiRepeatLine,
@@ -559,20 +560,21 @@ export async function registerRoutes(
         : '';
 
       const systemPrompt = [
-        `You are a real-time human-like LivePortrait AI avatar and language tutor inside a voice app. You help the user practice ${language}.`,
+        `You are a real-time human-like AI avatar and language tutor inside a voice app. You help the user practice ${language}.`,
+        `TRANSCRIPTION RULES (critical): The user's message is a literal speech transcription. Do NOT interpret or add emotions, tone indicators, symbols, or emojis. Do NOT guess or add words the user did not say. Do NOT paraphrase their input — respond to exactly the words they used.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
-        `Keep replies short, voice-first, and on point: usually 1 sentence, maximum 2 sentences, under 35 words unless the user asks for detail.`,
-        `If the user's speech is unclear, ask one short clarification question instead of guessing.`,
+        `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
+        `If the user's speech is genuinely unclear, ask one short clarification question instead of guessing.`,
         personality === 'Formal'
           ? `Your tone is warm but polished — professional without being stiff.`
           : `Your tone is friendly, confident, and slightly playful — like a smart friend who actually enjoys the conversation.`,
         teachingStyle === 'Grammar'
           ? `Lean into grammar and structure, but keep it warm and encouraging — never lecture.`
           : `Keep it conversational and reactive — respond to what the user actually said, like a real person would.`,
-        `Speak naturally. Avoid paragraphs, lists, markdown, and long explanations.`,
+        `Speak naturally. Avoid markdown, bullet lists, and academic-style explanations.`,
         `Never open with hollow filler: no "Great!", "Wow!", "Of course!", "Certainly!". Just respond.`,
-        `Never ask more than one question. Often none is better — let your reply land on its own.`,
-        `Never repeat phrasing from previous turns. If the conversation loops, pivot to a completely fresh angle.`,
+        `Never ask more than one question at a time. Often zero questions is better.`,
+        `Never repeat phrasing from previous turns. If the conversation loops, pivot to a fresh angle.`,
         correctionLine,
         antiRepeatLine,
         youtubeActive ? `The user is also watching a YouTube video — casually reference it if it fits.` : '',
@@ -593,7 +595,7 @@ export async function registerRoutes(
           const nvidiaRes = await fetch(`${baseUrl}/chat/completions`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, messages, max_tokens: 100, temperature, stream: true }),
+            body: JSON.stringify({ model, messages, max_tokens: 160, temperature, stream: true }),
           });
           if (!nvidiaRes.ok || !nvidiaRes.body) return false;
 

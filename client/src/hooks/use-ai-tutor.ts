@@ -492,10 +492,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => {
     if (aiActive) {
       activeRef.current = true;
-      // Reduced to 700ms for faster initial capture
+      // 250ms — gives the intro TTS time to start, then mic activates immediately after
       setTimeout(() => {
         if (activeRef.current && !speakingRef.current) sttRef.current?.startListening();
-      }, 700);
+      }, 250);
     } else {
       activeRef.current = false;
       sttRef.current?.stopAll();

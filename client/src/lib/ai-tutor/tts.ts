@@ -27,9 +27,22 @@ export class TtsEngine {
   private voiceId: string | null = null;
   private speed = 0.7;
   private callbacks: TtsCallbacks;
+  // Eagerly cached voice list — avoids Chrome returning empty on first playback
+  private cachedVoices: SpeechSynthesisVoice[] = [];
 
   constructor(callbacks: TtsCallbacks) {
     this.callbacks = callbacks;
+    // Pre-load the browser voice list immediately so it is ready on first speak.
+    // Chrome loads voices asynchronously — without this the default (often male)
+    // voice is used even for Female persona on the very first utterance.
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const loadVoices = () => {
+        const v = window.speechSynthesis.getVoices();
+        if (v.length > 0) this.cachedVoices = v;
+      };
+      loadVoices(); // may return immediately on Firefox / Safari
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
   }
 
   configure(voice: "Female" | "Male", speed: number, voiceId?: string | null) {
@@ -86,7 +99,11 @@ export class TtsEngine {
     utter.pitch = isFemale ? 1.65 : 0.60;
     utter.lang = "en-US";
 
-    const voices = window.speechSynthesis.getVoices();
+    // Use cached voices (loaded in constructor) so the correct voice is
+    // available even on the very first utterance — avoids male voice on first click
+    const freshVoices = window.speechSynthesis.getVoices();
+    if (freshVoices.length > 0) this.cachedVoices = freshVoices;
+    const voices = this.cachedVoices;
     if (voices.length > 0) {
       const savedVoice = this.voiceId
         ? voices.find(v => v.voiceURI === this.voiceId || v.name === this.voiceId)

@@ -1,9 +1,11 @@
 /**
  * STT Module — Web Speech API wrapper with barge-in support.
  *
- * Primary recognizer: runs in single-utterance mode (continuous: false).
- *   - More reliable than continuous mode; Chrome always fires isFinal after a pause
- *   - Auto-restarts after each utterance so the AI keeps listening indefinitely
+ * Primary recognizer: runs in CONTINUOUS mode with a 750ms silence timer.
+ *   - Continuous mode captures fast speech and long sentences without cutting off.
+ *   - A silence timer (750ms after last isFinal) flushes the accumulated buffer.
+ *   - Auto-restarts within 50ms after session ends so the gap between sentences
+ *     is imperceptible.
  *
  * Barge-in recognizer: lightweight always-on mic that detects ANY voice
  *   while AI is speaking and immediately cancels the TTS pipeline.
@@ -37,6 +39,7 @@ export class SttEngine {
   private loadingRef: { current: boolean };
   private activeRef: { current: boolean };
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
+  private silenceTimer: ReturnType<typeof setTimeout> | null = null;
   private micDenied = false;
 
   constructor(
@@ -59,6 +62,10 @@ export class SttEngine {
     this.lang = SPEECH_LANG_MAP[roomLanguage] || "en-US";
   }
 
+  private clearSilenceTimer() {
+    if (this.silenceTimer) { clearTimeout(this.silenceTimer); this.silenceTimer = null; }
+  }
+
   private scheduleRestart(delayMs: number) {
     if (this.restartTimer) clearTimeout(this.restartTimer);
     this.restartTimer = setTimeout(() => {
@@ -70,58 +77,69 @@ export class SttEngine {
   }
 
   /**
-   * Start primary recognition.
-   * Uses single-utterance mode (continuous: false) — fires a final result
-   * reliably after the user pauses speaking, then auto-restarts.
+   * Start primary recognition in CONTINUOUS mode.
+   * Accumulates isFinal results into a buffer and flushes when the user
+   * pauses for 750ms — this captures fast speech and long sentences fully.
    */
   startListening() {
     if (!SpeechRec) return;
     if (this.micDenied) return;
     if (!this.activeRef.current || this.speakingRef.current || this.loadingRef.current) return;
 
+    this.clearSilenceTimer();
     try { this.primary?.abort(); } catch {}
     this.primary = null;
 
     const rec = new SpeechRec();
-    // Single-utterance mode: much more reliable for getting isFinal results
-    rec.continuous = false;
+    rec.continuous = true;         // continuous — no early cut-off on mid-sentence pauses
     rec.interimResults = true;
     rec.maxAlternatives = 1;
     rec.lang = this.lang;
     this.primary = rec;
 
-    let gotFinal = false;
+    let finalBuffer = "";
+
+    // Flush accumulated text to the AI after 750ms of silence
+    const flush = () => {
+      this.clearSilenceTimer();
+      const text = finalBuffer.trim();
+      finalBuffer = "";
+      if (text && this.activeRef.current && !this.loadingRef.current) {
+        this.callbacks.onFinal(text);
+      }
+    };
+
+    const resetSilence = () => {
+      this.clearSilenceTimer();
+      this.silenceTimer = setTimeout(flush, 750);
+    };
 
     rec.onstart = () => {
       this.callbacks.onStart();
     };
 
     rec.onresult = (e: any) => {
-      const results = Array.from(e.results as SpeechRecognitionResultList);
-
-      // Always show interim text so user can see mic is picking up their voice
-      const interim = results
-        .filter((r: SpeechRecognitionResult) => !r.isFinal)
-        .map((r: SpeechRecognitionResult) => r[0].transcript)
-        .join(" ")
-        .trim();
-      if (interim) this.callbacks.onInterim(interim);
-
-      // Final transcript — send to AI
-      const transcript = results
-        .filter((r: SpeechRecognitionResult) => r.isFinal)
-        .map((r: SpeechRecognitionResult) => r[0].transcript)
-        .join(" ")
-        .trim();
-
-      if (transcript) {
-        gotFinal = true;
-        this.callbacks.onFinal(transcript);
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const result = e.results[i];
+        if (result.isFinal) {
+          const word = result[0].transcript.trim();
+          if (word) {
+            finalBuffer += (finalBuffer ? " " : "") + word;
+            resetSilence(); // reset the 750ms silence window after each final chunk
+          }
+        } else {
+          interim += result[0].transcript;
+        }
       }
+      // Show the running transcript (finals + current interim) to the user
+      const display = (finalBuffer + (interim ? " " + interim : "")).trim();
+      if (display) this.callbacks.onInterim(display);
     };
 
     rec.onerror = (e: any) => {
       const err: string = e?.error || "unknown";
+      this.clearSilenceTimer();
 
       if (err === "not-allowed" || err === "service-not-allowed") {
         this.micDenied = true;
@@ -131,15 +149,15 @@ export class SttEngine {
       }
 
       if (err === "aborted") {
-        // Intentional abort — don't log or restart from here
+        // Intentional abort from stopListening() — don't restart from here
         return;
       }
 
       this.callbacks.onStop();
 
       if (err === "no-speech") {
-        // No speech heard — restart quickly to keep listening
-        this.scheduleRestart(400);
+        // No speech detected — restart quickly to keep the session alive
+        this.scheduleRestart(150);
         return;
       }
 
@@ -149,24 +167,29 @@ export class SttEngine {
         return;
       }
 
-      // Other errors — restart after a short pause
+      // Other errors — restart after a brief pause
       this.callbacks.onError?.(`Speech recognition error: ${err}`);
-      this.scheduleRestart(800);
+      this.scheduleRestart(600);
     };
 
     rec.onend = () => {
+      this.clearSilenceTimer();
+      // If there's buffered text (session ended before silence timer fired), send it now
+      const text = finalBuffer.trim();
+      finalBuffer = "";
       this.callbacks.onStop();
-      if (!gotFinal && !this.micDenied) {
-        // Recognition ended without capturing speech — restart to keep listening
-        this.scheduleRestart(300);
+      if (text && this.activeRef.current && !this.loadingRef.current) {
+        this.callbacks.onFinal(text);
+        // sendAiMessage will restart listening after AI responds
+        return;
       }
-      // If gotFinal is true, DO NOT restart here.
-      // sendAiMessage will restart after AI responds (via onTtsEnd → startListening).
+      // Continuous session ended without new text — restart immediately
+      this.scheduleRestart(50);
     };
 
     try {
       rec.start();
-    } catch (err) {
+    } catch {
       this.callbacks.onStop();
       this.callbacks.onError?.("Could not start microphone. Try refreshing the page.");
     }
@@ -208,6 +231,7 @@ export class SttEngine {
   }
 
   stopListening() {
+    this.clearSilenceTimer();
     if (this.restartTimer) { clearTimeout(this.restartTimer); this.restartTimer = null; }
     try { this.primary?.abort(); } catch {}
     this.primary = null;
