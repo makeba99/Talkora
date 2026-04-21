@@ -84,6 +84,23 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
   const [pendingTo, setPendingTo] = useState<{ userId: string; username: string } | null>(null);
   const [showChallengeList, setShowChallengeList] = useState(false);
   const chessRef = useRef<Chess>(new Chess());
+  const boardWrapperRef = useRef<HTMLDivElement | null>(null);
+  const [boardSize, setBoardSize] = useState<number>(320);
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const [legalTargets, setLegalTargets] = useState<string[]>([]);
+
+  useEffect(() => {
+    const el = boardWrapperRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = Math.floor(entry.contentRect.width);
+        if (w > 0) setBoardSize(w);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Sync from server
   useEffect(() => {
@@ -169,7 +186,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
   };
   const newGame = () => socket?.emit("room:chess-new-game", { roomId });
 
-  const onPieceDrop = (sourceSquare: string, targetSquare: string): boolean => {
+  const submitMove = (sourceSquare: string, targetSquare: string): boolean => {
     if (!state || state.status !== "playing" || !isMyTurn || !socket) return false;
     const game = new Chess(state.fen);
     let move;
@@ -207,8 +224,51 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
       winner,
       endReason,
     });
+    setSelectedSquare(null);
+    setLegalTargets([]);
     return true;
   };
+
+  const onPieceDrop = (sourceSquare: string, targetSquare: string): boolean => {
+    return submitMove(sourceSquare, targetSquare);
+  };
+
+  const onSquareClick = (square: string) => {
+    if (!state || state.status !== "playing" || !isMyTurn) return;
+    const game = new Chess(state.fen);
+    const piece = game.get(square as any);
+    const myTurnColor = state.turn;
+    if (selectedSquare && selectedSquare !== square) {
+      const moved = submitMove(selectedSquare, square);
+      if (moved) return;
+    }
+    if (piece && piece.color === myTurnColor) {
+      setSelectedSquare(square);
+      try {
+        const moves = game.moves({ square: square as any, verbose: true }) as any[];
+        setLegalTargets(moves.map((m) => m.to));
+      } catch {
+        setLegalTargets([]);
+      }
+    } else {
+      setSelectedSquare(null);
+      setLegalTargets([]);
+    }
+  };
+
+  const highlightSquares = useMemo(() => {
+    const styles: Record<string, React.CSSProperties> = {};
+    if (selectedSquare) {
+      styles[selectedSquare] = { background: "rgba(255, 217, 0, 0.45)" };
+    }
+    for (const t of legalTargets) {
+      styles[t] = {
+        background:
+          "radial-gradient(circle, rgba(20,180,80,0.55) 22%, transparent 24%)",
+      };
+    }
+    return styles;
+  }, [selectedSquare, legalTargets]);
 
   const shareLichess = () => {
     setLichessError(null);
@@ -306,16 +366,18 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
       </div>
 
       {tab === "quick" && (
-        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+        <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
           {seatBadge(state?.white ?? null, "white")}
-          <div className="rounded-lg overflow-hidden border border-border/60 bg-[#312e2b]">
+          <div ref={boardWrapperRef} className="rounded-lg overflow-hidden border border-border/60 bg-[#312e2b] w-full">
             <Chessboard
               position={state?.fen || "start"}
               onPieceDrop={onPieceDrop}
+              onSquareClick={onSquareClick}
               boardOrientation={myColor === "black" ? "black" : "white"}
               arePiecesDraggable={!!isMyTurn}
               customBoardStyle={{ borderRadius: "0px" }}
-              boardWidth={280}
+              customSquareStyles={highlightSquares}
+              boardWidth={boardSize}
             />
           </div>
           {seatBadge(state?.black ?? null, "black")}

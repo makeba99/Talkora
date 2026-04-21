@@ -4174,8 +4174,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "youtube" ? "flex" : "none" }}>
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 
-          {/* ── HOST VIEW: search + stop controls ── */}
-          {isHost && (
+          {/* ── EVERYONE: search + stop controls ── */}
+          {true && (
             <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0 space-y-2">
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
@@ -4204,8 +4204,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          {/* ── PARTICIPANT VIEW: now watching card ── */}
-          {!isHost && activeYoutubeId && (() => {
+          {/* ── Now watching card (shown to non-broadcasters) ── */}
+          {user?.id !== youtubeStartedBy && activeYoutubeId && (() => {
             const broadcaster = participants.find(p => p.id === youtubeStartedBy);
             const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
             const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
@@ -4269,19 +4269,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             );
           })()}
 
-          {/* ── PARTICIPANT VIEW: no video active ── */}
-          {!isHost && !activeYoutubeId && (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
-              <div className="w-12 h-12 rounded-full bg-muted/30 flex items-center justify-center">
-                <Youtube className="w-6 h-6 text-muted-foreground/30" />
-              </div>
-              <p className="text-[12px] font-medium text-muted-foreground/60">No video playing</p>
-              <p className="text-[11px] text-muted-foreground/40">The host will start a video for everyone to watch together.</p>
-            </div>
-          )}
-
-          {/* ── HOST VIEW: search results + trending ── */}
-          {isHost && (
+          {/* ── EVERYONE: search results + trending ── */}
+          {true && (
             <ScrollArea className="flex-1 min-h-0">
               <div className="p-3 space-y-3">
                 {youtubeResults.length > 0 && (
@@ -5892,7 +5881,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           )}
 
           {activeYoutubeId && showYoutube && (() => {
-            const isYoutubeHost = user?.id === youtubeStartedBy;
+            const isYoutubeHost = !!user?.id;
             const broadcaster = participants.find(p => p.id === youtubeStartedBy);
             const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
             const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
@@ -5996,12 +5985,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                 )}
 
-                {/* Participant info banner — non-host viewers see a subtle "watching" badge */}
-                {!isYoutubeHost && (
-                  <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white/70 text-[11px] px-2.5 py-1 rounded-full border border-white/10">
-                    <Eye className="w-3 h-3" /> Watching
-                  </div>
-                )}
 
                 {/* Connection quality badge — auto-shown when slow internet triggers a quality downgrade */}
                 <div
@@ -6017,11 +6000,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   {ytQualityState === "slow" ? "Slow" : "Good"}
                 </div>
 
-                {/* Participant blocking overlay — prevents non-host from interacting with the iframe.
-                    Sits below host controls (z-20) but above the iframe (which is mounted via portal). */}
-                {!isYoutubeHost && (
-                  <div className="absolute inset-0 z-10 cursor-default" style={{ pointerEvents: "all" }} />
-                )}
 
                 {/* Broadcaster pill — bottom-left */}
                 {broadcaster && (
@@ -6039,7 +6017,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <span className="text-white text-[11px] font-semibold">{getUserDisplayName(broadcaster)}</span>
                       <span className="text-red-400 text-[9px] flex items-center gap-0.5 font-medium">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-                        {isYoutubeHost ? "You're hosting" : "Playing"}
+                        {user?.id === youtubeStartedBy ? "You're hosting" : "Playing"}
                       </span>
                     </div>
                   </div>
@@ -7994,7 +7972,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             - neither                            → 1×1 hidden but still playing audio */}
       {activeYoutubeId && (() => {
         const isMini = !showYoutube || miniPlayerMode || !ytSlotRect;
-        const isYoutubeHost = user?.id === youtubeStartedBy;
+        const isYoutubeHost = !!user?.id;
         const showAsHidden = !showYoutube && !miniPlayerMode;
         const wrapperStyle: React.CSSProperties = showAsHidden
           ? { left: -9999, top: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }
@@ -8024,10 +8002,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <span className="text-[11px] text-white/70">Loading video…</span>
                   </div>
                 </div>
-              )}
-              {/* Block iframe interaction for non-host viewers */}
-              {!isYoutubeHost && (
-                <div className="absolute inset-0 z-10 cursor-default" style={{ pointerEvents: "all" }} />
               )}
               {isMini && !showAsHidden && (
                 <>

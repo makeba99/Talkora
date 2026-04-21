@@ -2500,7 +2500,7 @@ export async function registerRoutes(
       } catch (err) {
         console.error("Error auto-deleting room:", err);
       }
-    }, 90000);
+    }, 5000);
     roomDeleteTimers.set(roomId, timer);
   }
 
@@ -3792,7 +3792,7 @@ export async function registerRoutes(
                 }
               }
             }
-          }, 30000);
+          }, 1500);
           disconnectTimers.set(timerId, timer);
         }
       }

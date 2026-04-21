@@ -115,10 +115,10 @@ async function cleanOrphanedFiles(orphanDays: number): Promise<void> {
 }
 
 async function runCleanup(): Promise<void> {
-  const messagesDays       = getEnvDays("CLEANUP_MESSAGES_DAYS",       90);
-  const roomMessagesDays   = getEnvDays("CLEANUP_ROOM_MESSAGES_DAYS",  30);
-  const notificationsDays  = getEnvDays("CLEANUP_NOTIFICATIONS_DAYS",  60);
-  const reportsDays        = getEnvDays("CLEANUP_REPORTS_DAYS",        180);
+  const messagesDays       = getEnvDays("CLEANUP_MESSAGES_DAYS",       7);
+  const roomMessagesDays   = getEnvDays("CLEANUP_ROOM_MESSAGES_DAYS",  7);
+  const notificationsDays  = getEnvDays("CLEANUP_NOTIFICATIONS_DAYS",  14);
+  const reportsDays        = getEnvDays("CLEANUP_REPORTS_DAYS",        30);
   const orphanFilesDays    = getEnvDays("CLEANUP_ORPHAN_FILES_DAYS",   7);
 
   log("Starting scheduled data cleanup...");
@@ -227,10 +227,10 @@ export function startCleanupScheduler(): void {
 
   log(`Cleanup scheduler started — runs every ${intervalMinutes} minute(s)`);
   log(
-    `Retention: messages=${getEnvDays("CLEANUP_MESSAGES_DAYS", 90)}d, ` +
-    `room_messages=${getEnvDays("CLEANUP_ROOM_MESSAGES_DAYS", 30)}d, ` +
-    `notifications=${getEnvDays("CLEANUP_NOTIFICATIONS_DAYS", 60)}d, ` +
-    `reports=${getEnvDays("CLEANUP_REPORTS_DAYS", 180)}d, ` +
+    `Retention: messages=${getEnvDays("CLEANUP_MESSAGES_DAYS", 7)}d, ` +
+    `room_messages=${getEnvDays("CLEANUP_ROOM_MESSAGES_DAYS", 7)}d, ` +
+    `notifications=${getEnvDays("CLEANUP_NOTIFICATIONS_DAYS", 14)}d, ` +
+    `reports=${getEnvDays("CLEANUP_REPORTS_DAYS", 30)}d, ` +
     `orphan_files=${getEnvDays("CLEANUP_ORPHAN_FILES_DAYS", 7)}d`
   );
 
