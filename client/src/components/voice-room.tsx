@@ -1512,8 +1512,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         setShowYoutube(false);
         setMiniPlayerMode(false);
         setYoutubeWatchers(new Set());
-      } else {
-        // Auto-open for everyone — broadcaster AND watchers all see the player immediately
+      } else if (data.startedBy === user.id) {
+        // Only auto-open for the broadcaster — watchers must click the broadcaster's avatar
         setShowYoutube(true);
       }
     });
