@@ -423,7 +423,12 @@ export const insertAnnouncementSchema = createInsertSchema(announcements)
     mediaPosition: z.enum(["above", "below", "between"]).default("below"),
     kind: z.enum(["platform", "maintenance", "safety", "celebration"]).default("platform"),
     status: z.enum(["draft", "published"]).default("draft"),
-    mediaUrls: z.array(z.string().startsWith("/uploads/")).max(4).default([]),
+    mediaUrls: z.array(
+      z.string().refine(
+        (url) => url.startsWith("/uploads/") || url.startsWith("https://") || url.startsWith("http://"),
+        { message: "Media URL must be an uploaded file path (/uploads/...) or a full http(s) URL" }
+      )
+    ).max(4).default([]),
     mediaTypes: z.array(z.enum(["image", "gif"])).max(4).default([]),
     showOnLobby: z.boolean().default(false),
   });

@@ -1370,11 +1370,14 @@ export default function AdminPage() {
                           className="flex-1 min-w-0"
                           data-testid="input-announcement-media"
                         />
-                        <div className="flex items-center gap-1.5 text-sm border border-border/60 bg-muted/20 rounded-md px-2 py-1 flex-shrink-0">
-                          <span className="text-muted-foreground text-xs">GIF</span>
+                        <div className="flex items-center text-sm border border-border/60 bg-muted/20 rounded-md px-1 py-0.5 flex-shrink-0" title="Pick a GIF">
                           <GifPickerButton
                             onGifSelect={(gifUrl) => {
                               if (announcementMediaUrls.length >= 4) return;
+                              if (!gifUrl.startsWith("/uploads/") && !gifUrl.startsWith("https://") && !gifUrl.startsWith("http://")) {
+                                toast({ title: "Invalid GIF", description: "GIF source is not a valid URL.", variant: "destructive" });
+                                return;
+                              }
                               setAnnouncementMediaUrls(prev => [...prev, gifUrl].slice(0, 4));
                               setAnnouncementMediaTypes(prev => [...prev, "gif"].slice(0, 4));
                             }}
@@ -1425,7 +1428,7 @@ export default function AdminPage() {
                       <Button
                         variant="outline"
                         onClick={() => saveAnnouncementMutation.mutate("draft")}
-                        disabled={announcementTitle.trim().length < 3 || announcementBody.trim().length === 0 || saveAnnouncementMutation.isPending}
+                        disabled={announcementTitle.trim().length < 3 || announcementBody.trim().length === 0 || saveAnnouncementMutation.isPending || uploadAnnouncementMediaMutation.isPending}
                         data-testid="button-save-announcement-draft"
                       >
                         <Save className="w-4 h-4 mr-2" />
@@ -1433,7 +1436,7 @@ export default function AdminPage() {
                       </Button>
                       <Button
                         onClick={() => saveAnnouncementMutation.mutate("published")}
-                        disabled={announcementTitle.trim().length < 3 || announcementBody.trim().length === 0 || saveAnnouncementMutation.isPending}
+                        disabled={announcementTitle.trim().length < 3 || announcementBody.trim().length === 0 || saveAnnouncementMutation.isPending || uploadAnnouncementMediaMutation.isPending}
                         data-testid="button-publish-announcement"
                       >
                         <Send className="w-4 h-4 mr-2" />
