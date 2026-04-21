@@ -711,6 +711,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
+  const [readCatalog, setReadCatalog] = useState<any[]>([]);
+  const [readAudiobooks, setReadAudiobooks] = useState<any[]>([]);
+  const [readVideos, setReadVideos] = useState<any[]>([]);
   const [readLoading, setReadLoading] = useState(false);
   const [selectedBook, setSelectedBook] = useState<any | null>(null);
   const [bookText, setBookText] = useState("");
@@ -3323,24 +3326,35 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (readBooks.length > 0 || readLoading) return;
     setReadLoading(true);
     try {
-      const res = await fetch(`https://gutendex.com/books/?sort=popular&languages=en`);
+      const res = await fetch(`/api/library/search`, { credentials: "include" });
       const data = await res.json();
-      setReadBooks(data.results || []);
+      setReadBooks(data.books || []);
+      setReadCatalog([]);
+      setReadAudiobooks([]);
+      setReadVideos([]);
     } catch { setReadBooks([]); } finally { setReadLoading(false); }
   };
 
   const searchGutenberg = async (query: string) => {
     if (!query.trim()) {
       setReadBooks([]);
+      setReadCatalog([]);
+      setReadAudiobooks([]);
+      setReadVideos([]);
       loadDefaultBooks();
       return;
     }
     setReadLoading(true);
     try {
-      const res = await fetch(`https://gutendex.com/books/?search=${encodeURIComponent(query)}&languages=en`);
+      const res = await fetch(`/api/library/search?q=${encodeURIComponent(query)}`, { credentials: "include" });
       const data = await res.json();
-      setReadBooks(data.results || []);
-    } catch { setReadBooks([]); } finally { setReadLoading(false); }
+      setReadBooks(data.books || []);
+      setReadCatalog(data.openLibrary || []);
+      setReadAudiobooks(data.audiobooks || []);
+      setReadVideos(data.videos || []);
+    } catch {
+      setReadBooks([]); setReadCatalog([]); setReadAudiobooks([]); setReadVideos([]);
+    } finally { setReadLoading(false); }
   };
 
   const loadBookText = async (book: any, fromShared = false) => {
@@ -4446,21 +4460,27 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 )}
-                {readBooks.length === 0 && !readLoading && (
+                {readBooks.length === 0 && readCatalog.length === 0 && readAudiobooks.length === 0 && readVideos.length === 0 && !readLoading && (
                   <div className="text-center py-8 space-y-2 text-muted-foreground">
                     <BookOpen className="w-8 h-8 mx-auto opacity-30" />
-                    <p className="text-xs">No books found. Try a different search.</p>
-                    <button onClick={loadDefaultBooks} className="text-xs text-primary hover:underline">Browse bestsellers</button>
+                    <p className="text-xs">No matches. Try a different search.</p>
+                    <button onClick={loadDefaultBooks} className="text-xs text-primary hover:underline" data-testid="link-browse-bestsellers">Browse bestsellers</button>
                   </div>
                 )}
                 {readBooks.length > 0 && !readSearch.trim() && (
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pb-1">📚 Popular Bestsellers</p>
+                )}
+                {readBooks.length > 0 && readSearch.trim() && (
+                  <p className="text-[10px] font-semibold text-emerald-400/90 uppercase tracking-wide px-1 pb-1 flex items-center gap-1" data-testid="text-section-free">
+                    <BookOpen className="w-3 h-3" /> Read free now
+                  </p>
                 )}
                 {readBooks.map((book: any) => (
                   <button
                     key={book.id}
                     onClick={() => loadBookText(book)}
                     className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
+                    data-testid={`button-book-${book.id}`}
                   >
                     {book.formats?.["image/jpeg"] ? (
                       <img src={book.formats["image/jpeg"]} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
@@ -4480,6 +4500,108 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     </div>
                   </button>
                 ))}
+
+                {readSearch.trim() && readBooks.length === 0 && (readCatalog.length > 0 || readAudiobooks.length > 0 || readVideos.length > 0) && (
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5 text-[11px] text-amber-200/90" data-testid="text-no-free-text">
+                    No free full text for "<strong>{readSearch}</strong>" — here are some related audiobooks, videos, and catalog matches you can open in a new tab.
+                  </div>
+                )}
+
+                {readAudiobooks.length > 0 && (
+                  <div className="space-y-1.5 pt-2" data-testid="section-audiobooks">
+                    <p className="text-[10px] font-semibold text-purple-400/90 uppercase tracking-wide px-1 flex items-center gap-1">
+                      <Volume1 className="w-3 h-3" /> Free audiobooks (LibriVox)
+                    </p>
+                    {readAudiobooks.map((a: any) => (
+                      <a
+                        key={a.id}
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+                        data-testid={`link-audiobook-${a.id}`}
+                      >
+                        <div className="w-10 h-10 rounded bg-purple-500/15 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+                          <Volume1 className="w-5 h-5 text-purple-300" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold line-clamp-2">{a.title}</p>
+                          {a.author && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{a.author}</p>}
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {a.runtime ? `${a.runtime} • ` : ""}Listen on LibriVox
+                          </p>
+                        </div>
+                        <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0 mt-1" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                {readVideos.length > 0 && (
+                  <div className="space-y-1.5 pt-2" data-testid="section-videos">
+                    <p className="text-[10px] font-semibold text-red-400/90 uppercase tracking-wide px-1 flex items-center gap-1">
+                      <Tv className="w-3 h-3" /> Watch on YouTube
+                    </p>
+                    {readVideos.map((v: any) => (
+                      <button
+                        key={v.id}
+                        onClick={() => {
+                          setSidePanelTab("youtube");
+                          setActiveYoutubeId(v.id);
+                          setShowYoutube(true);
+                          socket?.emit("room:youtube", { roomId: room.id, videoId: v.id });
+                        }}
+                        className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
+                        data-testid={`button-video-${v.id}`}
+                      >
+                        {v.thumbnail ? (
+                          <img src={v.thumbnail} alt="" className="w-16 h-10 rounded object-cover flex-shrink-0 bg-muted" />
+                        ) : (
+                          <div className="w-16 h-10 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                            <Tv className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold line-clamp-2">{v.title}</p>
+                          {v.channel && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{v.channel}</p>}
+                          <p className="text-[10px] text-red-400/80 mt-0.5">▶ Play in room</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {readCatalog.length > 0 && (
+                  <div className="space-y-1.5 pt-2" data-testid="section-catalog">
+                    <p className="text-[10px] font-semibold text-blue-400/90 uppercase tracking-wide px-1 flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" /> More from Open Library
+                    </p>
+                    {readCatalog.map((c: any) => (
+                      <a
+                        key={c.key}
+                        href={c.openLibraryUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+                        data-testid={`link-catalog-${c.key?.replace(/\W/g, '')}`}
+                      >
+                        {c.coverUrl ? (
+                          <img src={c.coverUrl} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
+                        ) : (
+                          <div className="w-12 h-16 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                            <BookOpen className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold line-clamp-2">{c.title}</p>
+                          {c.author && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{c.author}</p>}
+                          {c.year && <p className="text-[10px] text-muted-foreground mt-0.5">{c.year}</p>}
+                        </div>
+                        <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0 mt-1" />
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </div>

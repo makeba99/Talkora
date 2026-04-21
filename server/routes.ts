@@ -862,6 +862,114 @@ export async function registerRoutes(
     }
   });
 
+  // Unified library search: combines free Gutenberg books + Open Library catalog +
+  // LibriVox audiobook fallback + YouTube audiobook/summary suggestions when no
+  // free full-text match is available.
+  app.get("/api/library/search", isAuthenticated, async (req: any, res) => {
+    const query = String(req.query.q || "").trim();
+    const language = String(req.query.lang || "en").trim().slice(0, 2) || "en";
+    const wantSuggestions = String(req.query.suggest || "1") !== "0";
+
+    const fetchJson = async (url: string, timeoutMs = 6000) => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), timeoutMs);
+      try {
+        const r = await fetch(url, {
+          signal: ctrl.signal,
+          headers: { "User-Agent": "Connect2Talk/1.0 (library-search)" },
+        });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(t);
+      }
+    };
+
+    try {
+      // 1) Free full text from Project Gutenberg
+      const gutendexUrl = query
+        ? `https://gutendex.com/books/?search=${encodeURIComponent(query)}&languages=${language}`
+        : `https://gutendex.com/books/?sort=popular&languages=${language}`;
+      const gutendex = await fetchJson(gutendexUrl);
+      const books = (gutendex?.results || []).slice(0, 24);
+
+      // If we have plenty of free books or no query, just return them.
+      if (!query || books.length >= 5 || !wantSuggestions) {
+        return res.json({ query, books, openLibrary: [], audiobooks: [], videos: [] });
+      }
+
+      // 2) Open Library catalog (so users see the book exists even if not free here)
+      const olData = await fetchJson(
+        `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=8&fields=key,title,author_name,first_publish_year,cover_i,subject`
+      );
+      const openLibrary = (olData?.docs || []).slice(0, 8).map((d: any) => ({
+        key: d.key,
+        title: d.title,
+        author: Array.isArray(d.author_name) ? d.author_name.join(", ") : null,
+        year: d.first_publish_year || null,
+        coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : null,
+        openLibraryUrl: `https://openlibrary.org${d.key}`,
+        readUrl: `https://archive.org/details/${(d.key || "").replace("/works/", "")}`,
+      }));
+
+      // 3) Free audiobooks from LibriVox
+      const lvData = await fetchJson(
+        `https://librivox.org/api/feed/audiobooks/?title=${encodeURIComponent(query)}&format=json&limit=6`
+      );
+      let audiobooks = (lvData?.books || []).slice(0, 6).map((b: any) => ({
+        id: b.id,
+        title: b.title,
+        author: Array.isArray(b.authors) && b.authors.length
+          ? `${b.authors[0].first_name || ""} ${b.authors[0].last_name || ""}`.trim()
+          : null,
+        url: b.url_librivox || b.url_iarchive || null,
+        runtime: b.totaltime || null,
+        language: b.language || null,
+      })).filter((a: any) => a.url);
+
+      // Fallback: also try by author keyword if title search returned nothing
+      if (audiobooks.length === 0) {
+        const lvAuthor = await fetchJson(
+          `https://librivox.org/api/feed/audiobooks/?author=${encodeURIComponent(query)}&format=json&limit=4`
+        );
+        audiobooks = (lvAuthor?.books || []).slice(0, 4).map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          author: Array.isArray(b.authors) && b.authors.length
+            ? `${b.authors[0].first_name || ""} ${b.authors[0].last_name || ""}`.trim()
+            : null,
+          url: b.url_librivox || b.url_iarchive || null,
+          runtime: b.totaltime || null,
+          language: b.language || null,
+        })).filter((a: any) => a.url);
+      }
+
+      // 4) YouTube audiobook + summary videos (best-effort, never fatal)
+      let videos: any[] = [];
+      try {
+        const ytSearch = await import("youtube-search-api");
+        const ytQuery = `${query} audiobook full`;
+        const yt = await ytSearch.GetListByKeyword(ytQuery, false, 6, [{ type: "video" }]);
+        videos = (yt?.items || []).slice(0, 6).map((v: any) => ({
+          id: v.id,
+          title: v.title,
+          channel: v.channelTitle,
+          thumbnail: v.thumbnail?.thumbnails?.[v.thumbnail.thumbnails.length - 1]?.url || null,
+          url: `https://www.youtube.com/watch?v=${v.id}`,
+        }));
+      } catch (e) {
+        videos = [];
+      }
+
+      res.json({ query, books, openLibrary, audiobooks, videos });
+    } catch (err: any) {
+      console.error("Library search error:", err);
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
   app.get("/api/book/text", isAuthenticated, async (req: any, res) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ message: "Missing url" });
