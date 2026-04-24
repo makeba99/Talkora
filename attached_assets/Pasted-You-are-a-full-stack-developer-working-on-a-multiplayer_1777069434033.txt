@@ -1,0 +1,35 @@
+You are a full-stack developer working on a multiplayer gaming platform. Your task is to enhance an existing chess application with new interactive game modes and improve the user experience for in-room gameplay.
+
+**Core Requirements:**
+
+1. **Add New Game Engagement Features**
+   - Implement 2-3 new interactive game modes or challenges that players can engage with while in the same room
+   - These modes should be designed to encourage competition and skill improvement
+   - Examples might include: puzzle challenges, timed matches, handicap modes, or achievement-based challenges
+   - Ensure players can easily switch between modes and invite opponents to play
+
+2. **Improve Chess Game Display**
+   - Expand the chess board to fullscreen or near-fullscreen mode (similar to YouTube's fullscreen experience)
+   - Make this expansion available as a dedicated button/toggle that users can activate during gameplay
+   - Ensure all game controls, chat, and player information remain accessible in fullscreen mode
+   - Optimize the layout so the chess board dominates the viewport while keeping essential UI elements visible
+
+3. **Add Screen-Share Capability**
+   - Implement a screen-share feature that allows users to broadcast their game view to others in the room
+   - This should work alongside the fullscreen chess view
+   - Ensure shared screens maintain performance and quality during gameplay
+
+4. **Implement Player Screen Following**
+   - Add the ability for other players in the room to click on a player's screen and follow their view in real-time
+   - When a player follows another's screen, they should see what that player sees (board state, board position, controls)
+   - Allow players to easily exit follow mode and return to their own independent view
+   - This feature should enhance engagement during multiplayer sessions
+
+**Technical Considerations:**
+- Maintain compatibility with existing room-based multiplayer architecture
+- Ensure responsive design works across devices (desktop, tablet, mobile where applicable)
+- Keep code performance optimized for real-time gameplay
+- Preserve existing chess logic and game state management
+
+**Deliverable:**
+Updated application code with all four enhancements integrated and tested for smooth user experience during in-room multiplayer sessions.

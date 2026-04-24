@@ -44,7 +44,36 @@ const roomChessState = new Map<string, {
   winner?: "white" | "black" | "draw" | null;
   endReason?: string | null;
   startedAt: number;
+  lastMove?: { from: string; to: string; san: string } | null;
+  timeControl?: number | null;
+  clocks?: { white: number; black: number; lastTickAt: number } | null;
+  mode?: "standard" | "timed" | null;
 }>();
+
+const CHESS_PUZZLE_BANK = [
+  { id: 1, title: "Checkmate in 1", fen: "7k/6Q1/5K2/8/8/8/8/8 w - - 0 1", toMove: "w", solution: "g7g8", hint: "Use the queen to deliver checkmate" },
+  { id: 2, title: "Corner Checkmate", fen: "k7/8/KQ6/8/8/8/8/8 w - - 0 1", toMove: "w", solution: "b6b8", hint: "Push the queen to the back rank" },
+  { id: 3, title: "Rook Checkmate", fen: "7k/7p/6K1/8/8/8/8/6R1 w - - 0 1", toMove: "w", solution: "g1g8", hint: "Drive the rook to the 8th rank" },
+  { id: 4, title: "Two Rooks Mate", fen: "k7/8/8/8/8/8/8/RR5K w - - 0 1", toMove: "w", solution: "b1b8", hint: "Cut off the king with your rooks" },
+  { id: 5, title: "Queen Sweeps In", fen: "6k1/5ppp/8/8/8/8/8/Q5K1 w - - 0 1", toMove: "w", solution: "a1a8", hint: "Send the queen to the back rank" },
+  { id: 6, title: "Rook Roller", fen: "8/8/1k6/8/8/8/8/KRR5 w - - 0 1", toMove: "w", solution: "b1b6", hint: "Push the rook to deliver check" },
+  { id: 7, title: "Diagonal Finish", fen: "6k1/8/6K1/8/8/8/8/6B1 w - - 0 1", toMove: "w", solution: "g1f2", hint: "The bishop holds the key diagonal" },
+  { id: 8, title: "Queen Corridor", fen: "8/8/8/8/8/1k6/8/Q3K3 w - - 0 1", toMove: "w", solution: "a1a3", hint: "Trap the king against the edge" },
+] as const;
+
+const roomPuzzleState = new Map<string, {
+  puzzleIdx: number;
+  round: number;
+  maxRounds: number;
+  scores: { white: number; black: number };
+  status: "active" | "solved" | "ended";
+  solvedBy: "white" | "black" | null;
+  white: ChessSeat;
+  black: ChessSeat;
+}>();
+
+const pendingPuzzleChallenges = new Map<string, { challengerId: string; challengerName: string; challengerAvatar: string | null; roomId: string; maxRounds: number }>();
+
 // Lichess shared embed per room (URL string of game/study/tv)
 const roomLichessState = new Map<string, { url: string; sharedBy: string } | null>();
 
@@ -3385,13 +3414,14 @@ export async function registerRoutes(
       socket.emit("room:lichess", roomLichessState.get(data.roomId) || null);
     });
 
-    socket.on("room:chess-claim-seat", async (data: { roomId: string; color: "white" | "black" }) => {
+    socket.on("room:chess-claim-seat", async (data: { roomId: string; color: "white" | "black"; timeControl?: number | null }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
       const me = await storage.getUser(currentUserId);
       if (!me) return;
       let state = roomChessState.get(data.roomId);
+      const tc = data.timeControl ?? null;
       if (!state) {
         state = {
           fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -3401,6 +3431,10 @@ export async function registerRoutes(
           turn: "w",
           status: "waiting",
           startedAt: Date.now(),
+          lastMove: null,
+          timeControl: tc,
+          clocks: tc ? { white: tc, black: tc, lastTickAt: Date.now() } : null,
+          mode: tc ? "timed" : "standard",
         };
         roomChessState.set(data.roomId, state);
       }
@@ -3415,6 +3449,10 @@ export async function registerRoutes(
         state.white = null;
         state.black = null;
         state.startedAt = Date.now();
+        state.lastMove = null;
+        state.timeControl = tc;
+        state.clocks = tc ? { white: tc, black: tc, lastTickAt: Date.now() } : null;
+        state.mode = tc ? "timed" : "standard";
       }
       const displayName = me.displayName || me.firstName || (me.email ? me.email.split("@")[0] : null) || "Player";
       const seat: ChessSeat = { userId: currentUserId, username: displayName, avatar: me.profileImageUrl || null };
@@ -3462,6 +3500,23 @@ export async function registerRoutes(
       state.fen = data.fen;
       state.pgn = data.pgn;
       state.turn = data.turn;
+      state.lastMove = data.lastMove || null;
+
+      // Update chess clocks for timed games
+      if (state.timeControl && state.clocks) {
+        const elapsed = Date.now() - state.clocks.lastTickAt;
+        state.clocks[moverSide] = Math.max(0, state.clocks[moverSide] - elapsed);
+        state.clocks.lastTickAt = Date.now();
+        // Check for flag (time ran out)
+        if (state.clocks[moverSide] <= 0) {
+          state.status = "ended";
+          state.winner = moverSide === "white" ? "black" : "white";
+          state.endReason = "time";
+          io.to(data.roomId).emit("room:chess-state", state);
+          return;
+        }
+      }
+
       if (data.status === "ended") {
         state.status = "ended";
         state.winner = data.winner ?? null;
@@ -3483,7 +3538,7 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:chess-state", state);
     });
 
-    socket.on("room:chess-challenge", async (data: { roomId: string; targetUserId: string; color?: "white" | "black" | "random" }) => {
+    socket.on("room:chess-challenge", async (data: { roomId: string; targetUserId: string; color?: "white" | "black" | "random"; timeControl?: number | null }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId) || !participants.has(data.targetUserId)) return;
@@ -3501,11 +3556,12 @@ export async function registerRoutes(
         fromUsername: challengerName,
         fromAvatar: challenger.profileImageUrl || null,
         color: data.color || "random",
+        timeControl: data.timeControl ?? null,
         challengeId: `${currentUserId}-${Date.now()}`,
       });
     });
 
-    socket.on("room:chess-challenge-respond", async (data: { roomId: string; fromUserId: string; accept: boolean; color?: "white" | "black" | "random" }) => {
+    socket.on("room:chess-challenge-respond", async (data: { roomId: string; fromUserId: string; accept: boolean; color?: "white" | "black" | "random"; timeControl?: number | null }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId) || !participants.has(data.fromUserId)) return;
@@ -3533,6 +3589,7 @@ export async function registerRoutes(
       const blackSeat: ChessSeat = challengerColor === "white"
         ? { userId: currentUserId, username: responderName, avatar: responder.profileImageUrl || null }
         : { userId: data.fromUserId, username: challengerName, avatar: challenger.profileImageUrl || null };
+      const tc = data.timeControl ?? null;
       const newState = {
         fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         pgn: "",
@@ -3543,13 +3600,14 @@ export async function registerRoutes(
         winner: null,
         endReason: null,
         startedAt: Date.now(),
+        lastMove: null,
+        timeControl: tc,
+        clocks: tc ? { white: tc, black: tc, lastTickAt: Date.now() } : null,
+        mode: (tc ? "timed" : "standard") as "standard" | "timed",
       };
       roomChessState.set(data.roomId, newState);
       io.to(data.roomId).emit("room:chess-state", newState);
-      io.to(data.roomId).emit("room:chess-challenge-accepted", {
-        white: whiteSeat,
-        black: blackSeat,
-      });
+      io.to(data.roomId).emit("room:chess-challenge-accepted", { white: whiteSeat, black: blackSeat });
     });
 
     socket.on("room:chess-new-game", (data: { roomId: string }) => {
@@ -3560,6 +3618,159 @@ export async function registerRoutes(
       if (!isPlayer && state.status !== "ended") return;
       roomChessState.delete(data.roomId);
       io.to(data.roomId).emit("room:chess-state", null);
+    });
+
+    // ---------- Chess Rematch (swap colors, same time control) ----------
+    socket.on("room:chess-rematch", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const state = roomChessState.get(data.roomId);
+      if (!state || state.status !== "ended") return;
+      const isPlayer = state.white?.userId === currentUserId || state.black?.userId === currentUserId;
+      if (!isPlayer) return;
+      const tc = state.timeControl ?? null;
+      const newState = {
+        fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        pgn: "",
+        white: state.black,   // swapped
+        black: state.white,   // swapped
+        turn: "w" as const,
+        status: "playing" as const,
+        winner: null,
+        endReason: null,
+        startedAt: Date.now(),
+        lastMove: null,
+        timeControl: tc,
+        clocks: tc ? { white: tc, black: tc, lastTickAt: Date.now() } : null,
+        mode: (tc ? "timed" : "standard") as "standard" | "timed",
+      };
+      roomChessState.set(data.roomId, newState);
+      io.to(data.roomId).emit("room:chess-state", newState);
+    });
+
+    // ---------- Puzzle Duel ----------
+    const puzzleBroadcast = (roomId: string) => {
+      const ps = roomPuzzleState.get(roomId);
+      if (!ps) return;
+      const puzzle = ps.puzzleIdx < CHESS_PUZZLE_BANK.length ? CHESS_PUZZLE_BANK[ps.puzzleIdx] : null;
+      io.to(roomId).emit("room:chess-puzzle-state", { ...ps, puzzle });
+    };
+
+    socket.on("room:chess-puzzle-challenge", async (data: { roomId: string; targetUserId: string; maxRounds?: number }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId) || !participants.has(data.targetUserId)) return;
+      if (data.targetUserId === currentUserId) return;
+      const challenger = await storage.getUser(currentUserId);
+      if (!challenger) return;
+      const targetSocketId = userSockets.get(data.targetUserId);
+      if (!targetSocketId) return;
+      const challengerName = challenger.displayName || challenger.firstName || (challenger.email ? challenger.email.split("@")[0] : null) || "Someone";
+      const key = `${data.roomId}:${data.targetUserId}`;
+      pendingPuzzleChallenges.set(key, {
+        challengerId: currentUserId,
+        challengerName,
+        challengerAvatar: challenger.profileImageUrl || null,
+        roomId: data.roomId,
+        maxRounds: data.maxRounds || 5,
+      });
+      io.to(targetSocketId).emit("room:chess-puzzle-challenge", {
+        fromUserId: currentUserId,
+        fromUsername: challengerName,
+        fromAvatar: challenger.profileImageUrl || null,
+        maxRounds: data.maxRounds || 5,
+        roomId: data.roomId,
+      });
+    });
+
+    socket.on("room:chess-puzzle-respond", async (data: { roomId: string; fromUserId: string; accept: boolean }) => {
+      if (!currentUserId) return;
+      const key = `${data.roomId}:${currentUserId}`;
+      const pending = pendingPuzzleChallenges.get(key);
+      if (!pending || pending.challengerId !== data.fromUserId) return;
+      pendingPuzzleChallenges.delete(key);
+      if (!data.accept) {
+        const challengerSocket = userSockets.get(data.fromUserId);
+        if (challengerSocket) io.to(challengerSocket).emit("room:chess-puzzle-declined", { byUserId: currentUserId });
+        return;
+      }
+      const challenger = await storage.getUser(data.fromUserId);
+      const responder = await storage.getUser(currentUserId);
+      if (!challenger || !responder) return;
+      const challengerName = challenger.displayName || challenger.firstName || (challenger.email ? challenger.email.split("@")[0] : null) || "Player";
+      const responderName = responder.displayName || responder.firstName || (responder.email ? responder.email.split("@")[0] : null) || "Player";
+      // Randomly assign white/black for puzzle duel display
+      const challengerIsWhite = Math.random() < 0.5;
+      const puzzleState = {
+        puzzleIdx: 0,
+        round: 1,
+        maxRounds: pending.maxRounds,
+        scores: { white: 0, black: 0 },
+        status: "active" as const,
+        solvedBy: null,
+        white: challengerIsWhite
+          ? { userId: data.fromUserId, username: challengerName, avatar: challenger.profileImageUrl || null }
+          : { userId: currentUserId, username: responderName, avatar: responder.profileImageUrl || null },
+        black: challengerIsWhite
+          ? { userId: currentUserId, username: responderName, avatar: responder.profileImageUrl || null }
+          : { userId: data.fromUserId, username: challengerName, avatar: challenger.profileImageUrl || null },
+      };
+      roomPuzzleState.set(data.roomId, puzzleState);
+      puzzleBroadcast(data.roomId);
+    });
+
+    socket.on("room:chess-puzzle-move", (data: { roomId: string; from: string; to: string }) => {
+      if (!currentUserId) return;
+      const ps = roomPuzzleState.get(data.roomId);
+      if (!ps || ps.status !== "active") return;
+      const isWhite = ps.white?.userId === currentUserId;
+      const isBlack = ps.black?.userId === currentUserId;
+      if (!isWhite && !isBlack) return;
+      const puzzle = CHESS_PUZZLE_BANK[ps.puzzleIdx];
+      if (!puzzle) return;
+      const attemptUci = `${data.from}${data.to}`;
+      if (attemptUci !== puzzle.solution) {
+        // Wrong move - notify only the sender
+        socket.emit("room:chess-puzzle-wrong", { userId: currentUserId });
+        return;
+      }
+      // Correct! Award point
+      const side = isWhite ? "white" : "black";
+      ps.scores[side]++;
+      ps.solvedBy = side;
+      ps.status = "solved";
+      puzzleBroadcast(data.roomId);
+      // After a delay, advance to next round or end
+      setTimeout(() => {
+        const current = roomPuzzleState.get(data.roomId);
+        if (!current) return;
+        current.round++;
+        current.puzzleIdx = (current.puzzleIdx + 1) % CHESS_PUZZLE_BANK.length;
+        current.solvedBy = null;
+        if (current.round > current.maxRounds) {
+          current.status = "ended";
+        } else {
+          current.status = "active";
+        }
+        puzzleBroadcast(data.roomId);
+      }, 2500);
+    });
+
+    socket.on("room:chess-puzzle-sync", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const ps = roomPuzzleState.get(data.roomId);
+      if (!ps) { socket.emit("room:chess-puzzle-state", null); return; }
+      const puzzle = ps.puzzleIdx < CHESS_PUZZLE_BANK.length ? CHESS_PUZZLE_BANK[ps.puzzleIdx] : null;
+      socket.emit("room:chess-puzzle-state", { ...ps, puzzle });
+    });
+
+    socket.on("room:chess-puzzle-reset", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const ps = roomPuzzleState.get(data.roomId);
+      if (!ps) return;
+      const isPlayer = ps.white?.userId === currentUserId || ps.black?.userId === currentUserId;
+      if (!isPlayer) return;
+      roomPuzzleState.delete(data.roomId);
+      io.to(data.roomId).emit("room:chess-puzzle-state", null);
     });
 
     // ---------- Lichess shared embed (any participant can share a Lichess URL) ----------
