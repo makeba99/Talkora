@@ -8,9 +8,34 @@
     font-family: 'Space Grotesk', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
   }
   h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.01em;
+  }
+
+  /* Prevent iOS zoom on input focus (inputs need font-size >= 16px) */
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+
+  /* Smooth momentum scrolling on iOS */
+  .overflow-y-auto, .overflow-y-scroll, .overflow-auto, .overflow-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Eliminate 300ms tap delay on all interactive elements */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* Safe area padding helpers for notch/home bar on iOS */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
   }
 }
 

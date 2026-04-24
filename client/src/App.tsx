@@ -18,6 +18,7 @@ import DmPage from "@/pages/dm";
 import AdminPage from "@/pages/admin";
 import TeachersPage from "@/pages/teachers";
 import PaymentMethodsPage from "@/pages/payment-methods";
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 
 const SEVERITY_LABELS: Record<string, string> = {
   critical: "CRITICAL",
@@ -132,6 +133,7 @@ function App() {
           <AnimatedBackground />
           <AppContent />
           <Toaster />
+          <PwaInstallBanner />
         </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
