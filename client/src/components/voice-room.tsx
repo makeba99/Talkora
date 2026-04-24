@@ -17,7 +17,7 @@ import {
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown, RotateCcw
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -702,6 +702,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const ytSlotRef = useRef<HTMLDivElement | null>(null);
   const [ytSlotRect, setYtSlotRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const [youtubeWatchers, setYoutubeWatchers] = useState<Set<string>>(new Set());
+  type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
+  const [ytQueue, setYtQueue] = useState<YtQueueItem[]>([]);
   const [screenWatchers, setScreenWatchers] = useState<Set<string>>(new Set());
   const [ytQualityState, setYtQualityState] = useState<"good" | "slow">("good");
   const [ytPlayerLoading, setYtPlayerLoading] = useState(false);
@@ -747,6 +749,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const ytSyncTimeRef = useRef<number>(0);
   const ytBufferTimerRef = useRef<number | null>(null);
   const youtubeStartedByRef = useRef<string | null>(null);
+  const ytQueueRef = useRef<YtQueueItem[]>([]);
   const [ytIsPlaying, setYtIsPlaying] = useState(false);
   const [ytCurrentTime, setYtCurrentTime] = useState(0);
   const [ytDuration, setYtDuration] = useState(0);
@@ -872,6 +875,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   useEffect(() => {
     youtubeStartedByRef.current = youtubeStartedBy;
   }, [youtubeStartedBy]);
+
+  useEffect(() => {
+    ytQueueRef.current = ytQueue;
+  }, [ytQueue]);
 
   useEffect(() => {
     socketRef.current = socket;
@@ -1674,6 +1681,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       });
     });
 
+    socket.on("room:youtube-queue-update", (data: { queue: YtQueueItem[] }) => {
+      setYtQueue(data.queue ?? []);
+    });
+
     // Host has force-stopped my screen share — stop it immediately and let everyone know.
     socket.on("room:screen-share-force-stop", () => {
       if (screenStream.current) {
@@ -1841,6 +1852,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("room:reaction-update");
       socket.off("room:youtube");
       socket.off("room:youtube-watchers-update");
+      socket.off("room:youtube-queue-update");
       socket.off("room:book-watchers-update");
       socket.off("room:screen-share");
       socket.off("room:screen-share-force-stop");
@@ -2050,9 +2062,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       const sock = socketRef.current;
       if (state === YT.PlayerState.ENDED) {
         setYtIsPlaying(false);
-        if (isBroadcaster) {
-          try { player.seekTo(0, true); player.playVideo(); } catch (_) {}
-          sock?.emit("room:youtube-state", { roomId: room.id, action: "play", time: 0, ts: Date.now() });
+        // Only the video starter drives queue advance to avoid duplicate emissions
+        if (user?.id === youtubeStartedByRef.current) {
+          // Check if there are queued videos — if so, advance; otherwise loop current video
+          const currentQueue = ytQueueRef.current;
+          if (currentQueue && currentQueue.length > 0) {
+            sock?.emit("room:youtube-queue-next", { roomId: room.id });
+          } else {
+            try { player.seekTo(0, true); player.playVideo(); } catch (_) {}
+            sock?.emit("room:youtube-state", { roomId: room.id, action: "play", time: 0, ts: Date.now() });
+          }
         }
         return;
       }
@@ -3075,9 +3094,31 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     setYtIsPlaying(false);
     setYtCurrentTime(0);
     setYtDuration(0);
+    setYtQueue([]);
     youtubePlayerRef.current?.destroy();
     youtubePlayerRef.current = null;
     socket?.emit("room:youtube", { roomId: room.id, videoId: null });
+  };
+
+  const handleAddToQueue = (video: { id: string; title?: string; thumbnail?: string }) => {
+    const item: YtQueueItem = {
+      id: crypto.randomUUID(),
+      videoId: video.id,
+      title: video.title,
+      thumbnail: video.thumbnail,
+      addedBy: user?.id ?? "",
+    };
+    // If nothing is playing, just start it directly
+    if (!activeYoutubeId) {
+      handleSelectYoutubeVideo(video.id);
+      return;
+    }
+    socket?.emit("room:youtube-queue-add", { roomId: room.id, item });
+    toast({ title: "Added to queue", description: video.title ? `"${video.title}" added to the queue` : "Video added to queue" });
+  };
+
+  const handleRemoveFromQueue = (itemId: string) => {
+    socket?.emit("room:youtube-queue-remove", { roomId: room.id, id: itemId });
   };
 
   const handleYtPlayPause = useCallback(() => {
@@ -4332,7 +4373,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         )}
                       </div>
                       <span className="text-[11px] text-muted-foreground">
-                        <span className="font-medium text-foreground">{getUserDisplayName(broadcaster)}</span> is hosting
+                        <span className="font-medium text-foreground">{getUserDisplayName(broadcaster)}</span> started playback
                       </span>
                     </div>
                   )}
@@ -4360,6 +4401,57 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             );
           })()}
 
+          {/* ── Queue ── */}
+          {ytQueue.length > 0 && (
+            <div className="mx-3 mb-1 mt-1 rounded-xl border border-border/30 bg-muted/5 overflow-hidden flex-shrink-0" data-testid="youtube-queue-section">
+              <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border/20">
+                <ListVideo className="w-3.5 h-3.5 text-red-400/80" />
+                <p className="text-[10px] font-semibold text-foreground/80 uppercase tracking-wide">Up Next ({ytQueue.length})</p>
+              </div>
+              <div className="divide-y divide-border/20">
+                {ytQueue.map((item, idx) => {
+                  const adder = participants.find(p => p.id === item.addedBy);
+                  return (
+                    <div key={item.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted/20 transition-colors group" data-testid={`queue-item-${item.id}`}>
+                      <span className="text-[10px] text-muted-foreground/50 font-mono w-3 flex-shrink-0">{idx + 1}</span>
+                      {item.thumbnail ? (
+                        <img src={item.thumbnail} alt="" className="w-12 h-8 rounded object-cover flex-shrink-0 bg-muted" />
+                      ) : (
+                        <div className="w-12 h-8 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                          <Youtube className="w-3 h-3 text-muted-foreground/40" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-medium line-clamp-1 leading-tight">{item.title || "Video"}</p>
+                        {adder && (
+                          <p className="text-[9px] text-muted-foreground/50 mt-0.5">by {getUserDisplayName(adder)}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleSelectYoutubeVideo(item.videoId)}
+                          className="p-1 rounded hover:bg-red-500/15 text-red-400/70 hover:text-red-400 transition-colors"
+                          title="Play now"
+                          data-testid={`button-queue-play-${item.id}`}
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveFromQueue(item.id)}
+                          className="p-1 rounded hover:bg-muted/40 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                          title="Remove from queue"
+                          data-testid={`button-queue-remove-${item.id}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* ── EVERYONE: search results + trending ── */}
           {true && (
             <ScrollArea className="flex-1 min-h-0">
@@ -4368,13 +4460,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <div className="space-y-2" data-testid="youtube-search-results">
                     <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest px-0.5">Results</p>
                     {youtubeResults.map((video: any) => (
-                      <button
+                      <div
                         key={video.id}
-                        onClick={() => handleSelectYoutubeVideo(video.id)}
-                        className="w-full rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:bg-muted/25 hover:border-border/60 transition-all duration-150 text-left group"
+                        className="rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:border-border/50 transition-all duration-150 group"
                         data-testid={`button-youtube-result-${video.id}`}
                       >
-                        <div className="relative w-full aspect-video bg-muted overflow-hidden">
+                        <div className="relative w-full aspect-video bg-muted overflow-hidden cursor-pointer" onClick={() => handleSelectYoutubeVideo(video.id)}>
                           <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                           {video.duration && (
@@ -4388,13 +4479,29 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                             </div>
                           </div>
                         </div>
-                        <div className="p-2.5">
+                        <div className="p-2.5 pb-2">
                           <p className="text-[12px] font-medium line-clamp-2 leading-snug">{video.title}</p>
                           {video.channelTitle && (
                             <span className="text-[10px] text-muted-foreground/60 mt-1 block truncate">{video.channelTitle}</span>
                           )}
+                          <div className="flex gap-1.5 mt-2">
+                            <button
+                              onClick={() => handleSelectYoutubeVideo(video.id)}
+                              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-500/15 border border-red-500/25 text-red-400 text-[10px] font-medium hover:bg-red-500/25 transition-colors"
+                              data-testid={`button-play-now-${video.id}`}
+                            >
+                              <Play className="w-2.5 h-2.5 fill-red-400" /> Play Now
+                            </button>
+                            <button
+                              onClick={() => handleAddToQueue({ id: video.id, title: video.title, thumbnail: video.thumbnail })}
+                              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-muted/20 border border-border/30 text-muted-foreground text-[10px] font-medium hover:bg-muted/40 transition-colors"
+                              data-testid={`button-add-queue-${video.id}`}
+                            >
+                              <ListVideo className="w-2.5 h-2.5" /> Add to Queue
+                            </button>
+                          </div>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -4446,12 +4553,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </div>
                     )}
                     {!youtubeFeaturedLoading && youtubeFeatured.map((video: any) => (
-                      <button
+                      <div
                         key={video.id}
-                        onClick={() => handleSelectYoutubeVideo(video.id)}
-                        className="w-full rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:bg-muted/25 hover:border-border/60 transition-all duration-150 text-left group"
+                        className="rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:border-border/50 transition-all duration-150 group"
                       >
-                        <div className="relative w-full aspect-video bg-muted overflow-hidden">
+                        <div className="relative w-full aspect-video bg-muted overflow-hidden cursor-pointer" onClick={() => handleSelectYoutubeVideo(video.id)}>
                           <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                           {video.duration && (
@@ -4465,13 +4571,27 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                             </div>
                           </div>
                         </div>
-                        <div className="p-2.5">
+                        <div className="p-2.5 pb-2">
                           <p className="text-[12px] font-medium line-clamp-2 leading-snug">{video.title}</p>
                           {video.channelTitle && (
                             <span className="text-[10px] text-muted-foreground/60 mt-1 block truncate">{video.channelTitle}</span>
                           )}
+                          <div className="flex gap-1.5 mt-2">
+                            <button
+                              onClick={() => handleSelectYoutubeVideo(video.id)}
+                              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-500/15 border border-red-500/25 text-red-400 text-[10px] font-medium hover:bg-red-500/25 transition-colors"
+                            >
+                              <Play className="w-2.5 h-2.5 fill-red-400" /> Play Now
+                            </button>
+                            <button
+                              onClick={() => handleAddToQueue({ id: video.id, title: video.title, thumbnail: video.thumbnail })}
+                              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-muted/20 border border-border/30 text-muted-foreground text-[10px] font-medium hover:bg-muted/40 transition-colors"
+                            >
+                              <ListVideo className="w-2.5 h-2.5" /> Add to Queue
+                            </button>
+                          </div>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 )}

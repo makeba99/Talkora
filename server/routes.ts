@@ -19,6 +19,8 @@ const roomParticipants = new Map<string, Map<string, User>>();
 const roomVideoStatus = new Map<string, Set<string>>();
 const roomScreenShareStatus = new Map<string, string | null>();
 const roomYoutubeState = new Map<string, { videoId: string; startedBy: string; playing: boolean; lastTime: number; lastTs: number }>();
+type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
+const roomYoutubeQueue = new Map<string, YtQueueItem[]>();
 const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
 const roomRoles = new Map<string, Map<string, string>>();
 const roomMuteStatus = new Map<string, Map<string, boolean>>();
@@ -1228,6 +1230,7 @@ export async function registerRoutes(
       roomVideoStatus.delete(roomId);
       roomScreenShareStatus.delete(roomId);
       roomYoutubeState.delete(roomId);
+      roomYoutubeQueue.delete(roomId);
       roomRoles.delete(roomId);
       roomMuteStatus.delete(roomId);
       startRoomDeleteTimer(roomId);
@@ -1344,6 +1347,7 @@ export async function registerRoutes(
       roomVideoStatus.delete(roomId);
       roomScreenShareStatus.delete(roomId);
       roomYoutubeState.delete(roomId);
+      roomYoutubeQueue.delete(roomId);
       roomBookState.delete(roomId);
       roomRoles.delete(roomId);
       roomMuteStatus.delete(roomId);
@@ -3016,6 +3020,11 @@ export async function registerRoutes(
           from: ytState.startedBy,
         });
       }
+      // Send queue state so newcomers see the current queue
+      const queue = roomYoutubeQueue.get(roomId);
+      if (queue && queue.length > 0) {
+        socket.emit("room:youtube-queue-update", { queue });
+      }
 
       const bookState = roomBookState.get(roomId);
       if (bookState) {
@@ -3320,6 +3329,54 @@ export async function registerRoutes(
       }
     });
     socket.on("room:youtube-time-respond", () => {});
+
+    // ---------- YouTube Queue (any participant can add/remove/advance) ----------
+    socket.on("room:youtube-queue-add", (data: { roomId: string; item: YtQueueItem }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      if (!roomYoutubeQueue.has(data.roomId)) roomYoutubeQueue.set(data.roomId, []);
+      const queue = roomYoutubeQueue.get(data.roomId)!;
+      // Avoid duplicate videoIds in queue
+      if (queue.some(q => q.videoId === data.item.videoId)) return;
+      queue.push({ ...data.item, addedBy: currentUserId });
+      io.to(data.roomId).emit("room:youtube-queue-update", { queue });
+    });
+
+    socket.on("room:youtube-queue-remove", (data: { roomId: string; id: string }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const queue = roomYoutubeQueue.get(data.roomId);
+      if (!queue) return;
+      const filtered = queue.filter(q => q.id !== data.id);
+      roomYoutubeQueue.set(data.roomId, filtered);
+      io.to(data.roomId).emit("room:youtube-queue-update", { queue: filtered });
+    });
+
+    socket.on("room:youtube-queue-next", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const queue = roomYoutubeQueue.get(data.roomId);
+      if (!queue || queue.length === 0) {
+        // No next video — clear the active video
+        roomYoutubeState.delete(data.roomId);
+        io.to(data.roomId).emit("room:youtube", { videoId: null, startedBy: null });
+        return;
+      }
+      const next = queue.shift()!;
+      roomYoutubeQueue.set(data.roomId, queue);
+      roomYoutubeState.set(data.roomId, {
+        videoId: next.videoId,
+        startedBy: next.addedBy,
+        playing: true,
+        lastTime: 0,
+        lastTs: Date.now(),
+      });
+      io.to(data.roomId).emit("room:youtube", { videoId: next.videoId, startedBy: next.addedBy });
+      io.to(data.roomId).emit("room:youtube-queue-update", { queue });
+    });
 
     // ---------- Chess (built-in board, two seats per room, others spectate) ----------
     socket.on("room:chess-sync-request", (data: { roomId: string }) => {
