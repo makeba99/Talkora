@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Vextorn mark">
+  <defs>
+    <radialGradient id="vx-talk" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#A5B4FC"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </radialGradient>
+    <radialGradient id="vx-share" cx="40%" cy="60%" r="65%">
+      <stop offset="0%" stop-color="#C4B5FD"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </radialGradient>
+    <radialGradient id="vx-belong" cx="60%" cy="60%" r="65%">
+      <stop offset="0%" stop-color="#FBCFE8"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </radialGradient>
+    <filter id="vx-soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0.4"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#vx-soft)" style="mix-blend-mode:normal">
+    <circle cx="80" cy="58" r="38" fill="url(#vx-talk)" opacity="0.92"/>
+    <circle cx="56" cy="100" r="38" fill="url(#vx-share)" opacity="0.88" style="mix-blend-mode:multiply"/>
+    <circle cx="104" cy="100" r="38" fill="url(#vx-belong)" opacity="0.88" style="mix-blend-mode:multiply"/>
+  </g>
+
+  <circle cx="80" cy="86" r="6" fill="#0F172A" opacity="0.88"/>
+</svg>
