@@ -290,6 +290,12 @@ Badge applications table (shared/schema.ts):
   (now driven by `.neu-inset:focus-within`), bumped to `h-11`, added
   `focus-visible:ring-0` to suppress shadcn's default ring so only the
   amber halo shows.
+- Scrollbar (`index.css` ~1998): retuned from a chunky 12px sculpted
+  pill into a slim 8px deep midnight-navy element. Track now
+  `hsl(228 28% 5%) → hsl(228 24% 7%)` with cool inset shadows; thumb
+  `hsl(228 22% 16%) → hsl(228 24% 11%)` barely lighter than the track
+  so it disappears into the page. Hover keeps the warm amber rim
+  (6px @ 0.18) for a quiet hint of life.
 
 ## User Preferences
 - No landing page gate - lobby always shown

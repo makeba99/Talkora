@@ -1993,29 +1993,29 @@ html.synthwave .neon-text {
 }
 
 /* ─── NEUMORPHIC SCROLLBAR ─────────────────────────────────────
-   Subtle dark scrollbar that matches the profile-decoration tile
-   language — an inset (sunken) track with a raised neumorphic
-   pill thumb in the same surface color as the cards themselves.
-   No bright accent color in the resting state; a faint warm
-   tint appears only on hover/active. */
+   Slim deep midnight-navy scrollbar that disappears into the page
+   background. Track is a darker carved channel matching the navy
+   ambient; thumb is a slim raised pill barely lighter than the
+   track so it reads as a quiet hint of structure rather than UI
+   chrome. Faint warm rim only on hover/active. */
 .app-scrollbar,
 .admin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--neu-surface-2)) transparent;
+  scrollbar-color: hsl(228 22% 14%) transparent;
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--neu-surface-2)) transparent;
+  scrollbar-color: hsl(228 22% 14%) transparent;
 }
 
 *::-webkit-scrollbar,
 .app-scrollbar::-webkit-scrollbar,
 .admin-scrollbar::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-track,
@@ -2023,30 +2023,30 @@ html.synthwave .neon-text {
 .admin-scrollbar::-webkit-scrollbar-track {
   background: linear-gradient(
     145deg,
-    rgba(0, 0, 0, 0.50) 0%,
-    rgba(0, 0, 0, 0.32) 100%
+    hsl(228 28% 5%) 0%,
+    hsl(228 24% 7%) 100%
   );
   border-radius: 999px;
   box-shadow:
-    inset 3px 3px 6px rgba(0, 0, 0, 0.70),
-    inset -2px -2px 5px rgba(255, 255, 255, 0.030);
-  margin: 4px 0;
+    inset 2px 2px 5px rgba(0, 0, 0, 0.78),
+    inset -1px -1px 3px rgba(120, 130, 180, 0.025);
+  margin: 6px 2px;
 }
 
 *::-webkit-scrollbar-thumb,
 .app-scrollbar::-webkit-scrollbar-thumb,
 .admin-scrollbar::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  border: 2px solid rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.6);
   background: linear-gradient(
-    145deg,
-    hsl(var(--neu-surface-2)) 0%,
-    hsl(var(--neu-surface)) 100%
+    155deg,
+    hsl(228 22% 16%) 0%,
+    hsl(228 24% 11%) 100%
   );
   box-shadow:
-    -2px -2px 5px rgba(255, 255, 255, 0.040),
-    3px 3px 7px rgba(0, 0, 0, 0.60),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    -1px -1px 2px rgba(140, 150, 200, 0.045),
+    1px 1px 3px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(180, 190, 220, 0.05);
   transition: background 220ms ease-out, box-shadow 220ms ease-out;
 }
 
@@ -2054,15 +2054,15 @@ html.synthwave .neon-text {
 .app-scrollbar::-webkit-scrollbar-thumb:hover,
 .admin-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
-    145deg,
-    hsl(var(--neu-surface-2)) 0%,
-    hsl(var(--neu-orange-lo) / 0.55) 100%
+    155deg,
+    hsl(228 22% 19%) 0%,
+    hsl(228 24% 13%) 100%
   );
   box-shadow:
-    -2px -2px 5px rgba(255, 235, 215, 0.045),
-    3px 3px 7px rgba(0, 0, 0, 0.65),
-    0 0 8px hsl(var(--neu-orange) / 0.22),
-    inset 0 1px 0 rgba(255, 230, 200, 0.10);
+    -1px -1px 3px rgba(255, 235, 215, 0.05),
+    1px 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 6px hsl(var(--neu-orange) / 0.18),
+    inset 0 1px 0 rgba(255, 230, 200, 0.08);
 }
 
 *::-webkit-scrollbar-thumb:active,
