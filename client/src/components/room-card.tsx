@@ -250,13 +250,26 @@ function buildYoutubeEmbed(id: string) {
 }
 
 function CardHologramVideo({ src }: { src: string }) {
-  const ytId = extractYoutubeId(src) || (src.includes("youtube.com/embed/") ? src.split("/embed/")[1]?.split("?")[0] : null);
+  // Mobile-perf guard: a single lobby viewport can show 6+ room cards, each of
+  // which would otherwise auto-play a YouTube iframe or HTML5 video in the
+  // background. That's brutal for phone CPUs/batteries and torches the data
+  // budget on cellular. On phones (or for users who asked the OS to reduce
+  // motion) we just render the dimming overlay — the gradient + theme colour
+  // still set the mood without touching the video pipeline at all.
+  const skipVideo = typeof window !== "undefined" && (
+    window.matchMedia?.("(max-width: 767px), (pointer: coarse)").matches === true
+    || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+  );
   const overlay = (
     <div
       className="absolute inset-0 z-[1] pointer-events-none"
       style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.44) 0%, rgba(2,4,18,0.32) 58%, rgba(2,4,18,0.58) 100%)" }}
     />
   );
+  if (skipVideo) {
+    return overlay;
+  }
+  const ytId = extractYoutubeId(src) || (src.includes("youtube.com/embed/") ? src.split("/embed/")[1]?.split("?")[0] : null);
   if (ytId) {
     return (
       <>

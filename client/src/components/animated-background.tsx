@@ -12,10 +12,15 @@ interface Shooter  { x: number; y: number; vx: number; vy: number; len: number; 
 
 const SF_COLORS = ["#fff","#e0f0ff","#c8dfff","#93c5fd","#c4b5fd","#f0e6ff"];
 
-function buildStarLayers(W: number, H: number) {
-  const far:  StarLayer[] = Array.from({ length: 220 }, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*0.5+0.1, twinkle: Math.random()*Math.PI*2, color: "#cbd5e1" }));
-  const mid:  StarLayer[] = Array.from({ length: 120 }, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*0.7+0.3, twinkle: Math.random()*Math.PI*2, color: SF_COLORS[Math.floor(Math.random()*SF_COLORS.length)] }));
-  const near: StarLayer[] = Array.from({ length: 55  }, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.1+0.6, twinkle: Math.random()*Math.PI*2, color: SF_COLORS[Math.floor(Math.random()*SF_COLORS.length)] }));
+function buildStarLayers(W: number, H: number, lite = false) {
+  // On mobile we cut star counts roughly in half to keep the canvas paint
+  // budget under the 16ms-per-frame target without making the sky look empty.
+  const farN  = lite ? 110 : 220;
+  const midN  = lite ? 60  : 120;
+  const nearN = lite ? 30  : 55;
+  const far:  StarLayer[] = Array.from({ length: farN  }, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*0.5+0.1, twinkle: Math.random()*Math.PI*2, color: "#cbd5e1" }));
+  const mid:  StarLayer[] = Array.from({ length: midN  }, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*0.7+0.3, twinkle: Math.random()*Math.PI*2, color: SF_COLORS[Math.floor(Math.random()*SF_COLORS.length)] }));
+  const near: StarLayer[] = Array.from({ length: nearN }, () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.1+0.6, twinkle: Math.random()*Math.PI*2, color: SF_COLORS[Math.floor(Math.random()*SF_COLORS.length)] }));
   return { far, mid, near };
 }
 
@@ -848,6 +853,25 @@ export function AnimatedBackground() {
       return;
     }
 
+    // ── Mobile / accessibility-aware perf budget ─────────────────────────────
+    // On phones (and for users who asked the OS to reduce motion) we run a
+    // "lite" version of the canvas: half the particles and a 30 fps cap. If the
+    // user has explicitly turned ON reduce-motion we skip the canvas entirely
+    // and just leave the underlying CSS background visible — saving ~100% of
+    // the canvas frame budget.
+    const reduceMotion = typeof window !== "undefined"
+      && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+    if (reduceMotion) {
+      canvas.style.opacity = "0";
+      cancelAnimationFrame(rafRef.current);
+      return;
+    }
+    const isMobile = typeof window !== "undefined"
+      && (window.matchMedia?.("(max-width: 767px), (pointer: coarse)").matches === true);
+    // 30 fps on mobile (33ms target), 60 fps on desktop (16ms target).
+    const minFrameMs = isMobile ? 33 : 16;
+    let lastFrameAt = 0;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     canvas.style.opacity = "1";
@@ -858,11 +882,13 @@ export function AnimatedBackground() {
       const W = canvas.width, H = canvas.height;
 
       if (theme === "starfield") {
-        dataRef.current.starLayers = buildStarLayers(W, H);
+        dataRef.current.starLayers = buildStarLayers(W, H, isMobile);
         dataRef.current.shooters   = [];
       }
       if (theme === "galaxy") {
-        dataRef.current.galaxyArms = buildGalaxyArms(1800);
+        // 1800 dots is fine on desktop GPUs but blows the budget on mobile —
+        // 700 still reads as a galaxy without dropping frames.
+        dataRef.current.galaxyArms = buildGalaxyArms(isMobile ? 700 : 1800);
       }
       if (theme === "neon-cyberpunk") {
         dataRef.current.rain = buildRain(W, H);
@@ -912,12 +938,23 @@ export function AnimatedBackground() {
     });
     document.addEventListener("visibilitychange", handleVisibility);
 
-    const draw = () => {
+    const draw = (now?: number) => {
       if (paused) {
         rafRef.current = 0;
         return;
       }
-      timeRef.current += 0.016;
+      // Frame-rate cap: on mobile we redraw at ~30 fps instead of 60 fps. The
+      // sky still feels alive because the per-frame motion delta is doubled,
+      // but the canvas paints HALF as often → ~50% lower CPU/GPU usage and
+      // visibly less battery drain.
+      const ts = now ?? performance.now();
+      if (ts - lastFrameAt < minFrameMs) {
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      const dt = lastFrameAt === 0 ? 0.016 : Math.min((ts - lastFrameAt) / 1000, 0.05);
+      lastFrameAt = ts;
+      timeRef.current += dt;
       const t  = timeRef.current;
       const W  = canvas.width;
       const H  = canvas.height;

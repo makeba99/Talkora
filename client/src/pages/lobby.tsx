@@ -379,6 +379,17 @@ export default function Lobby() {
   const [liveParticipants, setLiveParticipants] = useState<Record<string, User[]>>({ ...BASE_SAMPLE_PARTICIPANTS });
 
   useEffect(() => {
+    // Mobile-perf guard: this interval simulates "live" activity on the SAMPLE
+    // rooms by randomly bumping vote counts and shuffling participant avatars.
+    // It triggers a state update — and therefore a re-render of the lobby grid —
+    // every 4-7 seconds, which on a phone means constant React work + layout
+    // for purely cosmetic motion. We skip it entirely on phones (and also when
+    // the OS asks for reduced motion or when the tab isn't visible).
+    if (typeof window !== "undefined") {
+      const isMobile = window.matchMedia?.("(max-width: 767px), (pointer: coarse)").matches === true;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+      if (isMobile || reduceMotion) return;
+    }
     const sampleRoomIds = SAMPLE_ROOMS.map((r) => r.id);
     const interval = setInterval(() => {
       const roll = Math.random();
