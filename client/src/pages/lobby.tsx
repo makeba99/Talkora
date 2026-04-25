@@ -756,18 +756,20 @@ export default function Lobby() {
             </div>
             <div className="min-w-0 hidden sm:flex flex-col justify-center">
               <h1
-                className="text-lg leading-none tracking-tight bg-clip-text text-transparent"
+                className="text-lg leading-none tracking-tight"
                 style={{
-                  fontWeight: 800,
-                  letterSpacing: "-0.04em",
-                  backgroundImage:
-                    "linear-gradient(90deg, hsl(var(--foreground)) 0%, hsl(var(--foreground) / 0.7) 100%)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                  fontFamily: '"Space Grotesk", system-ui, sans-serif',
                 }}
               >
                 Vextorn
               </h1>
-              <p className="text-[10px] text-muted-foreground leading-none mt-1" style={{ letterSpacing: "0.18em", fontWeight: 600 }}>
-                TALK · SHARE · BELONG
+              <p
+                className="text-[10px] leading-none mt-1 bg-gradient-to-r from-[#9D86FF] via-[#7B5CF6] to-[#3D8FFF] bg-clip-text text-transparent"
+                style={{ fontWeight: 600 }}
+              >
+                Talk. Share. Belong.
               </p>
             </div>
           </div>

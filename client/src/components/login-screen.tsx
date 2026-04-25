@@ -43,16 +43,20 @@ export function LoginScreen() {
           <div>
             <h1
               className="text-4xl tracking-tight"
-              style={{ fontWeight: 800, letterSpacing: "-0.04em" }}
+              style={{
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              }}
               data-testid="text-app-title"
             >
               Vextorn
             </h1>
             <p
-              className="text-muted-foreground mt-2 text-[11px] font-semibold"
-              style={{ letterSpacing: "0.22em" }}
+              className="mt-2 text-sm font-semibold bg-gradient-to-r from-[#9D86FF] via-[#7B5CF6] to-[#3D8FFF] bg-clip-text text-transparent"
+              style={{ letterSpacing: "0.01em" }}
             >
-              TALK · SHARE · BELONG
+              Talk. Share. Belong.
             </p>
           </div>
         </div>

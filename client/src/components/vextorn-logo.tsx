@@ -11,48 +11,36 @@ export function VextornMark({ size = 32, className }: VextornMarkProps) {
     <svg
       width={size}
       height={size}
-      viewBox="0 0 160 160"
+      viewBox="0 0 200 200"
       role="img"
       aria-label="Vextorn"
       className={className}
     >
       <defs>
-        <radialGradient id={`vx-talk-${uid}`} cx="35%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#8B92FF" />
-          <stop offset="60%" stopColor="#5B6CFF" />
-          <stop offset="100%" stopColor="#3D4BE0" />
-        </radialGradient>
-        <radialGradient id={`vx-share-${uid}`} cx="35%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#C896FF" />
-          <stop offset="60%" stopColor="#9B5CFF" />
-          <stop offset="100%" stopColor="#7C3AED" />
-        </radialGradient>
-        <radialGradient id={`vx-belong-${uid}`} cx="35%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#FF9FC4" />
-          <stop offset="60%" stopColor="#FF6BA1" />
-          <stop offset="100%" stopColor="#E1428A" />
-        </radialGradient>
+        <linearGradient id={`vx-left-${uid}`} x1="0.2" y1="0" x2="0.6" y2="1">
+          <stop offset="0%" stopColor="#9D86FF" />
+          <stop offset="55%" stopColor="#7B5CF6" />
+          <stop offset="100%" stopColor="#5B3CE0" />
+        </linearGradient>
+        <linearGradient id={`vx-right-${uid}`} x1="0.4" y1="0" x2="0.9" y2="1">
+          <stop offset="0%" stopColor="#3D8FFF" />
+          <stop offset="55%" stopColor="#3385FF" />
+          <stop offset="100%" stopColor="#22D3EE" />
+        </linearGradient>
+        <linearGradient id={`vx-head-${uid}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#9D86FF" />
+          <stop offset="100%" stopColor="#3D8FFF" />
+        </linearGradient>
       </defs>
-      <g transform="rotate(-6 80 80)">
-        <circle cx="80" cy="56" r="36" fill={`url(#vx-talk-${uid})`} />
-        <circle
-          cx="54"
-          cy="100"
-          r="36"
-          fill={`url(#vx-share-${uid})`}
-          style={{ mixBlendMode: "multiply" }}
-        />
-        <circle
-          cx="106"
-          cy="100"
-          r="36"
-          fill={`url(#vx-belong-${uid})`}
-          style={{ mixBlendMode: "multiply" }}
-        />
-        <ellipse cx="71" cy="44" rx="6" ry="3.5" fill="#fff" opacity="0.55" />
-        <ellipse cx="45" cy="88" rx="6" ry="3.5" fill="#fff" opacity="0.45" />
-        <ellipse cx="97" cy="88" rx="6" ry="3.5" fill="#fff" opacity="0.45" />
-      </g>
+      <path
+        d="M 100 180 C 86 152, 68 114, 50 72 C 40 48, 38 24, 58 22 C 74 20, 84 34, 90 64 C 94 102, 98 144, 100 180 Z"
+        fill={`url(#vx-left-${uid})`}
+      />
+      <path
+        d="M 100 180 C 114 152, 132 114, 150 72 C 160 48, 162 24, 142 22 C 126 20, 116 34, 110 64 C 106 102, 102 144, 100 180 Z"
+        fill={`url(#vx-right-${uid})`}
+      />
+      <circle cx="100" cy="56" r="11" fill={`url(#vx-head-${uid})`} />
     </svg>
   );
 }
@@ -66,10 +54,10 @@ export function VextornWordmark({ className }: VextornWordmarkProps) {
     <span
       className={className}
       style={{
-        fontWeight: 800,
-        letterSpacing: "-0.04em",
+        fontWeight: 700,
+        letterSpacing: "-0.02em",
         fontFamily:
-          'Inter, "SF Pro Display", "Helvetica Neue", system-ui, -apple-system, sans-serif',
+          '"Space Grotesk", "SF Pro Display", "Helvetica Neue", system-ui, -apple-system, sans-serif',
       }}
     >
       Vextorn
@@ -98,18 +86,18 @@ export function VextornLockup({
       <div className="flex flex-col leading-none">
         <VextornWordmark
           className={
-            wordmarkClassName ?? "text-lg font-extrabold tracking-tight"
+            wordmarkClassName ?? "text-lg font-bold tracking-tight"
           }
         />
         {showTagline && (
           <span
             className={
               taglineClassName ??
-              "text-[10px] text-muted-foreground mt-1 font-semibold"
+              "text-[11px] mt-1 font-semibold bg-gradient-to-r from-[#9D86FF] via-[#7B5CF6] to-[#3D8FFF] bg-clip-text text-transparent"
             }
-            style={{ letterSpacing: "0.18em" }}
+            style={{ letterSpacing: "0.01em" }}
           >
-            TALK · SHARE · BELONG
+            Talk. Share. Belong.
           </span>
         )}
       </div>
