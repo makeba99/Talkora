@@ -1993,7 +1993,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   }, [activeYoutubeId, showYoutube, miniPlayerMode, sidePanelOpen, sidePanelTab, mobileSheetOpen]);
 
   useEffect(() => {
-    if (!activeYoutubeId) {
+    // Opt-in playback: the YouTube iframe is created ONLY for users who have
+    // actually opened the player (showYoutube) or have it in the floating
+    // mini-player. Non-watchers get no iframe at all, which means no audio
+    // leaks to people who never clicked "Join Watch Party". When the user
+    // closes their view, the player is destroyed and audio stops immediately.
+    const isActivelyWatching = showYoutube || miniPlayerMode;
+    if (!activeYoutubeId || !isActivelyWatching) {
       if (youtubePlayerRef.current) {
         try { youtubePlayerRef.current.destroy(); } catch (_) {}
         youtubePlayerRef.current = null;
@@ -2002,6 +2008,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setYtPlayerLoading(false);
       setYtPlayerReady(false);
       setYtPlayerError(null);
+      setYtIsPlaying(false);
+      setYoutubeActive(false);
       ytHostFallbackRef.current = false;
       if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); ytLoadTimeoutRef.current = null; }
       return;
@@ -2172,9 +2180,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 setYtPlayerLoading(false);
                 setYtPlayerReady(true);
                 if (isSlowNet) setYtQualityState("slow");
-                // Independent playback: no auto-sync to the starter on player ready.
-                // Watchers can press the "Sync with starter" button if they want to
-                // jump to the starter's current position.
+                // Auto-sync on join: a watcher who just opened the player jumps
+                // straight to the starter's current playhead. After that, their
+                // playback is fully independent — local play/pause/seek don't
+                // affect anyone else, and they can press "Sync" again any time
+                // to re-catch-up to the starter.
+                if (user?.id !== youtubeStartedByRef.current && socketRef.current) {
+                  socketRef.current.emit("room:youtube-time-request", { roomId: room.id, requesterId: user?.id });
+                }
               } catch (err) { console.error("[YT] playVideo/unMute error:", err); }
             },
             onError: (e: any) => {
@@ -2259,13 +2272,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setYtDuration(0);
       setYoutubeActive(false);
     };
-    // CRITICAL: Only re-create the player when the video ID itself changes,
-    // OR when the user explicitly hits Retry (ytRetryNonce bumps).
-    // Toggling showYoutube (panel open/close, avatar focus, etc.) must NOT destroy the player —
-    // the persistent fixed-position wrapper handles visibility via CSS, and rebuilding the player
-    // restarts buffering and causes severe lag.
+    // The player mount/unmount is now driven by:
+    //   - activeYoutubeId    → which video the room is currently playing
+    //   - showYoutube        → has the user opened the watch panel
+    //   - miniPlayerMode     → is the floating mini-player visible
+    //   - ytRetryNonce       → user pressed Retry after a load error
+    // Closing the watch view destroys the iframe so audio stops for users who
+    // are not actively watching, fixing audio leakage to non-watchers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeYoutubeId, ytRetryNonce]);
+  }, [activeYoutubeId, showYoutube, miniPlayerMode, ytRetryNonce]);
 
   // User-facing retry: switch host on second attempt to dodge ad-blockers, then rebuild.
   const handleRetryYoutube = () => {
