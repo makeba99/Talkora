@@ -3029,42 +3029,52 @@ html.synthwave .neon-text {
 .text-neu-teal   { color: hsl(var(--neu-teal)); }
 .text-neu-magenta { color: hsl(var(--neu-magenta)); }
 
-/* Red icon button — for the host's room-settings gear and other
-   destructive / owner-only controls. Same neumorphic depth as
-   .neu-icon-btn but with a warm red wash + red glow. */
+/* Host-only gear button (formerly red) — restyled into the unified
+   amber-honey neumorphic theme. Dark surface body so it doesn't
+   compete with the Step In CTA, with an amber-glowing icon and
+   subtle amber rim that signals an owner-only action without
+   shouting. Pressed state recesses into the card surface. */
 .neu-icon-btn-red {
   background: linear-gradient(
     145deg,
-    hsl(0 78% 56%) 0%,
-    hsl(355 70% 38%) 100%
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
   );
-  color: #fff;
-  border: 1px solid rgba(220, 50, 50, 0.55);
+  color: hsl(var(--neu-orange-hi));
+  border: 1px solid hsl(var(--neu-orange) / 0.30);
   box-shadow:
-    0 0 14px rgba(255, 60, 60, 0.42),
-    0 0 28px rgba(255, 60, 60, 0.16),
-    -3px -3px 8px rgba(255, 255, 255, 0.045),
+    0 0 8px hsl(var(--neu-orange) / 0.18),
+    -3px -3px 8px rgba(255, 235, 215, 0.045),
     4px 4px 10px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+    inset 0 1px 0 rgba(255, 235, 215, 0.07);
   transition: all 180ms ease-out;
 }
+.neu-icon-btn-red > svg {
+  filter:
+    drop-shadow(0 0 3px hsl(var(--neu-orange) / 0.65))
+    drop-shadow(0 0 7px hsl(var(--neu-orange) / 0.28));
+}
 .neu-icon-btn-red:hover:not(:disabled) {
-  filter: brightness(1.08);
+  color: hsl(34 92% 62%);
   transform: translateY(-1px);
+  border-color: hsl(var(--neu-orange) / 0.50);
   box-shadow:
-    0 0 18px rgba(255, 60, 60, 0.58),
-    0 0 36px rgba(255, 60, 60, 0.22),
-    -4px -4px 10px rgba(255, 255, 255, 0.05),
+    0 0 14px hsl(var(--neu-orange) / 0.34),
+    0 0 28px hsl(var(--neu-orange) / 0.12),
+    -4px -4px 10px rgba(255, 235, 215, 0.05),
     5px 5px 12px rgba(0, 0, 0, 0.70),
-    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    inset 0 1px 0 rgba(255, 235, 215, 0.10);
+}
+.neu-icon-btn-red:hover:not(:disabled) > svg {
+  filter:
+    drop-shadow(0 0 5px hsl(var(--neu-orange) / 0.85))
+    drop-shadow(0 0 11px hsl(var(--neu-orange) / 0.38));
 }
 .neu-icon-btn-red:active:not(:disabled) {
   transform: translateY(0);
   box-shadow:
-    0 0 10px rgba(255, 60, 60, 0.36),
-    inset 3px 3px 8px rgba(0, 0, 0, 0.55),
-    inset -2px -2px 6px rgba(255, 90, 90, 0.18);
+    inset 3px 3px 8px rgba(0, 0, 0, 0.62),
+    inset -2px -2px 6px rgba(255, 235, 215, 0.035);
 }
 
 /* Stronger neumorphic depth for the lobby room cards in the

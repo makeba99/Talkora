@@ -216,6 +216,12 @@ Badge applications table (shared/schema.ts):
 - `client/src/components/create-room-dialog.tsx` updated to use all the
   new neumorphic classes for tiles, nav arrows, pagination dots,
   upload/youtube tabs, public-room switch, and the submit button.
+- **Host gear button restyled.** `.neu-icon-btn-red` (still used on the
+  room card's settings gear) is no longer red. It's now a dark neumorphic
+  body with a glowing amber icon and a faint amber rim — same material
+  language as the Create Room button. Hover deepens the amber glow;
+  pressed state recesses into the card. Signals "owner-only" without
+  shouting, and no longer clashes with the unified amber theme.
 
 ## Lobby Neumorphic Polish (Round 2, April 2026)
 - Toned-down "burnt orange" palette: `--neu-orange` 20 72% 44%, `--neu-orange-hi`
