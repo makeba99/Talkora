@@ -466,7 +466,7 @@ function ParticipantCard({
       )}
       <div
         className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
-          isSpeaking ? "border-orange-500/80 shadow-[0_0_15px_rgba(220,120,50,0.45)]" : "border-transparent hover:border-white/20"
+          isSpeaking ? "border-fuchsia-500/80 shadow-[0_0_15px_rgba(200,55,175,0.45)]" : "border-transparent hover:border-white/20"
         } transition-all duration-300`}
       >
         {hasActiveYoutube && youtubeVideoId ? (
@@ -2743,10 +2743,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
     };
     const activeStyle: React.CSSProperties = {
-      background: "linear-gradient(145deg, hsl(22 96% 60%) 0%, hsl(14 88% 46%) 100%)",
-      border: "1px solid rgba(255,140,60,0.5)",
+      background: "linear-gradient(145deg, hsl(322 74% 56%) 0%, hsl(335 66% 40%) 100%)",
+      border: "1px solid rgba(210,55,175,0.50)",
       color: "#fff",
-      boxShadow: "0 0 18px hsla(18, 92%, 54%, 0.4), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.4)",
+      boxShadow: "0 0 18px hsla(328, 70%, 50%, 0.4), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,185,240,0.4)",
     };
     const micLiveStyle: React.CSSProperties = {
       background: "linear-gradient(145deg, rgba(34,197,94,0.18) 0%, rgba(22,163,74,0.10) 100%)",
@@ -2988,13 +2988,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             {!aiTutorActive && (
               <span
                 className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
-                style={{ background: "rgba(220,120,50,0.18)", animationDuration: "2.2s" }}
+                style={{ background: "rgba(200,55,175,0.18)", animationDuration: "2.2s" }}
               />
             )}
             {aiTutorActive && (
               <span
                 className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
-                style={{ background: "rgba(220,120,50,0.28)", animationDuration: "1.4s" }}
+                style={{ background: "rgba(200,55,175,0.28)", animationDuration: "1.4s" }}
               />
             )}
             <button
@@ -3003,21 +3003,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               title={aiTutorActive ? `Dismiss ${aiPersonaName}` : "Call AI Tutor"}
               className={btnBase}
               style={aiTutorActive ? {
-                background: "linear-gradient(145deg, hsl(22 96% 60%) 0%, hsl(14 88% 46%) 100%)",
-                border: "1px solid rgba(255,140,60,0.55)",
+                background: "linear-gradient(145deg, hsl(322 74% 56%) 0%, hsl(335 66% 40%) 100%)",
+                border: "1px solid rgba(210,55,175,0.55)",
                 color: "#fff",
-                boxShadow: "0 0 24px hsla(18, 92%, 54%, 0.5), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.4)",
+                boxShadow: "0 0 24px hsla(328, 70%, 50%, 0.5), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,185,240,0.4)",
               } : {
                 background: "linear-gradient(145deg, hsl(228 14% 15%) 0%, hsl(228 14% 12%) 100%)",
-                border: "1px solid rgba(255,140,60,0.22)",
-                color: "hsl(18 92% 60%)",
+                border: "1px solid rgba(210,55,175,0.22)",
+                color: "hsl(328 70% 60%)",
                 boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
               }}
             >
-              <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 5px rgba(255,170,80,0.85))" } : undefined} />
+              <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 5px rgba(215,100,210,0.85))" } : undefined} />
             </button>
           </div>
-          <span className={labelBase} style={{ color: aiTutorActive ? "rgba(255,170,80,0.95)" : "hsl(18 92% 60% / 0.7)" }}>
+          <span className={labelBase} style={{ color: aiTutorActive ? "rgba(225,120,210,0.95)" : "hsl(328 70% 60% / 0.7)" }}>
             {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
         </div>
@@ -3941,7 +3941,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             title="Chat"
             className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
             style={sidePanelTab === "chat"
-              ? { background: "rgba(220,120,50,0.12)", border: "1px solid rgba(220,120,50,0.28)", color: "rgba(240,160,80,0.90)", boxShadow: "0 0 10px rgba(220,120,50,0.14)" }
+              ? { background: "rgba(200,55,175,0.12)", border: "1px solid rgba(200,55,175,0.28)", color: "rgba(225,120,210,0.90)", boxShadow: "0 0 10px rgba(200,55,175,0.14)" }
               : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
             }
           >
@@ -6130,7 +6130,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   {isHost && (
                     <span
                       className="flex-shrink-0 text-[9px] font-bold px-1.5 py-[2px] rounded-md tracking-wider uppercase"
-                      style={{ background: "rgba(220,120,50,0.12)", color: "rgba(240,160,80,0.90)", border: "1px solid rgba(220,120,50,0.22)" }}
+                      style={{ background: "rgba(200,55,175,0.12)", color: "rgba(225,120,210,0.90)", border: "1px solid rgba(200,55,175,0.22)" }}
                     >
                       HOST
                     </span>
@@ -6168,7 +6168,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       title="Social Panel"
                       className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
                       style={isActive
-                        ? { background: "rgba(220,120,50,0.12)", border: "1px solid rgba(220,120,50,0.28)", color: "rgba(240,160,80,0.90)", boxShadow: "0 0 10px rgba(220,120,50,0.14)" }
+                        ? { background: "rgba(200,55,175,0.12)", border: "1px solid rgba(200,55,175,0.28)", color: "rgba(225,120,210,0.90)", boxShadow: "0 0 10px rgba(200,55,175,0.14)" }
                         : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
                       }
                     >

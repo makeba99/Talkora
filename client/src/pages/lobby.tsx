@@ -252,7 +252,7 @@ function PeopleDiscoveryCard({
               {isOnline ? "● Online now" : "○ Offline"}
             </p>
             {currentRoomId && (
-              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-neu-orange bg-orange-400/10 rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-neu-orange bg-fuchsia-400/10 rounded-full px-2 py-0.5">
                 <Radio className="w-2.5 h-2.5" />
                 Talking
               </span>
@@ -289,7 +289,7 @@ function PeopleDiscoveryCard({
           </span>
           {voteCount > 0 && (
             <span className="flex items-center gap-1 text-white/60">
-              <Flame className="w-3 h-3 text-orange-400" />
+              <Flame className="w-3 h-3 text-fuchsia-400" />
               <span className="font-semibold text-white/80">{voteCount + (hasVoted ? 1 : 0)}</span>
             </span>
           )}
@@ -309,7 +309,7 @@ function PeopleDiscoveryCard({
               disabled={isCurrentUser || isPending}
               className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
                 isFollowing
-                  ? "border-orange-400/40 bg-orange-400/20 text-orange-200 hover:bg-orange-400/25"
+                  ? "border-fuchsia-400/40 bg-fuchsia-400/20 text-fuchsia-200 hover:bg-fuchsia-400/25"
                   : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
               } disabled:opacity-45 disabled:cursor-not-allowed`}
               data-testid={`button-follow-discovery-${person.id}`}
@@ -331,12 +331,12 @@ function PeopleDiscoveryCard({
             disabled={isCurrentUser}
             className={`w-full flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
               hasVoted
-                ? "border-orange-400/50 bg-orange-400/20 text-orange-200"
-                : "border-orange-400/20 bg-orange-400/8 text-orange-300/70 hover:bg-orange-400/14 hover:border-orange-400/35"
+                ? "border-fuchsia-400/50 bg-fuchsia-400/20 text-fuchsia-200"
+                : "border-fuchsia-400/20 bg-fuchsia-400/8 text-fuchsia-300/70 hover:bg-fuchsia-400/14 hover:border-fuchsia-400/35"
             } disabled:opacity-45 disabled:cursor-not-allowed`}
             data-testid={`button-vote-discovery-${person.id}`}
           >
-            <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-orange-400 text-orange-400" : ""}`} />
+            <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-fuchsia-400 text-fuchsia-400" : ""}`} />
             {hasVoted ? "Voted!" : "Vote"}
             {(voteCount > 0) && <span className="ml-1 opacity-60">{voteCount + (hasVoted ? 1 : 0)}</span>}
           </button>

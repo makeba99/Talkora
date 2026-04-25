@@ -651,8 +651,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   <>
                     <span className="text-white/30 text-[10px]">•</span>
                     <div className="flex items-center gap-0.5">
-                      <Users className="w-3 h-3 text-orange-400/80" />
-                      <span className="text-[11px] font-semibold text-orange-400">{voteCount} joining</span>
+                      <Users className="w-3 h-3 text-fuchsia-400/80" />
+                      <span className="text-[11px] font-semibold text-fuchsia-400">{voteCount} joining</span>
                     </div>
                   </>
                 )}
@@ -794,7 +794,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               {isLoggedIn && onVote && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onVote(); }}
-                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/35 hover:text-orange-400"}`}
+                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-fuchsia-400" : "text-white/35 hover:text-fuchsia-400"}`}
                   data-testid={`button-vote-room-${room.id}`}
                   title={hasVoted ? "Remove vote" : "Vote"}
                 >

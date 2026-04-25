@@ -154,19 +154,22 @@ Badge applications table (shared/schema.ts):
 - id, userId, badgeType, reason, status, reviewedById, adminNotes, createdAt, updatedAt
 
 ## Design
-- Primary accent: Orange (18 92% 54%) — neumorphic
-- Surface tokens: --neu-bg 220 9% 10%, --neu-surface 220 9% 13%
-- Neumorphic utility classes in `client/src/index.css` (~line 2280+):
+- Primary accent: Rose-Magenta `--neu-orange: 328 70% 50%` (CSS var kept as `--neu-orange` for naming legacy)
+- Surface tokens: `--neu-bg: 228 14% 9%`, `--neu-surface: 228 13% 12%` (dark blue-indigo base)
+- Neumorphic utility classes in `client/src/index.css` (~line 2430+):
   `.neu-canvas`, `.neu-surface`, `.neu-inset`, `.neu-btn`, `.neu-btn-orange`,
   `.neu-icon-btn`, `.neu-pill` (+ `.is-active`)
-- Active pills use inline orange gradient style for guaranteed override
+- Create Room button: `Sparkles` icon, `sparkle-icon` CSS animation, magenta-violet gradient
+- Active pills, "Step In", "Sign In" buttons all use the rose-magenta accent
 - Font: Space Grotesk
 - Dark-first design with light mode support
 - Per-room theme borders/glow on room cards preserved (owner choice)
+- Empty participant slots: neomorphic dark surface + subtle cyan border, no sparkle particles
 - Colored avatar gradient rings per participant — NOT affected by room themes
-- Animated pulse ring on speaking users
+- Animated pulse ring on speaking users uses fuchsia/magenta
 - Premium badge pips use each badge color with subtle glow and tooltips
-- Voice-room control dock: dark neumorphic surface; ghost/active/AI Tutor buttons neumorphic orange; mic/video/screen-share/leave keep semantic colors
+- Voice-room control dock: dark neumorphic surface; ghost/active/AI Tutor buttons use magenta; mic/video/screen-share/leave keep semantic colors
+- AI hologram cyan intentionally preserved for the hologram visual effect
 
 ## User Preferences
 - No landing page gate - lobby always shown

@@ -1266,7 +1266,7 @@ html.neomorphic-light .neu-pill[data-active="true"] {
     0 0 55px hsla(var(--neu-orange) / 0.28),
     -4px -4px 10px rgba(255, 255, 255, 0.048),
     5px 5px 16px rgba(0, 0, 0, 0.70),
-    inset 0 1px 0 rgba(255, 230, 190, 0.52) !important;
+    inset 0 1px 0 rgba(255, 185, 240, 0.52) !important;
 }
 
 /* 9. ICON-ONLY CONTROL BUTTONS — deepen hover lift */
@@ -2169,14 +2169,12 @@ html.synthwave .neon-text {
 }
 
 /* ── Hammer button animation ── */
-@keyframes hammer-strike {
-  0%   { transform: rotate(-32deg) translateY(-1px); }
-  14%  { transform: rotate(20deg)  translateY(2px);  }
-  24%  { transform: rotate(-12deg) translateY(-1px); }
-  34%  { transform: rotate(6deg)   translateY(1px);  }
-  42%  { transform: rotate(-3deg)  translateY(0px);  }
-  50%  { transform: rotate(0deg)   translateY(0px);  }
-  100% { transform: rotate(-32deg) translateY(-1px); }
+@keyframes sparkle-rotate {
+  0%   { transform: scale(1)    rotate(0deg);   }
+  30%  { transform: scale(1.18) rotate(18deg);  }
+  55%  { transform: scale(0.92) rotate(-8deg);  }
+  75%  { transform: scale(1.08) rotate(6deg);   }
+  100% { transform: scale(1)    rotate(0deg);   }
 }
 
 @keyframes hammer-btn-pulse {
@@ -2186,22 +2184,22 @@ html.synthwave .neon-text {
   100% { box-shadow: 0 0 16px hsla(var(--neu-orange) / 0.22), 0 2px 8px rgba(0,0,0,0.30); }
 }
 
-.hammer-icon {
+.sparkle-icon {
   display: inline-block;
-  transform-origin: 78% 78%;
-  animation: hammer-strike 2.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+  transform-origin: center center;
+  animation: sparkle-rotate 2.8s ease-in-out infinite;
 }
 
 .hammer-btn {
-  animation: hammer-btn-pulse 2.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+  animation: hammer-btn-pulse 2.8s ease-in-out infinite;
 }
 
-.hammer-btn:hover .hammer-icon {
-  animation-duration: 1s;
+.hammer-btn:hover .sparkle-icon {
+  animation-duration: 1.2s;
 }
 
 .hammer-btn:hover {
-  animation-duration: 1s;
+  animation-duration: 1.2s;
 }
 
 /* ── AI Tutor responsive face size ── */
@@ -2434,9 +2432,9 @@ html.synthwave .neon-text {
   --neu-surface-2: 228 12% 16%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
-  --neu-orange: 20 78% 48%;        /* primary accent — warm amber, not neon */
-  --neu-orange-hi: 22 82% 54%;     /* highlight tone */
-  --neu-orange-lo: 14 72% 36%;     /* deep tone */
+  --neu-orange: 328 70% 50%;       /* primary accent — rose-magenta */
+  --neu-orange-hi: 322 74% 56%;    /* highlight tone */
+  --neu-orange-lo: 335 65% 38%;    /* deep tone */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
@@ -2531,13 +2529,13 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-lo)) 100%
   );
   color: #fff;
-  border: 1px solid rgba(255, 140, 60, 0.55);
+  border: 1px solid rgba(210, 55, 175, 0.55);
   box-shadow:
     0 0 22px hsla(var(--neu-orange) / 0.42),
     0 0 48px hsla(var(--neu-orange) / 0.16),
     -5px -5px 12px rgba(255, 255, 255, 0.045),
     7px 7px 18px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(255, 230, 190, 0.48),
+    inset 0 1px 0 rgba(255, 185, 240, 0.48),
     inset 0 -1px 0 rgba(0, 0, 0, 0.22);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
   transition: all 200ms ease-out;
@@ -2550,14 +2548,14 @@ html.synthwave .neon-text {
     0 0 60px hsla(var(--neu-orange) / 0.22),
     -5px -5px 12px rgba(255, 255, 255, 0.048),
     8px 8px 20px rgba(0, 0, 0, 0.72),
-    inset 0 1px 0 rgba(255, 230, 190, 0.52);
+    inset 0 1px 0 rgba(255, 185, 240, 0.52);
 }
 .neu-btn-orange:active:not(:disabled) {
   transform: translateY(0);
   box-shadow:
     0 0 16px hsla(var(--neu-orange) / 0.44),
     inset 4px 4px 10px rgba(0, 0, 0, 0.52),
-    inset -3px -3px 8px rgba(255, 200, 140, 0.22);
+    inset -3px -3px 8px rgba(220, 140, 220, 0.22);
 }
 
 /* Compact circular variant used for icon-only controls */
@@ -2600,7 +2598,7 @@ html.synthwave .neon-text {
     0 0 44px hsla(var(--neu-orange) / 0.18),
     -4px -4px 10px rgba(255, 255, 255, 0.045),
     5px 5px 14px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(255, 230, 190, 0.44);
+    inset 0 1px 0 rgba(255, 185, 240, 0.44);
 }
 
 /* Pill variants used for the discovery tabs and language filters. */
@@ -2633,13 +2631,13 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-hi)) 0%,
     hsl(var(--neu-orange-lo)) 100%
   );
-  border: 1px solid rgba(255, 150, 70, 0.60);
+  border: 1px solid rgba(210, 55, 175, 0.60);
   box-shadow:
     0 0 26px hsla(var(--neu-orange) / 0.62),
     0 0 50px hsla(var(--neu-orange) / 0.28),
     -4px -4px 10px rgba(255, 255, 255, 0.048),
     5px 5px 16px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(255, 230, 190, 0.50);
+    inset 0 1px 0 rgba(255, 185, 240, 0.50);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 

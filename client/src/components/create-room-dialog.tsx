@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Hammer, Link, Loader2, Search, Video, X, Youtube } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link, Loader2, Search, Sparkles, Video, X, Youtube } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { ROOM_THEMES } from "@/components/profile-decorations";
@@ -145,12 +145,12 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
           data-testid="button-create-room"
           className="hammer-btn h-10 px-4 font-semibold whitespace-nowrap flex-shrink-0 gap-2"
           style={{
-            background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,50,240,0.9) 100%)",
-            border: "1px solid rgba(0,210,255,0.35)",
+            background: "linear-gradient(135deg, hsl(322 74% 52%) 0%, hsl(268 62% 40%) 100%)",
+            border: "1px solid rgba(210,55,175,0.40)",
             color: "#fff",
           }}
         >
-          <Hammer className="hammer-icon w-4 h-4" />
+          <Sparkles className="sparkle-icon w-4 h-4" />
           Create Room
         </Button>
       </DialogTrigger>
