@@ -671,41 +671,41 @@ html.neomorphic-dark {
   --opaque-button-border-intensity: 7;
   --elevate-1: rgba(192, 38, 211, .04);
   --elevate-2: rgba(192, 38, 211, .08);
-  --background: 245 22% 14%;
-  --foreground: 250 20% 92%;
-  --border: 245 18% 22%;
-  --card: 245 22% 16%;
-  --card-foreground: 250 20% 92%;
-  --card-border: 245 18% 22%;
-  --sidebar: 245 22% 13%;
-  --sidebar-foreground: 250 20% 92%;
-  --sidebar-border: 245 18% 20%;
-  --sidebar-primary: 295 75% 58%;
+  --background: 244 28% 15%;
+  --foreground: 250 22% 94%;
+  --border: 244 22% 24%;
+  --card: 244 28% 17%;
+  --card-foreground: 250 22% 94%;
+  --card-border: 244 22% 24%;
+  --sidebar: 244 28% 14%;
+  --sidebar-foreground: 250 22% 94%;
+  --sidebar-border: 244 22% 22%;
+  --sidebar-primary: 286 82% 62%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 245 20% 18%;
-  --sidebar-accent-foreground: 250 20% 92%;
-  --sidebar-ring: 295 75% 58%;
-  --popover: 245 22% 16%;
-  --popover-foreground: 250 20% 92%;
-  --popover-border: 245 18% 22%;
-  --primary: 295 75% 58%;
+  --sidebar-accent: 244 24% 20%;
+  --sidebar-accent-foreground: 250 22% 94%;
+  --sidebar-ring: 286 82% 62%;
+  --popover: 244 28% 17%;
+  --popover-foreground: 250 22% 94%;
+  --popover-border: 244 22% 24%;
+  --primary: 286 82% 62%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 188 90% 55%;
-  --secondary-foreground: 245 22% 14%;
-  --muted: 245 20% 18%;
-  --muted-foreground: 250 12% 60%;
-  --accent: 245 22% 19%;
-  --accent-foreground: 250 20% 92%;
+  --secondary: 192 95% 58%;
+  --secondary-foreground: 244 28% 15%;
+  --muted: 244 24% 20%;
+  --muted-foreground: 250 14% 64%;
+  --accent: 244 26% 22%;
+  --accent-foreground: 250 22% 94%;
   --destructive: 0 84% 58%;
   --destructive-foreground: 0 0% 98%;
-  --input: 245 18% 12%;
-  --ring: 295 75% 58%;
-  /* Neomorphic depth tokens */
-  --neo-bg: 245 22% 14%;
-  --neo-shadow-dark: 245 28% 6%;
-  --neo-shadow-light: 245 18% 22%;
-  --neo-accent-from: 295 75% 58%;
-  --neo-accent-to: 188 90% 55%;
+  --input: 244 22% 12%;
+  --ring: 286 82% 62%;
+  /* Neomorphic depth tokens — deeper, richer */
+  --neo-bg: 244 28% 15%;
+  --neo-shadow-dark: 244 35% 5%;
+  --neo-shadow-light: 244 22% 25%;
+  --neo-accent-from: 286 82% 62%;
+  --neo-accent-to: 192 95% 58%;
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -725,43 +725,43 @@ html.neomorphic-light {
   --button-outline: rgba(0, 0, 0, .04);
   --badge-outline: rgba(0, 0, 0, .03);
   --opaque-button-border-intensity: -6;
-  --elevate-1: rgba(124, 92, 255, .04);
-  --elevate-2: rgba(124, 92, 255, .08);
-  --background: 230 25% 92%;
-  --foreground: 240 18% 22%;
-  --border: 230 18% 84%;
-  --card: 230 28% 94%;
-  --card-foreground: 240 18% 22%;
-  --card-border: 230 18% 86%;
-  --sidebar: 230 28% 90%;
-  --sidebar-foreground: 240 18% 22%;
-  --sidebar-border: 230 18% 84%;
-  --sidebar-primary: 252 78% 65%;
+  --elevate-1: rgba(124, 92, 255, .05);
+  --elevate-2: rgba(124, 92, 255, .10);
+  --background: 232 30% 91%;
+  --foreground: 244 22% 20%;
+  --border: 232 22% 82%;
+  --card: 232 32% 93%;
+  --card-foreground: 244 22% 20%;
+  --card-border: 232 22% 84%;
+  --sidebar: 232 32% 89%;
+  --sidebar-foreground: 244 22% 20%;
+  --sidebar-border: 232 22% 82%;
+  --sidebar-primary: 256 82% 65%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 230 22% 86%;
-  --sidebar-accent-foreground: 240 18% 22%;
-  --sidebar-ring: 252 78% 65%;
-  --popover: 230 28% 94%;
-  --popover-foreground: 240 18% 22%;
-  --popover-border: 230 18% 86%;
-  --primary: 252 78% 65%;
+  --sidebar-accent: 232 26% 84%;
+  --sidebar-accent-foreground: 244 22% 20%;
+  --sidebar-ring: 256 82% 65%;
+  --popover: 232 32% 93%;
+  --popover-foreground: 244 22% 20%;
+  --popover-border: 232 22% 84%;
+  --primary: 256 82% 65%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 280 70% 60%;
+  --secondary: 286 75% 62%;
   --secondary-foreground: 0 0% 100%;
-  --muted: 230 22% 88%;
-  --muted-foreground: 240 12% 45%;
-  --accent: 230 22% 90%;
-  --accent-foreground: 240 18% 22%;
+  --muted: 232 26% 86%;
+  --muted-foreground: 244 14% 42%;
+  --accent: 232 26% 88%;
+  --accent-foreground: 244 22% 20%;
   --destructive: 0 78% 52%;
   --destructive-foreground: 0 0% 98%;
-  --input: 230 22% 84%;
-  --ring: 252 78% 65%;
-  /* Neomorphic depth tokens */
-  --neo-bg: 230 25% 92%;
-  --neo-shadow-dark: 230 18% 78%;
+  --input: 232 26% 82%;
+  --ring: 256 82% 65%;
+  /* Neomorphic depth tokens — deeper, richer */
+  --neo-bg: 232 30% 91%;
+  --neo-shadow-dark: 232 22% 72%;
   --neo-shadow-light: 0 0% 100%;
-  --neo-accent-from: 252 78% 65%;
-  --neo-accent-to: 280 70% 60%;
+  --neo-accent-from: 256 82% 65%;
+  --neo-accent-to: 286 75% 62%;
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -1052,6 +1052,122 @@ html.neomorphic-light [data-sidebar] {
   box-shadow:
     inset -2px 0 6px hsl(var(--neo-shadow-dark) / 0.4) !important;
   border: none !important;
+}
+
+/* ─── DEEPER SHADOWS — make all neo elements feel more 3D ─── */
+html.neomorphic-dark button:not([data-neo-skip]):not([role="tab"]):not([role="combobox"]):not([data-state="checked"]):not([data-state="on"]),
+html.neomorphic-light button:not([data-neo-skip]):not([role="tab"]):not([role="combobox"]):not([data-state="checked"]):not([data-state="on"]) {
+  box-shadow:
+    -5px -5px 12px hsl(var(--neo-shadow-light) / 0.6),
+    5px 5px 12px hsl(var(--neo-shadow-dark) / 0.7);
+  border-radius: 14px;
+}
+
+html.neomorphic-dark button:not([data-neo-skip]):hover:not(:disabled),
+html.neomorphic-light button:not([data-neo-skip]):hover:not(:disabled) {
+  box-shadow:
+    -7px -7px 16px hsl(var(--neo-shadow-light) / 0.7),
+    7px 7px 16px hsl(var(--neo-shadow-dark) / 0.8);
+  transform: translateY(-1px);
+}
+
+html.neomorphic-dark .bg-card,
+html.neomorphic-light .bg-card,
+html.neomorphic-dark [data-testid^="card-room"],
+html.neomorphic-light [data-testid^="card-room"] {
+  box-shadow:
+    -10px -10px 24px hsl(var(--neo-shadow-light) / 0.55),
+    10px 10px 24px hsl(var(--neo-shadow-dark) / 0.7) !important;
+  border-radius: 1.5rem !important;
+}
+
+html.neomorphic-dark .bg-popover,
+html.neomorphic-light .bg-popover {
+  box-shadow:
+    -12px -12px 28px hsl(var(--neo-shadow-light) / 0.55),
+    12px 12px 28px hsl(var(--neo-shadow-dark) / 0.75) !important;
+  border-radius: 1.25rem !important;
+}
+
+/* ─── PARTICIPANT AVATARS — squircle in neomorphic theme ─── */
+/* Override the circle/full-rounded avatars to be a soft rounded square */
+html.neomorphic-dark [data-testid^="card-room"] [data-testid^="button-card-participant"] .rounded-full,
+html.neomorphic-light [data-testid^="card-room"] [data-testid^="button-card-participant"] .rounded-full,
+html.neomorphic-dark [data-testid^="card-room"] [data-testid^="button-card-participant"] [class*="rounded-full"],
+html.neomorphic-light [data-testid^="card-room"] [data-testid^="button-card-participant"] [class*="rounded-full"] {
+  border-radius: 22% !important;
+}
+
+/* Outer participant ring also becomes squircle */
+html.neomorphic-dark [data-testid^="card-room"] .rounded-full[style*="conic-gradient"],
+html.neomorphic-light [data-testid^="card-room"] .rounded-full[style*="conic-gradient"],
+html.neomorphic-dark [data-testid^="card-room"] > * .rounded-full:has(.rounded-full),
+html.neomorphic-light [data-testid^="card-room"] > * .rounded-full:has(.rounded-full) {
+  border-radius: 24% !important;
+}
+
+/* Empty join-spot circles too */
+html.neomorphic-dark [data-testid^="card-room"] .rounded-full,
+html.neomorphic-light [data-testid^="card-room"] .rounded-full {
+  border-radius: 24% !important;
+}
+
+/* In-room participant cards (voice room) — already squarish, just deepen the shadow */
+html.neomorphic-dark [data-testid^="participant-"],
+html.neomorphic-light [data-testid^="participant-"] {
+  border-radius: 1.25rem !important;
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    -6px -6px 14px hsl(var(--neo-shadow-light) / 0.55),
+    6px 6px 14px hsl(var(--neo-shadow-dark) / 0.65) !important;
+  border: 1px solid transparent !important;
+}
+
+/* ─── SEARCH FIELDS — extra deep recessed look ─── */
+html.neomorphic-dark input[type="search"],
+html.neomorphic-light input[type="search"],
+html.neomorphic-dark input[placeholder*="earch" i],
+html.neomorphic-light input[placeholder*="earch" i],
+html.neomorphic-dark input[data-testid*="search" i],
+html.neomorphic-light input[data-testid*="search" i] {
+  background: hsl(var(--neo-bg)) !important;
+  border-radius: 999px !important;
+  border: none !important;
+  box-shadow:
+    inset 5px 5px 12px hsl(var(--neo-shadow-dark) / 0.6),
+    inset -5px -5px 12px hsl(var(--neo-shadow-light) / 0.5) !important;
+  padding-left: 2.5rem !important;
+}
+
+html.neomorphic-dark input[type="search"]:focus-visible,
+html.neomorphic-light input[type="search"]:focus-visible,
+html.neomorphic-dark input[placeholder*="earch" i]:focus-visible,
+html.neomorphic-light input[placeholder*="earch" i]:focus-visible {
+  box-shadow:
+    inset 5px 5px 12px hsl(var(--neo-shadow-dark) / 0.65),
+    inset -5px -5px 12px hsl(var(--neo-shadow-light) / 0.55),
+    0 0 0 2px hsl(var(--neo-accent-from) / 0.4) !important;
+}
+
+/* Search container wrapper (the relative div around input + icon) */
+html.neomorphic-dark .relative:has(> input[placeholder*="earch" i]),
+html.neomorphic-light .relative:has(> input[placeholder*="earch" i]) {
+  border-radius: 999px;
+}
+
+/* ─── NEOMORPHIC: BACKGROUND TEXTURE for body ─── */
+html.neomorphic-dark body {
+  background:
+    radial-gradient(ellipse at 20% 0%, hsl(286 50% 18% / 0.55) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, hsl(192 60% 16% / 0.45) 0%, transparent 55%),
+    hsl(244 28% 15%) !important;
+}
+
+html.neomorphic-light body {
+  background:
+    radial-gradient(ellipse at 20% 0%, hsl(256 60% 88% / 0.7) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, hsl(286 50% 90% / 0.6) 0%, transparent 55%),
+    hsl(232 30% 91%) !important;
 }
 
 .dark {
