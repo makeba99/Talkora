@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -454,13 +454,30 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const glow = getThemeGlowColor(isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme);
   const displaySlots = Array.from({ length: Math.min(room.maxUsers, 10) });
 
+  /* viewport-based scale factor so the participant circles grow on bigger screens
+     while the card itself stays a comfortable, fixed-feeling size */
+  const [circleScale, setCircleScale] = useState(1);
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      if (w >= 1536) setCircleScale(1.35);
+      else if (w >= 1280) setCircleScale(1.18);
+      else if (w >= 1024) setCircleScale(1.05);
+      else setCircleScale(1);
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
+
   /* circle size is based on room.maxUsers — fixed per room, never changes with current participants */
-  const circleSize =
+  const baseCircleSize =
     room.maxUsers <= 2 ? 76 :
     room.maxUsers <= 4 ? 68 :
     room.maxUsers <= 6 ? 60 :
     room.maxUsers <= 8 ? 52 :
     room.maxUsers <= 10 ? 46 : 40;
+  const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
     <Button
