@@ -460,24 +460,36 @@ function ParticipantCard({
         </div>
 
         {(showScreenIcon || showYoutubeIcon || showBookIcon || isWatcher) && (
-          <div className="absolute top-1 right-8 z-20 flex items-center gap-0.5 animate-pulse pointer-events-none drop-shadow-md">
+          <div className="absolute top-1 right-8 z-20 flex items-center gap-0.5 animate-pulse drop-shadow-md">
              {showScreenIcon && (
-                <div className="bg-blue-600 p-1 rounded-sm shadow">
+                <div className="bg-blue-600 p-1 rounded-sm shadow pointer-events-none">
                    <Monitor className="w-3 h-3 text-white" />
                 </div>
              )}
              {showYoutubeIcon && !showScreenIcon && (
-                <div className="bg-red-600 p-1 rounded-sm shadow">
-                   <Youtube className="w-3 h-3 text-white" />
-                </div>
+                onWatchYoutube && !isMe ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onWatchYoutube(); }}
+                    className="bg-red-600 hover:bg-red-500 p-1 rounded-sm shadow cursor-pointer pointer-events-auto transition-colors"
+                    title="Tap to watch this video"
+                    data-testid={`button-watch-yt-${p.id}`}
+                  >
+                    <Youtube className="w-3 h-3 text-white" />
+                  </button>
+                ) : (
+                  <div className="bg-red-600 p-1 rounded-sm shadow pointer-events-none">
+                    <Youtube className="w-3 h-3 text-white" />
+                  </div>
+                )
              )}
              {isWatcher && !showScreenIcon && !showYoutubeIcon && (
-                <div className="bg-red-500/80 p-1 rounded-sm shadow flex items-center gap-0.5">
+                <div className="bg-red-500/80 p-1 rounded-sm shadow flex items-center gap-0.5 pointer-events-none">
                    <Eye className="w-3 h-3 text-white" />
                 </div>
              )}
              {showBookIcon && !showScreenIcon && (
-                <div className="bg-amber-600 p-1 rounded-sm shadow">
+                <div className="bg-amber-600 p-1 rounded-sm shadow pointer-events-none">
                    <BookOpen className="w-3 h-3 text-white" />
                 </div>
              )}
@@ -6141,7 +6153,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          {activeYoutubeId && !showYoutube && !userDismissedYoutube && (() => {
+          {/* Watcher preview is intentionally NOT auto-shown. Watchers in the room
+              see nothing extra in the main media area when a host plays a video —
+              they tap the red YouTube badge on the host's avatar (or the side panel)
+              to opt in to the watch party. */}
+          {false && activeYoutubeId && !showYoutube && !userDismissedYoutube && (() => {
             const broadcaster = participants.find(p => p.id === youtubeStartedBy);
             const thumb = `https://img.youtube.com/vi/${activeYoutubeId}/hqdefault.jpg`;
             const handleJoinWatch = () => {
