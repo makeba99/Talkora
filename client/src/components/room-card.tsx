@@ -629,8 +629,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         <div className="relative z-[2] flex flex-col h-full">
 
           {/* ── Header ── */}
-          <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-1">
-            <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-3 sm:pb-4">
+            <div className="flex-1 min-w-0 pr-2">
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
@@ -664,7 +664,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
           </div>
 
           {/* ── Body: unified neon ring circle grid ── */}
-          <div className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 overflow-hidden">
+          <div className="flex-1 flex flex-col justify-center px-3 pt-2 pb-1 overflow-hidden">
             <div className={`grid ${isPremiumAtmosphere ? "gap-3" : "gap-2"}`} style={{ gridTemplateColumns: `repeat(${gridCols}, auto)`, justifyContent: room.maxUsers <= 4 ? "center" : "start" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
