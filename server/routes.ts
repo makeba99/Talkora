@@ -14,6 +14,7 @@ import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { isSesameConfigured, sesameSynthesize, sesameHealth } from "./sesame";
+import { isOpenAiTtsConfigured, openaiTtsSynthesize } from "./openai-tts";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -609,10 +610,28 @@ export async function registerRoutes(
   // to use Sesame CSM or fall back to the browser's SpeechSynthesis engine.
   app.get("/api/ai-tutor/tts/health", isAuthenticated, async (_req, res) => {
     try {
-      const h = await sesameHealth();
-      res.json({ available: h.available, reachable: h.reachable });
+      const sesame = await sesameHealth();
+      const openai = isOpenAiTtsConfigured();
+      // Advertise "available" if EITHER provider is configured. The actual
+      // /tts route falls through Sesame → OpenAI per request, so the client
+      // benefits from the high-quality voice even when Modal is asleep/down.
+      const available = sesame.available || openai;
+      const provider = sesame.available && sesame.reachable
+        ? "sesame"
+        : openai ? "openai" : sesame.available ? "sesame" : "browser";
+      res.json({
+        available,
+        reachable: sesame.reachable || openai,
+        provider,
+        sesameConfigured: sesame.available,
+        openaiConfigured: openai,
+      });
     } catch {
-      res.json({ available: false, reachable: false });
+      res.json({
+        available: isOpenAiTtsConfigured(),
+        reachable: isOpenAiTtsConfigured(),
+        provider: isOpenAiTtsConfigured() ? "openai" : "browser",
+      });
     }
   });
 
@@ -625,8 +644,10 @@ export async function registerRoutes(
   // other room participants from burning the GPU on someone else's session.
   app.post("/api/ai-tutor/tts", isAuthenticated, async (req: any, res) => {
     try {
-      if (!isSesameConfigured()) {
-        return res.status(501).json({ error: "sesame-not-configured" });
+      const sesameOn = isSesameConfigured();
+      const openaiOn = isOpenAiTtsConfigured();
+      if (!sesameOn && !openaiOn) {
+        return res.status(501).json({ error: "tts-not-configured" });
       }
 
       const { text, voice = "Female", speed = 1.0, language = "en", roomId } = req.body || {};
@@ -645,23 +666,46 @@ export async function registerRoutes(
         }
       }
 
-      const result = await sesameSynthesize({
+      const ttsReq = {
         text: text.trim(),
-        voice,
+        voice: voice as "Female" | "Male",
         speed: typeof speed === "number" ? speed : 1.0,
         language: typeof language === "string" ? language : "en",
-      });
+      };
 
-      if (!result.ok || !result.body) {
-        console.error("[AI Tutor TTS] Sesame error:", result.status, result.error);
-        return res.status(result.status >= 500 ? 502 : result.status).json({
-          error: result.error || "tts-failed",
-        });
+      // Provider chain: Sesame (Modal GPU) → OpenAI TTS → 502.
+      // Sesame can be slow/cold/down — when that happens we transparently
+      // serve the OpenAI voice so the user always hears a real AI voice
+      // instead of falling back to the browser's robotic SpeechSynthesis.
+      let result: Awaited<ReturnType<typeof sesameSynthesize>> | null = null;
+      let usedProvider = "none";
+
+      if (sesameOn) {
+        result = await sesameSynthesize(ttsReq);
+        if (result.ok && result.body) {
+          usedProvider = "sesame";
+        } else {
+          console.warn("[AI Tutor TTS] Sesame failed (status=" + result.status + "): " + result.error + " — falling back to OpenAI");
+          result = null;
+        }
+      }
+
+      if (!result && openaiOn) {
+        result = await openaiTtsSynthesize(ttsReq);
+        if (result.ok && result.body) usedProvider = "openai";
+      }
+
+      if (!result || !result.ok || !result.body) {
+        const status = result?.status ?? 502;
+        const err = result?.error ?? "no-tts-provider";
+        console.error("[AI Tutor TTS] all providers failed:", status, err);
+        return res.status(status >= 500 ? 502 : status).json({ error: err });
       }
 
       res.setHeader("Content-Type", result.contentType || "audio/wav");
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Accel-Buffering", "no");
+      res.setHeader("X-TTS-Provider", usedProvider);
       // Disable compression — audio is already compact / already compressed.
       res.setHeader("Content-Encoding", "identity");
       res.send(Buffer.from(result.body));
