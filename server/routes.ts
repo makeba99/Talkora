@@ -13,6 +13,7 @@ import nodemailer from "nodemailer";
 import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
+import { isSesameConfigured, sesameSynthesize, sesameHealth } from "./sesame";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -600,6 +601,73 @@ export async function registerRoutes(
         correctionFixed: null,
         debug: { source: 'error', warnings: ['server_error'] },
       });
+    }
+  });
+
+  // ── AI Tutor TTS (Sesame CSM proxy) ──────────────────────────────────────
+  // Capability probe — the client uses this once on load to decide whether
+  // to use Sesame CSM or fall back to the browser's SpeechSynthesis engine.
+  app.get("/api/ai-tutor/tts/health", isAuthenticated, async (_req, res) => {
+    try {
+      const h = await sesameHealth();
+      res.json({ available: h.available, reachable: h.reachable });
+    } catch {
+      res.json({ available: false, reachable: false });
+    }
+  });
+
+  // Synthesize a single sentence via the configured CSM inference server.
+  // Returns raw audio bytes (audio/wav by default). The client decodes via
+  // Web Audio and plays back with amplitude-driven viseme animation.
+  //
+  // Active-session gate matches /api/ai-tutor/chat — only the user holding
+  // the active AI session in this room may request audio for it. This stops
+  // other room participants from burning the GPU on someone else's session.
+  app.post("/api/ai-tutor/tts", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!isSesameConfigured()) {
+        return res.status(501).json({ error: "sesame-not-configured" });
+      }
+
+      const { text, voice = "Female", speed = 1.0, language = "en", roomId } = req.body || {};
+      if (typeof text !== "string" || !text.trim()) {
+        return res.status(400).json({ error: "text required" });
+      }
+      if (voice !== "Female" && voice !== "Male") {
+        return res.status(400).json({ error: "voice must be Female or Male" });
+      }
+
+      if (roomId) {
+        const session = roomAiTutorState.get(roomId);
+        const callerId = (req.user as any)?.id;
+        if (session && callerId && session.userId !== callerId) {
+          return res.status(403).json({ error: "not-active-session" });
+        }
+      }
+
+      const result = await sesameSynthesize({
+        text: text.trim(),
+        voice,
+        speed: typeof speed === "number" ? speed : 1.0,
+        language: typeof language === "string" ? language : "en",
+      });
+
+      if (!result.ok || !result.body) {
+        console.error("[AI Tutor TTS] Sesame error:", result.status, result.error);
+        return res.status(result.status >= 500 ? 502 : result.status).json({
+          error: result.error || "tts-failed",
+        });
+      }
+
+      res.setHeader("Content-Type", result.contentType || "audio/wav");
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("X-Accel-Buffering", "no");
+      // Disable compression — audio is already compact / already compressed.
+      res.setHeader("Content-Encoding", "identity");
+      res.send(Buffer.from(result.body));
+    } catch (err: any) {
+      console.error("[AI Tutor TTS] Unexpected:", err);
+      res.status(500).json({ error: "tts-server-error" });
     }
   });
 

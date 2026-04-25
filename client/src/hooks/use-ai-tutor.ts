@@ -17,7 +17,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TtsEngine, extractSentences } from "@/lib/ai-tutor/tts";
+import { extractSentences } from "@/lib/ai-tutor/tts";
+import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
 import { SttEngine } from "@/lib/ai-tutor/stt";
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
 import { streamTokens, fetchBufferedReply } from "@/lib/ai-tutor/stream";
@@ -161,7 +162,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, []);
 
   // ── TTS Engine ────────────────────────────────────────────────────────────
-  const ttsRef = useRef<TtsEngine | null>(null);
+  // Wrapped via createTts() — auto-uses Sesame CSM when /api/ai-tutor/tts/health
+  // reports availability, otherwise falls back to the browser SpeechSynthesis
+  // engine. Either way the contract is identical.
+  const ttsRef = useRef<TtsLike | null>(null);
 
   const onTtsStart = useCallback(() => {
     setAiSpeaking(true);
@@ -187,7 +191,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const onTtsSentenceEnd = useCallback(() => {}, []);
 
   useEffect(() => {
-    ttsRef.current = new TtsEngine({
+    ttsRef.current = createTts({
       onStart: onTtsStart,
       onEnd: onTtsEnd,
       onSentenceEnd: onTtsSentenceEnd,
@@ -503,8 +507,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, [aiActive, socket, roomId, userId, username, aiSettings]);
 
   // ── Observe AI message from another user in the room ─────────────────────
+  // Uses the same Sesame-or-browser factory so observers hear the same voice
+  // the active speaker is hearing (when CSM is configured).
   const observeSpeakText = useCallback((text: string, voice: string, speed: number, voiceId?: string | null) => {
-    const engine = new TtsEngine({
+    const engine = createTts({
       onStart: () => setCurrentViseme("open"),
       onEnd: () => setCurrentViseme("rest"),
       onSentenceEnd: () => {},

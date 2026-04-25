@@ -1,0 +1,10 @@
+fastapi==0.115.4
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+torch>=2.4.0
+torchaudio>=2.4.0
+transformers>=4.45.0
+huggingface_hub>=0.26.0
+silentcipher @ git+https://github.com/SesameAILabs/silentcipher.git
+moshi==0.2.2
+git+https://github.com/SesameAILabs/csm.git
