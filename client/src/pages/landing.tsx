@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ThemePicker } from "@/components/theme-picker";
 import { Mic, Globe, Users, Shield, Headphones, MessageSquare } from "lucide-react";
+import { VextornMark } from "@/components/vextorn-logo";
 import { useTheme } from "@/lib/theme";
 
 function HeroOrb({
@@ -53,12 +54,13 @@ export default function LandingPage() {
       {/* Sticky nav */}
       <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 p-4">
-          <div className="flex items-center gap-2 animate-slide-in-left">
-            <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center border border-primary/20">
-              <Mic className="w-5 h-5 text-primary" />
-            </div>
-            <span className={`text-lg font-bold ${theme === "neon-cyberpunk" ? "neon-text" : ""}`}>
-              Connect<span className="text-primary">2</span>Talk
+          <div className="flex items-center gap-2.5 animate-slide-in-left">
+            <VextornMark size={36} />
+            <span
+              className={`text-lg ${theme === "neon-cyberpunk" ? "neon-text" : ""}`}
+              style={{ fontWeight: 800, letterSpacing: "-0.04em" }}
+            >
+              Vextorn
             </span>
           </div>
           <div className="flex items-center gap-2 animate-fade-in">
@@ -198,7 +200,7 @@ export default function LandingPage() {
             <h2
               className="text-2xl font-bold text-center mb-10 animate-slide-in-up"
             >
-              Why Connect2Talk?
+              Why Vextorn?
             </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
@@ -238,7 +240,7 @@ export default function LandingPage() {
 
       <footer className="border-t py-6">
         <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          Connect2Talk &copy; {new Date().getFullYear()}
+          Vextorn &copy; {new Date().getFullYear()} · Talk. Share. Belong.
         </div>
       </footer>
     </div>

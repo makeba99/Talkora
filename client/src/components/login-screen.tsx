@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useUser } from "@/lib/user";
 import { Mic, Globe, Zap } from "lucide-react";
+import { VextornMark } from "@/components/vextorn-logo";
 
 export function LoginScreen() {
   const [username, setUsername] = useState("");
@@ -35,18 +36,23 @@ export function LoginScreen() {
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
             <div className="relative">
-              <div className="w-14 h-14 rounded-md bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Mic className="w-7 h-7 text-primary" />
-              </div>
+              <VextornMark size={64} className="drop-shadow-[0_0_20px_rgba(155,92,255,0.45)]" />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-chart-3 rounded-full animate-pulse-glow" />
             </div>
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight" data-testid="text-app-title">
-              Connect<span className="text-primary">2</span>Talk
+            <h1
+              className="text-4xl tracking-tight"
+              style={{ fontWeight: 800, letterSpacing: "-0.04em" }}
+              data-testid="text-app-title"
+            >
+              Vextorn
             </h1>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Real-time voice chat for language practice
+            <p
+              className="text-muted-foreground mt-2 text-[11px] font-semibold"
+              style={{ letterSpacing: "0.22em" }}
+            >
+              TALK · SHARE · BELONG
             </p>
           </div>
         </div>
@@ -93,7 +99,7 @@ export function LoginScreen() {
               disabled={!username.trim() || isLoading}
               data-testid="button-join"
             >
-              {isLoading ? "Joining..." : "Join Connect2Talk"}
+              {isLoading ? "Joining..." : "Join Vextorn"}
             </Button>
           </form>
 

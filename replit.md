@@ -1,7 +1,7 @@
-# Connect2Talk - Real-time Voice Chat Platform
+# Vextorn — Talk. Share. Belong.
 
 ## Overview
-Connect2Talk is a browser-based, real-time voice chat platform for language practice. Users join public voice rooms organized by language and skill level, with a lightweight social layer (friends, followers, DMs). Rooms are visible to everyone; creating/joining requires Replit Auth login.
+Vextorn (formerly Connect2Talk) is a browser-based, real-time voice chat platform for language practice. Users join public voice rooms organized by language and skill level, with a lightweight social layer (friends, followers, DMs). Rooms are visible to everyone; creating/joining requires Replit Auth login. Tagline: **Talk. Share. Belong.** Brand assets live in `attached_assets/brand/` (mark, horizontal lockup, stacked lockup) and PNG icons in `client/public/` (`vextorn-mark.svg`, `vextorn-icon-192.png`, `vextorn-icon-512.png`, `favicon.png`). The reusable in-app brand component is `client/src/components/vextorn-logo.tsx` (`<VextornMark />`, `<VextornWordmark />`, `<VextornLockup />`).
 
 ## Tech Stack
 - **Frontend**: React + Vite + Tailwind CSS + shadcn/ui

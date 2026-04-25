@@ -1,4 +1,4 @@
-const CACHE_VERSION = "c2t-v1";
+const CACHE_VERSION = "vextorn-v1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
@@ -6,6 +6,9 @@ const STATIC_ASSETS = [
   "/",
   "/manifest.json",
   "/favicon.png",
+  "/vextorn-mark.svg",
+  "/vextorn-icon-192.png",
+  "/vextorn-icon-512.png",
 ];
 
 const OFFLINE_FALLBACK = `<!DOCTYPE html>
@@ -13,7 +16,7 @@ const OFFLINE_FALLBACK = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Connect2Talk — Offline</title>
+  <title>Vextorn — Offline</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d0b18;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}
@@ -27,7 +30,7 @@ const OFFLINE_FALLBACK = `<!DOCTYPE html>
 <body>
   <div class="icon">🔌</div>
   <h1>You're offline</h1>
-  <p>Connect2Talk needs an internet connection to connect you with other language learners. Please check your connection and try again.</p>
+  <p>Vextorn needs an internet connection to connect you with other language learners. Please check your connection and try again.</p>
   <button onclick="location.reload()">Try again</button>
 </body>
 </html>`;
@@ -137,10 +140,10 @@ self.addEventListener("push", (event) => {
   if (!event.data) return;
   const data = event.data.json();
   event.waitUntil(
-    self.registration.showNotification(data.title || "Connect2Talk", {
+    self.registration.showNotification(data.title || "Vextorn", {
       body: data.body || "",
-      icon: "/favicon.png",
-      badge: "/favicon.png",
+      icon: "/vextorn-icon-192.png",
+      badge: "/vextorn-icon-192.png",
       data: data.url ? { url: data.url } : undefined,
       vibrate: [200, 100, 200],
     })

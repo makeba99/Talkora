@@ -14,6 +14,7 @@ import { SocialPanel } from "@/components/social-panel";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { ThemePicker } from "@/components/theme-picker";
+import { VextornMark } from "@/components/vextorn-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -743,23 +744,30 @@ export default function Lobby() {
       >
         <div className="flex items-center justify-between gap-3 px-4 py-3 max-w-7xl mx-auto">
           <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="w-10 h-10 rounded-[14px] flex items-center justify-center flex-shrink-0 relative group"
-              style={{
-                background: "linear-gradient(135deg, rgba(var(--primary), 0.15) 0%, rgba(var(--secondary), 0.15) 100%)",
-                border: "1px solid rgba(var(--primary), 0.3)",
-                boxShadow: "0 0 20px rgba(var(--primary), 0.15), inset 0 1px 0 rgba(255,255,255,0.1)",
-              }}
-            >
-              <div className="absolute inset-0 rounded-[14px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-[rgba(var(--primary),0.3)] to-[rgba(var(--secondary),0.3)] blur-md"></div>
-              <Mic className="w-5 h-5 text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.8)] relative z-10" />
+            <div className="flex-shrink-0 relative group">
+              <div
+                className="absolute -inset-1.5 rounded-[16px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(91,108,255,0.45), rgba(155,92,255,0.45), rgba(255,107,161,0.45))",
+                }}
+              />
+              <VextornMark size={40} className="relative z-10 drop-shadow-[0_0_10px_rgba(155,92,255,0.45)]" />
             </div>
             <div className="min-w-0 hidden sm:flex flex-col justify-center">
-              <h1 className="text-lg font-bold leading-none tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 drop-shadow-sm">
-                Connect<span className="text-primary">2</span>Talk
+              <h1
+                className="text-lg leading-none tracking-tight bg-clip-text text-transparent"
+                style={{
+                  fontWeight: 800,
+                  letterSpacing: "-0.04em",
+                  backgroundImage:
+                    "linear-gradient(90deg, hsl(var(--foreground)) 0%, hsl(var(--foreground) / 0.7) 100%)",
+                }}
+              >
+                Vextorn
               </h1>
-              <p className="text-[10px] text-muted-foreground leading-none mt-1" style={{ letterSpacing: "0.12em", fontWeight: 600 }}>
-                LANGUAGE PRACTICE COMMUNITY
+              <p className="text-[10px] text-muted-foreground leading-none mt-1" style={{ letterSpacing: "0.18em", fontWeight: 600 }}>
+                TALK · SHARE · BELONG
               </p>
             </div>
           </div>

@@ -138,12 +138,12 @@ export function PwaInstallBanner() {
     >
       <div className="p-4 flex items-center gap-3">
         <img
-          src="/favicon.png"
-          alt="Connect2Talk"
+          src="/vextorn-icon-192.png"
+          alt="Vextorn"
           className="w-12 h-12 rounded-2xl shadow-lg flex-shrink-0 object-cover"
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white leading-tight">Install Connect2Talk</p>
+          <p className="text-sm font-semibold text-white leading-tight">Install Vextorn</p>
           <p className="text-xs text-white/50 mt-0.5 leading-tight">
             {isIos ? "Add to Home Screen for the best experience" : "Install the app — no App Store needed"}
           </p>

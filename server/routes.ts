@@ -895,7 +895,7 @@ export async function registerRoutes(
     try {
       const response = await fetch(parsedUrl.toString(), {
         headers: {
-          "User-Agent": "Connect2Talk/1.0 link preview",
+          "User-Agent": "Vextorn/1.0 link preview",
           Accept: "text/html,application/xhtml+xml,image/*",
         },
         signal: AbortSignal.timeout(6000),
@@ -945,7 +945,7 @@ export async function registerRoutes(
       try {
         const r = await fetch(url, {
           signal: ctrl.signal,
-          headers: { "User-Agent": "Connect2Talk/1.0 (library-search)" },
+          headers: { "User-Agent": "Vextorn/1.0 (library-search)" },
         });
         if (!r.ok) return null;
         return await r.json();
@@ -1049,7 +1049,7 @@ export async function registerRoutes(
       return res.status(403).json({ message: "URL not allowed" });
     }
     try {
-      const response = await fetch(url, { headers: { "User-Agent": "Connect2Talk/1.0 (+https://connect2talk.replit.app)" } });
+      const response = await fetch(url, { headers: { "User-Agent": "Vextorn/1.0 (+https://vextorn.replit.app)" } });
       if (!response.ok) return res.status(response.status).json({ message: "Upstream error" });
       const text = await response.text();
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -1737,7 +1737,7 @@ export async function registerRoutes(
           await transporter.sendMail({
             from: smtpUser,
             to: "bagpetrosyan@gmail.com",
-            subject: `Connect2Talk Report: ${reporterName || "User"} reported ${reportedName || "User"}`,
+            subject: `Vextorn Report: ${reporterName || "User"} reported ${reportedName || "User"}`,
             html: `
               <h2>New User Report</h2>
               <p><strong>Reporter:</strong> ${reporterName || parsed.data.reporterId}</p>
