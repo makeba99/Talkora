@@ -234,6 +234,7 @@ function ParticipantCard({
   onUnblock,
   analyserNode,
   mood,
+  onClearMood,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -422,22 +423,41 @@ function ParticipantCard({
 
   const avatarContent = (
     <div className="flex flex-col items-start gap-1 relative">
-      {/* Floating mood emoji — fires when this participant picks an emoji from
-          the mood picker. Animation: pop in, gently float upward + bob, fade
-          out. Auto-cleared by the parent ~3.5s after dispatch. */}
+      {/* Mood emoji "sticker" — fires when this participant picks an emoji
+          from the mood picker. Animation: pop in with a playful bounce, then
+          settles above the avatar and gently bobs forever (until cleared).
+          Owner of the mood (isMe) sees a small × on hover to dismiss it. */}
       {mood?.emoji && (
         <div
           key={mood.id}
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-12 z-30 select-none"
+          className="absolute left-1/2 -top-10 sm:-top-12 z-30 select-none group/mood"
           data-testid={`mood-${p.id}`}
-          style={{ animation: "moodFloat 3.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards" }}
+          style={{
+            animation: "moodFloat 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards, moodBob 3.6s ease-in-out 0.9s infinite",
+            transform: "translate(-50%, 0)",
+          }}
         >
           <div
-            className="text-4xl sm:text-5xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+            className="text-4xl sm:text-5xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)] pointer-events-none"
             style={{ filter: "drop-shadow(0 0 12px rgba(255,255,255,0.35))" }}
           >
             {mood.emoji}
           </div>
+          {isMe && onClearMood && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClearMood();
+              }}
+              className="absolute -top-1 -right-2 w-5 h-5 rounded-full bg-black/70 hover:bg-red-500 text-white text-[11px] leading-none flex items-center justify-center border border-white/30 shadow-md opacity-0 group-hover/mood:opacity-100 transition-opacity"
+              data-testid={`button-clear-mood-${p.id}`}
+              aria-label="Remove mood"
+              title="Remove mood"
+            >
+              ×
+            </button>
+          )}
         </div>
       )}
       <div
@@ -1609,28 +1629,37 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     // Mood reactions broadcast — when anyone in the room (including ourselves)
     // picks an emoji from the mood picker, the server echoes a "room:mood-update"
     // back. We stash the emoji keyed by userId so the corresponding participant
-    // card animates the floating mood emoji above their avatar, and schedule a
-    // cleanup so the card returns to normal after the animation finishes.
+    // card pins the mood emoji above their avatar. The mood now PERSISTS until
+    // the owner explicitly removes it (room:mood-clear) or picks a new one.
     socket.on("room:mood-update", (data: { userId: string; emoji: string; ts?: number }) => {
       if (!data?.userId || !data?.emoji) return;
       const id = `${data.ts || Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       setParticipantMoods((prev) => ({ ...prev, [data.userId]: { id, emoji: data.emoji } }));
       // Subtle audio cue so reactions register even when you're not looking at the screen.
       try { playMoodSound(data.emoji); } catch {}
-      // Cancel any pending cleanup for this user, then schedule a fresh one.
-      // 3.6s ≈ animation duration (3.4s) + small buffer.
+      // Cancel any leftover auto-clear timer from prior versions; mood is now persistent.
       const existing = moodTimersRef.current[data.userId];
-      if (existing) clearTimeout(existing);
-      moodTimersRef.current[data.userId] = setTimeout(() => {
-        setParticipantMoods((prev) => {
-          const next = { ...prev };
-          // Only clear if this specific entry is still the active one — guards
-          // against a race where a newer mood replaced this one mid-flight.
-          if (next[data.userId]?.id === id) delete next[data.userId];
-          return next;
-        });
+      if (existing) {
+        clearTimeout(existing);
         delete moodTimersRef.current[data.userId];
-      }, 3600);
+      }
+    });
+
+    // Owner explicitly removed their mood sticker — drop it from the local map
+    // so their card returns to normal for everyone in the room.
+    socket.on("room:mood-clear", (data: { userId: string }) => {
+      if (!data?.userId) return;
+      setParticipantMoods((prev) => {
+        if (!prev[data.userId]) return prev;
+        const next = { ...prev };
+        delete next[data.userId];
+        return next;
+      });
+      const existing = moodTimersRef.current[data.userId];
+      if (existing) {
+        clearTimeout(existing);
+        delete moodTimersRef.current[data.userId];
+      }
     });
 
     socket.on("room:mute-update", (data: { userId: string; isMuted: boolean; forcedBy?: string }) => {
@@ -2564,6 +2593,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (!socket || !user?.id) return;
     socket.emit("room:mood", { roomId: room.id, userId: user.id, emoji });
     setMoodPickerOpen(false);
+  };
+
+  // Clear my own mood sticker — only the owner of a mood can call this from
+  // the × button on their card. Server relays room:mood-clear to everyone.
+  const clearMyMood = () => {
+    if (!socket || !user?.id) return;
+    socket.emit("room:mood-clear", { roomId: room.id, userId: user.id });
   };
 
   // AI tutor logic is now fully handled by the useAiTutor hook above.
@@ -7123,6 +7159,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       onUnblock={handleUnblock}
                       analyserNode={analysersRef.current.get(p.id)}
                       mood={participantMoods[p.id]}
+                      onClearMood={isMe ? clearMyMood : undefined}
                     />
                   </div>
                 );

@@ -77,25 +77,29 @@
     opacity: 0;
     transform: translate(-50%, 14px) scale(0.4) rotate(-12deg);
   }
-  18% {
+  35% {
     opacity: 1;
-    transform: translate(-50%, -6px) scale(1.18) rotate(6deg);
+    transform: translate(-50%, -10px) scale(1.22) rotate(8deg);
   }
-  32% {
+  60% {
     opacity: 1;
-    transform: translate(-50%, -2px) scale(1) rotate(-4deg);
-  }
-  55% {
-    opacity: 1;
-    transform: translate(calc(-50% - 6px), -22px) scale(1.04) rotate(3deg);
-  }
-  78% {
-    opacity: 0.85;
-    transform: translate(calc(-50% + 4px), -38px) scale(0.98) rotate(-2deg);
+    transform: translate(-50%, 2px) scale(0.96) rotate(-4deg);
   }
   100% {
-    opacity: 0;
-    transform: translate(-50%, -58px) scale(0.85) rotate(0deg);
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* Once the mood emoji has settled above the avatar, give it a subtle
+   continuous bob so it still feels alive (like a sticker pinned with a
+   light breeze). Runs forever until the user clears their mood. */
+@keyframes moodBob {
+  0%, 100% {
+    transform: translate(-50%, 0) rotate(-2deg);
+  }
+  50% {
+    transform: translate(-50%, -3px) rotate(2deg);
   }
 }
 

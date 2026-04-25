@@ -3103,6 +3103,14 @@ export async function registerRoutes(
       });
     });
 
+    // Mood "remove" — the owner clicked the × on their pinned mood sticker.
+    // We just relay so every participant drops it from their local map and the
+    // sticker disappears from the sender's avatar card across the whole room.
+    socket.on("room:mood-clear", (data: { roomId: string; userId: string }) => {
+      if (!data?.roomId || !data?.userId) return;
+      io.to(data.roomId).emit("room:mood-clear", { userId: data.userId });
+    });
+
     socket.on("room:kick", async (data: { roomId: string; targetUserId: string; kickedBy: string }) => {
       const room = await storage.getRoom(data.roomId);
       if (!room || room.ownerId !== data.kickedBy) return;
