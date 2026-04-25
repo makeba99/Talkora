@@ -686,7 +686,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         boxShadow: hasRing
                           ? undefined
                           : isPremiumAtmosphere
-                            ? `0 0 7px rgba(220,120,50,0.45), 0 0 14px rgba(160,60,200,0.28), 0 0 22px rgba(200,100,30,0.18)`
+                            ? `0 0 7px rgba(145,40,130,0.40), 0 0 14px rgba(145,40,130,0.20), 0 0 22px rgba(100,50,180,0.15)`
                             : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
                       }}
                     >

@@ -939,7 +939,7 @@ export default function Lobby() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="neu-inset pl-10 pr-14 h-10 transition-all duration-200 border-0 rounded-full text-white placeholder:text-white/35"
                 onFocus={(e) => {
-                  e.currentTarget.style.boxShadow = "inset 4px 4px 10px rgba(0,0,0,0.55), inset -3px -3px 8px rgba(255,255,255,0.025), 0 0 0 2px hsla(18, 92%, 54%, 0.35)";
+                  e.currentTarget.style.boxShadow = "inset 4px 4px 10px rgba(0,0,0,0.55), inset -3px -3px 8px rgba(255,255,255,0.025), 0 0 0 2px hsla(302, 48%, 40%, 0.35)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.boxShadow = "";
@@ -974,10 +974,10 @@ export default function Lobby() {
                   onClick={() => setActiveDiscovery(filter.id)}
                   className={`neu-pill flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(22 96% 60%) 0%, hsl(14 88% 46%) 100%)",
+                    background: "linear-gradient(145deg, hsl(298 52% 44%) 0%, hsl(268 55% 36%) 100%)",
                     color: "#fff",
-                    border: "1px solid rgba(255,150,70,0.55)",
-                    boxShadow: "0 0 22px hsla(18, 92%, 54%, 0.55), 0 0 40px hsla(18, 92%, 54%, 0.25), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.45)",
+                    border: "1px solid rgba(145,40,130,0.45)",
+                    boxShadow: "0 0 16px hsla(302, 48%, 40%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(220,170,235,0.35)",
                     textShadow: "0 1px 1px rgba(0,0,0,0.25)",
                   } : undefined}
                   data-testid={`filter-discovery-${filter.id}`}
@@ -1000,10 +1000,10 @@ export default function Lobby() {
                   onClick={() => setSelectedLanguage(lang)}
                   className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(22 96% 60%) 0%, hsl(14 88% 46%) 100%)",
+                    background: "linear-gradient(145deg, hsl(298 52% 44%) 0%, hsl(268 55% 36%) 100%)",
                     color: "#fff",
-                    border: "1px solid rgba(255,150,70,0.55)",
-                    boxShadow: "0 0 22px hsla(18, 92%, 54%, 0.55), 0 0 40px hsla(18, 92%, 54%, 0.25), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.45)",
+                    border: "1px solid rgba(145,40,130,0.45)",
+                    boxShadow: "0 0 16px hsla(302, 48%, 40%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(220,170,235,0.35)",
                     textShadow: "0 1px 1px rgba(0,0,0,0.25)",
                   } : undefined}
                   data-testid={`tab-language-${lang.toLowerCase()}`}
