@@ -716,6 +716,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const ytHostFallbackRef = useRef(false);
   const ytLoadTimeoutRef = useRef<number | null>(null);
 
+  const [ytFloatingReactions, setYtFloatingReactions] = useState<Array<{ id: string; emoji: string; left: number; userId: string }>>([]);
+
   const [bookReaders, setBookReaders] = useState<Set<string>>(new Set());
   const [goLiveOpen, setGoLiveOpen] = useState(false);
   const [goLivePlatform, setGoLivePlatform] = useState<"youtube" | "twitch" | "tiktok">("youtube");
@@ -1743,6 +1745,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         description: data?.reason || "Ask the room host or co-host to play this video.",
         variant: "destructive",
       });
+    });
+
+    // Floating watch-party reactions — anyone in the room can fire emojis on the video.
+    socket.on("room:youtube-reaction", (data: { userId: string; emoji: string; ts: number }) => {
+      const id = `${data.ts}-${data.userId}-${Math.random().toString(36).slice(2, 7)}`;
+      const left = 8 + Math.random() * 84; // % across the player width
+      setYtFloatingReactions(prev => [...prev, { id, emoji: data.emoji, left, userId: data.userId }]);
+      window.setTimeout(() => {
+        setYtFloatingReactions(prev => prev.filter(r => r.id !== id));
+      }, 2600);
     });
 
     socket.on("room:roles", (roles: Record<string, string>) => {
@@ -6125,10 +6137,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {activeYoutubeId && !showYoutube && (() => {
             const broadcaster = participants.find(p => p.id === youtubeStartedBy);
             const thumb = `https://img.youtube.com/vi/${activeYoutubeId}/hqdefault.jpg`;
+            const handleJoinWatch = () => {
+              setShowYoutube(true);
+              setSidePanelOpen(false);
+              if (user?.id !== youtubeStartedBy) {
+                setTimeout(() => { try { handleYtSyncToStarter(); } catch (_) {} }, 1200);
+                setTimeout(() => { try { handleYtSyncToStarter(); } catch (_) {} }, 2800);
+              }
+            };
             return (
               <div
                 className="flex-1 min-h-0 bg-black relative flex items-center justify-center cursor-pointer group/ytpreview"
-                onClick={() => { setShowYoutube(true); setSidePanelOpen(false); }}
+                onClick={handleJoinWatch}
                 data-testid="yt-watch-preview"
               >
                 <img
@@ -6304,6 +6324,47 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     {youtubeWatchers.size === 1 ? "1 watching" : `${youtubeWatchers.size} watching`}
                   </div>
                 )}
+
+                {/* Floating watch-party reactions — emojis drift up from the bottom */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-10" data-testid="yt-floating-reactions">
+                  {ytFloatingReactions.map(r => (
+                    <span
+                      key={r.id}
+                      className="absolute text-3xl select-none"
+                      style={{
+                        left: `${r.left}%`,
+                        bottom: 0,
+                        animation: "ytReactionFloat 2.4s ease-out forwards",
+                        textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+                      }}
+                    >
+                      {r.emoji}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Reaction bar — anyone watching can fire emojis, no permission needed */}
+                <div
+                  className="absolute bottom-3 right-3 z-20 flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded-full border border-white/15 px-1.5 py-1 shadow-md opacity-70 hover:opacity-100 transition-opacity"
+                  data-testid="yt-reaction-bar"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {["❤️", "👍", "😂", "🔥", "👏", "😮"].map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        if (!socket || !user) return;
+                        socket.emit("room:youtube-reaction", { roomId: room.id, emoji });
+                      }}
+                      className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-95"
+                      title={`React with ${emoji}`}
+                      data-testid={`button-yt-react-${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
 
                 {/* Profiles intentionally NOT overlaid on the video — they appear in the
                     participant strip beneath the player, mirroring the book reader pattern. */}
