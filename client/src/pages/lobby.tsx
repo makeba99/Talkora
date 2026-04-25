@@ -459,7 +459,9 @@ export default function Lobby() {
     markAnnouncementsViewedMutation.mutate(unseenIds);
   }, [user, announcements]);
 
-  const rooms = [...SAMPLE_ROOMS.slice(0, 8), ...fetchedRooms];
+  const userOwnedRooms = fetchedRooms.filter(r => r.ownerId === user?.id);
+  const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id);
+  const rooms = [...userOwnedRooms, ...SAMPLE_ROOMS.slice(0, 8), ...otherRealRooms];
 
   const allRoomParticipants = (base: Record<string, User[]>) => ({
     ...liveParticipants,

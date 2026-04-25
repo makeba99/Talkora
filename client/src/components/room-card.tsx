@@ -483,7 +483,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     <Button
       size="icon"
       variant="ghost"
-      className="neu-icon-btn flex-shrink-0 w-7 h-7 rounded-full text-neu-orange hover:text-neu-orange"
+      className="neu-icon-btn flex-shrink-0 w-7 h-7 rounded-full text-red-500 hover:text-red-400"
       onClick={(e) => {
         e.stopPropagation();
         setEditTitle(room.title);
