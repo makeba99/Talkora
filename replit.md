@@ -171,6 +171,24 @@ Badge applications table (shared/schema.ts):
 - Voice-room control dock: dark neumorphic surface; ghost/active/AI Tutor buttons use magenta; mic/video/screen-share/leave keep semantic colors
 - AI hologram cyan intentionally preserved for the hologram visual effect
 
+## Lobby Neumorphic Redesign (April 2026)
+- Active theme `midnight-purple` was unified to a single warm-orange accent family.
+  All `--chart-*`, `--primary`, `--secondary`, `--accent`, `--ring`, `--sidebar-primary`
+  now derive from the orange palette (`hsl(22 92% 56%)` core).
+- Mixed cyan/blue/teal level labels removed — `levelColor` in `room-card.tsx` maps
+  Beginner/Intermediate/Advanced/Native to amber → orange → deep-orange → rose.
+- Cyan/blue fallbacks (`text-cyan-400`, `hover:text-blue-*`) replaced with orange.
+- Added neumorphic depth tokens (`--neo-bg`, `--neo-shadow-dark`,
+  `--neo-shadow-light`) scoped to `html.midnight-purple` and applied as a global
+  raised shadow rule on every `[data-testid^="card-room-"]` wrapper, with a
+  hover lift + soft orange glow.
+- New `.neu-icon-btn-red` helper (red gradient + red glow + dual neumorphic
+  shadows) is used for the host's room-settings gear in `room-card.tsx`.
+- Global scrollbar redesigned: inset track (dark inner shadow) + raised pill
+  thumb using the `--neu-orange-hi → --neu-orange-lo` gradient with warm glow.
+- Profile decorations and avatar tiles inside lobby cards receive a unified
+  `drop-shadow` so colored rings always sit on the same neumorphic base.
+
 ## User Preferences
 - No landing page gate - lobby always shown
 - Collapse/expand for language filters instead of scrollbar

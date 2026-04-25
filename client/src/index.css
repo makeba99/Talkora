@@ -246,12 +246,15 @@
 }
 
 /* ─── MIDNIGHT PURPLE ─────────────────────────────────────────── */
+/* Unified warm-orange accent on a deep purplish-gray neumorphic base.
+   All chart/level/secondary tones derive from the same orange family so
+   the whole interface reads as one cohesive palette. */
 html.midnight-purple {
-  --button-outline: rgba(255, 255, 255, .10);
-  --badge-outline: rgba(255, 255, 255, .05);
+  --button-outline: rgba(255, 162, 88, .12);
+  --badge-outline: rgba(255, 162, 88, .06);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(168, 85, 247, .06);
-  --elevate-2: rgba(168, 85, 247, .12);
+  --elevate-1: rgba(255, 132, 56, .06);
+  --elevate-2: rgba(255, 132, 56, .12);
   --background: 265 35% 6%;
   --foreground: 270 20% 92%;
   --border: 265 25% 16%;
@@ -261,26 +264,35 @@ html.midnight-purple {
   --sidebar: 265 35% 8%;
   --sidebar-foreground: 270 20% 92%;
   --sidebar-border: 265 25% 13%;
-  --sidebar-primary: 272 80% 65%;
-  --sidebar-primary-foreground: 265 35% 6%;
+  --sidebar-primary: 22 92% 56%;
+  --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 265 28% 14%;
   --sidebar-accent-foreground: 270 20% 92%;
-  --sidebar-ring: 272 80% 65%;
+  --sidebar-ring: 22 92% 56%;
   --popover: 265 32% 11%;
   --popover-foreground: 270 20% 92%;
   --popover-border: 265 25% 16%;
-  --primary: 272 80% 65%;
-  --primary-foreground: 265 35% 6%;
-  --secondary: 310 60% 60%;
+  --primary: 22 92% 56%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 28 92% 64%;
   --secondary-foreground: 0 0% 100%;
   --muted: 265 25% 14%;
   --muted-foreground: 270 12% 55%;
-  --accent: 265 25% 13%;
-  --accent-foreground: 270 20% 92%;
+  --accent: 16 82% 48%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 55%;
   --destructive-foreground: 0 0% 98%;
   --input: 265 22% 22%;
-  --ring: 272 80% 65%;
+  --ring: 22 92% 56%;
+  --chart-1: 16 82% 48%;
+  --chart-2: 22 92% 56%;
+  --chart-3: 28 92% 64%;
+  --chart-4: 36 96% 60%;
+  --chart-5: 348 78% 60%;
+  /* Neumorphic depth tokens for the room cards & panels in this theme */
+  --neo-bg: 265 32% 9%;
+  --neo-shadow-dark: 265 45% 2%;
+  --neo-shadow-light: 265 25% 22%;
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -1952,46 +1964,73 @@ html.synthwave .neon-text {
   animation: owner-badge-glow 2.4s ease-in-out infinite;
 }
 
+/* ─── NEUMORPHIC SCROLLBAR ─────────────────────────────────────
+   Subtle inset track, soft pill thumb with warm orange highlight.
+   Matches the same dual shadow language as the rest of the system. */
 .app-scrollbar,
 .admin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--primary) / 0.75) hsl(var(--background) / 0.25);
+  scrollbar-color: hsl(var(--neu-orange) / 0.65) transparent;
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--primary) / 0.65) transparent;
+  scrollbar-color: hsl(var(--neu-orange) / 0.55) transparent;
 }
 
 *::-webkit-scrollbar,
 .app-scrollbar::-webkit-scrollbar,
 .admin-scrollbar::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 *::-webkit-scrollbar-track,
 .app-scrollbar::-webkit-scrollbar-track,
 .admin-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(0, 0, 0, 0.30);
+  border-radius: 999px;
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.025);
+  margin: 4px 0;
 }
 
 *::-webkit-scrollbar-thumb,
 .app-scrollbar::-webkit-scrollbar-thumb,
 .admin-scrollbar::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  border: 2px solid rgba(6, 10, 28, 0.92);
-  background: linear-gradient(180deg, hsl(var(--secondary)), hsl(var(--primary)), hsl(var(--chart-4)));
-  box-shadow: 0 0 14px hsl(var(--primary) / 0.38), inset 0 0 4px rgba(255,255,255,0.18);
+  border: 2px solid rgba(0, 0, 0, 0.55);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-orange-hi)) 0%,
+    hsl(var(--neu-orange)) 50%,
+    hsl(var(--neu-orange-lo)) 100%
+  );
+  box-shadow:
+    0 0 10px hsl(var(--neu-orange) / 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.30);
 }
 
 *::-webkit-scrollbar-thumb:hover,
 .app-scrollbar::-webkit-scrollbar-thumb:hover,
 .admin-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, hsl(var(--chart-4)), hsl(var(--primary)), hsl(var(--secondary)));
-  box-shadow: 0 0 20px hsl(var(--primary) / 0.55), 0 0 32px hsl(var(--secondary) / 0.28);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-orange-hi)) 0%,
+    hsl(var(--neu-orange)) 100%
+  );
+  box-shadow:
+    0 0 16px hsl(var(--neu-orange) / 0.62),
+    0 0 28px hsl(var(--neu-orange) / 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 @keyframes owner-badge-glow {
@@ -2633,3 +2672,73 @@ html.synthwave .neon-text {
 .bg-neu-orange   { background-color: hsl(var(--neu-orange)); }
 .text-neu-teal   { color: hsl(var(--neu-teal)); }
 .text-neu-magenta { color: hsl(var(--neu-magenta)); }
+
+/* Red icon button — for the host's room-settings gear and other
+   destructive / owner-only controls. Same neumorphic depth as
+   .neu-icon-btn but with a warm red wash + red glow. */
+.neu-icon-btn-red {
+  background: linear-gradient(
+    145deg,
+    hsl(0 78% 56%) 0%,
+    hsl(355 70% 38%) 100%
+  );
+  color: #fff;
+  border: 1px solid rgba(220, 50, 50, 0.55);
+  box-shadow:
+    0 0 14px rgba(255, 60, 60, 0.42),
+    0 0 28px rgba(255, 60, 60, 0.16),
+    -3px -3px 8px rgba(255, 255, 255, 0.045),
+    4px 4px 10px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+  transition: all 180ms ease-out;
+}
+.neu-icon-btn-red:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 18px rgba(255, 60, 60, 0.58),
+    0 0 36px rgba(255, 60, 60, 0.22),
+    -4px -4px 10px rgba(255, 255, 255, 0.05),
+    5px 5px 12px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+}
+.neu-icon-btn-red:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 0 10px rgba(255, 60, 60, 0.36),
+    inset 3px 3px 8px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 6px rgba(255, 90, 90, 0.18);
+}
+
+/* Stronger neumorphic depth for the lobby room cards in the
+   midnight-purple theme. The card itself paints its own
+   gradient + border-glow; this rule layers a second outer
+   shadow on the wrapper so it reads as a true raised tile
+   on the deep purplish-gray canvas. */
+html.midnight-purple [data-testid^="card-room-"] {
+  border-radius: 18px;
+  box-shadow:
+    -8px -8px 18px hsla(var(--neo-shadow-light) / 0.16),
+    10px 12px 26px hsla(var(--neo-shadow-dark) / 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  transition: box-shadow 220ms ease-out, transform 220ms ease-out;
+}
+html.midnight-purple [data-testid^="card-room-"]:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    -10px -10px 22px hsla(var(--neo-shadow-light) / 0.22),
+    12px 14px 32px hsla(var(--neo-shadow-dark) / 0.92),
+    0 0 28px hsl(var(--neu-orange) / 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Unified neumorphic shadow for profile decorations & avatar
+   tiles inside the lobby cards (midnight-purple). Adds a soft
+   raised feel underneath any colored ring/glow they paint. */
+html.midnight-purple [data-testid^="card-room-"] .profile-decoration-host,
+html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
+  filter:
+    drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.55))
+    drop-shadow(-1px -1px 2px rgba(255, 255, 255, 0.04));
+}

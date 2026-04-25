@@ -186,7 +186,7 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-muted-foreground hover:text-blue-400 transition-colors"
+              className="text-muted-foreground hover:text-orange-400 transition-colors"
               title="LinkedIn"
             >
               <Linkedin className="w-4 h-4" />
@@ -198,7 +198,7 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-muted-foreground hover:text-blue-500 transition-colors"
+              className="text-muted-foreground hover:text-orange-500 transition-colors"
               title="Facebook"
             >
               <Facebook className="w-4 h-4" />
@@ -441,10 +441,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const languages = LANGUAGES.filter((l) => l !== "All");
 
   const levelColor: Record<string, string> = {
-    Beginner: "text-chart-3",
-    Intermediate: "text-chart-4",
-    Advanced: "text-chart-1",
-    Native: "text-secondary",
+    Beginner: "text-amber-300",
+    Intermediate: "text-orange-400",
+    Advanced: "text-orange-500",
+    Native: "text-rose-400",
   };
 
   const themeBorderClass = getRoomThemeBorderClass((room as any).roomTheme);
@@ -483,7 +483,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     <Button
       size="icon"
       variant="ghost"
-      className="neu-icon-btn flex-shrink-0 w-7 h-7 rounded-full text-red-500 hover:text-red-400"
+      className="neu-icon-btn-red flex-shrink-0 w-7 h-7 rounded-full"
       onClick={(e) => {
         e.stopPropagation();
         setEditTitle(room.title);
@@ -644,7 +644,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 <LanguageFlag language={room.language} />
                 <span className="text-[11px] text-white/70 font-medium">{room.language}</span>
                 <span className="text-white/30 text-[10px]">•</span>
-                <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-cyan-400"}`}>
+                <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-orange-400"}`}>
                   {room.level}
                 </span>
                 {voteCount > 0 && (
