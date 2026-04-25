@@ -810,7 +810,14 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
     case "volcanic":
       return { background: "rgba(14,2,0,0.76)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(200,40,0,0.22)" };
     default:
-      return { background: "rgba(8,8,8,0.78)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(255,255,255,0.06)" };
+      // Default chat panel — matches the lobby's midnight-purple neumorphic
+      // surface (deep violet-charcoal with a faint warm amber rim).
+      return {
+        background: "rgba(20, 14, 30, 0.82)",
+        backdropFilter: "blur(18px) saturate(1.15)",
+        WebkitBackdropFilter: "blur(18px) saturate(1.15)",
+        borderColor: "rgba(255, 168, 92, 0.10)",
+      };
   }
 }
 
@@ -843,7 +850,16 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
     case "volcanic":
       return { background: "radial-gradient(ellipse at 50% 100%, #1c0400 0%, #0e0200 55%, #080100 100%)" };
     default:
-      return { background: "radial-gradient(ellipse at 50% 45%, #111111 0%, #0a0a0a 50%, #080808 100%)" };
+      // Default room background — mirrors the lobby's midnight-purple
+      // canvas (deep violet-charcoal with soft amber and indigo aura)
+      // so entering a room feels continuous with the lobby aesthetic.
+      return {
+        background:
+          "radial-gradient(ellipse 80% 60% at 22% 8%, rgba(110, 80, 200, 0.16) 0%, transparent 55%), " +
+          "radial-gradient(ellipse 70% 55% at 82% 12%, rgba(255, 152, 72, 0.10) 0%, transparent 50%), " +
+          "radial-gradient(ellipse 90% 70% at 50% 100%, rgba(0, 0, 0, 0.55) 0%, transparent 60%), " +
+          "radial-gradient(ellipse at 50% 40%, #16102a 0%, #0c0818 55%, #060410 100%)",
+      };
   }
 }
 

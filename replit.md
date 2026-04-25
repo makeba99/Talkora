@@ -188,6 +188,35 @@ Badge applications table (shared/schema.ts):
 - Profile decorations and avatar tiles inside lobby cards receive a unified
   `drop-shadow` so colored rings always sit on the same neumorphic base.
 
+## Lobby Neumorphic Polish (Round 3, April 2026)
+- Orange palette refined again to **amber-honey** for true harmony with the
+  violet-undertone backgrounds: `--neu-orange` 26 78% 48%,
+  `--neu-orange-hi` 32 84% 56%, `--neu-orange-lo` 18 72% 34%. Midnight-purple
+  primary/secondary/accent/chart values shifted to match. The warmer hue
+  creates a complementary contrast with the purple base instead of clashing.
+- **In-room "default" theme aligned with the lobby.** `getRoomThemeStyle`
+  default is now a midnight-purple radial canvas (deep violet-charcoal
+  `#16102a → #060410` with subtle indigo + warm amber aura) and
+  `getChatPanelStyle` default uses a violet-charcoal panel with a faint amber
+  rim — entering a default-theme room now feels continuous with the lobby.
+- New neumorphic depth classes for Create Room dialog elements (in
+  `client/src/index.css`):
+  - `.neu-tile` / `.neu-tile.is-active` — recessed grooved Card-Theme
+    previews with a raised amber rim + glow on the active tile.
+  - `.neu-tile-check` — small raised amber confirmation pip on the active tile.
+  - `.neu-tile-nav` — tiny neumorphic arrow buttons for the theme carousel.
+  - `.neu-tile-dot` — recessed pagination dots; active is raised amber.
+  - `.neu-tab-group` / `.neu-tab` / `.neu-tab.is-active` /
+    `.neu-tab.is-active-red` — recessed groove containing a raised
+    orange (or red, for YouTube) pill on the active tab.
+  - `.neu-submit` — proper raised neumorphic orange Create Room button
+    (replaces the flat `<Button type="submit">`); pressed state recesses.
+  - `.neu-switch` — neumorphic recessed groove track with a raised
+    amber-rimmed thumb when checked (replaces the magenta primary toggle).
+- `client/src/components/create-room-dialog.tsx` updated to use all the
+  new neumorphic classes for tiles, nav arrows, pagination dots,
+  upload/youtube tabs, public-room switch, and the submit button.
+
 ## Lobby Neumorphic Polish (Round 2, April 2026)
 - Toned-down "burnt orange" palette: `--neu-orange` 20 72% 44%, `--neu-orange-hi`
   26 76% 52%, `--neu-orange-lo` 14 70% 32%. Midnight-purple `--primary`,

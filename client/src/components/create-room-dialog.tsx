@@ -223,6 +223,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
               data-testid="switch-public"
               checked={isPublic}
               onCheckedChange={setIsPublic}
+              className="neu-switch"
             />
           </div>
 
@@ -238,7 +239,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                 type="button"
                 onClick={() => setThemeOffset((o) => Math.max(0, o - THEMES_PER_PAGE))}
                 disabled={themeOffset === 0}
-                className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="neu-tile-nav flex-shrink-0 w-7 h-12 rounded-md flex items-center justify-center"
                 data-testid="button-theme-prev"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -249,7 +250,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                     key={theme.id}
                     type="button"
                     onClick={() => setRoomTheme(theme.id)}
-                    className={`relative rounded-lg overflow-hidden transition-all border-2 ${roomTheme === theme.id ? "border-white shadow-lg" : "border-transparent opacity-70 hover:opacity-100"}`}
+                    className={`neu-tile ${roomTheme === theme.id ? "is-active" : ""}`}
                     title={theme.label}
                     data-testid={`button-create-theme-${theme.id}`}
                   >
@@ -269,8 +270,8 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                       {theme.label}
                     </span>
                     {roomTheme === theme.id && (
-                      <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white flex items-center justify-center">
-                        <svg className="w-1.5 h-1.5" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <div className="neu-tile-check">
+                        <svg className="w-2 h-2" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M2 6l3 3 5-5" />
                         </svg>
                       </div>
@@ -282,19 +283,19 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                 type="button"
                 onClick={() => setThemeOffset((o) => Math.min(ROOM_THEMES.length - THEMES_PER_PAGE, o + THEMES_PER_PAGE))}
                 disabled={themeOffset + THEMES_PER_PAGE >= ROOM_THEMES.length}
-                className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="neu-tile-nav flex-shrink-0 w-7 h-12 rounded-md flex items-center justify-center"
                 data-testid="button-theme-next"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex justify-center gap-1">
+            <div className="flex justify-center gap-1.5 pt-1">
               {Array.from({ length: Math.ceil(ROOM_THEMES.length / THEMES_PER_PAGE) }).map((_, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => setThemeOffset(i * THEMES_PER_PAGE)}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors ${themeOffset === i * THEMES_PER_PAGE ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
+                  className={`neu-tile-dot ${themeOffset === i * THEMES_PER_PAGE ? "is-active" : ""}`}
                   data-testid={`button-theme-page-${i}`}
                 />
               ))}
@@ -303,11 +304,11 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
           <div className="space-y-2">
             <Label>Card Background Video</Label>
-            <div className="flex rounded-md border border-border overflow-hidden text-xs">
+            <div className="neu-tab-group text-xs">
               <button
                 type="button"
                 onClick={() => setVideoTab("upload")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 transition-colors ${videoTab === "upload" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                className={`neu-tab ${videoTab === "upload" ? "is-active" : ""}`}
                 data-testid="button-create-video-upload-tab"
               >
                 <Video className="w-3 h-3" /> Upload File
@@ -315,7 +316,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
               <button
                 type="button"
                 onClick={() => setVideoTab("youtube")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 transition-colors ${videoTab === "youtube" ? "bg-red-600 text-white" : "hover:bg-muted"}`}
+                className={`neu-tab ${videoTab === "youtube" ? "is-active-red" : ""}`}
                 data-testid="button-create-video-youtube-tab"
               >
                 <Youtube className="w-3 h-3" /> YouTube
@@ -424,14 +425,14 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
             )}
           </div>
 
-          <Button
+          <button
             type="submit"
-            className="w-full"
+            className="neu-submit"
             disabled={!title.trim() || isPending || uploadingVideo}
             data-testid="button-submit-room"
           >
             {isPending || uploadingVideo ? "Creating..." : "Create Room"}
-          </Button>
+          </button>
         </form>
       </DialogContent>
     </Dialog>

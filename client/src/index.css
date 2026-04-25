@@ -250,11 +250,11 @@
    All chart/level/secondary tones derive from the same orange family so
    the whole interface reads as one cohesive palette. */
 html.midnight-purple {
-  --button-outline: rgba(255, 162, 88, .12);
-  --badge-outline: rgba(255, 162, 88, .06);
+  --button-outline: rgba(255, 178, 100, .12);
+  --badge-outline: rgba(255, 178, 100, .06);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255, 132, 56, .06);
-  --elevate-2: rgba(255, 132, 56, .12);
+  --elevate-1: rgba(255, 152, 72, .06);
+  --elevate-2: rgba(255, 152, 72, .12);
   --background: 265 35% 6%;
   --foreground: 270 20% 92%;
   --border: 265 25% 16%;
@@ -264,35 +264,35 @@ html.midnight-purple {
   --sidebar: 265 35% 8%;
   --sidebar-foreground: 270 20% 92%;
   --sidebar-border: 265 25% 13%;
-  --sidebar-primary: 20 72% 46%;
+  --sidebar-primary: 26 78% 48%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 265 28% 14%;
   --sidebar-accent-foreground: 270 20% 92%;
-  --sidebar-ring: 20 72% 46%;
+  --sidebar-ring: 26 78% 48%;
   --popover: 265 32% 11%;
   --popover-foreground: 270 20% 92%;
   --popover-border: 265 25% 16%;
-  --primary: 20 72% 46%;
+  --primary: 26 78% 48%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 26 76% 54%;
+  --secondary: 32 84% 56%;
   --secondary-foreground: 0 0% 100%;
   --muted: 265 25% 14%;
   --muted-foreground: 270 12% 55%;
-  --accent: 14 70% 40%;
+  --accent: 18 72% 40%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 55%;
   --destructive-foreground: 0 0% 98%;
   --input: 265 22% 22%;
-  --ring: 20 72% 46%;
-  --chart-1: 14 70% 40%;
-  --chart-2: 20 72% 46%;
-  --chart-3: 26 76% 54%;
-  --chart-4: 32 80% 56%;
+  --ring: 26 78% 48%;
+  --chart-1: 18 72% 40%;
+  --chart-2: 26 78% 48%;
+  --chart-3: 32 84% 56%;
+  --chart-4: 38 86% 60%;
   --chart-5: 348 60% 52%;
   /* Neumorphic depth tokens for the room cards & panels in this theme */
   --neo-bg: 265 32% 9%;
-  --neo-shadow-dark: 265 45% 2%;
-  --neo-shadow-light: 265 25% 22%;
+  --neo-shadow-dark: 265 50% 2%;
+  --neo-shadow-light: 265 28% 24%;
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -2322,10 +2322,260 @@ html.synthwave .neon-text {
     drop-shadow(0 0 10px hsl(var(--neu-orange) / 0.30));
 }
 .create-room-btn:hover .sparkle-icon {
-  color: hsl(28 92% 60%);
+  color: hsl(34 92% 62%);
   filter:
     drop-shadow(0 0 6px hsl(var(--neu-orange) / 0.75))
     drop-shadow(0 0 14px hsl(var(--neu-orange) / 0.40));
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   NEUMORPHIC DIALOG ELEMENTS — premium 3D depth for the
+   Create Room dialog (Card Theme tiles, video tabs, submit
+   button, public-room switch). All built on the same neu-bg /
+   neu-surface tokens so they share the lobby's material language.
+   ───────────────────────────────────────────────────────────────── */
+
+/* Card-Theme grid tile — recessed neumorphic frame around each
+   theme preview; active state is raised with an amber rim. */
+.neu-tile {
+  position: relative;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: hsl(var(--neu-bg));
+  border: 1px solid rgba(255, 235, 215, 0.04);
+  box-shadow:
+    inset 2px 2px 6px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 4px rgba(255, 235, 215, 0.025),
+    0 1px 0 rgba(255, 235, 215, 0.04);
+  transition: all 200ms ease-out;
+  opacity: 0.78;
+}
+.neu-tile:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 1px 1px 4px rgba(0, 0, 0, 0.45),
+    -2px -2px 6px rgba(255, 235, 215, 0.03),
+    3px 3px 8px rgba(0, 0, 0, 0.55);
+}
+.neu-tile.is-active {
+  opacity: 1;
+  border-color: hsl(var(--neu-orange) / 0.55);
+  box-shadow:
+    0 0 0 1px hsl(var(--neu-orange) / 0.45),
+    0 0 16px hsl(var(--neu-orange) / 0.35),
+    -3px -3px 8px rgba(255, 235, 215, 0.045),
+    4px 4px 12px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 235, 215, 0.10);
+  transform: translateY(-1px);
+}
+.neu-tile-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  box-shadow:
+    0 0 8px hsl(var(--neu-orange) / 0.65),
+    inset 0 1px 0 rgba(255, 230, 200, 0.40);
+  color: #fff;
+}
+
+/* Card-Theme nav arrow — small neumorphic icon button */
+.neu-tile-nav {
+  background: linear-gradient(145deg, hsl(var(--neu-surface-2)) 0%, hsl(var(--neu-surface)) 100%);
+  border: 1px solid rgba(255, 235, 215, 0.05);
+  color: rgba(255, 230, 200, 0.65);
+  box-shadow:
+    -3px -3px 7px rgba(255, 235, 215, 0.035),
+    4px 4px 10px rgba(0, 0, 0, 0.60),
+    inset 0 1px 0 rgba(255, 235, 215, 0.05);
+  transition: all 180ms ease-out;
+}
+.neu-tile-nav:hover:not(:disabled) {
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow:
+    -4px -4px 9px rgba(255, 235, 215, 0.045),
+    5px 5px 12px rgba(0, 0, 0, 0.66),
+    0 0 10px hsl(var(--neu-orange) / 0.18);
+}
+.neu-tile-nav:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 3px 3px 7px rgba(0, 0, 0, 0.60),
+    inset -2px -2px 5px rgba(255, 235, 215, 0.030);
+}
+.neu-tile-nav:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+/* Pagination dot under the theme grid */
+.neu-tile-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.02);
+  transition: all 180ms ease-out;
+}
+.neu-tile-dot.is-active {
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  box-shadow:
+    0 0 8px hsl(var(--neu-orange) / 0.55),
+    inset 0 1px 0 rgba(255, 230, 200, 0.34);
+}
+
+/* Video upload/youtube tab group — recessed groove containing
+   a raised orange pill on the active tab. */
+.neu-tab-group {
+  display: flex;
+  border-radius: 0.5rem;
+  padding: 3px;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 3px rgba(255, 235, 215, 0.025);
+}
+.neu-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.4rem;
+  color: rgba(255, 230, 200, 0.55);
+  background: transparent;
+  transition: all 180ms ease-out;
+}
+.neu-tab:hover:not(.is-active) {
+  color: rgba(255, 230, 200, 0.85);
+  background: rgba(255, 235, 215, 0.025);
+}
+.neu-tab.is-active {
+  color: #fff;
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  box-shadow:
+    0 0 12px hsl(var(--neu-orange) / 0.40),
+    -2px -2px 5px rgba(255, 235, 215, 0.04),
+    3px 3px 7px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 230, 200, 0.36);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+}
+.neu-tab.is-active-red {
+  color: #fff;
+  background: linear-gradient(145deg, hsl(0 78% 56%) 0%, hsl(0 72% 38%) 100%);
+  box-shadow:
+    0 0 12px hsl(0 80% 50% / 0.40),
+    -2px -2px 5px rgba(255, 220, 220, 0.04),
+    3px 3px 7px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 220, 200, 0.36);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+}
+
+/* Submit Create-Room button — proper raised neumorphic orange
+   slab; pressed state recesses into the dialog surface. */
+.neu-submit {
+  width: 100%;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 0.55rem;
+  padding: 0.65rem 1rem;
+  color: #fff;
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  border: 1px solid rgba(180, 90, 30, 0.45);
+  box-shadow:
+    0 0 18px hsl(var(--neu-orange) / 0.34),
+    0 0 38px hsl(var(--neu-orange) / 0.14),
+    -5px -5px 12px rgba(255, 235, 215, 0.045),
+    7px 7px 18px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 230, 200, 0.40),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.36);
+  transition: all 200ms ease-out;
+}
+.neu-submit:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 24px hsl(var(--neu-orange) / 0.46),
+    0 0 48px hsl(var(--neu-orange) / 0.18),
+    -6px -6px 14px rgba(255, 235, 215, 0.055),
+    8px 8px 20px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 rgba(255, 230, 200, 0.44);
+}
+.neu-submit:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 0 12px hsl(var(--neu-orange) / 0.30),
+    inset 4px 4px 10px rgba(0, 0, 0, 0.58),
+    inset -3px -3px 8px rgba(255, 200, 160, 0.18);
+}
+.neu-submit:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+  box-shadow:
+    -3px -3px 8px rgba(255, 235, 215, 0.025),
+    5px 5px 12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 235, 215, 0.06);
+}
+
+/* Public-Room switch — neumorphic recessed groove with a raised
+   amber thumb when active. Targets Radix Switch via attribute. */
+.neu-switch[data-state] {
+  width: 2.85rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  border: none;
+  padding: 0;
+  position: relative;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.62),
+    inset -2px -2px 4px rgba(255, 235, 215, 0.025),
+    0 1px 0 rgba(255, 235, 215, 0.04);
+  transition: all 220ms ease-out;
+}
+.neu-switch[data-state="checked"] {
+  background: linear-gradient(145deg, hsl(var(--neu-orange-lo)) 0%, hsl(var(--neu-orange)) 100%);
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.45),
+    inset -1px -1px 3px rgba(255, 220, 180, 0.20),
+    0 0 12px hsl(var(--neu-orange) / 0.45);
+}
+.neu-switch[data-state] > span {
+  display: block;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 9999px;
+  background: linear-gradient(145deg, hsl(var(--neu-surface-2)) 0%, hsl(var(--neu-surface)) 100%);
+  box-shadow:
+    -2px -2px 4px rgba(255, 235, 215, 0.06),
+    2px 2px 4px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 235, 215, 0.08);
+  transition: transform 220ms ease-out, background 220ms ease-out, box-shadow 220ms ease-out;
+  transform: translateX(0.18rem);
+}
+.neu-switch[data-state="checked"] > span {
+  transform: translateX(1.45rem);
+  background: linear-gradient(145deg, #fff8ee 0%, #ffd9b0 100%);
+  box-shadow:
+    -2px -2px 4px rgba(255, 235, 215, 0.10),
+    2px 2px 5px rgba(0, 0, 0, 0.50),
+    0 0 8px hsl(var(--neu-orange) / 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 /* ── AI Tutor responsive face size ── */
@@ -2558,12 +2808,13 @@ html.synthwave .neon-text {
   --neu-surface-2: 228 14% 18%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
-  /* Muted "burnt orange" palette — sits comfortably on a dark
-     surface without burning out the eye. Lower saturation than a
-     neon orange but still clearly warm. */
-  --neu-orange: 20 72% 44%;        /* primary accent — burnt orange */
-  --neu-orange-hi: 26 76% 52%;     /* highlight tone — warm copper */
-  --neu-orange-lo: 14 70% 32%;     /* deep tone — dark amber */
+  /* Refined "amber-honey orange" palette — slightly more golden so
+     it harmonizes with the violet-undertone backgrounds (hue 265).
+     Still firmly orange, but the warmer hue creates a complementary
+     contrast against the cool background instead of fighting it. */
+  --neu-orange: 26 78% 48%;        /* primary accent — amber honey */
+  --neu-orange-hi: 32 84% 56%;     /* highlight tone — warm copper-gold */
+  --neu-orange-lo: 18 72% 34%;     /* deep tone — burnt umber */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
