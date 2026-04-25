@@ -18,7 +18,7 @@ import {
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -733,6 +733,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   // watcher preview card render for this user. Resets whenever the room starts
   // a new video so the next one is shown fresh.
   const [userDismissedYoutube, setUserDismissedYoutube] = useState(false);
+  // Watch-party voting state — server tallies, client tracks own choice locally.
+  const [ytVotes, setYtVotes] = useState<{ likes: number; dislikes: number; skip: number; watchers: number }>({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
+  const [myYtVote, setMyYtVote] = useState<"like" | "dislike" | null>(null);
+  const [myYtSkipVote, setMyYtSkipVote] = useState(false);
 
   const [bookReaders, setBookReaders] = useState<Set<string>>(new Set());
   const [goLiveOpen, setGoLiveOpen] = useState(false);
@@ -1641,8 +1645,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setActiveYoutubeId(data.videoId);
       setYoutubeStartedBy(data.videoId ? (data.startedBy || null) : null);
       // A new (or cleared) video resets the per-user "I dismissed this" flag,
-      // so the next video gets a fresh chance to be shown.
+      // so the next video gets a fresh chance to be shown. Vote toggles also reset.
       setUserDismissedYoutube(false);
+      setMyYtVote(null);
+      setMyYtSkipVote(false);
+      setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
       if (!data.videoId) {
         setShowYoutube(false);
         setMiniPlayerMode(false);
@@ -1764,6 +1771,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         description: data?.reason || "Ask the room host or co-host to play this video.",
         variant: "destructive",
       });
+    });
+
+    socket.on("room:youtube-votes", (data: { videoId?: string; likes: number; dislikes: number; skip: number; watchers: number }) => {
+      setYtVotes({ likes: data.likes || 0, dislikes: data.dislikes || 0, skip: data.skip || 0, watchers: data.watchers || 0 });
+    });
+
+    socket.on("room:youtube-skipped", () => {
+      // Server advanced past this video — reset our local vote toggles.
+      setMyYtVote(null);
+      setMyYtSkipVote(false);
     });
 
     // Floating watch-party reactions — anyone in the room can fire emojis on the video.
@@ -6391,27 +6408,71 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   ))}
                 </div>
 
-                {/* Reaction bar — anyone watching can fire emojis, no permission needed */}
+                {/* Watch-party voting bar — like / dislike give live counts; the
+                    skip vote auto-advances to the next queue item once a majority
+                    of the room agrees. None of this affects the starter's playhead;
+                    the starter keeps watching at their own position. The small
+                    heart on the far left fires a one-tap floating-emoji reaction. */}
                 <div
-                  className="absolute bottom-3 right-3 z-20 flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded-full border border-white/15 px-1.5 py-1 shadow-md opacity-70 hover:opacity-100 transition-opacity"
-                  data-testid="yt-reaction-bar"
+                  className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-black/65 backdrop-blur-sm rounded-full border border-white/15 px-2 py-1.5 shadow-lg"
+                  data-testid="yt-vote-bar"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {["❤️", "👍", "😂", "🔥", "👏", "😮"].map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => {
-                        if (!socket || !user) return;
-                        socket.emit("room:youtube-reaction", { roomId: room.id, emoji });
-                      }}
-                      className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-95"
-                      title={`React with ${emoji}`}
-                      data-testid={`button-yt-react-${emoji}`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => { if (socket) socket.emit("room:youtube-reaction", { roomId: room.id, emoji: "❤️" }); }}
+                    className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-95"
+                    title="Send a heart"
+                    data-testid="button-yt-react-heart"
+                  >
+                    ❤️
+                  </button>
+                  <div className="w-px h-5 bg-white/20" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!socket) return;
+                      const next = myYtVote === "like" ? null : "like";
+                      setMyYtVote(next);
+                      socket.emit("room:youtube-vote", { roomId: room.id, kind: next || "none" });
+                    }}
+                    className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "like" ? "bg-emerald-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
+                    title="Like this video"
+                    data-testid="button-yt-vote-like"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <span className="tabular-nums">{ytVotes.likes}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!socket) return;
+                      const next = myYtVote === "dislike" ? null : "dislike";
+                      setMyYtVote(next);
+                      socket.emit("room:youtube-vote", { roomId: room.id, kind: next || "none" });
+                    }}
+                    className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "dislike" ? "bg-red-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
+                    title="Dislike this video"
+                    data-testid="button-yt-vote-dislike"
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5" />
+                    <span className="tabular-nums">{ytVotes.dislikes}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!socket) return;
+                      const next = !myYtSkipVote;
+                      setMyYtSkipVote(next);
+                      socket.emit("room:youtube-skip-vote", { roomId: room.id, vote: next });
+                    }}
+                    className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtSkipVote ? "bg-amber-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
+                    title={`Vote to skip — auto-advances when ${Math.max(2, Math.ceil((ytVotes.watchers || participants.length) / 2))} people agree`}
+                    data-testid="button-yt-vote-skip"
+                  >
+                    <SkipForward className="w-3.5 h-3.5" />
+                    <span className="tabular-nums">{ytVotes.skip}</span>
+                  </button>
                 </div>
 
                 {/* Profiles intentionally NOT overlaid on the video — they appear in the

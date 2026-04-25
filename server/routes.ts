@@ -19,6 +19,10 @@ const roomParticipants = new Map<string, Map<string, User>>();
 const roomVideoStatus = new Map<string, Set<string>>();
 const roomScreenShareStatus = new Map<string, string | null>();
 const roomYoutubeState = new Map<string, { videoId: string; startedBy: string; playing: boolean; lastTime: number; lastTs: number }>();
+// Per-room vote tally for the currently-playing video. Resets whenever a new
+// video starts. Likes/dislikes are pure feedback; if more than half of the
+// active watchers vote skip, the server auto-advances to the next queue item.
+const roomYoutubeVotes = new Map<string, { videoId: string; likes: Set<string>; dislikes: Set<string>; skip: Set<string> }>();
 type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
 const roomYoutubeQueue = new Map<string, YtQueueItem[]>();
 const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
@@ -3355,6 +3359,86 @@ export async function registerRoutes(
         userId: currentUserId,
         watching: data.watching,
       });
+    });
+
+    // ---------- Watch-party voting (likes / dislikes / skip) ----------
+    const broadcastVotes = (roomId: string) => {
+      const v = roomYoutubeVotes.get(roomId);
+      if (!v) {
+        io.to(roomId).emit("room:youtube-votes", { likes: 0, dislikes: 0, skip: 0, myVote: null, mySkip: false });
+        return;
+      }
+      // Per-socket personalization is heavier; emit aggregate only and let the
+      // client track its own toggle state locally to keep this lightweight.
+      io.to(roomId).emit("room:youtube-votes", {
+        videoId: v.videoId,
+        likes: v.likes.size,
+        dislikes: v.dislikes.size,
+        skip: v.skip.size,
+        watchers: roomParticipants.get(roomId)?.size || 0,
+      });
+    };
+
+    socket.on("room:youtube-vote", (data: { roomId: string; kind: "like" | "dislike" | "none" }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const ytState = roomYoutubeState.get(data.roomId);
+      if (!ytState) return;
+      let v = roomYoutubeVotes.get(data.roomId);
+      if (!v || v.videoId !== ytState.videoId) {
+        v = { videoId: ytState.videoId, likes: new Set(), dislikes: new Set(), skip: new Set() };
+        roomYoutubeVotes.set(data.roomId, v);
+      }
+      v.likes.delete(currentUserId);
+      v.dislikes.delete(currentUserId);
+      if (data.kind === "like") v.likes.add(currentUserId);
+      else if (data.kind === "dislike") v.dislikes.add(currentUserId);
+      broadcastVotes(data.roomId);
+    });
+
+    socket.on("room:youtube-skip-vote", (data: { roomId: string; vote: boolean }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const ytState = roomYoutubeState.get(data.roomId);
+      if (!ytState) return;
+      let v = roomYoutubeVotes.get(data.roomId);
+      if (!v || v.videoId !== ytState.videoId) {
+        v = { videoId: ytState.videoId, likes: new Set(), dislikes: new Set(), skip: new Set() };
+        roomYoutubeVotes.set(data.roomId, v);
+      }
+      if (data.vote) v.skip.add(currentUserId);
+      else v.skip.delete(currentUserId);
+
+      // Auto-skip when more than half of the people in the room agree (min 2 votes).
+      const totalPeople = roomParticipants.get(data.roomId)?.size || 0;
+      const threshold = Math.max(2, Math.ceil(totalPeople / 2));
+      if (v.skip.size >= threshold) {
+        // Drop votes for this video and advance to the next queue item (if any).
+        roomYoutubeVotes.delete(data.roomId);
+        const queue = roomYoutubeQueue.get(data.roomId);
+        if (queue && queue.length > 0) {
+          const next = queue.shift()!;
+          roomYoutubeQueue.set(data.roomId, queue);
+          roomYoutubeState.set(data.roomId, {
+            videoId: next.videoId,
+            startedBy: next.addedBy,
+            playing: true,
+            lastTime: 0,
+            lastTs: Date.now(),
+          });
+          io.to(data.roomId).emit("room:youtube", { videoId: next.videoId, startedBy: next.addedBy });
+          io.to(data.roomId).emit("room:youtube-queue-update", { queue });
+        } else {
+          roomYoutubeState.delete(data.roomId);
+          io.to(data.roomId).emit("room:youtube", { videoId: null, startedBy: null });
+        }
+        io.to(data.roomId).emit("room:youtube-skipped", { reason: "vote" });
+        broadcastVotes(data.roomId);
+        return;
+      }
+      broadcastVotes(data.roomId);
     });
 
     // Watch-party reactions: anyone watching can fire a quick emoji that floats
