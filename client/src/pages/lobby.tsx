@@ -459,11 +459,7 @@ export default function Lobby() {
     markAnnouncementsViewedMutation.mutate(unseenIds);
   }, [user, announcements]);
 
-  const realRoomIds = new Set(fetchedRooms.map((r) => r.id));
-  const rooms = [
-    ...fetchedRooms,
-    ...SAMPLE_ROOMS.filter((s) => !realRoomIds.has(s.id)),
-  ];
+  const rooms = [...fetchedRooms];
 
   const allRoomParticipants = (base: Record<string, User[]>) => ({
     ...liveParticipants,

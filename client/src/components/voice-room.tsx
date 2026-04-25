@@ -2737,8 +2737,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const renderControlDock = () => {
     const ghostStyle: React.CSSProperties = {
-      background: "linear-gradient(145deg, hsl(220 9% 16%) 0%, hsl(220 9% 13%) 100%)",
-      border: "1px solid rgba(255,255,255,0.04)",
+      background: "linear-gradient(145deg, hsl(228 14% 15%) 0%, hsl(228 14% 12%) 100%)",
+      border: "1px solid rgba(255,255,255,0.05)",
       color: "rgba(255,255,255,0.55)",
       boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
     };
@@ -2786,12 +2786,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       <div
         className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 select-none"
         style={{
-          background: "linear-gradient(145deg, hsl(220 9% 13%) 0%, hsl(220 9% 10%) 100%)",
+          background: "linear-gradient(145deg, hsl(228 14% 12%) 0%, hsl(228 14% 9%) 100%)",
           backdropFilter: "blur(40px) saturate(1.35)",
           WebkitBackdropFilter: "blur(40px) saturate(1.35)",
-          border: "1px solid rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.05)",
           borderRadius: "32px",
-          boxShadow: "-8px -8px 20px rgba(255,255,255,0.025), 12px 12px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.4)",
+          boxShadow: "-8px -8px 22px rgba(255,255,255,0.030), 12px 12px 32px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.45)",
           padding: "10px 12px",
         }}
         data-testid="toolbar-room-controls"
@@ -2835,7 +2835,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </PopoverTrigger>
               <PopoverContent
                 className="w-80 p-0 border-0 shadow-2xl overflow-hidden"
-                style={{ background: "#1a1f2e" }}
+                style={{ background: "hsl(228 14% 10%)" }}
                 align="center"
                 side="bottom"
                 sideOffset={12}
@@ -2988,13 +2988,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             {!aiTutorActive && (
               <span
                 className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
-                style={{ background: "rgba(0,225,255,0.18)", animationDuration: "2.2s" }}
+                style={{ background: "rgba(220,120,50,0.18)", animationDuration: "2.2s" }}
               />
             )}
             {aiTutorActive && (
               <span
                 className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
-                style={{ background: "rgba(0,225,255,0.28)", animationDuration: "1.4s" }}
+                style={{ background: "rgba(220,120,50,0.28)", animationDuration: "1.4s" }}
               />
             )}
             <button
@@ -3008,7 +3008,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 color: "#fff",
                 boxShadow: "0 0 24px hsla(18, 92%, 54%, 0.5), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.4)",
               } : {
-                background: "linear-gradient(145deg, hsl(220 9% 16%) 0%, hsl(220 9% 13%) 100%)",
+                background: "linear-gradient(145deg, hsl(228 14% 15%) 0%, hsl(228 14% 12%) 100%)",
                 border: "1px solid rgba(255,140,60,0.22)",
                 color: "hsl(18 92% 60%)",
                 boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
@@ -3941,7 +3941,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             title="Chat"
             className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
             style={sidePanelTab === "chat"
-              ? { background: "rgba(0,225,255,0.12)", border: "1px solid rgba(0,225,255,0.22)", color: "rgba(0,225,255,0.92)", boxShadow: "0 0 10px rgba(0,225,255,0.10)" }
+              ? { background: "rgba(220,120,50,0.12)", border: "1px solid rgba(220,120,50,0.28)", color: "rgba(240,160,80,0.90)", boxShadow: "0 0 10px rgba(220,120,50,0.14)" }
               : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
             }
           >
@@ -6098,10 +6098,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         <div
           className="border-b px-3 py-2"
           style={{
-            background: "linear-gradient(180deg, rgba(12,15,26,0.96) 0%, rgba(8,10,20,0.92) 100%)",
+            background: "linear-gradient(180deg, hsl(228 14% 10% / 0.97) 0%, hsl(228 14% 8% / 0.94) 100%)",
             backdropFilter: "blur(24px) saturate(1.3)",
-            borderColor: "rgba(255,255,255,0.07)",
-            boxShadow: "0 1px 0 rgba(255,255,255,0.04)",
+            borderColor: "rgba(255,255,255,0.06)",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.04), 0 -1px 0 rgba(0,0,0,0.3)",
           }}
         >
           <div className="flex flex-wrap items-center gap-2">
@@ -6130,7 +6130,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   {isHost && (
                     <span
                       className="flex-shrink-0 text-[9px] font-bold px-1.5 py-[2px] rounded-md tracking-wider uppercase"
-                      style={{ background: "rgba(0,225,255,0.10)", color: "rgba(0,225,255,0.85)", border: "1px solid rgba(0,225,255,0.18)" }}
+                      style={{ background: "rgba(220,120,50,0.12)", color: "rgba(240,160,80,0.90)", border: "1px solid rgba(220,120,50,0.22)" }}
                     >
                       HOST
                     </span>
@@ -6168,7 +6168,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       title="Social Panel"
                       className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
                       style={isActive
-                        ? { background: "rgba(0,225,255,0.12)", border: "1px solid rgba(0,225,255,0.22)", color: "rgba(0,225,255,0.92)", boxShadow: "0 0 10px rgba(0,225,255,0.14)" }
+                        ? { background: "rgba(220,120,50,0.12)", border: "1px solid rgba(220,120,50,0.28)", color: "rgba(240,160,80,0.90)", boxShadow: "0 0 10px rgba(220,120,50,0.14)" }
                         : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
                       }
                     >
@@ -6227,7 +6227,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     </PopoverTrigger>
                     <PopoverContent
                       className="w-60 p-0 border-0 shadow-2xl overflow-hidden"
-                      style={{ background: "#1a1f2e" }}
+                      style={{ background: "hsl(228 14% 10%)" }}
                       align="end"
                     >
                       <div className="flex flex-col">
