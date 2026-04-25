@@ -54,29 +54,20 @@ const roomChessState = new Map<string, {
   mode?: "standard" | "timed" | null;
 }>();
 
-const CHESS_PUZZLE_BANK = [
-  { id: 1, title: "Checkmate in 1", fen: "7k/6Q1/5K2/8/8/8/8/8 w - - 0 1", toMove: "w", solution: "g7g8", hint: "Use the queen to deliver checkmate" },
-  { id: 2, title: "Corner Checkmate", fen: "k7/8/KQ6/8/8/8/8/8 w - - 0 1", toMove: "w", solution: "b6b8", hint: "Push the queen to the back rank" },
-  { id: 3, title: "Rook Checkmate", fen: "7k/7p/6K1/8/8/8/8/6R1 w - - 0 1", toMove: "w", solution: "g1g8", hint: "Drive the rook to the 8th rank" },
-  { id: 4, title: "Two Rooks Mate", fen: "k7/8/8/8/8/8/8/RR5K w - - 0 1", toMove: "w", solution: "b1b8", hint: "Cut off the king with your rooks" },
-  { id: 5, title: "Queen Sweeps In", fen: "6k1/5ppp/8/8/8/8/8/Q5K1 w - - 0 1", toMove: "w", solution: "a1a8", hint: "Send the queen to the back rank" },
-  { id: 6, title: "Rook Roller", fen: "8/8/1k6/8/8/8/8/KRR5 w - - 0 1", toMove: "w", solution: "b1b6", hint: "Push the rook to deliver check" },
-  { id: 7, title: "Diagonal Finish", fen: "6k1/8/6K1/8/8/8/8/6B1 w - - 0 1", toMove: "w", solution: "g1f2", hint: "The bishop holds the key diagonal" },
-  { id: 8, title: "Queen Corridor", fen: "8/8/8/8/8/1k6/8/Q3K3 w - - 0 1", toMove: "w", solution: "a1a3", hint: "Trap the king against the edge" },
-] as const;
-
-const roomPuzzleState = new Map<string, {
-  puzzleIdx: number;
-  round: number;
-  maxRounds: number;
-  scores: { white: number; black: number };
-  status: "active" | "solved" | "ended";
-  solvedBy: "white" | "black" | null;
-  white: ChessSeat;
-  black: ChessSeat;
+type TttSeat = { userId: string; username: string; avatar: string | null } | null;
+const roomTttState = new Map<string, {
+  board: (null | "X" | "O")[];
+  turn: "X" | "O";
+  status: "active" | "ended";
+  winner: "X" | "O" | "draw" | null;
+  winLine: number[] | null;
+  x: TttSeat;
+  o: TttSeat;
+  scores: { x: number; o: number; draws: number };
+  startedAt: number;
 }>();
 
-const pendingPuzzleChallenges = new Map<string, { challengerId: string; challengerName: string; challengerAvatar: string | null; roomId: string; maxRounds: number }>();
+const pendingTttChallenges = new Map<string, { challengerId: string; challengerName: string; challengerAvatar: string | null; roomId: string }>();
 
 // Lichess shared embed per room (URL string of game/study/tv)
 const roomLichessState = new Map<string, { url: string; sharedBy: string } | null>();
@@ -3790,15 +3781,27 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:chess-state", newState);
     });
 
-    // ---------- Puzzle Duel ----------
-    const puzzleBroadcast = (roomId: string) => {
-      const ps = roomPuzzleState.get(roomId);
-      if (!ps) return;
-      const puzzle = ps.puzzleIdx < CHESS_PUZZLE_BANK.length ? CHESS_PUZZLE_BANK[ps.puzzleIdx] : null;
-      io.to(roomId).emit("room:chess-puzzle-state", { ...ps, puzzle });
+    // ---------- Tic-Tac-Toe ----------
+    const TTT_LINES: number[][] = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6],
+    ];
+    const tttCheckWin = (board: (null | "X" | "O")[]): { winner: "X" | "O"; line: number[] } | null => {
+      for (const line of TTT_LINES) {
+        const [a,b,c] = line;
+        const v = board[a];
+        if (v && board[b] === v && board[c] === v) return { winner: v as "X" | "O", line };
+      }
+      return null;
     };
 
-    socket.on("room:chess-puzzle-challenge", async (data: { roomId: string; targetUserId: string; maxRounds?: number }) => {
+    socket.on("room:ttt-sync", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      socket.emit("room:ttt-state", roomTttState.get(data.roomId) || null);
+    });
+
+    socket.on("room:ttt-challenge", async (data: { roomId: string; targetUserId: string }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId) || !participants.has(data.targetUserId)) return;
@@ -3809,111 +3812,99 @@ export async function registerRoutes(
       if (!targetSocketId) return;
       const challengerName = challenger.displayName || challenger.firstName || (challenger.email ? challenger.email.split("@")[0] : null) || "Someone";
       const key = `${data.roomId}:${data.targetUserId}`;
-      pendingPuzzleChallenges.set(key, {
+      pendingTttChallenges.set(key, {
         challengerId: currentUserId,
         challengerName,
         challengerAvatar: challenger.profileImageUrl || null,
         roomId: data.roomId,
-        maxRounds: data.maxRounds || 5,
       });
-      io.to(targetSocketId).emit("room:chess-puzzle-challenge", {
+      io.to(targetSocketId).emit("room:ttt-challenge", {
         fromUserId: currentUserId,
         fromUsername: challengerName,
         fromAvatar: challenger.profileImageUrl || null,
-        maxRounds: data.maxRounds || 5,
         roomId: data.roomId,
       });
     });
 
-    socket.on("room:chess-puzzle-respond", async (data: { roomId: string; fromUserId: string; accept: boolean }) => {
+    socket.on("room:ttt-respond", async (data: { roomId: string; fromUserId: string; accept: boolean }) => {
       if (!currentUserId) return;
       const key = `${data.roomId}:${currentUserId}`;
-      const pending = pendingPuzzleChallenges.get(key);
+      const pending = pendingTttChallenges.get(key);
       if (!pending || pending.challengerId !== data.fromUserId) return;
-      pendingPuzzleChallenges.delete(key);
-      if (!data.accept) {
-        const challengerSocket = userSockets.get(data.fromUserId);
-        if (challengerSocket) io.to(challengerSocket).emit("room:chess-puzzle-declined", { byUserId: currentUserId });
-        return;
-      }
-      const challenger = await storage.getUser(data.fromUserId);
+      pendingTttChallenges.delete(key);
+      const challengerSocket = userSockets.get(data.fromUserId);
       const responder = await storage.getUser(currentUserId);
-      if (!challenger || !responder) return;
-      const challengerName = challenger.displayName || challenger.firstName || (challenger.email ? challenger.email.split("@")[0] : null) || "Player";
-      const responderName = responder.displayName || responder.firstName || (responder.email ? responder.email.split("@")[0] : null) || "Player";
-      // Randomly assign white/black for puzzle duel display
-      const challengerIsWhite = Math.random() < 0.5;
-      const puzzleState = {
-        puzzleIdx: 0,
-        round: 1,
-        maxRounds: pending.maxRounds,
-        scores: { white: 0, black: 0 },
-        status: "active" as const,
-        solvedBy: null,
-        white: challengerIsWhite
-          ? { userId: data.fromUserId, username: challengerName, avatar: challenger.profileImageUrl || null }
-          : { userId: currentUserId, username: responderName, avatar: responder.profileImageUrl || null },
-        black: challengerIsWhite
-          ? { userId: currentUserId, username: responderName, avatar: responder.profileImageUrl || null }
-          : { userId: data.fromUserId, username: challengerName, avatar: challenger.profileImageUrl || null },
-      };
-      roomPuzzleState.set(data.roomId, puzzleState);
-      puzzleBroadcast(data.roomId);
-    });
-
-    socket.on("room:chess-puzzle-move", (data: { roomId: string; from: string; to: string }) => {
-      if (!currentUserId) return;
-      const ps = roomPuzzleState.get(data.roomId);
-      if (!ps || ps.status !== "active") return;
-      const isWhite = ps.white?.userId === currentUserId;
-      const isBlack = ps.black?.userId === currentUserId;
-      if (!isWhite && !isBlack) return;
-      const puzzle = CHESS_PUZZLE_BANK[ps.puzzleIdx];
-      if (!puzzle) return;
-      const attemptUci = `${data.from}${data.to}`;
-      if (attemptUci !== puzzle.solution) {
-        // Wrong move - notify only the sender
-        socket.emit("room:chess-puzzle-wrong", { userId: currentUserId });
+      const responderName = responder?.displayName || responder?.firstName || (responder?.email ? responder.email.split("@")[0] : null) || "Player";
+      if (!data.accept) {
+        if (challengerSocket) io.to(challengerSocket).emit("room:ttt-declined", { byUserId: currentUserId, byUsername: responderName });
         return;
       }
-      // Correct! Award point
-      const side = isWhite ? "white" : "black";
-      ps.scores[side]++;
-      ps.solvedBy = side;
-      ps.status = "solved";
-      puzzleBroadcast(data.roomId);
-      // After a delay, advance to next round or end
-      setTimeout(() => {
-        const current = roomPuzzleState.get(data.roomId);
-        if (!current) return;
-        current.round++;
-        current.puzzleIdx = (current.puzzleIdx + 1) % CHESS_PUZZLE_BANK.length;
-        current.solvedBy = null;
-        if (current.round > current.maxRounds) {
-          current.status = "ended";
-        } else {
-          current.status = "active";
-        }
-        puzzleBroadcast(data.roomId);
-      }, 2500);
+      const newState = {
+        board: Array(9).fill(null) as (null | "X" | "O")[],
+        turn: "X" as "X" | "O",
+        status: "active" as "active" | "ended",
+        winner: null as "X" | "O" | "draw" | null,
+        winLine: null as number[] | null,
+        x: { userId: data.fromUserId, username: pending.challengerName, avatar: pending.challengerAvatar },
+        o: { userId: currentUserId, username: responderName, avatar: responder?.profileImageUrl || null },
+        scores: { x: 0, o: 0, draws: 0 },
+        startedAt: Date.now(),
+      };
+      roomTttState.set(data.roomId, newState);
+      io.to(data.roomId).emit("room:ttt-state", newState);
+      if (challengerSocket) io.to(challengerSocket).emit("room:ttt-accepted", { byUserId: currentUserId });
     });
 
-    socket.on("room:chess-puzzle-sync", (data: { roomId: string }) => {
+    socket.on("room:ttt-move", (data: { roomId: string; idx: number }) => {
       if (!currentUserId) return;
-      const ps = roomPuzzleState.get(data.roomId);
-      if (!ps) { socket.emit("room:chess-puzzle-state", null); return; }
-      const puzzle = ps.puzzleIdx < CHESS_PUZZLE_BANK.length ? CHESS_PUZZLE_BANK[ps.puzzleIdx] : null;
-      socket.emit("room:chess-puzzle-state", { ...ps, puzzle });
+      const s = roomTttState.get(data.roomId);
+      if (!s || s.status !== "active") return;
+      const sym: "X" | "O" | null = s.x?.userId === currentUserId ? "X" : s.o?.userId === currentUserId ? "O" : null;
+      if (!sym || s.turn !== sym) return;
+      if (data.idx < 0 || data.idx > 8 || s.board[data.idx] !== null) return;
+      s.board[data.idx] = sym;
+      const win = tttCheckWin(s.board);
+      if (win) {
+        s.status = "ended";
+        s.winner = win.winner;
+        s.winLine = win.line;
+        if (win.winner === "X") s.scores.x++; else s.scores.o++;
+      } else if (s.board.every((c) => c !== null)) {
+        s.status = "ended";
+        s.winner = "draw";
+        s.scores.draws++;
+      } else {
+        s.turn = sym === "X" ? "O" : "X";
+      }
+      io.to(data.roomId).emit("room:ttt-state", s);
     });
 
-    socket.on("room:chess-puzzle-reset", (data: { roomId: string }) => {
+    socket.on("room:ttt-rematch", (data: { roomId: string }) => {
       if (!currentUserId) return;
-      const ps = roomPuzzleState.get(data.roomId);
-      if (!ps) return;
-      const isPlayer = ps.white?.userId === currentUserId || ps.black?.userId === currentUserId;
+      const s = roomTttState.get(data.roomId);
+      if (!s) return;
+      const isPlayer = s.x?.userId === currentUserId || s.o?.userId === currentUserId;
       if (!isPlayer) return;
-      roomPuzzleState.delete(data.roomId);
-      io.to(data.roomId).emit("room:chess-puzzle-state", null);
+      s.board = Array(9).fill(null);
+      // Loser starts next round; on draw alternate
+      if (s.winner === "X") s.turn = "O";
+      else if (s.winner === "O") s.turn = "X";
+      else s.turn = s.turn === "X" ? "O" : "X";
+      s.status = "active";
+      s.winner = null;
+      s.winLine = null;
+      s.startedAt = Date.now();
+      io.to(data.roomId).emit("room:ttt-state", s);
+    });
+
+    socket.on("room:ttt-close", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const s = roomTttState.get(data.roomId);
+      if (!s) return;
+      const isPlayer = s.x?.userId === currentUserId || s.o?.userId === currentUserId;
+      if (!isPlayer) return;
+      roomTttState.delete(data.roomId);
+      io.to(data.roomId).emit("room:ttt-state", null);
     });
 
     // ---------- Lichess shared embed (any participant can share a Lichess URL) ----------

@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   ExternalLink, Flag, Crown, RotateCcw, X, Link as LinkIcon, Trophy, Users,
-  Swords, Check, Timer, Puzzle, RefreshCw, Zap, ChevronDown, ChevronUp,
+  Swords, Check, Timer, Hash, RefreshCw, Zap, ChevronDown, ChevronUp,
 } from "lucide-react";
 import type { Socket } from "socket.io-client";
 import { useToast } from "@/hooks/use-toast";
@@ -32,13 +32,25 @@ interface IncomingChallenge {
   timeControl?: number | null;
 }
 
-interface IncomingPuzzleChallenge {
+interface IncomingTttChallenge {
   fromUserId: string;
   fromUsername: string;
   fromAvatar?: string | null;
-  maxRounds: number;
   roomId: string;
 }
+
+type TttSeat = { userId: string; username: string; avatar?: string | null } | null;
+type TttState = {
+  board: (null | "X" | "O")[];
+  turn: "X" | "O";
+  status: "active" | "ended";
+  winner: "X" | "O" | "draw" | null;
+  winLine: number[] | null;
+  x: TttSeat;
+  o: TttSeat;
+  scores: { x: number; o: number; draws: number };
+  startedAt: number;
+};
 
 export interface ChessRoomState {
   fen: string;
@@ -61,28 +73,6 @@ export interface LichessShare {
   sharedBy: string;
 }
 
-const PUZZLE_BANK = [
-  { id: 1, title: "Checkmate in 1", fen: "7k/6Q1/5K2/8/8/8/8/8 w - - 0 1", toMove: "w", solution: "g7g8", hint: "Use the queen to deliver checkmate" },
-  { id: 2, title: "Corner Checkmate", fen: "k7/8/KQ6/8/8/8/8/8 w - - 0 1", toMove: "w", solution: "b6b8", hint: "Push the queen to the back rank" },
-  { id: 3, title: "Rook Checkmate", fen: "7k/7p/6K1/8/8/8/8/6R1 w - - 0 1", toMove: "w", solution: "g1g8", hint: "Drive the rook to the 8th rank" },
-  { id: 4, title: "Two Rooks Mate", fen: "k7/8/8/8/8/8/8/RR5K w - - 0 1", toMove: "w", solution: "b1b8", hint: "Cut off the king with your rooks" },
-  { id: 5, title: "Queen Sweeps In", fen: "6k1/5ppp/8/8/8/8/8/Q5K1 w - - 0 1", toMove: "w", solution: "a1a8", hint: "Send the queen to the back rank" },
-  { id: 6, title: "Rook Roller", fen: "8/8/1k6/8/8/8/8/KRR5 w - - 0 1", toMove: "w", solution: "b1b6", hint: "Push the rook to deliver check" },
-  { id: 7, title: "Diagonal Finish", fen: "6k1/8/6K1/8/8/8/8/6B1 w - - 0 1", toMove: "w", solution: "g1f2", hint: "The bishop holds the key diagonal" },
-  { id: 8, title: "Queen Corridor", fen: "8/8/8/8/8/1k6/8/Q3K3 w - - 0 1", toMove: "w", solution: "a1a3", hint: "Trap the king against the edge" },
-];
-
-type PuzzleState = {
-  puzzleIdx: number;
-  round: number;
-  maxRounds: number;
-  scores: { white: number; black: number };
-  status: "active" | "solved" | "ended";
-  solvedBy: "white" | "black" | null;
-  white: ChessSeat;
-  black: ChessSeat;
-  puzzle: typeof PUZZLE_BANK[0] | null;
-};
 
 const TIME_OPTIONS = [
   { label: "Untimed", value: null },
@@ -128,7 +118,7 @@ function lichessEmbedUrl(rawUrl: string): string {
 
 export function ChessPanel({ socket, roomId, userId, participants }: Props) {
   const { toast } = useToast();
-  const [tab, setTab] = useState<"quick" | "lichess" | "puzzle">("quick");
+  const [tab, setTab] = useState<"quick" | "lichess" | "tictactoe">("quick");
   const [state, setState] = useState<ChessRoomState | null>(null);
   const [lichess, setLichess] = useState<LichessShare | null>(null);
   const [lichessInput, setLichessInput] = useState("");
@@ -139,13 +129,11 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
   const [selectedTimeControl, setSelectedTimeControl] = useState<number | null>(null);
   const [showTimeOptions, setShowTimeOptions] = useState(false);
 
-  // Puzzle duel state
-  const [puzzleState, setPuzzleState] = useState<PuzzleState | null>(null);
-  const [incomingPuzzle, setIncomingPuzzle] = useState<IncomingPuzzleChallenge | null>(null);
-  const [pendingPuzzleTo, setPendingPuzzleTo] = useState<{ userId: string; username: string } | null>(null);
-  const [showPuzzleChallengeList, setShowPuzzleChallengeList] = useState(false);
-  const [puzzleRounds, setPuzzleRounds] = useState<3 | 5 | 7>(5);
-  const [wrongFlash, setWrongFlash] = useState(false);
+  // Tic-Tac-Toe state
+  const [tttState, setTttState] = useState<TttState | null>(null);
+  const [incomingTtt, setIncomingTtt] = useState<IncomingTttChallenge | null>(null);
+  const [pendingTttTo, setPendingTttTo] = useState<{ userId: string; username: string } | null>(null);
+  const [showTttChallengeList, setShowTttChallengeList] = useState(false);
 
   // Live clocks
   const [liveClocks, setLiveClocks] = useState<{ white: number; black: number } | null>(null);
@@ -211,39 +199,41 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
       setShowChallengeList(false);
       toast({ title: "Challenge accepted!", description: "Game starting now." });
     };
-    const onPuzzleChallenge = (c: IncomingPuzzleChallenge) => setIncomingPuzzle(c);
-    const onPuzzleState = (ps: PuzzleState | null) => setPuzzleState(ps);
-    const onPuzzleWrong = () => {
-      setWrongFlash(true);
-      setTimeout(() => setWrongFlash(false), 700);
+    const onTttChallenge = (c: IncomingTttChallenge) => setIncomingTtt(c);
+    const onTttState = (s: TttState | null) => setTttState(s);
+    const onTttDeclined = (d: { byUserId: string; byUsername: string }) => {
+      if (pendingTttTo?.userId === d.byUserId) setPendingTttTo(null);
+      toast({ title: "Tic-Tac-Toe declined", description: `${d.byUsername} declined.` });
     };
-    const onPuzzleDeclined = () => {
-      setPendingPuzzleTo(null);
-      toast({ title: "Puzzle duel declined" });
+    const onTttAccepted = () => {
+      setPendingTttTo(null);
+      setShowTttChallengeList(false);
+      setTab("tictactoe");
+      toast({ title: "Match starting!", description: "Tic-Tac-Toe is on." });
     };
     socket.on("room:chess-state", onState);
     socket.on("room:lichess", onLichess);
     socket.on("room:chess-challenge", onChallenge);
     socket.on("room:chess-challenge-declined", onDeclined);
     socket.on("room:chess-challenge-accepted", onAccepted);
-    socket.on("room:chess-puzzle-challenge", onPuzzleChallenge);
-    socket.on("room:chess-puzzle-state", onPuzzleState);
-    socket.on("room:chess-puzzle-wrong", onPuzzleWrong);
-    socket.on("room:chess-puzzle-declined", onPuzzleDeclined);
+    socket.on("room:ttt-challenge", onTttChallenge);
+    socket.on("room:ttt-state", onTttState);
+    socket.on("room:ttt-declined", onTttDeclined);
+    socket.on("room:ttt-accepted", onTttAccepted);
     socket.emit("room:chess-sync-request", { roomId });
-    socket.emit("room:chess-puzzle-sync", { roomId });
+    socket.emit("room:ttt-sync", { roomId });
     return () => {
       socket.off("room:chess-state", onState);
       socket.off("room:lichess", onLichess);
       socket.off("room:chess-challenge", onChallenge);
       socket.off("room:chess-challenge-declined", onDeclined);
       socket.off("room:chess-challenge-accepted", onAccepted);
-      socket.off("room:chess-puzzle-challenge", onPuzzleChallenge);
-      socket.off("room:chess-puzzle-state", onPuzzleState);
-      socket.off("room:chess-puzzle-wrong", onPuzzleWrong);
-      socket.off("room:chess-puzzle-declined", onPuzzleDeclined);
+      socket.off("room:ttt-challenge", onTttChallenge);
+      socket.off("room:ttt-state", onTttState);
+      socket.off("room:ttt-declined", onTttDeclined);
+      socket.off("room:ttt-accepted", onTttAccepted);
     };
-  }, [socket, roomId, pendingTo?.userId, toast]);
+  }, [socket, roomId, pendingTo?.userId, pendingTttTo?.userId, toast]);
 
   const sendChallenge = (target: ChessParticipant) => {
     if (!socket) return;
@@ -266,20 +256,30 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
     if (accept) { setShowChallengeList(false); setTab("quick"); }
   };
 
-  const sendPuzzleChallenge = (target: ChessParticipant) => {
+  const sendTttChallenge = (target: ChessParticipant) => {
     if (!socket) return;
-    socket.emit("room:chess-puzzle-challenge", { roomId, targetUserId: target.id, maxRounds: puzzleRounds });
-    setPendingPuzzleTo({ userId: target.id, username: nameOf(target) });
-    toast({ title: "Puzzle duel sent!", description: `Waiting for ${nameOf(target)} to accept…` });
-    setTimeout(() => setPendingPuzzleTo(null), 30000);
+    socket.emit("room:ttt-challenge", { roomId, targetUserId: target.id });
+    setPendingTttTo({ userId: target.id, username: nameOf(target) });
+    toast({ title: "Tic-Tac-Toe sent!", description: `Waiting for ${nameOf(target)}…` });
+    setTimeout(() => setPendingTttTo((p) => (p?.userId === target.id ? null : p)), 30000);
   };
 
-  const respondPuzzleChallenge = (accept: boolean) => {
-    if (!incomingPuzzle || !socket) return;
-    socket.emit("room:chess-puzzle-respond", { roomId, fromUserId: incomingPuzzle.fromUserId, accept });
-    setIncomingPuzzle(null);
-    if (accept) setTab("puzzle");
+  const respondTttChallenge = (accept: boolean) => {
+    if (!incomingTtt || !socket) return;
+    socket.emit("room:ttt-respond", { roomId, fromUserId: incomingTtt.fromUserId, accept });
+    setIncomingTtt(null);
+    if (accept) setTab("tictactoe");
   };
+
+  const tttPlayCell = (idx: number) => {
+    if (!socket || !tttState || tttState.status !== "active") return;
+    const mySym: "X" | "O" | null = tttState.x?.userId === userId ? "X" : tttState.o?.userId === userId ? "O" : null;
+    if (!mySym || tttState.turn !== mySym) return;
+    if (tttState.board[idx] !== null) return;
+    socket.emit("room:ttt-move", { roomId, idx });
+  };
+  const tttRematch = () => socket?.emit("room:ttt-rematch", { roomId });
+  const tttClose = () => socket?.emit("room:ttt-close", { roomId });
 
   const myColor: "white" | "black" | null = useMemo(() => {
     if (state?.white?.userId === userId) return "white";
@@ -419,43 +419,13 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
     return `${winnerName || state.winner} wins by ${state.endReason}`;
   };
 
-  // ---------- Puzzle duel helpers ----------
-  const myPuzzleColor: "white" | "black" | null = useMemo(() => {
-    if (puzzleState?.white?.userId === userId) return "white";
-    if (puzzleState?.black?.userId === userId) return "black";
+  // ---------- Tic-Tac-Toe helpers ----------
+  const myTttSym: "X" | "O" | null = useMemo(() => {
+    if (tttState?.x?.userId === userId) return "X";
+    if (tttState?.o?.userId === userId) return "O";
     return null;
-  }, [puzzleState, userId]);
-
-  const onPuzzlePieceDrop = (src: string, tgt: string): boolean => {
-    if (!puzzleState || puzzleState.status !== "active" || !myPuzzleColor || !socket) return false;
-    socket.emit("room:chess-puzzle-move", { roomId, from: src, to: tgt });
-    return false; // Don't move locally, wait for server response
-  };
-
-  const onPuzzleSquareClick = (square: string) => {
-    if (!puzzleState || puzzleState.status !== "active" || !myPuzzleColor) return;
-    if (selectedSquare && selectedSquare !== square) {
-      socket?.emit("room:chess-puzzle-move", { roomId, from: selectedSquare, to: square });
-      setSelectedSquare(null);
-      setLegalTargets([]);
-      return;
-    }
-    if (puzzleState.puzzle) {
-      try {
-        const game = new Chess(puzzleState.puzzle.fen);
-        const piece = game.get(square as any);
-        const turn = puzzleState.puzzle.toMove;
-        if (piece && piece.color === turn) {
-          setSelectedSquare(square);
-          const moves = game.moves({ square: square as any, verbose: true }) as any[];
-          setLegalTargets(moves.map((m) => m.to));
-        } else {
-          setSelectedSquare(null);
-          setLegalTargets([]);
-        }
-      } catch { setSelectedSquare(null); setLegalTargets([]); }
-    }
-  };
+  }, [tttState, userId]);
+  const isMyTttTurn = !!tttState && tttState.status === "active" && !!myTttSym && tttState.turn === myTttSym;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -469,11 +439,11 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
           <Users className="w-3 h-3 inline mr-1" /> Match
         </button>
         <button
-          onClick={() => setTab("puzzle")}
-          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${tab === "puzzle" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted/60"}`}
-          data-testid="tab-chess-puzzle"
+          onClick={() => setTab("tictactoe")}
+          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${tab === "tictactoe" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted/60"}`}
+          data-testid="tab-tictactoe"
         >
-          <Puzzle className="w-3 h-3 inline mr-1" /> Puzzles
+          <Hash className="w-3 h-3 inline mr-1" /> Tic-Tac-Toe
         </button>
         <button
           onClick={() => setTab("lichess")}
@@ -616,51 +586,38 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
         </div>
       )}
 
-      {/* ─── Puzzle Duel ─── */}
-      {tab === "puzzle" && (
-        <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
-          {!puzzleState && (
+      {/* ─── Tic-Tac-Toe ─── */}
+      {tab === "tictactoe" && (
+        <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2" data-testid="panel-tictactoe">
+          {!tttState && (
             <>
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-400" />
-                  <p className="text-xs font-semibold">Puzzle Duel</p>
+                  <Hash className="w-4 h-4 text-primary" />
+                  <p className="text-xs font-semibold">Tic-Tac-Toe</p>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  Race another player to solve chess puzzles first. First to solve each puzzle earns a point. Best of {puzzleRounds} wins!
+                  Quick 3-in-a-row match against another person in this room. Challenger plays X, opponent plays O. First to align three wins the round.
                 </p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-muted-foreground">Rounds:</span>
-                  {([3, 5, 7] as const).map(r => (
-                    <button
-                      key={r}
-                      onClick={() => setPuzzleRounds(r)}
-                      className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${puzzleRounds === r ? "bg-primary text-primary-foreground border-primary" : "border-border/50 text-muted-foreground hover:bg-muted/40"}`}
-                      data-testid={`button-puzzle-rounds-${r}`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <Button
                 size="sm" variant="default" className="w-full h-8 text-xs"
-                onClick={() => setShowPuzzleChallengeList(o => !o)}
-                data-testid="button-puzzle-challenge-list"
+                onClick={() => setShowTttChallengeList((o) => !o)}
+                data-testid="button-ttt-challenge-list"
               >
-                <Swords className="w-3.5 h-3.5 mr-1" /> Challenge to Puzzle Duel
+                <Swords className="w-3.5 h-3.5 mr-1" /> Challenge to Tic-Tac-Toe
               </Button>
 
-              {pendingPuzzleTo && (
+              {pendingTttTo && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-300 flex items-center justify-between">
-                  <span>Waiting for {pendingPuzzleTo.username}…</span>
-                  <button onClick={() => setPendingPuzzleTo(null)}><X className="w-3 h-3" /></button>
+                  <span>Waiting for {pendingTttTo.username}…</span>
+                  <button onClick={() => setPendingTttTo(null)}><X className="w-3 h-3" /></button>
                 </div>
               )}
 
-              {showPuzzleChallengeList && (
-                <div className="rounded-xl border border-border/60 bg-muted/20 p-2 space-y-1.5" data-testid="list-puzzle-targets">
+              {showTttChallengeList && (
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-2 space-y-1.5" data-testid="list-ttt-targets">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1">Players in this room</p>
                   {participants.filter((p) => p.id !== userId).length === 0 ? (
                     <p className="text-[11px] text-muted-foreground p-2 text-center">No one else here yet!</p>
@@ -674,9 +631,9 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
                           </Avatar>
                           <span className="text-xs">{nameOf(p)}</span>
                         </div>
-                        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2" disabled={!!pendingPuzzleTo}
-                          onClick={() => sendPuzzleChallenge(p)} data-testid={`button-puzzle-challenge-${p.id}`}>
-                          <Zap className="w-3 h-3 mr-1" /> Duel
+                        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2" disabled={!!pendingTttTo}
+                          onClick={() => sendTttChallenge(p)} data-testid={`button-ttt-challenge-${p.id}`}>
+                          <Hash className="w-3 h-3 mr-1" /> Play
                         </Button>
                       </div>
                     ))
@@ -686,88 +643,75 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
             </>
           )}
 
-          {puzzleState && puzzleState.puzzle && (
-            <div className="space-y-2">
-              {/* Scoreboard */}
+          {tttState && (
+            <div className="space-y-2" data-testid="ttt-board-wrapper">
               <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
-                <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {puzzleState.white?.username || "White"}
+                <div className="text-center min-w-0">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide truncate">
+                    X · {tttState.x?.username || "—"}
                   </p>
-                  <p className={`text-2xl font-bold tabular-nums ${myPuzzleColor === "white" ? "text-primary" : "text-foreground"}`}>
-                    {puzzleState.scores.white}
+                  <p className={`text-2xl font-bold tabular-nums ${myTttSym === "X" ? "text-primary" : "text-foreground"}`}>
+                    {tttState.scores.x}
                   </p>
                 </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground">Round {puzzleState.round} / {puzzleState.maxRounds}</p>
-                  <Puzzle className="w-4 h-4 text-muted-foreground mx-auto mt-1" />
+                <div className="text-center px-2">
+                  <p className="text-[10px] text-muted-foreground">Draws</p>
+                  <p className="text-base font-semibold tabular-nums text-muted-foreground">{tttState.scores.draws}</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {puzzleState.black?.username || "Black"}
+                <div className="text-center min-w-0">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide truncate">
+                    O · {tttState.o?.username || "—"}
                   </p>
-                  <p className={`text-2xl font-bold tabular-nums ${myPuzzleColor === "black" ? "text-primary" : "text-foreground"}`}>
-                    {puzzleState.scores.black}
+                  <p className={`text-2xl font-bold tabular-nums ${myTttSym === "O" ? "text-primary" : "text-foreground"}`}>
+                    {tttState.scores.o}
                   </p>
                 </div>
               </div>
 
-              {/* Puzzle info */}
-              <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2 space-y-0.5">
-                <p className="text-xs font-semibold">{puzzleState.puzzle.title}</p>
-                <p className="text-[11px] text-muted-foreground">{puzzleState.puzzle.hint}</p>
-                <p className="text-[10px] text-muted-foreground/60">
-                  {puzzleState.puzzle.toMove === "w" ? "⬜ White" : "⬛ Black"} to move · Find the winning move!
-                </p>
+              <div className="text-center text-xs font-medium py-1">
+                {tttState.status === "ended"
+                  ? tttState.winner === "draw"
+                    ? "Round drawn"
+                    : `${tttState.winner === "X" ? tttState.x?.username : tttState.o?.username} wins the round!`
+                  : isMyTttTurn
+                  ? "Your turn"
+                  : `${tttState.turn === "X" ? tttState.x?.username : tttState.o?.username || tttState.turn}'s turn`}
               </div>
 
-              {/* Puzzle board */}
-              <div className={`rounded-lg overflow-hidden border-2 transition-colors ${
-                wrongFlash ? "border-red-500" :
-                puzzleState.status === "solved" ? (puzzleState.solvedBy === myPuzzleColor ? "border-green-500" : "border-red-400") :
-                "border-border/60"
-              } bg-[#312e2b] w-full`}>
-                <Chessboard
-                  position={puzzleState.puzzle.fen}
-                  onPieceDrop={onPuzzlePieceDrop}
-                  onSquareClick={onPuzzleSquareClick}
-                  boardOrientation={myPuzzleColor === "black" ? "black" : "white"}
-                  arePiecesDraggable={puzzleState.status === "active" && !!myPuzzleColor}
-                  customBoardStyle={{ borderRadius: "0px" }}
-                  customSquareStyles={highlightSquares}
-                  boardWidth={boardSize > 0 ? boardSize : 280}
-                />
+              <div className="grid grid-cols-3 gap-1.5 rounded-lg p-1.5 bg-muted/20 border border-border/50 mx-auto" style={{ maxWidth: 320 }}>
+                {tttState.board.map((cell, idx) => {
+                  const isWinCell = !!tttState.winLine?.includes(idx);
+                  const playable = !cell && tttState.status === "active" && isMyTttTurn;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => tttPlayCell(idx)}
+                      disabled={!playable}
+                      data-testid={`ttt-cell-${idx}`}
+                      className={`aspect-square rounded-md flex items-center justify-center text-3xl font-bold select-none transition-colors ${
+                        isWinCell ? "bg-emerald-500/30 border-2 border-emerald-400/70 text-emerald-300" : "bg-muted/40 border border-border/60 hover:bg-muted/60"
+                      } ${!playable ? "cursor-default" : "cursor-pointer"}`}
+                    >
+                      <span className={cell === "X" ? "text-sky-300" : cell === "O" ? "text-amber-300" : "opacity-0"}>
+                        {cell || "·"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              {puzzleState.status === "solved" && (
-                <div className={`rounded-lg px-3 py-2 text-center text-xs font-semibold ${
-                  puzzleState.solvedBy === myPuzzleColor ? "bg-green-500/10 border border-green-500/30 text-green-400" : "bg-red-500/10 border border-red-500/30 text-red-400"
-                }`}>
-                  {puzzleState.solvedBy === myPuzzleColor ? "✓ You solved it!" : `${puzzleState.solvedBy === "white" ? puzzleState.white?.username : puzzleState.black?.username} solved it first!`}
-                  <span className="block text-[10px] text-muted-foreground mt-0.5">Next puzzle in a moment…</span>
-                </div>
-              )}
-
-              {puzzleState.status === "ended" && (
-                <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4 text-center space-y-2">
-                  <Trophy className="w-6 h-6 text-amber-400 mx-auto" />
-                  <p className="text-sm font-bold">
-                    {puzzleState.scores.white > puzzleState.scores.black
-                      ? `${puzzleState.white?.username} wins!`
-                      : puzzleState.scores.black > puzzleState.scores.white
-                      ? `${puzzleState.black?.username} wins!`
-                      : "It's a draw!"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Final score: {puzzleState.white?.username} {puzzleState.scores.white} — {puzzleState.scores.black} {puzzleState.black?.username}
-                  </p>
-                  {myPuzzleColor && (
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => socket?.emit("room:chess-puzzle-reset", { roomId })}>
-                      <RotateCcw className="w-3 h-3 mr-1" /> Play Again
-                    </Button>
-                  )}
-                </div>
-              )}
+              <div className="flex gap-2 pt-1">
+                {tttState.status === "ended" && (myTttSym !== null) && (
+                  <Button size="sm" variant="default" className="flex-1 h-8 text-xs" onClick={tttRematch} data-testid="button-ttt-rematch">
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> Next round
+                  </Button>
+                )}
+                {(myTttSym !== null) && (
+                  <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={tttClose} data-testid="button-ttt-close">
+                    <X className="w-3.5 h-3.5 mr-1" /> End match
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -859,31 +803,31 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Incoming puzzle duel dialog */}
-      <Dialog open={!!incomingPuzzle} onOpenChange={(o) => { if (!o) respondPuzzleChallenge(false); }}>
-        <DialogContent className="sm:max-w-sm" data-testid="dialog-incoming-puzzle">
+      {/* Incoming Tic-Tac-Toe dialog */}
+      <Dialog open={!!incomingTtt} onOpenChange={(o) => { if (!o) respondTttChallenge(false); }}>
+        <DialogContent className="sm:max-w-sm" data-testid="dialog-incoming-ttt">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-400" /> Puzzle Duel!
+              <Hash className="w-4 h-4 text-primary" /> Tic-Tac-Toe Challenge!
             </DialogTitle>
-            <DialogDescription>
-              {incomingPuzzle && (
+            <DialogDescription asChild>
+              {incomingTtt ? (
                 <span className="flex items-center gap-2 mt-2">
                   <Avatar className="w-8 h-8">
-                    {incomingPuzzle.fromAvatar ? <AvatarImage src={incomingPuzzle.fromAvatar} /> : null}
-                    <AvatarFallback>{incomingPuzzle.fromUsername?.[0]?.toUpperCase()}</AvatarFallback>
+                    {incomingTtt.fromAvatar ? <AvatarImage src={incomingTtt.fromAvatar} /> : null}
+                    <AvatarFallback>{incomingTtt.fromUsername?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <span>
-                    <strong className="text-foreground">{incomingPuzzle.fromUsername}</strong> challenges you to a best-of-{incomingPuzzle.maxRounds} puzzle duel!
+                    <strong className="text-foreground">{incomingTtt.fromUsername}</strong> wants to play Tic-Tac-Toe with you!
                   </span>
                 </span>
-              )}
+              ) : <span />}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="ghost" className="flex-1" onClick={() => respondPuzzleChallenge(false)}>Decline</Button>
-            <Button className="flex-1" onClick={() => respondPuzzleChallenge(true)} data-testid="button-accept-puzzle">
-              <Zap className="w-3.5 h-3.5 mr-1" /> Accept!
+            <Button variant="ghost" className="flex-1" onClick={() => respondTttChallenge(false)} data-testid="button-decline-ttt">Decline</Button>
+            <Button className="flex-1" onClick={() => respondTttChallenge(true)} data-testid="button-accept-ttt">
+              <Hash className="w-3.5 h-3.5 mr-1" /> Accept
             </Button>
           </DialogFooter>
         </DialogContent>

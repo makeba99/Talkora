@@ -26,6 +26,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { playMoodSound } from "@/lib/mood-sounds";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { DmDialog } from "@/components/dm-dialog";
@@ -1614,6 +1615,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (!data?.userId || !data?.emoji) return;
       const id = `${data.ts || Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       setParticipantMoods((prev) => ({ ...prev, [data.userId]: { id, emoji: data.emoji } }));
+      // Subtle audio cue so reactions register even when you're not looking at the screen.
+      try { playMoodSound(data.emoji); } catch {}
       // Cancel any pending cleanup for this user, then schedule a fresh one.
       // 3.6s ≈ animation duration (3.4s) + small buffer.
       const existing = moodTimersRef.current[data.userId];
@@ -2866,11 +2869,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             {moodPickerOpen && (
               <div
                 data-testid="mood-picker"
-                className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center justify-center gap-1 px-2 py-2 rounded-2xl shadow-2xl border border-white/15"
+                className="fixed left-1/2 -translate-x-1/2 z-[100] flex flex-wrap items-center justify-center gap-1 px-2 py-2 rounded-2xl shadow-2xl border border-white/15"
                 style={{
+                  top: "calc(env(safe-area-inset-top, 0px) + 60px)",
                   background: "linear-gradient(180deg, rgba(20,16,40,0.96), rgba(8,6,24,0.96))",
                   backdropFilter: "blur(14px)",
-                  width: "min(280px, 80vw)",
+                  width: "min(320px, 90vw)",
                 }}
               >
                 {[
