@@ -252,7 +252,7 @@ function PeopleDiscoveryCard({
               {isOnline ? "● Online now" : "○ Offline"}
             </p>
             {currentRoomId && (
-              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-neu-orange bg-indigo-400/10 rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-neu-orange bg-orange-400/10 rounded-full px-2 py-0.5">
                 <Radio className="w-2.5 h-2.5" />
                 Talking
               </span>
@@ -272,7 +272,7 @@ function PeopleDiscoveryCard({
             {languages.map((lang) => (
               <span
                 key={lang}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-violet-400/25 bg-violet-400/10 text-violet-200"
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-orange-400/25 bg-orange-400/10 text-orange-200"
               >
                 {lang}
               </span>
@@ -289,7 +289,7 @@ function PeopleDiscoveryCard({
           </span>
           {voteCount > 0 && (
             <span className="flex items-center gap-1 text-white/60">
-              <Flame className="w-3 h-3 text-indigo-400" />
+              <Flame className="w-3 h-3 text-orange-400" />
               <span className="font-semibold text-white/80">{voteCount + (hasVoted ? 1 : 0)}</span>
             </span>
           )}
@@ -309,7 +309,7 @@ function PeopleDiscoveryCard({
               disabled={isCurrentUser || isPending}
               className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
                 isFollowing
-                  ? "border-indigo-400/35 bg-indigo-400/15 text-indigo-200 hover:bg-indigo-400/20"
+                  ? "border-orange-400/35 bg-orange-400/15 text-orange-200 hover:bg-orange-400/20"
                   : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
               } disabled:opacity-45 disabled:cursor-not-allowed`}
               data-testid={`button-follow-discovery-${person.id}`}
@@ -319,7 +319,7 @@ function PeopleDiscoveryCard({
             <button
               onClick={onTalk}
               disabled={isCurrentUser || (!isOnline && !currentRoomId)}
-              className="flex items-center justify-center gap-1 rounded-xl border border-violet-400/25 bg-violet-400/10 px-3 py-2 text-xs font-bold text-violet-100 disabled:opacity-45 disabled:cursor-not-allowed hover:bg-violet-400/16 transition-colors"
+              className="flex items-center justify-center gap-1 rounded-xl border border-orange-400/25 bg-orange-400/10 px-3 py-2 text-xs font-bold text-orange-100 disabled:opacity-45 disabled:cursor-not-allowed hover:bg-orange-400/16 transition-colors"
               data-testid={`button-talk-discovery-${person.id}`}
             >
               <MessageCircle className="w-3 h-3" />
@@ -331,12 +331,12 @@ function PeopleDiscoveryCard({
             disabled={isCurrentUser}
             className={`w-full flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
               hasVoted
-                ? "border-indigo-400/45 bg-indigo-400/15 text-indigo-200"
-                : "border-indigo-400/18 bg-indigo-400/8 text-indigo-300/60 hover:bg-indigo-400/12 hover:border-indigo-400/30"
+                ? "border-orange-400/45 bg-orange-400/15 text-orange-200"
+                : "border-orange-400/18 bg-orange-400/8 text-orange-300/60 hover:bg-orange-400/12 hover:border-orange-400/30"
             } disabled:opacity-45 disabled:cursor-not-allowed`}
             data-testid={`button-vote-discovery-${person.id}`}
           >
-            <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-indigo-400 text-indigo-400" : ""}`} />
+            <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-orange-400 text-orange-400" : ""}`} />
             {hasVoted ? "Voted!" : "Vote"}
             {(voteCount > 0) && <span className="ml-1 opacity-60">{voteCount + (hasVoted ? 1 : 0)}</span>}
           </button>
@@ -974,10 +974,10 @@ export default function Lobby() {
                   onClick={() => setActiveDiscovery(filter.id)}
                   className={`neu-pill flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(235 72% 55%) 0%, hsl(248 65% 42%) 100%)",
+                    background: "linear-gradient(145deg, hsl(25 90% 54%) 0%, hsl(16 82% 38%) 100%)",
                     color: "#fff",
-                    border: "1px solid rgba(100,80,230,0.45)",
-                    boxShadow: "0 0 16px hsla(238, 68%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(180,185,255,0.35)",
+                    border: "1px solid rgba(230,100,20,0.45)",
+                    boxShadow: "0 0 16px hsla(22, 90%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,175,100,0.35)",
                     textShadow: "0 1px 1px rgba(0,0,0,0.25)",
                   } : undefined}
                   data-testid={`filter-discovery-${filter.id}`}
@@ -1000,10 +1000,10 @@ export default function Lobby() {
                   onClick={() => setSelectedLanguage(lang)}
                   className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(235 72% 55%) 0%, hsl(248 65% 42%) 100%)",
+                    background: "linear-gradient(145deg, hsl(25 90% 54%) 0%, hsl(16 82% 38%) 100%)",
                     color: "#fff",
-                    border: "1px solid rgba(100,80,230,0.45)",
-                    boxShadow: "0 0 16px hsla(238, 68%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(180,185,255,0.35)",
+                    border: "1px solid rgba(230,100,20,0.45)",
+                    boxShadow: "0 0 16px hsla(22, 90%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,175,100,0.35)",
                     textShadow: "0 1px 1px rgba(0,0,0,0.25)",
                   } : undefined}
                   data-testid={`tab-language-${lang.toLowerCase()}`}

@@ -1245,7 +1245,7 @@ html.neomorphic-light .text-neu-orange svg {
       Ensures the lobby CTA is always vivid against the card surface. */
 html.neomorphic-dark .step-in-btn,
 html.neomorphic-light .step-in-btn {
-  border: 1px solid rgba(100, 80, 230, 0.48) !important;
+  border: 1px solid rgba(230, 100, 20, 0.48) !important;
   inset: none;
 }
 
@@ -2419,9 +2419,9 @@ html.synthwave .neon-text {
   --neu-surface-2: 228 14% 18%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
-  --neu-orange: 238 68% 52%;       /* primary accent — indigo-blue */
-  --neu-orange-hi: 235 72% 58%;    /* highlight tone */
-  --neu-orange-lo: 242 62% 40%;    /* deep tone */
+  --neu-orange: 22 90% 52%;        /* primary accent — dark orange */
+  --neu-orange-hi: 28 92% 60%;     /* highlight tone — warm amber */
+  --neu-orange-lo: 16 82% 38%;     /* deep tone — burnt orange */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
@@ -2516,7 +2516,7 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-lo)) 100%
   );
   color: #fff;
-  border: 1px solid rgba(100, 80, 230, 0.50);
+  border: 1px solid rgba(230, 100, 20, 0.50);
   box-shadow:
     0 0 22px hsla(var(--neu-orange) / 0.42),
     0 0 48px hsla(var(--neu-orange) / 0.16),
@@ -2618,7 +2618,7 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-hi)) 0%,
     hsl(var(--neu-orange-lo)) 100%
   );
-  border: 1px solid rgba(100, 80, 230, 0.55);
+  border: 1px solid rgba(230, 100, 20, 0.55);
   box-shadow:
     0 0 26px hsla(var(--neu-orange) / 0.62),
     0 0 50px hsla(var(--neu-orange) / 0.28),
