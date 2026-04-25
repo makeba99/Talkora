@@ -924,13 +924,16 @@ html.neomorphic-light button:not([data-neo-skip]):active:not(:disabled) {
     inset -2px -2px 6px hsl(var(--neo-shadow-light) / 0.4);
 }
 
-/* Primary / accent CTAs get the magenta→cyan gradient */
-html.neomorphic-dark button.bg-primary,
-html.neomorphic-light button.bg-primary,
-html.neomorphic-dark .bg-primary[role="button"],
-html.neomorphic-light .bg-primary[role="button"],
-html.neomorphic-dark button[data-state="active"],
-html.neomorphic-light button[data-state="active"] {
+/* Primary / accent CTAs get the magenta→cyan gradient
+   — but skip our custom neumorphic CTAs (.create-room-btn, .neu-submit,
+   .neu-icon-btn-red, .neu-tile, .neu-tab, .neu-deco-tile) which have
+   their own dark-body + amber-icon treatment. */
+html.neomorphic-dark button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-light button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-dark .bg-primary[role="button"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-light .bg-primary[role="button"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-dark button[data-state="active"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-light button[data-state="active"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile) {
   background: linear-gradient(135deg, hsl(var(--neo-accent-from)), hsl(var(--neo-accent-to))) !important;
   color: white !important;
   box-shadow:
@@ -939,8 +942,8 @@ html.neomorphic-light button[data-state="active"] {
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-html.neomorphic-dark button.bg-primary:hover,
-html.neomorphic-light button.bg-primary:hover {
+html.neomorphic-dark button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile):hover,
+html.neomorphic-light button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile):hover {
   box-shadow:
     -5px -5px 14px hsl(var(--neo-shadow-light) / 0.55),
     5px 5px 14px hsl(var(--neo-shadow-dark) / 0.65),
