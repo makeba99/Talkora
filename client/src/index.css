@@ -935,19 +935,21 @@ html.neomorphic-dark .bg-primary[role="button"]:not(.create-room-btn):not(.neu-s
 html.neomorphic-light .bg-primary[role="button"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
 html.neomorphic-dark button[data-state="active"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
 html.neomorphic-light button[data-state="active"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile) {
+  /* Multi-layer surface: top sheen → dome gradient → bottom darken */
   background:
-    linear-gradient(180deg, hsl(var(--neo-accent-from)) 0%, hsl(var(--neo-accent-to)) 100%) !important;
+    radial-gradient(ellipse 70% 100% at 50% -10%, rgba(220, 210, 255, 0.22) 0%, transparent 55%),
+    linear-gradient(180deg, hsl(var(--neo-accent-from)) 0%, hsl(var(--neo-accent-to)) 70%, hsl(var(--neo-accent-to) / 0.85) 100%) !important;
   color: rgba(255,255,255,0.96) !important;
-  border: 1px solid hsl(var(--neo-accent-to) / 0.65) !important;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  border: 1px solid hsl(var(--neo-accent-to) / 0.75) !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.45), 0 0 12px hsl(var(--neo-accent-from) / 0.35);
   box-shadow:
-    -5px -5px 12px hsl(var(--neo-shadow-light) / 0.30),
-    6px 6px 14px hsl(var(--neo-shadow-dark) / 0.65),
-    0 0 18px hsl(var(--neo-accent-from) / 0.22),
-    inset 0 1px 0 rgba(220, 210, 255, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
-  transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    -6px -6px 14px hsl(var(--neo-shadow-light) / 0.32),
+    8px 8px 18px hsl(var(--neo-shadow-dark) / 0.72),
+    0 0 22px hsl(var(--neo-accent-from) / 0.26),
+    inset 0 1px 0 rgba(220, 210, 255, 0.35),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.42),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  transition: all 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html.neomorphic-dark button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile):hover,
