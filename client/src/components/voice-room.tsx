@@ -7086,31 +7086,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </div>
                     )}
 
-                    {isHost && !isMe && (
-                      <div className="absolute -top-2 right-0 flex gap-0.5 invisible group-hover:visible z-10">
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className="w-6 h-6 rounded-full"
-                          onClick={() => handleForceMute(p.id)}
-                          title="Mute user"
-                          data-testid={`button-force-mute-${p.id}`}
-                        >
-                          <VolumeX className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className="w-6 h-6 rounded-full text-destructive"
-                          onClick={() => handleKick(p.id)}
-                          title="Kick user"
-                          data-testid={`button-kick-${p.id}`}
-                        >
-                          <UserX className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    )}
-
                     <ParticipantCard
                       participant={p}
                       allParticipants={participants}
