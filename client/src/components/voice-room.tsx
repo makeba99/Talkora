@@ -2761,10 +2761,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       boxShadow: "0 0 22px rgba(59,130,246,0.35), 0 4px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10)",
     };
     const screenShareActiveStyle: React.CSSProperties = {
-      background: "linear-gradient(145deg, rgba(139,92,246,0.30) 0%, rgba(109,40,217,0.20) 100%)",
-      border: "1px solid rgba(167,139,250,0.50)",
-      color: "rgba(196,181,253,0.97)",
-      boxShadow: "0 0 22px rgba(139,92,246,0.38), 0 4px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10)",
+      background: "linear-gradient(145deg, hsla(var(--neu-orange) / 0.32) 0%, hsla(var(--neu-orange-lo) / 0.22) 100%)",
+      border: "1px solid hsla(var(--neu-orange-hi) / 0.50)",
+      color: "hsla(var(--neu-orange-hi) / 0.97)",
+      boxShadow: "0 0 22px hsla(var(--neu-orange) / 0.38), 0 4px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10)",
     };
     const handRaisedStyle: React.CSSProperties = {
       background: "linear-gradient(145deg, rgba(251,191,36,0.22) 0%, rgba(217,119,6,0.13) 100%)",
@@ -3719,14 +3719,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const avatarGradients = [
-    "from-amber-400 to-orange-500",
-    "from-green-400 to-emerald-500",
-    "from-orange-400 to-red-500",
-    "from-purple-400 to-pink-500",
-    "from-yellow-400 to-orange-500",
-    "from-pink-400 to-rose-500",
-    "from-violet-400 to-purple-500",
-    "from-indigo-400 to-purple-500",
+    "from-amber-500 to-orange-700",
+    "from-orange-500 to-amber-700",
+    "from-yellow-600 to-orange-700",
+    "from-amber-600 to-yellow-800",
+    "from-orange-600 to-red-800",
+    "from-amber-700 to-orange-900",
+    "from-yellow-500 to-amber-700",
+    "from-orange-400 to-amber-600",
   ];
 
   const getAvatarGradient = (index: number) => avatarGradients[index % avatarGradients.length];
@@ -4012,7 +4012,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           title="People"
           className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
           style={sidePanelTab === "people"
-            ? { background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.28)", color: "rgba(167,139,250,0.95)", boxShadow: "0 0 10px rgba(139,92,246,0.12)" }
+            ? { background: "hsla(var(--neu-orange) / 0.18)", border: "1px solid hsla(var(--neu-orange) / 0.34)", color: "hsla(var(--neu-orange-hi) / 0.95)", boxShadow: "0 0 10px hsla(var(--neu-orange) / 0.18), inset 0 1px 0 rgba(255,255,255,0.06)" }
             : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
           }
         >
@@ -4043,7 +4043,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               title={welcomeText ? "Edit welcome message" : "Set welcome message"}
               className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150"
               style={welcomeText
-                ? { background: "rgba(139,92,246,0.18)", border: "1px solid rgba(139,92,246,0.35)", color: "rgba(167,139,250,0.95)", boxShadow: "0 0 8px rgba(139,92,246,0.15)" }
+                ? { background: "hsla(var(--neu-orange) / 0.22)", border: "1px solid hsla(var(--neu-orange) / 0.40)", color: "hsla(var(--neu-orange-hi) / 0.95)", boxShadow: "0 0 8px hsla(var(--neu-orange) / 0.22), inset 0 1px 0 rgba(255,255,255,0.06)" }
                 : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }
               }
             >
@@ -4074,10 +4074,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               displayedMessages.map((msg) => {
                 if (msg.type === "announcement" && !showMentionsOnly) {
                   const kindColors: Record<string, { border: string; bg: string; accent: string; pill: string }> = {
-                    platform:    { border: "border-cyan-500/40",   bg: "bg-cyan-950/40",   accent: "text-cyan-300",    pill: "bg-cyan-500/20 text-cyan-200 border-cyan-500/40" },
+                    platform:    { border: "border-orange-500/40", bg: "bg-orange-950/40", accent: "text-orange-200",  pill: "bg-orange-500/20 text-orange-200 border-orange-500/40" },
                     maintenance: { border: "border-amber-500/40",  bg: "bg-amber-950/40",  accent: "text-amber-300",   pill: "bg-amber-500/20 text-amber-200 border-amber-500/40" },
                     safety:      { border: "border-red-500/40",    bg: "bg-red-950/40",    accent: "text-red-300",     pill: "bg-red-500/20 text-red-200 border-red-500/40" },
-                    celebration: { border: "border-violet-500/40", bg: "bg-violet-950/40", accent: "text-violet-300",  pill: "bg-violet-500/20 text-violet-200 border-violet-500/40" },
+                    celebration: { border: "border-rose-500/40",   bg: "bg-rose-950/40",   accent: "text-rose-200",    pill: "bg-rose-500/20 text-rose-200 border-rose-500/40" },
                   };
                   const theme = kindColors[msg.announcementKind || "platform"] ?? kindColors.platform;
                   const mediaUrls = msg.announcementMediaUrls || [];
@@ -4412,7 +4412,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 type="button"
                 onClick={scrollToBottom}
                 className="absolute -top-12 right-1 rounded-full shadow-lg flex items-center gap-1.5 z-20 animate-in fade-in slide-in-from-bottom-2 transition-all px-3 py-1.5 text-[11px] font-semibold hover:scale-[1.02] active:scale-95"
-                style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, rgba(99,102,241,0.95) 100%)", color: "hsl(var(--primary-foreground))", boxShadow: "0 10px 30px rgba(0,0,0,0.28), 0 0 18px rgba(99,102,241,0.35)" }}
+                style={{ background: "linear-gradient(135deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)", color: "#fff", boxShadow: "0 10px 30px rgba(0,0,0,0.32), 0 0 18px hsla(var(--neu-orange) / 0.38), inset 0 1px 0 rgba(255,255,255,0.18)" }}
                 data-testid="button-new-messages-indicator"
                 aria-label="Scroll to latest messages"
               >
@@ -5035,7 +5035,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
                 {readAudiobooks.length > 0 && (
                   <div className="space-y-1.5 pt-2" data-testid="section-audiobooks">
-                    <p className="text-[10px] font-semibold text-purple-400/90 uppercase tracking-wide px-1 flex items-center gap-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide px-1 flex items-center gap-1" style={{ color: "hsla(var(--neu-orange-hi) / 0.92)" }}>
                       <Volume1 className="w-3 h-3" /> Free audiobooks (LibriVox)
                     </p>
                     {readAudiobooks.map((a: any) => (
@@ -5047,8 +5047,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         className="flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
                         data-testid={`link-audiobook-${a.id}`}
                       >
-                        <div className="w-10 h-10 rounded bg-purple-500/15 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
-                          <Volume1 className="w-5 h-5 text-purple-300" />
+                        <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{ background: "hsla(var(--neu-orange) / 0.16)", border: "1px solid hsla(var(--neu-orange) / 0.30)" }}>
+                          <Volume1 className="w-5 h-5" style={{ color: "hsla(var(--neu-orange-hi) / 0.92)" }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold line-clamp-2">{a.title}</p>
@@ -5335,7 +5335,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               value={peopleSearch}
               onChange={(e) => setPeopleSearch(e.target.value)}
               data-testid="input-people-search"
-              className="w-full pl-8 pr-3 py-2 text-xs rounded-lg bg-white/[0.04] border border-white/[0.10] text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all duration-150"
+              className="w-full pl-8 pr-3 py-2 text-xs rounded-lg text-foreground placeholder:text-muted-foreground/50 outline-none transition-all duration-150 neu-search-input"
+              style={{
+                background: "linear-gradient(145deg, hsl(228 16% 9%) 0%, hsl(228 16% 12%) 100%)",
+                border: "1px solid hsla(var(--neu-orange) / 0.20)",
+                boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.55), inset -2px -2px 5px rgba(255,255,255,0.025), 0 0 0 1px rgba(0,0,0,0.4)",
+              }}
             />
           </div>
         </div>
@@ -5348,7 +5353,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               data-testid={`filter-people-${f}`}
               className="flex-1 py-1 rounded-lg text-[10px] font-semibold capitalize transition-all duration-150"
               style={peopleFilter === f
-                ? { background: "rgba(139,92,246,0.18)", color: "rgba(167,139,250,0.95)", border: "1px solid rgba(139,92,246,0.30)" }
+                ? { background: "hsla(var(--neu-orange) / 0.22)", color: "hsla(var(--neu-orange-hi) / 0.95)", border: "1px solid hsla(var(--neu-orange) / 0.36)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)" }
                 : { color: "rgba(255,255,255,0.38)", border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.03)" }
               }
             >
@@ -5380,8 +5385,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               if (filtered.length === 0) {
                 return (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(139,92,246,0.10)", border: "1px solid rgba(139,92,246,0.18)" }}>
-                      <UsersRound className="w-6 h-6" style={{ color: "rgba(139,92,246,0.60)" }} />
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "hsla(var(--neu-orange) / 0.14)", border: "1px solid hsla(var(--neu-orange) / 0.24)" }}>
+                      <UsersRound className="w-6 h-6" style={{ color: "hsla(var(--neu-orange-hi) / 0.70)" }} />
                     </div>
                     <div className="text-center">
                       <p className="text-xs font-medium text-muted-foreground/80">No connections yet</p>
@@ -5402,7 +5407,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <div className="relative flex-shrink-0">
                       <Avatar className="w-8 h-8">
                         <AvatarImage src={u.profileImageUrl ?? undefined} />
-                        <AvatarFallback className="text-[10px] font-semibold bg-violet-900/40 text-violet-200">
+                        <AvatarFallback className="text-[10px] font-semibold" style={{ background: "hsla(var(--neu-orange-lo) / 0.40)", color: "hsla(var(--neu-orange-hi) / 0.95)" }}>
                           {getUserInitials(u)}
                         </AvatarFallback>
                       </Avatar>
@@ -5430,7 +5435,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           setDmUnreadCounts(prev => { const next = { ...prev }; delete next[u.id]; return next; });
                         }}
                         className="p-1.5 rounded-lg transition-all duration-150"
-                        style={{ background: "rgba(139,92,246,0.14)", color: "rgba(167,139,250,0.90)", border: "1px solid rgba(139,92,246,0.24)" }}
+                        style={{ background: "hsla(var(--neu-orange) / 0.18)", color: "hsla(var(--neu-orange-hi) / 0.92)", border: "1px solid hsla(var(--neu-orange) / 0.30)" }}
                         title={`Message ${getUserDisplayName(u)}`}
                       >
                         <MessageSquare className="w-3 h-3" />
@@ -5442,7 +5447,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         className="px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150"
                         style={isFollowingUser
                           ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.50)", border: "1px solid rgba(255,255,255,0.10)" }
-                          : { background: "rgba(139,92,246,0.18)", color: "rgba(167,139,250,0.95)", border: "1px solid rgba(139,92,246,0.28)" }
+                          : { background: "hsla(var(--neu-orange) / 0.22)", color: "hsla(var(--neu-orange-hi) / 0.95)", border: "1px solid hsla(var(--neu-orange) / 0.34)" }
                         }
                       >
                         {isFollowingUser ? "Following" : "Follow"}

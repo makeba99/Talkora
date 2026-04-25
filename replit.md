@@ -323,6 +323,40 @@ Badge applications table (shared/schema.ts):
   `<circle>` calls in the file are intentional small dot/bubble/
   flower-center shapes, not ring outlines.
 
+## Round 7 — Burnt-copper orange tone-down
+- `client/src/index.css`: muted the neumorphic accent palette so it
+  no longer reads as bright neon orange. New values:
+  `--neu-orange: 22 68% 46%` (was `20 95% 52%`),
+  `--neu-orange-hi: 26 74% 54%` (was `24 100% 60%`),
+  `--neu-orange-lo: 16 62% 32%` (was `14 88% 38%`).
+- Reduced the `step-in-breathe` keyframe glow halos and
+  `.step-in-btn::before` shine alpha (`0.36 → 0.18`) so the lobby
+  glow no longer pulses bright.
+
+## Round 8 — Neumorphic look applied inside the voice room
+- `client/src/components/voice-room.tsx`: replaced every purple/
+  violet/indigo accent (`rgba(139,92,246,…)`, `rgba(167,139,250,…)`,
+  `rgba(109,40,217,…)`, `rgba(99,102,241,…)`) used inside the room
+  with the burnt-copper palette via `hsla(var(--neu-orange[-hi/-lo])
+  / X)`. Affected elements: people-tab toggle, "Welcome" host pill,
+  screen-share active button, scroll-to-latest jump pill, people
+  filter pills, empty-people state icon, avatar initials fallback,
+  DM message button, Follow button.
+- People panel **search input** now uses a sculpted neu inset
+  (dark gradient bg + amber border + dual inset shadow) instead of
+  violet focus ring — matches the lobby search aesthetic.
+- Audiobook section header + icon tile recolored from purple to the
+  copper palette.
+- Announcement category color codes: `platform` cyan→orange,
+  `celebration` violet→rose. Maintenance/safety amber/red kept.
+- Avatar fallback gradient palette (`avatarGradients`) rebuilt with
+  warm amber/orange/yellow stops — removed `from-purple-…`,
+  `from-pink-…`, `from-violet-…`, `from-indigo-…` entries so user
+  initials never render with rainbow tints.
+- Twitch streaming-doc step badges (`bg-purple-600`) intentionally
+  left alone — those are Twitch's own brand color in the
+  documentation panel.
+
 ## User Preferences
 - No landing page gate - lobby always shown
 - Collapse/expand for language filters instead of scrollbar
