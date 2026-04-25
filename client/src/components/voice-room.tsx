@@ -6122,6 +6122,44 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
+          {activeYoutubeId && !showYoutube && (() => {
+            const broadcaster = participants.find(p => p.id === youtubeStartedBy);
+            const thumb = `https://img.youtube.com/vi/${activeYoutubeId}/hqdefault.jpg`;
+            return (
+              <div
+                className="flex-1 min-h-0 bg-black relative flex items-center justify-center cursor-pointer group/ytpreview"
+                onClick={() => { setShowYoutube(true); setSidePanelOpen(false); }}
+                data-testid="yt-watch-preview"
+              >
+                <img
+                  src={thumb}
+                  alt="Now playing"
+                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/ytpreview:opacity-75 transition-opacity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/55" />
+                <div className="relative z-10 flex flex-col items-center gap-3 px-6 text-center">
+                  <div className="w-16 h-16 rounded-full bg-red-600/90 group-hover/ytpreview:bg-red-500 flex items-center justify-center shadow-2xl border-2 border-white/30 transition-colors">
+                    <Play className="w-8 h-8 text-white fill-white ml-1" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-white text-sm font-semibold drop-shadow-lg">
+                      {broadcaster ? `${getUserDisplayName(broadcaster)} is playing a video` : "A video is playing"}
+                    </p>
+                    <p className="text-white/80 text-xs drop-shadow-md">
+                      Click to join the watch party
+                    </p>
+                  </div>
+                  {youtubeWatchers.size > 0 && (
+                    <div className="flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-full border border-white/15">
+                      <Eye className="w-3 h-3 opacity-80" />
+                      {youtubeWatchers.size === 1 ? "1 watching" : `${youtubeWatchers.size} watching`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {activeYoutubeId && showYoutube && (() => {
             const isYoutubeHost = canPlayYoutube;
             const broadcaster = participants.find(p => p.id === youtubeStartedBy);
