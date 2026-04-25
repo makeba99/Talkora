@@ -1015,17 +1015,42 @@ html.neomorphic-light [role="tab"][data-state="active"] {
     2px 2px 6px hsl(var(--neo-shadow-dark) / 0.55) !important;
 }
 
-/* ─── NEOMORPHIC: ROOM CARDS — override custom gradients ──── */
+/* ─── NEOMORPHIC: ROOM CARDS — override custom gradients ────
+   Deep sculpted neumorphic dome with a faint warm-amber inner rim
+   on top (catching ambient light) and a darker base shadow that
+   anchors the card. Idealistic, almost like blown-glass over warm
+   wood. */
 html.neomorphic-dark .room-card-shell,
 html.neomorphic-light .room-card-shell,
 html.neomorphic-dark [data-testid^="card-room"],
 html.neomorphic-light [data-testid^="card-room"] {
-  background: hsl(var(--neo-bg)) !important;
+  background:
+    linear-gradient(160deg,
+      hsl(var(--neo-bg)) 0%,
+      hsl(var(--neo-bg)) 55%,
+      hsl(228 22% 7%) 100%) !important;
   box-shadow:
-    -8px -8px 18px hsl(var(--neo-shadow-light) / 0.5),
-    8px 8px 18px hsl(var(--neo-shadow-dark) / 0.6) !important;
+    -10px -10px 22px hsl(var(--neo-shadow-light) / 0.55),
+    12px 12px 26px hsl(var(--neo-shadow-dark) / 0.72),
+    inset 0 1px 0 rgba(255, 235, 215, 0.075),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 200, 140, 0.025) !important;
   border: 1px solid transparent !important;
   border-radius: 1.25rem !important;
+  transition: transform 320ms cubic-bezier(.2,.8,.25,1), box-shadow 320ms ease-out !important;
+}
+html.neomorphic-dark .room-card-shell:hover,
+html.neomorphic-light .room-card-shell:hover,
+html.neomorphic-dark [data-testid^="card-room"]:hover,
+html.neomorphic-light [data-testid^="card-room"]:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    -12px -12px 26px hsl(var(--neo-shadow-light) / 0.62),
+    14px 14px 32px hsl(var(--neo-shadow-dark) / 0.80),
+    0 0 32px hsl(var(--neu-orange) / 0.10),
+    inset 0 1px 0 rgba(255, 235, 215, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.50),
+    inset 0 0 0 1px rgba(255, 200, 140, 0.045) !important;
 }
 
 /* Inner gradient overlays on room cards become flat in neo theme */
@@ -3029,16 +3054,42 @@ html.synthwave .neon-text {
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
 
-/* Page background — when this class is on a wrapper it darkens the
-   whole surface to the neumorphic canvas, regardless of the active
-   theme. Used by the lobby and the in-room layout. */
+/* Page background — deep sculpted neumorphic canvas with breathing
+   ambient warm-amber + indigo corner blooms and a subtle vignette.
+   Feels like the surface is gently lit from above by warm light. */
+@keyframes neu-aura-breathe {
+  0%, 100% { opacity: 0.95; transform: translateY(0) scale(1); }
+  50%      { opacity: 1.00; transform: translateY(-4px) scale(1.015); }
+}
+@keyframes neu-aura-drift {
+  0%, 100% { opacity: 0.85; transform: translate(0, 0) scale(1); }
+  50%      { opacity: 1.00; transform: translate(8px, -6px) scale(1.025); }
+}
+
 .neu-canvas {
+  position: relative;
   background:
-    radial-gradient(ellipse 90% 60% at 18% 0%, rgba(100, 80, 200, 0.10) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 82% 0%, rgba(200, 60, 100, 0.06) 0%, transparent 50%),
-    radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.018) 0%, transparent 55%),
-    radial-gradient(80% 60% at 50% 100%, rgba(0,0,0,0.50) 0%, transparent 60%),
+    radial-gradient(ellipse 95% 65% at 18% 0%, rgba(120, 90, 220, 0.13) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 55% at 82% 0%, rgba(255, 145, 60, 0.085) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 50% 110%, rgba(255, 130, 40, 0.05) 0%, transparent 60%),
+    radial-gradient(140% 90% at 50% 0%, rgba(255, 245, 230, 0.022) 0%, transparent 55%),
+    radial-gradient(85% 65% at 50% 100%, rgba(0, 0, 0, 0.55) 0%, transparent 62%),
     hsl(var(--neu-bg));
+}
+/* Ambient warm light blooms — breathe gently for an idealistic
+   atmospheric feel. Sit behind content but above the canvas. */
+.neu-canvas::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 50% 40% at 12% 18%, hsl(var(--neu-orange) / 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 38% at 88% 28%, rgba(140, 100, 255, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 50% 92%, hsl(var(--neu-orange-lo) / 0.06) 0%, transparent 60%);
+  animation: neu-aura-breathe 14s ease-in-out infinite;
+  mix-blend-mode: screen;
 }
 
 /* Subtle film grain over the canvas for premium texture */
@@ -3048,11 +3099,13 @@ html.synthwave .neon-text {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.018;
+  opacity: 0.022;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 160px 160px;
+  mix-blend-mode: overlay;
 }
+.neu-canvas > * { position: relative; z-index: 1; }
 
 /* Raised neumorphic surface — used for cards, panels, control docks. */
 .neu-surface {
@@ -3068,16 +3121,31 @@ html.synthwave .neon-text {
 }
 
 /* Inset / pressed neumorphic well — used for search inputs and
-   pressed states. */
+   pressed states. Carved-out groove with subtle warm rim that
+   gently catches ambient light from above. */
 .neu-inset {
   background: linear-gradient(
-    145deg,
+    155deg,
     hsl(var(--neu-bg)) 0%,
+    hsl(228 18% 11%) 60%,
     hsl(var(--neu-surface)) 100%
   );
   box-shadow:
-    inset 5px 5px 12px rgba(0, 0, 0, 0.65),
-    inset -4px -4px 10px rgba(255, 255, 255, 0.028);
+    inset 6px 6px 14px rgba(0, 0, 0, 0.72),
+    inset -5px -5px 12px rgba(255, 235, 215, 0.032),
+    inset 0 1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 -1px 0 rgba(255, 235, 215, 0.06),
+    0 1px 0 rgba(255, 235, 215, 0.025);
+  transition: box-shadow 240ms ease-out;
+}
+.neu-inset:focus-within {
+  box-shadow:
+    inset 5px 5px 12px rgba(0, 0, 0, 0.62),
+    inset -4px -4px 10px rgba(255, 235, 215, 0.04),
+    inset 0 1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 -1px 0 rgba(255, 235, 215, 0.08),
+    0 0 0 1px hsl(var(--neu-orange) / 0.42),
+    0 0 18px hsl(var(--neu-orange) / 0.22);
 }
 
 /* Raised neumorphic button (ghost / inactive). */
@@ -3193,27 +3261,46 @@ html.synthwave .neon-text {
     inset 0 1px 0 rgba(255, 230, 200, 0.34);
 }
 
-/* Pill variants used for the discovery tabs and language filters. */
+/* Pill variants used for the discovery tabs and language filters.
+   Sculpted raised dome — soft top highlight catching ambient light,
+   deeper bottom shadow for grounded weight, gentle warm rim glow on
+   hover for an idealistic premium feel. */
 .neu-pill {
+  position: relative;
   background: linear-gradient(
-    145deg,
+    155deg,
     hsl(var(--neu-surface-2)) 0%,
+    hsl(228 14% 16%) 55%,
     hsl(var(--neu-surface)) 100%
   );
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.62);
   box-shadow:
-    -4px -4px 10px rgba(255, 255, 255, 0.036),
-    5px 5px 12px rgba(0, 0, 0, 0.58),
-    inset 0 1px 0 rgba(255, 255, 255, 0.052);
-  transition: all 180ms ease-out;
+    -5px -5px 12px rgba(255, 235, 215, 0.045),
+    6px 6px 14px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 235, 215, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  transition:
+    transform 240ms cubic-bezier(.2,.8,.25,1),
+    color 240ms ease-out,
+    box-shadow 280ms ease-out;
 }
 .neu-pill:hover {
-  color: rgba(255, 255, 255, 0.92);
-  transform: translateY(-1px);
+  color: rgba(255, 248, 240, 0.94);
+  transform: translateY(-1.5px);
   box-shadow:
-    -5px -5px 12px rgba(255, 255, 255, 0.044),
-    6px 6px 14px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.065);
+    -6px -6px 14px rgba(255, 235, 215, 0.055),
+    7px 7px 16px rgba(0, 0, 0, 0.72),
+    0 0 16px hsl(var(--neu-orange) / 0.16),
+    inset 0 1px 0 rgba(255, 235, 215, 0.085),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.32);
+}
+.neu-pill:active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: 90ms;
+  box-shadow:
+    inset 4px 4px 9px rgba(0, 0, 0, 0.60),
+    inset -3px -3px 7px rgba(255, 235, 215, 0.03),
+    0 0 0 1px hsl(var(--neu-orange) / 0.18);
 }
 .neu-pill[data-active="true"],
 .neu-pill.is-active {

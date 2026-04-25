@@ -267,6 +267,30 @@ Badge applications table (shared/schema.ts):
 - Card hover glow softened from 28px @ 0.18 to 16px @ 0.10 to match the
   calmer overall accent intensity.
 
+## Round 5 — Idealistic 3D neumorphic depth pass (lobby)
+- `.neu-canvas` (`index.css` ~3047): added a breathing ambient layer
+  (`::before`, 14s `neu-aura-breathe`) with warm-amber + indigo corner
+  blooms over the existing radial gradients; film grain bumped to 0.022
+  with `mix-blend-mode: overlay`. Children get `position: relative; z-index: 1`
+  so they sit above the auras.
+- `.neu-inset` (~3104): three-stop diagonal gradient + deeper inner
+  shadows (`inset 6px 6px 14px / 0.72`), top dark + bottom warm rim
+  micro-lines, and a new `.neu-inset:focus-within` state with a 1px
+  amber ring + soft 18px amber halo (replaces the prior cool-purple
+  focus glow on the search input).
+- `.neu-pill` (~3246): three-stop diagonal gradient body, lifted
+  highlight/shadow stack, hover adds a 16px amber bloom and 1.5px
+  translateY; new `:active` state recesses with subtle amber ring.
+- Room cards (`html.neomorphic-dark/light .room-card-shell`,
+  `[data-testid^="card-room"]` ~1026): three-stop gradient (deeper at
+  bottom-right), heavier dual shadow stack (-10/-10 22px + 12/12 26px),
+  warm 1px inner rim (`rgba(255, 200, 140, 0.025)`), and a new `:hover`
+  variant that lifts 3px with a 32px amber halo.
+- `lobby.tsx` search Input (~951): removed inline focus/blur handlers
+  (now driven by `.neu-inset:focus-within`), bumped to `h-11`, added
+  `focus-visible:ring-0` to suppress shadcn's default ring so only the
+  amber halo shows.
+
 ## User Preferences
 - No landing page gate - lobby always shown
 - Collapse/expand for language filters instead of scrollbar

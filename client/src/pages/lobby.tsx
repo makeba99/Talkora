@@ -949,13 +949,7 @@ export default function Lobby() {
                 placeholder={activeDiscovery === "rooms" ? "Search rooms and languages..." : "Search speakers and famous users..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="neu-inset pl-10 pr-14 h-10 transition-all duration-200 border-0 rounded-full text-white placeholder:text-white/35"
-                onFocus={(e) => {
-                  e.currentTarget.style.boxShadow = "inset 4px 4px 10px rgba(0,0,0,0.55), inset -3px -3px 8px rgba(255,255,255,0.025), 0 0 0 2px hsla(238, 68%, 52%, 0.35)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.boxShadow = "";
-                }}
+                className="neu-inset pl-10 pr-14 h-11 border-0 rounded-full text-white placeholder:text-white/35 focus-visible:ring-0 focus-visible:ring-offset-0"
                 data-testid="input-search-rooms"
               />
               <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 text-[10px] text-muted-foreground/40 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 font-mono pointer-events-none">
