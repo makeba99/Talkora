@@ -2525,6 +2525,38 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     };
   }, []);
 
+  // Treat closing the browser tab / window the same as clicking the Leave button.
+  // We can't run async work here, but we can synchronously stop local media tracks,
+  // close peer connections, and emit room:leave so the server removes us from the
+  // room IMMEDIATELY (instead of waiting the 1.5s disconnect grace period). This
+  // means other participants see us leave instantly when we close the tab.
+  const handleLeaveRef = useRef(handleLeave);
+  useEffect(() => { handleLeaveRef.current = handleLeave; });
+  useEffect(() => {
+    const onPageHide = () => {
+      try {
+        // Stop local tracks first so the mic/camera light turns off immediately.
+        localStream.current?.getTracks().forEach((t) => t.stop());
+        screenStream.current?.getTracks().forEach((t) => t.stop());
+        videoStream.current?.getTracks().forEach((t) => t.stop());
+        peerConnections.current.forEach((pc) => pc.close());
+        peerConnections.current.clear();
+      } catch (_) {}
+      try {
+        // Best-effort: tell the server we left. socket.emit on pagehide is
+        // reliable in modern browsers because Socket.IO uses persistent
+        // connections — the frame is flushed before the page actually unloads.
+        socket?.emit("room:leave", { roomId: room.id, userId: user?.id });
+      } catch (_) {}
+    };
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("beforeunload", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("beforeunload", onPageHide);
+    };
+  }, [socket, room.id, user?.id]);
+
   const renderMicSettingsContent = () => (
     <div className="p-4 space-y-3">
       <div className="flex items-start gap-2">
@@ -6322,24 +6354,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </button>
                 </div>
 
-                {/* Floating watch-party reactions — emojis drift up from the bottom */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden z-10" data-testid="yt-floating-reactions">
-                  {ytFloatingReactions.map(r => (
-                    <span
-                      key={r.id}
-                      className="absolute text-3xl select-none"
-                      style={{
-                        left: `${r.left}%`,
-                        bottom: 0,
-                        animation: "ytReactionFloat 2.4s ease-out forwards",
-                        textShadow: "0 2px 8px rgba(0,0,0,0.6)",
-                      }}
-                    >
-                      {r.emoji}
-                    </span>
-                  ))}
-                </div>
-
                 {/* Watch-party voting bar — like / dislike give live counts; the
                     skip vote auto-advances to the next queue item once a majority
                     of the room agrees. None of this affects the starter's playhead;
@@ -8536,6 +8550,32 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Global watch-party floating reactions — visible to EVERY participant in
+          the room whenever someone fires a heart on the video, regardless of
+          whether they're actively watching the player or not. Anchored to the
+          bottom-right of the viewport so they don't cover the chat. */}
+      {ytFloatingReactions.length > 0 && (
+        <div
+          className="fixed bottom-24 right-6 w-40 h-64 pointer-events-none overflow-hidden z-[60]"
+          data-testid="yt-global-floating-reactions"
+        >
+          {ytFloatingReactions.map(r => (
+            <span
+              key={r.id}
+              className="absolute text-3xl select-none"
+              style={{
+                left: `${r.left}%`,
+                bottom: 0,
+                animation: "ytReactionFloat 2.4s ease-out forwards",
+                textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+              }}
+            >
+              {r.emoji}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
