@@ -935,15 +935,17 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
     case "volcanic":
       return { background: "radial-gradient(ellipse at 50% 100%, #1c0400 0%, #0e0200 55%, #080100 100%)" };
     default:
-      // Default room background — mirrors the lobby's midnight-purple
-      // canvas (deep violet-charcoal with soft amber and indigo aura)
-      // so entering a room feels continuous with the lobby aesthetic.
+      // Default room background — mirrors the lobby's neumorphic canvas
+      // (near-black indigo undertone with breathing violet/coral auras)
+      // so entering a room feels continuous with the platform shell.
       return {
         background:
-          "radial-gradient(ellipse 80% 60% at 22% 8%, rgba(110, 80, 200, 0.16) 0%, transparent 55%), " +
-          "radial-gradient(ellipse 70% 55% at 82% 12%, rgba(255, 152, 72, 0.10) 0%, transparent 50%), " +
-          "radial-gradient(ellipse 90% 70% at 50% 100%, rgba(0, 0, 0, 0.55) 0%, transparent 60%), " +
-          "radial-gradient(ellipse at 50% 40%, #16102a 0%, #0c0818 55%, #060410 100%)",
+          "radial-gradient(ellipse 95% 65% at 18% 0%, rgba(120, 90, 220, 0.13) 0%, transparent 58%), " +
+          "radial-gradient(ellipse 80% 55% at 82% 0%, rgba(170, 120, 255, 0.08) 0%, transparent 55%), " +
+          "radial-gradient(ellipse 60% 45% at 50% 110%, rgba(120, 80, 220, 0.06) 0%, transparent 60%), " +
+          "radial-gradient(140% 90% at 50% 0%, rgba(255, 245, 255, 0.020) 0%, transparent 55%), " +
+          "radial-gradient(85% 65% at 50% 100%, rgba(0, 0, 0, 0.55) 0%, transparent 62%), " +
+          "hsl(228 18% 8%)",
       };
   }
 }

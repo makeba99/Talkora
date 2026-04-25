@@ -980,11 +980,11 @@ export default function Lobby() {
                   onClick={() => setActiveDiscovery(filter.id)}
                   className={`neu-pill flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(25 90% 54%) 0%, hsl(16 82% 38%) 100%)",
+                    background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
                     color: "#fff",
-                    border: "1px solid rgba(230,100,20,0.45)",
-                    boxShadow: "0 0 16px hsla(22, 90%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,175,100,0.35)",
-                    textShadow: "0 1px 1px rgba(0,0,0,0.25)",
+                    border: "1px solid hsl(var(--neu-orange) / 0.45)",
+                    boxShadow: "0 0 18px hsl(var(--neu-orange) / 0.45), 0 0 38px hsl(var(--neu-orange) / 0.18), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.62), inset 0 1px 0 rgba(220,210,255,0.40)",
+                    textShadow: "0 1px 1px rgba(0,0,0,0.30)",
                   } : undefined}
                   data-testid={`filter-discovery-${filter.id}`}
                 >
@@ -1030,11 +1030,11 @@ export default function Lobby() {
                   onClick={() => setSelectedLanguage(lang)}
                   className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(25 90% 54%) 0%, hsl(16 82% 38%) 100%)",
+                    background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
                     color: "#fff",
-                    border: "1px solid rgba(230,100,20,0.45)",
-                    boxShadow: "0 0 16px hsla(22, 90%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,175,100,0.35)",
-                    textShadow: "0 1px 1px rgba(0,0,0,0.25)",
+                    border: "1px solid hsl(var(--neu-orange) / 0.45)",
+                    boxShadow: "0 0 18px hsl(var(--neu-orange) / 0.40), 0 0 38px hsl(var(--neu-orange) / 0.16), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.62), inset 0 1px 0 rgba(220,210,255,0.40)",
+                    textShadow: "0 1px 1px rgba(0,0,0,0.30)",
                   } : undefined}
                   data-testid={`tab-language-${lang.toLowerCase()}`}
                 >

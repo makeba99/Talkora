@@ -533,16 +533,19 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
             <Users className="w-4 h-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-80 sm:w-96 p-0 flex flex-col bg-gradient-to-b from-background via-background to-background/95">
-          <SheetHeader className="px-5 pt-5 pb-3 border-b border-border/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+        <SheetContent
+          className="w-80 sm:w-96 p-0 flex flex-col bg-gradient-to-b from-background via-background to-background/95"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
+          <SheetHeader className="px-5 pt-7 pr-12 pb-3 border-b border-border/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
             <SheetTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30 flex-shrink-0">
                   <Users className="w-4.5 h-4.5 text-primary-foreground" />
                 </div>
-                <div className="flex flex-col items-start">
+                <div className="flex flex-col items-start min-w-0">
                   <span className="text-base font-bold tracking-tight">People</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
+                  <span className="text-[10px] text-muted-foreground font-normal whitespace-nowrap">
                     {onlineCount} online · {allCount} total
                   </span>
                 </div>

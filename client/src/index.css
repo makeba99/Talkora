@@ -1285,7 +1285,7 @@ html.neomorphic-light .text-neu-orange svg {
       Ensures the lobby CTA is always vivid against the card surface. */
 html.neomorphic-dark .step-in-btn,
 html.neomorphic-light .step-in-btn {
-  border: 1px solid rgba(230, 100, 20, 0.48) !important;
+  border: 1px solid hsl(var(--neu-orange) / 0.48) !important;
   inset: none;
 }
 
@@ -2330,7 +2330,7 @@ html.synthwave .neon-text {
 .create-room-btn:hover:not(:disabled) {
   color: #fff;
   transform: translateY(-1px);
-  border-color: rgba(255, 180, 110, 0.22);
+  border-color: hsl(var(--neu-orange-hi) / 0.32);
   box-shadow:
     -5px -5px 12px rgba(255, 235, 215, 0.05),
     7px 7px 18px rgba(0, 0, 0, 0.72),
@@ -2522,7 +2522,7 @@ html.synthwave .neon-text {
   padding: 0.65rem 1rem;
   color: #fff;
   background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
-  border: 1px solid rgba(180, 90, 30, 0.45);
+  border: 1px solid hsl(var(--neu-orange) / 0.45);
   box-shadow:
     0 0 18px hsl(var(--neu-orange) / 0.34),
     0 0 38px hsl(var(--neu-orange) / 0.14),
@@ -3043,16 +3043,16 @@ html.synthwave .neon-text {
   --neu-surface-2: 228 14% 18%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
-  /* Refined "burnt-amber" palette — desaturated and shifted toward
-     copper so the accents read as sculpted metal instead of plastic
-     neon. Same warm hue family but ~25% less saturation across the
-     stops, which kills the "too bright / fake" look on filter pills
-     and the Step In button while keeping the orange identity. */
-  --neu-orange: 22 68% 46%;        /* primary accent — burnt copper */
-  --neu-orange-hi: 26 74% 54%;     /* highlight tone — warm amber */
-  --neu-orange-lo: 16 62% 32%;     /* deep tone — molten cocoa */
+  /* Refined indigo-violet accent palette — replaces the previous burnt
+     copper so the platform reads as one cohesive brand (Vextorn purple).
+     Variable names kept (--neu-orange) so existing CSS continues to
+     work, but the values now produce a sculpted violet glow that pairs
+     correctly with the deep neumorphic canvas. */
+  --neu-orange: 258 70% 58%;       /* primary accent — sculpted violet */
+  --neu-orange-hi: 268 82% 68%;    /* highlight tone — luminous lavender */
+  --neu-orange-lo: 250 62% 42%;    /* deep tone — deep indigo */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
-  --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
+  --neu-magenta: 318 72% 60%;      /* tertiary accent — coral magenta */
 }
 
 /* Page background — deep sculpted neumorphic canvas with breathing
@@ -3070,10 +3070,10 @@ html.synthwave .neon-text {
 .neu-canvas {
   position: relative;
   background:
-    radial-gradient(ellipse 95% 65% at 18% 0%, rgba(120, 90, 220, 0.13) 0%, transparent 58%),
-    radial-gradient(ellipse 80% 55% at 82% 0%, rgba(255, 145, 60, 0.085) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 45% at 50% 110%, rgba(255, 130, 40, 0.05) 0%, transparent 60%),
-    radial-gradient(140% 90% at 50% 0%, rgba(255, 245, 230, 0.022) 0%, transparent 55%),
+    radial-gradient(ellipse 95% 65% at 18% 0%, rgba(120, 90, 220, 0.16) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 55% at 82% 0%, rgba(170, 120, 255, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 50% 110%, rgba(120, 80, 220, 0.07) 0%, transparent 60%),
+    radial-gradient(140% 90% at 50% 0%, rgba(245, 240, 255, 0.022) 0%, transparent 55%),
     radial-gradient(85% 65% at 50% 100%, rgba(0, 0, 0, 0.55) 0%, transparent 62%),
     hsl(var(--neu-bg));
 }
@@ -3179,10 +3179,10 @@ html.synthwave .neon-text {
     inset -3px -3px 8px rgba(255, 255, 255, 0.028);
 }
 
-/* Primary orange neumorphic button — used for the most important
+/* Primary violet neumorphic button — used for the most important
    call-to-action (Step In, Sign In, Active tab, primary Play).
-   Warm-white inset highlights (no cool blue tint) so it reads as
-   a single, refined burnt-orange material. */
+   Cool-white inset highlights for a sculpted violet material that
+   matches the platform's brand. */
 .neu-btn-orange {
   background: linear-gradient(
     145deg,
@@ -3190,15 +3190,15 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-lo)) 100%
   );
   color: #fff;
-  border: 1px solid rgba(180, 80, 20, 0.45);
+  border: 1px solid hsl(var(--neu-orange) / 0.45);
   box-shadow:
-    0 0 14px hsla(var(--neu-orange) / 0.30),
-    0 0 32px hsla(var(--neu-orange) / 0.10),
-    -4px -4px 10px rgba(255, 235, 215, 0.035),
-    6px 6px 16px rgba(0, 0, 0, 0.70),
-    inset 0 1px 0 rgba(255, 230, 200, 0.38),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+    0 0 16px hsla(var(--neu-orange) / 0.38),
+    0 0 38px hsla(var(--neu-orange) / 0.14),
+    -4px -4px 10px rgba(220, 215, 255, 0.045),
+    6px 6px 18px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(225, 218, 255, 0.42),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.32);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.36);
   transition: all 200ms ease-out;
 }
 .neu-btn-orange:hover:not(:disabled) {
@@ -3311,7 +3311,7 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-hi)) 0%,
     hsl(var(--neu-orange-lo)) 100%
   );
-  border: 1px solid rgba(180, 80, 20, 0.50);
+  border: 1px solid hsl(var(--neu-orange) / 0.50);
   box-shadow:
     0 0 14px hsla(var(--neu-orange) / 0.36),
     0 0 28px hsla(var(--neu-orange) / 0.14),

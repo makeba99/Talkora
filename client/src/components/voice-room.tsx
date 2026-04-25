@@ -547,11 +547,23 @@ function ParticipantCard({
         )}
 
         {isRoomOwner ? (
-          <div className="absolute bottom-0 left-0 bg-orange-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5">
-            Owner <Crown className="w-2.5 h-2.5 text-yellow-300" />
+          <div
+            className="absolute bottom-0 left-0 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            style={{
+              background: "linear-gradient(145deg, hsl(var(--neu-orange-hi) / 0.95) 0%, hsl(var(--neu-orange-lo) / 0.92) 100%)",
+              boxShadow: "0 0 10px hsl(var(--neu-orange) / 0.45), inset 0 1px 0 rgba(220,210,255,0.30)",
+            }}
+          >
+            Owner <Crown className="w-2.5 h-2.5 text-yellow-200" />
           </div>
         ) : participantRole === "co-owner" ? (
-          <div className="absolute bottom-0 left-0 bg-orange-500/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5">
+          <div
+            className="absolute bottom-0 left-0 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            style={{
+              background: "linear-gradient(145deg, hsl(var(--neu-orange-hi) / 0.75) 0%, hsl(var(--neu-orange-lo) / 0.72) 100%)",
+              boxShadow: "0 0 8px hsl(var(--neu-orange) / 0.35), inset 0 1px 0 rgba(220,210,255,0.25)",
+            }}
+          >
             Co-Owner
           </div>
         ) : isMe ? (
@@ -2743,10 +2755,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
     };
     const activeStyle: React.CSSProperties = {
-      background: "linear-gradient(145deg, hsl(25 90% 54%) 0%, hsl(16 82% 38%) 100%)",
-      border: "1px solid rgba(230,100,20,0.45)",
+      background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
+      border: "1px solid hsl(var(--neu-orange) / 0.45)",
       color: "#fff",
-      boxShadow: "0 0 18px hsla(22, 90%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,175,100,0.35)",
+      boxShadow: "0 0 20px hsl(var(--neu-orange) / 0.42), 0 0 38px hsl(var(--neu-orange) / 0.16), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 12px rgba(0,0,0,0.62), inset 0 1px 0 rgba(220,210,255,0.40)",
     };
     const micLiveStyle: React.CSSProperties = {
       background: "linear-gradient(145deg, rgba(34,197,94,0.18) 0%, rgba(22,163,74,0.10) 100%)",
