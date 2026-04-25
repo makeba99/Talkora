@@ -53,36 +53,36 @@ function makeSampleUser(
 }
 
 const SAMPLE_USERS = {
-  sofia:    makeSampleUser("sample-user-1",  "Sofia",    "Martinez", "women/32",  { ring: "glow-pink",   flair: "crown",     decoration: "hearts",   bio: "Passionate about bridging cultures through language" }),
-  liam:     makeSampleUser("sample-user-2",  "Liam",     "Chen",     "men/46",    { ring: "pulse-cyan",  flair: "lightning",  decoration: "cosmic",   bio: "Daily English practice enthusiast & tech lover" }),
-  emma:     makeSampleUser("sample-user-3",  "Emma",     "Davis",    "women/28",  { ring: "glow-gold",   flair: "star",       decoration: "sparkles", bio: "Loves French cinema and casual Spanish conversation", offline: true }),
-  carlos:   makeSampleUser("sample-user-4",  "Carlos",   "Rivera",   "men/14",    { ring: "fire",        flair: "fox",        decoration: "fire",     bio: "Native speaker helping beginners get confident" }),
-  aigerim:  makeSampleUser("sample-user-5",  "Aigerim",  "Bekova",   "women/61",  { ring: "rainbow",     flair: "diamond",    decoration: "rainbow",  bio: "Trilingual and always looking for a language buddy" }),
-  marcus:   makeSampleUser("sample-user-6",  "Marcus",   "Williams", "men/88",    { ring: "glow-gold",   flair: "crown",      decoration: "stars",    bio: "Advanced English, advanced mindset, let's talk!" }),
-  anya:     makeSampleUser("sample-user-7",  "Anya",     "Petrova",  "women/52",  { ring: "ice",         flair: "cat",        decoration: "snow",     bio: "Russian soul, English dreams, talking daily", offline: true }),
-  james:    makeSampleUser("sample-user-8",  "James",    "O'Brien",  "men/67",    { ring: "glow-green",  flair: "bear",       decoration: "bubbles",  bio: "Join my room for casual conversation practice" }),
-  nadia:    makeSampleUser("sample-user-9",  "Nadia",    "Hassan",   "women/77",  { ring: "pulse-purple",flair: "heart",      decoration: "flowers",  bio: "Arabic & English fluent — DM me anytime", offline: true }),
-  kevin:    makeSampleUser("sample-user-10", "Kevin",    "Park",     "men/33",    { ring: "pulse-cyan",  flair: "dog",        decoration: "lightning",bio: "K-pop fan, Korean learner, English speaker" }),
-  yuki:     makeSampleUser("sample-user-11", "Yuki",     "Tanaka",   "women/5",   { ring: "glow-pink",   flair: "panda",      decoration: "flowers",  bio: "Anime lover learning English through stories" }),
-  min:      makeSampleUser("sample-user-12", "Min",      "Ji-hoon",  "men/72",    { ring: "fire",        flair: "wolf",       decoration: "stars",    bio: "Korean music producer, language enthusiast" }),
-  seo:      makeSampleUser("sample-user-13", "Seo",      "Yeon",     "women/44",  { ring: "rainbow",     flair: "cat",        decoration: "catears",  bio: "Sharing Korean culture one conversation at a time" }),
-  pierre:   makeSampleUser("sample-user-14", "Pierre",   "Dupont",   "men/55",    { ring: "glow-green",  flair: "star",       decoration: "sparkles", bio: "Parisian language coach and coffee enthusiast" }),
-  claire:   makeSampleUser("sample-user-15", "Claire",   "Bernard",  "women/17",  { ring: "ice",         flair: "heart",      decoration: "snow",     bio: "French literature lover, English practice daily" }),
-  hassan:   makeSampleUser("sample-user-16", "Hassan",   "Al-Amin",  "men/78",    { ring: "pulse-purple",flair: "diamond",    decoration: "cosmic",   bio: "Teaching Arabic, learning Spanish step by step" }),
-  fatima:   makeSampleUser("sample-user-17", "Fatima",   "Zahra",    "women/90",  { ring: "glow-pink",   flair: "fox",        decoration: "hearts",   bio: "Language is the map to every culture" }),
-  takeshi:  makeSampleUser("sample-user-18", "Takeshi",  "Mori",     "men/36",    { ring: "pulse-cyan",  flair: "bear",       decoration: "lightning",bio: "Kendo practitioner and Japanese calligraphy artist" }),
-  hana:     makeSampleUser("sample-user-19", "Hana",     "Suzuki",   "women/26",  { ring: "rainbow",     flair: "star",       decoration: "flowers",  bio: "Beginner English speaker, fluent in smiles" }),
-  lucas:    makeSampleUser("sample-user-20", "Lucas",    "Santos",   "men/22",    { ring: "glow-gold",   flair: "lightning",  decoration: "fire",     bio: "Brazilian rhythm, global mindset, let's talk!" }),
-  priya:    makeSampleUser("sample-user-21", "Priya",    "Sharma",   "women/13",  { ring: "glow-pink",   flair: "diamond",    decoration: "sparkles", bio: "Software engineer practicing English and French" }),
-  ivan:     makeSampleUser("sample-user-22", "Ivan",     "Petrov",   "men/19",    { ring: "ice",         flair: "wolf",       decoration: "snow",     bio: "Chess player and language lover from Moscow" }),
-  mei:      makeSampleUser("sample-user-23", "Mei",      "Lin",      "women/47",  { ring: "rainbow",     flair: "cat",        decoration: "catears",  bio: "Sharing Mandarin culture one chat at a time" }),
-  diego:    makeSampleUser("sample-user-24", "Diego",    "Torres",   "men/25",    { ring: "fire",        flair: "fox",        decoration: "fire",     bio: "Mexican cooking teacher turned language coach" }),
-  amara:    makeSampleUser("sample-user-25", "Amara",    "Osei",     "women/65",  { ring: "glow-gold",   flair: "heart",      decoration: "hearts",   bio: "Ghanaian storyteller, English and French fluent", offline: true }),
-  bjorn:    makeSampleUser("sample-user-26", "Bjorn",    "Andersen", "men/71",    { ring: "pulse-cyan",  flair: "bear",       decoration: "cosmic",   bio: "Scandinavian minimalist, maximalist in language" }),
-  isabela:  makeSampleUser("sample-user-27", "Isabela",  "Costa",    "women/38",  { ring: "pulse-purple",flair: "star",       decoration: "bubbles",  bio: "Rio native exploring Japanese and Korean" }),
-  kwame:    makeSampleUser("sample-user-28", "Kwame",    "Asante",   "men/85",    { ring: "glow-green",  flair: "lightning",  decoration: "lightning",bio: "Entrepreneur learning Mandarin for business" }),
-  natasha:  makeSampleUser("sample-user-29", "Natasha",  "Volkov",   "women/57",  { ring: "glow-pink",   flair: "panda",      decoration: "flowers",  bio: "Ballet dancer turned English teacher", offline: true }),
-  ryo:      makeSampleUser("sample-user-30", "Ryo",      "Nakamura", "men/8",     { ring: "rainbow",     flair: "dog",        decoration: "stars",    bio: "Game developer learning Spanish and Arabic" }),
+  sofia:    makeSampleUser("sample-user-1",  "Sofia",    "Martinez", "women/32",  { bio: "Passionate about bridging cultures through language" }),
+  liam:     makeSampleUser("sample-user-2",  "Liam",     "Chen",     "men/46",    { bio: "Daily English practice enthusiast & tech lover" }),
+  emma:     makeSampleUser("sample-user-3",  "Emma",     "Davis",    "women/28",  { bio: "Loves French cinema and casual Spanish conversation", offline: true }),
+  carlos:   makeSampleUser("sample-user-4",  "Carlos",   "Rivera",   "men/14",    { bio: "Native speaker helping beginners get confident" }),
+  aigerim:  makeSampleUser("sample-user-5",  "Aigerim",  "Bekova",   "women/61",  { bio: "Trilingual and always looking for a language buddy" }),
+  marcus:   makeSampleUser("sample-user-6",  "Marcus",   "Williams", "men/88",    { bio: "Advanced English, advanced mindset, let's talk!" }),
+  anya:     makeSampleUser("sample-user-7",  "Anya",     "Petrova",  "women/52",  { bio: "Russian soul, English dreams, talking daily", offline: true }),
+  james:    makeSampleUser("sample-user-8",  "James",    "O'Brien",  "men/67",    { bio: "Join my room for casual conversation practice" }),
+  nadia:    makeSampleUser("sample-user-9",  "Nadia",    "Hassan",   "women/77",  { bio: "Arabic & English fluent — DM me anytime", offline: true }),
+  kevin:    makeSampleUser("sample-user-10", "Kevin",    "Park",     "men/33",    { bio: "K-pop fan, Korean learner, English speaker" }),
+  yuki:     makeSampleUser("sample-user-11", "Yuki",     "Tanaka",   "women/5",   { bio: "Anime lover learning English through stories" }),
+  min:      makeSampleUser("sample-user-12", "Min",      "Ji-hoon",  "men/72",    { bio: "Korean music producer, language enthusiast" }),
+  seo:      makeSampleUser("sample-user-13", "Seo",      "Yeon",     "women/44",  { bio: "Sharing Korean culture one conversation at a time" }),
+  pierre:   makeSampleUser("sample-user-14", "Pierre",   "Dupont",   "men/55",    { bio: "Parisian language coach and coffee enthusiast" }),
+  claire:   makeSampleUser("sample-user-15", "Claire",   "Bernard",  "women/17",  { bio: "French literature lover, English practice daily" }),
+  hassan:   makeSampleUser("sample-user-16", "Hassan",   "Al-Amin",  "men/78",    { bio: "Teaching Arabic, learning Spanish step by step" }),
+  fatima:   makeSampleUser("sample-user-17", "Fatima",   "Zahra",    "women/90",  { bio: "Language is the map to every culture" }),
+  takeshi:  makeSampleUser("sample-user-18", "Takeshi",  "Mori",     "men/36",    { bio: "Kendo practitioner and Japanese calligraphy artist" }),
+  hana:     makeSampleUser("sample-user-19", "Hana",     "Suzuki",   "women/26",  { bio: "Beginner English speaker, fluent in smiles" }),
+  lucas:    makeSampleUser("sample-user-20", "Lucas",    "Santos",   "men/22",    { bio: "Brazilian rhythm, global mindset, let's talk!" }),
+  priya:    makeSampleUser("sample-user-21", "Priya",    "Sharma",   "women/13",  { bio: "Software engineer practicing English and French" }),
+  ivan:     makeSampleUser("sample-user-22", "Ivan",     "Petrov",   "men/19",    { bio: "Chess player and language lover from Moscow" }),
+  mei:      makeSampleUser("sample-user-23", "Mei",      "Lin",      "women/47",  { bio: "Sharing Mandarin culture one chat at a time" }),
+  diego:    makeSampleUser("sample-user-24", "Diego",    "Torres",   "men/25",    { bio: "Mexican cooking teacher turned language coach" }),
+  amara:    makeSampleUser("sample-user-25", "Amara",    "Osei",     "women/65",  { bio: "Ghanaian storyteller, English and French fluent", offline: true }),
+  bjorn:    makeSampleUser("sample-user-26", "Bjorn",    "Andersen", "men/71",    { bio: "Scandinavian minimalist, maximalist in language" }),
+  isabela:  makeSampleUser("sample-user-27", "Isabela",  "Costa",    "women/38",  { bio: "Rio native exploring Japanese and Korean" }),
+  kwame:    makeSampleUser("sample-user-28", "Kwame",    "Asante",   "men/85",    { bio: "Entrepreneur learning Mandarin for business" }),
+  natasha:  makeSampleUser("sample-user-29", "Natasha",  "Volkov",   "women/57",  { bio: "Ballet dancer turned English teacher", offline: true }),
+  ryo:      makeSampleUser("sample-user-30", "Ryo",      "Nakamura", "men/8",     { bio: "Game developer learning Spanish and Arabic" }),
 };
 
 const SAMPLE_ROOMS: Room[] = [
@@ -252,7 +252,7 @@ function PeopleDiscoveryCard({
               {isOnline ? "● Online now" : "○ Offline"}
             </p>
             {currentRoomId && (
-              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-cyan-300 bg-cyan-400/10 rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-neu-orange bg-orange-400/10 rounded-full px-2 py-0.5">
                 <Radio className="w-2.5 h-2.5" />
                 Talking
               </span>
@@ -295,7 +295,7 @@ function PeopleDiscoveryCard({
           )}
           {commentCount > 0 && (
             <span className="flex items-center gap-1 text-white/60">
-              <MessageSquare className="w-3 h-3 text-blue-400" />
+              <MessageSquare className="w-3 h-3 text-white/50" />
               <span className="font-semibold text-white/80">{commentCount}</span>
             </span>
           )}
@@ -309,8 +309,8 @@ function PeopleDiscoveryCard({
               disabled={isCurrentUser || isPending}
               className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
                 isFollowing
-                  ? "border-cyan-400/40 bg-cyan-400/20 text-cyan-200 hover:bg-cyan-400/25"
-                  : "border-cyan-400/25 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/16"
+                  ? "border-orange-400/40 bg-orange-400/20 text-orange-200 hover:bg-orange-400/25"
+                  : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
               } disabled:opacity-45 disabled:cursor-not-allowed`}
               data-testid={`button-follow-discovery-${person.id}`}
             >
@@ -342,7 +342,7 @@ function PeopleDiscoveryCard({
           </button>
           <button
             onClick={onComment}
-            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-blue-400/20 bg-blue-400/8 px-3 py-2 text-xs font-bold text-blue-300/70 hover:bg-blue-400/14 hover:border-blue-400/35 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/55 hover:bg-white/8 hover:border-white/18 transition-colors"
             data-testid={`button-comment-discovery-${person.id}`}
           >
             <MessageSquare className="w-3.5 h-3.5" />

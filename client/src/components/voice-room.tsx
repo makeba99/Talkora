@@ -148,7 +148,7 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
-            className="w-1.5 bg-cyan-400/80 rounded-t-sm animate-sound-wave origin-bottom"
+            className="w-1.5 bg-orange-400/80 rounded-t-sm animate-sound-wave origin-bottom"
             style={{ animationDelay: `${i * 0.13}s`, height: "70%" }}
           />
         ))}
@@ -272,7 +272,7 @@ function ParticipantCard({
              <div className="flex flex-col gap-1 flex-1 min-w-0">
                 <div className="flex justify-between items-center text-xs">
                    <span className="text-muted-foreground">ID: {p.id.slice(0, 10).toUpperCase()}</span>
-                   <button className="text-blue-400 font-medium hover:underline px-1" onClick={handleCopyId}>Copy ID</button>
+                   <button className="text-white/50 font-medium hover:underline px-1" onClick={handleCopyId}>Copy ID</button>
                 </div>
                 <div className="text-sm font-semibold truncate leading-none">Name: {getUserDisplayName(p)}</div>
                 {(p.instagramUrl || p.linkedinUrl || p.facebookUrl) && (
@@ -317,7 +317,7 @@ function ParticipantCard({
                  <UserNotePopover userId={p.id} />
                </div>
                <Button variant="outline" size="sm" onClick={() => isFollowing ? unfollowMutation.mutate(p.id) : followMutation.mutate(p.id)} className="h-12 flex-col text-[10px] leading-tight border-border bg-transparent hover:bg-muted px-1 gap-0.5">
-                  {isFollowing ? <UserCheck className="w-3.5 h-3.5 text-blue-400" /> : <UserPlus className="w-3.5 h-3.5 text-muted-foreground" />}
+                  {isFollowing ? <UserCheck className="w-3.5 h-3.5 text-orange-400" /> : <UserPlus className="w-3.5 h-3.5 text-muted-foreground" />}
                   <span className="truncate w-full text-center">{isFollowing ? "Unfollow" : "Follow"}</span>
                </Button>
                <Button variant="outline" size="sm" onClick={() => onReconnect && onReconnect(p.id)} className="h-12 flex-col text-[10px] leading-tight border-border bg-transparent hover:bg-muted px-1 gap-0.5">
@@ -346,7 +346,7 @@ function ParticipantCard({
                <Button variant={participantRole === "guest" || !participantRole ? "default" : "outline"} size="sm" onClick={() => onAssignRole && onAssignRole("guest")} className={`h-8 text-xs ${participantRole === "guest" || !participantRole ? 'bg-muted text-foreground border-border' : 'bg-transparent border-border text-muted-foreground hover:bg-muted'}`}>
                  <ChevronUp className="w-3.5 h-3.5 mr-1" /> Set Guest
                </Button>
-               <Button variant={participantRole === "co-owner" ? "default" : "outline"} size="sm" onClick={() => onAssignRole && onAssignRole("co-owner")} className={`h-8 text-xs ${participantRole === "co-owner" ? 'bg-blue-600 text-white border-blue-600' : 'bg-transparent border-border text-muted-foreground hover:bg-muted'}`}>
+               <Button variant={participantRole === "co-owner" ? "default" : "outline"} size="sm" onClick={() => onAssignRole && onAssignRole("co-owner")} className={`h-8 text-xs ${participantRole === "co-owner" ? 'bg-orange-600 text-white border-orange-600' : 'bg-transparent border-border text-muted-foreground hover:bg-muted'}`}>
                  <ChevronUp className="w-3.5 h-3.5 mr-1" /> Set Co-Owner
                </Button>
             </div>
@@ -392,8 +392,8 @@ function ParticipantCard({
 
           {!isMe && (
             <div className="flex items-center gap-3 mt-1 bg-muted/50 p-2 rounded-md border border-border">
-              <Button variant="outline" size="sm" className="h-8 border-blue-600 text-blue-500 bg-transparent px-2 pointer-events-none">Volume <Volume2 className="w-3.5 h-3.5 ml-1"/></Button>
-              <input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(e) => onVolumeChange && onVolumeChange(p.id, parseFloat(e.target.value))} className="flex-1 accent-blue-500 h-1 cursor-pointer" />
+              <Button variant="outline" size="sm" className="h-8 border-orange-500/40 text-orange-400/80 bg-transparent px-2 pointer-events-none">Volume <Volume2 className="w-3.5 h-3.5 ml-1"/></Button>
+              <input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(e) => onVolumeChange && onVolumeChange(p.id, parseFloat(e.target.value))} className="flex-1 accent-orange-500 h-1 cursor-pointer" />
             </div>
           )}
         </div>
@@ -466,7 +466,7 @@ function ParticipantCard({
       )}
       <div
         className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
-          isSpeaking ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]" : "border-transparent hover:border-blue-500/30"
+          isSpeaking ? "border-orange-500/80 shadow-[0_0_15px_rgba(220,120,50,0.45)]" : "border-transparent hover:border-white/20"
         } transition-all duration-300`}
       >
         {hasActiveYoutube && youtubeVideoId ? (
@@ -492,8 +492,8 @@ function ParticipantCard({
             <div className="text-center bg-black/50 w-full h-full absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 gap-1">
               {showVideoIcon && !isMe ? (
                 <>
-                  <Video className="w-5 h-5 text-cyan-400 drop-shadow-md" />
-                  <span className="text-[10px] text-cyan-300 font-semibold drop-shadow-md">Expand</span>
+                  <Video className="w-5 h-5 text-white/80 drop-shadow-md" />
+                  <span className="text-[10px] text-white/70 font-semibold drop-shadow-md">Expand</span>
                 </>
               ) : (
                 <span className="text-xs sm:text-sm font-bold text-white drop-shadow-md leading-tight break-words line-clamp-2 px-2">
@@ -506,7 +506,7 @@ function ParticipantCard({
         {(showScreenIcon || showYoutubeIcon || showBookIcon || isWatcher) && (
           <div className="absolute top-1 right-8 z-20 flex items-center gap-0.5 animate-pulse drop-shadow-md">
              {showScreenIcon && (
-                <div className="bg-blue-600 p-1 rounded-sm shadow pointer-events-none">
+                <div className="bg-orange-600/90 p-1 rounded-sm shadow pointer-events-none">
                    <Monitor className="w-3 h-3 text-white" />
                 </div>
              )}
@@ -547,11 +547,11 @@ function ParticipantCard({
         )}
 
         {isRoomOwner ? (
-          <div className="absolute bottom-0 left-0 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5">
+          <div className="absolute bottom-0 left-0 bg-orange-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5">
             Owner <Crown className="w-2.5 h-2.5 text-yellow-300" />
           </div>
         ) : participantRole === "co-owner" ? (
-          <div className="absolute bottom-0 left-0 bg-blue-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5">
+          <div className="absolute bottom-0 left-0 bg-orange-500/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5">
             Co-Owner
           </div>
         ) : isMe ? (
@@ -2675,8 +2675,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const renderMicSettingsContent = () => (
     <div className="p-4 space-y-3">
       <div className="flex items-start gap-2">
-        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center flex-shrink-0">
-          <Mic className="w-4 h-4 text-cyan-300" />
+        <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-400/20 flex items-center justify-center flex-shrink-0">
+          <Mic className="w-4 h-4 text-orange-300" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-white">Microphone Settings</p>
@@ -3719,13 +3719,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const avatarGradients = [
-    "from-cyan-400 to-blue-500",
+    "from-amber-400 to-orange-500",
     "from-green-400 to-emerald-500",
     "from-orange-400 to-red-500",
     "from-purple-400 to-pink-500",
     "from-yellow-400 to-orange-500",
     "from-pink-400 to-rose-500",
-    "from-teal-400 to-cyan-500",
+    "from-violet-400 to-purple-500",
     "from-indigo-400 to-purple-500",
   ];
 
@@ -5099,7 +5099,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
                 {readCatalog.length > 0 && (
                   <div className="space-y-1.5 pt-2" data-testid="section-catalog">
-                    <p className="text-[10px] font-semibold text-blue-400/90 uppercase tracking-wide px-1 flex items-center gap-1">
+                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wide px-1 flex items-center gap-1">
                       <BookOpen className="w-3 h-3" /> More from Open Library
                     </p>
                     {readCatalog.map((c: any) => (
@@ -6942,8 +6942,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               />
               <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
                 <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/15 rounded-full px-3 py-1 shadow-lg">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0" />
-                  <Monitor className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse flex-shrink-0" />
+                  <Monitor className="w-3 h-3 text-orange-400 flex-shrink-0" />
                   <span className="text-white text-xs">{getUserDisplayName(participants.find(p => p.id === remoteScreenShareUserId))} is sharing screen</span>
                 </div>
                 {isHost && remoteScreenShareUserId && (
@@ -6965,7 +6965,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 const sharer = participants.find(p => p.id === remoteScreenShareUserId);
                 return sharer ? (
                   <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
-                    <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-blue-500/70 bg-blue-600 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-orange-500/60 bg-orange-900/60 flex items-center justify-center">
                       {(sharer as any).profileImageUrl ? (
                         <img src={(sharer as any).profileImageUrl} className="w-full h-full object-cover rounded-full" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                       ) : (
@@ -6974,7 +6974,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     </div>
                     <div className="flex flex-col leading-none">
                       <span className="text-white text-[11px] font-semibold">{getUserDisplayName(sharer as any)}</span>
-                      <span className="text-blue-400 text-[9px] font-medium">Sharing screen</span>
+                      <span className="text-orange-400/80 text-[9px] font-medium">Sharing screen</span>
                     </div>
                   </div>
                 ) : null;
@@ -7012,7 +7012,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 className={`w-full h-full object-cover ${videoFlipped ? "scale-x-[-1]" : ""}`}
               />
               <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
-                <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-blue-500/70 bg-blue-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-orange-500/60 bg-orange-900/60 flex items-center justify-center">
                   {user?.profileImageUrl ? (
                     <img src={user.profileImageUrl} className="w-full h-full object-cover rounded-full" />
                   ) : (

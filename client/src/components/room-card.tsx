@@ -698,13 +698,13 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         boxShadow: hasRing
                           ? undefined
                           : isPremiumAtmosphere
-                            ? `0 0 7px rgba(0,220,255,0.55), 0 0 14px rgba(120,50,255,0.35), 0 0 22px rgba(60,130,255,0.20)`
+                            ? `0 0 7px rgba(220,120,50,0.45), 0 0 14px rgba(160,60,200,0.28), 0 0 22px rgba(200,100,30,0.18)`
                             : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
                       }}
                     >
                       <Avatar style={{ width: circleSize, height: circleSize }} className={`border-2 ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
                         <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} />
-                        <AvatarFallback className="text-base font-bold bg-[#0d1a3a] text-cyan-300">
+                        <AvatarFallback className="text-base font-bold bg-[#1a1520] text-white/70">
                           {getUserInitials(p)}
                         </AvatarFallback>
                       </Avatar>

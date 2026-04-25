@@ -2180,10 +2180,10 @@ html.synthwave .neon-text {
 }
 
 @keyframes hammer-btn-pulse {
-  0%   { box-shadow: 0 0 20px rgba(0,200,255,0.20), 0 2px 8px rgba(0,0,0,0.30); }
-  14%  { box-shadow: 0 0 28px rgba(0,200,255,0.50), 0 0 40px rgba(100,50,240,0.30), 0 2px 8px rgba(0,0,0,0.30); }
-  35%  { box-shadow: 0 0 20px rgba(0,200,255,0.20), 0 2px 8px rgba(0,0,0,0.30); }
-  100% { box-shadow: 0 0 20px rgba(0,200,255,0.20), 0 2px 8px rgba(0,0,0,0.30); }
+  0%   { box-shadow: 0 0 16px hsla(var(--neu-orange) / 0.22), 0 2px 8px rgba(0,0,0,0.30); }
+  14%  { box-shadow: 0 0 28px hsla(var(--neu-orange) / 0.55), 0 0 44px hsla(var(--neu-orange-lo) / 0.24), 0 2px 8px rgba(0,0,0,0.30); }
+  35%  { box-shadow: 0 0 16px hsla(var(--neu-orange) / 0.22), 0 2px 8px rgba(0,0,0,0.30); }
+  100% { box-shadow: 0 0 16px hsla(var(--neu-orange) / 0.22), 0 2px 8px rgba(0,0,0,0.30); }
 }
 
 .hammer-icon {
@@ -2434,9 +2434,9 @@ html.synthwave .neon-text {
   --neu-surface-2: 228 12% 16%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
-  --neu-orange: 18 92% 54%;        /* primary accent */
-  --neu-orange-hi: 22 96% 62%;     /* highlight tone */
-  --neu-orange-lo: 14 90% 44%;     /* deep tone */
+  --neu-orange: 20 78% 48%;        /* primary accent — warm amber, not neon */
+  --neu-orange-hi: 22 82% 54%;     /* highlight tone */
+  --neu-orange-lo: 14 72% 36%;     /* deep tone */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
