@@ -29,7 +29,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { ProfileDecoration } from "@/components/profile-decorations";
+import { PROFILE_DECORATIONS, ProfileDecoration } from "@/components/profile-decorations";
 import { BADGE_TYPES } from "@shared/schema";
 
 export const AVATAR_RINGS = [
@@ -381,8 +381,8 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
   const handleSaveDecorations = () => {
     saveDecorationsMutation.mutate({
       avatarRing: selectedRing,
-      flairBadge: selectedFlair,
-      profileDecoration: "none",
+      flairBadge: "none",
+      profileDecoration: selectedDecoration,
     });
   };
 
@@ -673,28 +673,40 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
               </div>
 
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Flair Badge</Label>
+                <Label className="text-sm font-medium">Animated Decoration</Label>
+                <p className="text-xs text-muted-foreground">Animated effects around your avatar in rooms</p>
                 <div className="grid grid-cols-4 gap-2">
-                  {FLAIR_BADGES.map((badge, idx) => (
-                    <button
-                      key={badge.id}
-                      onClick={() => setSelectedFlair(badge.id)}
-                      className={`neu-deco-tile ${selectedFlair === badge.id ? "is-active" : ""}`}
-                      style={{ ["--neu-deco-delay" as any]: `${idx * 30}ms` }}
-                      data-testid={`flair-option-${badge.id}`}
-                      title={badge.label}
-                    >
-                      {badge.icon ? (
-                        <span className="neu-deco-tile-emoji">{FLAIR_ICON_MAP[badge.icon]}</span>
-                      ) : (
-                        <span className="neu-deco-tile-none" />
-                      )}
-                      <span className="neu-deco-tile-label">{badge.label}</span>
-                      {selectedFlair === badge.id && (
-                        <span className="neu-deco-tile-check"><Check /></span>
-                      )}
-                    </button>
-                  ))}
+                  {PROFILE_DECORATIONS.map((deco, idx) => {
+                    const labelText = deco.label.replace(/^[\p{Emoji}\s]+/u, "").trim() || deco.label;
+                    const emojiMatch = deco.label.match(/^(\p{Emoji}+)/u);
+                    const emoji = emojiMatch ? emojiMatch[1] : null;
+                    return (
+                      <button
+                        key={deco.id}
+                        onClick={() => setSelectedDecoration(deco.id)}
+                        className={`neu-deco-tile ${selectedDecoration === deco.id ? "is-active" : ""}`}
+                        style={{ ["--neu-deco-delay" as any]: `${idx * 35}ms` }}
+                        data-testid={`decoration-option-${deco.id}`}
+                        title={labelText}
+                      >
+                        {deco.id === "none" ? (
+                          <span className="neu-deco-tile-none" />
+                        ) : (
+                          <span className="neu-deco-tile-preview" style={{ width: 36, height: 36, background: "transparent", boxShadow: "none" }}>
+                            <ProfileDecoration decorationId={deco.id} size={36}>
+                              <span className="block w-5 h-5 rounded-full bg-background/80 ring-1 ring-border" />
+                            </ProfileDecoration>
+                          </span>
+                        )}
+                        <span className="neu-deco-tile-label">
+                          {emoji ? `${emoji} ${labelText}` : labelText}
+                        </span>
+                        {selectedDecoration === deco.id && (
+                          <span className="neu-deco-tile-check"><Check /></span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
