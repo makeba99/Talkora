@@ -55,13 +55,26 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 p-4">
           <div className="flex items-center gap-2.5 animate-slide-in-left">
-            <VextornMark size={36} />
-            <span
-              className={`text-lg ${theme === "neon-cyberpunk" ? "neon-text" : ""}`}
-              style={{ fontWeight: 800, letterSpacing: "-0.04em" }}
-            >
-              Vextorn
-            </span>
+            <VextornMark size={36} className="drop-shadow-[0_0_10px_rgba(155,92,255,0.35)]" />
+            <div className="flex flex-col leading-none">
+              <span
+                className={`text-lg ${theme === "neon-cyberpunk" ? "neon-text" : ""}`}
+                style={{
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                  fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                }}
+                data-testid="brand-nav-wordmark"
+              >
+                Vextorn
+              </span>
+              <span
+                className="hidden sm:inline text-[10px] font-semibold mt-0.5 bg-gradient-to-r from-[#9D86FF] via-[#7B5CF6] to-[#3D8FFF] bg-clip-text text-transparent"
+                style={{ letterSpacing: "0.04em" }}
+              >
+                Talk. Share. Belong.
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2 animate-fade-in">
             <ThemePicker />

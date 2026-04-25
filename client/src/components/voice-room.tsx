@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AiTutorFace } from "@/components/ai-tutor-face";
+import { VextornMark } from "@/components/vextorn-logo";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -5859,9 +5860,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <div className="relative flex-shrink-0">
                 <div
                   className="w-7 h-7 rounded-[10px] flex items-center justify-center"
-                  style={{ background: "rgba(0,225,255,0.10)", border: "1px solid rgba(0,225,255,0.18)", boxShadow: "0 0 10px rgba(0,225,255,0.08)" }}
+                  style={{ background: "rgba(157,134,255,0.10)", border: "1px solid rgba(157,134,255,0.20)", boxShadow: "0 0 10px rgba(91,60,224,0.18)" }}
+                  data-testid="brand-room-mark"
                 >
-                  <Mic className="w-[13px] h-[13px] text-cyan-400" />
+                  <VextornMark size={20} />
                 </div>
                 <span className="absolute -top-px -right-px w-[7px] h-[7px] rounded-full bg-green-400 border border-black/40" style={{ boxShadow: "0 0 4px rgba(74,222,128,0.7)" }} />
               </div>
