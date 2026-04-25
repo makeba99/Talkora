@@ -188,15 +188,25 @@ const ThemeContext = createContext<ThemeContextType>({
   currentThemeDef: THEMES.find(t => t.id === "premium-atmosphere") ?? THEMES[0],
 });
 
+const DEFAULT_THEME: Theme = "neomorphic-dark";
+const THEME_DEFAULT_VERSION = "v2-violet-2026-04-25";
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window !== "undefined") {
+      const storedDefaultVersion = localStorage.getItem("theme-default-version");
+      if (storedDefaultVersion !== THEME_DEFAULT_VERSION) {
+        localStorage.setItem("theme-default-version", THEME_DEFAULT_VERSION);
+        localStorage.setItem("theme", DEFAULT_THEME);
+        localStorage.removeItem("theme-chosen");
+        return DEFAULT_THEME;
+      }
       const saved = localStorage.getItem("theme") as Theme | null;
       const hasExplicitChoice = localStorage.getItem("theme-chosen") === "1";
       if (saved && hasExplicitChoice) return saved;
-      return "neomorphic-dark";
+      return DEFAULT_THEME;
     }
-    return "neomorphic-dark";
+    return DEFAULT_THEME;
   });
 
   useEffect(() => {

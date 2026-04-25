@@ -466,7 +466,7 @@ function ParticipantCard({
       )}
       <div
         className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
-          isSpeaking ? "border-orange-500/60 shadow-[0_0_12px_rgba(230,100,20,0.35)]" : "border-transparent hover:border-white/20"
+          isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_14px_hsl(var(--neu-orange)/0.45)]" : "border-transparent hover:border-white/20"
         } transition-all duration-300`}
       >
         {hasActiveYoutube && youtubeVideoId ? (
@@ -3000,13 +3000,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             {!aiTutorActive && (
               <span
                 className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
-                style={{ background: "rgba(230,100,20,0.15)", animationDuration: "2.2s" }}
+                style={{ background: "hsl(var(--neu-orange) / 0.18)", animationDuration: "2.2s" }}
               />
             )}
             {aiTutorActive && (
               <span
                 className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
-                style={{ background: "rgba(230,100,20,0.22)", animationDuration: "1.4s" }}
+                style={{ background: "hsl(var(--neu-orange) / 0.26)", animationDuration: "1.4s" }}
               />
             )}
             <button
@@ -3015,21 +3015,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               title={aiTutorActive ? `Dismiss ${aiPersonaName}` : "Call AI Tutor"}
               className={btnBase}
               style={aiTutorActive ? {
-                background: "linear-gradient(145deg, hsl(25 90% 54%) 0%, hsl(16 82% 38%) 100%)",
-                border: "1px solid rgba(230,100,20,0.50)",
+                background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
+                border: "1px solid hsl(var(--neu-orange) / 0.55)",
                 color: "#fff",
-                boxShadow: "0 0 24px hsla(22, 90%, 52%, 0.40), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,175,100,0.35)",
+                boxShadow: "0 0 24px hsl(var(--neu-orange) / 0.45), 0 0 48px hsl(var(--neu-orange) / 0.18), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 12px rgba(0,0,0,0.62), inset 0 1px 0 rgba(220,210,255,0.40)",
               } : {
                 background: "linear-gradient(145deg, hsl(228 14% 15%) 0%, hsl(228 14% 12%) 100%)",
-                border: "1px solid rgba(230,100,20,0.20)",
-                color: "hsl(22 90% 70%)",
+                border: "1px solid hsl(var(--neu-orange) / 0.25)",
+                color: "hsl(var(--neu-orange-hi))",
                 boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
               }}
             >
-              <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 5px rgba(130,130,230,0.75))" } : undefined} />
+              <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 6px hsl(var(--neu-orange-hi) / 0.85))" } : undefined} />
             </button>
           </div>
-          <span className={labelBase} style={{ color: aiTutorActive ? "rgba(255,175,100,0.92)" : "hsl(22 90% 70% / 0.7)" }}>
+          <span className={labelBase} style={{ color: aiTutorActive ? "hsl(var(--neu-orange-hi) / 0.95)" : "hsl(var(--neu-orange-hi) / 0.72)" }}>
             {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
         </div>
@@ -3953,7 +3953,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             title="Chat"
             className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.04] active:scale-[0.96]"
             style={sidePanelTab === "chat"
-              ? { background: "rgba(230,100,20,0.12)", border: "1px solid rgba(230,100,20,0.28)", color: "rgba(255,175,100,0.90)", boxShadow: "0 0 10px rgba(230,100,20,0.15)" }
+              ? { background: "hsl(var(--neu-orange) / 0.18)", border: "1px solid hsl(var(--neu-orange) / 0.40)", color: "hsl(var(--neu-orange-hi) / 0.96)", boxShadow: "0 0 12px hsl(var(--neu-orange) / 0.28), inset 0 1px 0 rgba(220,210,255,0.18)" }
               : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }
             }
           >
@@ -6147,7 +6147,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   {isHost && (
                     <span
                       className="flex-shrink-0 text-[9px] font-bold px-1.5 py-[2px] rounded-md tracking-wider uppercase"
-                      style={{ background: "rgba(230,100,20,0.12)", color: "rgba(255,175,100,0.92)", border: "1px solid rgba(230,100,20,0.28)" }}
+                      style={{ background: "hsl(var(--neu-orange) / 0.18)", color: "hsl(var(--neu-orange-hi) / 0.96)", border: "1px solid hsl(var(--neu-orange) / 0.40)", boxShadow: "0 0 10px hsl(var(--neu-orange) / 0.22), inset 0 1px 0 rgba(220,210,255,0.18)" }}
                     >
                       HOST
                     </span>
@@ -6185,7 +6185,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       title="Social Panel"
                       className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
                       style={isActive
-                        ? { background: "rgba(230,100,20,0.12)", border: "1px solid rgba(230,100,20,0.28)", color: "rgba(255,175,100,0.90)", boxShadow: "0 0 10px rgba(230,100,20,0.15)" }
+                        ? { background: "hsl(var(--neu-orange) / 0.18)", border: "1px solid hsl(var(--neu-orange) / 0.40)", color: "hsl(var(--neu-orange-hi) / 0.96)", boxShadow: "0 0 12px hsl(var(--neu-orange) / 0.28), inset 0 1px 0 rgba(220,210,255,0.18)" }
                         : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
                       }
                     >
