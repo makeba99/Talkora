@@ -882,6 +882,178 @@ html.neomorphic-light textarea:focus-visible {
     0 0 0 2px hsl(var(--neo-accent-from) / 0.35);
 }
 
+/* ─── NEOMORPHIC: ALL BUTTONS ──────────────────────────────────
+   Make every button in the app sculpted with soft 3D depth */
+html.neomorphic-dark button:not([data-neo-skip]):not([role="tab"]):not([role="combobox"]):not([data-state="checked"]):not([data-state="on"]),
+html.neomorphic-light button:not([data-neo-skip]):not([role="tab"]):not([role="combobox"]):not([data-state="checked"]):not([data-state="on"]),
+html.neomorphic-dark [role="button"]:not([data-neo-skip]),
+html.neomorphic-light [role="button"]:not([data-neo-skip]) {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    -3px -3px 8px hsl(var(--neo-shadow-light) / 0.45),
+    3px 3px 8px hsl(var(--neo-shadow-dark) / 0.55);
+  border: 1px solid transparent !important;
+  transition: box-shadow .2s ease, transform .12s ease, background .2s ease;
+}
+
+html.neomorphic-dark button:not([data-neo-skip]):hover:not(:disabled),
+html.neomorphic-light button:not([data-neo-skip]):hover:not(:disabled),
+html.neomorphic-dark [role="button"]:not([data-neo-skip]):hover,
+html.neomorphic-light [role="button"]:not([data-neo-skip]):hover {
+  box-shadow:
+    -4px -4px 10px hsl(var(--neo-shadow-light) / 0.55),
+    4px 4px 10px hsl(var(--neo-shadow-dark) / 0.65);
+}
+
+html.neomorphic-dark button:not([data-neo-skip]):active:not(:disabled),
+html.neomorphic-light button:not([data-neo-skip]):active:not(:disabled) {
+  box-shadow:
+    inset 2px 2px 6px hsl(var(--neo-shadow-dark) / 0.55),
+    inset -2px -2px 6px hsl(var(--neo-shadow-light) / 0.4);
+}
+
+/* Primary / accent CTAs get the magenta→cyan gradient */
+html.neomorphic-dark button.bg-primary,
+html.neomorphic-light button.bg-primary,
+html.neomorphic-dark .bg-primary[role="button"],
+html.neomorphic-light .bg-primary[role="button"],
+html.neomorphic-dark button[data-state="active"],
+html.neomorphic-light button[data-state="active"] {
+  background: linear-gradient(135deg, hsl(var(--neo-accent-from)), hsl(var(--neo-accent-to))) !important;
+  color: white !important;
+  box-shadow:
+    -4px -4px 10px hsl(var(--neo-shadow-light) / 0.45),
+    4px 4px 10px hsl(var(--neo-shadow-dark) / 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+html.neomorphic-dark button.bg-primary:hover,
+html.neomorphic-light button.bg-primary:hover {
+  box-shadow:
+    -5px -5px 14px hsl(var(--neo-shadow-light) / 0.55),
+    5px 5px 14px hsl(var(--neo-shadow-dark) / 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 22px hsl(var(--neo-accent-from) / 0.4) !important;
+}
+
+/* Disabled — flat with no shadow */
+html.neomorphic-dark button:disabled,
+html.neomorphic-light button:disabled {
+  box-shadow: none !important;
+  opacity: 0.5;
+}
+
+/* Ghost / link / transparent buttons stay clean */
+html.neomorphic-dark button.bg-transparent,
+html.neomorphic-light button.bg-transparent,
+html.neomorphic-dark button[class*="ghost"],
+html.neomorphic-light button[class*="ghost"] {
+  background: transparent;
+  box-shadow: none;
+}
+
+html.neomorphic-dark button.bg-transparent:hover,
+html.neomorphic-light button.bg-transparent:hover,
+html.neomorphic-dark button[class*="ghost"]:hover,
+html.neomorphic-light button[class*="ghost"]:hover {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    -3px -3px 7px hsl(var(--neo-shadow-light) / 0.4),
+    3px 3px 7px hsl(var(--neo-shadow-dark) / 0.5);
+}
+
+/* ─── NEOMORPHIC: BADGES & PILLS ───────────────────────────── */
+html.neomorphic-dark .badge,
+html.neomorphic-light .badge,
+html.neomorphic-dark [class*="rounded-full"][class*="bg-"]:not(button):not([role="button"]),
+html.neomorphic-light [class*="rounded-full"][class*="bg-"]:not(button):not([role="button"]) {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    inset 1px 1px 3px hsl(var(--neo-shadow-dark) / 0.4),
+    inset -1px -1px 3px hsl(var(--neo-shadow-light) / 0.35);
+  border-color: transparent !important;
+}
+
+/* ─── NEOMORPHIC: TABS / SEGMENTED ────────────────────────── */
+html.neomorphic-dark [role="tablist"],
+html.neomorphic-light [role="tablist"] {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    inset 3px 3px 8px hsl(var(--neo-shadow-dark) / 0.5),
+    inset -3px -3px 8px hsl(var(--neo-shadow-light) / 0.4);
+  border: none !important;
+}
+
+html.neomorphic-dark [role="tab"],
+html.neomorphic-light [role="tab"] {
+  background: transparent;
+  box-shadow: none;
+  transition: all .2s ease;
+}
+
+html.neomorphic-dark [role="tab"][data-state="active"],
+html.neomorphic-light [role="tab"][data-state="active"] {
+  background: linear-gradient(135deg, hsl(var(--neo-accent-from)), hsl(var(--neo-accent-to))) !important;
+  color: white !important;
+  box-shadow:
+    -2px -2px 6px hsl(var(--neo-shadow-light) / 0.45),
+    2px 2px 6px hsl(var(--neo-shadow-dark) / 0.55) !important;
+}
+
+/* ─── NEOMORPHIC: ROOM CARDS — override custom gradients ──── */
+html.neomorphic-dark .room-card-shell,
+html.neomorphic-light .room-card-shell,
+html.neomorphic-dark [data-testid^="card-room"],
+html.neomorphic-light [data-testid^="card-room"] {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    -8px -8px 18px hsl(var(--neo-shadow-light) / 0.5),
+    8px 8px 18px hsl(var(--neo-shadow-dark) / 0.6) !important;
+  border: 1px solid transparent !important;
+  border-radius: 1.25rem !important;
+}
+
+/* Inner gradient overlays on room cards become flat in neo theme */
+html.neomorphic-dark [data-testid^="card-room"] [style*="background"],
+html.neomorphic-light [data-testid^="card-room"] [style*="background"] {
+  background: transparent !important;
+}
+
+/* But keep participant avatar gradient rings — restore them */
+html.neomorphic-dark [data-testid^="card-room"] .rounded-full[style*="conic-gradient"],
+html.neomorphic-light [data-testid^="card-room"] .rounded-full[style*="conic-gradient"] {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    -3px -3px 7px hsl(var(--neo-shadow-light) / 0.5),
+    3px 3px 7px hsl(var(--neo-shadow-dark) / 0.6) !important;
+  padding: 3px !important;
+}
+
+/* ─── NEOMORPHIC: ICONS — give them subtle gradient accent ─ */
+html.neomorphic-dark svg.text-primary,
+html.neomorphic-light svg.text-primary {
+  filter: drop-shadow(0 0 4px hsl(var(--neo-accent-from) / 0.4));
+}
+
+/* Active / on icons get the gradient */
+html.neomorphic-dark button[data-state="on"] svg,
+html.neomorphic-light button[data-state="on"] svg,
+html.neomorphic-dark .bg-primary svg,
+html.neomorphic-light .bg-primary svg {
+  color: white !important;
+}
+
+/* Sidebar / nav rails get an inset look */
+html.neomorphic-dark .bg-sidebar,
+html.neomorphic-light .bg-sidebar,
+html.neomorphic-dark [data-sidebar],
+html.neomorphic-light [data-sidebar] {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    inset -2px 0 6px hsl(var(--neo-shadow-dark) / 0.4) !important;
+  border: none !important;
+}
+
 .dark {
   --button-outline: rgba(0, 188, 212, .12);
   --badge-outline: rgba(0, 188, 212, .06);
