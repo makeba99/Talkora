@@ -143,7 +143,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
       <DialogTrigger asChild>
         <Button
           data-testid="button-create-room"
-          className="hammer-btn neu-btn-orange h-10 px-4 font-semibold whitespace-nowrap flex-shrink-0 gap-2"
+          className="hammer-btn create-room-btn h-10 px-4 font-semibold whitespace-nowrap flex-shrink-0 gap-2 rounded-md"
         >
           <Hammer className="sparkle-icon w-4 h-4" />
           Create Room
@@ -331,7 +331,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                     loop
                     muted
                     playsInline
-                    className="w-12 h-12 rounded-md object-cover border-2 border-cyan-400"
+                    className="w-12 h-12 rounded-md object-cover border-2 border-orange-400"
                     data-testid="video-create-preview"
                   />
                 )}

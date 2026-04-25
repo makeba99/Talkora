@@ -174,20 +174,38 @@ Badge applications table (shared/schema.ts):
 ## Lobby Neumorphic Redesign (April 2026)
 - Active theme `midnight-purple` was unified to a single warm-orange accent family.
   All `--chart-*`, `--primary`, `--secondary`, `--accent`, `--ring`, `--sidebar-primary`
-  now derive from the orange palette (`hsl(22 92% 56%)` core).
+  derive from the orange palette.
 - Mixed cyan/blue/teal level labels removed — `levelColor` in `room-card.tsx` maps
   Beginner/Intermediate/Advanced/Native to amber → orange → deep-orange → rose.
 - Cyan/blue fallbacks (`text-cyan-400`, `hover:text-blue-*`) replaced with orange.
 - Added neumorphic depth tokens (`--neo-bg`, `--neo-shadow-dark`,
   `--neo-shadow-light`) scoped to `html.midnight-purple` and applied as a global
-  raised shadow rule on every `[data-testid^="card-room-"]` wrapper, with a
-  hover lift + soft orange glow.
+  raised shadow rule on every `[data-testid^="card-room-"]` wrapper.
 - New `.neu-icon-btn-red` helper (red gradient + red glow + dual neumorphic
   shadows) is used for the host's room-settings gear in `room-card.tsx`.
-- Global scrollbar redesigned: inset track (dark inner shadow) + raised pill
-  thumb using the `--neu-orange-hi → --neu-orange-lo` gradient with warm glow.
+- Global scrollbar redesigned to a subtle dark neumorphic pill (raised surface
+  thumb on inset track) — no bright accent at rest; faint warm tint on hover.
 - Profile decorations and avatar tiles inside lobby cards receive a unified
   `drop-shadow` so colored rings always sit on the same neumorphic base.
+
+## Lobby Neumorphic Polish (Round 2, April 2026)
+- Toned-down "burnt orange" palette: `--neu-orange` 20 72% 44%, `--neu-orange-hi`
+  26 76% 52%, `--neu-orange-lo` 14 70% 32%. Midnight-purple `--primary`,
+  `--secondary`, `--accent`, `--chart-*` shifted to match (less saturation,
+  lower lightness) so accents stop competing with content.
+- Cool blue-tinted inset highlights on `.neu-btn-orange`, `.neu-pill.is-active`
+  and `.neu-icon-btn.neu-active` replaced with warm-white insets
+  (`rgba(255, 230, 200, …)`) so the orange reads as a single material.
+- Step In button: replaced the hard scale-pulse with a calmer cycled
+  `step-in-breathe` (3.2s) plus a diagonal `step-in-shine` sweep
+  (`::before`, `mix-blend-mode: screen`) for a premium, continuous feel.
+- Create Room button: new `.create-room-btn` class — dark neumorphic body with
+  a glowing orange Hammer icon (drop-shadow glow on the `.sparkle-icon`).
+  No longer inherits `.neu-btn-orange`.
+- Removed cyan border (`border-cyan-400`) from the upload-video preview tile
+  in the Create Room dialog — now `border-orange-400`.
+- Card hover glow softened from 28px @ 0.18 to 16px @ 0.10 to match the
+  calmer overall accent intensity.
 
 ## User Preferences
 - No landing page gate - lobby always shown

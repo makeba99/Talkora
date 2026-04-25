@@ -264,31 +264,31 @@ html.midnight-purple {
   --sidebar: 265 35% 8%;
   --sidebar-foreground: 270 20% 92%;
   --sidebar-border: 265 25% 13%;
-  --sidebar-primary: 22 92% 56%;
+  --sidebar-primary: 20 72% 46%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 265 28% 14%;
   --sidebar-accent-foreground: 270 20% 92%;
-  --sidebar-ring: 22 92% 56%;
+  --sidebar-ring: 20 72% 46%;
   --popover: 265 32% 11%;
   --popover-foreground: 270 20% 92%;
   --popover-border: 265 25% 16%;
-  --primary: 22 92% 56%;
+  --primary: 20 72% 46%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 28 92% 64%;
+  --secondary: 26 76% 54%;
   --secondary-foreground: 0 0% 100%;
   --muted: 265 25% 14%;
   --muted-foreground: 270 12% 55%;
-  --accent: 16 82% 48%;
+  --accent: 14 70% 40%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 55%;
   --destructive-foreground: 0 0% 98%;
   --input: 265 22% 22%;
-  --ring: 22 92% 56%;
-  --chart-1: 16 82% 48%;
-  --chart-2: 22 92% 56%;
-  --chart-3: 28 92% 64%;
-  --chart-4: 36 96% 60%;
-  --chart-5: 348 78% 60%;
+  --ring: 20 72% 46%;
+  --chart-1: 14 70% 40%;
+  --chart-2: 20 72% 46%;
+  --chart-3: 26 76% 54%;
+  --chart-4: 32 80% 56%;
+  --chart-5: 348 60% 52%;
   /* Neumorphic depth tokens for the room cards & panels in this theme */
   --neo-bg: 265 32% 9%;
   --neo-shadow-dark: 265 45% 2%;
@@ -1965,19 +1965,22 @@ html.synthwave .neon-text {
 }
 
 /* ─── NEUMORPHIC SCROLLBAR ─────────────────────────────────────
-   Subtle inset track, soft pill thumb with warm orange highlight.
-   Matches the same dual shadow language as the rest of the system. */
+   Subtle dark scrollbar that matches the profile-decoration tile
+   language — an inset (sunken) track with a raised neumorphic
+   pill thumb in the same surface color as the cards themselves.
+   No bright accent color in the resting state; a faint warm
+   tint appears only on hover/active. */
 .app-scrollbar,
 .admin-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--neu-orange) / 0.65) transparent;
+  scrollbar-color: hsl(var(--neu-surface-2)) transparent;
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--neu-orange) / 0.55) transparent;
+  scrollbar-color: hsl(var(--neu-surface-2)) transparent;
 }
 
 *::-webkit-scrollbar,
@@ -1990,11 +1993,15 @@ html.synthwave .neon-text {
 *::-webkit-scrollbar-track,
 .app-scrollbar::-webkit-scrollbar-track,
 .admin-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.30);
+  background: linear-gradient(
+    145deg,
+    rgba(0, 0, 0, 0.50) 0%,
+    rgba(0, 0, 0, 0.32) 100%
+  );
   border-radius: 999px;
   box-shadow:
-    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
-    inset -2px -2px 5px rgba(255, 255, 255, 0.025);
+    inset 3px 3px 6px rgba(0, 0, 0, 0.70),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.030);
   margin: 4px 0;
 }
 
@@ -2004,29 +2011,38 @@ html.synthwave .neon-text {
   border-radius: 999px;
   border: 2px solid rgba(0, 0, 0, 0.55);
   background: linear-gradient(
-    180deg,
-    hsl(var(--neu-orange-hi)) 0%,
-    hsl(var(--neu-orange)) 50%,
-    hsl(var(--neu-orange-lo)) 100%
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
   );
   box-shadow:
-    0 0 10px hsl(var(--neu-orange) / 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.30),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+    -2px -2px 5px rgba(255, 255, 255, 0.040),
+    3px 3px 7px rgba(0, 0, 0, 0.60),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: background 220ms ease-out, box-shadow 220ms ease-out;
 }
 
 *::-webkit-scrollbar-thumb:hover,
 .app-scrollbar::-webkit-scrollbar-thumb:hover,
 .admin-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
-    180deg,
-    hsl(var(--neu-orange-hi)) 0%,
-    hsl(var(--neu-orange)) 100%
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-orange-lo) / 0.55) 100%
   );
   box-shadow:
-    0 0 16px hsl(var(--neu-orange) / 0.62),
-    0 0 28px hsl(var(--neu-orange) / 0.30),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    -2px -2px 5px rgba(255, 235, 215, 0.045),
+    3px 3px 7px rgba(0, 0, 0, 0.65),
+    0 0 8px hsl(var(--neu-orange) / 0.22),
+    inset 0 1px 0 rgba(255, 230, 200, 0.10);
+}
+
+*::-webkit-scrollbar-thumb:active,
+.app-scrollbar::-webkit-scrollbar-thumb:active,
+.admin-scrollbar::-webkit-scrollbar-thumb:active {
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.04);
 }
 
 *::-webkit-scrollbar-corner {
@@ -2042,32 +2058,70 @@ html.synthwave .neon-text {
   }
 }
 
-@keyframes step-in-glow {
+/* ── Step In: cycled neumorphic breathing + shine sweep ──
+   The button cycles through three calm states — raised, gently
+   inhaled, raised — instead of a hard pulse. A diagonal shine
+   sweeps across the surface every cycle to add a premium,
+   continuous "alive" feel without being distracting. */
+@keyframes step-in-breathe {
   0%, 100% {
     box-shadow:
-      0 2px 14px hsla(var(--neu-orange) / 0.52),
-      0 0 0 0 hsla(var(--neu-orange) / 0.28),
-      -4px -4px 10px rgba(255, 255, 255, 0.04),
-      6px 6px 16px rgba(0, 0, 0, 0.62);
-    transform: scale(1);
+      0 0 14px hsla(var(--neu-orange) / 0.30),
+      0 0 32px hsla(var(--neu-orange) / 0.10),
+      -4px -4px 10px rgba(255, 235, 215, 0.035),
+      6px 6px 16px rgba(0, 0, 0, 0.70),
+      inset 0 1px 0 rgba(255, 230, 200, 0.38),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.28);
   }
   50% {
     box-shadow:
-      0 4px 28px hsla(var(--neu-orange) / 0.72),
-      0 0 0 5px hsla(var(--neu-orange) / 0.14),
-      0 0 50px hsla(var(--neu-orange) / 0.22),
-      -4px -4px 10px rgba(255, 255, 255, 0.045),
-      7px 7px 18px rgba(0, 0, 0, 0.68);
-    transform: scale(1.04);
+      0 0 22px hsla(var(--neu-orange) / 0.46),
+      0 0 48px hsla(var(--neu-orange) / 0.18),
+      -5px -5px 12px rgba(255, 235, 215, 0.05),
+      8px 8px 20px rgba(0, 0, 0, 0.78),
+      inset 0 2px 0 rgba(255, 230, 200, 0.46),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.34);
   }
 }
 
+@keyframes step-in-shine {
+  0%   { transform: translateX(-140%) skewX(-22deg); opacity: 0; }
+  35%  { opacity: 0.85; }
+  60%  { opacity: 0.85; }
+  100% { transform: translateX(220%)  skewX(-22deg); opacity: 0; }
+}
+
 .step-in-btn {
-  animation: step-in-glow 1.8s ease-in-out infinite;
-  transition: opacity 0.15s;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  animation: step-in-breathe 3.2s ease-in-out infinite;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.step-in-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 230, 200, 0.00) 30%,
+    rgba(255, 240, 220, 0.36) 50%,
+    rgba(255, 230, 200, 0.00) 70%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  animation: step-in-shine 3.2s ease-in-out infinite;
+  z-index: 0;
+}
+.step-in-btn > * {
+  position: relative;
+  z-index: 1;
 }
 .step-in-btn:hover {
-  opacity: 0.88;
+  opacity: 0.95;
+  transform: translateY(-1px);
 }
 
 /* ── Premium Animated Borders ── */
@@ -2226,6 +2280,52 @@ html.synthwave .neon-text {
 
 .hammer-btn:hover .sparkle-icon {
   animation-duration: 1.0s;
+}
+
+/* ── Create Room button — dark neumorphic body, glowing orange
+   icon. Sits beside the orange Sign-In CTA without competing
+   visually, but its icon clearly reads as the warm accent. */
+.create-room-btn {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: rgba(255, 230, 200, 0.96);
+  border: 1px solid rgba(255, 235, 215, 0.06);
+  box-shadow:
+    -4px -4px 10px rgba(255, 235, 215, 0.045),
+    6px 6px 16px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 235, 215, 0.06);
+  transition: all 220ms ease-out;
+}
+.create-room-btn:hover:not(:disabled) {
+  color: #fff;
+  transform: translateY(-1px);
+  border-color: rgba(255, 180, 110, 0.22);
+  box-shadow:
+    -5px -5px 12px rgba(255, 235, 215, 0.05),
+    7px 7px 18px rgba(0, 0, 0, 0.72),
+    0 0 14px hsl(var(--neu-orange) / 0.22),
+    inset 0 1px 0 rgba(255, 235, 215, 0.08);
+}
+.create-room-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.62),
+    inset -2px -2px 6px rgba(255, 235, 215, 0.035);
+}
+.create-room-btn .sparkle-icon {
+  color: hsl(var(--neu-orange-hi));
+  filter:
+    drop-shadow(0 0 4px hsl(var(--neu-orange) / 0.55))
+    drop-shadow(0 0 10px hsl(var(--neu-orange) / 0.30));
+}
+.create-room-btn:hover .sparkle-icon {
+  color: hsl(28 92% 60%);
+  filter:
+    drop-shadow(0 0 6px hsl(var(--neu-orange) / 0.75))
+    drop-shadow(0 0 14px hsl(var(--neu-orange) / 0.40));
 }
 
 /* ── AI Tutor responsive face size ── */
@@ -2458,9 +2558,12 @@ html.synthwave .neon-text {
   --neu-surface-2: 228 14% 18%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
-  --neu-orange: 22 90% 52%;        /* primary accent — dark orange */
-  --neu-orange-hi: 28 92% 60%;     /* highlight tone — warm amber */
-  --neu-orange-lo: 16 82% 38%;     /* deep tone — burnt orange */
+  /* Muted "burnt orange" palette — sits comfortably on a dark
+     surface without burning out the eye. Lower saturation than a
+     neon orange but still clearly warm. */
+  --neu-orange: 20 72% 44%;        /* primary accent — burnt orange */
+  --neu-orange-hi: 26 76% 52%;     /* highlight tone — warm copper */
+  --neu-orange-lo: 14 70% 32%;     /* deep tone — dark amber */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
@@ -2547,7 +2650,9 @@ html.synthwave .neon-text {
 }
 
 /* Primary orange neumorphic button — used for the most important
-   call-to-action (Step In, Sign In, Active tab, primary Play). */
+   call-to-action (Step In, Sign In, Active tab, primary Play).
+   Warm-white inset highlights (no cool blue tint) so it reads as
+   a single, refined burnt-orange material. */
 .neu-btn-orange {
   background: linear-gradient(
     145deg,
@@ -2555,33 +2660,33 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-lo)) 100%
   );
   color: #fff;
-  border: 1px solid rgba(230, 100, 20, 0.50);
+  border: 1px solid rgba(180, 80, 20, 0.45);
   box-shadow:
-    0 0 22px hsla(var(--neu-orange) / 0.42),
-    0 0 48px hsla(var(--neu-orange) / 0.16),
-    -5px -5px 12px rgba(255, 255, 255, 0.045),
-    7px 7px 18px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(180, 185, 255, 0.42),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
+    0 0 14px hsla(var(--neu-orange) / 0.30),
+    0 0 32px hsla(var(--neu-orange) / 0.10),
+    -4px -4px 10px rgba(255, 235, 215, 0.035),
+    6px 6px 16px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 230, 200, 0.38),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
   transition: all 200ms ease-out;
 }
 .neu-btn-orange:hover:not(:disabled) {
-  filter: brightness(1.07);
+  filter: brightness(1.06);
   transform: translateY(-1px);
   box-shadow:
-    0 0 30px hsla(var(--neu-orange) / 0.58),
-    0 0 60px hsla(var(--neu-orange) / 0.22),
-    -5px -5px 12px rgba(255, 255, 255, 0.048),
-    8px 8px 20px rgba(0, 0, 0, 0.72),
-    inset 0 1px 0 rgba(180, 185, 255, 0.46);
+    0 0 20px hsla(var(--neu-orange) / 0.42),
+    0 0 40px hsla(var(--neu-orange) / 0.14),
+    -5px -5px 12px rgba(255, 235, 215, 0.045),
+    7px 7px 18px rgba(0, 0, 0, 0.74),
+    inset 0 1px 0 rgba(255, 230, 200, 0.42);
 }
 .neu-btn-orange:active:not(:disabled) {
   transform: translateY(0);
   box-shadow:
-    0 0 16px hsla(var(--neu-orange) / 0.44),
-    inset 4px 4px 10px rgba(0, 0, 0, 0.52),
-    inset -3px -3px 8px rgba(120, 120, 210, 0.22);
+    0 0 12px hsla(var(--neu-orange) / 0.32),
+    inset 4px 4px 10px rgba(0, 0, 0, 0.55),
+    inset -3px -3px 8px rgba(255, 200, 160, 0.16);
 }
 
 /* Compact circular variant used for icon-only controls */
@@ -2620,11 +2725,11 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-lo)) 100%
   );
   box-shadow:
-    0 0 22px hsla(var(--neu-orange) / 0.48),
-    0 0 44px hsla(var(--neu-orange) / 0.18),
-    -4px -4px 10px rgba(255, 255, 255, 0.045),
-    5px 5px 14px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(180, 185, 255, 0.38);
+    0 0 14px hsla(var(--neu-orange) / 0.32),
+    0 0 28px hsla(var(--neu-orange) / 0.12),
+    -4px -4px 10px rgba(255, 235, 215, 0.04),
+    5px 5px 14px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 230, 200, 0.34);
 }
 
 /* Pill variants used for the discovery tabs and language filters. */
@@ -2657,14 +2762,14 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-hi)) 0%,
     hsl(var(--neu-orange-lo)) 100%
   );
-  border: 1px solid rgba(230, 100, 20, 0.55);
+  border: 1px solid rgba(180, 80, 20, 0.50);
   box-shadow:
-    0 0 26px hsla(var(--neu-orange) / 0.62),
-    0 0 50px hsla(var(--neu-orange) / 0.28),
-    -4px -4px 10px rgba(255, 255, 255, 0.048),
-    5px 5px 16px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(180, 185, 255, 0.42);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+    0 0 14px hsla(var(--neu-orange) / 0.36),
+    0 0 28px hsla(var(--neu-orange) / 0.14),
+    -4px -4px 10px rgba(255, 235, 215, 0.045),
+    5px 5px 16px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 230, 200, 0.38);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
 }
 
 /* Accent color helpers */
@@ -2729,7 +2834,7 @@ html.midnight-purple [data-testid^="card-room-"]:hover {
   box-shadow:
     -10px -10px 22px hsla(var(--neo-shadow-light) / 0.22),
     12px 14px 32px hsla(var(--neo-shadow-dark) / 0.92),
-    0 0 28px hsl(var(--neu-orange) / 0.18),
+    0 0 16px hsl(var(--neu-orange) / 0.10),
     inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
 }
 
