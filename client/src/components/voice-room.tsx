@@ -6226,74 +6226,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   {ytQualityState === "slow" ? "Slow" : "Good"}
                 </div>
 
-
-                {/* Watchers stack — sits ABOVE the broadcaster pill */}
-                {(() => {
-                  const watcherIds = Array.from(youtubeWatchers).filter(id => id !== youtubeStartedBy);
-                  if (watcherIds.length === 0) return null;
-                  const visible = watcherIds.slice(0, 6);
-                  const extra = watcherIds.length - visible.length;
-                  return (
-                    <div
-                      className="absolute left-3 z-20 pointer-events-none flex flex-col-reverse items-start gap-1.5"
-                      style={{ bottom: 56 }}
-                      data-testid="youtube-watchers-stack"
-                    >
-                      {visible.map((wid) => {
-                        const w = participants.find(p => p.id === wid);
-                        if (!w) return null;
-                        const idx = participants.findIndex(p => p.id === wid);
-                        const grad = getAvatarGradient(idx >= 0 ? idx : 0);
-                        return (
-                          <div
-                            key={wid}
-                            className="flex items-center gap-2 bg-black/55 backdrop-blur-sm rounded-full pl-0.5 pr-2.5 py-0.5 shadow-md border border-white/10"
-                            data-testid={`youtube-watcher-${wid}`}
-                          >
-                            <div className={`w-6 h-6 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-white/30 bg-gradient-to-br ${grad}`}>
-                              {w.profileImageUrl ? (
-                                <img src={w.profileImageUrl} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className={`w-full h-full bg-gradient-to-br ${grad} flex items-center justify-center`}>
-                                  <span className="text-[9px] font-bold text-white">{getUserInitials(w)}</span>
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-white text-[10px] font-medium leading-none">{getUserDisplayName(w)}</span>
-                            <Eye className="w-2.5 h-2.5 text-white/60" />
-                          </div>
-                        );
-                      })}
-                      {extra > 0 && (
-                        <div className="flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-md border border-white/10">
-                          <span className="text-white text-[10px] font-semibold">+{extra} more</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Broadcaster pill — bottom-left */}
-                {broadcaster && (
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-20 pointer-events-none">
-                    <div className={`w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-red-500/70 bg-gradient-to-br ${bGradient}`}>
-                      {broadcaster.profileImageUrl ? (
-                        <img src={broadcaster.profileImageUrl} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className={`w-full h-full bg-gradient-to-br ${bGradient} flex items-center justify-center`}>
-                          <span className="text-[10px] font-bold text-white">{getUserInitials(broadcaster)}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col leading-none">
-                      <span className="text-white text-[11px] font-semibold">{getUserDisplayName(broadcaster)}</span>
-                      <span className="text-red-400 text-[9px] flex items-center gap-0.5 font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-                        {user?.id === youtubeStartedBy ? "You're hosting" : "Playing"}
-                      </span>
-                    </div>
+                {/* Tiny "X watching" pill — top-right, mirrors the book reader's "X reading" pill */}
+                {(broadcaster || youtubeWatchers.size > 0) && (
+                  <div
+                    className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-[10px] font-medium px-2 py-1 rounded-full border border-white/15 shadow-md text-white pointer-events-none"
+                    data-testid="badge-yt-watchers-count"
+                  >
+                    <Eye className="w-2.5 h-2.5 opacity-70" />
+                    {youtubeWatchers.size === 1 ? "1 watching" : `${youtubeWatchers.size} watching`}
                   </div>
                 )}
+
+                {/* Profiles intentionally NOT overlaid on the video — they appear in the
+                    participant strip beneath the player, mirroring the book reader pattern. */}
               </div>
             );
           })()}
@@ -6640,7 +6585,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${(activeYoutubeId && showYoutube) ? "hidden" : ""} ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
+          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
             <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-5">
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
