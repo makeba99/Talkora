@@ -610,9 +610,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
           borderRadius: "16px",
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgba(3,6,22,0.88) 0%, rgba(6,8,28,0.80) 38%, rgba(5,3,20,0.90) 72%, rgba(8,4,25,0.86) 100%)"
-            : "linear-gradient(160deg, rgba(8, 12, 32, 0.50) 0%, rgba(5, 8, 22, 0.58) 100%)",
-          backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(24px) saturate(1.18)",
-          WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(24px) saturate(1.18)",
+            : "linear-gradient(160deg, rgba(16, 20, 50, 0.88) 0%, rgba(11, 15, 42, 0.92) 100%)",
+          backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
+          WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
           height: isPremiumAtmosphere ? 304 : 290,
         }}
       >
@@ -651,8 +651,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   <>
                     <span className="text-white/30 text-[10px]">•</span>
                     <div className="flex items-center gap-0.5">
-                      <Users className="w-3 h-3 text-indigo-400/80" />
-                      <span className="text-[11px] font-semibold text-indigo-400">{voteCount} joining</span>
+                      <Users className="w-3 h-3 text-violet-400/80" />
+                      <span className="text-[11px] font-semibold text-violet-400">{voteCount} joining</span>
                     </div>
                   </>
                 )}

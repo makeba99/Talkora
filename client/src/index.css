@@ -2427,9 +2427,9 @@ html.synthwave .neon-text {
    ───────────────────────────────────────────────────────────────── */
 
 :root {
-  --neu-bg: 228 14% 9%;            /* near-black canvas — subtle indigo undertone */
-  --neu-surface: 228 13% 12%;      /* card / panel surface */
-  --neu-surface-2: 228 12% 16%;    /* slightly raised */
+  --neu-bg: 228 18% 8%;            /* near-black canvas — deeper indigo undertone */
+  --neu-surface: 228 16% 14%;      /* card / panel surface */
+  --neu-surface-2: 228 14% 18%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
   --neu-orange: 238 68% 52%;       /* primary accent — indigo-blue */
