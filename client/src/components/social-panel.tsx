@@ -269,6 +269,8 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [onlyOnline, setOnlyOnline] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
 
   const { data: allUsers = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -493,6 +495,36 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
 
   const profileTarget = profileUser;
 
+  const onlineFilter = (users: User[]) => onlyOnline ? users.filter((u) => onlineUsers.has(u.id)) : users;
+  const applyFilters = (users: User[]) => onlineFilter(filterBySearch(users));
+
+  const allCount = connectedUsers.length;
+  const friendsCount = friends.length;
+  const followingCount = followingUsers.length;
+  const followersCount = followerUsers.length;
+  const onlineCount = connectedUsers.filter((u) => onlineUsers.has(u.id)).length;
+
+  const renderEmpty = (icon: React.ReactNode, title: string, hint: string) => (
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3 text-primary/70">
+        {icon}
+      </div>
+      <p className="text-sm font-medium text-foreground/90 mb-1">{title}</p>
+      <p className="text-xs text-muted-foreground max-w-[220px]">{hint}</p>
+    </div>
+  );
+
+  const tabPill = (label: string, count: number, isActive?: boolean) => (
+    <span className="flex items-center gap-1.5">
+      <span>{label}</span>
+      {count > 0 && (
+        <span className={`text-[9px] leading-none px-1.5 py-0.5 rounded-full font-bold ${isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </span>
+  );
+
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
@@ -501,68 +533,118 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
             <Users className="w-4 h-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-80 sm:w-96 p-0 flex flex-col">
-          <SheetHeader className="p-4 pb-0">
-            <SheetTitle>People</SheetTitle>
+        <SheetContent className="w-80 sm:w-96 p-0 flex flex-col bg-gradient-to-b from-background via-background to-background/95">
+          <SheetHeader className="px-5 pt-5 pb-3 border-b border-border/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+            <SheetTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
+                  <Users className="w-4.5 h-4.5 text-primary-foreground" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-base font-bold tracking-tight">People</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    {onlineCount} online · {allCount} total
+                  </span>
+                </div>
+              </div>
+            </SheetTitle>
           </SheetHeader>
 
-          <div className="px-4 py-3">
+          <div className="px-4 pt-3 pb-2 space-y-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search users..."
+                placeholder="Search by name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-10 rounded-full bg-muted/40 border-border/50 focus-visible:ring-primary/40 placeholder:text-muted-foreground/70"
                 data-testid="input-search-users"
               />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  data-testid="button-clear-search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
+
+            <button
+              onClick={() => setOnlyOnline(!onlyOnline)}
+              className={`w-full flex items-center justify-center gap-2 h-8 rounded-full text-xs font-medium transition-all ${
+                onlyOnline
+                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                  : "bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-transparent"
+              }`}
+              data-testid="toggle-online-only"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${onlyOnline ? "bg-emerald-400 animate-pulse" : "bg-muted-foreground/50"}`} />
+              {onlyOnline ? `Showing ${onlineCount} online` : "Show online only"}
+            </button>
           </div>
 
-          <Tabs defaultValue="all" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="mx-4 grid grid-cols-4 text-[11px]">
-              <TabsTrigger value="all" className="text-[11px]" data-testid="tab-all">All</TabsTrigger>
-              <TabsTrigger value="friends" className="text-[11px]" data-testid="tab-friends">Friends</TabsTrigger>
-              <TabsTrigger value="following" className="text-[11px]" data-testid="tab-following">Following</TabsTrigger>
-              <TabsTrigger value="followers" className="text-[11px]" data-testid="tab-followers">Followers</TabsTrigger>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="mx-4 grid grid-cols-4 h-9 bg-muted/30 rounded-full p-1">
+              <TabsTrigger value="all" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-all">
+                {tabPill("All", allCount, activeTab === "all")}
+              </TabsTrigger>
+              <TabsTrigger value="friends" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-friends">
+                {tabPill("Friends", friendsCount, activeTab === "friends")}
+              </TabsTrigger>
+              <TabsTrigger value="following" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-following">
+                {tabPill("Following", followingCount, activeTab === "following")}
+              </TabsTrigger>
+              <TabsTrigger value="followers" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-followers">
+                {tabPill("Fans", followersCount, activeTab === "followers")}
+              </TabsTrigger>
             </TabsList>
 
             <ScrollArea className="flex-1 mt-2">
-              <div className="px-4 pb-4">
-                <TabsContent value="all" className="mt-0 space-y-1">
-                  {filterBySearch(connectedUsers).length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No connections yet. Follow someone to see them here.
-                    </p>
+              <div className="px-3 pb-4">
+                <TabsContent value="all" className="mt-0 space-y-0.5">
+                  {applyFilters(connectedUsers).length === 0 ? (
+                    renderEmpty(
+                      <Users className="w-6 h-6" />,
+                      search || onlyOnline ? "No matches" : "No connections yet",
+                      search || onlyOnline ? "Try a different search or filter." : "Follow someone to start building your network."
+                    )
                   ) : (
-                    filterBySearch(connectedUsers).map(renderUser)
+                    applyFilters(connectedUsers).map(renderUser)
                   )}
                 </TabsContent>
-                <TabsContent value="friends" className="mt-0 space-y-1">
-                  {filterBySearch(friends).length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No friends yet
-                    </p>
+                <TabsContent value="friends" className="mt-0 space-y-0.5">
+                  {applyFilters(friends).length === 0 ? (
+                    renderEmpty(
+                      <UserCheck className="w-6 h-6" />,
+                      "No friends yet",
+                      "Friends are people who follow each other. Follow someone back to make a friend!"
+                    )
                   ) : (
-                    filterBySearch(friends).map(renderUser)
+                    applyFilters(friends).map(renderUser)
                   )}
                 </TabsContent>
-                <TabsContent value="following" className="mt-0 space-y-1">
-                  {filterBySearch(followingUsers).length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      Not following anyone
-                    </p>
+                <TabsContent value="following" className="mt-0 space-y-0.5">
+                  {applyFilters(followingUsers).length === 0 ? (
+                    renderEmpty(
+                      <UserPlus className="w-6 h-6" />,
+                      "Not following anyone",
+                      "Tap the follow icon on any user to keep up with them."
+                    )
                   ) : (
-                    filterBySearch(followingUsers).map(renderUser)
+                    applyFilters(followingUsers).map(renderUser)
                   )}
                 </TabsContent>
-                <TabsContent value="followers" className="mt-0 space-y-1">
-                  {filterBySearch(followerUsers).length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No followers yet
-                    </p>
+                <TabsContent value="followers" className="mt-0 space-y-0.5">
+                  {applyFilters(followerUsers).length === 0 ? (
+                    renderEmpty(
+                      <Users className="w-6 h-6" />,
+                      "No followers yet",
+                      "Be active in rooms — others will discover and follow you."
+                    )
                   ) : (
-                    filterBySearch(followerUsers).map(renderUser)
+                    applyFilters(followerUsers).map(renderUser)
                   )}
                 </TabsContent>
               </div>
