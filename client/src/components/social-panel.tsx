@@ -373,7 +373,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
     return (
       <div
         key={u.id}
-        className="flex items-center gap-3 p-2 rounded-md hover-elevate"
+        className="flex items-center gap-2 p-2 rounded-md hover-elevate"
         data-testid={`social-user-${u.id}`}
       >
         <button
@@ -400,13 +400,18 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
           onClick={() => setProfileUser(u)}
           data-testid={`button-name-${u.id}`}
         >
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium truncate hover:text-primary transition-colors">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="text-sm font-medium truncate hover:text-primary transition-colors min-w-0">
               {getUserDisplayName(u)}
             </p>
+            {isFollowing && (
+              <span className="text-[9px] leading-none px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold uppercase tracking-wide flex-shrink-0">
+                ✓
+              </span>
+            )}
             {inRoomId && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium flex-shrink-0">
-                In Room
+              <span className="text-[9px] leading-none px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold uppercase tracking-wide flex-shrink-0">
+                Live
               </span>
             )}
           </div>
@@ -420,7 +425,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
           <UserBadgePips userId={u.id} />
         </button>
 
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-0.5 flex-shrink-0">
           {inRoomId && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -429,7 +434,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
                   variant="ghost"
                   onClick={() => handleJoinRoom(inRoomId)}
                   data-testid={`button-join-room-${u.id}`}
-                  className="text-primary w-8 h-8"
+                  className="text-emerald-400 hover:text-emerald-300 w-8 h-8"
                 >
                   <Phone className="w-4 h-4" />
                 </Button>
@@ -458,12 +463,13 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
             </TooltipTrigger>
             <TooltipContent>Message</TooltipContent>
           </Tooltip>
+          <UserNotePopover userId={u.id} />
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="icon"
-                variant="ghost"
-                className="w-8 h-8"
+                variant={isFollowing ? "default" : "ghost"}
+                className={`w-8 h-8 ${isFollowing ? "bg-primary/20 text-primary hover:bg-primary/30" : ""}`}
                 onClick={() =>
                   isFollowing
                     ? unfollowMutation.mutate(u.id)
@@ -472,7 +478,7 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
                 data-testid={`button-follow-${u.id}`}
               >
                 {isFollowing ? (
-                  <UserCheck className="w-4 h-4 text-primary" />
+                  <UserCheck className="w-4 h-4" />
                 ) : (
                   <UserPlus className="w-4 h-4" />
                 )}
