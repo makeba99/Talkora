@@ -45,3 +45,8 @@ waitForPort = 5000
 integrations = ["javascript_log_in_with_replit:2.0.0"]
 expertMode = true
 stack = "FULLSTACK_JS"
+
+[userenv]
+
+[userenv.shared]
+SESAME_CSM_TIMEOUT_MS = "90000"
