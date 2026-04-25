@@ -483,7 +483,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     <Button
       size="icon"
       variant="ghost"
-      className="flex-shrink-0 w-7 h-7 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+      className="neu-icon-btn flex-shrink-0 w-7 h-7 rounded-full text-neu-orange hover:text-neu-orange"
       onClick={(e) => {
         e.stopPropagation();
         setEditTitle(room.title);
@@ -830,8 +830,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             {isFull ? (
               <button
                 disabled
-                className="flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white/40 text-xs font-bold cursor-not-allowed"
-                style={{ background: "rgba(255,255,255,0.08)" }}
+                className="neu-btn flex items-center gap-1.5 px-5 py-1.5 rounded-full text-white/40 text-xs font-bold cursor-not-allowed"
                 data-testid={`button-join-room-${room.id}`}
               >
                 <Footprints className="w-3.5 h-3.5" />
@@ -840,12 +839,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             ) : !isLoggedIn ? (
               <a
                 href="/api/login"
-                className="step-in-btn flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-white text-xs font-bold active:scale-95"
-                style={{
-                  background: isPremiumAtmosphere
-                    ? "linear-gradient(90deg, #04d9ff 0%, #6040ff 28%, #b020ff 56%, #6080ff 80%, #04d9ff 100%)"
-                    : `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
-                }}
+                className="neu-btn-orange step-in-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold"
                 data-testid={`button-signin-room-${room.id}`}
               >
                 <Footprints className="w-3.5 h-3.5 animate-bounce" />
@@ -853,12 +847,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               </a>
             ) : (
               <button
-                className="step-in-btn flex items-center gap-1.5 px-5 py-1.5 rounded-xl text-white text-xs font-bold active:scale-95"
-                style={{
-                  background: isPremiumAtmosphere
-                    ? "linear-gradient(90deg, #04d9ff 0%, #6040ff 28%, #b020ff 56%, #6080ff 80%, #04d9ff 100%)"
-                    : `linear-gradient(90deg, ${glow.from} 0%, ${glow.to} 100%)`,
-                }}
+                className="neu-btn-orange step-in-btn flex items-center gap-1.5 px-5 py-1.5 rounded-full text-xs font-bold"
                 onClick={() => onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
               >

@@ -154,14 +154,19 @@ Badge applications table (shared/schema.ts):
 - id, userId, badgeType, reason, status, reviewedById, adminNotes, createdAt, updatedAt
 
 ## Design
-- Primary color: Cyan (195 100% 50%)
-- Secondary color: Purple (260 60% 60%)
+- Primary accent: Orange (18 92% 54%) — neumorphic
+- Surface tokens: --neu-bg 220 9% 10%, --neu-surface 220 9% 13%
+- Neumorphic utility classes in `client/src/index.css` (~line 2280+):
+  `.neu-canvas`, `.neu-surface`, `.neu-inset`, `.neu-btn`, `.neu-btn-orange`,
+  `.neu-icon-btn`, `.neu-pill` (+ `.is-active`)
+- Active pills use inline orange gradient style for guaranteed override
 - Font: Space Grotesk
 - Dark-first design with light mode support
-- Gradient borders on room cards (cyan to purple)
-- Colored avatar gradient rings per participant
+- Per-room theme borders/glow on room cards preserved (owner choice)
+- Colored avatar gradient rings per participant — NOT affected by room themes
 - Animated pulse ring on speaking users
 - Premium badge pips use each badge color with subtle glow and tooltips
+- Voice-room control dock: dark neumorphic surface; ghost/active/AI Tutor buttons neumorphic orange; mic/video/screen-share/leave keep semantic colors
 
 ## User Preferences
 - No landing page gate - lobby always shown

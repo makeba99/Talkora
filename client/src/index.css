@@ -2274,3 +2274,206 @@ html.synthwave .neon-text {
   85%  { transform: translateY(-220px) scale(1); opacity: 0.85; }
   100% { transform: translateY(-280px) scale(0.85); opacity: 0; }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   NEUMORPHISM SYSTEM (dark base + orange accent)
+   Inspired by the dark neumorphic UI references with vibrant orange
+   primary actions (e.g. the play button in the music player mockup).
+   The page background should be very dark (near-black). Raised
+   elements use a dual soft-shadow: a light highlight on the
+   top-left edge and a darker shadow on the bottom-right edge.
+   Pressed/inset elements invert those shadows. Orange is used for
+   primary calls-to-action (Step In, active tab, Sign In, etc.).
+   ───────────────────────────────────────────────────────────────── */
+
+:root {
+  --neu-bg: 220 9% 10%;            /* near-black canvas */
+  --neu-surface: 220 9% 13%;       /* card / panel surface */
+  --neu-surface-2: 220 9% 16%;     /* slightly raised */
+  --neu-light: 220 14% 22%;        /* highlight edge */
+  --neu-shadow: 220 18% 3%;        /* dark drop edge */
+  --neu-orange: 18 92% 54%;        /* primary accent */
+  --neu-orange-hi: 22 96% 60%;     /* highlight tone */
+  --neu-orange-lo: 14 88% 46%;     /* deep tone */
+}
+
+/* Page background — when this class is on a wrapper it darkens the
+   whole surface to the neumorphic canvas, regardless of the active
+   theme. Used by the lobby and the in-room layout. */
+.neu-canvas {
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.025) 0%, transparent 55%),
+    radial-gradient(80% 60% at 50% 100%, rgba(0,0,0,0.4) 0%, transparent 60%),
+    hsl(var(--neu-bg));
+}
+
+/* Raised neumorphic surface — used for cards, panels, control docks. */
+.neu-surface {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  box-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.025),
+    8px 8px 18px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Inset / pressed neumorphic well — used for search inputs and
+   pressed states. */
+.neu-inset {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-bg)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  box-shadow:
+    inset 4px 4px 10px rgba(0, 0, 0, 0.55),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.025);
+}
+
+/* Raised neumorphic button (ghost / inactive). */
+.neu-btn {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow:
+    -4px -4px 10px rgba(255, 255, 255, 0.03),
+    6px 6px 14px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 200ms ease-out;
+}
+.neu-btn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    -3px -3px 8px rgba(255, 255, 255, 0.04),
+    5px 5px 12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+.neu-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.03);
+}
+
+/* Primary orange neumorphic button — used for the most important
+   call-to-action (Step In, Sign In, Active tab, primary Play). */
+.neu-btn-orange {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange-hi)) 0%,
+    hsl(var(--neu-orange-lo)) 100%
+  );
+  color: #fff;
+  border: 1px solid rgba(255, 140, 60, 0.5);
+  box-shadow:
+    0 0 18px hsla(var(--neu-orange) / 0.35),
+    -4px -4px 10px rgba(255, 255, 255, 0.04),
+    6px 6px 16px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 220, 180, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+  transition: all 200ms ease-out;
+}
+.neu-btn-orange:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 24px hsla(var(--neu-orange) / 0.5),
+    -4px -4px 10px rgba(255, 255, 255, 0.04),
+    7px 7px 18px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 220, 180, 0.45);
+}
+.neu-btn-orange:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 0 14px hsla(var(--neu-orange) / 0.4),
+    inset 3px 3px 8px rgba(0, 0, 0, 0.45),
+    inset -2px -2px 6px rgba(255, 200, 140, 0.18);
+}
+
+/* Compact circular variant used for icon-only controls */
+.neu-icon-btn {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    -3px -3px 8px rgba(255, 255, 255, 0.025),
+    4px 4px 10px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 180ms ease-out;
+}
+.neu-icon-btn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+.neu-icon-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 2px 2px 6px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 4px rgba(255, 255, 255, 0.03);
+}
+.neu-icon-btn[data-active="true"],
+.neu-icon-btn.neu-active {
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange-hi)) 0%,
+    hsl(var(--neu-orange-lo)) 100%
+  );
+  box-shadow:
+    0 0 18px hsla(var(--neu-orange) / 0.4),
+    -3px -3px 8px rgba(255, 255, 255, 0.04),
+    4px 4px 12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 220, 180, 0.4);
+}
+
+/* Pill variants used for the discovery tabs and language filters. */
+.neu-pill {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: rgba(255, 255, 255, 0.62);
+  box-shadow:
+    -3px -3px 8px rgba(255, 255, 255, 0.025),
+    4px 4px 10px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 180ms ease-out;
+}
+.neu-pill:hover {
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+}
+.neu-pill[data-active="true"],
+.neu-pill.is-active {
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange-hi)) 0%,
+    hsl(var(--neu-orange-lo)) 100%
+  );
+  border: 1px solid rgba(255, 150, 70, 0.55);
+  box-shadow:
+    0 0 22px hsla(var(--neu-orange) / 0.55),
+    0 0 40px hsla(var(--neu-orange) / 0.25),
+    -3px -3px 8px rgba(255, 255, 255, 0.05),
+    4px 4px 14px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 220, 180, 0.45);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+
+/* Accent color helpers */
+.text-neu-orange { color: hsl(var(--neu-orange)); }
+.bg-neu-orange   { background-color: hsl(var(--neu-orange)); }

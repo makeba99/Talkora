@@ -759,12 +759,13 @@ export default function Lobby() {
   const visibleLanguages = languagesExpanded ? languageTags : languageTags.slice(0, 8);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full neu-canvas">
       <header
-        className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl transition-all duration-300"
+        className="sticky top-0 z-50 backdrop-blur-xl transition-all duration-300"
         style={{
-          borderBottom: "1px solid transparent",
-          borderImage: "linear-gradient(to right, transparent, rgba(var(--primary), 0.2), transparent) 1",
+          background: "linear-gradient(180deg, hsl(220 9% 9% / 0.92) 0%, hsl(220 9% 10% / 0.78) 100%)",
+          borderBottom: "1px solid rgba(255,255,255,0.04)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
         }}
       >
         <div className="flex items-center justify-between gap-3 px-4 py-3 max-w-[1600px] mx-auto">
@@ -802,31 +803,27 @@ export default function Lobby() {
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {user ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => navigate("/teachers")}
-                  className="mr-1 text-xs border border-violet-500/20 bg-violet-500/5 hover:bg-violet-500/10 hover:border-violet-500/40"
+                  className="neu-btn mr-1 inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
                   data-testid="button-book-teacher-nav"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-violet-400" />
-                  <span className="hidden sm:inline text-violet-300/80">Book Teacher</span>
-                </Button>
+                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
+                  <span className="hidden sm:inline">Book Teacher</span>
+                </button>
                 {isAdminUser && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <button
                     onClick={() => navigate("/admin")}
-                    className="mr-1 text-xs border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/40"
+                    className="neu-btn mr-1 inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
                     data-testid="button-admin-panel"
                   >
                     {user.role === "superadmin" || user.email === "dj55jggg@gmail.com" ? (
-                      <Crown className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
+                      <Crown className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
                     ) : (
-                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-cyan-400" />
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
                     )}
-                    <span className="hidden sm:inline text-amber-300/80">Admin</span>
-                  </Button>
+                    <span className="hidden sm:inline">Admin</span>
+                  </button>
                 )}
                 <SocialPanel onlineUsers={onlineUsers} onOpenDm={(userId) => setDmUserId(userId)} />
                 <MessagesDropdown onOpenDm={(userId) => setDmUserId(userId)} />
@@ -840,33 +837,23 @@ export default function Lobby() {
               </>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => navigate("/teachers")}
-                  className="text-xs border border-violet-500/20 bg-violet-500/5 hover:bg-violet-500/10 hover:border-violet-500/40"
+                  className="neu-btn inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
                   data-testid="button-book-teacher-nav-guest"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-violet-400" />
-                  <span className="hidden sm:inline text-violet-300/80">Book Teacher</span>
-                </Button>
+                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
+                  <span className="hidden sm:inline">Book Teacher</span>
+                </button>
                 <ThemePicker />
-                <Button
-                  asChild
+                <a
+                  href="/api/login"
                   data-testid="button-sign-in"
-                  size="sm"
-                  className="ml-1 font-semibold"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,60,240,0.9) 100%)",
-                    border: "1px solid rgba(0,210,255,0.3)",
-                    boxShadow: "0 0 18px rgba(0,200,255,0.2)",
-                  }}
+                  className="neu-btn-orange ml-1 inline-flex items-center h-9 px-4 rounded-full text-sm font-bold"
                 >
-                  <a href="/api/login">
-                    <LogIn className="w-4 h-4 mr-1.5" />
-                    Sign In
-                  </a>
-                </Button>
+                  <LogIn className="w-4 h-4 mr-1.5" />
+                  Sign In
+                </a>
               </>
             )}
           </div>
@@ -954,18 +941,12 @@ export default function Lobby() {
                 placeholder={activeDiscovery === "rooms" ? "Search rooms and languages..." : "Search speakers and famous users..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-14 h-10 transition-all duration-200"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
+                className="neu-inset pl-10 pr-14 h-10 transition-all duration-200 border-0 rounded-full text-white placeholder:text-white/35"
                 onFocus={(e) => {
-                  e.currentTarget.style.border = "1px solid rgba(0,210,255,0.45)";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,210,255,0.08), 0 0 16px rgba(0,210,255,0.1)";
+                  e.currentTarget.style.boxShadow = "inset 4px 4px 10px rgba(0,0,0,0.55), inset -3px -3px 8px rgba(255,255,255,0.025), 0 0 0 2px hsla(18, 92%, 54%, 0.35)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)";
-                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.boxShadow = "";
                 }}
                 data-testid="input-search-rooms"
               />
@@ -995,21 +976,14 @@ export default function Lobby() {
                 <button
                   key={filter.id}
                   onClick={() => setActiveDiscovery(filter.id)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-200"
-                  style={
-                    isActive
-                      ? {
-                          background: "linear-gradient(135deg, rgba(0,200,255,0.85) 0%, rgba(100,50,240,0.85) 100%)",
-                          border: "1px solid rgba(0,210,255,0.4)",
-                          color: "#fff",
-                          boxShadow: "0 0 14px rgba(0,200,255,0.22), 0 2px 8px rgba(0,0,0,0.25)",
-                        }
-                      : {
-                          background: "rgba(255,255,255,0.05)",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          color: "rgba(255,255,255,0.62)",
-                        }
-                  }
+                  className={`neu-pill flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap ${isActive ? "is-active" : ""}`}
+                  style={isActive ? {
+                    background: "linear-gradient(145deg, hsl(22 96% 60%) 0%, hsl(14 88% 46%) 100%)",
+                    color: "#fff",
+                    border: "1px solid rgba(255,150,70,0.55)",
+                    boxShadow: "0 0 22px hsla(18, 92%, 54%, 0.55), 0 0 40px hsla(18, 92%, 54%, 0.25), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.45)",
+                    textShadow: "0 1px 1px rgba(0,0,0,0.25)",
+                  } : undefined}
                   data-testid={`filter-discovery-${filter.id}`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -1028,35 +1002,14 @@ export default function Lobby() {
                 <button
                   key={lang}
                   onClick={() => setSelectedLanguage(lang)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200"
-                  style={
-                    isActive
-                      ? {
-                          background: "linear-gradient(135deg, rgba(0,200,255,0.85) 0%, rgba(100,50,240,0.85) 100%)",
-                          border: "1px solid rgba(0,210,255,0.4)",
-                          color: "#fff",
-                          boxShadow: "0 0 14px rgba(0,200,255,0.22), 0 2px 8px rgba(0,0,0,0.25)",
-                        }
-                      : {
-                          background: "rgba(255,255,255,0.05)",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          color: "rgba(255,255,255,0.55)",
-                        }
-                  }
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.09)";
-                      e.currentTarget.style.border = "1px solid rgba(255,255,255,0.18)";
-                      e.currentTarget.style.color = "rgba(255,255,255,0.85)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                      e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)";
-                      e.currentTarget.style.color = "rgba(255,255,255,0.55)";
-                    }
-                  }}
+                  className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
+                  style={isActive ? {
+                    background: "linear-gradient(145deg, hsl(22 96% 60%) 0%, hsl(14 88% 46%) 100%)",
+                    color: "#fff",
+                    border: "1px solid rgba(255,150,70,0.55)",
+                    boxShadow: "0 0 22px hsla(18, 92%, 54%, 0.55), 0 0 40px hsla(18, 92%, 54%, 0.25), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.45)",
+                    textShadow: "0 1px 1px rgba(0,0,0,0.25)",
+                  } : undefined}
                   data-testid={`tab-language-${lang.toLowerCase()}`}
                 >
                   {lang}
@@ -1072,20 +1025,7 @@ export default function Lobby() {
             {languageTags.length > 8 && (
               <button
                 onClick={() => setLanguagesExpanded(!languagesExpanded)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "rgba(255,255,255,0.45)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.09)";
-                  e.currentTarget.style.color = "rgba(255,255,255,0.75)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                  e.currentTarget.style.color = "rgba(255,255,255,0.45)";
-                }}
+                className="neu-pill flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium"
                 data-testid="button-toggle-languages"
               >
                 {languagesExpanded ? (

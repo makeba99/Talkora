@@ -2737,15 +2737,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const renderControlDock = () => {
     const ghostStyle: React.CSSProperties = {
-      background: "rgba(255,255,255,0.058)",
-      border: "1px solid rgba(255,255,255,0.085)",
-      color: "rgba(255,255,255,0.40)",
+      background: "linear-gradient(145deg, hsl(220 9% 16%) 0%, hsl(220 9% 13%) 100%)",
+      border: "1px solid rgba(255,255,255,0.04)",
+      color: "rgba(255,255,255,0.55)",
+      boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
     };
     const activeStyle: React.CSSProperties = {
-      background: "linear-gradient(145deg, rgba(255,255,255,0.155) 0%, rgba(255,255,255,0.08) 100%)",
-      border: "1px solid rgba(255,255,255,0.20)",
-      color: "rgba(255,255,255,0.96)",
-      boxShadow: "0 0 14px rgba(255,255,255,0.07), 0 4px 16px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.12)",
+      background: "linear-gradient(145deg, hsl(22 96% 60%) 0%, hsl(14 88% 46%) 100%)",
+      border: "1px solid rgba(255,140,60,0.5)",
+      color: "#fff",
+      boxShadow: "0 0 18px hsla(18, 92%, 54%, 0.4), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.4)",
     };
     const micLiveStyle: React.CSSProperties = {
       background: "linear-gradient(145deg, rgba(34,197,94,0.18) 0%, rgba(22,163,74,0.10) 100%)",
@@ -2785,13 +2786,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       <div
         className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 select-none"
         style={{
-          background: "linear-gradient(180deg, rgba(18,22,36,0.97) 0%, rgba(9,11,22,0.95) 100%)",
+          background: "linear-gradient(145deg, hsl(220 9% 13%) 0%, hsl(220 9% 10%) 100%)",
           backdropFilter: "blur(40px) saturate(1.35)",
           WebkitBackdropFilter: "blur(40px) saturate(1.35)",
-          border: "1px solid rgba(255,255,255,0.088)",
+          border: "1px solid rgba(255,255,255,0.04)",
           borderRadius: "32px",
-          boxShadow: "0 24px 56px rgba(0,0,0,0.52), 0 0 0 1px rgba(255,255,255,0.022), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.18)",
-          padding: "8px 10px",
+          boxShadow: "-8px -8px 20px rgba(255,255,255,0.025), 12px 12px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.4)",
+          padding: "10px 12px",
         }}
         data-testid="toolbar-room-controls"
       >
@@ -3002,21 +3003,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               title={aiTutorActive ? `Dismiss ${aiPersonaName}` : "Call AI Tutor"}
               className={btnBase}
               style={aiTutorActive ? {
-                background: "linear-gradient(145deg, rgba(0,200,255,0.28) 0%, rgba(0,120,200,0.18) 100%)",
-                border: "1px solid rgba(0,225,255,0.55)",
-                color: "rgba(0,225,255,0.97)",
-                boxShadow: "0 0 26px rgba(0,225,255,0.40), 0 4px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.12)",
+                background: "linear-gradient(145deg, hsl(22 96% 60%) 0%, hsl(14 88% 46%) 100%)",
+                border: "1px solid rgba(255,140,60,0.55)",
+                color: "#fff",
+                boxShadow: "0 0 24px hsla(18, 92%, 54%, 0.5), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,180,0.4)",
               } : {
-                background: "linear-gradient(145deg, rgba(0,180,255,0.16) 0%, rgba(0,100,200,0.10) 100%)",
-                border: "1px solid rgba(0,225,255,0.38)",
-                color: "rgba(0,225,255,0.90)",
-                boxShadow: "0 0 16px rgba(0,225,255,0.22), 0 4px 12px rgba(0,0,0,0.24)",
+                background: "linear-gradient(145deg, hsl(220 9% 16%) 0%, hsl(220 9% 13%) 100%)",
+                border: "1px solid rgba(255,140,60,0.22)",
+                color: "hsl(18 92% 60%)",
+                boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
               }}
             >
-              <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 5px rgba(0,225,255,0.8))" } : undefined} />
+              <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 5px rgba(255,170,80,0.85))" } : undefined} />
             </button>
           </div>
-          <span className={labelBase} style={{ color: aiTutorActive ? "rgba(0,225,255,0.90)" : "rgba(0,200,255,0.55)" }}>
+          <span className={labelBase} style={{ color: aiTutorActive ? "rgba(255,170,80,0.95)" : "hsl(18 92% 60% / 0.7)" }}>
             {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
         </div>
