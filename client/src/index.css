@@ -264,30 +264,30 @@ html.midnight-purple {
   --sidebar: 265 35% 8%;
   --sidebar-foreground: 270 20% 92%;
   --sidebar-border: 265 25% 13%;
-  --sidebar-primary: 26 78% 48%;
+  --sidebar-primary: 20 95% 52%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 265 28% 14%;
   --sidebar-accent-foreground: 270 20% 92%;
-  --sidebar-ring: 26 78% 48%;
+  --sidebar-ring: 20 95% 52%;
   --popover: 265 32% 11%;
   --popover-foreground: 270 20% 92%;
   --popover-border: 265 25% 16%;
-  --primary: 26 78% 48%;
+  --primary: 20 95% 52%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 32 84% 56%;
+  --secondary: 24 100% 60%;
   --secondary-foreground: 0 0% 100%;
   --muted: 265 25% 14%;
   --muted-foreground: 270 12% 55%;
-  --accent: 18 72% 40%;
+  --accent: 14 88% 42%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 55%;
   --destructive-foreground: 0 0% 98%;
   --input: 265 22% 22%;
-  --ring: 26 78% 48%;
-  --chart-1: 18 72% 40%;
-  --chart-2: 26 78% 48%;
-  --chart-3: 32 84% 56%;
-  --chart-4: 38 86% 60%;
+  --ring: 20 95% 52%;
+  --chart-1: 14 88% 42%;
+  --chart-2: 20 95% 52%;
+  --chart-3: 24 100% 60%;
+  --chart-4: 30 100% 64%;
   --chart-5: 348 60% 52%;
   /* Neumorphic depth tokens for the room cards & panels in this theme */
   --neo-bg: 265 32% 9%;
@@ -3019,9 +3019,9 @@ html.synthwave .neon-text {
      it harmonizes with the violet-undertone backgrounds (hue 265).
      Still firmly orange, but the warmer hue creates a complementary
      contrast against the cool background instead of fighting it. */
-  --neu-orange: 26 78% 48%;        /* primary accent — amber honey */
-  --neu-orange-hi: 32 84% 56%;     /* highlight tone — warm copper-gold */
-  --neu-orange-lo: 18 72% 34%;     /* deep tone — burnt umber */
+  --neu-orange: 20 95% 52%;        /* primary accent — vivid bright orange */
+  --neu-orange-hi: 24 100% 60%;    /* highlight tone — neon orange */
+  --neu-orange-lo: 14 88% 38%;     /* deep tone — molten amber */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
