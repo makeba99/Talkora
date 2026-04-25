@@ -145,8 +145,8 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
           data-testid="button-create-room"
           className="hammer-btn h-10 px-4 font-semibold whitespace-nowrap flex-shrink-0 gap-2"
           style={{
-            background: "linear-gradient(135deg, hsl(298 52% 44%) 0%, hsl(268 55% 36%) 100%)",
-            border: "1px solid rgba(145,40,130,0.45)",
+            background: "linear-gradient(135deg, hsl(235 72% 54%) 0%, hsl(252 65% 38%) 100%)",
+            border: "1px solid rgba(100,80,230,0.42)",
             color: "#fff",
           }}
         >

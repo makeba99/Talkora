@@ -1245,7 +1245,7 @@ html.neomorphic-light .text-neu-orange svg {
       Ensures the lobby CTA is always vivid against the card surface. */
 html.neomorphic-dark .step-in-btn,
 html.neomorphic-light .step-in-btn {
-  border: 1px solid rgba(145, 40, 130, 0.50) !important;
+  border: 1px solid rgba(100, 80, 230, 0.48) !important;
   inset: none;
 }
 
@@ -1266,7 +1266,7 @@ html.neomorphic-light .neu-pill[data-active="true"] {
     0 0 55px hsla(var(--neu-orange) / 0.28),
     -4px -4px 10px rgba(255, 255, 255, 0.048),
     5px 5px 16px rgba(0, 0, 0, 0.70),
-    inset 0 1px 0 rgba(220, 170, 235, 0.45) !important;
+    inset 0 1px 0 rgba(180, 185, 255, 0.45) !important;
 }
 
 /* 9. ICON-ONLY CONTROL BUTTONS — deepen hover lift */
@@ -2432,9 +2432,9 @@ html.synthwave .neon-text {
   --neu-surface-2: 228 12% 16%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
-  --neu-orange: 302 48% 40%;       /* primary accent — deep muted purple-magenta */
-  --neu-orange-hi: 298 52% 46%;    /* highlight tone */
-  --neu-orange-lo: 308 43% 30%;    /* deep tone */
+  --neu-orange: 238 68% 52%;       /* primary accent — indigo-blue */
+  --neu-orange-hi: 235 72% 58%;    /* highlight tone */
+  --neu-orange-lo: 242 62% 40%;    /* deep tone */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
@@ -2529,13 +2529,13 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-lo)) 100%
   );
   color: #fff;
-  border: 1px solid rgba(145, 40, 130, 0.55);
+  border: 1px solid rgba(100, 80, 230, 0.50);
   box-shadow:
     0 0 22px hsla(var(--neu-orange) / 0.42),
     0 0 48px hsla(var(--neu-orange) / 0.16),
     -5px -5px 12px rgba(255, 255, 255, 0.045),
     7px 7px 18px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(220, 170, 235, 0.42),
+    inset 0 1px 0 rgba(180, 185, 255, 0.42),
     inset 0 -1px 0 rgba(0, 0, 0, 0.22);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
   transition: all 200ms ease-out;
@@ -2548,14 +2548,14 @@ html.synthwave .neon-text {
     0 0 60px hsla(var(--neu-orange) / 0.22),
     -5px -5px 12px rgba(255, 255, 255, 0.048),
     8px 8px 20px rgba(0, 0, 0, 0.72),
-    inset 0 1px 0 rgba(220, 170, 235, 0.46);
+    inset 0 1px 0 rgba(180, 185, 255, 0.46);
 }
 .neu-btn-orange:active:not(:disabled) {
   transform: translateY(0);
   box-shadow:
     0 0 16px hsla(var(--neu-orange) / 0.44),
     inset 4px 4px 10px rgba(0, 0, 0, 0.52),
-    inset -3px -3px 8px rgba(180, 130, 200, 0.22);
+    inset -3px -3px 8px rgba(120, 120, 210, 0.22);
 }
 
 /* Compact circular variant used for icon-only controls */
@@ -2598,7 +2598,7 @@ html.synthwave .neon-text {
     0 0 44px hsla(var(--neu-orange) / 0.18),
     -4px -4px 10px rgba(255, 255, 255, 0.045),
     5px 5px 14px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(220, 170, 235, 0.38);
+    inset 0 1px 0 rgba(180, 185, 255, 0.38);
 }
 
 /* Pill variants used for the discovery tabs and language filters. */
@@ -2631,13 +2631,13 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-hi)) 0%,
     hsl(var(--neu-orange-lo)) 100%
   );
-  border: 1px solid rgba(145, 40, 130, 0.60);
+  border: 1px solid rgba(100, 80, 230, 0.55);
   box-shadow:
     0 0 26px hsla(var(--neu-orange) / 0.62),
     0 0 50px hsla(var(--neu-orange) / 0.28),
     -4px -4px 10px rgba(255, 255, 255, 0.048),
     5px 5px 16px rgba(0, 0, 0, 0.68),
-    inset 0 1px 0 rgba(220, 170, 235, 0.42);
+    inset 0 1px 0 rgba(180, 185, 255, 0.42);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 

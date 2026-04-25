@@ -252,7 +252,7 @@ function PeopleDiscoveryCard({
               {isOnline ? "● Online now" : "○ Offline"}
             </p>
             {currentRoomId && (
-              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-neu-orange bg-fuchsia-400/10 rounded-full px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-neu-orange bg-indigo-400/10 rounded-full px-2 py-0.5">
                 <Radio className="w-2.5 h-2.5" />
                 Talking
               </span>
@@ -289,7 +289,7 @@ function PeopleDiscoveryCard({
           </span>
           {voteCount > 0 && (
             <span className="flex items-center gap-1 text-white/60">
-              <Flame className="w-3 h-3 text-fuchsia-400" />
+              <Flame className="w-3 h-3 text-indigo-400" />
               <span className="font-semibold text-white/80">{voteCount + (hasVoted ? 1 : 0)}</span>
             </span>
           )}
@@ -309,7 +309,7 @@ function PeopleDiscoveryCard({
               disabled={isCurrentUser || isPending}
               className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
                 isFollowing
-                  ? "border-fuchsia-400/40 bg-fuchsia-400/20 text-fuchsia-200 hover:bg-fuchsia-400/25"
+                  ? "border-indigo-400/35 bg-indigo-400/15 text-indigo-200 hover:bg-indigo-400/20"
                   : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
               } disabled:opacity-45 disabled:cursor-not-allowed`}
               data-testid={`button-follow-discovery-${person.id}`}
@@ -331,12 +331,12 @@ function PeopleDiscoveryCard({
             disabled={isCurrentUser}
             className={`w-full flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
               hasVoted
-                ? "border-fuchsia-400/50 bg-fuchsia-400/20 text-fuchsia-200"
-                : "border-fuchsia-400/20 bg-fuchsia-400/8 text-fuchsia-300/70 hover:bg-fuchsia-400/14 hover:border-fuchsia-400/35"
+                ? "border-indigo-400/45 bg-indigo-400/15 text-indigo-200"
+                : "border-indigo-400/18 bg-indigo-400/8 text-indigo-300/60 hover:bg-indigo-400/12 hover:border-indigo-400/30"
             } disabled:opacity-45 disabled:cursor-not-allowed`}
             data-testid={`button-vote-discovery-${person.id}`}
           >
-            <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-fuchsia-400 text-fuchsia-400" : ""}`} />
+            <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-indigo-400 text-indigo-400" : ""}`} />
             {hasVoted ? "Voted!" : "Vote"}
             {(voteCount > 0) && <span className="ml-1 opacity-60">{voteCount + (hasVoted ? 1 : 0)}</span>}
           </button>
@@ -939,7 +939,7 @@ export default function Lobby() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="neu-inset pl-10 pr-14 h-10 transition-all duration-200 border-0 rounded-full text-white placeholder:text-white/35"
                 onFocus={(e) => {
-                  e.currentTarget.style.boxShadow = "inset 4px 4px 10px rgba(0,0,0,0.55), inset -3px -3px 8px rgba(255,255,255,0.025), 0 0 0 2px hsla(302, 48%, 40%, 0.35)";
+                  e.currentTarget.style.boxShadow = "inset 4px 4px 10px rgba(0,0,0,0.55), inset -3px -3px 8px rgba(255,255,255,0.025), 0 0 0 2px hsla(238, 68%, 52%, 0.35)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.boxShadow = "";
@@ -974,10 +974,10 @@ export default function Lobby() {
                   onClick={() => setActiveDiscovery(filter.id)}
                   className={`neu-pill flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(298 52% 44%) 0%, hsl(268 55% 36%) 100%)",
+                    background: "linear-gradient(145deg, hsl(235 72% 55%) 0%, hsl(248 65% 42%) 100%)",
                     color: "#fff",
-                    border: "1px solid rgba(145,40,130,0.45)",
-                    boxShadow: "0 0 16px hsla(302, 48%, 40%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(220,170,235,0.35)",
+                    border: "1px solid rgba(100,80,230,0.45)",
+                    boxShadow: "0 0 16px hsla(238, 68%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(180,185,255,0.35)",
                     textShadow: "0 1px 1px rgba(0,0,0,0.25)",
                   } : undefined}
                   data-testid={`filter-discovery-${filter.id}`}
@@ -1000,10 +1000,10 @@ export default function Lobby() {
                   onClick={() => setSelectedLanguage(lang)}
                   className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(298 52% 44%) 0%, hsl(268 55% 36%) 100%)",
+                    background: "linear-gradient(145deg, hsl(235 72% 55%) 0%, hsl(248 65% 42%) 100%)",
                     color: "#fff",
-                    border: "1px solid rgba(145,40,130,0.45)",
-                    boxShadow: "0 0 16px hsla(302, 48%, 40%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(220,170,235,0.35)",
+                    border: "1px solid rgba(100,80,230,0.45)",
+                    boxShadow: "0 0 16px hsla(238, 68%, 52%, 0.35), -3px -3px 8px rgba(255,255,255,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(180,185,255,0.35)",
                     textShadow: "0 1px 1px rgba(0,0,0,0.25)",
                   } : undefined}
                   data-testid={`tab-language-${lang.toLowerCase()}`}

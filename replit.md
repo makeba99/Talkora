@@ -154,7 +154,7 @@ Badge applications table (shared/schema.ts):
 - id, userId, badgeType, reason, status, reviewedById, adminNotes, createdAt, updatedAt
 
 ## Design
-- Primary accent: Rose-Magenta `--neu-orange: 328 70% 50%` (CSS var kept as `--neu-orange` for naming legacy)
+- Primary accent: Indigo-Blue `--neu-orange: 238 68% 52%` (CSS var kept as `--neu-orange` for naming legacy)
 - Surface tokens: `--neu-bg: 228 14% 9%`, `--neu-surface: 228 13% 12%` (dark blue-indigo base)
 - Neumorphic utility classes in `client/src/index.css` (~line 2430+):
   `.neu-canvas`, `.neu-surface`, `.neu-inset`, `.neu-btn`, `.neu-btn-orange`,
