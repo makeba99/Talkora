@@ -1182,7 +1182,7 @@ export default function Lobby() {
               )}
             </section>
           ) : roomsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 xl:gap-8">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="space-y-3 p-5 rounded-md border">
                   <Skeleton className="h-6 w-3/4" />
@@ -1227,7 +1227,7 @@ export default function Lobby() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 xl:gap-8">
               {filteredRooms.map((room) => {
                 const mergedParticipants = allRoomParticipants(roomParticipants);
                 const isSample = room.id.startsWith("sample-");
