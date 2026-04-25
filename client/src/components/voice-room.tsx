@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { AiTutorFace } from "@/components/ai-tutor-face";
 import { VextornMark } from "@/components/vextorn-logo";
 import { Button } from "@/components/ui/button";
@@ -2902,41 +2903,74 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 style={moodPickerOpen ? { filter: "drop-shadow(0 0 4px rgba(251,191,36,0.6))" } : undefined}
               />
             </button>
-            {moodPickerOpen && (
-              <div
-                data-testid="mood-picker"
-                className="fixed left-1/2 -translate-x-1/2 z-[100] flex flex-wrap items-center justify-center gap-1 px-2 py-2 rounded-2xl shadow-2xl border border-white/15"
-                style={{
-                  top: "calc(env(safe-area-inset-top, 0px) + 60px)",
-                  background: "linear-gradient(180deg, rgba(20,16,40,0.96), rgba(8,6,24,0.96))",
-                  backdropFilter: "blur(14px)",
-                  width: "min(320px, 90vw)",
-                }}
-              >
-                {[
-                  { e: "✋", label: "Raise hand" },
-                  { e: "👋", label: "Wave hi" },
-                  { e: "😂", label: "Laughing" },
-                  { e: "😴", label: "Sleepy" },
-                  { e: "😡", label: "Angry" },
-                  { e: "🤔", label: "Thinking" },
-                  { e: "❤️", label: "Love it" },
-                  { e: "👍", label: "Yes" },
-                  { e: "🎉", label: "Party" },
-                  { e: "🤯", label: "Mind blown" },
-                ].map(({ e, label }) => (
-                  <button
-                    key={e}
-                    onClick={() => sendMood(e)}
-                    title={label}
-                    aria-label={label}
-                    data-testid={`mood-emoji-${e}`}
-                    className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl text-xl sm:text-2xl hover:bg-white/10 active:scale-95 transition-all"
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
+            {moodPickerOpen && createPortal(
+              <>
+                {/* backdrop catches outside taps to close the picker */}
+                <div
+                  className="fixed inset-0 z-[9998]"
+                  onClick={() => setMoodPickerOpen(false)}
+                  data-testid="mood-picker-backdrop"
+                />
+                <div
+                  data-testid="mood-picker"
+                  className="fixed left-1/2 -translate-x-1/2 z-[9999] grid grid-cols-6 gap-1.5 p-3 rounded-2xl shadow-2xl border border-white/15"
+                  style={{
+                    top: "calc(env(safe-area-inset-top, 0px) + 56px)",
+                    background: "linear-gradient(180deg, rgba(20,16,40,0.97), rgba(8,6,24,0.97))",
+                    backdropFilter: "blur(14px)",
+                    width: "min(360px, 92vw)",
+                    maxHeight: "70vh",
+                    overflowY: "auto",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {[
+                    { e: "✋", label: "Raise hand" },
+                    { e: "👋", label: "Wave hi" },
+                    { e: "👍", label: "Yes" },
+                    { e: "👎", label: "No" },
+                    { e: "👏", label: "Clap" },
+                    { e: "🙏", label: "Thanks" },
+                    { e: "❤️", label: "Love it" },
+                    { e: "🔥", label: "Fire" },
+                    { e: "💯", label: "100" },
+                    { e: "🎉", label: "Party" },
+                    { e: "🥳", label: "Celebrate" },
+                    { e: "🤯", label: "Mind blown" },
+                    { e: "😂", label: "Laughing" },
+                    { e: "🤣", label: "ROFL" },
+                    { e: "😆", label: "Giggle" },
+                    { e: "😮", label: "Wow" },
+                    { e: "😱", label: "Shocked" },
+                    { e: "🤔", label: "Thinking" },
+                    { e: "🙄", label: "Eye roll" },
+                    { e: "😴", label: "Sleepy" },
+                    { e: "🥱", label: "Yawn" },
+                    { e: "😡", label: "Angry" },
+                    { e: "🤬", label: "Furious" },
+                    { e: "🤡", label: "Clown" },
+                    { e: "💩", label: "Poop" },
+                    { e: "👻", label: "Boo!" },
+                    { e: "🤖", label: "Robot" },
+                    { e: "🐸", label: "Frog" },
+                    { e: "🦄", label: "Unicorn" },
+                    { e: "🚀", label: "Let's go!" },
+                  ].map(({ e, label }) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => sendMood(e)}
+                      title={label}
+                      aria-label={label}
+                      data-testid={`mood-emoji-${e}`}
+                      className="w-11 h-11 flex items-center justify-center rounded-xl text-2xl hover:bg-white/10 active:scale-95 transition-all touch-manipulation"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </>,
+              document.body
             )}
           </div>
           <span className={labelBase} style={moodPickerOpen ? { color: "rgba(251,191,36,0.86)" } : { color: "rgba(255,255,255,0.32)" }}>
