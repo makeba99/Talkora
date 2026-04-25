@@ -695,12 +695,14 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                         height: circleSize + 6,
                         padding: 3,
                         background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
-                        boxShadow: isPremiumAtmosphere
-                          ? `0 0 7px rgba(0,220,255,0.55), 0 0 14px rgba(120,50,255,0.35), 0 0 22px rgba(60,130,255,0.20)`
-                          : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
+                        boxShadow: hasRing
+                          ? undefined
+                          : isPremiumAtmosphere
+                            ? `0 0 7px rgba(0,220,255,0.55), 0 0 14px rgba(120,50,255,0.35), 0 0 22px rgba(60,130,255,0.20)`
+                            : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
                       }}
                     >
-                      <Avatar style={{ width: circleSize, height: circleSize }} className={`border-2 ${isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
+                      <Avatar style={{ width: circleSize, height: circleSize }} className={`border-2 ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
                         <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} />
                         <AvatarFallback className="text-base font-bold bg-[#0d1a3a] text-cyan-300">
                           {getUserInitials(p)}
