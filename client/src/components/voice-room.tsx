@@ -36,6 +36,7 @@ import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-drop
 import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
+import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
 import type { Room, User, Follow } from "@shared/schema";
 
 interface VoiceRoomProps {
@@ -1342,7 +1343,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     let animationFrameId: number;
     let lastCheck = performance.now();
     const checkAudioLevels = (time: number) => {
-      if (time - lastCheck > 100) {
+      const interval = isYoutubeActive() ? 250 : 100;
+      if (time - lastCheck > interval) {
         lastCheck = time;
         const currentlySpeaking = new Set<string>();
         
@@ -2062,6 +2064,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       const sock = socketRef.current;
       if (state === YT.PlayerState.ENDED) {
         setYtIsPlaying(false);
+        setYoutubeActive(false);
         // Only the video starter drives queue advance to avoid duplicate emissions
         if (user?.id === youtubeStartedByRef.current) {
           // Check if there are queued videos — if so, advance; otherwise loop current video
@@ -2077,9 +2080,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
       if (state === YT.PlayerState.PLAYING) {
         setYtIsPlaying(true);
+        setYoutubeActive(true);
         try { const d = player.getDuration(); if (d > 0) setYtDuration(d); } catch (_) {}
       } else if (state === YT.PlayerState.PAUSED) {
         setYtIsPlaying(false);
+        setYoutubeActive(false);
         try { setYtCurrentTime(player.getCurrentTime() || 0); } catch (_) {}
       } else if (state === YT.PlayerState.BUFFERING) {
         // Slow-internet adaptation: if buffering lasts >4s, downgrade quality one step.
@@ -2279,6 +2284,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setYtIsPlaying(false);
       setYtCurrentTime(0);
       setYtDuration(0);
+      setYoutubeActive(false);
     };
     // CRITICAL: Only re-create the player when the video ID itself changes,
     // OR when the user explicitly hits Retry (ytRetryNonce bumps).

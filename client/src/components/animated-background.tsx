@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTheme } from "@/lib/theme";
+import { isBackgroundPaused, onBackgroundPauseChange } from "@/lib/perf-bus";
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -882,8 +883,40 @@ export function AnimatedBackground() {
     timeRef.current = 0;
 
     const shooterTimer = { v: 0 };
+    let paused = isBackgroundPaused() || (typeof document !== "undefined" && document.hidden);
+
+    const stopLoop = () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = 0;
+      }
+    };
+    const startLoop = () => {
+      if (rafRef.current) return;
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+    const handleVisibility = () => {
+      const shouldPause = isBackgroundPaused() || document.hidden;
+      if (shouldPause === paused) return;
+      paused = shouldPause;
+      if (paused) stopLoop();
+      else startLoop();
+    };
+    const offBgPause = onBackgroundPauseChange((p) => {
+      const shouldPause = p || (typeof document !== "undefined" && document.hidden);
+      if (shouldPause === paused) return;
+      paused = shouldPause;
+      if (paused) stopLoop();
+      else startLoop();
+    });
+    document.addEventListener("visibilitychange", handleVisibility);
 
     const draw = () => {
+      if (paused) {
+        rafRef.current = 0;
+        return;
+      }
       timeRef.current += 0.016;
       const t  = timeRef.current;
       const W  = canvas.width;
@@ -941,10 +974,12 @@ export function AnimatedBackground() {
       rafRef.current = requestAnimationFrame(draw);
     };
 
-    draw();
+    if (!paused) draw();
 
     return () => {
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      offBgPause();
       cancelAnimationFrame(rafRef.current);
     };
   }, [theme, active]);
