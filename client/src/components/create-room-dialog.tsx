@@ -40,7 +40,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   const [level, setLevel] = useState("Beginner");
   const [maxUsers, setMaxUsers] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
-  const [roomTheme, setRoomTheme] = useState("premium-atmosphere");
+  const [roomTheme, setRoomTheme] = useState("none");
   const [themeOffset, setThemeOffset] = useState(0);
   const THEMES_PER_PAGE = 4;
   const [videoTab, setVideoTab] = useState<"upload" | "youtube">("upload");
