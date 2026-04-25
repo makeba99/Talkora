@@ -767,7 +767,7 @@ export default function Lobby() {
           borderImage: "linear-gradient(to right, transparent, rgba(var(--primary), 0.2), transparent) 1",
         }}
       >
-        <div className="flex items-center justify-between gap-3 px-4 py-3 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 max-w-[1600px] mx-auto">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex-shrink-0 relative group">
               <div
@@ -874,7 +874,7 @@ export default function Lobby() {
       </header>
 
       <div className="flex-1 overflow-auto app-scrollbar">
-        <div className="max-w-7xl mx-auto p-3 sm:p-4 pb-8 space-y-5 animate-fade-in">
+        <div className="max-w-[1600px] mx-auto p-3 sm:p-4 lg:px-6 xl:px-8 pb-8 space-y-5 animate-fade-in">
           {announcements.length > 0 && (
             <div className="space-y-2" data-testid="container-lobby-announcements">
               {announcements.map((announcement) => {
@@ -1182,7 +1182,7 @@ export default function Lobby() {
               )}
             </section>
           ) : roomsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="space-y-3 p-5 rounded-md border">
                   <Skeleton className="h-6 w-3/4" />
@@ -1227,7 +1227,7 @@ export default function Lobby() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
               {filteredRooms.map((room) => {
                 const mergedParticipants = allRoomParticipants(roomParticipants);
                 const isSample = room.id.startsWith("sample-");
