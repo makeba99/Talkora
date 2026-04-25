@@ -366,9 +366,9 @@ export default function Lobby() {
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [languagesExpanded, setLanguagesExpanded] = useState(false);
   const [showLanguageFilters, setShowLanguageFilters] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
+    if (typeof window === "undefined") return false;
     const saved = window.localStorage.getItem("vextorn:showLanguageFilters");
-    return saved === null ? true : saved === "true";
+    return saved === null ? false : saved === "true";
   });
   useEffect(() => {
     if (typeof window !== "undefined") {
