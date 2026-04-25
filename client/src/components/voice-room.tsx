@@ -2310,6 +2310,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket.emit("room:youtube-watching", { roomId: room.id, watching: showYoutube });
     if (showYoutube) {
       setYoutubeWatchers(prev => { const n = new Set(prev); n.add(user?.id || ""); return n; });
+      // Pre-fetch the starter's current playhead the moment a watcher opens the
+      // panel — BEFORE the iframe even mounts. The response populates
+      // ytSyncTimeRef so that when the player's onReady fires moments later,
+      // it can seek directly to the correct position. This eliminates the
+      // "starts at 0, then jumps" flash that happened when we waited until
+      // onReady to ask for the time.
+      if (user?.id && user.id !== youtubeStartedByRef.current) {
+        ytSyncTimeRef.current = 0;
+        socket.emit("room:youtube-time-request", { roomId: room.id, requesterId: user.id });
+      }
     } else {
       setYoutubeWatchers(prev => { const n = new Set(prev); n.delete(user?.id || ""); return n; });
     }
@@ -6630,7 +6640,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
+          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${(activeYoutubeId && showYoutube) ? "hidden" : ""} ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
             <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-5">
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
