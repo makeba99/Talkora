@@ -677,7 +677,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
                   const avatarEl = (
                     <div
-                      className={`relative rounded-full flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
+                      className={`relative rounded-2xl flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
                       style={{
                         width: circleSize + 6,
                         height: circleSize + 6,
@@ -690,9 +690,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                             : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
                       }}
                     >
-                      <Avatar style={{ width: circleSize, height: circleSize }} className={`border-2 ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
-                        <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} />
-                        <AvatarFallback className="text-base font-bold bg-[#1a1520] text-white/70">
+                      <Avatar style={{ width: circleSize, height: circleSize }} className={`rounded-2xl border-2 ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
+                        <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} className="rounded-2xl" />
+                        <AvatarFallback className="rounded-2xl text-base font-bold bg-[#1a1520] text-white/70">
                           {getUserInitials(p)}
                         </AvatarFallback>
                       </Avatar>
@@ -742,28 +742,26 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   );
                 }
 
-                /* Empty slot — neomorphic surface circle */
+                /* Empty slot — rounded-square neomorphic tile */
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div
-                      className="rounded-full flex items-center justify-center flex-shrink-0"
+                      className="rounded-2xl flex items-center justify-center flex-shrink-0"
                       style={{
                         width: circleSize + 6,
                         height: circleSize + 6,
-                        background: "hsl(228 14% 13%)",
-                        border: "1px solid rgba(0,210,230,0.16)",
-                        boxShadow: "-3px -3px 7px rgba(255,255,255,0.025), 3px 3px 8px rgba(0,0,0,0.55), inset 0 0 10px rgba(0,200,220,0.05)",
-                        padding: 0,
+                        background: "linear-gradient(145deg, hsl(228 14% 12%) 0%, hsl(228 14% 10%) 100%)",
+                        border: "1px solid rgba(255,255,255,0.055)",
+                        boxShadow: "-2px -2px 5px rgba(255,255,255,0.02), 3px 3px 9px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.025)",
                       }}
                     >
-                      <div
-                        className="w-full h-full rounded-full flex items-center justify-center"
+                      <Users
                         style={{
-                          background: "radial-gradient(circle at 42% 36%, rgba(0,210,230,0.07) 0%, hsl(228 14% 12%) 60%, hsl(228 14% 10%) 100%)",
+                          width: Math.round(circleSize * 0.38),
+                          height: Math.round(circleSize * 0.38),
+                          color: "rgba(255,255,255,0.14)",
                         }}
-                      >
-                        <Users className="w-5 h-5" style={{ color: "rgba(0,210,230,0.38)" }} />
-                      </div>
+                      />
                     </div>
                   </div>
                 );
