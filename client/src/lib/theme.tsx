@@ -194,9 +194,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem("theme") as Theme | null;
       const hasExplicitChoice = localStorage.getItem("theme-chosen") === "1";
       if (saved && hasExplicitChoice) return saved;
-      return "premium-atmosphere";
+      return "neomorphic-dark";
     }
-    return "premium-atmosphere";
+    return "neomorphic-dark";
   });
 
   useEffect(() => {
