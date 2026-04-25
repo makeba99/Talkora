@@ -297,6 +297,32 @@ Badge applications table (shared/schema.ts):
   so it disappears into the page. Hover keeps the warm amber rim
   (6px @ 0.18) for a quiet hint of life.
 
+## Round 6 — Decoration rings squared to match avatar tiles
+- `client/src/components/profile-decorations.tsx`: avatar tiles in
+  room cards are now `rounded-2xl` (16px corners), so the animated
+  decoration rings/auras were updated to trace a rounded square
+  instead of a circle.
+- Added module-level helpers `roundedRectPath(cx, cy, halfSize,
+  cornerRadius)` and `pointOnRoundedRect(t, cx, cy, halfSize,
+  cornerRadius)` plus `AVATAR_TILE_RADIUS = 16`. The path helper emits
+  an SVG path for a rounded-rect outline; the perimeter sampler walks
+  clockwise starting at top-center so old `(i / count) * 2π` angle
+  distributions map directly onto `t = i / count`.
+- Each ring's corner radius scales as `AVATAR_TILE_RADIUS + offset`
+  so corners stay parallel to the avatar tile as the ring distance
+  from center grows.
+- Components converted from `<circle>` rings + cos/sin point placement
+  to rounded-rect paths + perimeter sampling: `CosmicRing` (3 rings +
+  8 dots), `RainbowRing` (3 nested rings), `StarsRing` (10 stars +
+  outer halo), `LightningAura` (6 arcs + halo), `FrostAura` (12
+  snowflakes + halo), `HeartsAura` (10 spawn points), `SparklesAura`
+  (14 sparkle positions), `BubblesAura` (12 bubble origins),
+  `PetalsAura` (12 petal origins).
+- Untouched: `FireAura` (flames rise from the bottom edge — not a
+  ring) and `CatEarsDecoration` (corner-positioned). Remaining
+  `<circle>` calls in the file are intentional small dot/bubble/
+  flower-center shapes, not ring outlines.
+
 ## User Preferences
 - No landing page gate - lobby always shown
 - Collapse/expand for language filters instead of scrollbar

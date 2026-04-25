@@ -38,12 +38,82 @@ const DECO_STYLES = `
 
 function uid(prefix: string, i: number) { return `${prefix}-${i}`; }
 
+/* ── Rounded-rect ring helpers ─────────────────────────────────────
+   Avatar tiles in room cards are `rounded-2xl` (16px corner). All
+   decoration rings/auras now trace a rounded square instead of a
+   circle so they hug the actual tile shape. */
+const AVATAR_TILE_RADIUS = 16;
+
+function roundedRectPath(cx: number, cy: number, halfSize: number, cornerRadius: number): string {
+  const r = Math.max(0, Math.min(cornerRadius, halfSize));
+  const x = cx - halfSize, y = cy - halfSize, s = halfSize * 2;
+  return (
+    `M${x + r},${y} L${x + s - r},${y} ` +
+    `A${r},${r} 0 0 1 ${x + s},${y + r} L${x + s},${y + s - r} ` +
+    `A${r},${r} 0 0 1 ${x + s - r},${y + s} L${x + r},${y + s} ` +
+    `A${r},${r} 0 0 1 ${x},${y + s - r} L${x},${y + r} ` +
+    `A${r},${r} 0 0 1 ${x + r},${y} Z`
+  );
+}
+
+/* Sample a point on a rounded-rect perimeter at parameter t (0..1).
+   Starts at top-center going clockwise (matches angle = -PI/2 mapping
+   to t = 0 of the equivalent circle). */
+function pointOnRoundedRect(
+  t: number,
+  cx: number,
+  cy: number,
+  halfSize: number,
+  cornerRadius: number
+): { x: number; y: number } {
+  const r = Math.max(0, Math.min(cornerRadius, halfSize));
+  const s = halfSize * 2;
+  const straight = s - 2 * r;
+  const arcLen = (Math.PI / 2) * r;
+  const perim = 4 * straight + 4 * arcLen;
+  const halfTop = straight / 2;
+  let d = (((t % 1) + 1) % 1) * perim;
+  if (d < halfTop) return { x: cx + d, y: cy - halfSize };
+  d -= halfTop;
+  if (d < arcLen) {
+    const a = (d / arcLen) * (Math.PI / 2) - Math.PI / 2;
+    return { x: cx + halfTop + r * Math.cos(a), y: cy - halfSize + r + r * Math.sin(a) };
+  }
+  d -= arcLen;
+  if (d < straight) return { x: cx + halfSize, y: cy - halfSize + r + d };
+  d -= straight;
+  if (d < arcLen) {
+    const a = (d / arcLen) * (Math.PI / 2);
+    return { x: cx + halfSize - r + r * Math.cos(a), y: cy + halfSize - r + r * Math.sin(a) };
+  }
+  d -= arcLen;
+  if (d < straight) return { x: cx + halfSize - r - d, y: cy + halfSize };
+  d -= straight;
+  if (d < arcLen) {
+    const a = (d / arcLen) * (Math.PI / 2) + Math.PI / 2;
+    return { x: cx - halfSize + r + r * Math.cos(a), y: cy + halfSize - r + r * Math.sin(a) };
+  }
+  d -= arcLen;
+  if (d < straight) return { x: cx - halfSize, y: cy + halfSize - r - d };
+  d -= straight;
+  if (d < arcLen) {
+    const a = (d / arcLen) * (Math.PI / 2) + Math.PI;
+    return { x: cx - halfSize + r + r * Math.cos(a), y: cy - halfSize + r + r * Math.sin(a) };
+  }
+  d -= arcLen;
+  return { x: cx - halfSize + r + d, y: cy - halfSize };
+}
+
 function CosmicRing({ size }: { size: number }) {
   const pad = Math.round(size * 0.32);
   const w = size + pad * 2;
   const c = w / 2;
-  const r1 = size / 2 + pad * 0.38;
-  const r2 = size / 2 + pad * 0.72;
+  const off1 = pad * 0.38;
+  const off2 = pad * 0.72;
+  const half1 = size / 2 + off1;
+  const half2 = size / 2 + off2;
+  const cr1 = AVATAR_TILE_RADIUS + off1;
+  const cr2 = AVATAR_TILE_RADIUS + off2;
   const id = `cr${size}`;
   const dots = 8;
 
@@ -73,23 +143,22 @@ function CosmicRing({ size }: { size: number }) {
           </filter>
         </defs>
         <g style={{ animation: `dec-spin 4s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
-          <circle cx={c} cy={c} r={r2} fill="none" stroke={`url(#${id}g1)`} strokeWidth="3.5" filter={`url(#${id}glow2)`} />
+          <path d={roundedRectPath(c, c, half2, cr2)} fill="none" stroke={`url(#${id}g1)`} strokeWidth="3.5" filter={`url(#${id}glow2)`} />
         </g>
         <g style={{ animation: `dec-spin-rev 3s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
-          <circle cx={c} cy={c} r={r2 - 4} fill="none" stroke={`url(#${id}g2)`} strokeWidth="1.5" opacity="0.5" />
+          <path d={roundedRectPath(c, c, half2 - 4, Math.max(0, cr2 - 4))} fill="none" stroke={`url(#${id}g2)`} strokeWidth="1.5" opacity="0.5" />
         </g>
         <g style={{ animation: `dec-spin-rev 6s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
-          <circle cx={c} cy={c} r={r1} fill="none" stroke="#00e5ff" strokeWidth="1" strokeDasharray="6 5" opacity="0.55" filter={`url(#${id}glow)`} />
+          <path d={roundedRectPath(c, c, half1, cr1)} fill="none" stroke="#00e5ff" strokeWidth="1" strokeDasharray="6 5" opacity="0.55" filter={`url(#${id}glow)`} />
         </g>
         {Array.from({ length: dots }).map((_, i) => {
-          const angle = (i / dots) * 2 * Math.PI;
-          const dx = Math.cos(angle) * r2;
-          const dy = Math.sin(angle) * r2;
+          const t = i / dots;
+          const { x, y } = pointOnRoundedRect(t, c, c, half2, cr2);
           return (
             <circle
               key={i}
-              cx={c + dx}
-              cy={c + dy}
+              cx={x}
+              cy={y}
               r={2.5}
               fill="#00e5ff"
               filter={`url(#${id}glow)`}
@@ -164,7 +233,11 @@ function LightningAura({ size }: { size: number }) {
   const pad = Math.round(size * 0.28);
   const w = size + pad * 2;
   const c = w / 2;
-  const r = size / 2 + pad * 0.55;
+  const off = pad * 0.55;
+  const half = size / 2 + off;
+  const cr = AVATAR_TILE_RADIUS + off;
+  const halfOuter = half * 1.25;
+  const crOuter = cr * 1.25;
   const arcs = 6;
 
   return (
@@ -177,20 +250,18 @@ function LightningAura({ size }: { size: number }) {
           </filter>
         </defs>
         {Array.from({ length: arcs }).map((_, i) => {
-          const a1 = ((i / arcs) * 360 - 20) * (Math.PI / 180);
-          const a2 = ((i / arcs) * 360 + 50) * (Math.PI / 180);
-          const x1 = c + Math.cos(a1) * r;
-          const y1 = c + Math.sin(a1) * r;
-          const x2 = c + Math.cos(a2) * r;
-          const y2 = c + Math.sin(a2) * r;
-          const mx = c + Math.cos((a1 + a2) / 2) * (r * 1.25);
-          const my = c + Math.sin((a1 + a2) / 2) * (r * 1.25);
+          const t1 = (i / arcs) - 20 / 360;
+          const t2 = (i / arcs) + 50 / 360;
+          const tm = (t1 + t2) / 2;
+          const p1 = pointOnRoundedRect(t1, c, c, half, cr);
+          const p2 = pointOnRoundedRect(t2, c, c, half, cr);
+          const pm = pointOnRoundedRect(tm, c, c, halfOuter, crOuter);
           const dur = 0.4 + Math.random() * 0.5;
           const delay = (i / arcs) * 1.5;
           return (
             <g key={i} style={{ animation: `dec-flicker ${dur}s ease-in-out ${delay}s infinite` }}>
               <path
-                d={`M${x1},${y1} Q${mx},${my} ${x2},${y2}`}
+                d={`M${p1.x},${p1.y} Q${pm.x},${pm.y} ${p2.x},${p2.y}`}
                 fill="none"
                 stroke="#00cfff"
                 strokeWidth="2.5"
@@ -198,7 +269,7 @@ function LightningAura({ size }: { size: number }) {
                 filter={`url(#lf${size})`}
               />
               <path
-                d={`M${x1},${y1} Q${mx},${my} ${x2},${y2}`}
+                d={`M${p1.x},${p1.y} Q${pm.x},${pm.y} ${p2.x},${p2.y}`}
                 fill="none"
                 stroke="#ffffff"
                 strokeWidth="0.8"
@@ -208,7 +279,7 @@ function LightningAura({ size }: { size: number }) {
             </g>
           );
         })}
-        <circle cx={c} cy={c} r={r} fill="none" stroke="#00cfff" strokeWidth="1" opacity="0.25"
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#00cfff" strokeWidth="1" opacity="0.25"
           style={{ animation: `dec-pulse 2s ease-in-out infinite` }} />
       </svg>
     </div>
@@ -231,10 +302,11 @@ function SparklesAura({ size }: { size: number }) {
           </filter>
         </defs>
         {Array.from({ length: count }).map((_, i) => {
-          const angle = (i / count) * 2 * Math.PI;
-          const rVar = (size / 2 + pad * 0.45) + (i % 3) * pad * 0.18;
-          const x = c + Math.cos(angle) * rVar;
-          const y = c + Math.sin(angle) * rVar;
+          const t = i / count;
+          const ringOff = pad * 0.45 + (i % 3) * pad * 0.18;
+          const half = size / 2 + ringOff;
+          const cr = AVATAR_TILE_RADIUS + ringOff;
+          const { x, y } = pointOnRoundedRect(t, c, c, half, cr);
           const s = 3 + (i % 4);
           const dur = 1.2 + (i % 5) * 0.35;
           const del = (i / count) * 2.5;
@@ -258,7 +330,9 @@ function RainbowRing({ size }: { size: number }) {
   const pad = Math.round(size * 0.28);
   const w = size + pad * 2;
   const c = w / 2;
-  const r = size / 2 + pad * 0.55;
+  const off = pad * 0.55;
+  const halfMid = size / 2 + off;
+  const crMid = AVATAR_TILE_RADIUS + off;
   const id = `rr${size}`;
 
   return (
@@ -280,9 +354,9 @@ function RainbowRing({ size }: { size: number }) {
           </filter>
         </defs>
         <g style={{ animation: `dec-rainbow-spin 3s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
-          <circle cx={c} cy={c} r={r} fill="none" stroke={`url(#${id}lg)`} strokeWidth="5" filter={`url(#${id}gf)`} />
-          <circle cx={c} cy={c} r={r + 5} fill="none" stroke={`url(#${id}lg)`} strokeWidth="1.5" opacity="0.4" />
-          <circle cx={c} cy={c} r={r - 5} fill="none" stroke={`url(#${id}lg)`} strokeWidth="1.5" opacity="0.4" />
+          <path d={roundedRectPath(c, c, halfMid, crMid)} fill="none" stroke={`url(#${id}lg)`} strokeWidth="5" filter={`url(#${id}gf)`} />
+          <path d={roundedRectPath(c, c, halfMid + 5, crMid + 5)} fill="none" stroke={`url(#${id}lg)`} strokeWidth="1.5" opacity="0.4" />
+          <path d={roundedRectPath(c, c, halfMid - 5, Math.max(0, crMid - 5))} fill="none" stroke={`url(#${id}lg)`} strokeWidth="1.5" opacity="0.4" />
         </g>
       </svg>
     </div>
@@ -306,10 +380,11 @@ function FrostAura({ size }: { size: number }) {
         </defs>
         <g filter={`url(#frf${size})`}>
           {Array.from({ length: count }).map((_, i) => {
-            const angle = (i / count) * 2 * Math.PI;
-            const rVar = (size / 2 + pad * 0.4) + (i % 3) * pad * 0.22;
-            const sx = c + Math.cos(angle) * rVar;
-            const sy = c + Math.sin(angle) * rVar;
+            const t = i / count;
+            const ringOff = pad * 0.4 + (i % 3) * pad * 0.22;
+            const half = size / 2 + ringOff;
+            const cr = AVATAR_TILE_RADIUS + ringOff;
+            const { x: sx, y: sy } = pointOnRoundedRect(t, c, c, half, cr);
             const s = 4.5 + (i % 3) * 2;
             const cols = ["#a8f4ff", "#c8f8ff", "#88e8ff", "#e0f8ff"];
             const col = cols[i % cols.length];
@@ -327,7 +402,7 @@ function FrostAura({ size }: { size: number }) {
             );
           })}
         </g>
-        <circle cx={c} cy={c} r={size / 2 + pad * 0.2} fill="none" stroke="#a8f4ff" strokeWidth="1" opacity="0.25"
+        <path d={roundedRectPath(c, c, size / 2 + pad * 0.2, AVATAR_TILE_RADIUS + pad * 0.2)} fill="none" stroke="#a8f4ff" strokeWidth="1" opacity="0.25"
           style={{ animation: `dec-pulse 3s ease-in-out infinite` }} />
       </svg>
     </div>
@@ -351,10 +426,11 @@ function HeartsAura({ size }: { size: number }) {
           </filter>
         </defs>
         {Array.from({ length: count }).map((_, i) => {
-          const angle = (i / count) * 2 * Math.PI;
-          const rVar = size / 2 + pad * 0.38 + (i % 3) * pad * 0.2;
-          const sx = c + Math.cos(angle) * rVar;
-          const sy = c + Math.sin(angle) * rVar;
+          const t = i / count;
+          const ringOff = pad * 0.38 + (i % 3) * pad * 0.2;
+          const half = size / 2 + ringOff;
+          const cr = AVATAR_TILE_RADIUS + ringOff;
+          const { x: sx, y: sy } = pointOnRoundedRect(t, c, c, half, cr);
           const hx = (Math.random() - 0.5) * 30;
           const hy = -30 - Math.random() * 25;
           const s = 0.45 + (i % 3) * 0.2;
@@ -386,6 +462,9 @@ function StarsRing({ size }: { size: number }) {
   const c = w / 2;
   const count = 10;
   const colors = ["#ffe96e", "#fff5b0", "#ffd700", "#ffffff", "#ffec8b"];
+  const haloOff = pad * 0.3;
+  const haloHalf = size / 2 + haloOff;
+  const haloCr = AVATAR_TILE_RADIUS + haloOff;
 
   function starPath(cx: number, cy: number, r1: number, r2: number, pts: number) {
     let d = "";
@@ -410,10 +489,11 @@ function StarsRing({ size }: { size: number }) {
         </defs>
         <g style={{ animation: `dec-spin ${12}s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
           {Array.from({ length: count }).map((_, i) => {
-            const angle = (i / count) * 2 * Math.PI;
-            const rVar = size / 2 + pad * 0.5 + (i % 3) * pad * 0.15;
-            const x = c + Math.cos(angle) * rVar;
-            const y = c + Math.sin(angle) * rVar;
+            const t = i / count;
+            const ringOff = pad * 0.5 + (i % 3) * pad * 0.15;
+            const half = size / 2 + ringOff;
+            const cr = AVATAR_TILE_RADIUS + ringOff;
+            const { x, y } = pointOnRoundedRect(t, c, c, half, cr);
             const s = 4 + (i % 3) * 2.5;
             const col = colors[i % colors.length];
             const dur = 1.5 + (i % 4) * 0.4;
@@ -428,7 +508,7 @@ function StarsRing({ size }: { size: number }) {
             );
           })}
         </g>
-        <circle cx={c} cy={c} r={size / 2 + pad * 0.3} fill="none" stroke="#ffe96e" strokeWidth="0.8" opacity="0.2"
+        <path d={roundedRectPath(c, c, haloHalf, haloCr)} fill="none" stroke="#ffe96e" strokeWidth="0.8" opacity="0.2"
           style={{ animation: `dec-pulse 3s ease-in-out infinite` }} />
       </svg>
     </div>
@@ -458,9 +538,11 @@ function BubblesAura({ size }: { size: number }) {
           </filter>
         </defs>
         {Array.from({ length: count }).map((_, i) => {
-          const angle = (i / count) * 2 * Math.PI + Math.random() * 0.5;
-          const rx = c + Math.cos(angle) * (size / 2 + pad * 0.3 + (i % 3) * pad * 0.15);
-          const ry = c + Math.sin(angle) * (size / 2 + pad * 0.3 + (i % 3) * pad * 0.15);
+          const t = i / count + (Math.random() * 0.5) / (2 * Math.PI);
+          const ringOff = pad * 0.3 + (i % 3) * pad * 0.15;
+          const half = size / 2 + ringOff;
+          const cr = AVATAR_TILE_RADIUS + ringOff;
+          const { x: rx, y: ry } = pointOnRoundedRect(t, c, c, half, cr);
           const r = 4 + (i % 4) * 2.5;
           const dur = 2.0 + (i % 5) * 0.4;
           const del = (i / count) * 3.5;
@@ -497,9 +579,12 @@ function PetalsAura({ size }: { size: number }) {
           </filter>
         </defs>
         {Array.from({ length: count }).map((_, i) => {
-          const angle = (i / count) * 2 * Math.PI;
-          const sx = c + Math.cos(angle) * (size / 2 + pad * 0.3 + (i % 3) * pad * 0.2);
-          const sy = c + Math.sin(angle) * (size / 2 + pad * 0.3 + (i % 3) * pad * 0.2);
+          const t = i / count;
+          const ringOff = pad * 0.3 + (i % 3) * pad * 0.2;
+          const half = size / 2 + ringOff;
+          const cr = AVATAR_TILE_RADIUS + ringOff;
+          const { x: sx, y: sy } = pointOnRoundedRect(t, c, c, half, cr);
+          const angle = t * 2 * Math.PI;
           const px = (Math.cos(angle + 0.8) * 25).toFixed(1);
           const py = (Math.sin(angle + 0.8) * 25 + 15).toFixed(1);
           const pr = (Math.random() * 200 - 100).toFixed(0);
