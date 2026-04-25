@@ -54,14 +54,14 @@ export function EmojiPickerButton({ onEmojiSelect }: EmojiPickerButtonProps) {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[340px] p-0"
+        className="w-[340px] p-0 vextorn-emoji-popover"
         side="top"
         align="start"
         sideOffset={8}
       >
         <EmojiPicker
           onEmojiClick={handleEmojiClick}
-          theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
+          theme={theme === "light" || theme === "neomorphic-light" ? Theme.LIGHT : Theme.DARK}
           width="100%"
           height={350}
           searchPlaceHolder="Search emojis..."

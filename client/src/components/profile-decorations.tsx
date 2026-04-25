@@ -935,17 +935,20 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
     case "volcanic":
       return { background: "radial-gradient(ellipse at 50% 100%, #1c0400 0%, #0e0200 55%, #080100 100%)" };
     default:
-      // Default room background — mirrors the lobby's neumorphic canvas
-      // (near-black indigo undertone with breathing violet/coral auras)
-      // so entering a room feels continuous with the platform shell.
+      // Default room background — soft neumorphic slate-gray that feels
+      // like a real tactile surface (inspired by sculpted neumorphism dashboards):
+      // a subtle directional top highlight from a virtual light source, a
+      // gently darker bottom vignette to ground the surface, and a faint violet
+      // ambient bloom from the upper corners that ties back to the platform shell
+      // without overpowering the gray. The base is a warm slate-gray, not pure
+      // black, so floating cards and avatars read as raised pillows on top.
       return {
         background:
-          "radial-gradient(ellipse 95% 65% at 18% 0%, rgba(120, 90, 220, 0.13) 0%, transparent 58%), " +
-          "radial-gradient(ellipse 80% 55% at 82% 0%, rgba(170, 120, 255, 0.08) 0%, transparent 55%), " +
-          "radial-gradient(ellipse 60% 45% at 50% 110%, rgba(120, 80, 220, 0.06) 0%, transparent 60%), " +
-          "radial-gradient(140% 90% at 50% 0%, rgba(255, 245, 255, 0.020) 0%, transparent 55%), " +
-          "radial-gradient(85% 65% at 50% 100%, rgba(0, 0, 0, 0.55) 0%, transparent 62%), " +
-          "hsl(228 18% 8%)",
+          "radial-gradient(ellipse 110% 70% at 50% -10%, rgba(255, 255, 255, 0.045) 0%, transparent 55%), " +
+          "radial-gradient(ellipse 80% 55% at 12% 8%, hsl(var(--neu-orange-hi) / 0.07) 0%, transparent 60%), " +
+          "radial-gradient(ellipse 80% 55% at 88% 8%, hsl(var(--neu-orange) / 0.05) 0%, transparent 60%), " +
+          "radial-gradient(ellipse 95% 70% at 50% 115%, rgba(0, 0, 0, 0.55) 0%, transparent 65%), " +
+          "linear-gradient(180deg, hsl(228 11% 22%) 0%, hsl(228 13% 17%) 60%, hsl(228 14% 13%) 100%)",
       };
   }
 }

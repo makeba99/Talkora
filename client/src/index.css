@@ -3428,3 +3428,96 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.55))
     drop-shadow(-1px -1px 2px rgba(255, 255, 255, 0.04));
 }
+
+/* ============================================================
+   Emoji Picker (emoji-picker-react) — violet neumorphic skin
+   Override the library's CSS variables so the picker matches
+   the platform's deep-violet shell instead of stark black/white.
+   ============================================================ */
+.vextorn-emoji-popover {
+  background: hsl(228 14% 12%) !important;
+  border: 1px solid hsl(var(--neu-orange) / 0.30) !important;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.62),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(220, 210, 255, 0.05) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact,
+.vextorn-emoji-popover aside.EmojiPickerReact {
+  --epr-bg-color: hsl(228 14% 12%);
+  --epr-category-label-bg-color: hsl(228 14% 12%);
+  --epr-text-color: hsl(0 0% 92%);
+  --epr-search-input-bg-color: hsl(228 14% 9%);
+  --epr-search-input-bg-color-active: hsl(228 14% 9%);
+  --epr-search-input-text-color: hsl(0 0% 92%);
+  --epr-search-input-placeholder-color: rgba(220, 210, 255, 0.45);
+  --epr-search-border-color: hsl(var(--neu-orange) / 0.40);
+  --epr-search-input-border-radius: 10px;
+  --epr-category-icon-active-color: hsl(var(--neu-orange-hi));
+  --epr-picker-border-color: transparent;
+  --epr-hover-bg-color: hsl(var(--neu-orange) / 0.18);
+  --epr-focus-bg-color: hsl(var(--neu-orange) / 0.22);
+  --epr-highlight-color: hsl(var(--neu-orange-hi));
+  --epr-category-label-text-color: rgba(220, 210, 255, 0.78);
+  --epr-horizontal-padding: 10px;
+  border: none !important;
+  background: hsl(228 14% 12%) !important;
+  font-family: inherit !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact .epr-header {
+  background: hsl(228 14% 12%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding-bottom: 8px !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact .epr-search-container input.epr-search {
+  background: hsl(228 14% 9%) !important;
+  border: 1px solid hsl(var(--neu-orange) / 0.28) !important;
+  color: hsl(0 0% 94%) !important;
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.025) !important;
+  border-radius: 10px !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact .epr-search-container input.epr-search:focus {
+  border-color: hsl(var(--neu-orange) / 0.55) !important;
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.025),
+    0 0 0 2px hsl(var(--neu-orange) / 0.20) !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact .epr-category-nav {
+  background: hsl(228 14% 11%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 6px 8px !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact .epr-emoji-category-label {
+  background: hsl(228 14% 12%) !important;
+  color: rgba(220, 210, 255, 0.62) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact button.epr-emoji {
+  background: transparent !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact button.epr-emoji:hover > .epr-emoji-img,
+.vextorn-emoji-popover .EmojiPickerReact button.epr-emoji:hover > .epr-emoji-native {
+  filter: drop-shadow(0 0 6px hsl(var(--neu-orange) / 0.55));
+}
+.vextorn-emoji-popover .EmojiPickerReact button.epr-emoji:hover {
+  background: hsl(var(--neu-orange) / 0.22) !important;
+  border-radius: 8px !important;
+}
+.vextorn-emoji-popover .EmojiPickerReact .epr-body::-webkit-scrollbar {
+  width: 8px;
+}
+.vextorn-emoji-popover .EmojiPickerReact .epr-body::-webkit-scrollbar-thumb {
+  background: hsl(var(--neu-orange) / 0.30);
+  border-radius: 8px;
+}
+.vextorn-emoji-popover .EmojiPickerReact .epr-body::-webkit-scrollbar-track {
+  background: transparent;
+}
