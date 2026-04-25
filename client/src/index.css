@@ -2168,38 +2168,25 @@ html.synthwave .neon-text {
   animation: premium-atmosphere-spark 2.6s ease-in-out infinite;
 }
 
-/* ── Hammer button animation ── */
-@keyframes sparkle-rotate {
-  0%   { transform: scale(1)    rotate(0deg);   }
-  30%  { transform: scale(1.18) rotate(18deg);  }
-  55%  { transform: scale(0.92) rotate(-8deg);  }
-  75%  { transform: scale(1.08) rotate(6deg);   }
-  100% { transform: scale(1)    rotate(0deg);   }
-}
-
-@keyframes hammer-btn-pulse {
-  0%   { box-shadow: 0 0 16px hsla(var(--neu-orange) / 0.22), 0 2px 8px rgba(0,0,0,0.30); }
-  14%  { box-shadow: 0 0 28px hsla(var(--neu-orange) / 0.55), 0 0 44px hsla(var(--neu-orange-lo) / 0.24), 0 2px 8px rgba(0,0,0,0.30); }
-  35%  { box-shadow: 0 0 16px hsla(var(--neu-orange) / 0.22), 0 2px 8px rgba(0,0,0,0.30); }
-  100% { box-shadow: 0 0 16px hsla(var(--neu-orange) / 0.22), 0 2px 8px rgba(0,0,0,0.30); }
+/* ── Hammer icon animation ── */
+@keyframes hammer-swing {
+  0%   { transform: rotate(0deg);   }
+  12%  { transform: rotate(-22deg); }
+  28%  { transform: rotate(14deg);  }
+  48%  { transform: rotate(-8deg);  }
+  65%  { transform: rotate(4deg);   }
+  80%  { transform: rotate(-2deg);  }
+  100% { transform: rotate(0deg);   }
 }
 
 .sparkle-icon {
   display: inline-block;
-  transform-origin: center center;
-  animation: sparkle-rotate 2.8s ease-in-out infinite;
-}
-
-.hammer-btn {
-  animation: hammer-btn-pulse 2.8s ease-in-out infinite;
+  transform-origin: 70% 70%;
+  animation: hammer-swing 2.6s ease-in-out infinite;
 }
 
 .hammer-btn:hover .sparkle-icon {
-  animation-duration: 1.2s;
-}
-
-.hammer-btn:hover {
-  animation-duration: 1.2s;
+  animation-duration: 1.0s;
 }
 
 /* ── AI Tutor responsive face size ── */
