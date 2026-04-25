@@ -309,17 +309,20 @@ function ParticipantCard({
 
           {!isMe && (
             <div className="grid grid-cols-4 gap-2">
-               <Button variant="outline" size="sm" onClick={() => onNavigateDm && onNavigateDm(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
-                  <MessageSquare className="w-3.5 h-3.5 mr-1 text-muted-foreground" /> PM
+               <Button variant="outline" size="sm" onClick={() => onNavigateDm && onNavigateDm(p.id)} className="h-12 flex-col text-[10px] leading-tight border-border bg-transparent hover:bg-muted px-1 gap-0.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="truncate w-full text-center">PM</span>
                </Button>
-               <div className="h-8 rounded-md border border-border bg-transparent hover:bg-muted flex items-center justify-center">
+               <div className="h-12 rounded-md border border-border bg-transparent hover:bg-muted flex items-center justify-center">
                  <UserNotePopover userId={p.id} />
                </div>
-               <Button variant="outline" size="sm" onClick={() => isFollowing ? unfollowMutation.mutate(p.id) : followMutation.mutate(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
-                  {isFollowing ? <UserCheck className="w-3.5 h-3.5 mr-1 text-blue-400" /> : <UserPlus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />} {isFollowing ? "Unf" : "Follow"}
+               <Button variant="outline" size="sm" onClick={() => isFollowing ? unfollowMutation.mutate(p.id) : followMutation.mutate(p.id)} className="h-12 flex-col text-[10px] leading-tight border-border bg-transparent hover:bg-muted px-1 gap-0.5">
+                  {isFollowing ? <UserCheck className="w-3.5 h-3.5 text-blue-400" /> : <UserPlus className="w-3.5 h-3.5 text-muted-foreground" />}
+                  <span className="truncate w-full text-center">{isFollowing ? "Unfollow" : "Follow"}</span>
                </Button>
-               <Button variant="outline" size="sm" onClick={() => onReconnect && onReconnect(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
-                  <RefreshCw className="w-3.5 h-3.5 mr-1 text-muted-foreground" /> Reboot
+               <Button variant="outline" size="sm" onClick={() => onReconnect && onReconnect(p.id)} className="h-12 flex-col text-[10px] leading-tight border-border bg-transparent hover:bg-muted px-1 gap-0.5">
+                  <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="truncate w-full text-center">Reboot</span>
                </Button>
             </div>
           )}
