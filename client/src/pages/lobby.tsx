@@ -666,7 +666,21 @@ export default function Lobby() {
           bc.postMessage({ type: "room-joined", roomId });
           bc.close();
         } catch {}
-        window.open(data.path || `/room/${roomId}`, "_blank");
+        const url = data.path || `/room/${roomId}`;
+        const target = `vextorn-room-${roomId}`;
+        const existing = window.open("", target);
+        if (existing && !existing.closed) {
+          try {
+            if (existing.location.href === "about:blank") {
+              existing.location.href = url;
+            }
+            existing.focus();
+          } catch {
+            existing.focus();
+          }
+        } else {
+          window.open(url, target);
+        }
       } catch (error: any) {
         toast({
           title: "Unable to open room",
