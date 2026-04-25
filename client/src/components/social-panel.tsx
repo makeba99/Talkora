@@ -1,0 +1,679 @@
+import { useState } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Users, Search, UserPlus, UserCheck, MessageSquare, Phone, StickyNote, X } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { getUserDisplayName, getUserInitials } from "@/lib/utils";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
+import type { User, Follow, UserBadge } from "@shared/schema";
+import { BADGE_TYPES } from "@shared/schema";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+function UserBadgePips({ userId }: { userId: string }) {
+  const { data: badges = [] } = useQuery<UserBadge[]>({
+    queryKey: ["/api/users", userId, "badges"],
+    queryFn: () => fetch(`/api/users/${userId}/badges`).then(r => r.json()),
+    staleTime: 60000,
+  });
+  if (badges.length === 0) return null;
+  const displayed = badges.slice(0, 3);
+  return (
+    <div className="flex items-center gap-0.5 mt-0.5">
+      {displayed.map((b) => {
+        const def = BADGE_TYPES[b.badgeType as keyof typeof BADGE_TYPES];
+        if (!def) return null;
+        return (
+          <Tooltip key={b.id}>
+            <TooltipTrigger asChild>
+              <span className="text-[11px] leading-none cursor-default">{def.emoji}</span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">{def.label}</TooltipContent>
+          </Tooltip>
+        );
+      })}
+      {badges.length > 3 && <span className="text-[10px] text-muted-foreground">+{badges.length - 3}</span>}
+    </div>
+  );
+}
+
+export function UserNotePopover({ userId }: { userId: string }) {
+  const [noteText, setNoteText] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const { data, isLoading } = useQuery<{ note: string }>({
+    queryKey: ["/api/notes", userId],
+    queryFn: () => fetch(`/api/notes/${userId}`, { credentials: "include" }).then(r => r.json()),
+    enabled: open,
+    staleTime: 30000,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (note: string) => {
+      await apiRequest("POST", `/api/notes/${userId}`, { note });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notes", userId] });
+    },
+  });
+
+  const currentNote = noteText ?? (data?.note ?? "");
+
+  const handleClose = () => {
+    setOpen(false);
+    setNoteText(null);
+  };
+
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant="ghost"
+            data-testid={`button-note-${userId}`}
+            className={`h-8 w-8 ${data?.note ? "text-amber-400" : "text-muted-foreground hover:text-foreground"}`}
+            onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+          >
+            <StickyNote className="w-4 h-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Private note</TooltipContent>
+      </Tooltip>
+
+      <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+        <DialogContent className="sm:max-w-lg w-full p-0 overflow-hidden" data-testid={`dialog-note-${userId}`}>
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border/40">
+            <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
+              <StickyNote className="w-4 h-4 text-amber-400" />
+              Private Note
+            </DialogTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Only you can see this — not visible to anyone else</p>
+          </DialogHeader>
+          <div className="px-5 py-4 space-y-3">
+            {isLoading ? (
+              <div className="h-52 bg-muted animate-pulse rounded-lg" />
+            ) : (
+              <Textarea
+                className="resize-none h-52 text-sm leading-relaxed bg-muted/30 border-border/50 focus-visible:ring-amber-400/40 placeholder:text-muted-foreground/50"
+                placeholder="Write your personal notes about this person here... (only you can read this)"
+                value={currentNote}
+                onChange={(e) => setNoteText(e.target.value)}
+                maxLength={1000}
+                autoFocus
+                data-testid={`textarea-note-${userId}`}
+              />
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] text-muted-foreground">{currentNote.length} / 1000</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-xs"
+                  onClick={handleClose}
+                  data-testid={`button-cancel-note-${userId}`}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs bg-amber-500 hover:bg-amber-400 text-black"
+                  disabled={saveMutation.isPending || isLoading}
+                  onClick={() => saveMutation.mutate(currentNote)}
+                  data-testid={`button-save-note-${userId}`}
+                >
+                  {saveMutation.isPending ? "Saving..." : "Save Note"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+interface UserProfileDialogProps {
+  user: User;
+  open: boolean;
+  onClose: () => void;
+  isFollowing: boolean;
+  onFollow: () => void;
+  onUnfollow: () => void;
+  onMessage: () => void;
+  onJoinRoom?: () => void;
+  inRoomId?: string;
+  isOnline: boolean;
+}
+
+function UserProfileDialog({
+  user: u,
+  open,
+  onClose,
+  isFollowing,
+  onFollow,
+  onUnfollow,
+  onMessage,
+  onJoinRoom,
+  inRoomId,
+  isOnline,
+}: UserProfileDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent
+        className="sm:max-w-sm w-full p-0 overflow-hidden"
+        data-testid={`dialog-profile-${u.id}`}
+      >
+        <div className="relative">
+          <div className="h-16 bg-gradient-to-br from-primary/30 via-primary/10 to-transparent" />
+          <div className="absolute top-8 left-4">
+            <Avatar className="w-16 h-16 border-4 border-background shadow-lg">
+              <AvatarImage src={u.profileImageUrl || undefined} alt={getUserDisplayName(u)} />
+              <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                {getUserInitials(u)}
+              </AvatarFallback>
+            </Avatar>
+            <div
+              className={`absolute bottom-1 right-1 w-3 h-3 rounded-full border-2 border-background ${
+                isOnline ? "bg-green-500" : "bg-muted-foreground/40"
+              }`}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 pt-10 pb-4 space-y-3">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="font-semibold text-base leading-tight">{getUserDisplayName(u)}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {isOnline ? "Online" : "Offline"}
+                  {inRoomId && (
+                    <span className="ml-1.5 text-primary font-medium">• In a room</span>
+                  )}
+                </p>
+              </div>
+              {isFollowing && (
+                <Badge variant="secondary" className="text-[10px] h-5 shrink-0">Following</Badge>
+              )}
+            </div>
+            {u.bio && (
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed line-clamp-3">{u.bio}</p>
+            )}
+            <UserBadgePips userId={u.id} />
+          </div>
+
+          <div className="border-t border-border/40 pt-3">
+            <p className="text-[11px] text-muted-foreground mb-2 font-medium uppercase tracking-wide">Private Note</p>
+            <UserNotePopover userId={u.id} />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            {inRoomId && onJoinRoom && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-8 text-xs"
+                onClick={() => { onJoinRoom(); onClose(); }}
+                data-testid={`button-join-room-profile-${u.id}`}
+              >
+                <Phone className="w-3.5 h-3.5 mr-1.5" /> Join Room
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 h-8 text-xs"
+              onClick={() => { onMessage(); onClose(); }}
+              data-testid={`button-message-profile-${u.id}`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Message
+            </Button>
+            <Button
+              size="sm"
+              variant={isFollowing ? "outline" : "default"}
+              className="flex-1 h-8 text-xs"
+              onClick={() => { isFollowing ? onUnfollow() : onFollow(); }}
+              data-testid={`button-follow-profile-${u.id}`}
+            >
+              {isFollowing ? (
+                <><UserCheck className="w-3.5 h-3.5 mr-1.5 text-primary" /> Following</>
+              ) : (
+                <><UserPlus className="w-3.5 h-3.5 mr-1.5" /> Follow</>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface SocialPanelProps {
+  onOpenDm?: (userId: string) => void;
+  onlineUsers: Set<string>;
+}
+
+export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [onlyOnline, setOnlyOnline] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
+
+  const { data: allUsers = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: !!user,
+  });
+
+  const { data: following = [] } = useQuery<Follow[]>({
+    queryKey: ["/api/follows/following", user?.id],
+    enabled: !!user,
+  });
+
+  const { data: followers = [] } = useQuery<Follow[]>({
+    queryKey: ["/api/follows/followers", user?.id],
+    enabled: !!user,
+  });
+
+  const { data: userRooms = {} } = useQuery<Record<string, string>>({
+    queryKey: ["/api/users/rooms"],
+    enabled: !!user,
+    refetchInterval: 5000,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: async (followingId: string) => {
+      await apiRequest("POST", "/api/follows", {
+        followerId: user?.id,
+        followingId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/follows/following"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/follows/followers"] });
+    },
+  });
+
+  const unfollowMutation = useMutation({
+    mutationFn: async (followingId: string) => {
+      await apiRequest("DELETE", `/api/follows/${user?.id}/${followingId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/follows/following"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/follows/followers"] });
+    },
+  });
+
+  const followingIds = new Set(following.map((f) => f.followingId));
+  const followerIds = new Set(followers.map((f) => f.followerId));
+
+  const friends = allUsers.filter(
+    (u) => u.id !== user?.id && followingIds.has(u.id) && followerIds.has(u.id)
+  );
+
+  const followingUsers = allUsers.filter(
+    (u) => u.id !== user?.id && followingIds.has(u.id)
+  );
+
+  const followerUsers = allUsers.filter(
+    (u) => u.id !== user?.id && followerIds.has(u.id)
+  );
+
+  const connectedUserIds = new Set([...Array.from(followingIds), ...Array.from(followerIds)]);
+  const connectedUsers = allUsers.filter(
+    (u) => u.id !== user?.id && connectedUserIds.has(u.id)
+  );
+
+  const filterBySearch = (users: User[]) =>
+    users.filter((u) =>
+      getUserDisplayName(u).toLowerCase().includes(search.toLowerCase())
+    );
+
+  const handleJoinRoom = (roomId: string) => {
+    setOpen(false);
+    if (user?.id) {
+      try {
+        const bc = new BroadcastChannel(`connect-room-${user.id}`);
+        bc.postMessage({ type: "room-joined", roomId });
+        bc.close();
+      } catch {}
+    }
+    const url = `/room/${roomId}`;
+    const target = `vextorn-room-${roomId}`;
+    const existing = window.open("", target);
+    if (existing && !existing.closed) {
+      try {
+        if (existing.location.href === "about:blank") {
+          existing.location.href = url;
+        }
+        existing.focus();
+      } catch {
+        existing.focus();
+      }
+    } else {
+      window.open(url, target);
+    }
+  };
+
+  const renderUser = (u: User) => {
+    const isOnline = onlineUsers.has(u.id);
+    const isFollowing = followingIds.has(u.id);
+    const inRoomId = userRooms[u.id];
+
+    return (
+      <div
+        key={u.id}
+        className="flex items-center gap-2 p-2 rounded-md hover-elevate"
+        data-testid={`social-user-${u.id}`}
+      >
+        <button
+          className="relative flex-shrink-0 focus:outline-none"
+          onClick={() => setProfileUser(u)}
+          data-testid={`button-avatar-${u.id}`}
+          aria-label={`View ${getUserDisplayName(u)}'s profile`}
+        >
+          <Avatar className="w-9 h-9 hover:ring-2 hover:ring-primary/50 transition-all rounded-full">
+            <AvatarImage src={u.profileImageUrl || undefined} alt={getUserDisplayName(u)} />
+            <AvatarFallback className="text-sm bg-primary/10 text-primary">
+              {getUserInitials(u)}
+            </AvatarFallback>
+          </Avatar>
+          <div
+            className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background ${
+              isOnline ? "bg-status-online" : "bg-status-offline"
+            }`}
+          />
+        </button>
+
+        <button
+          className="flex-1 min-w-0 text-left focus:outline-none"
+          onClick={() => setProfileUser(u)}
+          data-testid={`button-name-${u.id}`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="text-sm font-medium truncate hover:text-primary transition-colors min-w-0">
+              {getUserDisplayName(u)}
+            </p>
+            {isFollowing && (
+              <span className="text-[9px] leading-none px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold uppercase tracking-wide flex-shrink-0">
+                ✓
+              </span>
+            )}
+            {inRoomId && (
+              <span className="text-[9px] leading-none px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold uppercase tracking-wide flex-shrink-0">
+                Live
+              </span>
+            )}
+          </div>
+          {u.bio ? (
+            <p className="text-xs text-muted-foreground truncate">{u.bio}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {isOnline ? "Online" : "Offline"}
+            </p>
+          )}
+          <UserBadgePips userId={u.id} />
+        </button>
+
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {inRoomId && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleJoinRoom(inRoomId)}
+                  data-testid={`button-join-room-${u.id}`}
+                  className="text-emerald-400 hover:text-emerald-300 w-8 h-8"
+                >
+                  <Phone className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Join their room</TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="w-8 h-8"
+                onClick={() => {
+                  if (onOpenDm) {
+                    onOpenDm(u.id);
+                  } else {
+                    setLocation(`/messages/${u.id}`);
+                  }
+                  setOpen(false);
+                }}
+                data-testid={`button-dm-${u.id}`}
+              >
+                <MessageSquare className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Message</TooltipContent>
+          </Tooltip>
+          <UserNotePopover userId={u.id} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant={isFollowing ? "default" : "ghost"}
+                className={`w-8 h-8 ${isFollowing ? "bg-primary/20 text-primary hover:bg-primary/30" : ""}`}
+                onClick={() =>
+                  isFollowing
+                    ? unfollowMutation.mutate(u.id)
+                    : followMutation.mutate(u.id)
+                }
+                data-testid={`button-follow-${u.id}`}
+              >
+                {isFollowing ? (
+                  <UserCheck className="w-4 h-4" />
+                ) : (
+                  <UserPlus className="w-4 h-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{isFollowing ? "Unfollow" : "Follow"}</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+    );
+  };
+
+  const profileTarget = profileUser;
+
+  const onlineFilter = (users: User[]) => onlyOnline ? users.filter((u) => onlineUsers.has(u.id)) : users;
+  const applyFilters = (users: User[]) => onlineFilter(filterBySearch(users));
+
+  const allCount = connectedUsers.length;
+  const friendsCount = friends.length;
+  const followingCount = followingUsers.length;
+  const followersCount = followerUsers.length;
+  const onlineCount = connectedUsers.filter((u) => onlineUsers.has(u.id)).length;
+
+  const renderEmpty = (icon: React.ReactNode, title: string, hint: string) => (
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3 text-primary/70">
+        {icon}
+      </div>
+      <p className="text-sm font-medium text-foreground/90 mb-1">{title}</p>
+      <p className="text-xs text-muted-foreground max-w-[220px]">{hint}</p>
+    </div>
+  );
+
+  const tabPill = (label: string, count: number, isActive?: boolean) => (
+    <span className="flex items-center gap-1.5">
+      <span>{label}</span>
+      {count > 0 && (
+        <span className={`text-[9px] leading-none px-1.5 py-0.5 rounded-full font-bold ${isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </span>
+  );
+
+  return (
+    <>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button size="icon" variant="ghost" data-testid="button-social-panel">
+            <Users className="w-4 h-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-80 sm:w-96 p-0 flex flex-col bg-gradient-to-b from-background via-background to-background/95">
+          <SheetHeader className="px-5 pt-5 pb-3 border-b border-border/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+            <SheetTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
+                  <Users className="w-4.5 h-4.5 text-primary-foreground" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-base font-bold tracking-tight">People</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    {onlineCount} online · {allCount} total
+                  </span>
+                </div>
+              </div>
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="px-4 pt-3 pb-2 space-y-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 h-10 rounded-full bg-muted/40 border-border/50 focus-visible:ring-primary/40 placeholder:text-muted-foreground/70"
+                data-testid="input-search-users"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  data-testid="button-clear-search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={() => setOnlyOnline(!onlyOnline)}
+              className={`w-full flex items-center justify-center gap-2 h-8 rounded-full text-xs font-medium transition-all ${
+                onlyOnline
+                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                  : "bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-transparent"
+              }`}
+              data-testid="toggle-online-only"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${onlyOnline ? "bg-emerald-400 animate-pulse" : "bg-muted-foreground/50"}`} />
+              {onlyOnline ? `Showing ${onlineCount} online` : "Show online only"}
+            </button>
+          </div>
+
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="mx-4 grid grid-cols-4 h-9 bg-muted/30 rounded-full p-1">
+              <TabsTrigger value="all" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-all">
+                {tabPill("All", allCount, activeTab === "all")}
+              </TabsTrigger>
+              <TabsTrigger value="friends" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-friends">
+                {tabPill("Friends", friendsCount, activeTab === "friends")}
+              </TabsTrigger>
+              <TabsTrigger value="following" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-following">
+                {tabPill("Following", followingCount, activeTab === "following")}
+              </TabsTrigger>
+              <TabsTrigger value="followers" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-followers">
+                {tabPill("Fans", followersCount, activeTab === "followers")}
+              </TabsTrigger>
+            </TabsList>
+
+            <ScrollArea className="flex-1 mt-2">
+              <div className="px-3 pb-4">
+                <TabsContent value="all" className="mt-0 space-y-0.5">
+                  {applyFilters(connectedUsers).length === 0 ? (
+                    renderEmpty(
+                      <Users className="w-6 h-6" />,
+                      search || onlyOnline ? "No matches" : "No connections yet",
+                      search || onlyOnline ? "Try a different search or filter." : "Follow someone to start building your network."
+                    )
+                  ) : (
+                    applyFilters(connectedUsers).map(renderUser)
+                  )}
+                </TabsContent>
+                <TabsContent value="friends" className="mt-0 space-y-0.5">
+                  {applyFilters(friends).length === 0 ? (
+                    renderEmpty(
+                      <UserCheck className="w-6 h-6" />,
+                      "No friends yet",
+                      "Friends are people who follow each other. Follow someone back to make a friend!"
+                    )
+                  ) : (
+                    applyFilters(friends).map(renderUser)
+                  )}
+                </TabsContent>
+                <TabsContent value="following" className="mt-0 space-y-0.5">
+                  {applyFilters(followingUsers).length === 0 ? (
+                    renderEmpty(
+                      <UserPlus className="w-6 h-6" />,
+                      "Not following anyone",
+                      "Tap the follow icon on any user to keep up with them."
+                    )
+                  ) : (
+                    applyFilters(followingUsers).map(renderUser)
+                  )}
+                </TabsContent>
+                <TabsContent value="followers" className="mt-0 space-y-0.5">
+                  {applyFilters(followerUsers).length === 0 ? (
+                    renderEmpty(
+                      <Users className="w-6 h-6" />,
+                      "No followers yet",
+                      "Be active in rooms — others will discover and follow you."
+                    )
+                  ) : (
+                    applyFilters(followerUsers).map(renderUser)
+                  )}
+                </TabsContent>
+              </div>
+            </ScrollArea>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
+
+      {profileTarget && (
+        <UserProfileDialog
+          user={profileTarget}
+          open={!!profileTarget}
+          onClose={() => setProfileUser(null)}
+          isFollowing={followingIds.has(profileTarget.id)}
+          onFollow={() => followMutation.mutate(profileTarget.id)}
+          onUnfollow={() => unfollowMutation.mutate(profileTarget.id)}
+          onMessage={() => {
+            if (onOpenDm) {
+              onOpenDm(profileTarget.id);
+            } else {
+              setLocation(`/messages/${profileTarget.id}`);
+            }
+            setOpen(false);
+          }}
+          onJoinRoom={userRooms[profileTarget.id] ? () => handleJoinRoom(userRooms[profileTarget.id]) : undefined}
+          inRoomId={userRooms[profileTarget.id]}
+          isOnline={onlineUsers.has(profileTarget.id)}
+        />
+      )}
+    </>
+  );
+}

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" role="img" aria-label="Vextorn — Talk. Share. Belong.">
+  <defs>
+    <radialGradient id="hxv-talk" cx="35%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#8B92FF"/>
+      <stop offset="60%" stop-color="#5B6CFF"/>
+      <stop offset="100%" stop-color="#3D4BE0"/>
+    </radialGradient>
+    <radialGradient id="hxv-share" cx="35%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#C896FF"/>
+      <stop offset="60%" stop-color="#9B5CFF"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </radialGradient>
+    <radialGradient id="hxv-belong" cx="35%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#FF9FC4"/>
+      <stop offset="60%" stop-color="#FF6BA1"/>
+      <stop offset="100%" stop-color="#E1428A"/>
+    </radialGradient>
+    <linearGradient id="hxv-word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <style>
+      .vx-word {
+        font-family: "Inter", "SF Pro Display", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+        font-weight: 800;
+        font-size: 72px;
+        letter-spacing: -3px;
+        fill: url(#hxv-word);
+      }
+      .vx-tag {
+        font-family: "Inter", "SF Pro Text", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 5.5px;
+        fill: #64748B;
+        text-transform: uppercase;
+      }
+    </style>
+  </defs>
+
+  <g transform="translate(28,28) rotate(-6 72 72)">
+    <circle cx="72" cy="50" r="32" fill="url(#hxv-talk)"/>
+    <circle cx="49" cy="89" r="32" fill="url(#hxv-share)" style="mix-blend-mode:multiply"/>
+    <circle cx="95" cy="89" r="32" fill="url(#hxv-belong)" style="mix-blend-mode:multiply"/>
+    <ellipse cx="64" cy="40" rx="5" ry="3" fill="#fff" opacity="0.55"/>
+    <ellipse cx="41" cy="79" rx="5" ry="3" fill="#fff" opacity="0.45"/>
+    <ellipse cx="87" cy="79" rx="5" ry="3" fill="#fff" opacity="0.45"/>
+  </g>
+
+  <g transform="translate(208,0)">
+    <text x="0" y="102" class="vx-word">Vextorn</text>
+    <text x="4" y="138" class="vx-tag">Talk. Share. Belong.</text>
+  </g>
+</svg>

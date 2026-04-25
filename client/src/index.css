@@ -1,0 +1,3408 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.01em;
+  }
+
+  /* Prevent iOS zoom on input focus (inputs need font-size >= 16px) */
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+
+  /* Smooth momentum scrolling on iOS */
+  .overflow-y-auto, .overflow-y-scroll, .overflow-auto, .overflow-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Eliminate 300ms tap delay on all interactive elements */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* Safe area padding helpers for notch/home bar on iOS */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-background/60 backdrop-blur-xl border border-white/10 shadow-xl;
+  }
+  .glass-input {
+    @apply bg-white/5 border-white/10 focus:border-primary/50 focus:bg-white/10 transition-all duration-200;
+  }
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/20;
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mood emoji float — used by the in-room mood reactions that replaced the old
+   raise-hand button. The emoji pops in big above the participant's avatar
+   card, gently rises while bobbing left/right (like a balloon catching air),
+   then fades out as it drifts further up. Tweaked to read clearly even on
+   small mobile cards.
+   Note: translate(-50%, …) keeps the emoji horizontally centered above the
+   card since the parent is positioned at left:50%. */
+@keyframes moodFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.4) rotate(-12deg);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(1.22) rotate(8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, 2px) scale(0.96) rotate(-4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* Once the mood emoji has settled above the avatar, give it a subtle
+   continuous bob so it still feels alive (like a sticker pinned with a
+   light breeze). Runs forever until the user clears their mood. */
+@keyframes moodBob {
+  0%, 100% {
+    transform: translate(-50%, 0) rotate(-2deg);
+  }
+  50% {
+    transform: translate(-50%, -3px) rotate(2deg);
+  }
+}
+
+@keyframes aiFloat {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-10px) scale(1.01); }
+}
+
+@keyframes holoRingRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes holoScan {
+  0% { top: -10%; opacity: 0.6; }
+  80% { opacity: 0.3; }
+  100% { top: 110%; opacity: 0; }
+}
+
+@keyframes holoPlatform {
+  0%, 100% { opacity: 0.6; transform: scaleX(1); }
+  50% { opacity: 0.9; transform: scaleX(1.05); }
+}
+
+@keyframes svgMouthOpen {
+  from { ry: 1; }
+  to   { ry: 9; }
+}
+
+@keyframes svgLipSync {
+  0%   { d: path("M 8 14 C 18 19 42 19 52 14"); }
+  50%  { d: path("M 8 14 C 18 27 42 27 52 14"); }
+  100% { d: path("M 8 14 C 18 22 42 22 52 14"); }
+}
+
+@keyframes listenPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,225,255,0.0); }
+  50% { box-shadow: 0 0 0 8px rgba(0,225,255,0.15); }
+}
+
+.ai-float {
+  animation: aiFloat 3.5s ease-in-out infinite;
+}
+.holo-ring-rotate {
+  animation: holoRingRotate 8s linear infinite;
+}
+.holo-platform {
+  animation: holoPlatform 2.5s ease-in-out infinite;
+}
+
+/* When YouTube is actively playing, suspend the AI's continuous decorative
+   animations so the GPU/main thread is free for video decode. */
+.ai-overlay-quiet .ai-float,
+.ai-overlay-quiet .holo-ring-rotate,
+.ai-overlay-quiet .holo-platform {
+  animation: none !important;
+}
+.ai-overlay-quiet .animate-ping,
+.ai-overlay-quiet .animate-pulse {
+  animation: none !important;
+}
+
+/* Isolate the AI overlay from the rest of the room so its repaints/reflows
+   stay inside the overlay and never invalidate the YouTube slot layout. */
+.ai-overlay-isolate {
+  contain: layout paint style;
+}
+
+
+/* LIGHT MODE */
+:root {
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0, 0, 0, .03);
+  --elevate-2: rgba(0, 0, 0, .08);
+  --background: 220 20% 97%;
+  --foreground: 220 20% 10%;
+  --border: 220 15% 88%;
+  --card: 220 20% 95%;
+  --card-foreground: 220 20% 10%;
+  --card-border: 220 15% 90%;
+  --sidebar: 220 25% 93%;
+  --sidebar-foreground: 220 20% 10%;
+  --sidebar-border: 220 15% 88%;
+  --sidebar-primary: 195 100% 42%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 195 20% 85%;
+  --sidebar-accent-foreground: 220 20% 10%;
+  --sidebar-ring: 195 100% 42%;
+  --popover: 220 20% 94%;
+  --popover-foreground: 220 20% 10%;
+  --popover-border: 220 15% 88%;
+  --primary: 195 100% 42%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 260 60% 55%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 220 15% 90%;
+  --muted-foreground: 220 10% 45%;
+  --accent: 195 20% 90%;
+  --accent-foreground: 220 20% 10%;
+  --destructive: 0 84% 48%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 220 15% 75%;
+  --ring: 195 100% 42%;
+  --chart-1: 195 100% 42%;
+  --chart-2: 260 60% 55%;
+  --chart-3: 160 70% 40%;
+  --chart-4: 35 90% 50%;
+  --chart-5: 340 80% 50%;
+  --font-sans: 'Space Grotesk', 'Inter', sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: .5rem;
+  --shadow-2xs: 0px 2px 0px 0px hsl(195 100% 42% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(195 100% 42% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(195 100% 42% / 0.00), 0px 1px 2px -1px hsl(195 100% 42% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(195 100% 42% / 0.00), 0px 1px 2px -1px hsl(195 100% 42% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(195 100% 42% / 0.00), 0px 2px 4px -1px hsl(195 100% 42% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(195 100% 42% / 0.00), 0px 4px 6px -1px hsl(195 100% 42% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(195 100% 42% / 0.00), 0px 8px 10px -1px hsl(195 100% 42% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(195 100% 42% / 0.00);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+#replit-pill-host {
+  display: none !important;
+}
+
+/* ─── MIDNIGHT PURPLE ─────────────────────────────────────────── */
+/* Unified warm-orange accent on a deep purplish-gray neumorphic base.
+   All chart/level/secondary tones derive from the same orange family so
+   the whole interface reads as one cohesive palette. */
+html.midnight-purple {
+  --button-outline: rgba(255, 178, 100, .12);
+  --badge-outline: rgba(255, 178, 100, .06);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255, 152, 72, .06);
+  --elevate-2: rgba(255, 152, 72, .12);
+  --background: 265 35% 6%;
+  --foreground: 270 20% 92%;
+  --border: 265 25% 16%;
+  --card: 265 32% 9%;
+  --card-foreground: 270 20% 92%;
+  --card-border: 265 25% 14%;
+  --sidebar: 265 35% 8%;
+  --sidebar-foreground: 270 20% 92%;
+  --sidebar-border: 265 25% 13%;
+  --sidebar-primary: 20 95% 52%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 265 28% 14%;
+  --sidebar-accent-foreground: 270 20% 92%;
+  --sidebar-ring: 20 95% 52%;
+  --popover: 265 32% 11%;
+  --popover-foreground: 270 20% 92%;
+  --popover-border: 265 25% 16%;
+  --primary: 20 95% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 24 100% 60%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 265 25% 14%;
+  --muted-foreground: 270 12% 55%;
+  --accent: 14 88% 42%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 265 22% 22%;
+  --ring: 20 95% 52%;
+  --chart-1: 14 88% 42%;
+  --chart-2: 20 95% 52%;
+  --chart-3: 24 100% 60%;
+  --chart-4: 30 100% 64%;
+  --chart-5: 348 60% 52%;
+  /* Neumorphic depth tokens for the room cards & panels in this theme */
+  --neo-bg: 265 32% 9%;
+  --neo-shadow-dark: 265 50% 2%;
+  --neo-shadow-light: 265 28% 24%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── WARM SEPIA ─────────────────────────────────────────────── */
+.warm-sepia {
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(194, 129, 58, .04);
+  --elevate-2: rgba(194, 129, 58, .09);
+  --background: 38 45% 95%;
+  --foreground: 30 30% 18%;
+  --border: 35 30% 82%;
+  --card: 38 40% 91%;
+  --card-foreground: 30 30% 18%;
+  --card-border: 35 28% 84%;
+  --sidebar: 38 38% 88%;
+  --sidebar-foreground: 30 30% 18%;
+  --sidebar-border: 35 28% 82%;
+  --sidebar-primary: 30 65% 42%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 35 25% 84%;
+  --sidebar-accent-foreground: 30 30% 18%;
+  --sidebar-ring: 30 65% 42%;
+  --popover: 38 38% 90%;
+  --popover-foreground: 30 30% 18%;
+  --popover-border: 35 28% 82%;
+  --primary: 30 65% 42%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 20 55% 52%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 35 28% 85%;
+  --muted-foreground: 30 20% 45%;
+  --accent: 38 30% 87%;
+  --accent-foreground: 30 30% 18%;
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 35 22% 72%;
+  --ring: 30 65% 42%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── NEON CYBERPUNK ──────────────────────────────────────────── */
+html.neon-cyberpunk {
+  --button-outline: rgba(0, 255, 159, .15);
+  --badge-outline: rgba(0, 255, 159, .06);
+  --opaque-button-border-intensity: 12;
+  --elevate-1: rgba(0, 255, 159, .05);
+  --elevate-2: rgba(0, 255, 159, .10);
+  --background: 240 10% 4%;
+  --foreground: 150 100% 90%;
+  --border: 150 30% 14%;
+  --card: 240 12% 7%;
+  --card-foreground: 150 100% 90%;
+  --card-border: 150 25% 12%;
+  --sidebar: 240 12% 6%;
+  --sidebar-foreground: 150 100% 90%;
+  --sidebar-border: 150 25% 11%;
+  --sidebar-primary: 150 100% 50%;
+  --sidebar-primary-foreground: 240 10% 4%;
+  --sidebar-accent: 240 10% 11%;
+  --sidebar-accent-foreground: 150 100% 90%;
+  --sidebar-ring: 150 100% 50%;
+  --popover: 240 12% 8%;
+  --popover-foreground: 150 100% 90%;
+  --popover-border: 150 30% 14%;
+  --primary: 150 100% 50%;
+  --primary-foreground: 240 10% 4%;
+  --secondary: 300 100% 60%;
+  --secondary-foreground: 240 10% 4%;
+  --muted: 240 10% 11%;
+  --muted-foreground: 150 20% 50%;
+  --accent: 240 10% 10%;
+  --accent-foreground: 150 100% 90%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 240 12% 18%;
+  --ring: 150 100% 50%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── FROSTED GLASS ───────────────────────────────────────────── */
+.frosted-glass {
+  --button-outline: rgba(59, 130, 246, .12);
+  --badge-outline: rgba(59, 130, 246, .06);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(59, 130, 246, .04);
+  --elevate-2: rgba(59, 130, 246, .09);
+  --background: 214 60% 96%;
+  --foreground: 220 30% 16%;
+  --border: 214 40% 86%;
+  --card: 214 55% 93%;
+  --card-foreground: 220 30% 16%;
+  --card-border: 214 38% 88%;
+  --sidebar: 214 52% 90%;
+  --sidebar-foreground: 220 30% 16%;
+  --sidebar-border: 214 36% 86%;
+  --sidebar-primary: 213 94% 58%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 214 40% 87%;
+  --sidebar-accent-foreground: 220 30% 16%;
+  --sidebar-ring: 213 94% 58%;
+  --popover: 214 52% 92%;
+  --popover-foreground: 220 30% 16%;
+  --popover-border: 214 38% 86%;
+  --primary: 213 94% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 190 80% 50%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 214 38% 88%;
+  --muted-foreground: 220 18% 48%;
+  --accent: 214 45% 90%;
+  --accent-foreground: 220 30% 16%;
+  --destructive: 0 80% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 214 30% 76%;
+  --ring: 213 94% 58%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── OCEAN DEEP ──────────────────────────────────────────────── */
+html.ocean-deep {
+  --button-outline: rgba(6, 182, 212, .12);
+  --badge-outline: rgba(6, 182, 212, .06);
+  --opaque-button-border-intensity: 10;
+  --elevate-1: rgba(6, 182, 212, .05);
+  --elevate-2: rgba(6, 182, 212, .10);
+  --background: 204 55% 6%;
+  --foreground: 190 30% 90%;
+  --border: 200 40% 14%;
+  --card: 204 50% 9%;
+  --card-foreground: 190 30% 90%;
+  --card-border: 200 38% 12%;
+  --sidebar: 204 52% 7%;
+  --sidebar-foreground: 190 30% 90%;
+  --sidebar-border: 200 36% 12%;
+  --sidebar-primary: 186 100% 42%;
+  --sidebar-primary-foreground: 204 55% 6%;
+  --sidebar-accent: 204 42% 13%;
+  --sidebar-accent-foreground: 190 30% 90%;
+  --sidebar-ring: 186 100% 42%;
+  --popover: 204 50% 10%;
+  --popover-foreground: 190 30% 90%;
+  --popover-border: 200 40% 14%;
+  --primary: 186 100% 42%;
+  --primary-foreground: 204 55% 6%;
+  --secondary: 217 80% 58%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 204 40% 13%;
+  --muted-foreground: 190 18% 50%;
+  --accent: 204 40% 12%;
+  --accent-foreground: 190 30% 90%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 204 38% 20%;
+  --ring: 186 100% 42%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── FOREST DARK ─────────────────────────────────────────────── */
+html.forest-dark {
+  --button-outline: rgba(74, 222, 128, .12);
+  --badge-outline: rgba(74, 222, 128, .05);
+  --opaque-button-border-intensity: 10;
+  --elevate-1: rgba(74, 222, 128, .05);
+  --elevate-2: rgba(74, 222, 128, .10);
+  --background: 130 20% 5%;
+  --foreground: 130 18% 90%;
+  --border: 130 18% 14%;
+  --card: 130 18% 8%;
+  --card-foreground: 130 18% 90%;
+  --card-border: 130 16% 12%;
+  --sidebar: 130 20% 6%;
+  --sidebar-foreground: 130 18% 90%;
+  --sidebar-border: 130 16% 11%;
+  --sidebar-primary: 142 70% 52%;
+  --sidebar-primary-foreground: 130 20% 5%;
+  --sidebar-accent: 130 15% 13%;
+  --sidebar-accent-foreground: 130 18% 90%;
+  --sidebar-ring: 142 70% 52%;
+  --popover: 130 18% 9%;
+  --popover-foreground: 130 18% 90%;
+  --popover-border: 130 18% 14%;
+  --primary: 142 70% 52%;
+  --primary-foreground: 130 20% 5%;
+  --secondary: 90 60% 45%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 130 15% 13%;
+  --muted-foreground: 130 10% 50%;
+  --accent: 130 15% 11%;
+  --accent-foreground: 130 18% 90%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 130 14% 20%;
+  --ring: 142 70% 52%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── ROSE GOLD ───────────────────────────────────────────────── */
+.rose-gold {
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(232, 101, 125, .04);
+  --elevate-2: rgba(232, 101, 125, .09);
+  --background: 345 55% 97%;
+  --foreground: 340 25% 18%;
+  --border: 345 35% 86%;
+  --card: 345 48% 93%;
+  --card-foreground: 340 25% 18%;
+  --card-border: 345 32% 88%;
+  --sidebar: 345 45% 90%;
+  --sidebar-foreground: 340 25% 18%;
+  --sidebar-border: 345 30% 86%;
+  --sidebar-primary: 344 72% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 345 28% 86%;
+  --sidebar-accent-foreground: 340 25% 18%;
+  --sidebar-ring: 344 72% 60%;
+  --popover: 345 45% 92%;
+  --popover-foreground: 340 25% 18%;
+  --popover-border: 345 32% 86%;
+  --primary: 344 72% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 25 80% 58%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 345 30% 87%;
+  --muted-foreground: 340 15% 48%;
+  --accent: 345 32% 89%;
+  --accent-foreground: 340 25% 18%;
+  --destructive: 0 80% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 345 22% 75%;
+  --ring: 344 72% 60%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── AURORA ──────────────────────────────────────────────────── */
+html.aurora {
+  --button-outline: rgba(16, 217, 160, .12);
+  --badge-outline: rgba(16, 217, 160, .05);
+  --opaque-button-border-intensity: 10;
+  --elevate-1: rgba(16, 217, 160, .05);
+  --elevate-2: rgba(16, 217, 160, .10);
+  --background: 210 40% 5%;
+  --foreground: 170 25% 90%;
+  --border: 200 28% 14%;
+  --card: 210 38% 8%;
+  --card-foreground: 170 25% 90%;
+  --card-border: 200 25% 12%;
+  --sidebar: 210 40% 6%;
+  --sidebar-foreground: 170 25% 90%;
+  --sidebar-border: 200 24% 11%;
+  --sidebar-primary: 162 85% 46%;
+  --sidebar-primary-foreground: 210 40% 5%;
+  --sidebar-accent: 210 32% 13%;
+  --sidebar-accent-foreground: 170 25% 90%;
+  --sidebar-ring: 162 85% 46%;
+  --popover: 210 38% 9%;
+  --popover-foreground: 170 25% 90%;
+  --popover-border: 200 28% 14%;
+  --primary: 162 85% 46%;
+  --primary-foreground: 210 40% 5%;
+  --secondary: 270 70% 62%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 210 28% 13%;
+  --muted-foreground: 170 14% 50%;
+  --accent: 210 28% 12%;
+  --accent-foreground: 170 25% 90%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 210 26% 20%;
+  --ring: 162 85% 46%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+html.premium-atmosphere {
+  --button-outline: rgba(0, 220, 255, .18);
+  --badge-outline: rgba(255, 104, 64, .10);
+  --opaque-button-border-intensity: 14;
+  --elevate-1: rgba(0, 220, 255, .08);
+  --elevate-2: rgba(255, 0, 200, .14);
+  --background: 228 62% 4%;
+  --foreground: 220 40% 94%;
+  --border: 236 48% 18%;
+  --card: 236 54% 8%;
+  --card-foreground: 220 40% 94%;
+  --card-border: 198 100% 50%;
+  --sidebar: 232 60% 5%;
+  --sidebar-foreground: 220 40% 94%;
+  --sidebar-border: 236 48% 15%;
+  --sidebar-primary: 190 100% 50%;
+  --sidebar-primary-foreground: 228 62% 4%;
+  --sidebar-accent: 268 52% 13%;
+  --sidebar-accent-foreground: 220 40% 94%;
+  --sidebar-ring: 318 100% 55%;
+  --popover: 236 54% 8%;
+  --popover-foreground: 220 40% 94%;
+  --popover-border: 198 100% 50%;
+  --primary: 190 100% 50%;
+  --primary-foreground: 228 62% 4%;
+  --secondary: 318 100% 55%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 236 42% 13%;
+  --muted-foreground: 220 18% 66%;
+  --accent: 20 100% 58%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 56%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 236 42% 20%;
+  --ring: 318 100% 55%;
+  --chart-1: 190 100% 50%;
+  --chart-2: 318 100% 55%;
+  --chart-3: 20 100% 58%;
+  --chart-4: 250 100% 68%;
+  --chart-5: 42 100% 62%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+html.premium-atmosphere body {
+  background:
+    radial-gradient(ellipse at 14% 10%, rgba(0, 130, 255, 0.24) 0%, transparent 38%),
+    radial-gradient(ellipse at 88% 22%, rgba(110, 40, 255, 0.18) 0%, transparent 36%),
+    radial-gradient(ellipse at 48% 78%, rgba(140, 0, 255, 0.12) 0%, transparent 44%),
+    radial-gradient(ellipse at 68% 52%, rgba(0, 200, 255, 0.06) 0%, transparent 30%),
+    hsl(228 62% 4%);
+}
+
+/* ─── NEOMORPHIC DARK ──────────────────────────────────────────
+   Sculpted soft 3D depth with magenta-to-cyan accents */
+html.neomorphic-dark {
+  --button-outline: rgba(255, 255, 255, .04);
+  --badge-outline: rgba(255, 255, 255, .03);
+  --opaque-button-border-intensity: 7;
+  --elevate-1: rgba(192, 38, 211, .04);
+  --elevate-2: rgba(192, 38, 211, .08);
+  --background: 244 28% 15%;
+  --foreground: 250 22% 94%;
+  --border: 244 22% 24%;
+  --card: 244 28% 17%;
+  --card-foreground: 250 22% 94%;
+  --card-border: 244 22% 24%;
+  --sidebar: 244 28% 14%;
+  --sidebar-foreground: 250 22% 94%;
+  --sidebar-border: 244 22% 22%;
+  --sidebar-primary: 286 82% 62%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 244 24% 20%;
+  --sidebar-accent-foreground: 250 22% 94%;
+  --sidebar-ring: 286 82% 62%;
+  --popover: 244 28% 17%;
+  --popover-foreground: 250 22% 94%;
+  --popover-border: 244 22% 24%;
+  --primary: 286 82% 62%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 192 95% 58%;
+  --secondary-foreground: 244 28% 15%;
+  --muted: 244 24% 20%;
+  --muted-foreground: 250 14% 64%;
+  --accent: 244 26% 22%;
+  --accent-foreground: 250 22% 94%;
+  --destructive: 0 84% 58%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 244 22% 12%;
+  --ring: 286 82% 62%;
+  /* Neomorphic depth tokens — deeper, richer */
+  --neo-bg: 244 28% 15%;
+  --neo-shadow-dark: 244 35% 5%;
+  --neo-shadow-light: 244 22% 25%;
+  --neo-accent-from: 286 82% 62%;
+  --neo-accent-to: 192 95% 58%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+html.neomorphic-dark body {
+  background: hsl(245 22% 14%);
+}
+
+/* ─── NEOMORPHIC LIGHT ─────────────────────────────────────────
+   Soft tactile lightness with violet accents */
+html.neomorphic-light {
+  --button-outline: rgba(0, 0, 0, .04);
+  --badge-outline: rgba(0, 0, 0, .03);
+  --opaque-button-border-intensity: -6;
+  --elevate-1: rgba(124, 92, 255, .05);
+  --elevate-2: rgba(124, 92, 255, .10);
+  --background: 232 30% 91%;
+  --foreground: 244 22% 20%;
+  --border: 232 22% 82%;
+  --card: 232 32% 93%;
+  --card-foreground: 244 22% 20%;
+  --card-border: 232 22% 84%;
+  --sidebar: 232 32% 89%;
+  --sidebar-foreground: 244 22% 20%;
+  --sidebar-border: 232 22% 82%;
+  --sidebar-primary: 256 82% 65%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 232 26% 84%;
+  --sidebar-accent-foreground: 244 22% 20%;
+  --sidebar-ring: 256 82% 65%;
+  --popover: 232 32% 93%;
+  --popover-foreground: 244 22% 20%;
+  --popover-border: 232 22% 84%;
+  --primary: 256 82% 65%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 286 75% 62%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 232 26% 86%;
+  --muted-foreground: 244 14% 42%;
+  --accent: 232 26% 88%;
+  --accent-foreground: 244 22% 20%;
+  --destructive: 0 78% 52%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 232 26% 82%;
+  --ring: 256 82% 65%;
+  /* Neomorphic depth tokens — deeper, richer */
+  --neo-bg: 232 30% 91%;
+  --neo-shadow-dark: 232 22% 72%;
+  --neo-shadow-light: 0 0% 100%;
+  --neo-accent-from: 256 82% 65%;
+  --neo-accent-to: 286 75% 62%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+html.neomorphic-light body {
+  background: hsl(230 25% 92%);
+}
+
+/* ─── NEOMORPHIC UTILITY CLASSES ───────────────────────────────
+   Shared between Dark and Light variants. The actual shadow colors
+   come from --neo-shadow-dark / --neo-shadow-light tokens above. */
+html.neomorphic-dark .neo-raised,
+html.neomorphic-light .neo-raised,
+html.neomorphic-dark [data-neo="raised"],
+html.neomorphic-light [data-neo="raised"] {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    -6px -6px 14px hsl(var(--neo-shadow-light) / 0.55),
+    6px 6px 14px hsl(var(--neo-shadow-dark) / 0.65);
+  border: 1px solid transparent;
+  transition: box-shadow .25s ease, transform .15s ease;
+}
+
+html.neomorphic-dark .neo-raised:hover,
+html.neomorphic-light .neo-raised:hover,
+html.neomorphic-dark [data-neo="raised"]:hover,
+html.neomorphic-light [data-neo="raised"]:hover {
+  box-shadow:
+    -8px -8px 18px hsl(var(--neo-shadow-light) / 0.65),
+    8px 8px 18px hsl(var(--neo-shadow-dark) / 0.75);
+}
+
+html.neomorphic-dark .neo-inset,
+html.neomorphic-light .neo-inset,
+html.neomorphic-dark [data-neo="inset"],
+html.neomorphic-light [data-neo="inset"] {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    inset 4px 4px 10px hsl(var(--neo-shadow-dark) / 0.55),
+    inset -4px -4px 10px hsl(var(--neo-shadow-light) / 0.45);
+  border: 1px solid transparent;
+}
+
+html.neomorphic-dark .neo-pressed,
+html.neomorphic-light .neo-pressed,
+html.neomorphic-dark [data-neo="pressed"],
+html.neomorphic-light [data-neo="pressed"] {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    inset 3px 3px 8px hsl(var(--neo-shadow-dark) / 0.5),
+    inset -3px -3px 8px hsl(var(--neo-shadow-light) / 0.4);
+  transform: translateY(1px);
+}
+
+html.neomorphic-dark .neo-accent,
+html.neomorphic-light .neo-accent {
+  background: linear-gradient(135deg, hsl(var(--neo-accent-from)), hsl(var(--neo-accent-to)));
+  color: white;
+  box-shadow:
+    -4px -4px 10px hsl(var(--neo-shadow-light) / 0.45),
+    4px 4px 10px hsl(var(--neo-shadow-dark) / 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: box-shadow .25s ease, transform .15s ease;
+}
+
+html.neomorphic-dark .neo-accent:hover,
+html.neomorphic-light .neo-accent:hover {
+  box-shadow:
+    -5px -5px 14px hsl(var(--neo-shadow-light) / 0.55),
+    5px 5px 14px hsl(var(--neo-shadow-dark) / 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0 18px hsl(var(--neo-accent-from) / 0.35);
+}
+
+/* Apply neomorphic look automatically to common UI containers */
+html.neomorphic-dark .bg-card,
+html.neomorphic-light .bg-card {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    -6px -6px 14px hsl(var(--neo-shadow-light) / 0.5),
+    6px 6px 14px hsl(var(--neo-shadow-dark) / 0.6);
+  border-color: transparent !important;
+}
+
+html.neomorphic-dark .bg-popover,
+html.neomorphic-light .bg-popover {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    -8px -8px 22px hsl(var(--neo-shadow-light) / 0.5),
+    8px 8px 22px hsl(var(--neo-shadow-dark) / 0.65);
+  border-color: transparent !important;
+}
+
+html.neomorphic-dark input:not([type="checkbox"]):not([type="radio"]),
+html.neomorphic-light input:not([type="checkbox"]):not([type="radio"]),
+html.neomorphic-dark textarea,
+html.neomorphic-light textarea {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    inset 3px 3px 7px hsl(var(--neo-shadow-dark) / 0.45),
+    inset -3px -3px 7px hsl(var(--neo-shadow-light) / 0.35);
+  border-color: transparent;
+}
+
+html.neomorphic-dark input:focus-visible,
+html.neomorphic-light input:focus-visible,
+html.neomorphic-dark textarea:focus-visible,
+html.neomorphic-light textarea:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 3px 3px 7px hsl(var(--neo-shadow-dark) / 0.5),
+    inset -3px -3px 7px hsl(var(--neo-shadow-light) / 0.4),
+    0 0 0 2px hsl(var(--neo-accent-from) / 0.35);
+}
+
+/* ─── NEOMORPHIC: ALL BUTTONS ──────────────────────────────────
+   Make every button in the app sculpted with soft 3D depth */
+html.neomorphic-dark button:not([data-neo-skip]):not([role="tab"]):not([role="combobox"]):not([data-state="checked"]):not([data-state="on"]),
+html.neomorphic-light button:not([data-neo-skip]):not([role="tab"]):not([role="combobox"]):not([data-state="checked"]):not([data-state="on"]),
+html.neomorphic-dark [role="button"]:not([data-neo-skip]),
+html.neomorphic-light [role="button"]:not([data-neo-skip]) {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    -3px -3px 8px hsl(var(--neo-shadow-light) / 0.45),
+    3px 3px 8px hsl(var(--neo-shadow-dark) / 0.55);
+  border: 1px solid transparent !important;
+  transition: box-shadow .2s ease, transform .12s ease, background .2s ease;
+}
+
+html.neomorphic-dark button:not([data-neo-skip]):hover:not(:disabled),
+html.neomorphic-light button:not([data-neo-skip]):hover:not(:disabled),
+html.neomorphic-dark [role="button"]:not([data-neo-skip]):hover,
+html.neomorphic-light [role="button"]:not([data-neo-skip]):hover {
+  box-shadow:
+    -4px -4px 10px hsl(var(--neo-shadow-light) / 0.55),
+    4px 4px 10px hsl(var(--neo-shadow-dark) / 0.65);
+}
+
+html.neomorphic-dark button:not([data-neo-skip]):active:not(:disabled),
+html.neomorphic-light button:not([data-neo-skip]):active:not(:disabled) {
+  box-shadow:
+    inset 2px 2px 6px hsl(var(--neo-shadow-dark) / 0.55),
+    inset -2px -2px 6px hsl(var(--neo-shadow-light) / 0.4);
+}
+
+/* Primary / accent CTAs get the magenta→cyan gradient
+   — but skip our custom neumorphic CTAs (.create-room-btn, .neu-submit,
+   .neu-icon-btn-red, .neu-tile, .neu-tab, .neu-deco-tile) which have
+   their own dark-body + amber-icon treatment. */
+html.neomorphic-dark button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-light button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-dark .bg-primary[role="button"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-light .bg-primary[role="button"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-dark button[data-state="active"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile),
+html.neomorphic-light button[data-state="active"]:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile) {
+  background: linear-gradient(135deg, hsl(var(--neo-accent-from)), hsl(var(--neo-accent-to))) !important;
+  color: white !important;
+  box-shadow:
+    -4px -4px 10px hsl(var(--neo-shadow-light) / 0.45),
+    4px 4px 10px hsl(var(--neo-shadow-dark) / 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+html.neomorphic-dark button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile):hover,
+html.neomorphic-light button.bg-primary:not(.create-room-btn):not(.neu-submit):not(.neu-icon-btn-red):not(.neu-tile):not(.neu-tab):not(.neu-deco-tile):hover {
+  box-shadow:
+    -5px -5px 14px hsl(var(--neo-shadow-light) / 0.55),
+    5px 5px 14px hsl(var(--neo-shadow-dark) / 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 22px hsl(var(--neo-accent-from) / 0.4) !important;
+}
+
+/* Disabled — flat with no shadow */
+html.neomorphic-dark button:disabled,
+html.neomorphic-light button:disabled {
+  box-shadow: none !important;
+  opacity: 0.5;
+}
+
+/* Ghost / link / transparent buttons stay clean */
+html.neomorphic-dark button.bg-transparent,
+html.neomorphic-light button.bg-transparent,
+html.neomorphic-dark button[class*="ghost"],
+html.neomorphic-light button[class*="ghost"] {
+  background: transparent;
+  box-shadow: none;
+}
+
+html.neomorphic-dark button.bg-transparent:hover,
+html.neomorphic-light button.bg-transparent:hover,
+html.neomorphic-dark button[class*="ghost"]:hover,
+html.neomorphic-light button[class*="ghost"]:hover {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    -3px -3px 7px hsl(var(--neo-shadow-light) / 0.4),
+    3px 3px 7px hsl(var(--neo-shadow-dark) / 0.5);
+}
+
+/* ─── NEOMORPHIC: BADGES & PILLS ───────────────────────────── */
+html.neomorphic-dark .badge,
+html.neomorphic-light .badge,
+html.neomorphic-dark [class*="rounded-full"][class*="bg-"]:not(button):not([role="button"]),
+html.neomorphic-light [class*="rounded-full"][class*="bg-"]:not(button):not([role="button"]) {
+  background: hsl(var(--neo-bg));
+  box-shadow:
+    inset 1px 1px 3px hsl(var(--neo-shadow-dark) / 0.4),
+    inset -1px -1px 3px hsl(var(--neo-shadow-light) / 0.35);
+  border-color: transparent !important;
+}
+
+/* ─── NEOMORPHIC: TABS / SEGMENTED ────────────────────────── */
+html.neomorphic-dark [role="tablist"],
+html.neomorphic-light [role="tablist"] {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    inset 3px 3px 8px hsl(var(--neo-shadow-dark) / 0.5),
+    inset -3px -3px 8px hsl(var(--neo-shadow-light) / 0.4);
+  border: none !important;
+}
+
+html.neomorphic-dark [role="tab"],
+html.neomorphic-light [role="tab"] {
+  background: transparent;
+  box-shadow: none;
+  transition: all .2s ease;
+}
+
+html.neomorphic-dark [role="tab"][data-state="active"],
+html.neomorphic-light [role="tab"][data-state="active"] {
+  background: linear-gradient(135deg, hsl(var(--neo-accent-from)), hsl(var(--neo-accent-to))) !important;
+  color: white !important;
+  box-shadow:
+    -2px -2px 6px hsl(var(--neo-shadow-light) / 0.45),
+    2px 2px 6px hsl(var(--neo-shadow-dark) / 0.55) !important;
+}
+
+/* ─── NEOMORPHIC: ROOM CARDS — override custom gradients ────
+   Deep sculpted neumorphic dome with a faint warm-amber inner rim
+   on top (catching ambient light) and a darker base shadow that
+   anchors the card. Idealistic, almost like blown-glass over warm
+   wood. */
+html.neomorphic-dark .room-card-shell,
+html.neomorphic-light .room-card-shell,
+html.neomorphic-dark [data-testid^="card-room"],
+html.neomorphic-light [data-testid^="card-room"] {
+  background:
+    linear-gradient(160deg,
+      hsl(var(--neo-bg)) 0%,
+      hsl(var(--neo-bg)) 55%,
+      hsl(228 22% 7%) 100%) !important;
+  box-shadow:
+    -10px -10px 22px hsl(var(--neo-shadow-light) / 0.55),
+    12px 12px 26px hsl(var(--neo-shadow-dark) / 0.72),
+    inset 0 1px 0 rgba(255, 235, 215, 0.075),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 200, 140, 0.025) !important;
+  border: 1px solid transparent !important;
+  border-radius: 1.25rem !important;
+  transition: transform 320ms cubic-bezier(.2,.8,.25,1), box-shadow 320ms ease-out !important;
+}
+html.neomorphic-dark .room-card-shell:hover,
+html.neomorphic-light .room-card-shell:hover,
+html.neomorphic-dark [data-testid^="card-room"]:hover,
+html.neomorphic-light [data-testid^="card-room"]:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    -12px -12px 26px hsl(var(--neo-shadow-light) / 0.62),
+    14px 14px 32px hsl(var(--neo-shadow-dark) / 0.80),
+    0 0 32px hsl(var(--neu-orange) / 0.10),
+    inset 0 1px 0 rgba(255, 235, 215, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.50),
+    inset 0 0 0 1px rgba(255, 200, 140, 0.045) !important;
+}
+
+/* Inner gradient overlays on room cards become flat in neo theme */
+html.neomorphic-dark [data-testid^="card-room"] [style*="background"],
+html.neomorphic-light [data-testid^="card-room"] [style*="background"] {
+  background: transparent !important;
+}
+
+/* But keep participant avatar gradient rings — restore them */
+html.neomorphic-dark [data-testid^="card-room"] .rounded-full[style*="conic-gradient"],
+html.neomorphic-light [data-testid^="card-room"] .rounded-full[style*="conic-gradient"] {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    -3px -3px 7px hsl(var(--neo-shadow-light) / 0.5),
+    3px 3px 7px hsl(var(--neo-shadow-dark) / 0.6) !important;
+  padding: 3px !important;
+}
+
+/* ─── NEOMORPHIC: ICONS — give them subtle gradient accent ─ */
+html.neomorphic-dark svg.text-primary,
+html.neomorphic-light svg.text-primary {
+  filter: drop-shadow(0 0 4px hsl(var(--neo-accent-from) / 0.4));
+}
+
+/* Active / on icons get the gradient */
+html.neomorphic-dark button[data-state="on"] svg,
+html.neomorphic-light button[data-state="on"] svg,
+html.neomorphic-dark .bg-primary svg,
+html.neomorphic-light .bg-primary svg {
+  color: white !important;
+}
+
+/* Sidebar / nav rails get an inset look */
+html.neomorphic-dark .bg-sidebar,
+html.neomorphic-light .bg-sidebar,
+html.neomorphic-dark [data-sidebar],
+html.neomorphic-light [data-sidebar] {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    inset -2px 0 6px hsl(var(--neo-shadow-dark) / 0.4) !important;
+  border: none !important;
+}
+
+/* ─── DEEPER SHADOWS — make all neo elements feel more 3D ─── */
+html.neomorphic-dark button:not([data-neo-skip]):not([role="tab"]):not([role="combobox"]):not([data-state="checked"]):not([data-state="on"]),
+html.neomorphic-light button:not([data-neo-skip]):not([role="tab"]):not([role="combobox"]):not([data-state="checked"]):not([data-state="on"]) {
+  box-shadow:
+    -5px -5px 12px hsl(var(--neo-shadow-light) / 0.6),
+    5px 5px 12px hsl(var(--neo-shadow-dark) / 0.7);
+  border-radius: 14px;
+}
+
+html.neomorphic-dark button:not([data-neo-skip]):hover:not(:disabled),
+html.neomorphic-light button:not([data-neo-skip]):hover:not(:disabled) {
+  box-shadow:
+    -7px -7px 16px hsl(var(--neo-shadow-light) / 0.7),
+    7px 7px 16px hsl(var(--neo-shadow-dark) / 0.8);
+  transform: translateY(-1px);
+}
+
+html.neomorphic-dark .bg-card,
+html.neomorphic-light .bg-card,
+html.neomorphic-dark [data-testid^="card-room"],
+html.neomorphic-light [data-testid^="card-room"] {
+  box-shadow:
+    -10px -10px 24px hsl(var(--neo-shadow-light) / 0.55),
+    10px 10px 24px hsl(var(--neo-shadow-dark) / 0.7) !important;
+  border-radius: 1.5rem !important;
+}
+
+html.neomorphic-dark .bg-popover,
+html.neomorphic-light .bg-popover {
+  box-shadow:
+    -12px -12px 28px hsl(var(--neo-shadow-light) / 0.55),
+    12px 12px 28px hsl(var(--neo-shadow-dark) / 0.75) !important;
+  border-radius: 1.25rem !important;
+}
+
+/* ─── PARTICIPANT AVATARS — squircle in neomorphic theme ─── */
+/* Override the circle/full-rounded avatars to be a soft rounded square */
+html.neomorphic-dark [data-testid^="card-room"] [data-testid^="button-card-participant"] .rounded-full,
+html.neomorphic-light [data-testid^="card-room"] [data-testid^="button-card-participant"] .rounded-full,
+html.neomorphic-dark [data-testid^="card-room"] [data-testid^="button-card-participant"] [class*="rounded-full"],
+html.neomorphic-light [data-testid^="card-room"] [data-testid^="button-card-participant"] [class*="rounded-full"] {
+  border-radius: 22% !important;
+}
+
+/* Outer participant ring also becomes squircle */
+html.neomorphic-dark [data-testid^="card-room"] .rounded-full[style*="conic-gradient"],
+html.neomorphic-light [data-testid^="card-room"] .rounded-full[style*="conic-gradient"],
+html.neomorphic-dark [data-testid^="card-room"] > * .rounded-full:has(.rounded-full),
+html.neomorphic-light [data-testid^="card-room"] > * .rounded-full:has(.rounded-full) {
+  border-radius: 24% !important;
+}
+
+/* Empty join-spot circles too */
+html.neomorphic-dark [data-testid^="card-room"] .rounded-full,
+html.neomorphic-light [data-testid^="card-room"] .rounded-full {
+  border-radius: 24% !important;
+}
+
+/* In-room participant cards (voice room) — already squarish, just deepen the shadow */
+html.neomorphic-dark [data-testid^="participant-"],
+html.neomorphic-light [data-testid^="participant-"] {
+  border-radius: 1.25rem !important;
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    -6px -6px 14px hsl(var(--neo-shadow-light) / 0.55),
+    6px 6px 14px hsl(var(--neo-shadow-dark) / 0.65) !important;
+  border: 1px solid transparent !important;
+}
+
+/* ─── SEARCH FIELDS — extra deep recessed look ─── */
+html.neomorphic-dark input[type="search"],
+html.neomorphic-light input[type="search"],
+html.neomorphic-dark input[placeholder*="earch" i],
+html.neomorphic-light input[placeholder*="earch" i],
+html.neomorphic-dark input[data-testid*="search" i],
+html.neomorphic-light input[data-testid*="search" i] {
+  background: hsl(var(--neo-bg)) !important;
+  border-radius: 999px !important;
+  border: none !important;
+  box-shadow:
+    inset 5px 5px 12px hsl(var(--neo-shadow-dark) / 0.6),
+    inset -5px -5px 12px hsl(var(--neo-shadow-light) / 0.5) !important;
+  padding-left: 2.5rem !important;
+}
+
+html.neomorphic-dark input[type="search"]:focus-visible,
+html.neomorphic-light input[type="search"]:focus-visible,
+html.neomorphic-dark input[placeholder*="earch" i]:focus-visible,
+html.neomorphic-light input[placeholder*="earch" i]:focus-visible {
+  box-shadow:
+    inset 5px 5px 12px hsl(var(--neo-shadow-dark) / 0.65),
+    inset -5px -5px 12px hsl(var(--neo-shadow-light) / 0.55),
+    0 0 0 2px hsl(var(--neo-accent-from) / 0.4) !important;
+}
+
+/* Search container wrapper (the relative div around input + icon) */
+html.neomorphic-dark .relative:has(> input[placeholder*="earch" i]),
+html.neomorphic-light .relative:has(> input[placeholder*="earch" i]) {
+  border-radius: 999px;
+}
+
+/* ─── NEOMORPHIC: BACKGROUND TEXTURE for body ─── */
+html.neomorphic-dark body {
+  background:
+    radial-gradient(ellipse at 20% 0%, hsl(286 50% 18% / 0.55) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, hsl(192 60% 16% / 0.45) 0%, transparent 55%),
+    hsl(244 28% 15%) !important;
+}
+
+html.neomorphic-light body {
+  background:
+    radial-gradient(ellipse at 20% 0%, hsl(256 60% 88% / 0.7) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, hsl(286 50% 90% / 0.6) 0%, transparent 55%),
+    hsl(232 30% 91%) !important;
+}
+
+/* ─── NEOMORPHIC PREMIUM PASS ──────────────────────────────────
+   Second-layer refinements that build on all base neo rules.
+   Goal: maximum depth, tactile surfaces, premium icon/color
+   consistency, and stable card color regardless of avatar rings. */
+
+/* 1. ROOM CARD: TOP-LEFT SPECULAR HIGHLIGHT EDGE
+      Creates a subtle diagonal shine from top-left, giving the card
+      a sculpted, premium "lit from above-left" appearance. */
+html.neomorphic-dark [data-testid^="card-room"]::before,
+html.neomorphic-light [data-testid^="card-room"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.055) 0%,
+    rgba(255, 255, 255, 0.012) 30%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 2. EMPTY PARTICIPANT SLOTS — deep inset wells
+      Instead of gradients (wiped by rule 1017), show a true recessed
+      dark well so empty seats look like genuine hollows in the surface. */
+html.neomorphic-dark [data-testid^="card-room"] .rounded-full > .rounded-full,
+html.neomorphic-light [data-testid^="card-room"] .rounded-full > .rounded-full {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    inset 3px 3px 8px hsl(var(--neo-shadow-dark) / 0.75),
+    inset -2px -2px 6px hsl(var(--neo-shadow-light) / 0.22) !important;
+}
+
+/* 3. CARD COLOR STABILITY — profile decoration wrappers must not
+      bleed color into the card shell. The outer glow on avatar rings
+      is absorbed by the card's own neu shadow. */
+html.neomorphic-dark [data-testid^="card-room"] [class*="profile-decoration"],
+html.neomorphic-light [data-testid^="card-room"] [class*="profile-decoration"] {
+  filter: none !important;
+}
+
+/* 4. PARTICIPANT RING WRAPPER — squircle-raised for filled slots
+      The outer padding div that holds the conic-gradient ring gets
+      a raised neo shadow to make filled avatars "pop" out of the card. */
+html.neomorphic-dark [data-testid^="card-room"] [data-testid^="button-card-participant"] > div,
+html.neomorphic-light [data-testid^="card-room"] [data-testid^="button-card-participant"] > div {
+  box-shadow:
+    -3px -3px 8px hsl(var(--neo-shadow-light) / 0.50),
+    3px 3px 8px hsl(var(--neo-shadow-dark) / 0.65) !important;
+}
+
+/* 5. ROOM CARD FOOTER ICON CONSISTENCY
+      Mute the raw white/foreground icon colors in the card footer and
+      use the secondary teal accent so flame / chat / users feel unified. */
+html.neomorphic-dark [data-testid^="card-room"] .text-white\/35,
+html.neomorphic-dark [data-testid^="card-room"] .text-white\/50,
+html.neomorphic-light [data-testid^="card-room"] .text-white\/35,
+html.neomorphic-light [data-testid^="card-room"] .text-white\/50 {
+  opacity: 0.75;
+}
+
+/* 6. ICON DROP-SHADOW — add subtle glow to all primary-colored icons */
+html.neomorphic-dark .text-neu-orange > svg,
+html.neomorphic-dark .text-neu-orange svg,
+html.neomorphic-light .text-neu-orange > svg,
+html.neomorphic-light .text-neu-orange svg {
+  filter: drop-shadow(0 0 3px hsla(var(--neu-orange) / 0.55));
+}
+
+/* 7. STEP-IN BUTTON: extra depth layering over the main orange style
+      Ensures the lobby CTA is always vivid against the card surface. */
+html.neomorphic-dark .step-in-btn,
+html.neomorphic-light .step-in-btn {
+  border: 1px solid rgba(230, 100, 20, 0.48) !important;
+  inset: none;
+}
+
+/* 8. LANGUAGE FILTER + DISCOVERY TABS: deeper shadow for neomorphic themes */
+html.neomorphic-dark .neu-pill,
+html.neomorphic-light .neu-pill {
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.040),
+    6px 6px 14px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 255, 255, 0.058) !important;
+}
+html.neomorphic-dark .neu-pill.is-active,
+html.neomorphic-dark .neu-pill[data-active="true"],
+html.neomorphic-light .neu-pill.is-active,
+html.neomorphic-light .neu-pill[data-active="true"] {
+  box-shadow:
+    0 0 28px hsla(var(--neu-orange) / 0.65),
+    0 0 55px hsla(var(--neu-orange) / 0.28),
+    -4px -4px 10px rgba(255, 255, 255, 0.048),
+    5px 5px 16px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(180, 185, 255, 0.45) !important;
+}
+
+/* 9. ICON-ONLY CONTROL BUTTONS — deepen hover lift */
+html.neomorphic-dark .neu-icon-btn:hover:not(:disabled),
+html.neomorphic-light .neu-icon-btn:hover:not(:disabled) {
+  box-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.048),
+    7px 7px 18px rgba(0, 0, 0, 0.72) !important;
+}
+
+/* 10. GENERAL BUTTON OVERRIDE — ensure all buttons in neo themes
+       pick up the upgraded shadow depth set by the neu-btn rules */
+html.neomorphic-dark button.neu-btn,
+html.neomorphic-light button.neu-btn {
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.040),
+    7px 7px 16px rgba(0, 0, 0, 0.68),
+    inset 0 1px 0 rgba(255, 255, 255, 0.068) !important;
+}
+html.neomorphic-dark button.neu-btn:hover:not(:disabled),
+html.neomorphic-light button.neu-btn:hover:not(:disabled) {
+  box-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.050),
+    8px 8px 18px rgba(0, 0, 0, 0.74),
+    inset 0 1px 0 rgba(255, 255, 255, 0.085) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 11. NEOMORPHIC SURFACES in room card body area (inner dark panels) */
+html.neomorphic-dark .bg-muted\/20,
+html.neomorphic-dark [class*="bg-muted/"] {
+  box-shadow:
+    inset 3px 3px 8px hsl(var(--neo-shadow-dark) / 0.5),
+    inset -2px -2px 6px hsl(var(--neo-shadow-light) / 0.18);
+}
+
+.dark {
+  --button-outline: rgba(0, 188, 212, .12);
+  --badge-outline: rgba(0, 188, 212, .06);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(0, 188, 212, .05);
+  --elevate-2: rgba(0, 188, 212, .10);
+  --background: 0 0% 5%;
+  --foreground: 0 0% 92%;
+  --border: 0 0% 15%;
+  --card: 0 0% 8%;
+  --card-foreground: 0 0% 92%;
+  --card-border: 0 0% 13%;
+  --sidebar: 0 0% 6%;
+  --sidebar-foreground: 0 0% 92%;
+  --sidebar-border: 0 0% 12%;
+  --sidebar-primary: 187 100% 41%;
+  --sidebar-primary-foreground: 0 0% 5%;
+  --sidebar-accent: 0 0% 12%;
+  --sidebar-accent-foreground: 0 0% 92%;
+  --sidebar-ring: 187 100% 41%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 92%;
+  --popover-border: 0 0% 15%;
+  --primary: 187 100% 41%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 0 0% 18%;
+  --secondary-foreground: 0 0% 92%;
+  --muted: 0 0% 13%;
+  --muted-foreground: 0 0% 55%;
+  --accent: 0 0% 11%;
+  --accent-foreground: 0 0% 92%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 0 0% 18%;
+  --ring: 187 100% 41%;
+  --chart-1: 187 100% 41%;
+  --chart-2: 187 60% 55%;
+  --chart-3: 160 70% 50%;
+  --chart-4: 35 90% 60%;
+  --chart-5: 340 80% 60%;
+  --shadow-2xs: 0px 2px 0px 0px hsl(187 100% 41% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(187 100% 41% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(187 100% 41% / 0.00), 0px 1px 2px -1px hsl(187 100% 41% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(187 100% 41% / 0.00), 0px 1px 2px -1px hsl(187 100% 41% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(187 100% 41% / 0.00), 0px 2px 4px -1px hsl(187 100% 41% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(187 100% 41% / 0.00), 0px 4px 6px -1px hsl(187 100% 41% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(187 100% 41% / 0.00), 0px 8px 10px -1px hsl(187 100% 41% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(187 100% 41% / 0.00);
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── DARK MODE NOISE TEXTURE ─────────────────────────────────── */
+.dark body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* ─── THEME TRANSITION ────────────────────────────────────────── */
+html {
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* ─── AMBIENT BACKGROUND ANIMATIONS ─────────────────────────── */
+@keyframes aurora-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes neon-flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96%           { opacity: 0.85; }
+  98%           { opacity: 0.95; }
+}
+
+@keyframes float-up {
+  0%   { transform: translateY(0px) scale(1);   opacity: 0.6; }
+  50%  { transform: translateY(-18px) scale(1.05); opacity: 0.9; }
+  100% { transform: translateY(0px) scale(1);   opacity: 0.6; }
+}
+
+@keyframes gradient-pan {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes swatch-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.animate-slide-in-up    { animation: slide-in-up 0.5s cubic-bezier(.22,.68,0,1.2) both; }
+.animate-slide-in-left  { animation: slide-in-left 0.45s cubic-bezier(.22,.68,0,1.2) both; }
+.animate-fade-in        { animation: fade-in 0.4s ease both; }
+.animate-scale-in       { animation: scale-in 0.35s cubic-bezier(.22,.68,0,1.2) both; }
+.animate-float-up       { animation: float-up 4s ease-in-out infinite; }
+
+/* ambient hero orbs */
+.hero-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+  animation: float-up 6s ease-in-out infinite;
+}
+
+/* neon glow text for cyberpunk */
+.neon-cyberpunk .neon-text {
+  text-shadow: 0 0 10px hsl(150 100% 50% / 0.8), 0 0 30px hsl(150 100% 50% / 0.4);
+  animation: neon-flicker 5s ease-in-out infinite;
+}
+
+/* aurora theme animated gradient bg */
+.aurora .aurora-bg {
+  background: linear-gradient(135deg,
+    hsl(210 40% 5%),
+    hsl(162 60% 10%),
+    hsl(270 50% 10%),
+    hsl(210 40% 5%)
+  );
+  background-size: 300% 300%;
+  animation: aurora-shift 12s ease infinite;
+}
+
+/* video-bg utility for video background theme */
+.video-bg-overlay {
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.35) 40%,
+    rgba(0,0,0,0.65) 100%
+  );
+}
+
+@layer utilities {
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  .no-default-hover-elevate {}
+
+  .no-default-active-elevate {}
+
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: -1;
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: 999;
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+    inset: -1px;
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 15px hsl(187 100% 41% / 0.20), 0 0 30px hsl(187 100% 41% / 0.10);
+  }
+
+  .glow-cyan-strong {
+    box-shadow: 0 0 20px hsl(187 100% 41% / 0.32), 0 0 40px hsl(187 100% 41% / 0.15);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 15px hsl(187 100% 41% / 0.15), 0 0 30px hsl(187 100% 41% / 0.08);
+  }
+
+  .speaking-ring {
+    box-shadow: 0 0 0 3px hsl(160 70% 50% / 0.6), 0 0 15px hsl(160 70% 50% / 0.3);
+  }
+
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes sound-wave {
+
+    0%,
+    100% {
+      transform: scaleY(0.3);
+    }
+
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  .animate-sound-wave {
+    animation: sound-wave 0.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse-ring {
+
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(var(--primary), 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 0 6px rgba(var(--primary), 0);
+    }
+  }
+
+  .animate-pulse-ring {
+    animation: pulse-ring 1.5s ease-in-out infinite;
+  }
+
+  .speaking-waves {
+    animation: speaking-wave 1.2s ease-in-out infinite;
+  }
+
+  @keyframes speaking-wave {
+    0% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5), 0 0 0 0 hsl(var(--primary) / 0.3);
+    }
+
+    50% {
+      box-shadow: 0 0 0 8px hsl(var(--primary) / 0), 0 0 0 16px hsl(var(--primary) / 0);
+    }
+
+    100% {
+      box-shadow: 0 0 0 8px hsl(var(--primary) / 0), 0 0 0 16px hsl(var(--primary) / 0);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NEW ANIMATED & EXPANDED DARK THEMES
+   All use html.theme-name for higher specificity than .dark
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── STARFIELD ───────────────────────────────────────────────── */
+html.starfield {
+  --button-outline: rgba(180, 210, 255, .10);
+  --badge-outline: rgba(180, 210, 255, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(147, 197, 253, .05);
+  --elevate-2: rgba(147, 197, 253, .10);
+  --background: 230 35% 4%;
+  --foreground: 220 25% 90%;
+  --border: 230 30% 14%;
+  --card: 230 32% 7%;
+  --card-foreground: 220 25% 90%;
+  --card-border: 230 28% 11%;
+  --sidebar: 230 34% 5%;
+  --sidebar-foreground: 220 25% 90%;
+  --sidebar-border: 230 28% 10%;
+  --sidebar-primary: 210 100% 72%;
+  --sidebar-primary-foreground: 230 35% 4%;
+  --sidebar-accent: 230 28% 10%;
+  --sidebar-accent-foreground: 220 25% 90%;
+  --sidebar-ring: 210 100% 72%;
+  --popover: 230 32% 8%;
+  --popover-foreground: 220 25% 90%;
+  --popover-border: 230 30% 14%;
+  --primary: 210 100% 72%;
+  --primary-foreground: 230 35% 4%;
+  --secondary: 260 70% 68%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 230 28% 11%;
+  --muted-foreground: 220 15% 50%;
+  --accent: 230 28% 9%;
+  --accent-foreground: 220 25% 90%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 230 26% 18%;
+  --ring: 210 100% 72%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── GALAXY ──────────────────────────────────────────────────── */
+html.galaxy {
+  --button-outline: rgba(192, 132, 252, .12);
+  --badge-outline: rgba(192, 132, 252, .06);
+  --opaque-button-border-intensity: 10;
+  --elevate-1: rgba(192, 132, 252, .06);
+  --elevate-2: rgba(192, 132, 252, .12);
+  --background: 250 40% 4%;
+  --foreground: 260 20% 92%;
+  --border: 250 30% 15%;
+  --card: 250 36% 7%;
+  --card-foreground: 260 20% 92%;
+  --card-border: 250 28% 12%;
+  --sidebar: 250 38% 5%;
+  --sidebar-foreground: 260 20% 92%;
+  --sidebar-border: 250 28% 11%;
+  --sidebar-primary: 285 75% 68%;
+  --sidebar-primary-foreground: 250 40% 4%;
+  --sidebar-accent: 250 30% 12%;
+  --sidebar-accent-foreground: 260 20% 92%;
+  --sidebar-ring: 285 75% 68%;
+  --popover: 250 36% 8%;
+  --popover-foreground: 260 20% 92%;
+  --popover-border: 250 30% 15%;
+  --primary: 285 75% 68%;
+  --primary-foreground: 250 40% 4%;
+  --secondary: 320 65% 62%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 250 28% 12%;
+  --muted-foreground: 260 12% 52%;
+  --accent: 250 28% 10%;
+  --accent-foreground: 260 20% 92%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 250 26% 18%;
+  --ring: 285 75% 68%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── SYNTHWAVE ───────────────────────────────────────────────── */
+html.synthwave {
+  --button-outline: rgba(255, 60, 180, .15);
+  --badge-outline: rgba(255, 60, 180, .06);
+  --opaque-button-border-intensity: 10;
+  --elevate-1: rgba(255, 60, 180, .05);
+  --elevate-2: rgba(255, 60, 180, .10);
+  --background: 270 30% 4%;
+  --foreground: 300 20% 92%;
+  --border: 270 28% 15%;
+  --card: 270 28% 7%;
+  --card-foreground: 300 20% 92%;
+  --card-border: 270 24% 12%;
+  --sidebar: 270 30% 5%;
+  --sidebar-foreground: 300 20% 92%;
+  --sidebar-border: 270 24% 11%;
+  --sidebar-primary: 325 100% 60%;
+  --sidebar-primary-foreground: 270 30% 4%;
+  --sidebar-accent: 270 26% 12%;
+  --sidebar-accent-foreground: 300 20% 92%;
+  --sidebar-ring: 325 100% 60%;
+  --popover: 270 28% 8%;
+  --popover-foreground: 300 20% 92%;
+  --popover-border: 270 28% 15%;
+  --primary: 325 100% 60%;
+  --primary-foreground: 270 30% 4%;
+  --secondary: 185 100% 50%;
+  --secondary-foreground: 270 30% 4%;
+  --muted: 270 26% 12%;
+  --muted-foreground: 300 12% 52%;
+  --accent: 270 26% 10%;
+  --accent-foreground: 300 20% 92%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 270 24% 18%;
+  --ring: 325 100% 60%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── BLOOD MOON ──────────────────────────────────────────────── */
+html.blood-moon {
+  --button-outline: rgba(220, 38, 38, .15);
+  --badge-outline: rgba(220, 38, 38, .06);
+  --opaque-button-border-intensity: 10;
+  --elevate-1: rgba(220, 38, 38, .06);
+  --elevate-2: rgba(220, 38, 38, .12);
+  --background: 0 25% 4%;
+  --foreground: 10 20% 90%;
+  --border: 0 22% 16%;
+  --card: 0 22% 7%;
+  --card-foreground: 10 20% 90%;
+  --card-border: 0 20% 12%;
+  --sidebar: 0 24% 5%;
+  --sidebar-foreground: 10 20% 90%;
+  --sidebar-border: 0 20% 11%;
+  --sidebar-primary: 0 80% 55%;
+  --sidebar-primary-foreground: 0 25% 4%;
+  --sidebar-accent: 0 20% 12%;
+  --sidebar-accent-foreground: 10 20% 90%;
+  --sidebar-ring: 0 80% 55%;
+  --popover: 0 22% 8%;
+  --popover-foreground: 10 20% 90%;
+  --popover-border: 0 22% 16%;
+  --primary: 0 80% 55%;
+  --primary-foreground: 0 25% 4%;
+  --secondary: 20 80% 50%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 18% 12%;
+  --muted-foreground: 10 12% 50%;
+  --accent: 0 18% 10%;
+  --accent-foreground: 10 20% 90%;
+  --destructive: 0 90% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 0 18% 18%;
+  --ring: 0 80% 55%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── SLATE NOIR ──────────────────────────────────────────────── */
+html.slate-noir {
+  --button-outline: rgba(148, 163, 184, .12);
+  --badge-outline: rgba(148, 163, 184, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(148, 163, 184, .04);
+  --elevate-2: rgba(148, 163, 184, .09);
+  --background: 220 15% 5%;
+  --foreground: 215 18% 88%;
+  --border: 220 12% 16%;
+  --card: 220 13% 8%;
+  --card-foreground: 215 18% 88%;
+  --card-border: 220 12% 13%;
+  --sidebar: 220 14% 6%;
+  --sidebar-foreground: 215 18% 88%;
+  --sidebar-border: 220 12% 12%;
+  --sidebar-primary: 215 60% 65%;
+  --sidebar-primary-foreground: 220 15% 5%;
+  --sidebar-accent: 220 12% 12%;
+  --sidebar-accent-foreground: 215 18% 88%;
+  --sidebar-ring: 215 60% 65%;
+  --popover: 220 13% 9%;
+  --popover-foreground: 215 18% 88%;
+  --popover-border: 220 12% 16%;
+  --primary: 215 60% 65%;
+  --primary-foreground: 220 15% 5%;
+  --secondary: 200 40% 55%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 220 12% 12%;
+  --muted-foreground: 215 10% 50%;
+  --accent: 220 12% 10%;
+  --accent-foreground: 215 18% 88%;
+  --destructive: 0 70% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 220 12% 20%;
+  --ring: 215 60% 65%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── NEURAL PULSE ────────────────────────────────────────────── */
+html.neural-pulse {
+  --button-outline: rgba(0, 212, 255, .12);
+  --badge-outline: rgba(0, 212, 255, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(0, 212, 255, .05);
+  --elevate-2: rgba(0, 212, 255, .10);
+  --background: 215 60% 3%;
+  --foreground: 195 80% 90%;
+  --border: 210 50% 14%;
+  --card: 215 55% 6%;
+  --card-foreground: 195 80% 90%;
+  --card-border: 210 45% 11%;
+  --sidebar: 215 58% 4%;
+  --sidebar-foreground: 195 80% 90%;
+  --sidebar-border: 210 48% 10%;
+  --sidebar-primary: 192 100% 50%;
+  --sidebar-primary-foreground: 215 60% 3%;
+  --sidebar-accent: 210 45% 9%;
+  --sidebar-accent-foreground: 195 80% 90%;
+  --sidebar-ring: 192 100% 50%;
+  --popover: 215 55% 7%;
+  --popover-foreground: 195 80% 90%;
+  --popover-border: 210 50% 14%;
+  --primary: 192 100% 50%;
+  --primary-foreground: 215 60% 3%;
+  --secondary: 200 80% 45%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 210 45% 10%;
+  --muted-foreground: 200 30% 55%;
+  --accent: 210 45% 8%;
+  --accent-foreground: 195 80% 90%;
+  --destructive: 0 80% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 210 45% 16%;
+  --ring: 192 100% 50%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+/* ─── ANIMATED BACKGROUND CANVAS ─────────────────────────────── */
+#animated-bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+html.starfield #animated-bg-canvas,
+html.galaxy #animated-bg-canvas,
+html.synthwave #animated-bg-canvas,
+html.aurora #animated-bg-canvas,
+html.neon-cyberpunk #animated-bg-canvas,
+html.midnight-purple #animated-bg-canvas,
+html.blood-moon #animated-bg-canvas,
+html.neural-pulse #animated-bg-canvas,
+html.premium-atmosphere #animated-bg-canvas {
+  opacity: 1;
+}
+
+/* synthwave neon text glow */
+html.synthwave .neon-text {
+  text-shadow: 0 0 12px hsl(325 100% 60% / 0.7), 0 0 30px hsl(325 100% 60% / 0.35), 0 0 60px hsl(325 100% 60% / 0.15);
+}
+
+.owner-badge {
+  background: linear-gradient(135deg, #facc15, #f97316, #fde68a);
+  box-shadow: 0 0 18px rgb(250 204 21 / 0.45), 0 0 36px rgb(249 115 22 / 0.2);
+  animation: owner-badge-glow 2.4s ease-in-out infinite;
+}
+
+/* ─── NEUMORPHIC SCROLLBAR ─────────────────────────────────────
+   Slim deep midnight-navy scrollbar that disappears into the page
+   background. Track is a darker carved channel matching the navy
+   ambient; thumb is a slim raised pill barely lighter than the
+   track so it reads as a quiet hint of structure rather than UI
+   chrome. Faint warm rim only on hover/active. */
+.app-scrollbar,
+.admin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(228 22% 14%) transparent;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(228 22% 14%) transparent;
+}
+
+*::-webkit-scrollbar,
+.app-scrollbar::-webkit-scrollbar,
+.admin-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track,
+.app-scrollbar::-webkit-scrollbar-track,
+.admin-scrollbar::-webkit-scrollbar-track {
+  background: linear-gradient(
+    145deg,
+    hsl(228 28% 5%) 0%,
+    hsl(228 24% 7%) 100%
+  );
+  border-radius: 999px;
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.78),
+    inset -1px -1px 3px rgba(120, 130, 180, 0.025);
+  margin: 6px 2px;
+}
+
+*::-webkit-scrollbar-thumb,
+.app-scrollbar::-webkit-scrollbar-thumb,
+.admin-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  background: linear-gradient(
+    155deg,
+    hsl(228 22% 16%) 0%,
+    hsl(228 24% 11%) 100%
+  );
+  box-shadow:
+    -1px -1px 2px rgba(140, 150, 200, 0.045),
+    1px 1px 3px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(180, 190, 220, 0.05);
+  transition: background 220ms ease-out, box-shadow 220ms ease-out;
+}
+
+*::-webkit-scrollbar-thumb:hover,
+.app-scrollbar::-webkit-scrollbar-thumb:hover,
+.admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    155deg,
+    hsl(228 22% 19%) 0%,
+    hsl(228 24% 13%) 100%
+  );
+  box-shadow:
+    -1px -1px 3px rgba(255, 235, 215, 0.05),
+    1px 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 6px hsl(var(--neu-orange) / 0.18),
+    inset 0 1px 0 rgba(255, 230, 200, 0.08);
+}
+
+*::-webkit-scrollbar-thumb:active,
+.app-scrollbar::-webkit-scrollbar-thumb:active,
+.admin-scrollbar::-webkit-scrollbar-thumb:active {
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.04);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@keyframes owner-badge-glow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.2);
+  }
+}
+
+/* ── Step In: cycled neumorphic breathing + shine sweep ──
+   The button cycles through three calm states — raised, gently
+   inhaled, raised — instead of a hard pulse. A diagonal shine
+   sweeps across the surface every cycle to add a premium,
+   continuous "alive" feel without being distracting. */
+@keyframes step-in-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 8px hsla(var(--neu-orange) / 0.16),
+      0 0 18px hsla(var(--neu-orange) / 0.05),
+      -4px -4px 10px rgba(255, 235, 215, 0.03),
+      6px 6px 16px rgba(0, 0, 0, 0.68),
+      inset 0 1px 0 rgba(255, 220, 190, 0.28),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+  }
+  50% {
+    box-shadow:
+      0 0 12px hsla(var(--neu-orange) / 0.24),
+      0 0 26px hsla(var(--neu-orange) / 0.08),
+      -5px -5px 12px rgba(255, 235, 215, 0.04),
+      8px 8px 20px rgba(0, 0, 0, 0.74),
+      inset 0 2px 0 rgba(255, 220, 190, 0.34),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.36);
+  }
+}
+
+@keyframes step-in-shine {
+  0%   { transform: translateX(-140%) skewX(-22deg); opacity: 0; }
+  35%  { opacity: 0.85; }
+  60%  { opacity: 0.85; }
+  100% { transform: translateX(220%)  skewX(-22deg); opacity: 0; }
+}
+
+.step-in-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  animation: step-in-breathe 3.2s ease-in-out infinite;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.step-in-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 230, 200, 0.00) 30%,
+    rgba(255, 235, 210, 0.18) 50%,
+    rgba(255, 230, 200, 0.00) 70%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  animation: step-in-shine 3.2s ease-in-out infinite;
+  z-index: 0;
+}
+.step-in-btn > * {
+  position: relative;
+  z-index: 1;
+}
+.step-in-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+/* ── Premium Animated Borders ── */
+
+/* Cosmic: blue → purple → red/orange */
+@keyframes cosmic-hue {
+  0%   { filter: hue-rotate(0deg)   brightness(1.15) saturate(1.2); }
+  50%  { filter: hue-rotate(120deg) brightness(1.3)  saturate(1.35); }
+  100% { filter: hue-rotate(0deg)   brightness(1.15) saturate(1.2); }
+}
+.cosmic-border-wrap { animation: cosmic-hue 5s ease-in-out infinite; }
+
+/* Plasma: pink → violet → indigo — faster, aggressive */
+@keyframes plasma-hue {
+  0%   { filter: hue-rotate(0deg)   brightness(1.2) saturate(1.4); }
+  50%  { filter: hue-rotate(-80deg) brightness(1.4) saturate(1.6); }
+  100% { filter: hue-rotate(0deg)   brightness(1.2) saturate(1.4); }
+}
+.plasma-border-wrap { animation: plasma-hue 3.5s ease-in-out infinite; }
+
+/* Hologram: cyan → teal → electric green — ripple-like */
+@keyframes hologram-hue {
+  0%   { filter: hue-rotate(0deg)  brightness(1.1) saturate(1.3); }
+  33%  { filter: hue-rotate(40deg) brightness(1.5) saturate(1.8); }
+  66%  { filter: hue-rotate(80deg) brightness(1.2) saturate(1.3); }
+  100% { filter: hue-rotate(0deg)  brightness(1.1) saturate(1.3); }
+}
+.hologram-border-wrap { animation: hologram-hue 4s linear infinite; }
+
+/* Inferno: orange → red → gold — slow ember pulse */
+@keyframes inferno-hue {
+  0%   { filter: hue-rotate(0deg)   brightness(1.1) saturate(1.2); }
+  50%  { filter: hue-rotate(-50deg) brightness(1.45) saturate(1.5); }
+  100% { filter: hue-rotate(0deg)   brightness(1.1) saturate(1.2); }
+}
+.inferno-border-wrap { animation: inferno-hue 6s ease-in-out infinite; }
+
+@keyframes premium-atmosphere-border {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes premium-atmosphere-spark {
+  0%, 100% { opacity: 0.16; transform: scale(0.65); }
+  50% { opacity: 0.95; transform: scale(1.35); }
+}
+
+@keyframes premium-atmosphere-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  40% { transform: translate(18px, -16px) scale(1.08); opacity: 0.8; }
+  72% { transform: translate(-14px, 10px) scale(0.94); opacity: 0.42; }
+}
+
+@keyframes premium-atmosphere-sweep {
+  0% { transform: translateX(-120%) rotate(9deg); opacity: 0; }
+  18% { opacity: 0.75; }
+  55% { opacity: 0.3; }
+  100% { transform: translateX(145%) rotate(9deg); opacity: 0; }
+}
+
+.premium-atmosphere-border-wrap {
+  background-size: 260% 260% !important;
+  animation: premium-atmosphere-border 4.6s ease-in-out infinite;
+}
+
+.premium-atmosphere-card {
+  box-shadow:
+    inset 0 0 30px rgba(0, 180, 255, 0.06),
+    inset 0 0 60px rgba(100, 50, 255, 0.04),
+    inset 0 1px 0 rgba(0, 220, 255, 0.12),
+    inset 0 -1px 0 rgba(140, 50, 255, 0.10);
+}
+
+.premium-atmosphere-card-effects {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.68;
+}
+
+.premium-atmosphere-orb,
+.premium-atmosphere-sweep,
+.premium-atmosphere-spark {
+  position: absolute;
+  display: block;
+}
+
+.premium-atmosphere-orb {
+  border-radius: 9999px;
+  filter: blur(28px);
+  animation: premium-atmosphere-orb 9s ease-in-out infinite;
+}
+
+.premium-atmosphere-orb-a {
+  width: 180px;
+  height: 180px;
+  left: -60px;
+  top: -55px;
+  background: radial-gradient(circle, rgba(0, 200, 255, 0.20), transparent 68%);
+}
+
+.premium-atmosphere-orb-b {
+  width: 200px;
+  height: 200px;
+  right: -65px;
+  top: -25px;
+  background: radial-gradient(circle, rgba(120, 50, 255, 0.18), transparent 68%);
+  animation-delay: -2.4s;
+}
+
+.premium-atmosphere-orb-c {
+  width: 175px;
+  height: 175px;
+  left: 35%;
+  bottom: -80px;
+  background: radial-gradient(circle, rgba(180, 30, 255, 0.16), transparent 70%);
+  animation-delay: -4.2s;
+}
+
+.premium-atmosphere-sweep {
+  top: -40%;
+  left: 0;
+  width: 34%;
+  height: 180%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: premium-atmosphere-sweep 5.8s ease-in-out infinite;
+}
+
+.premium-atmosphere-spark {
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: rgba(235, 247, 255, 0.98);
+  box-shadow: 0 0 6px rgba(0, 210, 255, 0.70), 0 0 14px rgba(140, 60, 255, 0.45), 0 0 22px rgba(80, 0, 255, 0.22);
+  animation: premium-atmosphere-spark 2.6s ease-in-out infinite;
+}
+
+/* ── Hammer icon animation ── */
+@keyframes hammer-swing {
+  0%   { transform: rotate(0deg);   }
+  12%  { transform: rotate(-22deg); }
+  28%  { transform: rotate(14deg);  }
+  48%  { transform: rotate(-8deg);  }
+  65%  { transform: rotate(4deg);   }
+  80%  { transform: rotate(-2deg);  }
+  100% { transform: rotate(0deg);   }
+}
+
+.sparkle-icon {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: hammer-swing 2.6s ease-in-out infinite;
+}
+
+.hammer-btn:hover .sparkle-icon {
+  animation-duration: 1.0s;
+}
+
+/* ── Create Room button — dark neumorphic body, glowing orange
+   icon. Sits beside the orange Sign-In CTA without competing
+   visually, but its icon clearly reads as the warm accent. */
+.create-room-btn {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: rgba(255, 230, 200, 0.96);
+  border: 1px solid rgba(255, 235, 215, 0.06);
+  box-shadow:
+    -4px -4px 10px rgba(255, 235, 215, 0.045),
+    6px 6px 16px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 235, 215, 0.06);
+  transition: all 220ms ease-out;
+}
+.create-room-btn:hover:not(:disabled) {
+  color: #fff;
+  transform: translateY(-1px);
+  border-color: rgba(255, 180, 110, 0.22);
+  box-shadow:
+    -5px -5px 12px rgba(255, 235, 215, 0.05),
+    7px 7px 18px rgba(0, 0, 0, 0.72),
+    0 0 14px hsl(var(--neu-orange) / 0.22),
+    inset 0 1px 0 rgba(255, 235, 215, 0.08);
+}
+.create-room-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.62),
+    inset -2px -2px 6px rgba(255, 235, 215, 0.035);
+}
+.create-room-btn .sparkle-icon {
+  color: hsl(var(--neu-orange-hi));
+  filter:
+    drop-shadow(0 0 4px hsl(var(--neu-orange) / 0.55))
+    drop-shadow(0 0 10px hsl(var(--neu-orange) / 0.30));
+}
+.create-room-btn:hover .sparkle-icon {
+  color: hsl(34 92% 62%);
+  filter:
+    drop-shadow(0 0 6px hsl(var(--neu-orange) / 0.75))
+    drop-shadow(0 0 14px hsl(var(--neu-orange) / 0.40));
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   NEUMORPHIC DIALOG ELEMENTS — premium 3D depth for the
+   Create Room dialog (Card Theme tiles, video tabs, submit
+   button, public-room switch). All built on the same neu-bg /
+   neu-surface tokens so they share the lobby's material language.
+   ───────────────────────────────────────────────────────────────── */
+
+/* Card-Theme grid tile — recessed neumorphic frame around each
+   theme preview; active state is raised with an amber rim. */
+.neu-tile {
+  position: relative;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: hsl(var(--neu-bg));
+  border: 1px solid rgba(255, 235, 215, 0.04);
+  box-shadow:
+    inset 2px 2px 6px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 4px rgba(255, 235, 215, 0.025),
+    0 1px 0 rgba(255, 235, 215, 0.04);
+  transition: all 200ms ease-out;
+  opacity: 0.78;
+}
+.neu-tile:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 1px 1px 4px rgba(0, 0, 0, 0.45),
+    -2px -2px 6px rgba(255, 235, 215, 0.03),
+    3px 3px 8px rgba(0, 0, 0, 0.55);
+}
+.neu-tile.is-active {
+  opacity: 1;
+  border-color: hsl(var(--neu-orange) / 0.55);
+  box-shadow:
+    0 0 0 1px hsl(var(--neu-orange) / 0.45),
+    0 0 16px hsl(var(--neu-orange) / 0.35),
+    -3px -3px 8px rgba(255, 235, 215, 0.045),
+    4px 4px 12px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 235, 215, 0.10);
+  transform: translateY(-1px);
+}
+.neu-tile-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  box-shadow:
+    0 0 8px hsl(var(--neu-orange) / 0.65),
+    inset 0 1px 0 rgba(255, 230, 200, 0.40);
+  color: #fff;
+}
+
+/* Card-Theme nav arrow — small neumorphic icon button */
+.neu-tile-nav {
+  background: linear-gradient(145deg, hsl(var(--neu-surface-2)) 0%, hsl(var(--neu-surface)) 100%);
+  border: 1px solid rgba(255, 235, 215, 0.05);
+  color: rgba(255, 230, 200, 0.65);
+  box-shadow:
+    -3px -3px 7px rgba(255, 235, 215, 0.035),
+    4px 4px 10px rgba(0, 0, 0, 0.60),
+    inset 0 1px 0 rgba(255, 235, 215, 0.05);
+  transition: all 180ms ease-out;
+}
+.neu-tile-nav:hover:not(:disabled) {
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow:
+    -4px -4px 9px rgba(255, 235, 215, 0.045),
+    5px 5px 12px rgba(0, 0, 0, 0.66),
+    0 0 10px hsl(var(--neu-orange) / 0.18);
+}
+.neu-tile-nav:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 3px 3px 7px rgba(0, 0, 0, 0.60),
+    inset -2px -2px 5px rgba(255, 235, 215, 0.030);
+}
+.neu-tile-nav:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+/* Pagination dot under the theme grid */
+.neu-tile-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.02);
+  transition: all 180ms ease-out;
+}
+.neu-tile-dot.is-active {
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  box-shadow:
+    0 0 8px hsl(var(--neu-orange) / 0.55),
+    inset 0 1px 0 rgba(255, 230, 200, 0.34);
+}
+
+/* Video upload/youtube tab group — recessed groove containing
+   a raised orange pill on the active tab. */
+.neu-tab-group {
+  display: flex;
+  border-radius: 0.5rem;
+  padding: 3px;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 3px rgba(255, 235, 215, 0.025);
+}
+.neu-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.4rem;
+  color: rgba(255, 230, 200, 0.55);
+  background: transparent;
+  transition: all 180ms ease-out;
+}
+.neu-tab:hover:not(.is-active) {
+  color: rgba(255, 230, 200, 0.85);
+  background: rgba(255, 235, 215, 0.025);
+}
+.neu-tab.is-active {
+  color: #fff;
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  box-shadow:
+    0 0 12px hsl(var(--neu-orange) / 0.40),
+    -2px -2px 5px rgba(255, 235, 215, 0.04),
+    3px 3px 7px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 230, 200, 0.36);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+}
+.neu-tab.is-active-red {
+  color: #fff;
+  background: linear-gradient(145deg, hsl(0 78% 56%) 0%, hsl(0 72% 38%) 100%);
+  box-shadow:
+    0 0 12px hsl(0 80% 50% / 0.40),
+    -2px -2px 5px rgba(255, 220, 220, 0.04),
+    3px 3px 7px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 220, 200, 0.36);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+}
+
+/* Submit Create-Room button — proper raised neumorphic orange
+   slab; pressed state recesses into the dialog surface. */
+.neu-submit {
+  width: 100%;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 0.55rem;
+  padding: 0.65rem 1rem;
+  color: #fff;
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  border: 1px solid rgba(180, 90, 30, 0.45);
+  box-shadow:
+    0 0 18px hsl(var(--neu-orange) / 0.34),
+    0 0 38px hsl(var(--neu-orange) / 0.14),
+    -5px -5px 12px rgba(255, 235, 215, 0.045),
+    7px 7px 18px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 230, 200, 0.40),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.30);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.36);
+  transition: all 200ms ease-out;
+}
+.neu-submit:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 24px hsl(var(--neu-orange) / 0.46),
+    0 0 48px hsl(var(--neu-orange) / 0.18),
+    -6px -6px 14px rgba(255, 235, 215, 0.055),
+    8px 8px 20px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 rgba(255, 230, 200, 0.44);
+}
+.neu-submit:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 0 12px hsl(var(--neu-orange) / 0.30),
+    inset 4px 4px 10px rgba(0, 0, 0, 0.58),
+    inset -3px -3px 8px rgba(255, 200, 160, 0.18);
+}
+.neu-submit:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+  box-shadow:
+    -3px -3px 8px rgba(255, 235, 215, 0.025),
+    5px 5px 12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 235, 215, 0.06);
+}
+
+/* Public-Room switch — neumorphic recessed groove with a raised
+   amber thumb when active. Targets Radix Switch via attribute. */
+.neu-switch[data-state] {
+  width: 2.85rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  border: none;
+  padding: 0;
+  position: relative;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.62),
+    inset -2px -2px 4px rgba(255, 235, 215, 0.025),
+    0 1px 0 rgba(255, 235, 215, 0.04);
+  transition: all 220ms ease-out;
+}
+.neu-switch[data-state="checked"] {
+  background: linear-gradient(145deg, hsl(var(--neu-orange-lo)) 0%, hsl(var(--neu-orange)) 100%);
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.45),
+    inset -1px -1px 3px rgba(255, 220, 180, 0.20),
+    0 0 12px hsl(var(--neu-orange) / 0.45);
+}
+.neu-switch[data-state] > span {
+  display: block;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 9999px;
+  background: linear-gradient(145deg, hsl(var(--neu-surface-2)) 0%, hsl(var(--neu-surface)) 100%);
+  box-shadow:
+    -2px -2px 4px rgba(255, 235, 215, 0.06),
+    2px 2px 4px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 235, 215, 0.08);
+  transition: transform 220ms ease-out, background 220ms ease-out, box-shadow 220ms ease-out;
+  transform: translateX(0.18rem);
+}
+.neu-switch[data-state="checked"] > span {
+  transform: translateX(1.45rem);
+  background: linear-gradient(145deg, #fff8ee 0%, #ffd9b0 100%);
+  box-shadow:
+    -2px -2px 4px rgba(255, 235, 215, 0.10),
+    2px 2px 5px rgba(0, 0, 0, 0.50),
+    0 0 8px hsl(var(--neu-orange) / 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+/* ── Neumorphic decoration tiles (Profile Decorations dialog) ── */
+/* Square selection tile used for Avatar Ring + Flair Badge picks.
+   Premium neumorphic body, amber rim + glow on active, lift on hover,
+   compresses inward on click. Entrance is a soft fade-up so the grid
+   waterfalls in when the dialog opens. */
+@keyframes neu-deco-enter {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.96); filter: blur(2px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes neu-deco-active-pulse {
+  0%, 100% { box-shadow:
+    -3px -3px 7px rgba(255, 235, 215, 0.045),
+     5px  5px 12px rgba(0, 0, 0, 0.55),
+     0 0 0 1px hsl(var(--neu-orange) / 0.55) inset,
+     0 0 14px hsl(var(--neu-orange) / 0.35); }
+  50%      { box-shadow:
+    -3px -3px 7px rgba(255, 235, 215, 0.045),
+     5px  5px 12px rgba(0, 0, 0, 0.55),
+     0 0 0 1px hsl(var(--neu-orange-hi) / 0.75) inset,
+     0 0 22px hsl(var(--neu-orange) / 0.55); }
+}
+@keyframes neu-deco-sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+
+.neu-deco-tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.4rem 0.45rem;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(150deg, hsl(var(--neu-surface-2)) 0%, hsl(var(--neu-surface)) 100%);
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    -3px -3px 7px rgba(255, 235, 215, 0.045),
+     5px  5px 12px rgba(0, 0, 0, 0.55),
+     inset 0 1px 0 rgba(255, 235, 215, 0.05);
+  transition:
+    transform 240ms cubic-bezier(.2,.8,.25,1),
+    box-shadow 280ms ease-out,
+    background 280ms ease-out;
+  opacity: 0;
+  animation: neu-deco-enter 420ms cubic-bezier(.2,.85,.3,1) forwards;
+  animation-delay: var(--neu-deco-delay, 0ms);
+}
+.neu-deco-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 90% at 50% 0%, hsl(var(--neu-orange) / 0.10), transparent 60%);
+  opacity: 0;
+  transition: opacity 280ms ease-out;
+  pointer-events: none;
+  z-index: 0;
+}
+.neu-deco-tile::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 38%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    hsl(var(--neu-orange-hi) / 0.18) 45%,
+    hsl(var(--neu-orange-hi) / 0.30) 50%,
+    hsl(var(--neu-orange-hi) / 0.18) 55%,
+    transparent 100%);
+  transform: translateX(-120%) skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.neu-deco-tile > * { position: relative; z-index: 2; }
+
+.neu-deco-tile:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(150deg, hsl(var(--neu-surface-2)) 0%, hsl(var(--neu-surface-2)) 100%);
+  box-shadow:
+    -4px -4px 9px rgba(255, 235, 215, 0.06),
+     6px  6px 14px rgba(0, 0, 0, 0.62),
+     0 0 12px hsl(var(--neu-orange) / 0.18),
+     inset 0 1px 0 rgba(255, 235, 215, 0.07);
+}
+.neu-deco-tile:hover::before { opacity: 1; }
+.neu-deco-tile:hover::after { animation: neu-deco-sheen 900ms ease-out; }
+
+.neu-deco-tile:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 90ms;
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 4px rgba(255, 235, 215, 0.04),
+    0 0 8px hsl(var(--neu-orange) / 0.25);
+}
+
+.neu-deco-tile.is-active {
+  background: linear-gradient(150deg, hsl(var(--neu-surface-2)) 0%, hsl(28 30% 14%) 100%);
+  animation:
+    neu-deco-enter 420ms cubic-bezier(.2,.85,.3,1) forwards,
+    neu-deco-active-pulse 2800ms ease-in-out 600ms infinite;
+}
+.neu-deco-tile.is-active::before { opacity: 1; }
+
+.neu-deco-tile-preview {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+  transition: transform 280ms cubic-bezier(.2,.8,.25,1);
+}
+.neu-deco-tile:hover .neu-deco-tile-preview { transform: scale(1.06); }
+.neu-deco-tile.is-active .neu-deco-tile-preview { transform: scale(1.08); }
+
+.neu-deco-tile-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+  transition: transform 320ms cubic-bezier(.2,.8,.25,1);
+}
+.neu-deco-tile:hover .neu-deco-tile-emoji { transform: scale(1.12) rotate(-4deg); }
+.neu-deco-tile.is-active .neu-deco-tile-emoji { transform: scale(1.15); }
+
+.neu-deco-tile-label {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: hsl(var(--muted-foreground));
+  transition: color 240ms ease-out;
+}
+.neu-deco-tile:hover .neu-deco-tile-label { color: hsl(var(--foreground)); }
+.neu-deco-tile.is-active .neu-deco-tile-label {
+  color: hsl(var(--neu-orange-hi));
+  text-shadow: 0 0 6px hsl(var(--neu-orange) / 0.45);
+}
+
+.neu-deco-tile-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  box-shadow:
+    0 0 6px hsl(var(--neu-orange) / 0.7),
+    inset 0 1px 0 rgba(255, 235, 215, 0.45);
+  z-index: 3;
+  animation: neu-deco-enter 320ms cubic-bezier(.2,.85,.3,1) forwards;
+}
+.neu-deco-tile-check > svg {
+  width: 9px;
+  height: 9px;
+  color: #1a0c00;
+  stroke-width: 3.5;
+}
+
+.neu-deco-tile-none {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  position: relative;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+}
+.neu-deco-tile-none::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 12%;
+  right: 12%;
+  height: 1.5px;
+  background: hsl(var(--muted-foreground));
+  transform: translateY(-50%) rotate(-45deg);
+  border-radius: 2px;
+  opacity: 0.55;
+}
+
+/* ── AI Tutor responsive face size ── */
+.ai-face-size {
+  width: clamp(132px, 32vw, 172px);
+  height: clamp(132px, 32vw, 172px);
+}
+
+.ai-liveportrait-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: scale(1.06);
+  transform-origin: center 48%;
+  filter: drop-shadow(0 0 18px rgba(0, 225, 255, 0.26));
+}
+
+.ai-liveportrait-speaking {
+  animation: ai-liveportrait-speak 1.2s ease-in-out infinite;
+}
+
+.ai-liveportrait-listening {
+  animation: ai-liveportrait-listen 2.4s ease-in-out infinite;
+}
+
+.ai-liveportrait-neutral {
+  animation: ai-liveportrait-neutral 4s ease-in-out infinite;
+}
+
+.ai-avatar-hair-front,
+.ai-avatar-bang {
+  animation: ai-liveportrait-hair 3.8s ease-in-out infinite;
+  transform-origin: 120px 78px;
+}
+
+.ai-avatar-eyes {
+  animation: ai-liveportrait-eyes 5.8s ease-in-out infinite;
+  transform-origin: 120px 121px;
+}
+
+.ai-avatar-eye-mimic {
+  transform-origin: 121px 121px;
+  transition: transform 260ms ease;
+}
+
+.ai-avatar-blink {
+  opacity: 0;
+  animation: ai-liveportrait-blink 5.8s ease-in-out infinite;
+}
+
+.ai-avatar-brow,
+.ai-avatar-cheek,
+.ai-avatar-face {
+  transition: transform 180ms ease, opacity 180ms ease, filter 180ms ease;
+}
+
+.ai-liveportrait-listening .ai-avatar-brow-left {
+  transform: none;
+  transform-origin: 101px 106px;
+}
+
+.ai-liveportrait-listening .ai-avatar-brow-right {
+  transform: none;
+  transform-origin: 140px 106px;
+}
+
+.ai-liveportrait-listening .ai-avatar-brow {
+  animation: none;
+}
+
+.ai-liveportrait-listening .ai-avatar-cheek {
+  opacity: 0.55;
+}
+
+.ai-liveportrait-listening .ai-avatar-eye-mimic {
+  animation: ai-liveportrait-eye-track 4.2s ease-in-out infinite;
+}
+
+.ai-liveportrait-listening .ai-avatar-eyes {
+  animation-duration: 4.8s;
+}
+
+.ai-liveportrait-listening .ai-avatar-face {
+  filter: brightness(1.02) saturate(1.03);
+}
+
+.ai-liveportrait-speaking .ai-avatar-brow-left {
+  transform: translateY(-4px) rotate(-5deg);
+  transform-origin: 101px 106px;
+}
+
+.ai-liveportrait-speaking .ai-avatar-brow-right {
+  transform: translateY(-4px) rotate(5deg);
+  transform-origin: 140px 106px;
+}
+
+.ai-liveportrait-speaking .ai-avatar-cheek {
+  opacity: 0.95;
+  filter: drop-shadow(0 0 7px rgba(255, 128, 170, 0.45));
+}
+
+.ai-liveportrait-speaking .ai-avatar-face {
+  filter: brightness(1.06) saturate(1.08);
+}
+
+@keyframes ai-liveportrait-speak {
+  0%, 100% { transform: scale(1.06) translateY(0); }
+  45% { transform: scale(1.075) translateY(-2px); }
+}
+
+@keyframes ai-liveportrait-neutral {
+  0%, 100% { transform: scale(1.055) translateY(0); }
+  50% { transform: scale(1.06) translateY(-0.5px); }
+}
+
+@keyframes ai-liveportrait-listen {
+  0%, 100% { transform: scale(1.055) translateY(0); }
+  50% { transform: scale(1.065) translateY(-1px); }
+}
+
+@keyframes ai-liveportrait-hair {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(-1deg) translateY(-1px); }
+}
+
+@keyframes ai-liveportrait-eyes {
+  0%, 7%, 9%, 63%, 65%, 100% { opacity: 1; }
+  8%, 64% { opacity: 0; }
+}
+
+@keyframes ai-liveportrait-blink {
+  0%, 7%, 9%, 63%, 65%, 100% { opacity: 0; }
+  8%, 64% { opacity: 1; }
+}
+
+@keyframes ai-liveportrait-eye-track {
+  0%, 100% { transform: translate(0, 0); }
+  18% { transform: translate(1.7px, -0.4px); }
+  36% { transform: translate(-1.4px, 0.3px); }
+  56% { transform: translate(0.6px, 0.7px); }
+  78% { transform: translate(-0.6px, -0.5px); }
+}
+
+/* ── AI Tutor photo-based avatar animations ── */
+
+/* Subtle breathing / idle head movement for the portrait photo */
+.ai-photo-neutral {
+  animation: ai-photo-breath 5.5s ease-in-out infinite;
+  transform-origin: 50% 88%;
+}
+.ai-photo-listening {
+  animation: ai-photo-listen 3.8s ease-in-out infinite;
+  transform-origin: 50% 88%;
+}
+.ai-photo-speaking {
+  animation: ai-photo-speak 1.6s ease-in-out infinite;
+  transform-origin: 50% 88%;
+}
+
+@keyframes ai-photo-breath {
+  0%, 100% { transform: scale(1)     translateY(0px)    rotate(0deg); }
+  50%       { transform: scale(1.007) translateY(-1.2px) rotate(0deg); }
+}
+@keyframes ai-photo-listen {
+  0%, 100% { transform: scale(1)     translateY(0px)    rotate(0deg);   }
+  28%       { transform: scale(1.005) translateY(-0.6px) rotate(-0.5deg); }
+  72%       { transform: scale(1.003) translateY(0.4px)  rotate(0.4deg);  }
+}
+@keyframes ai-photo-speak {
+  0%, 100% { transform: scale(1)     translateY(0px)    rotate(0deg);   }
+  22%       { transform: scale(1.006) translateY(-1px)   rotate(0.4deg);  }
+  68%       { transform: scale(1.004) translateY(0.5px)  rotate(-0.3deg); }
+}
+
+/* Eye blink — left and right lids animate together every ~4.5 seconds */
+.ai-photo-blink-left {
+  animation: ai-photo-blink 4.5s ease-in-out infinite;
+}
+.ai-photo-blink-right {
+  /* 60ms offset for natural asymmetry */
+  animation: ai-photo-blink 4.5s ease-in-out 0.06s infinite;
+}
+
+@keyframes ai-photo-blink {
+  0%, 93%, 100% { transform: scaleY(0);    opacity: 0.9; }
+  96.5%          { transform: scaleY(1);    opacity: 1;   }
+}
+
+/* ── AI Tutor chat panel responsive positioning ── */
+.ai-chat-panel-responsive {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(286px, 92vw);
+  margin-top: 108px;
+}
+
+@media (min-width: 640px) {
+  .ai-chat-panel-responsive {
+    top: 50%;
+    left: calc(50% + 112px);
+    transform: translateY(-50%);
+    width: 292px;
+    margin-top: 0;
+  }
+}
+/* ── Floating watch-party reactions on the YouTube player ── */
+@keyframes ytReactionFloat {
+  0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+  15%  { transform: translateY(-10px) scale(1.15); opacity: 1; }
+  85%  { transform: translateY(-220px) scale(1); opacity: 0.85; }
+  100% { transform: translateY(-280px) scale(0.85); opacity: 0; }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   NEUMORPHISM SYSTEM (dark base + orange accent)
+   Inspired by the dark neumorphic UI references with vibrant orange
+   primary actions (e.g. the play button in the music player mockup).
+   The page background should be very dark (near-black). Raised
+   elements use a dual soft-shadow: a light highlight on the
+   top-left edge and a darker shadow on the bottom-right edge.
+   Pressed/inset elements invert those shadows. Orange is used for
+   primary calls-to-action (Step In, active tab, Sign In, etc.).
+   ───────────────────────────────────────────────────────────────── */
+
+:root {
+  --neu-bg: 228 18% 8%;            /* near-black canvas — deeper indigo undertone */
+  --neu-surface: 228 16% 14%;      /* card / panel surface */
+  --neu-surface-2: 228 14% 18%;    /* slightly raised */
+  --neu-light: 228 18% 24%;        /* highlight edge */
+  --neu-shadow: 230 24% 3%;        /* dark drop edge */
+  /* Refined "burnt-amber" palette — desaturated and shifted toward
+     copper so the accents read as sculpted metal instead of plastic
+     neon. Same warm hue family but ~25% less saturation across the
+     stops, which kills the "too bright / fake" look on filter pills
+     and the Step In button while keeping the orange identity. */
+  --neu-orange: 22 68% 46%;        /* primary accent — burnt copper */
+  --neu-orange-hi: 26 74% 54%;     /* highlight tone — warm amber */
+  --neu-orange-lo: 16 62% 32%;     /* deep tone — molten cocoa */
+  --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
+  --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
+}
+
+/* Page background — deep sculpted neumorphic canvas with breathing
+   ambient warm-amber + indigo corner blooms and a subtle vignette.
+   Feels like the surface is gently lit from above by warm light. */
+@keyframes neu-aura-breathe {
+  0%, 100% { opacity: 0.95; transform: translateY(0) scale(1); }
+  50%      { opacity: 1.00; transform: translateY(-4px) scale(1.015); }
+}
+@keyframes neu-aura-drift {
+  0%, 100% { opacity: 0.85; transform: translate(0, 0) scale(1); }
+  50%      { opacity: 1.00; transform: translate(8px, -6px) scale(1.025); }
+}
+
+.neu-canvas {
+  position: relative;
+  background:
+    radial-gradient(ellipse 95% 65% at 18% 0%, rgba(120, 90, 220, 0.13) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 55% at 82% 0%, rgba(255, 145, 60, 0.085) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 50% 110%, rgba(255, 130, 40, 0.05) 0%, transparent 60%),
+    radial-gradient(140% 90% at 50% 0%, rgba(255, 245, 230, 0.022) 0%, transparent 55%),
+    radial-gradient(85% 65% at 50% 100%, rgba(0, 0, 0, 0.55) 0%, transparent 62%),
+    hsl(var(--neu-bg));
+}
+/* Ambient warm light blooms — breathe gently for an idealistic
+   atmospheric feel. Sit behind content but above the canvas. */
+.neu-canvas::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 50% 40% at 12% 18%, hsl(var(--neu-orange) / 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 38% at 88% 28%, rgba(140, 100, 255, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 50% 92%, hsl(var(--neu-orange-lo) / 0.06) 0%, transparent 60%);
+  animation: neu-aura-breathe 14s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+/* Subtle film grain over the canvas for premium texture */
+.neu-canvas::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+}
+.neu-canvas > * { position: relative; z-index: 1; }
+
+/* Raised neumorphic surface — used for cards, panels, control docks. */
+.neu-surface {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  box-shadow:
+    -7px -7px 16px rgba(255, 255, 255, 0.038),
+    9px 9px 22px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+/* Inset / pressed neumorphic well — used for search inputs and
+   pressed states. Carved-out groove with subtle warm rim that
+   gently catches ambient light from above. */
+.neu-inset {
+  background: linear-gradient(
+    155deg,
+    hsl(var(--neu-bg)) 0%,
+    hsl(228 18% 11%) 60%,
+    hsl(var(--neu-surface)) 100%
+  );
+  box-shadow:
+    inset 6px 6px 14px rgba(0, 0, 0, 0.72),
+    inset -5px -5px 12px rgba(255, 235, 215, 0.032),
+    inset 0 1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 -1px 0 rgba(255, 235, 215, 0.06),
+    0 1px 0 rgba(255, 235, 215, 0.025);
+  transition: box-shadow 240ms ease-out;
+}
+.neu-inset:focus-within {
+  box-shadow:
+    inset 5px 5px 12px rgba(0, 0, 0, 0.62),
+    inset -4px -4px 10px rgba(255, 235, 215, 0.04),
+    inset 0 1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 -1px 0 rgba(255, 235, 215, 0.08),
+    0 0 0 1px hsl(var(--neu-orange) / 0.42),
+    0 0 18px hsl(var(--neu-orange) / 0.22);
+}
+
+/* Raised neumorphic button (ghost / inactive). */
+.neu-btn {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: rgba(255, 255, 255, 0.80);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.038),
+    7px 7px 16px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.065);
+  transition: all 200ms ease-out;
+}
+.neu-btn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    -4px -4px 10px rgba(255, 255, 255, 0.048),
+    6px 6px 14px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+.neu-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 4px 4px 10px rgba(0, 0, 0, 0.65),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.028);
+}
+
+/* Primary orange neumorphic button — used for the most important
+   call-to-action (Step In, Sign In, Active tab, primary Play).
+   Warm-white inset highlights (no cool blue tint) so it reads as
+   a single, refined burnt-orange material. */
+.neu-btn-orange {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange-hi)) 0%,
+    hsl(var(--neu-orange-lo)) 100%
+  );
+  color: #fff;
+  border: 1px solid rgba(180, 80, 20, 0.45);
+  box-shadow:
+    0 0 14px hsla(var(--neu-orange) / 0.30),
+    0 0 32px hsla(var(--neu-orange) / 0.10),
+    -4px -4px 10px rgba(255, 235, 215, 0.035),
+    6px 6px 16px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 230, 200, 0.38),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+  transition: all 200ms ease-out;
+}
+.neu-btn-orange:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 20px hsla(var(--neu-orange) / 0.42),
+    0 0 40px hsla(var(--neu-orange) / 0.14),
+    -5px -5px 12px rgba(255, 235, 215, 0.045),
+    7px 7px 18px rgba(0, 0, 0, 0.74),
+    inset 0 1px 0 rgba(255, 230, 200, 0.42);
+}
+.neu-btn-orange:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 0 12px hsla(var(--neu-orange) / 0.32),
+    inset 4px 4px 10px rgba(0, 0, 0, 0.55),
+    inset -3px -3px 8px rgba(255, 200, 160, 0.16);
+}
+
+/* Compact circular variant used for icon-only controls */
+.neu-icon-btn {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    -4px -4px 10px rgba(255, 255, 255, 0.038),
+    5px 5px 12px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 180ms ease-out;
+}
+.neu-icon-btn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.96);
+  transform: translateY(-1px);
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.048),
+    6px 6px 14px rgba(0, 0, 0, 0.68);
+}
+.neu-icon-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.60),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.032);
+}
+.neu-icon-btn[data-active="true"],
+.neu-icon-btn.neu-active {
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange-hi)) 0%,
+    hsl(var(--neu-orange-lo)) 100%
+  );
+  box-shadow:
+    0 0 14px hsla(var(--neu-orange) / 0.32),
+    0 0 28px hsla(var(--neu-orange) / 0.12),
+    -4px -4px 10px rgba(255, 235, 215, 0.04),
+    5px 5px 14px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 230, 200, 0.34);
+}
+
+/* Pill variants used for the discovery tabs and language filters.
+   Sculpted raised dome — soft top highlight catching ambient light,
+   deeper bottom shadow for grounded weight, gentle warm rim glow on
+   hover for an idealistic premium feel. */
+.neu-pill {
+  position: relative;
+  background: linear-gradient(
+    155deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(228 14% 16%) 55%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: rgba(255, 255, 255, 0.62);
+  box-shadow:
+    -5px -5px 12px rgba(255, 235, 215, 0.045),
+    6px 6px 14px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 235, 215, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  transition:
+    transform 240ms cubic-bezier(.2,.8,.25,1),
+    color 240ms ease-out,
+    box-shadow 280ms ease-out;
+}
+.neu-pill:hover {
+  color: rgba(255, 248, 240, 0.94);
+  transform: translateY(-1.5px);
+  box-shadow:
+    -6px -6px 14px rgba(255, 235, 215, 0.055),
+    7px 7px 16px rgba(0, 0, 0, 0.72),
+    0 0 16px hsl(var(--neu-orange) / 0.16),
+    inset 0 1px 0 rgba(255, 235, 215, 0.085),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.32);
+}
+.neu-pill:active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: 90ms;
+  box-shadow:
+    inset 4px 4px 9px rgba(0, 0, 0, 0.60),
+    inset -3px -3px 7px rgba(255, 235, 215, 0.03),
+    0 0 0 1px hsl(var(--neu-orange) / 0.18);
+}
+.neu-pill[data-active="true"],
+.neu-pill.is-active {
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange-hi)) 0%,
+    hsl(var(--neu-orange-lo)) 100%
+  );
+  border: 1px solid rgba(180, 80, 20, 0.50);
+  box-shadow:
+    0 0 14px hsla(var(--neu-orange) / 0.36),
+    0 0 28px hsla(var(--neu-orange) / 0.14),
+    -4px -4px 10px rgba(255, 235, 215, 0.045),
+    5px 5px 16px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 230, 200, 0.38);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+}
+
+/* Accent color helpers */
+.text-neu-orange { color: hsl(var(--neu-orange)); }
+.bg-neu-orange   { background-color: hsl(var(--neu-orange)); }
+.text-neu-teal   { color: hsl(var(--neu-teal)); }
+.text-neu-magenta { color: hsl(var(--neu-magenta)); }
+
+/* Host-only gear button (formerly red) — restyled into the unified
+   amber-honey neumorphic theme. Dark surface body so it doesn't
+   compete with the Step In CTA, with an amber-glowing icon and
+   subtle amber rim that signals an owner-only action without
+   shouting. Pressed state recesses into the card surface. */
+.neu-icon-btn-red {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-surface-2)) 0%,
+    hsl(var(--neu-surface)) 100%
+  );
+  color: hsl(var(--neu-orange-hi));
+  border: 1px solid hsl(var(--neu-orange) / 0.30);
+  box-shadow:
+    0 0 8px hsl(var(--neu-orange) / 0.18),
+    -3px -3px 8px rgba(255, 235, 215, 0.045),
+    4px 4px 10px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 235, 215, 0.07);
+  transition: all 180ms ease-out;
+}
+.neu-icon-btn-red > svg {
+  filter:
+    drop-shadow(0 0 3px hsl(var(--neu-orange) / 0.65))
+    drop-shadow(0 0 7px hsl(var(--neu-orange) / 0.28));
+}
+.neu-icon-btn-red:hover:not(:disabled) {
+  color: hsl(34 92% 62%);
+  transform: translateY(-1px);
+  border-color: hsl(var(--neu-orange) / 0.50);
+  box-shadow:
+    0 0 14px hsl(var(--neu-orange) / 0.34),
+    0 0 28px hsl(var(--neu-orange) / 0.12),
+    -4px -4px 10px rgba(255, 235, 215, 0.05),
+    5px 5px 12px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 235, 215, 0.10);
+}
+.neu-icon-btn-red:hover:not(:disabled) > svg {
+  filter:
+    drop-shadow(0 0 5px hsl(var(--neu-orange) / 0.85))
+    drop-shadow(0 0 11px hsl(var(--neu-orange) / 0.38));
+}
+.neu-icon-btn-red:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.62),
+    inset -2px -2px 6px rgba(255, 235, 215, 0.035);
+}
+
+/* Stronger neumorphic depth for the lobby room cards in the
+   midnight-purple theme. The card itself paints its own
+   gradient + border-glow; this rule layers a second outer
+   shadow on the wrapper so it reads as a true raised tile
+   on the deep purplish-gray canvas. */
+html.midnight-purple [data-testid^="card-room-"] {
+  border-radius: 18px;
+  box-shadow:
+    -8px -8px 18px hsla(var(--neo-shadow-light) / 0.16),
+    10px 12px 26px hsla(var(--neo-shadow-dark) / 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  transition: box-shadow 220ms ease-out, transform 220ms ease-out;
+}
+html.midnight-purple [data-testid^="card-room-"]:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    -10px -10px 22px hsla(var(--neo-shadow-light) / 0.22),
+    12px 14px 32px hsla(var(--neo-shadow-dark) / 0.92),
+    0 0 16px hsl(var(--neu-orange) / 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Unified neumorphic shadow for profile decorations & avatar
+   tiles inside the lobby cards (midnight-purple). Adds a soft
+   raised feel underneath any colored ring/glow they paint. */
+html.midnight-purple [data-testid^="card-room-"] .profile-decoration-host,
+html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
+  filter:
+    drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.55))
+    drop-shadow(-1px -1px 2px rgba(255, 255, 255, 0.04));
+}

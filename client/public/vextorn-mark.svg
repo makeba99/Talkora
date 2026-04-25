@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Vextorn">
+  <defs>
+    <linearGradient id="vx-left" x1="0.2" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#9D86FF"/>
+      <stop offset="55%" stop-color="#7B5CF6"/>
+      <stop offset="100%" stop-color="#5B3CE0"/>
+    </linearGradient>
+    <linearGradient id="vx-right" x1="0.4" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#3D8FFF"/>
+      <stop offset="55%" stop-color="#3385FF"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="vx-head" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9D86FF"/>
+      <stop offset="100%" stop-color="#3D8FFF"/>
+    </linearGradient>
+  </defs>
+
+  <path
+    d="M 100 180
+       C 86 152, 68 114, 50 72
+       C 40 48, 38 24, 58 22
+       C 74 20, 84 34, 90 64
+       C 94 102, 98 144, 100 180 Z"
+    fill="url(#vx-left)"
+  />
+  <path
+    d="M 100 180
+       C 114 152, 132 114, 150 72
+       C 160 48, 162 24, 142 22
+       C 126 20, 116 34, 110 64
+       C 106 102, 102 144, 100 180 Z"
+    fill="url(#vx-right)"
+  />
+
+  <circle cx="100" cy="56" r="11" fill="url(#vx-head)"/>
+</svg>
