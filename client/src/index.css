@@ -3048,9 +3048,9 @@ html.synthwave .neon-text {
      Variable names kept (--neu-orange) so existing CSS continues to
      work, but the values now produce a sculpted violet glow that pairs
      correctly with the deep neumorphic canvas. */
-  --neu-orange: 258 70% 58%;       /* primary accent — sculpted violet */
-  --neu-orange-hi: 268 82% 68%;    /* highlight tone — luminous lavender */
-  --neu-orange-lo: 250 62% 42%;    /* deep tone — deep indigo */
+  --neu-orange: 256 58% 36%;       /* primary accent — deep sculpted indigo */
+  --neu-orange-hi: 260 64% 46%;    /* highlight tone — muted royal violet */
+  --neu-orange-lo: 252 60% 22%;    /* deep tone — near-black indigo */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 318 72% 60%;      /* tertiary accent — coral magenta */
 }
