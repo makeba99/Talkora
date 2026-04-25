@@ -622,18 +622,6 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             <span className="premium-atmosphere-orb premium-atmosphere-orb-b" />
             <span className="premium-atmosphere-orb premium-atmosphere-orb-c" />
             <span className="premium-atmosphere-sweep" />
-            {Array.from({ length: 28 }).map((_, i) => (
-              <span
-                key={i}
-                className="premium-atmosphere-spark"
-                style={{
-                  left: `${(i * 17 + 9) % 100}%`,
-                  top: `${(i * 29 + 13) % 100}%`,
-                  animationDelay: `${(i % 9) * 0.28}s`,
-                  animationDuration: `${2.1 + (i % 7) * 0.38}s`,
-                }}
-              />
-            ))}
           </div>
         )}
         {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} />}
@@ -754,7 +742,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   );
                 }
 
-                /* Empty slot — neon ring circle */
+                /* Empty slot — neomorphic surface circle */
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div
@@ -762,24 +750,19 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                       style={{
                         width: circleSize + 6,
                         height: circleSize + 6,
-                        background: isPremiumAtmosphere
-                          ? "conic-gradient(from 120deg, rgba(0,220,255,0.82), rgba(100,60,255,0.68), rgba(170,30,255,0.65), rgba(60,140,255,0.68), rgba(0,200,255,0.72), rgba(0,220,255,0.82))"
-                          : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
-                        padding: 2,
-                        boxShadow: isPremiumAtmosphere
-                          ? "0 0 6px rgba(0,220,255,0.42), 0 0 12px rgba(120,50,255,0.28), 0 0 18px rgba(60,130,255,0.18)"
-                          : `0 0 8px ${glow.from}, 0 0 16px ${glow.to}`,
+                        background: "hsl(228 14% 13%)",
+                        border: "1px solid rgba(0,210,230,0.16)",
+                        boxShadow: "-3px -3px 7px rgba(255,255,255,0.025), 3px 3px 8px rgba(0,0,0,0.55), inset 0 0 10px rgba(0,200,220,0.05)",
+                        padding: 0,
                       }}
                     >
                       <div
                         className="w-full h-full rounded-full flex items-center justify-center"
                         style={{
-                          background: isPremiumAtmosphere
-                            ? "radial-gradient(circle at 42% 32%, rgba(255,255,255,0.06), rgba(16,20,55,0.68) 48%, rgba(4,7,22,0.88))"
-                            : "radial-gradient(circle at 40% 35%, rgba(100,120,255,0.18), rgba(20,10,60,0.85))",
+                          background: "radial-gradient(circle at 42% 36%, rgba(0,210,230,0.07) 0%, hsl(228 14% 12%) 60%, hsl(228 14% 10%) 100%)",
                         }}
                       >
-                        <Users className="w-5 h-5" style={{ color: "rgba(180,140,255,0.55)" }} />
+                        <Users className="w-5 h-5" style={{ color: "rgba(0,210,230,0.38)" }} />
                       </div>
                     </div>
                   </div>
