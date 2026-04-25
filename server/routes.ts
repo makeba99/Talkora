@@ -3095,6 +3095,23 @@ export async function registerRoutes(
       });
     });
 
+    // Mood reaction broadcast — replaces the old "raise hand" button. Anyone in
+    // the room can fire a mood emoji (sleepy / angry / wave / clap / etc) and
+    // every other participant sees it animate above the sender's avatar card.
+    // Server is intentionally dumb: it just relays. Throttling/dedupe is the
+    // client's job (we already prevent spamming via the picker UI).
+    socket.on("room:mood", (data: { roomId: string; userId: string; emoji: string }) => {
+      if (!data?.roomId || !data?.userId || !data?.emoji) return;
+      // Trim emoji to a sane length so a malicious client can't broadcast a
+      // megabyte-long string.
+      const emoji = String(data.emoji).slice(0, 16);
+      io.to(data.roomId).emit("room:mood-update", {
+        userId: data.userId,
+        emoji,
+        ts: Date.now(),
+      });
+    });
+
     socket.on("room:kick", async (data: { roomId: string; targetUserId: string; kickedBy: string }) => {
       const room = await storage.getRoom(data.roomId);
       if (!room || room.ownerId !== data.kickedBy) return;

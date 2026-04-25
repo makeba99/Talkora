@@ -231,7 +231,8 @@ function ParticipantCard({
   isYoutubeWatcher,
   isBlocked,
   onUnblock,
-  analyserNode
+  analyserNode,
+  mood,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -419,7 +420,25 @@ function ParticipantCard({
   }
 
   const avatarContent = (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-col items-start gap-1 relative">
+      {/* Floating mood emoji — fires when this participant picks an emoji from
+          the mood picker. Animation: pop in, gently float upward + bob, fade
+          out. Auto-cleared by the parent ~3.5s after dispatch. */}
+      {mood?.emoji && (
+        <div
+          key={mood.id}
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-12 z-30 select-none"
+          data-testid={`mood-${p.id}`}
+          style={{ animation: "moodFloat 3.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards" }}
+        >
+          <div
+            className="text-4xl sm:text-5xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+            style={{ filter: "drop-shadow(0 0 12px rgba(255,255,255,0.35))" }}
+          >
+            {mood.emoji}
+          </div>
+        </div>
+      )}
       <div
         className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
           isSpeaking ? "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]" : "border-transparent hover:border-blue-500/30"
@@ -524,11 +543,9 @@ function ParticipantCard({
           )}
         </div>
 
-        {p.handRaised && (
-          <div className="absolute top-1 left-1 w-5 h-5 bg-yellow-500/90 rounded-full flex items-center justify-center shadow-lg z-20">
-            <Hand className="w-3 h-3 text-white" />
-          </div>
-        )}
+        {/* Note: the old static "raise hand" badge here has been replaced by
+            the floating mood emoji that animates above the card (see top of
+            avatarContent above). */}
       </div>
     </div>
   );
@@ -555,6 +572,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [isMuted, setIsMuted] = useState(true);
   const isMutedRef = useRef(true);
   const [handRaised, setHandRaised] = useState(false);
+  // Mood reactions — when any participant fires a mood emoji from the picker,
+  // we keep their currently-active emoji here keyed by userId. The floating
+  // animation in ParticipantCard re-runs whenever the entry's `id` changes
+  // (the `key` prop on the floating div), so picking the same emoji twice in a
+  // row still re-triggers the animation. Entries are auto-cleared after the
+  // animation duration so the card returns to its normal state.
+  const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({});
+  const moodTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  // Mood picker open/closed state (for the new emoji bar that replaced the
+  // raise-hand button in the bottom control row).
+  const [moodPickerOpen, setMoodPickerOpen] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
   const [micError, setMicError] = useState(false);
@@ -1577,6 +1605,31 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       );
     });
 
+    // Mood reactions broadcast — when anyone in the room (including ourselves)
+    // picks an emoji from the mood picker, the server echoes a "room:mood-update"
+    // back. We stash the emoji keyed by userId so the corresponding participant
+    // card animates the floating mood emoji above their avatar, and schedule a
+    // cleanup so the card returns to normal after the animation finishes.
+    socket.on("room:mood-update", (data: { userId: string; emoji: string; ts?: number }) => {
+      if (!data?.userId || !data?.emoji) return;
+      const id = `${data.ts || Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setParticipantMoods((prev) => ({ ...prev, [data.userId]: { id, emoji: data.emoji } }));
+      // Cancel any pending cleanup for this user, then schedule a fresh one.
+      // 3.6s ≈ animation duration (3.4s) + small buffer.
+      const existing = moodTimersRef.current[data.userId];
+      if (existing) clearTimeout(existing);
+      moodTimersRef.current[data.userId] = setTimeout(() => {
+        setParticipantMoods((prev) => {
+          const next = { ...prev };
+          // Only clear if this specific entry is still the active one — guards
+          // against a race where a newer mood replaced this one mid-flight.
+          if (next[data.userId]?.id === id) delete next[data.userId];
+          return next;
+        });
+        delete moodTimersRef.current[data.userId];
+      }, 3600);
+    });
+
     socket.on("room:mute-update", (data: { userId: string; isMuted: boolean; forcedBy?: string }) => {
       setParticipants((prev) =>
         prev.map((p) => (p.id === data.userId ? { ...p, isMuted: data.isMuted } : p))
@@ -1878,6 +1931,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("webrtc:new-peer");
       socket.off("room:speaking");
       socket.off("room:hand-raised");
+      socket.off("room:mood-update");
+      // Cancel any in-flight mood-clear timers so they don't fire after unmount.
+      Object.values(moodTimersRef.current).forEach((t) => clearTimeout(t));
+      moodTimersRef.current = {};
       socket.off("room:mute-update");
       socket.off("room:kicked");
       socket.off("room:host-deleted");
@@ -2494,6 +2551,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:hand", { roomId: room.id, userId: user?.id, raised: !handRaised });
   };
 
+  // Mood reactions — fired from the new emoji picker that replaced the old
+  // "raise hand" button. Anyone in the room can pick a mood (sleepy, angry,
+  // wave, clap, etc.) and every participant — including the sender — sees it
+  // animate above the sender's avatar card. We close the picker immediately
+  // for a snappy feel, and rely on the server echo to drive the animation
+  // (so the sender's own card animates in lockstep with everyone else's).
+  const sendMood = (emoji: string) => {
+    if (!socket || !user?.id) return;
+    socket.emit("room:mood", { roomId: room.id, userId: user.id, emoji });
+    setMoodPickerOpen(false);
+  };
+
   // AI tutor logic is now fully handled by the useAiTutor hook above.
 
   const handleLeave = (reason?: "joined-another-room") => {
@@ -2769,27 +2838,69 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           </span>
         </div>
 
-        {/* Hand — premium standout button */}
-        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
+        {/* Mood — replaces the old "raise hand" button.
+            Tap to open a mini emoji bar with quick mood reactions (sleepy,
+            angry, wave, clap, applause, etc). Picking one broadcasts to the
+            whole room; the chosen emoji animates floating above the sender's
+            avatar card so everyone sees who's reacting and what they feel. */}
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px] relative">
           <div className="relative">
-            {handRaised && (
+            {moodPickerOpen && (
               <span
                 className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
                 style={{ background: "rgba(251,191,36,0.28)", animationDuration: "1.4s" }}
               />
             )}
             <button
-              onClick={toggleHand}
-              data-testid="button-toggle-hand"
-              title={handRaised ? "Lower Hand" : "Raise Hand"}
+              onClick={() => setMoodPickerOpen((v) => !v)}
+              data-testid="button-toggle-mood"
+              title={moodPickerOpen ? "Close moods" : "Send a mood"}
               className={btnBase}
-              style={handRaised ? handRaisedStyle : ghostStyle}
+              style={moodPickerOpen ? handRaisedStyle : ghostStyle}
             >
-              <Hand className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={handRaised ? { filter: "drop-shadow(0 0 4px rgba(251,191,36,0.6))" } : undefined} />
+              <Smile
+                className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]"
+                style={moodPickerOpen ? { filter: "drop-shadow(0 0 4px rgba(251,191,36,0.6))" } : undefined}
+              />
             </button>
+            {moodPickerOpen && (
+              <div
+                data-testid="mood-picker"
+                className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center justify-center gap-1 px-2 py-2 rounded-2xl shadow-2xl border border-white/15"
+                style={{
+                  background: "linear-gradient(180deg, rgba(20,16,40,0.96), rgba(8,6,24,0.96))",
+                  backdropFilter: "blur(14px)",
+                  width: "min(280px, 80vw)",
+                }}
+              >
+                {[
+                  { e: "✋", label: "Raise hand" },
+                  { e: "👋", label: "Wave hi" },
+                  { e: "😂", label: "Laughing" },
+                  { e: "😴", label: "Sleepy" },
+                  { e: "😡", label: "Angry" },
+                  { e: "🤔", label: "Thinking" },
+                  { e: "❤️", label: "Love it" },
+                  { e: "👍", label: "Yes" },
+                  { e: "🎉", label: "Party" },
+                  { e: "🤯", label: "Mind blown" },
+                ].map(({ e, label }) => (
+                  <button
+                    key={e}
+                    onClick={() => sendMood(e)}
+                    title={label}
+                    aria-label={label}
+                    data-testid={`mood-emoji-${e}`}
+                    className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl text-xl sm:text-2xl hover:bg-white/10 active:scale-95 transition-all"
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <span className={labelBase} style={handRaised ? { color: "rgba(251,191,36,0.86)" } : { color: "rgba(255,255,255,0.32)" }}>
-            Hand
+          <span className={labelBase} style={moodPickerOpen ? { color: "rgba(251,191,36,0.86)" } : { color: "rgba(255,255,255,0.32)" }}>
+            Mood
           </span>
         </div>
 
@@ -7007,6 +7118,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       isBlocked={isBlockedUser}
                       onUnblock={handleUnblock}
                       analyserNode={analysersRef.current.get(p.id)}
+                      mood={participantMoods[p.id]}
                     />
                   </div>
                 );
