@@ -1170,6 +1170,139 @@ html.neomorphic-light body {
     hsl(232 30% 91%) !important;
 }
 
+/* ─── NEOMORPHIC PREMIUM PASS ──────────────────────────────────
+   Second-layer refinements that build on all base neo rules.
+   Goal: maximum depth, tactile surfaces, premium icon/color
+   consistency, and stable card color regardless of avatar rings. */
+
+/* 1. ROOM CARD: TOP-LEFT SPECULAR HIGHLIGHT EDGE
+      Creates a subtle diagonal shine from top-left, giving the card
+      a sculpted, premium "lit from above-left" appearance. */
+html.neomorphic-dark [data-testid^="card-room"]::before,
+html.neomorphic-light [data-testid^="card-room"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.055) 0%,
+    rgba(255, 255, 255, 0.012) 30%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 2. EMPTY PARTICIPANT SLOTS — deep inset wells
+      Instead of gradients (wiped by rule 1017), show a true recessed
+      dark well so empty seats look like genuine hollows in the surface. */
+html.neomorphic-dark [data-testid^="card-room"] .rounded-full > .rounded-full,
+html.neomorphic-light [data-testid^="card-room"] .rounded-full > .rounded-full {
+  background: hsl(var(--neo-bg)) !important;
+  box-shadow:
+    inset 3px 3px 8px hsl(var(--neo-shadow-dark) / 0.75),
+    inset -2px -2px 6px hsl(var(--neo-shadow-light) / 0.22) !important;
+}
+
+/* 3. CARD COLOR STABILITY — profile decoration wrappers must not
+      bleed color into the card shell. The outer glow on avatar rings
+      is absorbed by the card's own neu shadow. */
+html.neomorphic-dark [data-testid^="card-room"] [class*="profile-decoration"],
+html.neomorphic-light [data-testid^="card-room"] [class*="profile-decoration"] {
+  filter: none !important;
+}
+
+/* 4. PARTICIPANT RING WRAPPER — squircle-raised for filled slots
+      The outer padding div that holds the conic-gradient ring gets
+      a raised neo shadow to make filled avatars "pop" out of the card. */
+html.neomorphic-dark [data-testid^="card-room"] [data-testid^="button-card-participant"] > div,
+html.neomorphic-light [data-testid^="card-room"] [data-testid^="button-card-participant"] > div {
+  box-shadow:
+    -3px -3px 8px hsl(var(--neo-shadow-light) / 0.50),
+    3px 3px 8px hsl(var(--neo-shadow-dark) / 0.65) !important;
+}
+
+/* 5. ROOM CARD FOOTER ICON CONSISTENCY
+      Mute the raw white/foreground icon colors in the card footer and
+      use the secondary teal accent so flame / chat / users feel unified. */
+html.neomorphic-dark [data-testid^="card-room"] .text-white\/35,
+html.neomorphic-dark [data-testid^="card-room"] .text-white\/50,
+html.neomorphic-light [data-testid^="card-room"] .text-white\/35,
+html.neomorphic-light [data-testid^="card-room"] .text-white\/50 {
+  opacity: 0.75;
+}
+
+/* 6. ICON DROP-SHADOW — add subtle glow to all primary-colored icons */
+html.neomorphic-dark .text-neu-orange > svg,
+html.neomorphic-dark .text-neu-orange svg,
+html.neomorphic-light .text-neu-orange > svg,
+html.neomorphic-light .text-neu-orange svg {
+  filter: drop-shadow(0 0 3px hsla(var(--neu-orange) / 0.55));
+}
+
+/* 7. STEP-IN BUTTON: extra depth layering over the main orange style
+      Ensures the lobby CTA is always vivid against the card surface. */
+html.neomorphic-dark .step-in-btn,
+html.neomorphic-light .step-in-btn {
+  border: 1px solid rgba(255, 150, 70, 0.58) !important;
+  inset: none;
+}
+
+/* 8. LANGUAGE FILTER + DISCOVERY TABS: deeper shadow for neomorphic themes */
+html.neomorphic-dark .neu-pill,
+html.neomorphic-light .neu-pill {
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.040),
+    6px 6px 14px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 255, 255, 0.058) !important;
+}
+html.neomorphic-dark .neu-pill.is-active,
+html.neomorphic-dark .neu-pill[data-active="true"],
+html.neomorphic-light .neu-pill.is-active,
+html.neomorphic-light .neu-pill[data-active="true"] {
+  box-shadow:
+    0 0 28px hsla(var(--neu-orange) / 0.65),
+    0 0 55px hsla(var(--neu-orange) / 0.28),
+    -4px -4px 10px rgba(255, 255, 255, 0.048),
+    5px 5px 16px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 230, 190, 0.52) !important;
+}
+
+/* 9. ICON-ONLY CONTROL BUTTONS — deepen hover lift */
+html.neomorphic-dark .neu-icon-btn:hover:not(:disabled),
+html.neomorphic-light .neu-icon-btn:hover:not(:disabled) {
+  box-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.048),
+    7px 7px 18px rgba(0, 0, 0, 0.72) !important;
+}
+
+/* 10. GENERAL BUTTON OVERRIDE — ensure all buttons in neo themes
+       pick up the upgraded shadow depth set by the neu-btn rules */
+html.neomorphic-dark button.neu-btn,
+html.neomorphic-light button.neu-btn {
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.040),
+    7px 7px 16px rgba(0, 0, 0, 0.68),
+    inset 0 1px 0 rgba(255, 255, 255, 0.068) !important;
+}
+html.neomorphic-dark button.neu-btn:hover:not(:disabled),
+html.neomorphic-light button.neu-btn:hover:not(:disabled) {
+  box-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.050),
+    8px 8px 18px rgba(0, 0, 0, 0.74),
+    inset 0 1px 0 rgba(255, 255, 255, 0.085) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 11. NEOMORPHIC SURFACES in room card body area (inner dark panels) */
+html.neomorphic-dark .bg-muted\/20,
+html.neomorphic-dark [class*="bg-muted/"] {
+  box-shadow:
+    inset 3px 3px 8px hsl(var(--neo-shadow-dark) / 0.5),
+    inset -2px -2px 6px hsl(var(--neo-shadow-light) / 0.18);
+}
+
 .dark {
   --button-outline: rgba(0, 188, 212, .12);
   --badge-outline: rgba(0, 188, 212, .06);
@@ -1872,11 +2005,20 @@ html.synthwave .neon-text {
 
 @keyframes step-in-glow {
   0%, 100% {
-    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.5), 0 0 0 0 rgba(124, 58, 237, 0.3);
+    box-shadow:
+      0 2px 14px hsla(var(--neu-orange) / 0.52),
+      0 0 0 0 hsla(var(--neu-orange) / 0.28),
+      -4px -4px 10px rgba(255, 255, 255, 0.04),
+      6px 6px 16px rgba(0, 0, 0, 0.62);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 4px 22px rgba(124, 58, 237, 0.8), 0 0 0 4px rgba(124, 58, 237, 0.15);
+    box-shadow:
+      0 4px 28px hsla(var(--neu-orange) / 0.72),
+      0 0 0 5px hsla(var(--neu-orange) / 0.14),
+      0 0 50px hsla(var(--neu-orange) / 0.22),
+      -4px -4px 10px rgba(255, 255, 255, 0.045),
+      7px 7px 18px rgba(0, 0, 0, 0.68);
     transform: scale(1.04);
   }
 }
@@ -2287,14 +2429,16 @@ html.synthwave .neon-text {
    ───────────────────────────────────────────────────────────────── */
 
 :root {
-  --neu-bg: 220 9% 10%;            /* near-black canvas */
-  --neu-surface: 220 9% 13%;       /* card / panel surface */
-  --neu-surface-2: 220 9% 16%;     /* slightly raised */
-  --neu-light: 220 14% 22%;        /* highlight edge */
-  --neu-shadow: 220 18% 3%;        /* dark drop edge */
+  --neu-bg: 228 14% 9%;            /* near-black canvas — subtle indigo undertone */
+  --neu-surface: 228 13% 12%;      /* card / panel surface */
+  --neu-surface-2: 228 12% 16%;    /* slightly raised */
+  --neu-light: 228 18% 24%;        /* highlight edge */
+  --neu-shadow: 230 24% 3%;        /* dark drop edge */
   --neu-orange: 18 92% 54%;        /* primary accent */
-  --neu-orange-hi: 22 96% 60%;     /* highlight tone */
-  --neu-orange-lo: 14 88% 46%;     /* deep tone */
+  --neu-orange-hi: 22 96% 62%;     /* highlight tone */
+  --neu-orange-lo: 14 90% 44%;     /* deep tone */
+  --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
+  --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
 
 /* Page background — when this class is on a wrapper it darkens the
@@ -2302,9 +2446,24 @@ html.synthwave .neon-text {
    theme. Used by the lobby and the in-room layout. */
 .neu-canvas {
   background:
-    radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.025) 0%, transparent 55%),
-    radial-gradient(80% 60% at 50% 100%, rgba(0,0,0,0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 60% at 18% 0%, rgba(100, 80, 200, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 82% 0%, rgba(200, 60, 100, 0.06) 0%, transparent 50%),
+    radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.018) 0%, transparent 55%),
+    radial-gradient(80% 60% at 50% 100%, rgba(0,0,0,0.50) 0%, transparent 60%),
     hsl(var(--neu-bg));
+}
+
+/* Subtle film grain over the canvas for premium texture */
+.neu-canvas::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 160px 160px;
 }
 
 /* Raised neumorphic surface — used for cards, panels, control docks. */
@@ -2315,9 +2474,9 @@ html.synthwave .neon-text {
     hsl(var(--neu-surface)) 100%
   );
   box-shadow:
-    -6px -6px 14px rgba(255, 255, 255, 0.025),
-    8px 8px 18px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    -7px -7px 16px rgba(255, 255, 255, 0.038),
+    9px 9px 22px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
 }
 
 /* Inset / pressed neumorphic well — used for search inputs and
@@ -2329,8 +2488,8 @@ html.synthwave .neon-text {
     hsl(var(--neu-surface)) 100%
   );
   box-shadow:
-    inset 4px 4px 10px rgba(0, 0, 0, 0.55),
-    inset -3px -3px 8px rgba(255, 255, 255, 0.025);
+    inset 5px 5px 12px rgba(0, 0, 0, 0.65),
+    inset -4px -4px 10px rgba(255, 255, 255, 0.028);
 }
 
 /* Raised neumorphic button (ghost / inactive). */
@@ -2340,27 +2499,27 @@ html.synthwave .neon-text {
     hsl(var(--neu-surface-2)) 0%,
     hsl(var(--neu-surface)) 100%
   );
-  color: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.80);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow:
-    -4px -4px 10px rgba(255, 255, 255, 0.03),
-    6px 6px 14px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    -5px -5px 12px rgba(255, 255, 255, 0.038),
+    7px 7px 16px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.065);
   transition: all 200ms ease-out;
 }
 .neu-btn:hover:not(:disabled) {
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 0.96);
   box-shadow:
-    -3px -3px 8px rgba(255, 255, 255, 0.04),
-    5px 5px 12px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    -4px -4px 10px rgba(255, 255, 255, 0.048),
+    6px 6px 14px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transform: translateY(-1px);
 }
 .neu-btn:active:not(:disabled) {
   transform: translateY(0);
   box-shadow:
-    inset 3px 3px 8px rgba(0, 0, 0, 0.55),
-    inset -2px -2px 6px rgba(255, 255, 255, 0.03);
+    inset 4px 4px 10px rgba(0, 0, 0, 0.65),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.028);
 }
 
 /* Primary orange neumorphic button — used for the most important
@@ -2372,31 +2531,33 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-lo)) 100%
   );
   color: #fff;
-  border: 1px solid rgba(255, 140, 60, 0.5);
+  border: 1px solid rgba(255, 140, 60, 0.55);
   box-shadow:
-    0 0 18px hsla(var(--neu-orange) / 0.35),
-    -4px -4px 10px rgba(255, 255, 255, 0.04),
-    6px 6px 16px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 220, 180, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+    0 0 22px hsla(var(--neu-orange) / 0.42),
+    0 0 48px hsla(var(--neu-orange) / 0.16),
+    -5px -5px 12px rgba(255, 255, 255, 0.045),
+    7px 7px 18px rgba(0, 0, 0, 0.68),
+    inset 0 1px 0 rgba(255, 230, 190, 0.48),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30);
   transition: all 200ms ease-out;
 }
 .neu-btn-orange:hover:not(:disabled) {
-  filter: brightness(1.06);
+  filter: brightness(1.07);
   transform: translateY(-1px);
   box-shadow:
-    0 0 24px hsla(var(--neu-orange) / 0.5),
-    -4px -4px 10px rgba(255, 255, 255, 0.04),
-    7px 7px 18px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 220, 180, 0.45);
+    0 0 30px hsla(var(--neu-orange) / 0.58),
+    0 0 60px hsla(var(--neu-orange) / 0.22),
+    -5px -5px 12px rgba(255, 255, 255, 0.048),
+    8px 8px 20px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 230, 190, 0.52);
 }
 .neu-btn-orange:active:not(:disabled) {
   transform: translateY(0);
   box-shadow:
-    0 0 14px hsla(var(--neu-orange) / 0.4),
-    inset 3px 3px 8px rgba(0, 0, 0, 0.45),
-    inset -2px -2px 6px rgba(255, 200, 140, 0.18);
+    0 0 16px hsla(var(--neu-orange) / 0.44),
+    inset 4px 4px 10px rgba(0, 0, 0, 0.52),
+    inset -3px -3px 8px rgba(255, 200, 140, 0.22);
 }
 
 /* Compact circular variant used for icon-only controls */
@@ -2406,22 +2567,25 @@ html.synthwave .neon-text {
     hsl(var(--neu-surface-2)) 0%,
     hsl(var(--neu-surface)) 100%
   );
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.72);
   box-shadow:
-    -3px -3px 8px rgba(255, 255, 255, 0.025),
-    4px 4px 10px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    -4px -4px 10px rgba(255, 255, 255, 0.038),
+    5px 5px 12px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: all 180ms ease-out;
 }
 .neu-icon-btn:hover:not(:disabled) {
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 0.96);
   transform: translateY(-1px);
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.048),
+    6px 6px 14px rgba(0, 0, 0, 0.68);
 }
 .neu-icon-btn:active:not(:disabled) {
   transform: translateY(0);
   box-shadow:
-    inset 2px 2px 6px rgba(0, 0, 0, 0.55),
-    inset -1px -1px 4px rgba(255, 255, 255, 0.03);
+    inset 3px 3px 8px rgba(0, 0, 0, 0.60),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.032);
 }
 .neu-icon-btn[data-active="true"],
 .neu-icon-btn.neu-active {
@@ -2432,10 +2596,11 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-lo)) 100%
   );
   box-shadow:
-    0 0 18px hsla(var(--neu-orange) / 0.4),
-    -3px -3px 8px rgba(255, 255, 255, 0.04),
-    4px 4px 12px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 220, 180, 0.4);
+    0 0 22px hsla(var(--neu-orange) / 0.48),
+    0 0 44px hsla(var(--neu-orange) / 0.18),
+    -4px -4px 10px rgba(255, 255, 255, 0.045),
+    5px 5px 14px rgba(0, 0, 0, 0.68),
+    inset 0 1px 0 rgba(255, 230, 190, 0.44);
 }
 
 /* Pill variants used for the discovery tabs and language filters. */
@@ -2445,16 +2610,20 @@ html.synthwave .neon-text {
     hsl(var(--neu-surface-2)) 0%,
     hsl(var(--neu-surface)) 100%
   );
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(255, 255, 255, 0.65);
   box-shadow:
-    -3px -3px 8px rgba(255, 255, 255, 0.025),
-    4px 4px 10px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    -4px -4px 10px rgba(255, 255, 255, 0.036),
+    5px 5px 12px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.052);
   transition: all 180ms ease-out;
 }
 .neu-pill:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.92);
   transform: translateY(-1px);
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.044),
+    6px 6px 14px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.065);
 }
 .neu-pill[data-active="true"],
 .neu-pill.is-active {
@@ -2464,16 +2633,18 @@ html.synthwave .neon-text {
     hsl(var(--neu-orange-hi)) 0%,
     hsl(var(--neu-orange-lo)) 100%
   );
-  border: 1px solid rgba(255, 150, 70, 0.55);
+  border: 1px solid rgba(255, 150, 70, 0.60);
   box-shadow:
-    0 0 22px hsla(var(--neu-orange) / 0.55),
-    0 0 40px hsla(var(--neu-orange) / 0.25),
-    -3px -3px 8px rgba(255, 255, 255, 0.05),
-    4px 4px 14px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 220, 180, 0.45);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+    0 0 26px hsla(var(--neu-orange) / 0.62),
+    0 0 50px hsla(var(--neu-orange) / 0.28),
+    -4px -4px 10px rgba(255, 255, 255, 0.048),
+    5px 5px 16px rgba(0, 0, 0, 0.68),
+    inset 0 1px 0 rgba(255, 230, 190, 0.50);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
 /* Accent color helpers */
 .text-neu-orange { color: hsl(var(--neu-orange)); }
 .bg-neu-orange   { background-color: hsl(var(--neu-orange)); }
+.text-neu-teal   { color: hsl(var(--neu-teal)); }
+.text-neu-magenta { color: hsl(var(--neu-magenta)); }
