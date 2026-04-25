@@ -2094,21 +2094,21 @@ html.synthwave .neon-text {
 @keyframes step-in-breathe {
   0%, 100% {
     box-shadow:
-      0 0 14px hsla(var(--neu-orange) / 0.30),
-      0 0 32px hsla(var(--neu-orange) / 0.10),
-      -4px -4px 10px rgba(255, 235, 215, 0.035),
-      6px 6px 16px rgba(0, 0, 0, 0.70),
-      inset 0 1px 0 rgba(255, 230, 200, 0.38),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+      0 0 8px hsla(var(--neu-orange) / 0.16),
+      0 0 18px hsla(var(--neu-orange) / 0.05),
+      -4px -4px 10px rgba(255, 235, 215, 0.03),
+      6px 6px 16px rgba(0, 0, 0, 0.68),
+      inset 0 1px 0 rgba(255, 220, 190, 0.28),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.30);
   }
   50% {
     box-shadow:
-      0 0 22px hsla(var(--neu-orange) / 0.46),
-      0 0 48px hsla(var(--neu-orange) / 0.18),
-      -5px -5px 12px rgba(255, 235, 215, 0.05),
-      8px 8px 20px rgba(0, 0, 0, 0.78),
-      inset 0 2px 0 rgba(255, 230, 200, 0.46),
-      inset 0 -2px 0 rgba(0, 0, 0, 0.34);
+      0 0 12px hsla(var(--neu-orange) / 0.24),
+      0 0 26px hsla(var(--neu-orange) / 0.08),
+      -5px -5px 12px rgba(255, 235, 215, 0.04),
+      8px 8px 20px rgba(0, 0, 0, 0.74),
+      inset 0 2px 0 rgba(255, 220, 190, 0.34),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.36);
   }
 }
 
@@ -2135,7 +2135,7 @@ html.synthwave .neon-text {
     90deg,
     transparent 0%,
     rgba(255, 230, 200, 0.00) 30%,
-    rgba(255, 240, 220, 0.36) 50%,
+    rgba(255, 235, 210, 0.18) 50%,
     rgba(255, 230, 200, 0.00) 70%,
     transparent 100%
   );
@@ -3043,13 +3043,14 @@ html.synthwave .neon-text {
   --neu-surface-2: 228 14% 18%;    /* slightly raised */
   --neu-light: 228 18% 24%;        /* highlight edge */
   --neu-shadow: 230 24% 3%;        /* dark drop edge */
-  /* Refined "amber-honey orange" palette — slightly more golden so
-     it harmonizes with the violet-undertone backgrounds (hue 265).
-     Still firmly orange, but the warmer hue creates a complementary
-     contrast against the cool background instead of fighting it. */
-  --neu-orange: 20 95% 52%;        /* primary accent — vivid bright orange */
-  --neu-orange-hi: 24 100% 60%;    /* highlight tone — neon orange */
-  --neu-orange-lo: 14 88% 38%;     /* deep tone — molten amber */
+  /* Refined "burnt-amber" palette — desaturated and shifted toward
+     copper so the accents read as sculpted metal instead of plastic
+     neon. Same warm hue family but ~25% less saturation across the
+     stops, which kills the "too bright / fake" look on filter pills
+     and the Step In button while keeping the orange identity. */
+  --neu-orange: 22 68% 46%;        /* primary accent — burnt copper */
+  --neu-orange-hi: 26 74% 54%;     /* highlight tone — warm amber */
+  --neu-orange-lo: 16 62% 32%;     /* deep tone — molten cocoa */
   --neu-teal: 186 88% 40%;         /* secondary accent — rich teal */
   --neu-magenta: 300 70% 55%;      /* tertiary accent — deep magenta */
 }
