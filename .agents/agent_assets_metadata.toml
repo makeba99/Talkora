@@ -41,3 +41,21 @@ id = "dIqKfiAdwuanrSUyFEo4C"
 uri = "file://attached_assets/brand/vextorn-mark.svg"
 type = "image"
 title = "Vextorn — Icon / App Mark"
+
+[[outputs]]
+id = "6Rmc7zLRfnUbw0jKEnWYv"
+uri = "file://attached_assets/brand/options/option-a-monolith.png"
+type = "image"
+title = "Option A — Monolith V (editorial / restrained)"
+
+[[outputs]]
+id = "iVE_JmszLUp2wZqDJl7xW"
+uri = "file://attached_assets/brand/options/option-b-sonic.png"
+type = "image"
+title = "Option B — Sonic V (voice-forward / monochrome)"
+
+[[outputs]]
+id = "8V_dbNFjt2w_YjUcYvQZ5"
+uri = "file://attached_assets/brand/options/option-c-aperture.png"
+type = "image"
+title = "Option C — Aperture (premium app-icon disc)"
