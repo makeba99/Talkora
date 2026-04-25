@@ -1764,11 +1764,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     // "Sync with starter" button, which uses the time-request/respond mechanism.
     socket.on("room:youtube-state", () => { /* intentional no-op */ });
 
-    // Server tells us we tried to play / queue YouTube without permission.
+    // Server may still emit a denial in rare edge cases (e.g. trying to close
+    // someone else's video for everyone). Show a generic message.
     socket.on("room:youtube-denied", (data: { reason?: string }) => {
       toast({
-        title: "Only the host can play videos here",
-        description: data?.reason || "Ask the room host or co-host to play this video.",
+        title: "Can't do that",
+        description: data?.reason || "That action isn't allowed for this video.",
         variant: "destructive",
       });
     });
@@ -2918,9 +2919,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const myRole = participantRoles[user?.id || ""] || "guest";
   const canAssignRoles = isHost || myRole === "co-owner";
-  // Only the room host or co-host can play / queue / control YouTube videos.
-  // Everyone else is a watcher — they receive sync events but cannot trigger them.
-  const canPlayYoutube = isHost || myRole === "co-owner";
+  // Anyone in the room can play / queue YouTube videos. The person who starts
+  // a video becomes its host — they are the only one who can stop it for
+  // everyone. Other participants can hide it locally without affecting anyone.
+  const canPlayYoutube = true;
 
   const removeScreenTracksFromPeers = async () => {
     peerConnections.current.forEach((pc, peerId) => {
@@ -4366,112 +4368,57 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "youtube" ? "flex" : "none" }}>
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 
-          {/* ── HOST / CO-HOST: search + stop controls. Watchers see a notice instead. ── */}
-          {canPlayYoutube ? (
-            <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0 space-y-2">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-                <Input
-                  value={youtubeSearch}
-                  onChange={(e) => handleYoutubeSearchInput(e.target.value)}
-                  placeholder="Search YouTube…"
-                  className="pl-9 text-[13px] rounded-xl bg-muted/30 border-border/50 placeholder:text-muted-foreground/40 focus-visible:ring-red-400/30 focus-visible:border-red-400/40 h-9"
-                  data-testid="input-youtube-search"
-                />
-                {youtubeSearching && (
-                  <Loader2 className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 animate-spin" />
-                )}
-              </div>
-              {activeYoutubeId && user?.id === youtubeStartedBy && (
-                <button
-                  onClick={handleStopYoutube}
-                  title="Close this video for everyone (only you, the starter, can close it)"
-                  data-testid="button-stop-youtube-panel"
-                  className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
-                >
-                  <StopCircle className="w-3.5 h-3.5" />
-                  Close video for everyone
-                </button>
+          {/* ── Search + close-for-everyone (starter-only) ── */}
+          <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0 space-y-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+              <Input
+                value={youtubeSearch}
+                onChange={(e) => handleYoutubeSearchInput(e.target.value)}
+                placeholder="Search YouTube…"
+                className="pl-9 text-[13px] rounded-xl bg-muted/30 border-border/50 placeholder:text-muted-foreground/40 focus-visible:ring-red-400/30 focus-visible:border-red-400/40 h-9"
+                data-testid="input-youtube-search"
+              />
+              {youtubeSearching && (
+                <Loader2 className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 animate-spin" />
               )}
             </div>
-          ) : (
-            <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0">
-              <div
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-500"
-                data-testid="notice-youtube-host-only"
+            {activeYoutubeId && user?.id === youtubeStartedBy && (
+              <button
+                onClick={handleStopYoutube}
+                title="Close this video for everyone (only you, the starter, can close it)"
+                data-testid="button-stop-youtube-panel"
+                className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
               >
-                <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-                <p className="text-[11px] leading-snug">
-                  Only the room host or co-host can play videos here. Sync stays in real time for everyone.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ── Now watching card (shown to non-broadcasters) ── */}
-          {user?.id !== youtubeStartedBy && activeYoutubeId && (() => {
-            const broadcaster = participants.find(p => p.id === youtubeStartedBy);
-            const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
-            const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
-            return (
-              <div className="m-3 rounded-xl border border-red-500/25 bg-red-500/5 overflow-hidden flex-shrink-0 space-y-0">
-                {/* Thumbnail */}
-                <div className="relative w-full aspect-video bg-muted overflow-hidden">
-                  <img
-                    src={`https://i.ytimg.com/vi/${activeYoutubeId}/hqdefault.jpg`}
-                    alt="Now playing"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-[10px] font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-                    LIVE SYNC
-                  </div>
-                </div>
-                <div className="p-3 space-y-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <Youtube className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
-                    <p className="text-xs font-semibold text-foreground">Watch Together</p>
-                  </div>
-                  {broadcaster && (
-                    <div className="flex items-center gap-2">
-                      <div className={`w-5 h-5 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-red-500/50 bg-gradient-to-br ${bGradient}`}>
-                        {broadcaster.profileImageUrl ? (
-                          <img src={broadcaster.profileImageUrl} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className={`w-full h-full bg-gradient-to-br ${bGradient} flex items-center justify-center`}>
-                            <span className="text-[8px] font-bold text-white">{getUserInitials(broadcaster)}</span>
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-[11px] text-muted-foreground">
-                        <span className="font-medium text-foreground">{getUserDisplayName(broadcaster)}</span> started playback
-                      </span>
-                    </div>
-                  )}
-                  {youtubeWatchers.size > 0 && (
-                    <p className="text-[10px] text-muted-foreground/70">
-                      {youtubeWatchers.size} {youtubeWatchers.size === 1 ? "person" : "people"} watching
-                    </p>
-                  )}
-                  {!showYoutube && (
-                    <button
-                      onClick={() => { setShowYoutube(true); setSidePanelOpen(false); }}
-                      className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] font-semibold hover:bg-red-500/25 transition-colors"
-                      data-testid="button-join-watch-party"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-red-400" /> Join Watch Party
-                    </button>
-                  )}
-                  {showYoutube && (
-                    <div className="flex items-center justify-center gap-1.5 py-1 text-[11px] text-green-500 font-medium">
-                      <Eye className="w-3.5 h-3.5" /> You're watching
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
+                <StopCircle className="w-3.5 h-3.5" />
+                Close video for everyone
+              </button>
+            )}
+            {activeYoutubeId && user?.id !== youtubeStartedBy && showYoutube && (
+              <button
+                onClick={() => { setShowYoutube(false); setUserDismissedYoutube(true); setMiniPlayerMode(false); }}
+                title="Hide this video — just for you. Others keep watching."
+                data-testid="button-hide-youtube-panel"
+                className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-muted/30 border border-border/40 text-muted-foreground text-[11px] font-medium hover:bg-muted/50 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Hide video (just for me)
+              </button>
+            )}
+            {activeYoutubeId && user?.id !== youtubeStartedBy && !showYoutube && (() => {
+              const broadcaster = participants.find(p => p.id === youtubeStartedBy);
+              return (
+                <button
+                  onClick={() => { setShowYoutube(true); setUserDismissedYoutube(false); setSidePanelOpen(false); setTimeout(() => { try { handleYtSyncToStarter(); } catch (_) {} }, 1200); }}
+                  data-testid="button-join-watch-party"
+                  className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] font-semibold hover:bg-red-500/25 transition-colors"
+                >
+                  <Play className="w-3.5 h-3.5 fill-red-400" />
+                  {broadcaster ? `Watch ${getUserDisplayName(broadcaster)}'s video` : "Watch the video"}
+                </button>
+              );
+            })()}
+          </div>
 
           {/* ── Queue ── */}
           {ytQueue.length > 0 && (
@@ -6209,19 +6156,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       Click to join the watch party
                     </p>
                   </div>
-                  {youtubeWatchers.size > 0 && (
-                    <div className="flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-white text-[11px] font-medium px-2.5 py-1 rounded-full border border-white/15">
-                      <Eye className="w-3 h-3 opacity-80" />
-                      {youtubeWatchers.size === 1 ? "1 watching" : `${youtubeWatchers.size} watching`}
-                    </div>
-                  )}
                 </div>
               </div>
             );
           })()}
 
           {activeYoutubeId && showYoutube && (() => {
-            const isYoutubeHost = canPlayYoutube;
+            const isYoutubeHost = true;
             const broadcaster = participants.find(p => p.id === youtubeStartedBy);
             const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
             const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
@@ -6354,22 +6295,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   {ytQualityState === "slow" ? "Slow" : "Good"}
                 </div>
 
-                {/* Top-right cluster: "X watching" pill + close button.
+                {/* Top-right close button.
                     The close button does different things depending on who clicks it:
-                      - Starter / room host : stops the video for everyone in the room
-                      - Anyone else (watcher): just hides the player + preview for themselves;
-                                               the room keeps watching, and they can re-join
-                                               from the side panel's "Now Watching" card. */}
+                      - Starter : stops the video for everyone in the room
+                      - Anyone else (watcher): just hides the player for themselves;
+                                               the room keeps watching, and they can
+                                               re-join from the side panel. */}
                 <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
-                  {(broadcaster || youtubeWatchers.size > 0) && (
-                    <div
-                      className="flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-[10px] font-medium px-2 py-1 rounded-full border border-white/15 shadow-md text-white pointer-events-none"
-                      data-testid="badge-yt-watchers-count"
-                    >
-                      <Eye className="w-2.5 h-2.5 opacity-70" />
-                      {youtubeWatchers.size === 1 ? "1 watching" : `${youtubeWatchers.size} watching`}
-                    </div>
-                  )}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -6871,40 +6803,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           )}
                         </div>
                         <span className="text-[8px] text-muted-foreground">{screenWatchers.size} watching</span>
-                      </div>
-                    )}
-
-                    {p.id === youtubeStartedBy && youtubeWatchers.size > 0 && (
-                      <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`youtube-watchers-card-${p.id}`}>
-                        <div className="flex items-center">
-                          {Array.from(youtubeWatchers).slice(0, 4).map((watcherId, wi) => {
-                            const watcher = participants.find(wp => wp.id === watcherId);
-                            const wIndex = participants.findIndex(wp => wp.id === watcherId);
-                            const wGrad = getAvatarGradient(wIndex >= 0 ? wIndex : wi);
-                            return (
-                              <div
-                                key={watcherId}
-                                className="w-5 h-5 rounded-full border border-background overflow-hidden flex items-center justify-center shadow-sm"
-                                style={{ marginLeft: wi === 0 ? 0 : -6, zIndex: 4 - wi }}
-                                title={watcher ? getUserDisplayName(watcher) : watcherId}
-                              >
-                                {watcher?.profileImageUrl ? (
-                                  <img src={watcher.profileImageUrl} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
-                                    <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                          {youtubeWatchers.size > 4 && (
-                            <div className="w-5 h-5 rounded-full border border-background bg-slate-700 flex items-center justify-center shadow-sm text-[7px] font-bold text-white" style={{ marginLeft: -6, zIndex: 0 }}>
-                              +{youtubeWatchers.size - 4}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-[8px] text-muted-foreground">{youtubeWatchers.size} watching</span>
                       </div>
                     )}
 
@@ -8502,16 +8400,27 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       Click to Zoom
                     </button>
                   </div>
-                  {isYoutubeHost && (
-                    <button
-                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
-                      onClick={(e) => { e.stopPropagation(); handleStopYoutube(); setMiniPlayerMode(false); }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      data-testid="button-mini-player-close"
-                    >
-                      <X className="w-3 h-3 text-white" />
-                    </button>
-                  )}
+                  <button
+                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (user?.id === youtubeStartedBy) {
+                        handleStopYoutube();
+                        setMiniPlayerMode(false);
+                      } else {
+                        // Non-starter: just hide the player locally, don't
+                        // affect anyone else's playback.
+                        setShowYoutube(false);
+                        setMiniPlayerMode(false);
+                        setUserDismissedYoutube(true);
+                      }
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    title={user?.id === youtubeStartedBy ? "Close video for everyone" : "Hide video (just for me)"}
+                    data-testid="button-mini-player-close"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
                 </>
               )}
             </div>

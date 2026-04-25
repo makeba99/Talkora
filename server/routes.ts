@@ -3285,29 +3285,18 @@ export async function registerRoutes(
       });
     });
 
-    // Permission helper: only the room host or a co-owner may control YouTube
-    // (start a video, queue, skip, play/pause/seek). Everyone else is a watcher
-    // who receives sync events but cannot trigger them.
-    const canControlYoutube = async (roomId: string, userId: string): Promise<boolean> => {
-      const room = await storage.getRoom(roomId);
-      if (!room) return false;
-      if (room.ownerId === userId) return true;
-      const role = roomRoles.get(roomId)?.get(userId);
-      return role === "co-owner";
-    };
-
+    // Anyone in the room can start their own video. Whoever starts it becomes
+    // the "video host" for that playback session. Closing the video for
+    // everyone is restricted to the original starter — others can only hide it
+    // for themselves locally.
     socket.on("room:youtube", async (data: { roomId: string; videoId: string | null }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      const allowed = await canControlYoutube(data.roomId, currentUserId);
       const existing = roomYoutubeState.get(data.roomId);
       if (data.videoId) {
-        // Only host / co-owner can start a new video.
-        if (!allowed) {
-          socket.emit("room:youtube-denied", { reason: "Only the host or co-host can play videos in this room." });
-          return;
-        }
+        // Anyone in the room can play a video. The starter becomes the host
+        // that watchers sync to when they opt in by clicking the avatar.
         roomYoutubeState.set(data.roomId, {
           videoId: data.videoId,
           startedBy: currentUserId,
@@ -3317,10 +3306,10 @@ export async function registerRoutes(
         });
         io.to(data.roomId).emit("room:youtube", { videoId: data.videoId, startedBy: currentUserId });
       } else {
-        // Closing a video: allowed if the requester is the original starter, the
-        // host, or a co-owner. Fallback: if the starter has left the room, anyone
+        // Closing a video for everyone is allowed only for the original
+        // starter. Fallback: if the starter has already left the room, anyone
         // can close so videos cannot get permanently stuck.
-        if (existing && existing.startedBy !== currentUserId && !allowed) {
+        if (existing && existing.startedBy !== currentUserId) {
           const starterStillPresent = participants.has(existing.startedBy);
           if (starterStillPresent) return;
         }
@@ -3333,12 +3322,13 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      // Only host / co-owner can drive playback (play/pause/seek). This keeps
-      // sync clean — watchers can't accidentally interrupt the shared video.
-      const allowed = await canControlYoutube(data.roomId, currentUserId);
-      if (!allowed) return;
+      // Only the original starter can update the shared playhead anchor that
+      // late-joiners use to sync. Everyone else's playback is local-only and
+      // does not affect anyone — they should never reach this handler, but if
+      // they do we just ignore the event.
       const ytState = roomYoutubeState.get(data.roomId);
       if (!ytState) return;
+      if (ytState.startedBy !== currentUserId) return;
       const t = typeof data.time === "number" ? data.time : ytState.lastTime;
       ytState.lastTime = t;
       ytState.lastTs = Date.now();
@@ -3485,16 +3475,11 @@ export async function registerRoutes(
     });
     socket.on("room:youtube-time-respond", () => {});
 
-    // ---------- YouTube Queue (host / co-owner only) ----------
+    // ---------- YouTube Queue (anyone can queue) ----------
     socket.on("room:youtube-queue-add", async (data: { roomId: string; item: YtQueueItem }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      const allowed = await canControlYoutube(data.roomId, currentUserId);
-      if (!allowed) {
-        socket.emit("room:youtube-denied", { reason: "Only the host or co-host can queue videos in this room." });
-        return;
-      }
       if (!roomYoutubeQueue.has(data.roomId)) roomYoutubeQueue.set(data.roomId, []);
       const queue = roomYoutubeQueue.get(data.roomId)!;
       // Avoid duplicate videoIds in queue
@@ -3507,10 +3492,16 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      const allowed = await canControlYoutube(data.roomId, currentUserId);
-      if (!allowed) return;
       const queue = roomYoutubeQueue.get(data.roomId);
       if (!queue) return;
+      // Only the person who added a queue item (or the current video starter if
+      // they exist) can remove it; everyone else just leaves it alone.
+      const item = queue.find(q => q.id === data.id);
+      if (!item) return;
+      const ytState = roomYoutubeState.get(data.roomId);
+      const isAdder = item.addedBy === currentUserId;
+      const isCurrentStarter = ytState?.startedBy === currentUserId;
+      if (!isAdder && !isCurrentStarter) return;
       const filtered = queue.filter(q => q.id !== data.id);
       roomYoutubeQueue.set(data.roomId, filtered);
       io.to(data.roomId).emit("room:youtube-queue-update", { queue: filtered });
