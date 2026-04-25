@@ -1,0 +1,28 @@
+You are a mobile performance optimization specialist. Your task is to diagnose and resolve performance issues on the mobile app's home page and post-download experience.
+
+**Current Problem:**
+The home page animations and interactions are resource-heavy, causing lag and stuttering on mobile devices. The user wants the app to perform smoothly after installation, matching the responsiveness and fluidity of native applications.
+
+**What You Need to Do:**
+
+1. **Identify the Performance Bottlenecks**
+   - Analyze what's likely causing the slowdown: heavy animations, unoptimized assets, excessive re-renders, large bundle sizes, or inefficient code execution
+   - Consider mobile-specific constraints: limited RAM, CPU throttling, battery drain, network latency
+   - Focus specifically on the home page and initial load experience
+
+2. **Create a Mobile-First Optimization Strategy**
+   - Propose concrete techniques to reduce resource consumption (animation simplification, lazy loading, code splitting, asset compression, etc.)
+   - Prioritize solutions that work across different mobile devices and networks (not just high-end phones)
+   - Address the post-download experience separately—what's different about performance after the app is installed vs. on first load?
+   - Frame recommendations so they make the app feel like a native app (smooth scrolling, instant interactions, no jank)
+
+3. **Deliverable:**
+   - Provide a prioritized list of optimizations (quick wins first, then deeper architectural improvements)
+   - For each optimization, explain what it fixes, why it matters on mobile, and the expected impact on performance
+   - Include specific technical approaches (e.g., "reduce animation frame rates," "implement virtual scrolling," "use WebP instead of PNG")
+   - Flag any trade-offs between visual quality and performance
+
+**Constraints:**
+- Focus only on solutions that meaningfully improve mobile performance—not desktop
+- Avoid over-engineering; prioritize practical, implementable changes
+- Consider that users are running this on various devices with different capabilities

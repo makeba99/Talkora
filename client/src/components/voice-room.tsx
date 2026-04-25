@@ -18,7 +18,7 @@ import {
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -729,6 +729,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const ytLoadTimeoutRef = useRef<number | null>(null);
 
   const [ytFloatingReactions, setYtFloatingReactions] = useState<Array<{ id: string; emoji: string; left: number; userId: string }>>([]);
+  // Reactions panel is collapsed by default — users tap the smiley toggle on the
+  // video to reveal the emoji picker + like/dislike/skip vote pills.
+  const [ytReactionsOpen, setYtReactionsOpen] = useState(false);
   // Per-user "I closed this video" flag. When true, neither the player nor the
   // watcher preview card render for this user. Resets whenever the room starts
   // a new video so the next one is shown fresh.
@@ -4441,7 +4444,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               const broadcaster = participants.find(p => p.id === youtubeStartedBy);
               return (
                 <button
-                  onClick={() => { setShowYoutube(true); setUserDismissedYoutube(false); setSidePanelOpen(false); setTimeout(() => { try { handleYtSyncToStarter(); } catch (_) {} }, 1200); }}
+                  onClick={() => {
+                    setShowYoutube(true);
+                    setUserDismissedYoutube(false);
+                    setSidePanelOpen(false);
+                    // Multiple sync attempts to reliably catch up to the starter,
+                    // even on slow connections where the player needs time to load.
+                    setTimeout(() => { try { handleYtSyncToStarter(); } catch (_) {} }, 1200);
+                    setTimeout(() => { try { handleYtSyncToStarter(); } catch (_) {} }, 3200);
+                    setTimeout(() => { try { handleYtSyncToStarter(); } catch (_) {} }, 6500);
+                  }}
                   data-testid="button-join-watch-party"
                   className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] font-semibold hover:bg-red-500/25 transition-colors"
                 >
@@ -6354,70 +6366,130 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </button>
                 </div>
 
-                {/* Watch-party voting bar — like / dislike give live counts; the
-                    skip vote auto-advances to the next queue item once a majority
-                    of the room agrees. None of this affects the starter's playhead;
-                    the starter keeps watching at their own position. The small
-                    heart on the far left fires a one-tap floating-emoji reaction. */}
+                {/* Floating watch-party reactions — emojis drift up from the bottom
+                    of the video with the sender's avatar attached, so everyone can
+                    see WHO reacted. Visible to the starter and to every joined
+                    watcher (it lives inside the player container, which renders
+                    only when showYoutube is true). */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-10" data-testid="yt-floating-reactions">
+                  {ytFloatingReactions.map(r => {
+                    const sender = participants.find(p => p.id === r.userId);
+                    const senderName = sender ? getUserDisplayName(sender) : "";
+                    return (
+                      <div
+                        key={r.id}
+                        className="absolute flex flex-col items-center gap-1 select-none"
+                        style={{
+                          left: `${r.left}%`,
+                          bottom: 0,
+                          animation: "ytReactionFloat 2.8s ease-out forwards",
+                        }}
+                      >
+                        <span className="text-3xl" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}>
+                          {r.emoji}
+                        </span>
+                        {sender && (
+                          <div className="flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full pl-0.5 pr-2 py-0.5 border border-white/15 shadow-md">
+                            <Avatar className="w-4 h-4">
+                              <AvatarImage src={sender.profileImageUrl || undefined} />
+                              <AvatarFallback className="text-[8px] bg-purple-500/40 text-white">
+                                {senderName.slice(0, 1).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-[9px] text-white/95 font-medium leading-none whitespace-nowrap">
+                              {senderName}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Reactions toggle (smiley) + collapsible reactions/voting panel.
+                    The panel is HIDDEN by default — users tap the smiley to open it.
+                    When open it reveals an emoji picker (everyone can fire reactions)
+                    and the live like / dislike / skip-vote tally. The skip vote
+                    auto-advances the queue once a majority of the room agrees.
+                    None of this affects the starter's playhead. */}
                 <div
-                  className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-black/65 backdrop-blur-sm rounded-full border border-white/15 px-2 py-1.5 shadow-lg"
-                  data-testid="yt-vote-bar"
+                  className="absolute bottom-3 right-3 z-20 flex items-center gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {ytReactionsOpen && (
+                    <div
+                      className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm rounded-full border border-white/15 px-2 py-1.5 shadow-lg animate-in fade-in slide-in-from-right-2 duration-200"
+                      data-testid="yt-reactions-panel"
+                    >
+                      {/* Emoji picker — everyone in the watch party can fire any of these. */}
+                      {["❤️", "🔥", "😂", "😮", "👏", "👍", "🤯"].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => { if (socket) socket.emit("room:youtube-reaction", { roomId: room.id, emoji }); }}
+                          className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-90"
+                          title={`Send ${emoji}`}
+                          data-testid={`button-yt-react-${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                      <div className="w-px h-5 bg-white/20" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!socket) return;
+                          const next = myYtVote === "like" ? null : "like";
+                          setMyYtVote(next);
+                          socket.emit("room:youtube-vote", { roomId: room.id, kind: next || "none" });
+                        }}
+                        className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "like" ? "bg-emerald-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
+                        title="Like this video"
+                        data-testid="button-yt-vote-like"
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" />
+                        <span className="tabular-nums">{ytVotes.likes}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!socket) return;
+                          const next = myYtVote === "dislike" ? null : "dislike";
+                          setMyYtVote(next);
+                          socket.emit("room:youtube-vote", { roomId: room.id, kind: next || "none" });
+                        }}
+                        className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "dislike" ? "bg-red-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
+                        title="Dislike this video"
+                        data-testid="button-yt-vote-dislike"
+                      >
+                        <ThumbsDown className="w-3.5 h-3.5" />
+                        <span className="tabular-nums">{ytVotes.dislikes}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!socket) return;
+                          const next = !myYtSkipVote;
+                          setMyYtSkipVote(next);
+                          socket.emit("room:youtube-skip-vote", { roomId: room.id, vote: next });
+                        }}
+                        className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtSkipVote ? "bg-amber-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
+                        title={`Vote to skip — auto-advances when ${Math.max(2, Math.ceil((ytVotes.watchers || participants.length) / 2))} people agree`}
+                        data-testid="button-yt-vote-skip"
+                      >
+                        <SkipForward className="w-3.5 h-3.5" />
+                        <span className="tabular-nums">{ytVotes.skip}</span>
+                      </button>
+                    </div>
+                  )}
                   <button
                     type="button"
-                    onClick={() => { if (socket) socket.emit("room:youtube-reaction", { roomId: room.id, emoji: "❤️" }); }}
-                    className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-95"
-                    title="Send a heart"
-                    data-testid="button-yt-react-heart"
+                    onClick={() => setYtReactionsOpen((v) => !v)}
+                    className={`w-9 h-9 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-colors ${ytReactionsOpen ? "bg-purple-500/85 border-purple-300/50 text-white" : "bg-black/65 border-white/15 text-white hover:bg-white/20"}`}
+                    title={ytReactionsOpen ? "Hide reactions" : "Show reactions"}
+                    data-testid="button-yt-reactions-toggle"
                   >
-                    ❤️
-                  </button>
-                  <div className="w-px h-5 bg-white/20" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!socket) return;
-                      const next = myYtVote === "like" ? null : "like";
-                      setMyYtVote(next);
-                      socket.emit("room:youtube-vote", { roomId: room.id, kind: next || "none" });
-                    }}
-                    className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "like" ? "bg-emerald-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
-                    title="Like this video"
-                    data-testid="button-yt-vote-like"
-                  >
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                    <span className="tabular-nums">{ytVotes.likes}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!socket) return;
-                      const next = myYtVote === "dislike" ? null : "dislike";
-                      setMyYtVote(next);
-                      socket.emit("room:youtube-vote", { roomId: room.id, kind: next || "none" });
-                    }}
-                    className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "dislike" ? "bg-red-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
-                    title="Dislike this video"
-                    data-testid="button-yt-vote-dislike"
-                  >
-                    <ThumbsDown className="w-3.5 h-3.5" />
-                    <span className="tabular-nums">{ytVotes.dislikes}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!socket) return;
-                      const next = !myYtSkipVote;
-                      setMyYtSkipVote(next);
-                      socket.emit("room:youtube-skip-vote", { roomId: room.id, vote: next });
-                    }}
-                    className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtSkipVote ? "bg-amber-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
-                    title={`Vote to skip — auto-advances when ${Math.max(2, Math.ceil((ytVotes.watchers || participants.length) / 2))} people agree`}
-                    data-testid="button-yt-vote-skip"
-                  >
-                    <SkipForward className="w-3.5 h-3.5" />
-                    <span className="tabular-nums">{ytVotes.skip}</span>
+                    {ytReactionsOpen ? <X className="w-4 h-4" /> : <Smile className="w-4 h-4" />}
                   </button>
                 </div>
 
@@ -8551,31 +8623,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Global watch-party floating reactions — visible to EVERY participant in
-          the room whenever someone fires a heart on the video, regardless of
-          whether they're actively watching the player or not. Anchored to the
-          bottom-right of the viewport so they don't cover the chat. */}
-      {ytFloatingReactions.length > 0 && (
-        <div
-          className="fixed bottom-24 right-6 w-40 h-64 pointer-events-none overflow-hidden z-[60]"
-          data-testid="yt-global-floating-reactions"
-        >
-          {ytFloatingReactions.map(r => (
-            <span
-              key={r.id}
-              className="absolute text-3xl select-none"
-              style={{
-                left: `${r.left}%`,
-                bottom: 0,
-                animation: "ytReactionFloat 2.4s ease-out forwards",
-                textShadow: "0 2px 8px rgba(0,0,0,0.6)",
-              }}
-            >
-              {r.emoji}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
