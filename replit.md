@@ -228,6 +228,25 @@ Badge applications table (shared/schema.ts):
   amber-honey orange. The user's preference persists across reloads
   via `localStorage["vextorn:showLanguageFilters"]`. The toggle only
   appears when "Rooms" is the active discovery filter.
+- **Profile Decorations dialog redesigned (square neumorphic tiles).**
+  Removed the entire "Animated Decoration" (Flair Badge Animation)
+  section from the dialog — `handleSaveDecorations` now always sends
+  `profileDecoration: "none"` so prior values clear out. Avatar Ring
+  and Flair Badge pickers were converted from rounded rectangles to
+  premium square tiles in a 4-column grid via the new `.neu-deco-tile`
+  CSS module (`client/src/index.css`). Each tile features:
+    - Recessed neumorphic body with amber rim + soft pulse on active.
+    - Staggered fade-up + blur-out entrance (`@keyframes neu-deco-enter`,
+      35ms / 30ms cascade per item via `--neu-deco-delay` CSS var).
+    - Hover lift (-2px), amber sheen sweep (`@keyframes neu-deco-sheen`),
+      preview-circle scale, and emoji wiggle.
+    - Active state pulses the amber rim glow indefinitely
+      (`@keyframes neu-deco-active-pulse`).
+    - Inset preview disc with the actual ring sample, or the badge emoji,
+      or a slashed-circle "none" indicator.
+    - Compact label below preview, all options preserved.
+    - Press feedback compresses inward with shorter transition for
+      tactile feel.
 
 ## Lobby Neumorphic Polish (Round 2, April 2026)
 - Toned-down "burnt orange" palette: `--neu-orange` 20 72% 44%, `--neu-orange-hi`

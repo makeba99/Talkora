@@ -2578,6 +2578,213 @@ html.synthwave .neon-text {
     inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
+/* ── Neumorphic decoration tiles (Profile Decorations dialog) ── */
+/* Square selection tile used for Avatar Ring + Flair Badge picks.
+   Premium neumorphic body, amber rim + glow on active, lift on hover,
+   compresses inward on click. Entrance is a soft fade-up so the grid
+   waterfalls in when the dialog opens. */
+@keyframes neu-deco-enter {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.96); filter: blur(2px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes neu-deco-active-pulse {
+  0%, 100% { box-shadow:
+    -3px -3px 7px rgba(255, 235, 215, 0.045),
+     5px  5px 12px rgba(0, 0, 0, 0.55),
+     0 0 0 1px hsl(var(--neu-orange) / 0.55) inset,
+     0 0 14px hsl(var(--neu-orange) / 0.35); }
+  50%      { box-shadow:
+    -3px -3px 7px rgba(255, 235, 215, 0.045),
+     5px  5px 12px rgba(0, 0, 0, 0.55),
+     0 0 0 1px hsl(var(--neu-orange-hi) / 0.75) inset,
+     0 0 22px hsl(var(--neu-orange) / 0.55); }
+}
+@keyframes neu-deco-sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+
+.neu-deco-tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.4rem 0.45rem;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(150deg, hsl(var(--neu-surface-2)) 0%, hsl(var(--neu-surface)) 100%);
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    -3px -3px 7px rgba(255, 235, 215, 0.045),
+     5px  5px 12px rgba(0, 0, 0, 0.55),
+     inset 0 1px 0 rgba(255, 235, 215, 0.05);
+  transition:
+    transform 240ms cubic-bezier(.2,.8,.25,1),
+    box-shadow 280ms ease-out,
+    background 280ms ease-out;
+  opacity: 0;
+  animation: neu-deco-enter 420ms cubic-bezier(.2,.85,.3,1) forwards;
+  animation-delay: var(--neu-deco-delay, 0ms);
+}
+.neu-deco-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 90% at 50% 0%, hsl(var(--neu-orange) / 0.10), transparent 60%);
+  opacity: 0;
+  transition: opacity 280ms ease-out;
+  pointer-events: none;
+  z-index: 0;
+}
+.neu-deco-tile::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 38%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    hsl(var(--neu-orange-hi) / 0.18) 45%,
+    hsl(var(--neu-orange-hi) / 0.30) 50%,
+    hsl(var(--neu-orange-hi) / 0.18) 55%,
+    transparent 100%);
+  transform: translateX(-120%) skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.neu-deco-tile > * { position: relative; z-index: 2; }
+
+.neu-deco-tile:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(150deg, hsl(var(--neu-surface-2)) 0%, hsl(var(--neu-surface-2)) 100%);
+  box-shadow:
+    -4px -4px 9px rgba(255, 235, 215, 0.06),
+     6px  6px 14px rgba(0, 0, 0, 0.62),
+     0 0 12px hsl(var(--neu-orange) / 0.18),
+     inset 0 1px 0 rgba(255, 235, 215, 0.07);
+}
+.neu-deco-tile:hover::before { opacity: 1; }
+.neu-deco-tile:hover::after { animation: neu-deco-sheen 900ms ease-out; }
+
+.neu-deco-tile:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 90ms;
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 4px rgba(255, 235, 215, 0.04),
+    0 0 8px hsl(var(--neu-orange) / 0.25);
+}
+
+.neu-deco-tile.is-active {
+  background: linear-gradient(150deg, hsl(var(--neu-surface-2)) 0%, hsl(28 30% 14%) 100%);
+  animation:
+    neu-deco-enter 420ms cubic-bezier(.2,.85,.3,1) forwards,
+    neu-deco-active-pulse 2800ms ease-in-out 600ms infinite;
+}
+.neu-deco-tile.is-active::before { opacity: 1; }
+
+.neu-deco-tile-preview {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+  transition: transform 280ms cubic-bezier(.2,.8,.25,1);
+}
+.neu-deco-tile:hover .neu-deco-tile-preview { transform: scale(1.06); }
+.neu-deco-tile.is-active .neu-deco-tile-preview { transform: scale(1.08); }
+
+.neu-deco-tile-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+  transition: transform 320ms cubic-bezier(.2,.8,.25,1);
+}
+.neu-deco-tile:hover .neu-deco-tile-emoji { transform: scale(1.12) rotate(-4deg); }
+.neu-deco-tile.is-active .neu-deco-tile-emoji { transform: scale(1.15); }
+
+.neu-deco-tile-label {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: hsl(var(--muted-foreground));
+  transition: color 240ms ease-out;
+}
+.neu-deco-tile:hover .neu-deco-tile-label { color: hsl(var(--foreground)); }
+.neu-deco-tile.is-active .neu-deco-tile-label {
+  color: hsl(var(--neu-orange-hi));
+  text-shadow: 0 0 6px hsl(var(--neu-orange) / 0.45);
+}
+
+.neu-deco-tile-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%);
+  box-shadow:
+    0 0 6px hsl(var(--neu-orange) / 0.7),
+    inset 0 1px 0 rgba(255, 235, 215, 0.45);
+  z-index: 3;
+  animation: neu-deco-enter 320ms cubic-bezier(.2,.85,.3,1) forwards;
+}
+.neu-deco-tile-check > svg {
+  width: 9px;
+  height: 9px;
+  color: #1a0c00;
+  stroke-width: 3.5;
+}
+
+.neu-deco-tile-none {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  position: relative;
+  background: hsl(var(--neu-bg));
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+}
+.neu-deco-tile-none::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 12%;
+  right: 12%;
+  height: 1.5px;
+  background: hsl(var(--muted-foreground));
+  transform: translateY(-50%) rotate(-45deg);
+  border-radius: 2px;
+  opacity: 0.55;
+}
+
 /* ── AI Tutor responsive face size ── */
 .ai-face-size {
   width: clamp(132px, 32vw, 172px);

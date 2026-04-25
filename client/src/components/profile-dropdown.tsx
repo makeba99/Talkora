@@ -29,7 +29,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { PROFILE_DECORATIONS, ProfileDecoration } from "@/components/profile-decorations";
+import { ProfileDecoration } from "@/components/profile-decorations";
 import { BADGE_TYPES } from "@shared/schema";
 
 export const AVATAR_RINGS = [
@@ -382,7 +382,7 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
     saveDecorationsMutation.mutate({
       avatarRing: selectedRing,
       flairBadge: selectedFlair,
-      profileDecoration: selectedDecoration,
+      profileDecoration: "none",
     });
   };
 
@@ -646,24 +646,26 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
                     <FlairBadgeDisplay badgeId={selectedFlair} className="text-lg ml-1 -mt-1" />
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {AVATAR_RINGS.map((ring) => (
+                <div className="grid grid-cols-4 gap-2">
+                  {AVATAR_RINGS.map((ring, idx) => (
                     <button
                       key={ring.id}
                       onClick={() => setSelectedRing(ring.id)}
-                      className={`relative flex items-center gap-2 p-2 rounded-md border text-xs transition-colors
-                        ${selectedRing === ring.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover-elevate"
-                        }`}
+                      className={`neu-deco-tile ${selectedRing === ring.id ? "is-active" : ""}`}
+                      style={{ ["--neu-deco-delay" as any]: `${idx * 35}ms` }}
                       data-testid={`ring-option-${ring.id}`}
+                      title={ring.label}
                     >
-                      {ring.id !== "none" && (
-                        <span className={`w-4 h-4 rounded-full ${ring.className}`} />
+                      {ring.id === "none" ? (
+                        <span className="neu-deco-tile-none" />
+                      ) : (
+                        <span className="neu-deco-tile-preview">
+                          <span className={`block w-5 h-5 rounded-full bg-background ${ring.className}`} />
+                        </span>
                       )}
-                      <span className="truncate">{ring.label}</span>
+                      <span className="neu-deco-tile-label">{ring.label}</span>
                       {selectedRing === ring.id && (
-                        <Check className="w-3 h-3 text-primary absolute top-1 right-1" />
+                        <span className="neu-deco-tile-check"><Check /></span>
                       )}
                     </button>
                   ))}
@@ -672,47 +674,24 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
 
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Flair Badge</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {FLAIR_BADGES.map((badge) => (
+                <div className="grid grid-cols-4 gap-2">
+                  {FLAIR_BADGES.map((badge, idx) => (
                     <button
                       key={badge.id}
                       onClick={() => setSelectedFlair(badge.id)}
-                      className={`relative flex items-center gap-2 p-2 rounded-md border text-xs transition-colors
-                        ${selectedFlair === badge.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover-elevate"
-                        }`}
+                      className={`neu-deco-tile ${selectedFlair === badge.id ? "is-active" : ""}`}
+                      style={{ ["--neu-deco-delay" as any]: `${idx * 30}ms` }}
                       data-testid={`flair-option-${badge.id}`}
+                      title={badge.label}
                     >
-                      {badge.icon && (
-                        <span className="text-sm">{FLAIR_ICON_MAP[badge.icon]}</span>
+                      {badge.icon ? (
+                        <span className="neu-deco-tile-emoji">{FLAIR_ICON_MAP[badge.icon]}</span>
+                      ) : (
+                        <span className="neu-deco-tile-none" />
                       )}
-                      <span className="truncate">{badge.label}</span>
+                      <span className="neu-deco-tile-label">{badge.label}</span>
                       {selectedFlair === badge.id && (
-                        <Check className="w-3 h-3 text-primary absolute top-1 right-1" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Animated Decoration</Label>
-                <p className="text-xs text-muted-foreground">Animated effects around your avatar in rooms</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {PROFILE_DECORATIONS.map((deco) => (
-                    <button
-                      key={deco.id}
-                      onClick={() => setSelectedDecoration(deco.id)}
-                      className={`relative flex items-center gap-2 p-2 rounded-md border text-xs transition-colors
-                        ${selectedDecoration === deco.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:bg-muted/50"
-                        }`}
-                    >
-                      <span className="truncate font-medium">{deco.label}</span>
-                      {selectedDecoration === deco.id && (
-                        <Check className="w-3 h-3 text-primary absolute top-1 right-1" />
+                        <span className="neu-deco-tile-check"><Check /></span>
                       )}
                     </button>
                   ))}
