@@ -222,6 +222,12 @@ Badge applications table (shared/schema.ts):
   language as the Create Room button. Hover deepens the amber glow;
   pressed state recesses into the card. Signals "owner-only" without
   shouting, and no longer clashes with the unified amber theme.
+- **Language filter row is now toggleable.** Added a "Languages" pill
+  (Globe icon + chevron) on the right side of the discovery row that
+  shows/hides the entire language pill row. Active state is the unified
+  amber-honey orange. The user's preference persists across reloads
+  via `localStorage["vextorn:showLanguageFilters"]`. The toggle only
+  appears when "Rooms" is the active discovery filter.
 
 ## Lobby Neumorphic Polish (Round 2, April 2026)
 - Toned-down "burnt orange" palette: `--neu-orange` 20 72% 44%, `--neu-orange-hi`

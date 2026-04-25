@@ -365,6 +365,16 @@ export default function Lobby() {
   const [searchQuery, setSearchQuery] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [languagesExpanded, setLanguagesExpanded] = useState(false);
+  const [showLanguageFilters, setShowLanguageFilters] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const saved = window.localStorage.getItem("vextorn:showLanguageFilters");
+    return saved === null ? true : saved === "true";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("vextorn:showLanguageFilters", String(showLanguageFilters));
+    }
+  }, [showLanguageFilters]);
   const [activeDiscovery, setActiveDiscovery] = useState<DiscoveryFilter>("rooms");
   const [speakerVotes, setSpeakerVotes] = useState<Set<string>>(new Set());
   const [dmUserId, setDmUserId] = useState<string | null>(null);
@@ -989,10 +999,34 @@ export default function Lobby() {
                 </button>
               );
             })}
+            {activeDiscovery === "rooms" && (
+              <button
+                onClick={() => setShowLanguageFilters((v) => !v)}
+                className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ml-auto ${showLanguageFilters ? "is-active" : ""}`}
+                style={showLanguageFilters ? {
+                  background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
+                  color: "#fff",
+                  border: "1px solid hsl(var(--neu-orange) / 0.45)",
+                  boxShadow: "0 0 16px hsl(var(--neu-orange) / 0.35), -3px -3px 8px rgba(255,235,215,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,230,200,0.36)",
+                  textShadow: "0 1px 1px rgba(0,0,0,0.25)",
+                } : undefined}
+                title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
+                aria-expanded={showLanguageFilters}
+                data-testid="button-toggle-language-filters"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                Languages
+                {showLanguageFilters ? (
+                  <ChevronUp className="w-3.5 h-3.5 opacity-80" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+                )}
+              </button>
+            )}
           </div>
 
-          {activeDiscovery === "rooms" && (
-          <div className="flex gap-2 flex-wrap items-center">
+          {activeDiscovery === "rooms" && showLanguageFilters && (
+          <div className="flex gap-2 flex-wrap items-center" data-testid="row-language-filters">
             {visibleLanguages.map((lang) => {
               const count = lang === "All" ? rooms.length : languageCounts[lang] || 0;
               const isActive = selectedLanguage === lang;
