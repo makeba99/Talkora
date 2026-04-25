@@ -935,20 +935,19 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
     case "volcanic":
       return { background: "radial-gradient(ellipse at 50% 100%, #1c0400 0%, #0e0200 55%, #080100 100%)" };
     default:
-      // Default room background — soft neumorphic slate-gray that feels
-      // like a real tactile surface (inspired by sculpted neumorphism dashboards):
-      // a subtle directional top highlight from a virtual light source, a
-      // gently darker bottom vignette to ground the surface, and a faint violet
-      // ambient bloom from the upper corners that ties back to the platform shell
-      // without overpowering the gray. The base is a warm slate-gray, not pure
-      // black, so floating cards and avatars read as raised pillows on top.
+      // Default room background — a single, unified sculpted neumorphic panel.
+      // Deep violet-slate base with a directional top-left light source and a
+      // soft bottom-right shadow so the whole room reads as ONE big pressed-in
+      // 3D pillow, not a starry sky. The faint corner blooms are violet so it
+      // ties back to the platform shell.
       return {
         background:
-          "radial-gradient(ellipse 110% 70% at 50% -10%, rgba(255, 255, 255, 0.045) 0%, transparent 55%), " +
-          "radial-gradient(ellipse 80% 55% at 12% 8%, hsl(var(--neu-orange-hi) / 0.07) 0%, transparent 60%), " +
-          "radial-gradient(ellipse 80% 55% at 88% 8%, hsl(var(--neu-orange) / 0.05) 0%, transparent 60%), " +
-          "radial-gradient(ellipse 95% 70% at 50% 115%, rgba(0, 0, 0, 0.55) 0%, transparent 65%), " +
-          "linear-gradient(180deg, hsl(228 11% 22%) 0%, hsl(228 13% 17%) 60%, hsl(228 14% 13%) 100%)",
+          "radial-gradient(ellipse 90% 60% at 22% -8%, rgba(220, 215, 255, 0.08) 0%, transparent 55%), " +
+          "radial-gradient(ellipse 75% 55% at 12% 12%, hsl(var(--neu-orange-hi) / 0.10) 0%, transparent 60%), " +
+          "radial-gradient(ellipse 75% 55% at 88% 18%, hsl(var(--neu-orange) / 0.08) 0%, transparent 62%), " +
+          "radial-gradient(ellipse 95% 70% at 78% 110%, rgba(0, 0, 0, 0.55) 0%, transparent 60%), " +
+          "radial-gradient(ellipse 95% 75% at 50% 50%, rgba(0, 0, 0, 0.18) 60%, transparent 100%), " +
+          "linear-gradient(160deg, hsl(232 16% 19%) 0%, hsl(230 18% 14%) 45%, hsl(228 20% 10%) 100%)",
       };
   }
 }
@@ -957,112 +956,56 @@ export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefin
   const base: React.CSSProperties = { position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 };
 
   if (!themeId || themeId === "none") {
-    const seeds = [
-      [14,23,1.2,0.28,3,4,-2,-8,5,-16,0,-22],
-      [67,8,1.5,0.35,2,-5,4,-11,-3,-20,0,-28],
-      [32,71,1.0,0.22,-4,6,2,-9,5,-17,0,-24],
-      [88,45,1.8,0.40,5,-3,-3,-12,2,-22,0,-30],
-      [5,60,1.1,0.18,3,5,-5,-7,4,-15,0,-22],
-      [52,18,1.3,0.32,-2,4,3,-10,-4,-19,0,-26],
-      [76,82,0.9,0.25,4,-6,2,-13,3,-21,0,-28],
-      [23,37,1.6,0.38,-3,3,-4,-9,5,-18,0,-25],
-      [91,12,1.0,0.20,2,6,3,-11,-2,-20,0,-27],
-      [44,56,1.4,0.30,5,-4,-2,-8,4,-16,0,-23],
-      [10,90,1.2,0.26,-4,5,3,-12,2,-22,0,-29],
-      [60,3,1.7,0.42,3,-3,-5,-9,5,-17,0,-24],
-      [37,48,1.1,0.19,4,6,-3,-13,-4,-21,0,-28],
-      [80,70,0.8,0.24,2,-5,4,-10,3,-18,0,-25],
-      [18,28,1.5,0.36,-5,4,-2,-8,2,-16,0,-22],
-      [55,85,1.0,0.21,3,5,-4,-12,-3,-20,0,-27],
-      [70,42,1.3,0.33,-2,-6,5,-9,4,-17,0,-24],
-      [28,65,1.8,0.44,5,-3,-3,-11,2,-21,0,-29],
-      [95,30,0.9,0.17,4,6,2,-13,-5,-22,0,-28],
-      [42,95,1.2,0.29,-3,4,3,-8,5,-15,0,-22],
-      [8,50,1.6,0.37,2,-5,-4,-12,-2,-20,0,-26],
-      [65,22,1.0,0.23,5,5,-2,-9,3,-17,0,-24],
-      [82,75,1.4,0.31,-4,-4,4,-10,-5,-18,0,-25],
-      [48,10,1.1,0.20,3,6,-3,-13,2,-22,0,-29],
-      [15,40,1.7,0.41,-2,4,5,-8,-4,-16,0,-22],
-      [72,60,0.8,0.16,4,-6,-2,-12,3,-20,0,-27],
-      [35,88,1.3,0.34,2,5,3,-9,-3,-17,0,-24],
-      [58,32,1.5,0.38,-5,-3,-4,-11,5,-21,0,-28],
-      [90,55,1.0,0.22,3,6,2,-13,-2,-22,0,-29],
-      [25,72,1.2,0.27,-4,4,-3,-8,4,-15,0,-22],
-      [78,18,0.9,0.19,5,-5,4,-12,2,-19,0,-26],
-      [50,45,1.6,0.39,-2,3,-5,-9,-4,-17,0,-24],
-      [12,68,1.1,0.25,3,6,2,-11,3,-20,0,-27],
-      [86,38,1.4,0.32,-3,-4,4,-13,5,-22,0,-29],
-      [40,82,1.8,0.43,4,5,-2,-8,-3,-16,0,-22],
-      [63,5,1.0,0.21,-5,4,3,-12,2,-20,0,-27],
-      [20,55,1.3,0.30,2,-6,-4,-9,4,-17,0,-24],
-      [97,78,0.8,0.18,5,3,-3,-11,-5,-21,0,-28],
-      [45,25,1.5,0.36,-2,5,2,-13,3,-22,0,-29],
-      [3,92,1.2,0.28,4,-4,-5,-8,5,-15,0,-22],
-      [68,48,1.6,0.37,-3,6,3,-12,-2,-19,0,-26],
-      [30,15,1.0,0.23,2,4,-4,-9,4,-17,0,-24],
-      [84,62,1.4,0.32,5,-5,-2,-13,-3,-21,0,-28],
-      [55,38,1.1,0.20,-4,3,3,-8,2,-16,0,-22],
-      [17,80,1.7,0.42,3,6,-3,-11,5,-20,0,-27],
-      [72,98,0.9,0.17,-5,-4,4,-12,-4,-18,0,-25],
-      [38,52,1.3,0.33,2,5,-2,-9,3,-17,0,-24],
-      [92,20,1.0,0.21,4,-6,5,-13,-5,-22,0,-29],
-      [22,44,1.5,0.38,-3,4,-4,-8,2,-15,0,-22],
-      [60,70,1.2,0.26,5,3,3,-12,4,-20,0,-27],
-      [48,88,1.1,0.23,-2,-5,-3,-9,-3,-17,0,-24],
-      [75,32,0.8,0.16,4,6,2,-11,5,-21,0,-28],
-      [33,58,1.6,0.39,-5,4,-5,-13,2,-22,0,-29],
-      [88,42,1.0,0.22,3,-4,4,-8,-4,-16,0,-22],
-      [6,25,1.4,0.31,-2,5,2,-12,3,-19,0,-26],
-      [55,95,1.3,0.30,5,-3,-3,-9,5,-17,0,-24],
-      [20,10,1.8,0.44,-4,6,-2,-13,-2,-21,0,-28],
-      [80,65,0.9,0.18,2,4,3,-8,4,-15,0,-22],
-      [42,30,1.5,0.37,4,-6,-4,-12,-5,-20,0,-27],
-      [68,78,1.2,0.29,-3,5,5,-9,2,-17,0,-24],
-      [15,48,1.0,0.21,5,3,-2,-11,-3,-18,0,-25],
-      [95,85,1.4,0.34,-5,-4,4,-13,4,-22,0,-29],
-      [38,20,1.1,0.20,3,6,-3,-8,-4,-16,0,-22],
-      [72,55,0.8,0.16,2,-5,2,-12,3,-19,0,-26],
-      [50,72,1.6,0.39,-4,4,-5,-9,5,-17,0,-24],
-      [27,88,1.3,0.32,5,-3,4,-13,-2,-21,0,-28],
-      [84,15,1.0,0.22,-2,6,-4,-8,2,-15,0,-22],
-      [10,62,1.5,0.37,4,5,3,-12,-5,-20,0,-27],
-      [65,35,1.2,0.28,-3,-4,-2,-9,4,-17,0,-24],
-      [35,98,1.7,0.42,5,3,5,-11,-3,-18,0,-25],
-      [92,50,0.9,0.19,-5,6,-3,-13,2,-22,0,-29],
-      [48,5,1.4,0.33,3,-5,4,-8,-4,-16,0,-22],
-    ];
+    // Default room overlay — sculpted neumorphic 3D panel.
+    // Light source from the upper-left, soft inset rim shadow on the
+    // lower-right, breathing violet ambient bloom in the center, and a
+    // faint inner vignette so the whole room reads as ONE unified
+    // pressed-in pillow rather than a starry sky.
     return (
       <div style={base}>
         <style>{ROOM_THEME_KEYFRAMES}</style>
-        <div style={{ position:"absolute", top:"20%", left:"25%", right:"25%", bottom:"20%",
-          borderRadius:"50%",
-          background:"radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.055) 0%, rgba(200,210,255,0.025) 40%, transparent 70%)",
-          animation:"rt-center-glow 8s ease-in-out infinite" }} />
-        {seeds.map(([left,top,sz,dp,dx1,dy1,dx2,dy2,dx3,dy3,,dend], i) => {
-          const isDrifting = i % 3 !== 0;
-          const dur = 8 + (i % 12) * 1.5;
-          const del = (i * 0.19) % 12;
-          const warmth = i % 5;
-          const col = warmth === 0 ? "255,245,220" : warmth === 1 ? "220,230,255" : warmth === 2 ? "255,255,255" : warmth === 3 ? "200,220,255" : "255,240,200";
-          return (
-            <div key={i} style={{
-              position:"absolute",
-              borderRadius:"50%",
-              width: sz * 1.5, height: sz * 1.5,
-              background:`rgba(${col},0.9)`,
-              left:`${left}%`, top:`${top}%`,
-              ["--dp" as any]: dp,
-              ["--dx1" as any]: `${dx1}px`, ["--dy1" as any]: `${dy1}px`,
-              ["--dx2" as any]: `${dx2}px`, ["--dy2" as any]: `${dy2}px`,
-              ["--dx3" as any]: `${dx3}px`, ["--dy3" as any]: `${dy3}px`,
-              ["--dend" as any]: `${dend}px`,
-              animation: isDrifting
-                ? `rt-dust-drift ${dur}s ease-in-out ${del}s infinite`
-                : `rt-dust-twinkle ${4 + (i%8)*0.6}s ease-in-out ${del}s infinite`,
-              filter: sz > 1.4 ? `blur(${(sz - 1) * 0.3}px)` : undefined,
-            }} />
-          );
-        })}
+        {/* directional top-left rim light */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background:
+            "radial-gradient(ellipse 70% 55% at 8% 4%, rgba(220, 215, 255, 0.10) 0%, transparent 55%), " +
+            "linear-gradient(135deg, rgba(220, 215, 255, 0.05) 0%, transparent 28%)",
+        }} />
+        {/* soft bottom-right pressed-in shadow */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background:
+            "radial-gradient(ellipse 80% 60% at 100% 100%, rgba(0, 0, 0, 0.45) 0%, transparent 55%), " +
+            "linear-gradient(135deg, transparent 65%, rgba(0, 0, 0, 0.30) 100%)",
+        }} />
+        {/* center violet ambient bloom — gentle breathing */}
+        <div style={{
+          position: "absolute", top: "18%", left: "22%", right: "22%", bottom: "18%",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(ellipse at 50% 50%, hsl(var(--neu-orange-hi) / 0.10) 0%, hsl(var(--neu-orange) / 0.06) 35%, transparent 70%)",
+          filter: "blur(40px)",
+          animation: "rt-center-glow 10s ease-in-out infinite",
+        }} />
+        {/* secondary off-axis violet pillow for depth */}
+        <div style={{
+          position: "absolute", top: "8%", left: "55%", width: "45%", height: "55%",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(ellipse at 50% 50%, hsl(var(--neu-orange) / 0.08) 0%, transparent 65%)",
+          filter: "blur(60px)",
+          animation: "rt-orb-drift 14s ease-in-out infinite",
+        }} />
+        {/* inner edge vignette — completes the inset 3D panel feel */}
+        <div style={{
+          position: "absolute", inset: 0,
+          boxShadow:
+            "inset 0 60px 90px -40px rgba(0, 0, 0, 0.45), " +
+            "inset 0 -80px 120px -40px rgba(0, 0, 0, 0.55), " +
+            "inset 80px 0 100px -50px rgba(0, 0, 0, 0.30), " +
+            "inset -80px 0 100px -50px rgba(0, 0, 0, 0.40)",
+          pointerEvents: "none",
+        }} />
       </div>
     );
   }
