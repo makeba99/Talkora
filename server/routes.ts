@@ -3285,8 +3285,9 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      // Free4talk-style: anyone in the room can start or change the video
+      const existing = roomYoutubeState.get(data.roomId);
       if (data.videoId) {
+        // Anyone in the room can start a new video — they become the new starter.
         roomYoutubeState.set(data.roomId, {
           videoId: data.videoId,
           startedBy: currentUserId,
@@ -3294,11 +3295,19 @@ export async function registerRoutes(
           lastTime: 0,
           lastTs: Date.now(),
         });
+        io.to(data.roomId).emit("room:youtube", { videoId: data.videoId, startedBy: currentUserId });
       } else {
+        // Closing a video is restricted to the original starter — the room host
+        // (or anyone else) cannot close someone else's playing video. If the
+        // starter has already left the room, the close is allowed as a fallback
+        // so videos cannot get permanently stuck.
+        if (existing && existing.startedBy !== currentUserId) {
+          const starterStillPresent = participants.has(existing.startedBy);
+          if (starterStillPresent) return;
+        }
         roomYoutubeState.delete(data.roomId);
+        io.to(data.roomId).emit("room:youtube", { videoId: null, startedBy: currentUserId });
       }
-      // Broadcast to EVERYONE including sender so all clients agree on state
-      io.to(data.roomId).emit("room:youtube", { videoId: data.videoId, startedBy: currentUserId });
     });
 
     socket.on("room:youtube-state", (data: { roomId: string; action: string; time?: number; ts?: number }) => {

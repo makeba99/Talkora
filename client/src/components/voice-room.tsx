@@ -18,7 +18,7 @@ import {
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -1730,39 +1730,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
     });
 
-    socket.on("room:youtube-state", (data: { action: string; time?: number; ts?: number; from: string }) => {
-      if (data.from === user.id) return;
-      const player = youtubePlayerRef.current;
-      if (!player || !player.playVideo) return;
-      // Block any local state-change re-broadcasts for 3.5s (covers buffering delays)
-      ytRemoteAction.current = true;
-      try {
-        if (data.action === "play") {
-          if (data.time !== undefined) {
-            // Compensate for network latency using broadcaster timestamp
-            const networkDelay = data.ts ? Math.min((Date.now() - data.ts) / 1000, 3) : 0.15;
-            const targetTime = data.time + networkDelay;
-            let currentTime = 0;
-            try { currentTime = player.getCurrentTime() || 0; } catch (_) {}
-            // Only seek if drift > 1.5s — keeps watchers tightly locked to broadcaster
-            const drift = Math.abs(targetTime - currentTime);
-            if (drift > 1.5) {
-              player.seekTo(targetTime, true);
-            }
-          }
-          player.playVideo();
-        } else if (data.action === "pause") {
-          if (data.time !== undefined) {
-            try { player.seekTo(data.time, true); } catch (_) {}
-          }
-          player.pauseVideo();
-        } else if (data.action === "stop") {
-          player.stopVideo();
-        }
-      } catch (e) {}
-      // 3500ms — enough time for seek + buffering to complete before re-enabling local broadcasts
-      setTimeout(() => { ytRemoteAction.current = false; }, 3500);
-    });
+    // Independent playback: each user controls their own player. We intentionally
+    // do NOT auto-apply remote play/pause/seek events — incoming room:youtube-state
+    // events are ignored. The only way to follow the starter is the manual
+    // "Sync with starter" button, which uses the time-request/respond mechanism.
+    socket.on("room:youtube-state", () => { /* intentional no-op */ });
 
     socket.on("room:roles", (roles: Record<string, string>) => {
       setParticipantRoles(roles);
@@ -1934,15 +1906,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     };
   }, [socket, user, room.id]);
 
-  useEffect(() => {
-    // Free4talk-style sync: when this user opens the player, ask the server for the
-    // current authoritative playhead. The server replies with room:youtube-state which
-    // already includes elapsed-time compensation.
+  // Independent playback: opening the player no longer auto-syncs to the starter.
+  // Users start watching from the beginning (or whatever YouTube resumes at) and
+  // can press the "Sync with starter" button if they want to jump to the
+  // starter's current position.
+
+  const handleYtSyncToStarter = useCallback(() => {
     if (!socket || !user || !activeYoutubeId) return;
-    if (showYoutube) {
-      socket.emit("room:youtube-time-request", { roomId: room.id, requesterId: user.id });
-    }
-  }, [showYoutube, activeYoutubeId]);
+    if (user.id === youtubeStartedByRef.current) return;
+    socket.emit("room:youtube-time-request", { roomId: room.id, requesterId: user.id });
+  }, [socket, user, activeYoutubeId, room.id]);
 
   useEffect(() => {
     if (sidePanelTab === "read" && readBooks.length === 0 && !readLoading) {
@@ -2066,17 +2039,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (state === YT.PlayerState.ENDED) {
         setYtIsPlaying(false);
         setYoutubeActive(false);
-        // Only the video starter drives queue advance to avoid duplicate emissions
+        // Independent playback: only the starter drives queue advance (so the next
+        // video is broadcast to everyone). When no queue, every user simply loops
+        // their own local player — no broadcast involved.
         if (user?.id === youtubeStartedByRef.current) {
-          // Check if there are queued videos — if so, advance; otherwise loop current video
           const currentQueue = ytQueueRef.current;
           if (currentQueue && currentQueue.length > 0) {
             sock?.emit("room:youtube-queue-next", { roomId: room.id });
-          } else {
-            try { player.seekTo(0, true); player.playVideo(); } catch (_) {}
-            sock?.emit("room:youtube-state", { roomId: room.id, action: "play", time: 0, ts: Date.now() });
+            return;
           }
         }
+        try { player.seekTo(0, true); player.playVideo(); } catch (_) {}
         return;
       }
       if (state === YT.PlayerState.PLAYING) {
@@ -2199,10 +2172,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 setYtPlayerLoading(false);
                 setYtPlayerReady(true);
                 if (isSlowNet) setYtQualityState("slow");
-                // If watcher: request exact sync time from broadcaster now that player is ready
-                if (user?.id !== youtubeStartedByRef.current && socketRef.current) {
-                  socketRef.current.emit("room:youtube-time-request", { roomId: room.id, requesterId: user?.id });
-                }
+                // Independent playback: no auto-sync to the starter on player ready.
+                // Watchers can press the "Sync with starter" button if they want to
+                // jump to the starter's current position.
               } catch (err) { console.error("[YT] playVideo/unMute error:", err); }
             },
             onError: (e: any) => {
@@ -3128,33 +3100,29 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:youtube-queue-remove", { roomId: room.id, id: itemId });
   };
 
+  // Independent playback: play / pause / seek operate only on this user's local
+  // YouTube player. Nothing is broadcast to other participants, so each user has
+  // full local control without affecting anyone else.
   const handleYtPlayPause = useCallback(() => {
     const player = youtubePlayerRef.current;
     if (!player) return;
     try {
       if (ytIsPlaying) {
         player.pauseVideo();
-        socket?.emit("room:youtube-state", { roomId: room.id, action: "pause", time: player.getCurrentTime(), ts: Date.now() });
       } else {
         player.playVideo();
-        const time = player.getCurrentTime();
-        socket?.emit("room:youtube-state", { roomId: room.id, action: "play", time, ts: Date.now() });
       }
     } catch (_) {}
-  }, [ytIsPlaying, socket, room.id]);
+  }, [ytIsPlaying]);
 
   const handleYtSeek = useCallback((seconds: number) => {
     const player = youtubePlayerRef.current;
     if (!player) return;
-    ytRemoteAction.current = true;
     try {
       player.seekTo(seconds, true);
       setYtCurrentTime(seconds);
-      const action = ytIsPlaying ? "play" : "pause";
-      socket?.emit("room:youtube-state", { roomId: room.id, action, time: seconds, ts: Date.now() });
     } catch (_) {}
-    setTimeout(() => { ytRemoteAction.current = false; }, 3500);
-  }, [ytIsPlaying, socket, room.id]);
+  }, []);
 
   const handleYtVolume = useCallback((vol: number) => {
     const player = youtubePlayerRef.current;
@@ -4329,15 +4297,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <Loader2 className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 animate-spin" />
                 )}
               </div>
-              {activeYoutubeId && (
+              {activeYoutubeId && user?.id === youtubeStartedBy && (
                 <button
                   onClick={handleStopYoutube}
-                  title="Stop playback for everyone"
+                  title="Close this video for everyone (only you, the starter, can close it)"
                   data-testid="button-stop-youtube-panel"
                   className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
                 >
                   <StopCircle className="w-3.5 h-3.5" />
-                  Stop playback for everyone
+                  Close video for everyone
                 </button>
               )}
             </div>
@@ -6164,15 +6132,29 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         >
                           <RotateCcw className="w-3.5 h-3.5 text-white" />
                         </button>
-                        {/* Stop */}
-                        <button
-                          onClick={handleStopYoutube}
-                          className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-500/60 border border-white/15 flex items-center justify-center transition-colors shadow-lg"
-                          title="Stop video"
-                          data-testid="button-yt-stop"
-                        >
-                          <StopCircle className="w-3.5 h-3.5 text-white" />
-                        </button>
+                        {/* Sync with starter — non-starters only */}
+                        {user?.id !== youtubeStartedBy && youtubeStartedBy && (
+                          <button
+                            onClick={handleYtSyncToStarter}
+                            className="h-8 px-2.5 rounded-full bg-white/10 hover:bg-purple-500/60 border border-white/15 flex items-center justify-center gap-1 transition-colors shadow-lg"
+                            title="Jump to where the starter is watching"
+                            data-testid="button-yt-sync"
+                          >
+                            <Zap className="w-3.5 h-3.5 text-white" />
+                            <span className="text-[10px] text-white font-semibold leading-none">Sync</span>
+                          </button>
+                        )}
+                        {/* Close — only the starter can close the video for everyone */}
+                        {user?.id === youtubeStartedBy && (
+                          <button
+                            onClick={handleStopYoutube}
+                            className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-500/60 border border-white/15 flex items-center justify-center transition-colors shadow-lg"
+                            title="Close video for everyone"
+                            data-testid="button-yt-stop"
+                          >
+                            <StopCircle className="w-3.5 h-3.5 text-white" />
+                          </button>
+                        )}
                         {/* Time */}
                         <span className="text-white/70 text-[11px] font-mono tabular-nums" data-testid="text-yt-time">
                           {formatYtTime(ytCurrentTime)} / {formatYtTime(ytDuration)}
