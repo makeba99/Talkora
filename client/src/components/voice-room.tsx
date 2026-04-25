@@ -717,6 +717,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const ytLoadTimeoutRef = useRef<number | null>(null);
 
   const [ytFloatingReactions, setYtFloatingReactions] = useState<Array<{ id: string; emoji: string; left: number; userId: string }>>([]);
+  // Per-user "I closed this video" flag. When true, neither the player nor the
+  // watcher preview card render for this user. Resets whenever the room starts
+  // a new video so the next one is shown fresh.
+  const [userDismissedYoutube, setUserDismissedYoutube] = useState(false);
 
   const [bookReaders, setBookReaders] = useState<Set<string>>(new Set());
   const [goLiveOpen, setGoLiveOpen] = useState(false);
@@ -1624,6 +1628,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket.on("room:youtube", (data: { videoId: string | null; startedBy?: string }) => {
       setActiveYoutubeId(data.videoId);
       setYoutubeStartedBy(data.videoId ? (data.startedBy || null) : null);
+      // A new (or cleared) video resets the per-user "I dismissed this" flag,
+      // so the next video gets a fresh chance to be shown.
+      setUserDismissedYoutube(false);
       if (!data.videoId) {
         setShowYoutube(false);
         setMiniPlayerMode(false);
@@ -6134,7 +6141,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          {activeYoutubeId && !showYoutube && (() => {
+          {activeYoutubeId && !showYoutube && !userDismissedYoutube && (() => {
             const broadcaster = participants.find(p => p.id === youtubeStartedBy);
             const thumb = `https://img.youtube.com/vi/${activeYoutubeId}/hqdefault.jpg`;
             const handleJoinWatch = () => {
@@ -6314,16 +6321,41 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   {ytQualityState === "slow" ? "Slow" : "Good"}
                 </div>
 
-                {/* Tiny "X watching" pill — top-right, mirrors the book reader's "X reading" pill */}
-                {(broadcaster || youtubeWatchers.size > 0) && (
-                  <div
-                    className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-[10px] font-medium px-2 py-1 rounded-full border border-white/15 shadow-md text-white pointer-events-none"
-                    data-testid="badge-yt-watchers-count"
+                {/* Top-right cluster: "X watching" pill + close button.
+                    The close button does different things depending on who clicks it:
+                      - Starter / room host : stops the video for everyone in the room
+                      - Anyone else (watcher): just hides the player + preview for themselves;
+                                               the room keeps watching, and they can re-join
+                                               from the side panel's "Now Watching" card. */}
+                <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                  {(broadcaster || youtubeWatchers.size > 0) && (
+                    <div
+                      className="flex items-center gap-1.5 bg-black/55 backdrop-blur-sm text-[10px] font-medium px-2 py-1 rounded-full border border-white/15 shadow-md text-white pointer-events-none"
+                      data-testid="badge-yt-watchers-count"
+                    >
+                      <Eye className="w-2.5 h-2.5 opacity-70" />
+                      {youtubeWatchers.size === 1 ? "1 watching" : `${youtubeWatchers.size} watching`}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (user?.id === youtubeStartedBy) {
+                        handleStopYoutube();
+                      } else {
+                        setShowYoutube(false);
+                        setUserDismissedYoutube(true);
+                        setMiniPlayerMode(false);
+                      }
+                    }}
+                    className="w-7 h-7 rounded-full bg-black/55 backdrop-blur-sm hover:bg-red-500/80 border border-white/15 flex items-center justify-center text-white shadow-md transition-colors"
+                    title={user?.id === youtubeStartedBy ? "Close video for everyone" : "Hide video (just for you)"}
+                    data-testid="button-yt-corner-close"
                   >
-                    <Eye className="w-2.5 h-2.5 opacity-70" />
-                    {youtubeWatchers.size === 1 ? "1 watching" : `${youtubeWatchers.size} watching`}
-                  </div>
-                )}
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
                 {/* Floating watch-party reactions — emojis drift up from the bottom */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden z-10" data-testid="yt-floating-reactions">
