@@ -17,7 +17,9 @@ export type Theme =
   | "blood-moon"
   | "slate-noir"
   | "neural-pulse"
-  | "premium-atmosphere";
+  | "premium-atmosphere"
+  | "neomorphic-dark"
+  | "neomorphic-light";
 
 export interface ThemeDefinition {
   id: Theme;
@@ -36,6 +38,20 @@ export const THEMES: ThemeDefinition[] = [
     swatchColors: ["#03050f", "#1a0b2f", "#ff5c31"],
     isDark: true,
     animated: true,
+  },
+  {
+    id: "neomorphic-dark",
+    label: "Neomorphic Dark",
+    description: "Sculpted soft 3D depth",
+    swatchColors: ["#1c1b29", "#252338", "#c026d3"],
+    isDark: true,
+  },
+  {
+    id: "neomorphic-light",
+    label: "Neomorphic Light",
+    description: "Soft tactile lightness",
+    swatchColors: ["#e6e7ee", "#f0f1f7", "#7c5cff"],
+    isDark: false,
   },
   {
     id: "dark",
