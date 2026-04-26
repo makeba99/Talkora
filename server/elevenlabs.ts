@@ -232,15 +232,22 @@ export async function elevenLabsHealth(): Promise<{
   const key = pickKey();
   if (!key) return { available: true, reachable: false, keyCount, exhausted };
 
+  // Use /voices (TTS-scoped keys can read voices). Avoid /user/subscription
+  // because TTS-only keys reject it with a missing-permission error even
+  // though the key itself is perfectly valid for TTS calls.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3000);
   try {
-    const res = await fetch(`${BASE_URL}/user/subscription`, {
+    const res = await fetch(`${BASE_URL}/voices?show_legacy=false&page_size=1`, {
       method: "GET",
       headers: { "xi-api-key": key, "User-Agent": "Vextorn/1.0 (+health)" },
       signal: controller.signal,
     });
-    return { available: true, reachable: res.ok, keyCount, exhausted };
+    // 200 = perfect. 401/403 = key invalid. Anything else (incl. permission
+    // errors on non-essential scopes) we still treat as "key probably works
+    // for TTS" — only TTS itself is the source of truth.
+    const reachable = res.ok || (res.status !== 401 && res.status !== 403);
+    return { available: true, reachable, keyCount, exhausted };
   } catch {
     return { available: true, reachable: false, keyCount, exhausted };
   } finally {
