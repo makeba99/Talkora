@@ -452,17 +452,15 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
   const isPremiumAtmosphere = theme === "premium-atmosphere" || (room as any).roomTheme === "premium-atmosphere";
   const glow = getThemeGlowColor(isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme);
-  // Show ONLY the people who are actually in the room — never empty placeholder
-  // tiles. The "+ Join Spot" hint at the bottom already tells viewers there is
-  // room for more, so we don't waste card space on dead slots.
-  const displayCount = Math.min(participants.length, 10);
+  // Show ALL slots up to maxUsers — filled ones render participant avatars,
+  // empty ones render a ghost tile so viewers can see how many spots are open.
+  const displayCount = Math.min(room.maxUsers, 12);
   const displaySlots = Array.from({ length: displayCount });
 
   /* viewport-based scale factor so the participant circles grow on bigger screens
-     while the card itself stays a comfortable, fixed-feeling size. Sizing now
-     scales off the *actual* visible participant count instead of the room's
-     max capacity — that way a 6-cap room with only 2 people inside still shows
-     two large, friendly avatars rather than tiny ones surrounded by emptiness. */
+     while the card itself stays a comfortable, fixed-feeling size. Sizing is
+     based on maxUsers (total capacity) so the grid always fills the card area
+     proportionally whether slots are filled or empty. */
   const [circleScale, setCircleScale] = useState(1);
   useEffect(() => {
     const compute = () => {
@@ -678,6 +676,70 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               {settingsButton}
             </div>
           </div>
+
+          {/* ── YouTube watch-party strip ── shown when the card has a live
+              YouTube hologram, so visitors can see who's watching together */}
+          {hologramVideoUrl && extractYoutubeId(hologramVideoUrl) && participants.length > 0 && (
+            <div className="px-4 pb-2" data-testid={`youtube-watchers-${room.id}`}>
+              <div
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl"
+                style={{
+                  background: "rgba(0,0,0,0.45)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                  border: "1px solid rgba(255,60,60,0.22)",
+                }}
+              >
+                {/* Red YouTube play icon */}
+                <div className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-sm" style={{ background: "#ff0000" }}>
+                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                    <polygon points="2,1 8,4.5 2,8" fill="white" />
+                  </svg>
+                </div>
+                <span className="text-[10px] text-white/60 font-medium tracking-wide flex-1 truncate">Watching together</span>
+                {/* Stacked watcher avatars */}
+                <div className="flex items-center" style={{ marginLeft: "auto" }}>
+                  {participants.slice(0, 4).map((p, idx) => (
+                    <div
+                      key={p.id}
+                      className="rounded-full border-2 overflow-hidden flex-shrink-0"
+                      style={{
+                        width: 22,
+                        height: 22,
+                        marginLeft: idx === 0 ? 0 : -8,
+                        borderColor: "rgba(0,0,0,0.6)",
+                        zIndex: 4 - idx,
+                        position: "relative",
+                      }}
+                    >
+                      <Avatar style={{ width: 22, height: 22 }} className="rounded-full">
+                        <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} className="rounded-full" />
+                        <AvatarFallback className="rounded-full text-[8px] font-bold bg-[#1a1520] text-white/80">
+                          {getUserInitials(p)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  ))}
+                  {participants.length > 4 && (
+                    <div
+                      className="rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                      style={{
+                        width: 22,
+                        height: 22,
+                        marginLeft: -8,
+                        borderColor: "rgba(0,0,0,0.6)",
+                        background: "rgba(80,80,120,0.8)",
+                        zIndex: 0,
+                        position: "relative",
+                      }}
+                    >
+                      <span className="text-[8px] font-bold text-white/80">+{participants.length - 4}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Body: unified neon ring circle grid ──
               `overflow-visible` so avatar rings/decorations that extend a few
