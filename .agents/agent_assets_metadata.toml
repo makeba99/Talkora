@@ -30,6 +30,12 @@ uri = "file://attached_assets/generated_images/eva-avatar.png"
 type = "image"
 title = "eva-detailed-ai-avatar"
 
+[[generated]]
+id = "0bTFffwHTDD1YF4GvdFwV"
+uri = "file://attached_assets/ai-tutor-female-neumorphic.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "eAZicIfOhMRQvIiWi6BAn"
 uri = "file://attached_assets/brand/vextorn-logo-horizontal.svg"

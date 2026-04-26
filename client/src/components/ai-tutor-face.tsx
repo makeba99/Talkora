@@ -1,6 +1,6 @@
 import type { Viseme, MouthShape } from "@/lib/ai-tutor/lipsync";
 import { MOUTH_SHAPES } from "@/lib/ai-tutor/lipsync";
-import femaleSrc from "@assets/ai-tutor-female-nobg.png";
+import femaleSrc from "@assets/ai-tutor-female-neumorphic.png";
 import maleSrc from "@assets/ai-tutor-male-nobg.png";
 
 interface AiTutorFaceProps {
@@ -14,14 +14,14 @@ export function AiTutorFace({ gender, viseme, speaking }: AiTutorFaceProps) {
   const isMale = gender === "Male";
   const imgSrc = isMale ? maleSrc : femaleSrc;
 
-  const mouthX = isMale ? 100 : 96;
-  const mouthY = isMale ? 130 : 122;
-  const mouthW = 44;
-  const skinColor = isMale ? "#b8956e" : "#c8977a";
-  const skinColorEdge = isMale ? "rgba(168,128,90,0)" : "rgba(192,138,106,0)";
+  const mouthX = isMale ? 100 : 100;
+  const mouthY = isMale ? 130 : 128;
+  const mouthW = isMale ? 44 : 38;
+  const skinColor = isMale ? "#b8956e" : "#e9c4b8";
+  const skinColorEdge = isMale ? "rgba(168,128,90,0)" : "rgba(233,196,184,0)";
   const gradId = isMale ? "skin-cover-m" : "skin-cover-f";
-  const lipU = isMale ? "#a87865" : "#cc7080";
-  const lipL = isMale ? "#bf9080" : "#d990a0";
+  const lipU = isMale ? "#a87865" : "#d8788a";
+  const lipL = isMale ? "#bf9080" : "#e6909e";
   const sx = mouthW / 60;
   const sy = 0.75;
   const tx = mouthX - 30 * sx;
