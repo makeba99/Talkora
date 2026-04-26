@@ -9,7 +9,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, LogIn, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass, ROOM_THEMES } from "@/components/profile-decorations";
@@ -936,35 +936,58 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               )}
             </div>
 
-            {/* Step In — 3D neumorphic door button */}
+            {/* Step In — 3D animated swinging door */}
             {isFull ? (
-              <button
-                disabled
-                className="door-step-btn door-step-btn--disabled"
+              <div
+                className="door-3d-wrap door-3d-disabled"
                 data-testid={`button-join-room-${room.id}`}
-                onClick={(e) => e.stopPropagation()}
               >
-                <LogIn className="w-3.5 h-3.5 opacity-40" />
-                <span>Full</span>
-              </button>
+                <div className="door-frame">
+                  <div className="door-interior" />
+                  <div className="door-panel">
+                    <div className="door-panel-inset door-panel-inset-top" />
+                    <div className="door-panel-inset door-panel-inset-bot" />
+                    <div className="door-knob" />
+                  </div>
+                </div>
+                <span className="door-3d-label">Full</span>
+              </div>
             ) : !isLoggedIn ? (
               <a
                 href="/api/login"
-                className="door-step-btn"
+                className="door-3d-wrap"
                 data-testid={`button-signin-room-${room.id}`}
+                onClick={(e) => e.stopPropagation()}
               >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Enter</span>
+                <div className="door-frame">
+                  <div className="door-interior" />
+                  <div className="door-panel">
+                    <div className="door-panel-inset door-panel-inset-top" />
+                    <div className="door-panel-inset door-panel-inset-bot" />
+                    <div className="door-knob" />
+                  </div>
+                </div>
+                <span className="door-3d-label">Enter</span>
               </a>
             ) : (
-              <button
-                className="door-step-btn"
-                onClick={() => onJoin(room.id)}
+              <div
+                className="door-3d-wrap"
+                role="button"
+                tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
+                onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
               >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Enter</span>
-              </button>
+                <div className="door-frame">
+                  <div className="door-interior" />
+                  <div className="door-panel">
+                    <div className="door-panel-inset door-panel-inset-top" />
+                    <div className="door-panel-inset door-panel-inset-bot" />
+                    <div className="door-knob" />
+                  </div>
+                </div>
+                <span className="door-3d-label">Enter</span>
+              </div>
             )}
           </div>
         </div>
