@@ -24,11 +24,19 @@ const API_KEYS: string[] = RAW_KEYS
   .map(s => s.trim())
   .filter(s => s.length > 0);
 
-// Default to "Sarah" (mature, reassuring, confident) — works on the free tier.
-// Rachel (21m00Tcm4TlvDq8ikWAM) sounds great but is a library voice that
-// requires a paid plan. Override via ELEVENLABS_EVA_VOICE_ID if upgrading.
-const DEFAULT_VOICE_ID = (process.env.ELEVENLABS_EVA_VOICE_ID || "EXAVITQu4vr4xnSDxMaL").trim(); // Sarah
-const MODEL_ID = (process.env.ELEVENLABS_MODEL_ID || "eleven_turbo_v2_5").trim();
+// Default to "Jessica" (playful, bright, warm) — gives Eva that natural,
+// emotional Sesame-Maya feel rather than Turbo's flatter delivery.
+// All free-tier-safe voice options:
+//   Jessica  cgSgspJ2msm6clMCkdW9  (warm, expressive — current default)
+//   Bella    hpp4J3VqNfWAUOO0d1Us  (professional, bright, warm)
+//   Lily     pFZP5JQG7iQjIQuC4Bku  (velvety actress)
+//   Sarah    EXAVITQu4vr4xnSDxMaL  (mature, reassuring, confident)
+// Override via ELEVENLABS_EVA_VOICE_ID env var.
+const DEFAULT_VOICE_ID = (process.env.ELEVENLABS_EVA_VOICE_ID || "cgSgspJ2msm6clMCkdW9").trim(); // Jessica
+// `eleven_multilingual_v2` is dramatically more emotional and natural than
+// `eleven_turbo_v2_5` (which is tuned for ~300ms latency and sounds flatter).
+// The extra ~600ms latency is worth it for a tutor voice. Free-tier-safe.
+const MODEL_ID = (process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2").trim();
 const TIMEOUT_MS = Math.max(2000, Number(process.env.ELEVENLABS_TIMEOUT_MS || 30000));
 const BASE_URL = "https://api.elevenlabs.io/v1";
 const COOLDOWN_MS = 60 * 60 * 1000; // exhausted keys retry after 1 hour
@@ -127,12 +135,15 @@ export async function elevenLabsSynthesize(req: ElevenLabsTtsRequest): Promise<E
   // ElevenLabs. Including them on a free-tier key causes the API to respond
   // with HTTP 402 paid_plan_required, even though the model itself is free.
   // Keep voice_settings to the two free-tier-safe knobs only.
+  //   stability ↓ → more emotional/expressive (Sesame-like) but more variable
+  //   stability ↑ → more consistent/monotone
+  // 0.30 hits the sweet spot: warm, expressive, not robotic, not chaotic.
   const payload: Record<string, unknown> = {
     text: safeText,
     model_id: MODEL_ID,
     voice_settings: {
-      stability: 0.40,
-      similarity_boost: 0.75,
+      stability: 0.30,
+      similarity_boost: 0.80,
     },
   };
   if (req.language && req.language.length >= 2) {
