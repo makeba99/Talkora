@@ -1,7 +1,7 @@
 import type { Viseme, MouthShape } from "@/lib/ai-tutor/lipsync";
 import { MOUTH_SHAPES } from "@/lib/ai-tutor/lipsync";
-import femaleSrc from "@assets/ai-tutor-female.png";
-import maleSrc from "@assets/ai-tutor-male.png";
+import femaleSrc from "@assets/ai-tutor-female-nobg.png";
+import maleSrc from "@assets/ai-tutor-male-nobg.png";
 
 interface AiTutorFaceProps {
   gender: "Male" | "Female";
@@ -28,11 +28,33 @@ export function AiTutorFace({ gender, viseme, speaking }: AiTutorFaceProps) {
   const ty = mouthY - 14 * sy;
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", borderRadius: "50%" }}>
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        borderRadius: "50%",
+        background:
+          "radial-gradient(circle at 50% 38%, #1d1a2e 0%, #15131f 55%, #0d0b14 100%)",
+        boxShadow:
+          "inset 0 2px 6px rgba(255,255,255,0.04), inset 0 -3px 8px rgba(0,0,0,0.55)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(ellipse 70% 55% at 50% 40%, rgba(120,90,200,0.18) 0%, rgba(120,90,200,0) 70%)",
+          pointerEvents: "none",
+        }}
+      />
       <img
         src={imgSrc}
         alt={`${gender} AI tutor`}
         style={{
+          position: "relative",
           width: "100%",
           height: "100%",
           objectFit: "cover",
