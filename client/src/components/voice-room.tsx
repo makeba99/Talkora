@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AiTutorFace } from "@/components/ai-tutor-face";
 import { VextornMark } from "@/components/vextorn-logo";
@@ -41,10 +41,81 @@ import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
 import type { Room, User, Follow } from "@shared/schema";
+import evaAvatarUrl from "@assets/generated_images/eva-avatar.png";
 
 interface VoiceRoomProps {
   room: Room;
   onLeave: (reason?: "joined-another-room") => void;
+}
+
+// ── Neumorphic persona card (used in the AI tutor "Choose Your Tutor" picker) ──
+// Soft, single-tone background with paired light + dark shadows so the card
+// feels like a sculpted button rather than a flat overlay panel. Press state
+// inverts to inset shadows for tactile feedback.
+function NeumorphicPersonaCard(props: {
+  testId: string;
+  onClick: () => void;
+  avatar: ReactNode;
+  name: string;
+  description: string;
+  badge?: string;
+  nameColor?: string;
+}) {
+  const [pressed, setPressed] = useState(false);
+  const restShadow = "8px 8px 18px rgba(163,177,198,0.55), -8px -8px 18px rgba(255,255,255,0.95)";
+  const pressedShadow = "inset 5px 5px 12px rgba(163,177,198,0.55), inset -5px -5px 12px rgba(255,255,255,0.95)";
+  return (
+    <button
+      data-testid={props.testId}
+      onClick={props.onClick}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all"
+      style={{
+        background: "#e8eaf0",
+        boxShadow: pressed ? pressedShadow : restShadow,
+        transform: pressed ? "scale(0.99)" : "scale(1)",
+      }}
+    >
+      <div className="flex-shrink-0">{props.avatar}</div>
+      <div className="flex flex-col items-start min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[16px] font-semibold" style={{ color: props.nameColor || "#3b3f4b" }}>
+            {props.name}
+          </span>
+          {props.badge && (
+            <span
+              className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+              style={{
+                background: "#e8eaf0",
+                color: "#5563d3",
+                boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.45), inset -2px -2px 4px rgba(255,255,255,0.95)",
+              }}
+            >
+              {props.badge}
+            </span>
+          )}
+        </div>
+        <span className="text-[11px] mt-0.5" style={{ color: "#7c8290" }}>
+          {props.description}
+        </span>
+      </div>
+      <div
+        className="ml-auto w-7 h-7 rounded-full flex items-center justify-center"
+        style={{
+          background: "#e8eaf0",
+          boxShadow: pressed
+            ? "inset 2px 2px 4px rgba(163,177,198,0.45), inset -2px -2px 4px rgba(255,255,255,0.95)"
+            : "3px 3px 7px rgba(163,177,198,0.50), -3px -3px 7px rgba(255,255,255,0.95)",
+        }}
+      >
+        <ChevronRight className="w-3.5 h-3.5" style={{ color: "#5563d3" }} />
+      </div>
+    </button>
+  );
 }
 
 const AI_TUTOR_AVATARS = [
@@ -861,6 +932,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   useEffect(() => { aiTutorActiveRef.current = aiState.active; }, [aiState.active]);
   useEffect(() => { aiPersonaNameRef.current = aiPersonaName; }, [aiPersonaName]);
   useEffect(() => { welcomeUserRef.current = welcomeUser; }, [welcomeUser]);
+
+  // Bridge: when the Sesame TTS engine fails (Eva voice unreachable), surface
+  // a clear toast so the user knows their Modal deployment is offline rather
+  // than being silently confused by the AI going quiet or sounding wrong.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    (window as any).__vextornOnSesameError = (msg: string) => {
+      toast({
+        title: "Eva voice unavailable",
+        description: msg,
+        variant: "destructive",
+      });
+    };
+    return () => {
+      if (typeof window !== "undefined") {
+        delete (window as any).__vextornOnSesameError;
+      }
+    };
+  }, [toast]);
 
   // Track who is seated at the chess board so participant tiles can show a "spectate" badge
   useEffect(() => {
@@ -7399,137 +7489,120 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {aiPersonaPickerOpen && !aiTutorActive && (
             <div
               className="fixed inset-0 z-[80] flex items-center justify-center"
-              style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)" }}
+              style={{ background: "rgba(232,234,240,0.55)", backdropFilter: "blur(14px)" }}
               data-testid="ai-persona-picker-overlay"
               onClick={() => setAiPersonaPickerOpen(false)}
             >
+              {/* Neumorphic surface — soft single-tone background, no neon */}
               <div
-                className="relative flex flex-col items-center rounded-3xl overflow-hidden shadow-2xl mx-4"
+                className="relative flex flex-col items-center rounded-[28px] mx-4"
                 style={{
-                  background: "rgba(8,12,32,0.97)",
-                  border: "1px solid rgba(0,225,255,0.22)",
-                  boxShadow: "0 30px 80px rgba(0,0,0,0.80), 0 0 60px rgba(0,100,255,0.08)",
-                  width: "min(90vw, 420px)",
-                  padding: "32px 28px 28px",
+                  background: "#e8eaf0",
+                  boxShadow: "12px 12px 32px rgba(163,177,198,0.55), -12px -12px 32px rgba(255,255,255,0.95)",
+                  width: "min(90vw, 440px)",
+                  padding: "30px 26px 26px",
                 }}
                 onClick={e => e.stopPropagation()}
               >
-                {/* Close */}
+                {/* Close (neumorphic round button) */}
                 <button
                   onClick={() => setAiPersonaPickerOpen(false)}
-                  className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-white/10"
-                  style={{ color: "rgba(255,255,255,0.40)" }}
+                  className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-95"
+                  style={{
+                    background: "#e8eaf0",
+                    boxShadow: "4px 4px 10px rgba(163,177,198,0.50), -4px -4px 10px rgba(255,255,255,0.92)",
+                    color: "#6b7280",
+                  }}
+                  onMouseDown={e => { e.currentTarget.style.boxShadow = "inset 3px 3px 6px rgba(163,177,198,0.55), inset -3px -3px 6px rgba(255,255,255,0.95)"; }}
+                  onMouseUp={e => { e.currentTarget.style.boxShadow = "4px 4px 10px rgba(163,177,198,0.50), -4px -4px 10px rgba(255,255,255,0.92)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = "4px 4px 10px rgba(163,177,198,0.50), -4px -4px 10px rgba(255,255,255,0.92)"; }}
                   data-testid="button-persona-picker-close"
                 >
                   <X className="w-4 h-4" />
                 </button>
 
                 {/* Header */}
-                <div className="flex items-center gap-2 mb-2">
-                  <BrainCircuit className="w-5 h-5" style={{ color: "rgba(0,225,255,0.80)" }} />
-                  <span className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>Choose Your Tutor</span>
+                <div
+                  className="flex items-center gap-2 mb-1.5 px-4 py-2 rounded-full"
+                  style={{
+                    background: "#e8eaf0",
+                    boxShadow: "inset 3px 3px 7px rgba(163,177,198,0.45), inset -3px -3px 7px rgba(255,255,255,0.95)",
+                  }}
+                >
+                  <BrainCircuit className="w-4 h-4" style={{ color: "#5563d3" }} />
+                  <span className="text-[14px] font-semibold" style={{ color: "#3b3f4b" }}>Choose Your Tutor</span>
                 </div>
-                <p className="text-[12px] text-center mb-8" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  Which tutor would you like? Your choice is locked for the session.
+                <p className="text-[12px] text-center mb-7 mt-3" style={{ color: "#7c8290" }}>
+                  Pick a tutor — your choice is locked for the session.
                 </p>
 
-                {/* Persona buttons */}
-                <div className="flex flex-col gap-3 w-full">
+                {/* Persona cards (neumorphic) */}
+                <div className="flex flex-col gap-4 w-full">
                   {/* Female — Afi K */}
-                  <button
-                    data-testid="button-persona-female"
-                    onClick={() => {
-                      setAiPersonaPickerOpen(false);
-                      startWithPersona("Female", "Afi K");
-                    }}
-                    className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(255,100,180,0.14) 0%, rgba(200,80,220,0.10) 100%)",
-                      border: "1.5px solid rgba(255,120,200,0.35)",
-                      boxShadow: "0 4px 20px rgba(255,80,180,0.10)",
-                    }}
-                  >
-                    {/* Avatar circle */}
-                    <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
-                      style={{ background: "linear-gradient(135deg, rgba(255,120,200,0.50) 0%, rgba(180,60,220,0.40) 100%)", border: "2px solid rgba(255,140,210,0.50)" }}>
-                      ♀
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <span className="text-[16px] font-bold" style={{ color: "rgba(255,180,220,0.95)" }}>Afi K</span>
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>Funny · flirty · welcomes joiners by name</span>
-                    </div>
-                    <div className="ml-auto">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(255,120,200,0.20)", border: "1px solid rgba(255,140,210,0.35)" }}>
-                        <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(255,180,220,0.80)" }} />
+                  <NeumorphicPersonaCard
+                    testId="button-persona-female"
+                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Female", "Afi K"); }}
+                    avatar={
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
+                        style={{
+                          background: "#e8eaf0",
+                          boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.45), inset -3px -3px 6px rgba(255,255,255,0.92)",
+                          color: "#d65a9c",
+                        }}>
+                        ♀
                       </div>
-                    </div>
-                  </button>
+                    }
+                    name="Afi K"
+                    description="Funny · flirty · welcomes joiners by name"
+                    nameColor="#b3417e"
+                  />
 
                   {/* Male — Dude Lebowski */}
-                  <button
-                    data-testid="button-persona-male"
-                    onClick={() => {
-                      setAiPersonaPickerOpen(false);
-                      startWithPersona("Male", "Dude");
-                    }}
-                    className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(60,140,255,0.14) 0%, rgba(40,100,220,0.10) 100%)",
-                      border: "1.5px solid rgba(80,160,255,0.35)",
-                      boxShadow: "0 4px 20px rgba(60,140,255,0.10)",
-                    }}
-                  >
-                    {/* Avatar circle */}
-                    <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
-                      style={{ background: "linear-gradient(135deg, rgba(60,140,255,0.50) 0%, rgba(30,80,200,0.40) 100%)", border: "2px solid rgba(80,160,255,0.50)" }}>
-                      ♂
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <span className="text-[16px] font-bold" style={{ color: "rgba(140,190,255,0.95)" }}>Dude Lebowski</span>
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>Male tutor · Laid-back, conversational voice</span>
-                    </div>
-                    <div className="ml-auto">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(60,140,255,0.20)", border: "1px solid rgba(80,160,255,0.35)" }}>
-                        <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(140,190,255,0.80)" }} />
+                  <NeumorphicPersonaCard
+                    testId="button-persona-male"
+                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Dude"); }}
+                    avatar={
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
+                        style={{
+                          background: "#e8eaf0",
+                          boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.45), inset -3px -3px 6px rgba(255,255,255,0.92)",
+                          color: "#3b6fd8",
+                        }}>
+                        ♂
                       </div>
-                    </div>
-                  </button>
+                    }
+                    name="Dude Lebowski"
+                    description="Laid-back · conversational · easy-going"
+                    nameColor="#2f5bbd"
+                  />
 
-                  {/* Eva — Sesame CSM (new AI voice) */}
-                  <button
-                    data-testid="button-persona-eva"
-                    onClick={() => {
-                      setAiPersonaPickerOpen(false);
-                      startWithPersona("Eva", "Eva");
-                    }}
-                    className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(0,225,255,0.16) 0%, rgba(0,140,255,0.12) 100%)",
-                      border: "1.5px solid rgba(0,225,255,0.45)",
-                      boxShadow: "0 4px 22px rgba(0,200,255,0.14)",
-                    }}
-                  >
-                    {/* Avatar circle */}
-                    <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
-                      style={{ background: "linear-gradient(135deg, rgba(0,225,255,0.55) 0%, rgba(0,120,220,0.40) 100%)", border: "2px solid rgba(0,225,255,0.55)" }}>
-                      ✨
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[16px] font-bold" style={{ color: "rgba(160,235,255,0.97)" }}>Eva</span>
-                        <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: "rgba(0,225,255,0.18)", color: "rgba(0,225,255,0.95)", border: "1px solid rgba(0,225,255,0.40)" }}>NEW AI</span>
+                  {/* Eva — Sesame CSM (real portrait avatar) */}
+                  <NeumorphicPersonaCard
+                    testId="button-persona-eva"
+                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Eva"); }}
+                    avatar={
+                      <div className="w-14 h-14 rounded-full p-[3px]"
+                        style={{
+                          background: "#e8eaf0",
+                          boxShadow: "4px 4px 10px rgba(163,177,198,0.50), -4px -4px 10px rgba(255,255,255,0.95)",
+                        }}>
+                        <img
+                          src={evaAvatarUrl}
+                          alt="Eva avatar"
+                          className="w-full h-full rounded-full object-cover"
+                          style={{ boxShadow: "inset 0 0 0 1px rgba(163,177,198,0.25)" }}
+                          data-testid="img-eva-avatar"
+                        />
                       </div>
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>Sesame CSM · Natural & expressive</span>
-                    </div>
-                    <div className="ml-auto">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(0,225,255,0.22)", border: "1px solid rgba(0,225,255,0.45)" }}>
-                        <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(160,235,255,0.85)" }} />
-                      </div>
-                    </div>
-                  </button>
+                    }
+                    name="Eva"
+                    badge="NEW AI"
+                    description="Sesame CSM · Natural & expressive"
+                    nameColor="#3b3f4b"
+                  />
                 </div>
 
-                <p className="text-[10px] mt-5" style={{ color: "rgba(255,255,255,0.25)" }}>
+                <p className="text-[10px] mt-6" style={{ color: "#9aa0ad" }}>
                   Voice selection is locked once the session starts
                 </p>
               </div>

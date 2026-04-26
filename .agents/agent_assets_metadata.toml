@@ -24,6 +24,12 @@ uri = "file://client/src/assets/ai-tutor-male.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "y8rs5xmLZhVz7DOXyzRTV"
+uri = "file://attached_assets/generated_images/eva-avatar.png"
+type = "image"
+title = "eva-avatar-soft-portrait"
+
 [[outputs]]
 id = "eAZicIfOhMRQvIiWi6BAn"
 uri = "file://attached_assets/brand/vextorn-logo-horizontal.svg"

@@ -122,8 +122,17 @@ export class SesameTtsEngine {
       });
 
       if (!res.ok) {
-        // Surface the error so the caller can fall back to the browser engine
+        // Surface the error so the caller can show a toast — DO NOT silently
+        // fall back to the browser voice (the user explicitly picked Eva).
         const errText = await res.text().catch(() => "");
+        const msg = res.status === 502 || res.status === 504
+          ? "Eva voice is offline — your Sesame server isn't responding. Check your Modal deployment."
+          : res.status === 501
+            ? "Eva voice isn't configured on this server."
+            : `Eva voice failed (${res.status})`;
+        if (typeof window !== "undefined" && (window as any).__vextornOnSesameError) {
+          (window as any).__vextornOnSesameError(msg);
+        }
         throw new Error(`tts ${res.status}: ${errText.slice(0, 120)}`);
       }
 
