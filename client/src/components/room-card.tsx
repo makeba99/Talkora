@@ -309,6 +309,18 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const avatarSize = getAvatarSizeClass(room.maxUsers);
   const fallbackText = getFallbackTextClass(room.maxUsers);
   const [requestOpen, setRequestOpen] = useState(false);
+
+  const knockMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/rooms/${room.id}/knock`);
+    },
+    onSuccess: () => {
+      toast({ title: "🚪 Knock sent!", description: "The room owner has been notified. They can let you in." });
+    },
+    onError: () => {
+      toast({ title: "Couldn't send knock", description: "Please try again.", variant: "destructive" });
+    },
+  });
   const participantIds = participants.map((p) => p.id);
 
   const { data: fetchedFollowerCounts = {} } = useQuery<Record<string, number>>({
@@ -881,45 +893,28 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 </span>
               </div>
 
-              {/* Message / Request-to-join button */}
-              {isLoggedIn && onOpenDm && (
-                <Popover open={requestOpen} onOpenChange={setRequestOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setRequestOpen(true); }}
-                      className={`transition-all duration-200 ${isFull ? "text-amber-400 hover:text-amber-300 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" : "text-white/35 hover:text-white/70"}`}
-                      title={isFull ? "Request to join" : "Message owner"}
-                      data-testid={`button-messages-${room.id}`}
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-52 p-0 border-0 shadow-2xl overflow-hidden"
-                    style={{ background: "linear-gradient(145deg,hsl(228 18%,14%) 0%,hsl(228 16%,10%) 100%)", boxShadow: "-4px -4px 10px rgba(255,255,255,0.04),6px 6px 18px rgba(0,0,0,0.85),inset 0 1px 0 rgba(255,255,255,0.07)" }}
-                    align="start"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="p-3 flex flex-col gap-2.5">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
-                        <p className="text-xs font-bold text-white">{isFull ? "Request to Join" : "Message Owner"}</p>
-                      </div>
-                      {isFull && (
-                        <p className="text-[11px] text-white/55 leading-snug">
-                          Room is full. Send a knock to the host — they may open a spot for you.
-                        </p>
-                      )}
-                      <button
-                        className="neu-btn-orange flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-xs font-bold"
-                        onClick={() => { onOpenDm(room.ownerId); setRequestOpen(false); }}
-                      >
-                        <MessageSquare className="w-3 h-3" />
-                        {isFull ? "🚪 Knock knock" : "Open Chat"}
-                      </button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+              {/* Knock / Message button */}
+              {isLoggedIn && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isFull) {
+                      knockMutation.mutate();
+                    } else if (onOpenDm) {
+                      onOpenDm(room.ownerId);
+                    }
+                  }}
+                  disabled={knockMutation.isPending}
+                  className={`transition-all duration-200 disabled:opacity-50 ${isFull ? "text-amber-400 hover:text-amber-300 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" : "text-white/35 hover:text-white/70"}`}
+                  title={isFull ? "🚪 Knock knock — notify the owner" : "Message owner"}
+                  data-testid={`button-messages-${room.id}`}
+                >
+                  {knockMutation.isPending ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  )}
+                </button>
               )}
 
               {isLoggedIn && onVote && (

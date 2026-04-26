@@ -1461,6 +1461,35 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/rooms/:id/knock", isAuthenticated, async (req: any, res) => {
+    try {
+      const roomId = req.params.id;
+      const requesterId = (req.user as any).id;
+      const room = await storage.getRoom(roomId);
+      if (!room) return res.status(404).json({ message: "Room not found" });
+      if (room.ownerId === requesterId) return res.status(400).json({ message: "You own this room" });
+
+      await storage.createNotification({
+        userId: room.ownerId,
+        fromUserId: requesterId,
+        type: `join_request:${roomId}`,
+      });
+
+      const ownerSocketId = userSockets.get(room.ownerId);
+      if (ownerSocketId) {
+        io.to(ownerSocketId).emit("admin:notification", {
+          type: "join_request",
+          roomId,
+          roomTitle: room.title,
+        });
+      }
+
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.post("/api/rooms/:id/welcome-media", isAuthenticated, uploadWelcomeMedia.single("media"), async (req: any, res) => {
     try {
       const roomId = req.params.id;

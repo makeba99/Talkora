@@ -52,7 +52,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
   useEffect(() => {
     if (!socket) return;
 
-    const refreshNotifications = (event?: { type?: string }) => {
+    const refreshNotifications = (event?: { type?: string; roomTitle?: string }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       if (event?.type === "admin_promotion") {
@@ -76,6 +76,12 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
       }
       if (event?.type === "badge_awarded") {
         queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      }
+      if (event?.type === "join_request") {
+        toast({
+          title: "🚪 Someone's knocking!",
+          description: `A user wants to join "${event.roomTitle || "your room"}"`,
+        });
       }
     };
 
@@ -126,6 +132,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
     if (notif.type === "security_suspicious_activity") return "Suspicious activity was detected on your account. Please review your recent sessions.";
     if (notif.type === "security_rate_limited") return "Your account hit a request rate limit. If this wasn't you, consider changing your password.";
     if (notif.type === "security_account_alert") return "A security alert has been logged on your account. Contact support if you need help.";
+    if (notif.type.startsWith("join_request:")) return `🚪 ${getUserDisplayName(fromUser)} is knocking — they want to join your room!`;
     return notif.type;
   };
 
@@ -137,6 +144,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
     if (notif.type === "admin_restriction_lifted") return <ShieldOff className="w-4 h-4 text-green-400" />;
     if (notif.type.startsWith("badge_awarded:")) return <Award className="w-4 h-4 text-amber-400" />;
     if (notif.type.startsWith("security_")) return <ShieldAlert className="w-4 h-4 text-red-400" />;
+    if (notif.type.startsWith("join_request:")) return null;
     return null;
   };
 
@@ -190,7 +198,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
                 return (
                   <div
                     key={notif.id}
-                    className={`flex items-center gap-3 p-2 rounded-md ${!notif.read ? (notif.type.startsWith("security_") ? "bg-red-500/8" : "bg-primary/5") : ""}`}
+                    className={`flex items-center gap-3 p-2 rounded-md ${!notif.read ? (notif.type.startsWith("security_") ? "bg-red-500/8" : notif.type.startsWith("join_request:") ? "bg-amber-500/8" : "bg-primary/5") : ""}`}
                     data-testid={`notification-${notif.id}`}
                   >
                     {icon ? (
