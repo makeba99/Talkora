@@ -5931,6 +5931,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0">∞ Unlimited</SelectItem>
                   {[2, 4, 6, 8, 10, 12].map((n) => (
                     <SelectItem key={n} value={String(n)}>{n} people</SelectItem>
                   ))}

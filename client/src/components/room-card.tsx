@@ -303,10 +303,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme } = useTheme();
-  const isFull = participants.length >= room.maxUsers;
+  const isUnlimited = room.maxUsers === 0;
+  const isFull = !isUnlimited && participants.length >= room.maxUsers;
   const slots = Array.from({ length: Math.min(room.maxUsers, 12) });
   const avatarSize = getAvatarSizeClass(room.maxUsers);
   const fallbackText = getFallbackTextClass(room.maxUsers);
+  const [requestOpen, setRequestOpen] = useState(false);
   const participantIds = participants.map((p) => p.id);
 
   const { data: fetchedFollowerCounts = {} } = useQuery<Record<string, number>>({
@@ -452,9 +454,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
   const isPremiumAtmosphere = theme === "premium-atmosphere" || (room as any).roomTheme === "premium-atmosphere";
   const glow = getThemeGlowColor(isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme);
-  // Show ALL slots up to maxUsers — filled ones render participant avatars,
-  // empty ones render a ghost tile so viewers can see how many spots are open.
-  const displayCount = Math.min(room.maxUsers, 12);
+  // Unlimited rooms (maxUsers===0) only show filled participants, no ghost tiles.
+  // Capped rooms show ALL slots so viewers can see how many spots are open.
+  const displayCount = isUnlimited
+    ? Math.min(participants.length, 12)
+    : Math.min(room.maxUsers, 12);
   const displaySlots = Array.from({ length: displayCount });
 
   /* viewport-based scale factor so the participant circles grow on bigger screens
@@ -627,7 +631,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             : "linear-gradient(160deg, rgba(16, 20, 50, 0.88) 0%, rgba(11, 15, 42, 0.92) 100%)",
           backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
           WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
-          height: isPremiumAtmosphere ? 348 : 330,
+          height: isPremiumAtmosphere ? 370 : 352,
         }}
       >
         {isPremiumAtmosphere && (
@@ -872,13 +876,52 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-white/50">
                 <Users className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-medium">{participants.length}/{room.maxUsers}</span>
+                <span className="text-[11px] font-medium">
+                  {participants.length}/{isUnlimited ? "∞" : room.maxUsers}
+                </span>
               </div>
+
+              {/* Message / Request-to-join button */}
               {isLoggedIn && onOpenDm && (
-                <button className="text-white/35 hover:text-white/70 transition-colors" title="Messages" data-testid={`button-messages-${room.id}`}>
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </button>
+                <Popover open={requestOpen} onOpenChange={setRequestOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setRequestOpen(true); }}
+                      className={`transition-all duration-200 ${isFull ? "text-amber-400 hover:text-amber-300 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" : "text-white/35 hover:text-white/70"}`}
+                      title={isFull ? "Request to join" : "Message owner"}
+                      data-testid={`button-messages-${room.id}`}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-52 p-0 border-0 shadow-2xl overflow-hidden"
+                    style={{ background: "linear-gradient(145deg,hsl(228 18%,14%) 0%,hsl(228 16%,10%) 100%)", boxShadow: "-4px -4px 10px rgba(255,255,255,0.04),6px 6px 18px rgba(0,0,0,0.85),inset 0 1px 0 rgba(255,255,255,0.07)" }}
+                    align="start"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-3 flex flex-col gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+                        <p className="text-xs font-bold text-white">{isFull ? "Request to Join" : "Message Owner"}</p>
+                      </div>
+                      {isFull && (
+                        <p className="text-[11px] text-white/55 leading-snug">
+                          Room is full. Send a knock to the host — they may open a spot for you.
+                        </p>
+                      )}
+                      <button
+                        className="neu-btn-orange flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-xs font-bold"
+                        onClick={() => { onOpenDm(room.ownerId); setRequestOpen(false); }}
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        {isFull ? "🚪 Knock knock" : "Open Chat"}
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               )}
+
               {isLoggedIn && onVote && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onVote(); }}
@@ -898,32 +941,34 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               )}
             </div>
 
+            {/* Step In — 3D neumorphic door button */}
             {isFull ? (
               <button
                 disabled
-                className="neu-btn flex items-center gap-2 px-5 py-2 rounded-full text-white/35 text-xs font-bold cursor-not-allowed tracking-wide"
+                className="door-step-btn door-step-btn--disabled"
                 data-testid={`button-join-room-${room.id}`}
+                onClick={(e) => e.stopPropagation()}
               >
-                <Footprints className="w-4 h-4" />
-                Full
+                <LogIn className="w-3.5 h-3.5 opacity-40" />
+                <span>Full</span>
               </button>
             ) : !isLoggedIn ? (
               <a
                 href="/api/login"
-                className="neu-btn-orange step-in-btn flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold tracking-wide"
+                className="door-step-btn"
                 data-testid={`button-signin-room-${room.id}`}
               >
-                <Footprints className="w-4 h-4 animate-bounce" />
-                Step In
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Enter</span>
               </a>
             ) : (
               <button
-                className="neu-btn-orange step-in-btn flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold tracking-wide"
+                className="door-step-btn"
                 onClick={() => onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
               >
-                <Footprints className="w-4 h-4 animate-bounce" />
-                Step In
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Enter</span>
               </button>
             )}
           </div>
@@ -1002,6 +1047,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0">∞ Unlimited</SelectItem>
                   {[2, 3, 4, 6, 8, 10, 12].map((n) => (
                     <SelectItem key={n} value={String(n)}>{n} people</SelectItem>
                   ))}
