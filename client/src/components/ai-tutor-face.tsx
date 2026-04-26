@@ -1,11 +1,16 @@
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
 import femaleSrc from "@assets/ai-tutor-female-v3.png";
 import maleSrc from "@assets/ai-tutor-male-neumorphic.png";
+import evaSrc from "@assets/generated_images/eva-avatar.png";
 
 interface AiTutorFaceProps {
   gender: "Male" | "Female";
   viseme: Viseme;
   speaking: boolean;
+  // The actual persona name lets us pick the right portrait when two personas
+  // share the same gender (Afi K and Eva are both "Female" but must look
+  // visibly different so users can tell which voice they picked).
+  personaName?: string;
 }
 
 // Map a viseme to an amplitude estimate in [0..1]. The Eva TTS engine and the
@@ -21,9 +26,11 @@ const VISEME_AMPLITUDE: Record<Viseme, number> = {
   ah: 1.0,
 };
 
-export function AiTutorFace({ gender, viseme, speaking }: AiTutorFaceProps) {
+export function AiTutorFace({ gender, viseme, speaking, personaName }: AiTutorFaceProps) {
   const isMale = gender === "Male";
-  const imgSrc = isMale ? maleSrc : femaleSrc;
+  const isEva = personaName === "Eva";
+  // Eva has her own portrait so she doesn't visually clash with Afi K (also female).
+  const imgSrc = isEva ? evaSrc : isMale ? maleSrc : femaleSrc;
 
   // Amplitude in [0..1] — drives the underglow intensity and a tiny face
   // breathe-scale. When not speaking we ease back to 0 (resting).

@@ -1983,6 +1983,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (data.userId === user.id) return;
       if (data.active) {
         setAvailableScreenUsers((prev) => { const n = new Set(Array.from(prev)); n.add(data.userId); return n; });
+        // A screen share takes over the visual focus of the room. If a YouTube
+        // watch party is active, automatically dismiss the YouTube viewer for
+        // everyone — the broadcaster stops the video for the whole room, while
+        // watchers just hide their player. This avoids overlapping
+        // full-screen surfaces fighting for attention.
+        if (youtubeStartedByRef.current) {
+          if (user.id === youtubeStartedByRef.current) {
+            try { handleStopYoutube(); } catch (_) {}
+          } else {
+            setShowYoutube(false);
+            setMiniPlayerMode(false);
+          }
+        }
       } else {
         remoteScreenStreams.current.delete(data.userId);
         setAvailableScreenUsers((prev) => { const n = new Set(prev); n.delete(data.userId); return n; });
@@ -3356,6 +3369,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       screenStream.current = stream;
       setIsScreenSharing(true);
       socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: true });
+      // Mirror the same auto-dismiss behaviour the room sees in the
+      // socket listener: a screen share takes over the focus, so stop or
+      // hide the YouTube watch party right away on the sharer's screen
+      // (the socket listener short-circuits for self).
+      if (activeYoutubeId) {
+        if (user?.id === youtubeStartedByRef.current) {
+          try { handleStopYoutube(); } catch (_) {}
+        } else {
+          setShowYoutube(false);
+          setMiniPlayerMode(false);
+        }
+      }
       if (screenVideoRef.current) {
         screenVideoRef.current.srcObject = stream;
       }
@@ -3636,6 +3661,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       handleJoinReadTogether(sharedBook);
       setSidePanelOpen(true);
       setSidePanelTab("read");
+      return;
+    }
+
+    // If the clicked participant is sharing their screen, open the screen
+    // viewer for me — same one-tap flow as joining a YouTube watch party.
+    // Tapping the same person again toggles the viewer back off.
+    if (isClickingOther && availableScreenUsers.has(peerId) && !isScreenSharing) {
+      handleWatchScreen(peerId);
       return;
     }
 
@@ -7702,7 +7735,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <div className="absolute inset-0 rounded-full overflow-hidden">
 
                       {/* ── Gender-distinct SVG face with integrated lip-sync mouth ── */}
-                      <AiTutorFace gender={aiTutorFaceStyle} viseme={currentViseme} speaking={aiTutorDisplaySpeaking} />
+                      <AiTutorFace gender={aiTutorFaceStyle} viseme={currentViseme} speaking={aiTutorDisplaySpeaking} personaName={aiPersonaName} />
 
                       {/* Speaking shimmer glow */}
                       {aiTutorDisplaySpeaking && (

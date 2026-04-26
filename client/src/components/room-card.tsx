@@ -452,35 +452,42 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
   const isPremiumAtmosphere = theme === "premium-atmosphere" || (room as any).roomTheme === "premium-atmosphere";
   const glow = getThemeGlowColor(isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme);
-  const displaySlots = Array.from({ length: Math.min(room.maxUsers, 10) });
+  // Show ONLY the people who are actually in the room — never empty placeholder
+  // tiles. The "+ Join Spot" hint at the bottom already tells viewers there is
+  // room for more, so we don't waste card space on dead slots.
+  const displayCount = Math.min(participants.length, 10);
+  const displaySlots = Array.from({ length: displayCount });
 
   /* viewport-based scale factor so the participant circles grow on bigger screens
-     while the card itself stays a comfortable, fixed-feeling size.
-     Crowded rooms (6+ users, two-row grids) scale less aggressively so the
-     avatars never push past the card's available vertical space. */
+     while the card itself stays a comfortable, fixed-feeling size. Sizing now
+     scales off the *actual* visible participant count instead of the room's
+     max capacity — that way a 6-cap room with only 2 people inside still shows
+     two large, friendly avatars rather than tiny ones surrounded by emptiness. */
   const [circleScale, setCircleScale] = useState(1);
   useEffect(() => {
     const compute = () => {
       const w = window.innerWidth;
-      const crowded = room.maxUsers >= 6;
-      if (w >= 1536) setCircleScale(crowded ? 1.12 : 1.35);
-      else if (w >= 1280) setCircleScale(crowded ? 1.04 : 1.18);
-      else if (w >= 1024) setCircleScale(crowded ? 0.98 : 1.05);
-      else setCircleScale(crowded ? 0.94 : 1);
+      const crowded = displayCount >= 5;
+      if (w >= 1536) setCircleScale(crowded ? 1.15 : 1.40);
+      else if (w >= 1280) setCircleScale(crowded ? 1.06 : 1.22);
+      else if (w >= 1024) setCircleScale(crowded ? 1.00 : 1.10);
+      else setCircleScale(crowded ? 0.96 : 1.02);
     };
     compute();
     window.addEventListener("resize", compute);
     return () => window.removeEventListener("resize", compute);
-  }, [room.maxUsers]);
+  }, [displayCount]);
 
-  /* circle size is based on room.maxUsers — fixed per room, never changes with current participants.
-     Sized so two rows fit comfortably inside the card body without ever clipping the top row. */
+  /* circle size is based on how many people are actually visible — small rooms
+     with 1–2 people get big, friendly portraits; crowded rooms shrink so two
+     rows still fit comfortably inside the card body without ever clipping. */
   const baseCircleSize =
-    room.maxUsers <= 2 ? 76 :
-    room.maxUsers <= 4 ? 68 :
-    room.maxUsers <= 6 ? 54 :
-    room.maxUsers <= 8 ? 46 :
-    room.maxUsers <= 10 ? 42 : 38;
+    displayCount <= 1 ? 92 :
+    displayCount === 2 ? 84 :
+    displayCount <= 4 ? 70 :
+    displayCount <= 6 ? 58 :
+    displayCount <= 8 ? 50 :
+    44;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -588,12 +595,17 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     ? "0 0 10px rgba(0,210,255,0.28), 0 0 22px rgba(110,50,255,0.18), 0 0 42px rgba(0,100,255,0.08)"
     : `0 0 10px ${glow.from.replace(/[\d.]+\)$/, "0.25)")}`;
 
-  /* ── grid columns: always 2 rows, balanced ── */
+  /* ── grid columns: balanced rows that hug the actual people present so we
+     never leave dead space on the right of the card. With 1–4 people we use a
+     single tight row; from 5+ we wrap into 2 rows. ── */
   const gridCols =
-    room.maxUsers <= 2 ? 2 :
-    room.maxUsers === 3 ? 3 :
-    room.maxUsers <= 4 ? 4 :
-    Math.ceil(room.maxUsers / 2);
+    displayCount <= 1 ? 1 :
+    displayCount === 2 ? 2 :
+    displayCount === 3 ? 3 :
+    displayCount === 4 ? 4 :
+    displayCount <= 6 ? 3 :
+    displayCount <= 8 ? 4 :
+    5;
 
   return (
     <div
