@@ -1,21 +1,41 @@
 import React from "react";
 
+// Profile decorations come in two tiers:
+//   • "professional" — restrained, premium-feeling animations suitable for
+//     work-like contexts (verified accounts, teachers, executives). Subtle
+//     palettes (indigo / violet / cyan / platinum / teal), slow motion,
+//     never gimmicky.
+//   • "expressive"   — the original playful set (fire, hearts, sparkles…)
+//     for users who want personality on their profile.
+// The "category" field lets the picker UI group them into separate sections
+// instead of one undifferentiated grid.
 export const PROFILE_DECORATIONS = [
-  { id: "none", label: "None", description: "No decoration" },
-  { id: "cosmic", label: "🌀 Cosmic Ring", description: "Holographic orbiting ring" },
-  { id: "fire", label: "🔥 Fire Aura", description: "Blazing flame aura" },
-  { id: "lightning", label: "⚡ Lightning", description: "Electric energy arc" },
-  { id: "sparkles", label: "✨ Sparkles", description: "Shimmering sparkles halo" },
-  { id: "rainbow", label: "🌈 Rainbow", description: "Chromatic glow ring" },
-  { id: "snow", label: "❄️ Frost", description: "Icy frost aura" },
-  { id: "hearts", label: "💕 Hearts", description: "Floating heart aura" },
-  { id: "stars", label: "⭐ Stars", description: "Orbiting star ring" },
-  { id: "bubbles", label: "🫧 Bubbles", description: "Rising bubble aura" },
-  { id: "flowers", label: "🌸 Flowers", description: "Petal shower" },
-  { id: "catears", label: "🐱 Cat Ears", description: "Cute cat ears" },
+  { id: "none", label: "None", description: "No decoration", category: "core" },
+
+  // ── Professional ──────────────────────────────────────────────────────
+  { id: "aurora", label: "Aurora", description: "Soft indigo-violet aurora ring", category: "professional" },
+  { id: "executive", label: "Executive", description: "Brushed platinum highlight sweep", category: "professional" },
+  { id: "pulse", label: "Pulse", description: "Gentle teal breathing ring", category: "professional" },
+  { id: "quantum", label: "Quantum", description: "Three precise orbiting nodes", category: "professional" },
+  { id: "helix", label: "Helix", description: "Counter-rotating energy arcs", category: "professional" },
+  { id: "sentinel", label: "Sentinel", description: "Expanding security ring", category: "professional" },
+
+  // ── Expressive ────────────────────────────────────────────────────────
+  { id: "cosmic", label: "🌀 Cosmic Ring", description: "Holographic orbiting ring", category: "expressive" },
+  { id: "fire", label: "🔥 Fire Aura", description: "Blazing flame aura", category: "expressive" },
+  { id: "lightning", label: "⚡ Lightning", description: "Electric energy arc", category: "expressive" },
+  { id: "sparkles", label: "✨ Sparkles", description: "Shimmering sparkles halo", category: "expressive" },
+  { id: "rainbow", label: "🌈 Rainbow", description: "Chromatic glow ring", category: "expressive" },
+  { id: "snow", label: "❄️ Frost", description: "Icy frost aura", category: "expressive" },
+  { id: "hearts", label: "💕 Hearts", description: "Floating heart aura", category: "expressive" },
+  { id: "stars", label: "⭐ Stars", description: "Orbiting star ring", category: "expressive" },
+  { id: "bubbles", label: "🫧 Bubbles", description: "Rising bubble aura", category: "expressive" },
+  { id: "flowers", label: "🌸 Flowers", description: "Petal shower", category: "expressive" },
+  { id: "catears", label: "🐱 Cat Ears", description: "Cute cat ears", category: "expressive" },
 ] as const;
 
 export type DecorationId = typeof PROFILE_DECORATIONS[number]["id"];
+export type DecorationCategory = typeof PROFILE_DECORATIONS[number]["category"];
 
 const DECO_STYLES = `
   @keyframes dec-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -34,6 +54,30 @@ const DECO_STYLES = `
   @keyframes dec-glow-pulse { 0%,100%{filter:brightness(1) blur(2px);} 50%{filter:brightness(1.5) blur(3px);} }
   @keyframes dec-arc-flash { 0%{opacity:0;stroke-dashoffset:200;} 20%{opacity:1;stroke-dashoffset:100;} 50%{opacity:0.8;stroke-dashoffset:0;} 80%{opacity:0.4;} 100%{opacity:0;stroke-dashoffset:-100;} }
   @keyframes dec-particle-orbit { from{transform:rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a)));} to{transform:rotate(calc(var(--a) + 360deg)) translateX(var(--r)) rotate(calc(-1 * (var(--a) + 360deg)));} }
+
+  /* Professional decoration keyframes — restrained motion only.
+     All use transform/opacity so the GPU can composite them cheaply. */
+  @keyframes dec-breath { 0%,100% { opacity:0.55; } 50% { opacity:1; } }
+  @keyframes dec-sentinel-expand {
+    0% { transform: scale(1); opacity: 0.9; }
+    100% { transform: scale(1.32); opacity: 0; }
+  }
+  @keyframes dec-aurora-shimmer {
+    0%,100% { opacity: 0.85; }
+    50% { opacity: 1; }
+  }
+
+  /* Accessibility — disable decoration animations entirely for users who
+     have requested reduced motion. The static ring/shape is still drawn,
+     just without movement. */
+  @media (prefers-reduced-motion: reduce) {
+    .deco-wrap *,
+    .deco-wrap *::before,
+    .deco-wrap *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
 `;
 
 function uid(prefix: string, i: number) { return `${prefix}-${i}`; }
@@ -661,6 +705,245 @@ function CatEarsDecoration({ size }: { size: number }) {
   );
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   PROFESSIONAL DECORATIONS
+   ──────────────────────────────────────────────────────────────────────
+   Restrained, premium-feeling animations. All use the same rounded-rect
+   path so they hug the avatar tile shape, animate via transform/opacity
+   (GPU-cheap), and respect prefers-reduced-motion via the .deco-wrap
+   class on the parent.
+   ════════════════════════════════════════════════════════════════════════ */
+
+function AuroraRing({ size }: { size: number }) {
+  const pad = Math.round(size * 0.18);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `au${size}`;
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}g`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.85" />
+            <stop offset="50%" stopColor="#8b5cf6" stopOpacity="1" />
+            <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.85" />
+          </linearGradient>
+          <filter id={`${id}b`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2.2" />
+          </filter>
+        </defs>
+        {/* Crisp inner trace so the ring still reads when motion is off */}
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="0.8" />
+        {/* Slow rotating aurora gradient */}
+        <g style={{ animation: `dec-spin 14s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
+          <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}g)`} strokeWidth="2.4" filter={`url(#${id}b)`} style={{ animation: `dec-aurora-shimmer 5s ease-in-out infinite` }} />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function ExecutiveRing({ size }: { size: number }) {
+  const pad = Math.round(size * 0.16);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.5;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.5;
+  const id = `ex${size}`;
+  // Sweep dash sized so a single bright highlight slides across the ring.
+  // Total perimeter approx: 4*(2*half - 2*cr) + 2π*cr — we don't need exact,
+  // a generous gap is fine because we mask to a single visible streak.
+  const dashOn = Math.round(w * 0.18);
+  const dashOff = Math.round(w * 4);
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}base`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#f4e4ba" />
+            <stop offset="50%" stopColor="#c9a557" />
+            <stop offset="100%" stopColor="#7d5e1f" />
+          </linearGradient>
+          <linearGradient id={`${id}sweep`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+            <stop offset="50%" stopColor="rgba(255,250,220,0.95)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+          </linearGradient>
+          <filter id={`${id}glow`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.2" />
+          </filter>
+        </defs>
+        {/* Base brushed-platinum/gold ring */}
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}base)`} strokeWidth="2.4" />
+        {/* Light sweep — a short bright dash that travels around the perimeter */}
+        <g style={{ animation: `dec-spin 5s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
+          <path
+            d={roundedRectPath(c, c, half, cr)}
+            fill="none"
+            stroke={`url(#${id}sweep)`}
+            strokeWidth="2.6"
+            strokeDasharray={`${dashOn} ${dashOff}`}
+            opacity="0.9"
+            filter={`url(#${id}glow)`}
+          />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function PulseRing({ size }: { size: number }) {
+  const pad = Math.round(size * 0.14);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.45;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.45;
+  const id = `pl${size}`;
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <filter id={`${id}g`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.4" />
+          </filter>
+        </defs>
+        {/* Static thin reference ring (visible even with reduced motion) */}
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="rgba(34,211,238,0.35)" strokeWidth="1" />
+        {/* Breathing accent ring */}
+        <path
+          d={roundedRectPath(c, c, half, cr)}
+          fill="none"
+          stroke="#22d3ee"
+          strokeWidth="2"
+          filter={`url(#${id}g)`}
+          style={{ animation: "dec-breath 2.6s ease-in-out infinite" }}
+        />
+      </svg>
+    </div>
+  );
+}
+
+function QuantumRing({ size }: { size: number }) {
+  const pad = Math.round(size * 0.22);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `qm${size}`;
+  const dots = 3;
+  const period = 7; // seconds — slow & deliberate
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <filter id={`${id}g`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.8" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        {/* Faint guide ring */}
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="rgba(139,92,246,0.18)" strokeWidth="1" strokeDasharray="2 6" />
+        {/* Three orbiting nodes spaced evenly */}
+        {Array.from({ length: dots }).map((_, i) => {
+          const t = i / dots;
+          const { x, y } = pointOnRoundedRect(t, c, c, half, cr);
+          return (
+            <circle
+              key={uid("qmd", i)}
+              cx={x}
+              cy={y}
+              r={2.6}
+              fill="#8b5cf6"
+              filter={`url(#${id}g)`}
+              style={{
+                animation: `dec-spin ${period}s linear infinite`,
+                transformOrigin: `${c}px ${c}px`,
+                animationDelay: `${-i * (period / dots)}s`,
+              }}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function HelixRing({ size }: { size: number }) {
+  const pad = Math.round(size * 0.18);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `hx${size}`;
+  // Approximate perimeter for the dasharray — exact length isn't critical
+  // because the gradient trims the visible portion to a soft arc anyway.
+  const sideLen = 2 * half - 2 * cr;
+  const arcLen = (Math.PI / 2) * cr;
+  const perim = 4 * sideLen + 4 * arcLen;
+  const visible = Math.round(perim * 0.22);
+  const hidden = Math.round(perim - visible);
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}a`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(99,102,241,0)" />
+            <stop offset="50%" stopColor="#6366f1" />
+            <stop offset="100%" stopColor="rgba(99,102,241,0)" />
+          </linearGradient>
+          <linearGradient id={`${id}b`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(34,211,238,0)" />
+            <stop offset="50%" stopColor="#22d3ee" />
+            <stop offset="100%" stopColor="rgba(34,211,238,0)" />
+          </linearGradient>
+          <filter id={`${id}g`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.4" />
+          </filter>
+        </defs>
+        {/* Indigo arc rotating clockwise */}
+        <g style={{ animation: `dec-spin 7s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
+          <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}a)`} strokeWidth="2.2" strokeDasharray={`${visible} ${hidden}`} filter={`url(#${id}g)`} />
+        </g>
+        {/* Cyan arc rotating counter-clockwise */}
+        <g style={{ animation: `dec-spin-rev 7s linear infinite`, transformOrigin: `${c}px ${c}px` }}>
+          <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}b)`} strokeWidth="2.2" strokeDasharray={`${visible} ${hidden}`} filter={`url(#${id}g)`} />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function SentinelRing({ size }: { size: number }) {
+  const pad = Math.round(size * 0.22);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.32;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.32;
+  const id = `st${size}`;
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <filter id={`${id}g`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.2" />
+          </filter>
+        </defs>
+        {/* Solid base ring — the "verified" anchor */}
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#10b981" strokeWidth="1.8" opacity="0.95" />
+        {/* Two staggered expanding rings — like a security/scan pulse */}
+        <g style={{ animation: "dec-sentinel-expand 2.6s ease-out infinite", transformOrigin: `${c}px ${c}px` }}>
+          <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#10b981" strokeWidth="1.4" filter={`url(#${id}g)`} />
+        </g>
+        <g style={{ animation: "dec-sentinel-expand 2.6s ease-out infinite", animationDelay: "1.3s", transformOrigin: `${c}px ${c}px` }}>
+          <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#10b981" strokeWidth="1.4" filter={`url(#${id}g)`} />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 interface ProfileDecorationProps {
   decorationId: string | null | undefined;
   size?: number;
@@ -678,8 +961,18 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
   };
 
   return (
-    <div style={wrapStyle}>
+    // The "deco-wrap" class is what the prefers-reduced-motion media query
+    // hooks into to disable all animations inside this subtree.
+    <div style={wrapStyle} className="deco-wrap">
       <style>{DECO_STYLES}</style>
+      {/* Professional set */}
+      {decorationId === "aurora" && <AuroraRing size={size} />}
+      {decorationId === "executive" && <ExecutiveRing size={size} />}
+      {decorationId === "pulse" && <PulseRing size={size} />}
+      {decorationId === "quantum" && <QuantumRing size={size} />}
+      {decorationId === "helix" && <HelixRing size={size} />}
+      {decorationId === "sentinel" && <SentinelRing size={size} />}
+      {/* Expressive set */}
       {decorationId === "cosmic" && <CosmicRing size={size} />}
       {decorationId === "fire" && <FireAura size={size} />}
       {decorationId === "lightning" && <LightningAura size={size} />}

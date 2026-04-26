@@ -675,8 +675,13 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Animated Decoration</Label>
                 <p className="text-xs text-muted-foreground">Animated effects around your avatar in rooms</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {PROFILE_DECORATIONS.map((deco, idx) => {
+
+                {(() => {
+                  // Render decorations grouped by category. "core" (None) sits
+                  // up top; "professional" comes next with a section header so
+                  // serious users can find polished options without wading
+                  // through emoji-heavy ones; "expressive" follows.
+                  const renderTile = (deco: typeof PROFILE_DECORATIONS[number], idx: number) => {
                     const labelText = deco.label.replace(/^[\p{Emoji}\s]+/u, "").trim() || deco.label;
                     const emojiMatch = deco.label.match(/^(\p{Emoji}+)/u);
                     const emoji = emojiMatch ? emojiMatch[1] : null;
@@ -706,8 +711,41 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
                         )}
                       </button>
                     );
-                  })}
-                </div>
+                  };
+
+                  const coreItems = PROFILE_DECORATIONS.filter(d => d.category === "core");
+                  const professionalItems = PROFILE_DECORATIONS.filter(d => d.category === "professional");
+                  const expressiveItems = PROFILE_DECORATIONS.filter(d => d.category === "expressive");
+
+                  return (
+                    <>
+                      {/* None tile */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {coreItems.map((d, i) => renderTile(d, i))}
+                      </div>
+
+                      {/* Professional section */}
+                      <div className="pt-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2" data-testid="decoration-section-professional">
+                          Professional
+                        </p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {professionalItems.map((d, i) => renderTile(d, i + coreItems.length))}
+                        </div>
+                      </div>
+
+                      {/* Expressive section */}
+                      <div className="pt-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2" data-testid="decoration-section-expressive">
+                          Expressive
+                        </p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {expressiveItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length))}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </ScrollArea>
