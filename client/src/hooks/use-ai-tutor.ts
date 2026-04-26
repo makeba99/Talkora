@@ -446,7 +446,26 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // ── Start with a specific persona (voice + name, locked for session) ──────
   const startWithPersona = useCallback((voice: VoicePersona, pName: string) => {
-    if (aiActive) return;
+    // If a session is already running, fully tear it down first so the new
+    // persona actually takes effect. The previous early-return caused a real
+    // bug: clicking Eva while a Dude session was still active silently kept
+    // playing Dude's male browser voice — the picker would close but the
+    // voice never switched. Now we always honour the user's new pick.
+    if (aiActive) {
+      try { ttsRef.current?.cancel(); } catch {}
+      try { sttRef.current?.stopAll(); } catch {}
+      try { abortRef.current?.abort(); } catch {}
+      socket?.emit("room:ai-tutor-stop", { roomId, userId });
+      // Local state reset — mirrors the stop branch of toggleAiTutor
+      setAiSpeaking(false);
+      setAiLoading(false);
+      setVoiceInterimText(null);
+      setVoiceListening(false);
+      setVoiceBargeInActive(false);
+      setAiAcknowledging(false);
+      // We're about to flip aiActive back to true with the new persona,
+      // so don't bother flipping it false in between.
+    }
     // Lock the persona for this session
     personaLockedRef.current = true;
     setPersonaName(pName);
