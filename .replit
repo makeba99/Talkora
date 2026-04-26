@@ -49,4 +49,3 @@ stack = "FULLSTACK_JS"
 [userenv]
 
 [userenv.shared]
-SESAME_CSM_TIMEOUT_MS = "90000"

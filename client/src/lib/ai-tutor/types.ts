@@ -1,4 +1,4 @@
-// "Eva" is the new Sesame-powered voice persona. Female/Male keep using the
+// "Eva" is the ElevenLabs-powered voice persona. Female/Male keep using the
 // browser SpeechSynthesis engine (the original "Afi K" / "Dude" personas).
 export type VoicePersona = "Female" | "Male" | "Eva";
 

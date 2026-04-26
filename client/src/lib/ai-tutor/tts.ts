@@ -25,8 +25,8 @@ export class TtsEngine {
   private visemeTimer: ReturnType<typeof setInterval> | null = null;
   private boundarySupported = true;
   // Browser engine internally treats Eva as Female (it's a bright young
-  // female voice); Eva is normally routed to Sesame, this is just the
-  // graceful fallback if Sesame is offline.
+  // female voice); Eva is normally routed to ElevenLabs, this is just the
+  // graceful fallback if ElevenLabs is unreachable.
   private voice: "Female" | "Male" = "Female";
   private voiceId: string | null = null;
   // Natural conversational pace — 0.7 was robotically slow.

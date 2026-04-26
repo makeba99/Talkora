@@ -981,7 +981,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   useEffect(() => { aiPersonaNameRef.current = aiPersonaName; }, [aiPersonaName]);
   useEffect(() => { welcomeUserRef.current = welcomeUser; }, [welcomeUser]);
 
-  // Bridge: when the Sesame TTS engine fails (Eva voice unreachable), surface
+  // Bridge: when the Eva TTS engine fails (ElevenLabs unreachable), surface
   // a clear toast so the user knows ElevenLabs is unreachable rather than
   // being silently confused by the AI going quiet or sounding wrong.
   useEffect(() => {
@@ -7608,14 +7608,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     accentColor="rgba(120,180,255,0.90)"
                   />
 
-                  {/* Eva — Sesame CSM (detailed AI portrait, neumorphic ring) */}
+                  {/* Eva — ElevenLabs (detailed AI portrait, neumorphic ring) */}
                   <NeumorphicPersonaCard
                     testId="button-persona-eva"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Eva"); }}
                     avatar={<NeumorphicAvatarRing glowRgb="0,225,255" intense content={<img src={evaAvatarUrl} alt="Eva avatar" className="w-full h-full object-cover rounded-full" data-testid="img-eva-avatar" />} />}
                     name="Eva"
                     badge="NEW AI"
-                    description="Sesame CSM · Natural & expressive"
+                    description="ElevenLabs · Natural & expressive"
                     nameColor="rgba(160,235,255,0.97)"
                     accentColor="rgba(0,225,255,0.95)"
                   />
@@ -8175,7 +8175,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         : { background: "rgba(0,180,255,0.15)", border: "1px solid rgba(0,225,255,0.35)", color: "rgba(0,225,255,0.90)", cursor: "pointer" }}>
                       {aiTutorActive
                         ? (aiTutorSettings.voice === "Female" ? `♀ ${aiPersonaName}` : aiTutorSettings.voice === "Male" ? `♂ ${aiPersonaName}` : `✨ ${aiPersonaName}`)
-                        : (aiTutorSettings.voice === "Female" ? "♀ Female" : aiTutorSettings.voice === "Male" ? "♂ Male" : "✨ Eva (Sesame)")}
+                        : (aiTutorSettings.voice === "Female" ? "♀ Female" : aiTutorSettings.voice === "Male" ? "♂ Male" : "✨ Eva")}
                     </button>
                   </div>
                   <div>

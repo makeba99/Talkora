@@ -144,7 +144,7 @@ export class EvaTtsEngine {
 
       const source = ctx.createBufferSource();
       source.buffer = buffer;
-      // CSM rarely needs >1.0; we apply a soft playback rate for client-side speed.
+      // ElevenLabs returns natural pace; we apply a soft playback rate for client-side speed.
       source.playbackRate.value = Math.max(0.5, Math.min(1.6, this.speed));
 
       const analyser = ctx.createAnalyser();
@@ -193,7 +193,7 @@ export class EvaTtsEngine {
         return;
       }
       // Bubble error so the wrapping factory can fall back to browser TTS.
-      console.warn("[SesameTts] sentence failed, skipping:", err?.message || err);
+      console.warn("[EvaTts] sentence failed, skipping:", err?.message || err);
       this.callbacks.onSentenceEnd();
       // Try the next sentence; if none, end.
       if (this.queue.length > 0) {

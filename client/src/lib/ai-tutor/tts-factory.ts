@@ -11,7 +11,7 @@
  */
 
 import { TtsEngine, type TtsCallbacks } from "./tts";
-import { EvaTtsEngine } from "./sesame-tts";
+import { EvaTtsEngine } from "./eva-tts";
 import type { VoicePersona } from "./types";
 
 export interface TtsLike {

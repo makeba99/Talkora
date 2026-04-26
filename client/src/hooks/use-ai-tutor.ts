@@ -163,7 +163,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, []);
 
   // ── TTS Engine ────────────────────────────────────────────────────────────
-  // Wrapped via createTts() — auto-uses Sesame CSM when /api/ai-tutor/tts/health
+  // Wrapped via createTts() — Eva routes to ElevenLabs, Female/Male use browser
   // reports availability, otherwise falls back to the browser SpeechSynthesis
   // engine. Either way the contract is identical.
   const ttsRef = useRef<TtsLike | null>(null);
@@ -508,8 +508,8 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, [aiActive, socket, roomId, userId, username, aiSettings]);
 
   // ── Observe AI message from another user in the room ─────────────────────
-  // Uses the same Sesame-or-browser factory so observers hear the same voice
-  // the active speaker is hearing (when CSM is configured).
+  // Uses the same factory so observers hear the same voice the active
+  // speaker is hearing.
   const observeSpeakText = useCallback((text: string, voice: string, speed: number, voiceId?: string | null) => {
     const engine = createTts({
       onStart: () => setCurrentViseme("open"),
