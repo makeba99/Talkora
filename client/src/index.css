@@ -2409,19 +2409,32 @@ html.synthwave .neon-text {
   transition: box-shadow 0.52s ease;
 }
 
-/* "ENTER" / "FULL" label */
-.door-3d-label {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+/* Text engraved ON the door panel face — vertical writing */
+.door-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-60%, -50%);
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+  font-size: 5px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: hsl(var(--neu-orange-hi) / 0.70);
-  transition: color 220ms ease, text-shadow 220ms ease;
-  line-height: 1;
+  color: hsl(var(--neu-orange-hi) / 0.55);
+  z-index: 4;
+  pointer-events: none;
+  white-space: nowrap;
+  text-shadow: 0 0 3px hsl(var(--neu-orange) / 0.30);
+  transition: color 0.35s ease, text-shadow 0.35s ease;
 }
-.door-3d-wrap:hover .door-3d-label {
-  color: hsl(var(--neu-orange-hi));
-  text-shadow: 0 0 8px hsl(var(--neu-orange) / 0.50);
+.door-3d-wrap:hover .door-text {
+  color: hsl(var(--neu-orange-hi) / 0.90);
+  text-shadow: 0 0 6px hsl(var(--neu-orange) / 0.55);
+}
+.door-3d-disabled .door-text {
+  color: rgba(255,255,255,0.16);
+  text-shadow: none;
 }
 
 /* ── Premium Animated Borders ── */

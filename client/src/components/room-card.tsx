@@ -949,6 +949,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     <div className="door-panel-inset door-panel-inset-top" />
                     <div className="door-panel-inset door-panel-inset-bot" />
                     <div className="door-knob" />
+                    <span className="door-text">LOCKED</span>
                   </div>
                 </div>
               </div>
@@ -966,6 +967,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     <div className="door-panel-inset door-panel-inset-top" />
                     <div className="door-panel-inset door-panel-inset-bot" />
                     <div className="door-knob" />
+                    <span className="door-text">ENTER</span>
                   </div>
                 </div>
               </a>
@@ -985,6 +987,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     <div className="door-panel-inset door-panel-inset-top" />
                     <div className="door-panel-inset door-panel-inset-bot" />
                     <div className="door-knob" />
+                    <span className="door-text">ENTER</span>
                   </div>
                 </div>
               </div>
