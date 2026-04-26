@@ -2170,8 +2170,12 @@ html.synthwave .neon-text {
   z-index: 1;
 }
 .step-in-btn:hover {
-  opacity: 0.95;
-  transform: translateY(-1px);
+  opacity: 0.97;
+  transform: translateY(-2px) scale(1.03);
+  filter: brightness(1.08);
+}
+.step-in-btn:active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* ── Premium Animated Borders ── */

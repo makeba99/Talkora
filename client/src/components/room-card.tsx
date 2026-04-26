@@ -627,7 +627,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             : "linear-gradient(160deg, rgba(16, 20, 50, 0.88) 0%, rgba(11, 15, 42, 0.92) 100%)",
           backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
           WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
-          height: isPremiumAtmosphere ? 304 : 290,
+          height: isPremiumAtmosphere ? 348 : 330,
         }}
       >
         {isPremiumAtmosphere && (
@@ -746,7 +746,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               pixels outside the body never get clipped at the top. The outer
               card already owns the rounded-corner clipping. */}
           <div className="flex-1 flex flex-col justify-center px-3 pt-2 pb-1 min-h-0 overflow-visible">
-            <div className={`grid ${isPremiumAtmosphere ? "gap-3" : "gap-2"}`} style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
+            <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
@@ -823,7 +823,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   );
                 }
 
-                /* Empty slot — rounded-square neomorphic tile */
+                /* Empty slot — deep 3D neumorphic tile */
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div
@@ -831,16 +831,25 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                       style={{
                         width: circleSize + 6,
                         height: circleSize + 6,
-                        background: "linear-gradient(145deg, hsl(228 14% 12%) 0%, hsl(228 14% 10%) 100%)",
-                        border: "1px solid rgba(255,255,255,0.055)",
-                        boxShadow: "-2px -2px 5px rgba(255,255,255,0.02), 3px 3px 9px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.025)",
+                        background: "linear-gradient(155deg, hsl(228 18% 13%) 0%, hsl(228 16% 8%) 60%, hsl(228 14% 6%) 100%)",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                        boxShadow: [
+                          "-5px -5px 10px rgba(255,255,255,0.045)",
+                          "6px 6px 16px rgba(0,0,0,0.92)",
+                          "2px 2px 5px rgba(0,0,0,0.70)",
+                          "inset 0 2px 0 rgba(255,255,255,0.08)",
+                          "inset 0 -2px 0 rgba(0,0,0,0.55)",
+                          "inset 2px 0 0 rgba(255,255,255,0.03)",
+                          "inset -1px 0 0 rgba(0,0,0,0.4)",
+                        ].join(", "),
                       }}
                     >
                       <Users
                         style={{
-                          width: Math.round(circleSize * 0.38),
-                          height: Math.round(circleSize * 0.38),
-                          color: "rgba(255,255,255,0.14)",
+                          width: Math.round(circleSize * 0.36),
+                          height: Math.round(circleSize * 0.36),
+                          color: "rgba(255,255,255,0.12)",
+                          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))",
                         }}
                       />
                     </div>
@@ -892,28 +901,28 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             {isFull ? (
               <button
                 disabled
-                className="neu-btn flex items-center gap-1.5 px-5 py-1.5 rounded-full text-white/40 text-xs font-bold cursor-not-allowed"
+                className="neu-btn flex items-center gap-2 px-5 py-2 rounded-full text-white/35 text-xs font-bold cursor-not-allowed tracking-wide"
                 data-testid={`button-join-room-${room.id}`}
               >
-                <Footprints className="w-3.5 h-3.5" />
+                <Footprints className="w-4 h-4" />
                 Full
               </button>
             ) : !isLoggedIn ? (
               <a
                 href="/api/login"
-                className="neu-btn-orange step-in-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold"
+                className="neu-btn-orange step-in-btn flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold tracking-wide"
                 data-testid={`button-signin-room-${room.id}`}
               >
-                <Footprints className="w-3.5 h-3.5 animate-bounce" />
+                <Footprints className="w-4 h-4 animate-bounce" />
                 Step In
               </a>
             ) : (
               <button
-                className="neu-btn-orange step-in-btn flex items-center gap-1.5 px-5 py-1.5 rounded-full text-xs font-bold"
+                className="neu-btn-orange step-in-btn flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold tracking-wide"
                 onClick={() => onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
               >
-                <Footprints className="w-3.5 h-3.5 animate-bounce" />
+                <Footprints className="w-4 h-4 animate-bounce" />
                 Step In
               </button>
             )}
