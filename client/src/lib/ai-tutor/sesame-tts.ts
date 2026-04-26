@@ -1,14 +1,13 @@
 /**
- * SesameTtsEngine — drop-in replacement for TtsEngine that streams generated
- * audio from Vextorn's `/api/ai-tutor/tts` proxy (which fronts a self-hosted
- * Sesame CSM inference server).
+ * EvaTtsEngine — drop-in replacement for TtsEngine that streams generated
+ * audio from Vextorn's `/api/ai-tutor/tts` proxy (which fronts ElevenLabs).
  *
  * Same callback contract as the browser TtsEngine, so `useAiTutor` doesn't
  * have to know which one is in use:
  *   onStart / onEnd / onSentenceEnd / onViseme / onVoiceId
  *
  * Visemes are driven by an AnalyserNode running over the decoded audio
- * (RMS amplitude → mouth shape), since CSM doesn't emit word-boundary
+ * (RMS amplitude → mouth shape), since ElevenLabs doesn't emit word-boundary
  * events the way SpeechSynthesisUtterance does.
  */
 
@@ -22,7 +21,7 @@ interface QueueItem {
   abort: AbortController;
 }
 
-export class SesameTtsEngine {
+export class EvaTtsEngine {
   private queue: QueueItem[] = [];
   private active = false;
   private voice: VoicePersona = "Eva";
@@ -126,12 +125,14 @@ export class SesameTtsEngine {
         // fall back to the browser voice (the user explicitly picked Eva).
         const errText = await res.text().catch(() => "");
         const msg = res.status === 502 || res.status === 504
-          ? "Eva voice is offline — your Sesame server isn't responding. Check your Modal deployment."
+          ? "Eva voice is unreachable — ElevenLabs didn't respond. Check your API key and quota."
           : res.status === 501
-            ? "Eva voice isn't configured on this server."
-            : `Eva voice failed (${res.status})`;
-        if (typeof window !== "undefined" && (window as any).__vextornOnSesameError) {
-          (window as any).__vextornOnSesameError(msg);
+            ? "Eva voice isn't configured — add an ELEVENLABS_API_KEY secret."
+            : res.status === 401 || res.status === 403
+              ? "Eva voice rejected — your ElevenLabs API key may be invalid or out of credits."
+              : `Eva voice failed (${res.status})`;
+        if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
+          (window as any).__vextornOnEvaTtsError(msg);
         }
         throw new Error(`tts ${res.status}: ${errText.slice(0, 120)}`);
       }

@@ -13,7 +13,7 @@ import nodemailer from "nodemailer";
 import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
-import { isSesameConfigured, sesameSynthesize, sesameHealth } from "./sesame";
+import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "./elevenlabs";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -604,32 +604,34 @@ export async function registerRoutes(
     }
   });
 
-  // ── AI Tutor TTS (Sesame CSM proxy) ──────────────────────────────────────
-  // Capability probe — the client uses this once on load to decide whether
-  // to use Sesame CSM or fall back to the browser's SpeechSynthesis engine.
+  // ── AI Tutor TTS (ElevenLabs proxy) ──────────────────────────────────────
+  // Capability probe — the client uses this to decide whether Eva can speak.
+  // Female/Male personas use the browser SpeechSynthesis engine directly and
+  // do NOT depend on this endpoint.
   app.get("/api/ai-tutor/tts/health", isAuthenticated, async (_req, res) => {
     try {
-      const h = await sesameHealth();
+      const h = await elevenLabsHealth();
       res.json({ available: h.available, reachable: h.reachable });
     } catch {
       res.json({ available: false, reachable: false });
     }
   });
 
-  // Synthesize a single sentence via the configured CSM inference server.
-  // Returns raw audio bytes (audio/wav by default). The client decodes via
-  // Web Audio and plays back with amplitude-driven viseme animation.
+  // Synthesize a single sentence via ElevenLabs. Returns audio/mpeg bytes.
+  // The client decodes via Web Audio and plays back with amplitude-driven
+  // viseme animation.
   //
   // Active-session gate matches /api/ai-tutor/chat — only the user holding
   // the active AI session in this room may request audio for it. This stops
-  // other room participants from burning the GPU on someone else's session.
+  // other room participants from burning ElevenLabs quota on someone else's
+  // session.
   app.post("/api/ai-tutor/tts", isAuthenticated, async (req: any, res) => {
     try {
-      if (!isSesameConfigured()) {
-        return res.status(501).json({ error: "sesame-not-configured" });
+      if (!isElevenLabsConfigured()) {
+        return res.status(501).json({ error: "elevenlabs-not-configured" });
       }
 
-      const { text, voice = "Female", speed = 1.0, language = "en", roomId } = req.body || {};
+      const { text, voice = "Eva", speed = 1.0, language = "en", roomId } = req.body || {};
       if (typeof text !== "string" || !text.trim()) {
         return res.status(400).json({ error: "text required" });
       }
@@ -645,7 +647,7 @@ export async function registerRoutes(
         }
       }
 
-      const result = await sesameSynthesize({
+      const result = await elevenLabsSynthesize({
         text: text.trim(),
         voice,
         speed: typeof speed === "number" ? speed : 1.0,
@@ -653,16 +655,16 @@ export async function registerRoutes(
       });
 
       if (!result.ok || !result.body) {
-        console.error("[AI Tutor TTS] Sesame error:", result.status, result.error);
+        console.error("[AI Tutor TTS] ElevenLabs error:", result.status, result.error);
         return res.status(result.status >= 500 ? 502 : result.status).json({
           error: result.error || "tts-failed",
         });
       }
 
-      res.setHeader("Content-Type", result.contentType || "audio/wav");
+      res.setHeader("Content-Type", result.contentType || "audio/mpeg");
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Accel-Buffering", "no");
-      // Disable compression — audio is already compact / already compressed.
+      // Disable compression — audio is already compressed.
       res.setHeader("Content-Encoding", "identity");
       res.send(Buffer.from(result.body));
     } catch (err: any) {

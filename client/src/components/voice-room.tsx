@@ -982,11 +982,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   useEffect(() => { welcomeUserRef.current = welcomeUser; }, [welcomeUser]);
 
   // Bridge: when the Sesame TTS engine fails (Eva voice unreachable), surface
-  // a clear toast so the user knows their Modal deployment is offline rather
-  // than being silently confused by the AI going quiet or sounding wrong.
+  // a clear toast so the user knows ElevenLabs is unreachable rather than
+  // being silently confused by the AI going quiet or sounding wrong.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    (window as any).__vextornOnSesameError = (msg: string) => {
+    (window as any).__vextornOnEvaTtsError = (msg: string) => {
       toast({
         title: "Eva voice unavailable",
         description: msg,
@@ -995,7 +995,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     };
     return () => {
       if (typeof window !== "undefined") {
-        delete (window as any).__vextornOnSesameError;
+        delete (window as any).__vextornOnEvaTtsError;
       }
     };
   }, [toast]);
