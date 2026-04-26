@@ -1,10 +1,13 @@
 import React from "react";
 
-// Profile decorations come in two tiers:
+// Profile decorations come in three tiers:
 //   • "professional" — restrained, premium-feeling animations suitable for
 //     work-like contexts (verified accounts, teachers, executives). Subtle
 //     palettes (indigo / violet / cyan / platinum / teal), slow motion,
 //     never gimmicky.
+//   • "tactical"     — Discord-inspired sci-fi / HUD frames. Detailed,
+//     visually rich rings with tick marks, corner brackets, sword-blade
+//     crescents, and traveling circuit pulses. The "premium loot drop" tier.
 //   • "expressive"   — the original playful set (fire, hearts, sparkles…)
 //     for users who want personality on their profile.
 // The "category" field lets the picker UI group them into separate sections
@@ -19,6 +22,12 @@ export const PROFILE_DECORATIONS = [
   { id: "quantum", label: "Quantum", description: "Three precise orbiting nodes", category: "professional" },
   { id: "helix", label: "Helix", description: "Counter-rotating energy arcs", category: "professional" },
   { id: "sentinel", label: "Sentinel", description: "Expanding security ring", category: "professional" },
+
+  // ── Tactical (Discord-inspired premium frames) ────────────────────────
+  { id: "hologram", label: "Hologram", description: "Cyan HUD ring with tick markers", category: "tactical" },
+  { id: "tactical", label: "Tactical", description: "HUD targeting bracket reticle", category: "tactical" },
+  { id: "crimson", label: "Crimson Blade", description: "Sweeping crimson sword crescent", category: "tactical" },
+  { id: "circuit", label: "Circuit Core", description: "Segmented ring with traveling pulse", category: "tactical" },
 
   // ── Expressive ────────────────────────────────────────────────────────
   { id: "cosmic", label: "🌀 Cosmic Ring", description: "Holographic orbiting ring", category: "expressive" },
@@ -944,6 +953,219 @@ function SentinelRing({ size }: { size: number }) {
   );
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   TACTICAL DECORATIONS
+   ──────────────────────────────────────────────────────────────────────
+   Discord-inspired premium frames. More visually rich than the Professional
+   set — tick marks, HUD brackets, sword-blade crescents, traveling circuit
+   pulses. Each one is built to feel like a "loot drop" reward frame.
+   ════════════════════════════════════════════════════════════════════════ */
+
+function HologramRing({ size }: { size: number }) {
+  // Cyan double-ring with HUD tick markers and a slow rotation. Inspired by
+  // Discord's "Hologram Disc" — concentric crisp rings + radial ticks that
+  // make the frame read as a sci-fi instrument panel rather than a plain
+  // outline.
+  const pad = Math.round(size * 0.22);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const halfOuter = size / 2 + pad * 0.7;
+  const crOuter = AVATAR_TILE_RADIUS + pad * 0.7;
+  const halfInner = size / 2 + pad * 0.3;
+  const crInner = AVATAR_TILE_RADIUS + pad * 0.3;
+  const id = `hl${size}`;
+  const ticks = 16;
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}g`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#00f5ff" stopOpacity="0.95" />
+            <stop offset="50%" stopColor="#00d4ff" stopOpacity="1" />
+            <stop offset="100%" stopColor="#0099ff" stopOpacity="0.95" />
+          </linearGradient>
+          <filter id={`${id}glow`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.6" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        {/* Inner sharp ring — stays still so the avatar has a crisp border */}
+        <path d={roundedRectPath(c, c, halfInner, crInner)} fill="none" stroke="#00f5ff" strokeWidth="1.2" opacity="0.7" />
+        {/* Outer rotating ring + tick markers */}
+        <g style={{ animation: "dec-spin 24s linear infinite", transformOrigin: `${c}px ${c}px` }}>
+          <path d={roundedRectPath(c, c, halfOuter, crOuter)} fill="none" stroke={`url(#${id}g)`} strokeWidth="2" filter={`url(#${id}glow)`} />
+          {Array.from({ length: ticks }).map((_, i) => {
+            const t = i / ticks;
+            const inner = pointOnRoundedRect(t, c, c, halfOuter - 4, Math.max(0, crOuter - 4));
+            const outer = pointOnRoundedRect(t, c, c, halfOuter + 3, crOuter + 3);
+            const major = i % 4 === 0;
+            return (
+              <line
+                key={uid("hltk", i)}
+                x1={inner.x} y1={inner.y}
+                x2={outer.x} y2={outer.y}
+                stroke="#00f5ff"
+                strokeWidth={major ? 1.8 : 1}
+                opacity={major ? 1 : 0.55}
+                filter={`url(#${id}glow)`}
+              />
+            );
+          })}
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function TacticalRing({ size }: { size: number }) {
+  // HUD targeting reticle — four corner L-brackets that breathe. They sit
+  // outside the avatar's rounded corners (in the dead space of the bounding
+  // box), creating that "the camera is locked on this person" look.
+  const pad = Math.round(size * 0.22);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.65;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.65;
+  const id = `tc${size}`;
+  const bracketLen = Math.max(6, pad * 0.55);
+  const x1 = c - half, y1 = c - half;
+  const x2 = c + half, y2 = c + half;
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <filter id={`${id}glow`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="1.8" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        {/* Faint dashed outer reference path — the "targeting halo" */}
+        <path d={roundedRectPath(c, c, half - 2, Math.max(0, cr - 2))} fill="none" stroke="rgba(0,229,255,0.20)" strokeWidth="1" strokeDasharray="2 5" />
+        {/* Four L-brackets, breathing together */}
+        <g
+          stroke="#00e5ff"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          filter={`url(#${id}glow)`}
+          style={{ animation: "dec-breath 2.4s ease-in-out infinite" }}
+        >
+          <polyline points={`${x1 + bracketLen},${y1} ${x1},${y1} ${x1},${y1 + bracketLen}`} />
+          <polyline points={`${x2 - bracketLen},${y1} ${x2},${y1} ${x2},${y1 + bracketLen}`} />
+          <polyline points={`${x1},${y2 - bracketLen} ${x1},${y2} ${x1 + bracketLen},${y2}`} />
+          <polyline points={`${x2},${y2 - bracketLen} ${x2},${y2} ${x2 - bracketLen},${y2}`} />
+        </g>
+        {/* Tiny center crosshair tick marks at the four cardinal points */}
+        <g stroke="#00e5ff" strokeWidth="1.6" strokeLinecap="round" opacity="0.9" filter={`url(#${id}glow)`}>
+          <line x1={c} y1={y1 - 4} x2={c} y2={y1 + 2} />
+          <line x1={c} y1={y2 - 2} x2={c} y2={y2 + 4} />
+          <line x1={x1 - 4} y1={c} x2={x1 + 2} y2={c} />
+          <line x1={x2 - 2} y1={c} x2={x2 + 4} y2={c} />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function CrimsonBladeRing({ size }: { size: number }) {
+  // A crimson sword-blade crescent — about 72% of the perimeter is drawn,
+  // with a ~28% "cut" gap. The whole arc rotates slowly so the cut sweeps
+  // around the avatar like a slash. Inspired by Discord's "Ares Disc".
+  const pad = Math.round(size * 0.22);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.65;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.65;
+  const id = `cb${size}`;
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          {/* Gradient runs along path direction — fades in/out at the cut */}
+          <linearGradient id={`${id}g`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#7a0d1f" stopOpacity="0" />
+            <stop offset="12%" stopColor="#dc143c" stopOpacity="0.95" />
+            <stop offset="50%" stopColor="#ff2b4d" stopOpacity="1" />
+            <stop offset="88%" stopColor="#dc143c" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#7a0d1f" stopOpacity="0" />
+          </linearGradient>
+          <filter id={`${id}glow`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        {/* Faint dim ghost arc behind, so users see the avatar is fully framed */}
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="rgba(220,20,60,0.10)" strokeWidth="1" />
+        {/* Rotating crescent blade — pathLength + dasharray gives a clean cut */}
+        <g style={{ animation: "dec-spin 12s linear infinite", transformOrigin: `${c}px ${c}px` }}>
+          <path
+            d={roundedRectPath(c, c, half, cr)}
+            fill="none"
+            stroke={`url(#${id}g)`}
+            strokeWidth="2.8"
+            pathLength={100}
+            strokeDasharray="72 28"
+            strokeLinecap="round"
+            filter={`url(#${id}glow)`}
+            style={{ animation: "dec-aurora-shimmer 3s ease-in-out infinite" }}
+          />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function CircuitCoreRing({ size }: { size: number }) {
+  // Eight evenly-spaced segments around the perimeter (like LED bars), with
+  // a single bright leading segment that travels around the ring as if a
+  // pulse of energy is loading. Inspired by sci-fi reactor / "loading"
+  // rings in Discord premium frames.
+  const pad = Math.round(size * 0.20);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `cc${size}`;
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <filter id={`${id}glow`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.4" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        {/* Dim segmented base — 8 segments of 10% with 2.5% gaps */}
+        <path
+          d={roundedRectPath(c, c, half, cr)}
+          fill="none"
+          stroke="rgba(16,185,129,0.55)"
+          strokeWidth="2.4"
+          pathLength={100}
+          strokeDasharray="10 2.5"
+          strokeLinecap="butt"
+        />
+        {/* Bright traveling segment — dasharray "10 90" shows only one
+            10% segment at a time, and the parent <g> rotation moves it
+            around the perimeter once every 4 seconds. */}
+        <g style={{ animation: "dec-spin 4s linear infinite", transformOrigin: `${c}px ${c}px` }}>
+          <path
+            d={roundedRectPath(c, c, half, cr)}
+            fill="none"
+            stroke="#10ffaa"
+            strokeWidth="2.6"
+            pathLength={100}
+            strokeDasharray="10 90"
+            strokeLinecap="butt"
+            filter={`url(#${id}glow)`}
+          />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 interface ProfileDecorationProps {
   decorationId: string | null | undefined;
   size?: number;
@@ -972,6 +1194,11 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
       {decorationId === "quantum" && <QuantumRing size={size} />}
       {decorationId === "helix" && <HelixRing size={size} />}
       {decorationId === "sentinel" && <SentinelRing size={size} />}
+      {/* Tactical set (Discord-inspired premium frames) */}
+      {decorationId === "hologram" && <HologramRing size={size} />}
+      {decorationId === "tactical" && <TacticalRing size={size} />}
+      {decorationId === "crimson" && <CrimsonBladeRing size={size} />}
+      {decorationId === "circuit" && <CircuitCoreRing size={size} />}
       {/* Expressive set */}
       {decorationId === "cosmic" && <CosmicRing size={size} />}
       {decorationId === "fire" && <FireAura size={size} />}

@@ -715,6 +715,7 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
 
                   const coreItems = PROFILE_DECORATIONS.filter(d => d.category === "core");
                   const professionalItems = PROFILE_DECORATIONS.filter(d => d.category === "professional");
+                  const tacticalItems = PROFILE_DECORATIONS.filter(d => d.category === "tactical");
                   const expressiveItems = PROFILE_DECORATIONS.filter(d => d.category === "expressive");
 
                   return (
@@ -734,13 +735,30 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
                         </div>
                       </div>
 
+                      {/* Tactical section — Discord-inspired premium frames.
+                          A bright cyan accent label so users notice the new
+                          tier alongside the older Professional / Expressive
+                          ones. */}
+                      <div className="pt-2">
+                        <p
+                          className="text-[11px] font-semibold uppercase tracking-wider mb-2"
+                          style={{ color: "rgba(0,229,255,0.85)", textShadow: "0 0 8px rgba(0,229,255,0.35)" }}
+                          data-testid="decoration-section-tactical"
+                        >
+                          Tactical
+                        </p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {tacticalItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length))}
+                        </div>
+                      </div>
+
                       {/* Expressive section */}
                       <div className="pt-2">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2" data-testid="decoration-section-expressive">
                           Expressive
                         </p>
                         <div className="grid grid-cols-4 gap-2">
-                          {expressiveItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length))}
+                          {expressiveItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length + tacticalItems.length))}
                         </div>
                       </div>
                     </>
