@@ -481,11 +481,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   useEffect(() => {
     const compute = () => {
       const w = window.innerWidth;
-      const crowded = displayCount >= 5;
-      if (w >= 1536) setCircleScale(crowded ? 1.15 : 1.40);
-      else if (w >= 1280) setCircleScale(crowded ? 1.06 : 1.22);
-      else if (w >= 1024) setCircleScale(crowded ? 1.00 : 1.10);
-      else setCircleScale(crowded ? 0.96 : 1.02);
+      // 4-person 2×2 grids overflow body at uncrowded scale — treat ≥4 as crowded
+      const crowded = displayCount >= 4;
+      if (w >= 1536) setCircleScale(crowded ? 1.10 : 1.35);
+      else if (w >= 1280) setCircleScale(crowded ? 1.00 : 1.18);
+      else if (w >= 1024) setCircleScale(crowded ? 0.94 : 1.06);
+      else setCircleScale(crowded ? 0.90 : 0.98);
     };
     compute();
     window.addEventListener("resize", compute);
@@ -659,7 +660,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         <div className="relative z-[2] flex flex-col h-full">
 
           {/* ── Header ── */}
-          <div className="flex items-start justify-between gap-2 px-4 pt-3 pb-3 sm:pb-4">
+          <div className="relative z-10 flex items-start justify-between gap-2 px-4 pt-3 pb-3 sm:pb-4">
             <div className="flex-1 min-w-0 pr-2">
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
