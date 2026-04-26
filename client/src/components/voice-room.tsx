@@ -48,10 +48,19 @@ interface VoiceRoomProps {
   onLeave: (reason?: "joined-another-room") => void;
 }
 
-// ── Neumorphic persona card (used in the AI tutor "Choose Your Tutor" picker) ──
-// Soft, single-tone background with paired light + dark shadows so the card
-// feels like a sculpted button rather than a flat overlay panel. Press state
-// inverts to inset shadows for tactile feedback.
+// ── Dark Neumorphic persona card (AI tutor "Choose Your Tutor" picker) ──
+// Dark single-tone surface (#1a1f2e) with paired highlight + shadow so each
+// card looks sculpted out of the panel rather than painted on. Press state
+// inverts to inset shadows for tactile feedback. Matches the app's dark
+// cyberpunk theme.
+const NEUMO_BG = "#1a1f2e";
+const NEUMO_SHADOW_DARK = "rgba(0,0,0,0.55)";
+const NEUMO_SHADOW_LIGHT = "rgba(60,75,105,0.35)";
+const NEUMO_REST = `8px 8px 18px ${NEUMO_SHADOW_DARK}, -8px -8px 18px ${NEUMO_SHADOW_LIGHT}`;
+const NEUMO_PRESSED = `inset 5px 5px 12px ${NEUMO_SHADOW_DARK}, inset -5px -5px 12px ${NEUMO_SHADOW_LIGHT}`;
+const NEUMO_SMALL_REST = `4px 4px 10px ${NEUMO_SHADOW_DARK}, -4px -4px 10px ${NEUMO_SHADOW_LIGHT}`;
+const NEUMO_INSET_SMALL = `inset 3px 3px 7px ${NEUMO_SHADOW_DARK}, inset -3px -3px 7px ${NEUMO_SHADOW_LIGHT}`;
+
 function NeumorphicPersonaCard(props: {
   testId: string;
   onClick: () => void;
@@ -60,10 +69,9 @@ function NeumorphicPersonaCard(props: {
   description: string;
   badge?: string;
   nameColor?: string;
+  accentColor?: string;
 }) {
   const [pressed, setPressed] = useState(false);
-  const restShadow = "8px 8px 18px rgba(163,177,198,0.55), -8px -8px 18px rgba(255,255,255,0.95)";
-  const pressedShadow = "inset 5px 5px 12px rgba(163,177,198,0.55), inset -5px -5px 12px rgba(255,255,255,0.95)";
   return (
     <button
       data-testid={props.testId}
@@ -75,44 +83,42 @@ function NeumorphicPersonaCard(props: {
       onTouchEnd={() => setPressed(false)}
       className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all"
       style={{
-        background: "#e8eaf0",
-        boxShadow: pressed ? pressedShadow : restShadow,
+        background: NEUMO_BG,
+        boxShadow: pressed ? NEUMO_PRESSED : NEUMO_REST,
         transform: pressed ? "scale(0.99)" : "scale(1)",
       }}
     >
       <div className="flex-shrink-0">{props.avatar}</div>
       <div className="flex flex-col items-start min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[16px] font-semibold" style={{ color: props.nameColor || "#3b3f4b" }}>
+          <span className="text-[16px] font-semibold" style={{ color: props.nameColor || "rgba(230,235,245,0.95)" }}>
             {props.name}
           </span>
           {props.badge && (
             <span
               className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
               style={{
-                background: "#e8eaf0",
-                color: "#5563d3",
-                boxShadow: "inset 2px 2px 4px rgba(163,177,198,0.45), inset -2px -2px 4px rgba(255,255,255,0.95)",
+                background: NEUMO_BG,
+                color: props.accentColor || "rgba(0,225,255,0.92)",
+                boxShadow: NEUMO_INSET_SMALL,
               }}
             >
               {props.badge}
             </span>
           )}
         </div>
-        <span className="text-[11px] mt-0.5" style={{ color: "#7c8290" }}>
+        <span className="text-[11px] mt-0.5" style={{ color: "rgba(170,180,200,0.65)" }}>
           {props.description}
         </span>
       </div>
       <div
         className="ml-auto w-7 h-7 rounded-full flex items-center justify-center"
         style={{
-          background: "#e8eaf0",
-          boxShadow: pressed
-            ? "inset 2px 2px 4px rgba(163,177,198,0.45), inset -2px -2px 4px rgba(255,255,255,0.95)"
-            : "3px 3px 7px rgba(163,177,198,0.50), -3px -3px 7px rgba(255,255,255,0.95)",
+          background: NEUMO_BG,
+          boxShadow: pressed ? NEUMO_INSET_SMALL : NEUMO_SMALL_REST,
         }}
       >
-        <ChevronRight className="w-3.5 h-3.5" style={{ color: "#5563d3" }} />
+        <ChevronRight className="w-3.5 h-3.5" style={{ color: props.accentColor || "rgba(0,225,255,0.85)" }} />
       </div>
     </button>
   );
@@ -7489,16 +7495,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {aiPersonaPickerOpen && !aiTutorActive && (
             <div
               className="fixed inset-0 z-[80] flex items-center justify-center"
-              style={{ background: "rgba(232,234,240,0.55)", backdropFilter: "blur(14px)" }}
+              style={{ background: "rgba(8,12,22,0.78)", backdropFilter: "blur(14px)" }}
               data-testid="ai-persona-picker-overlay"
               onClick={() => setAiPersonaPickerOpen(false)}
             >
-              {/* Neumorphic surface — soft single-tone background, no neon */}
+              {/* Dark neumorphic surface — sculpted out of the dark theme */}
               <div
                 className="relative flex flex-col items-center rounded-[28px] mx-4"
                 style={{
-                  background: "#e8eaf0",
-                  boxShadow: "12px 12px 32px rgba(163,177,198,0.55), -12px -12px 32px rgba(255,255,255,0.95)",
+                  background: NEUMO_BG,
+                  boxShadow: `14px 14px 36px ${NEUMO_SHADOW_DARK}, -14px -14px 36px ${NEUMO_SHADOW_LIGHT}`,
                   width: "min(90vw, 440px)",
                   padding: "30px 26px 26px",
                 }}
@@ -7509,34 +7515,34 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   onClick={() => setAiPersonaPickerOpen(false)}
                   className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-95"
                   style={{
-                    background: "#e8eaf0",
-                    boxShadow: "4px 4px 10px rgba(163,177,198,0.50), -4px -4px 10px rgba(255,255,255,0.92)",
-                    color: "#6b7280",
+                    background: NEUMO_BG,
+                    boxShadow: NEUMO_SMALL_REST,
+                    color: "rgba(180,190,210,0.70)",
                   }}
-                  onMouseDown={e => { e.currentTarget.style.boxShadow = "inset 3px 3px 6px rgba(163,177,198,0.55), inset -3px -3px 6px rgba(255,255,255,0.95)"; }}
-                  onMouseUp={e => { e.currentTarget.style.boxShadow = "4px 4px 10px rgba(163,177,198,0.50), -4px -4px 10px rgba(255,255,255,0.92)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow = "4px 4px 10px rgba(163,177,198,0.50), -4px -4px 10px rgba(255,255,255,0.92)"; }}
+                  onMouseDown={e => { e.currentTarget.style.boxShadow = NEUMO_INSET_SMALL; }}
+                  onMouseUp={e => { e.currentTarget.style.boxShadow = NEUMO_SMALL_REST; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = NEUMO_SMALL_REST; }}
                   data-testid="button-persona-picker-close"
                 >
                   <X className="w-4 h-4" />
                 </button>
 
-                {/* Header */}
+                {/* Header pill (inset) */}
                 <div
                   className="flex items-center gap-2 mb-1.5 px-4 py-2 rounded-full"
                   style={{
-                    background: "#e8eaf0",
-                    boxShadow: "inset 3px 3px 7px rgba(163,177,198,0.45), inset -3px -3px 7px rgba(255,255,255,0.95)",
+                    background: NEUMO_BG,
+                    boxShadow: NEUMO_INSET_SMALL,
                   }}
                 >
-                  <BrainCircuit className="w-4 h-4" style={{ color: "#5563d3" }} />
-                  <span className="text-[14px] font-semibold" style={{ color: "#3b3f4b" }}>Choose Your Tutor</span>
+                  <BrainCircuit className="w-4 h-4" style={{ color: "rgba(0,225,255,0.92)" }} />
+                  <span className="text-[14px] font-semibold" style={{ color: "rgba(230,235,245,0.95)" }}>Choose Your Tutor</span>
                 </div>
-                <p className="text-[12px] text-center mb-7 mt-3" style={{ color: "#7c8290" }}>
+                <p className="text-[12px] text-center mb-7 mt-3" style={{ color: "rgba(170,180,200,0.65)" }}>
                   Pick a tutor — your choice is locked for the session.
                 </p>
 
-                {/* Persona cards (neumorphic) */}
+                {/* Persona cards (dark neumorphic) */}
                 <div className="flex flex-col gap-4 w-full">
                   {/* Female — Afi K */}
                   <NeumorphicPersonaCard
@@ -7545,16 +7551,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     avatar={
                       <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
                         style={{
-                          background: "#e8eaf0",
-                          boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.45), inset -3px -3px 6px rgba(255,255,255,0.92)",
-                          color: "#d65a9c",
+                          background: NEUMO_BG,
+                          boxShadow: NEUMO_INSET_SMALL,
+                          color: "rgba(255,140,210,0.90)",
                         }}>
                         ♀
                       </div>
                     }
                     name="Afi K"
                     description="Funny · flirty · welcomes joiners by name"
-                    nameColor="#b3417e"
+                    nameColor="rgba(255,180,220,0.95)"
+                    accentColor="rgba(255,140,210,0.90)"
                   />
 
                   {/* Male — Dude Lebowski */}
@@ -7564,45 +7571,49 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     avatar={
                       <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
                         style={{
-                          background: "#e8eaf0",
-                          boxShadow: "inset 3px 3px 6px rgba(163,177,198,0.45), inset -3px -3px 6px rgba(255,255,255,0.92)",
-                          color: "#3b6fd8",
+                          background: NEUMO_BG,
+                          boxShadow: NEUMO_INSET_SMALL,
+                          color: "rgba(120,180,255,0.90)",
                         }}>
                         ♂
                       </div>
                     }
                     name="Dude Lebowski"
                     description="Laid-back · conversational · easy-going"
-                    nameColor="#2f5bbd"
+                    nameColor="rgba(150,195,255,0.95)"
+                    accentColor="rgba(120,180,255,0.90)"
                   />
 
-                  {/* Eva — Sesame CSM (real portrait avatar) */}
+                  {/* Eva — Sesame CSM (detailed AI portrait, neumorphic ring) */}
                   <NeumorphicPersonaCard
                     testId="button-persona-eva"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Eva"); }}
                     avatar={
-                      <div className="w-14 h-14 rounded-full p-[3px]"
+                      <div className="w-14 h-14 rounded-full p-[3px] flex items-center justify-center"
                         style={{
-                          background: "#e8eaf0",
-                          boxShadow: "4px 4px 10px rgba(163,177,198,0.50), -4px -4px 10px rgba(255,255,255,0.95)",
+                          background: NEUMO_BG,
+                          boxShadow: NEUMO_SMALL_REST,
                         }}>
-                        <img
-                          src={evaAvatarUrl}
-                          alt="Eva avatar"
-                          className="w-full h-full rounded-full object-cover"
-                          style={{ boxShadow: "inset 0 0 0 1px rgba(163,177,198,0.25)" }}
-                          data-testid="img-eva-avatar"
-                        />
+                        <div className="w-full h-full rounded-full overflow-hidden"
+                          style={{ boxShadow: `inset 0 0 0 1px rgba(0,225,255,0.40), inset 0 0 8px rgba(0,225,255,0.18)` }}>
+                          <img
+                            src={evaAvatarUrl}
+                            alt="Eva avatar"
+                            className="w-full h-full object-cover"
+                            data-testid="img-eva-avatar"
+                          />
+                        </div>
                       </div>
                     }
                     name="Eva"
                     badge="NEW AI"
                     description="Sesame CSM · Natural & expressive"
-                    nameColor="#3b3f4b"
+                    nameColor="rgba(160,235,255,0.97)"
+                    accentColor="rgba(0,225,255,0.95)"
                   />
                 </div>
 
-                <p className="text-[10px] mt-6" style={{ color: "#9aa0ad" }}>
+                <p className="text-[10px] mt-6" style={{ color: "rgba(170,180,200,0.45)" }}>
                   Voice selection is locked once the session starts
                 </p>
               </div>
