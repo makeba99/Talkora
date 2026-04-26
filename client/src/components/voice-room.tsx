@@ -61,6 +61,48 @@ const NEUMO_PRESSED = `inset 5px 5px 12px ${NEUMO_SHADOW_DARK}, inset -5px -5px 
 const NEUMO_SMALL_REST = `4px 4px 10px ${NEUMO_SHADOW_DARK}, -4px -4px 10px ${NEUMO_SHADOW_LIGHT}`;
 const NEUMO_INSET_SMALL = `inset 3px 3px 7px ${NEUMO_SHADOW_DARK}, inset -3px -3px 7px ${NEUMO_SHADOW_LIGHT}`;
 
+// Layered avatar: outer color halo + raised neumorphic disc + inset color-tinted well.
+// Gives every persona that "glowing orb" look from the reference design.
+function NeumorphicAvatarRing(props: {
+  glowRgb: string; // e.g. "0,225,255" — the persona's signature color
+  content: ReactNode;
+  intense?: boolean; // brighter halo for the hero (Eva)
+}) {
+  const halo = props.intense ? 0.70 : 0.45;
+  const haloBlur = props.intense ? 10 : 7;
+  return (
+    <div className="relative w-14 h-14 flex-shrink-0">
+      {/* Outer color halo (sits behind the disc) */}
+      <div
+        className="absolute -inset-1.5 rounded-full pointer-events-none"
+        style={{
+          background: `radial-gradient(circle, rgba(${props.glowRgb},${halo}) 0%, rgba(${props.glowRgb},0) 65%)`,
+          filter: `blur(${haloBlur}px)`,
+        }}
+      />
+      {/* Raised neumorphic disc */}
+      <div
+        className="relative w-full h-full rounded-full p-[3px]"
+        style={{
+          background: NEUMO_BG,
+          boxShadow: `4px 4px 12px ${NEUMO_SHADOW_DARK}, -4px -4px 12px ${NEUMO_SHADOW_LIGHT}, 0 0 14px rgba(${props.glowRgb},${props.intense ? 0.30 : 0.15})`,
+        }}
+      >
+        {/* Inset well with subtle color tint + inner color ring */}
+        <div
+          className="w-full h-full rounded-full flex items-center justify-center overflow-hidden"
+          style={{
+            background: `radial-gradient(circle at 30% 25%, rgba(${props.glowRgb},0.18), ${NEUMO_BG} 75%)`,
+            boxShadow: `inset 3px 3px 6px ${NEUMO_SHADOW_DARK}, inset -3px -3px 6px ${NEUMO_SHADOW_LIGHT}, inset 0 0 0 1px rgba(${props.glowRgb},0.40), inset 0 0 8px rgba(${props.glowRgb},0.20)`,
+          }}
+        >
+          {props.content}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NeumorphicPersonaCard(props: {
   testId: string;
   onClick: () => void;
@@ -7548,16 +7590,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <NeumorphicPersonaCard
                     testId="button-persona-female"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Female", "Afi K"); }}
-                    avatar={
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
-                        style={{
-                          background: NEUMO_BG,
-                          boxShadow: NEUMO_INSET_SMALL,
-                          color: "rgba(255,140,210,0.90)",
-                        }}>
-                        ♀
-                      </div>
-                    }
+                    avatar={<NeumorphicAvatarRing glowRgb="255,140,210" content={<span className="text-2xl font-light leading-none" style={{ color: "rgba(255,200,230,0.98)", textShadow: "0 0 10px rgba(255,140,210,0.55)" }}>♀</span>} />}
                     name="Afi K"
                     description="Funny · flirty · welcomes joiners by name"
                     nameColor="rgba(255,180,220,0.95)"
@@ -7568,16 +7601,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <NeumorphicPersonaCard
                     testId="button-persona-male"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Dude"); }}
-                    avatar={
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
-                        style={{
-                          background: NEUMO_BG,
-                          boxShadow: NEUMO_INSET_SMALL,
-                          color: "rgba(120,180,255,0.90)",
-                        }}>
-                        ♂
-                      </div>
-                    }
+                    avatar={<NeumorphicAvatarRing glowRgb="120,180,255" content={<span className="text-2xl font-light leading-none" style={{ color: "rgba(180,215,255,0.98)", textShadow: "0 0 10px rgba(120,180,255,0.55)" }}>♂</span>} />}
                     name="Dude Lebowski"
                     description="Laid-back · conversational · easy-going"
                     nameColor="rgba(150,195,255,0.95)"
@@ -7588,23 +7612,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <NeumorphicPersonaCard
                     testId="button-persona-eva"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Eva"); }}
-                    avatar={
-                      <div className="w-14 h-14 rounded-full p-[3px] flex items-center justify-center"
-                        style={{
-                          background: NEUMO_BG,
-                          boxShadow: NEUMO_SMALL_REST,
-                        }}>
-                        <div className="w-full h-full rounded-full overflow-hidden"
-                          style={{ boxShadow: `inset 0 0 0 1px rgba(0,225,255,0.40), inset 0 0 8px rgba(0,225,255,0.18)` }}>
-                          <img
-                            src={evaAvatarUrl}
-                            alt="Eva avatar"
-                            className="w-full h-full object-cover"
-                            data-testid="img-eva-avatar"
-                          />
-                        </div>
-                      </div>
-                    }
+                    avatar={<NeumorphicAvatarRing glowRgb="0,225,255" intense content={<img src={evaAvatarUrl} alt="Eva avatar" className="w-full h-full object-cover rounded-full" data-testid="img-eva-avatar" />} />}
                     name="Eva"
                     badge="NEW AI"
                     description="Sesame CSM · Natural & expressive"
