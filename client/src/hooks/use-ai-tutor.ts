@@ -64,6 +64,16 @@ const MALE_INTROS = [
   "Hey! It's Dude. Ready when you are — what do you want to work on?",
 ];
 
+// Eva — warm, emotional, natural (Sesame "Maya"-like). She introduces herself
+// as Eva, never as "Dude" or "Afi K". Keep the lines short and personal so
+// the ElevenLabs voice has room to breathe.
+const EVA_INTROS = [
+  "Hey, I'm Eva. So glad you're here — what's on your mind?",
+  "Hi there. I'm Eva. Tell me anything — I'm listening.",
+  "Hey you, I'm Eva. Take your time — what do you wanna talk about?",
+  "Mmm hi, I'm Eva. Whenever you're ready, just start talking.",
+];
+
 const FALLBACK_RESPONSES = [
   "I heard you. Say that one more way?",
   "Got it. What part matters most?",
@@ -459,8 +469,13 @@ export function useAiTutor(deps: AiTutorDeps) {
     setAiDebugLog([]);
     setAiLastBroadcast(null);
 
-    // Persona-specific intro
-    const intros = voice === "Female" ? FEMALE_INTROS : MALE_INTROS;
+    // Persona-specific intro — Eva gets her own warm, female intros so she
+    // never says "I'm Dude" or "I'm Afi K" through the ElevenLabs voice.
+    const intros = voice === "Eva"
+      ? EVA_INTROS
+      : voice === "Female"
+        ? FEMALE_INTROS
+        : MALE_INTROS;
     const intro = intros[Math.floor(Math.random() * intros.length)];
     const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
     setAiConversation([introMsg]);
@@ -479,7 +494,11 @@ export function useAiTutor(deps: AiTutorDeps) {
       setAiConversation([]);
       setAiDebugLog([]);
       setAiLastBroadcast(null);
-      const intros = aiSettings.voice === "Male" ? MALE_INTROS : FEMALE_INTROS;
+      const intros = aiSettings.voice === "Eva"
+        ? EVA_INTROS
+        : aiSettings.voice === "Male"
+          ? MALE_INTROS
+          : FEMALE_INTROS;
       const intro = intros[Math.floor(Math.random() * intros.length)];
       const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
       setAiConversation([introMsg]);

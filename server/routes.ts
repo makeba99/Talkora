@@ -2602,21 +2602,33 @@ export async function registerRoutes(
     }
   }
 
-  function startRoomDeleteTimer(roomId: string) {
+  // Grace period for an empty room before it's auto-deleted.
+  // 60s gives users plenty of time to handle network blips, mobile-app
+  // backgrounding, page refreshes, and quick re-joins without losing the room.
+  const ROOM_EMPTY_GRACE_MS = 60_000;
+  // Longer grace at server startup — clients still need to socket-reconnect
+  // and re-emit `room:join` to repopulate the in-memory participants map,
+  // so we wait substantially longer before assuming a room is truly empty.
+  const ROOM_STARTUP_GRACE_MS = 120_000;
+
+  function startRoomDeleteTimer(roomId: string, graceMs: number = ROOM_EMPTY_GRACE_MS) {
     cancelRoomDeleteTimer(roomId);
     const timer = setTimeout(async () => {
       try {
         const participants = roomParticipants.get(roomId);
+        // Double-check the room is still empty AND has no live socket
+        // connections claiming it before we destroy it.
         if (!participants || participants.size === 0) {
           await storage.deleteRoom(roomId);
           roomParticipants.delete(roomId);
           roomDeleteTimers.delete(roomId);
           io.emit("room:deleted", { roomId });
+          console.log(`[room-cleanup] Deleted empty room ${roomId} after ${Math.round(graceMs / 1000)}s grace`);
         }
       } catch (err) {
         console.error("Error auto-deleting room:", err);
       }
-    }, 5000);
+    }, graceMs);
     roomDeleteTimers.set(roomId, timer);
   }
 
@@ -2957,13 +2969,16 @@ export async function registerRoutes(
       for (const room of allRooms) {
         const participants = roomParticipants.get(room.id);
         if (!participants || participants.size === 0) {
-          startRoomDeleteTimer(room.id);
+          // Use the longer startup grace so clients have time to socket-
+          // reconnect and re-emit `room:join` after a server restart.
+          // Without this, every redeploy nukes rooms while users are inside.
+          startRoomDeleteTimer(room.id, ROOM_STARTUP_GRACE_MS);
         }
       }
       console.log(`Startup cleanup: scheduled ${allRooms.filter(r => {
         const p = roomParticipants.get(r.id);
         return !p || p.size === 0;
-      }).length} empty rooms for deletion`);
+      }).length} empty rooms for deletion (grace=${Math.round(ROOM_STARTUP_GRACE_MS / 1000)}s)`);
     } catch (err) {
       console.error("Startup room cleanup error:", err);
     }
