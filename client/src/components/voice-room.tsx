@@ -7494,6 +7494,39 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </div>
                     </div>
                   </button>
+
+                  {/* Eva — Sesame CSM (new AI voice) */}
+                  <button
+                    data-testid="button-persona-eva"
+                    onClick={() => {
+                      setAiPersonaPickerOpen(false);
+                      startWithPersona("Eva", "Eva");
+                    }}
+                    className="group relative flex items-center gap-4 w-full rounded-2xl px-5 py-4 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(0,225,255,0.16) 0%, rgba(0,140,255,0.12) 100%)",
+                      border: "1.5px solid rgba(0,225,255,0.45)",
+                      boxShadow: "0 4px 22px rgba(0,200,255,0.14)",
+                    }}
+                  >
+                    {/* Avatar circle */}
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold"
+                      style={{ background: "linear-gradient(135deg, rgba(0,225,255,0.55) 0%, rgba(0,120,220,0.40) 100%)", border: "2px solid rgba(0,225,255,0.55)" }}>
+                      ✨
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[16px] font-bold" style={{ color: "rgba(160,235,255,0.97)" }}>Eva</span>
+                        <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: "rgba(0,225,255,0.18)", color: "rgba(0,225,255,0.95)", border: "1px solid rgba(0,225,255,0.40)" }}>NEW AI</span>
+                      </div>
+                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>Sesame CSM · Natural & expressive</span>
+                    </div>
+                    <div className="ml-auto">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(0,225,255,0.22)", border: "1px solid rgba(0,225,255,0.45)" }}>
+                        <ChevronRight className="w-3.5 h-3.5" style={{ color: "rgba(160,235,255,0.85)" }} />
+                      </div>
+                    </div>
+                  </button>
                 </div>
 
                 <p className="text-[10px] mt-5" style={{ color: "rgba(255,255,255,0.25)" }}>
@@ -8036,7 +8069,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       {aiTutorActive && <span className="text-[9px] mt-0.5" style={{ color: "rgba(255,200,80,0.65)" }}>Locked for this session</span>}
                     </div>
                     <button
-                      onClick={() => !aiTutorActive && setAiTutorSettings(s => ({ ...s, voice: s.voice === "Female" ? "Male" : "Female", voiceId: null }))}
+                      onClick={() => !aiTutorActive && setAiTutorSettings(s => ({
+                        ...s,
+                        // Cycle Female → Male → Eva → Female
+                        voice: s.voice === "Female" ? "Male" : s.voice === "Male" ? "Eva" : "Female",
+                        voiceId: null,
+                      }))}
                       data-testid="button-voice-toggle"
                       disabled={aiTutorActive}
                       className="text-[11px] font-semibold px-3 py-1 rounded-md transition-all"
@@ -8044,8 +8082,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         ? { background: "rgba(80,80,100,0.30)", border: "1px solid rgba(255,200,80,0.25)", color: "rgba(255,200,80,0.70)", cursor: "not-allowed" }
                         : { background: "rgba(0,180,255,0.15)", border: "1px solid rgba(0,225,255,0.35)", color: "rgba(0,225,255,0.90)", cursor: "pointer" }}>
                       {aiTutorActive
-                        ? (aiTutorSettings.voice === "Female" ? `♀ ${aiPersonaName}` : `♂ ${aiPersonaName}`)
-                        : (aiTutorSettings.voice === "Female" ? "♀ Female" : "♂ Male")}
+                        ? (aiTutorSettings.voice === "Female" ? `♀ ${aiPersonaName}` : aiTutorSettings.voice === "Male" ? `♂ ${aiPersonaName}` : `✨ ${aiPersonaName}`)
+                        : (aiTutorSettings.voice === "Female" ? "♀ Female" : aiTutorSettings.voice === "Male" ? "♂ Male" : "✨ Eva (Sesame)")}
                     </button>
                   </div>
                   <div>
@@ -8054,7 +8092,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.38)" }}>LivePortrait</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
-                      {AI_TUTOR_AVATARS.filter(avatar => avatar.gender === "Female").map(avatar => (
+                      {AI_TUTOR_AVATARS.filter(avatar => avatar.gender === "Female" || aiTutorSettings.voice === "Eva").map(avatar => (
                         <button
                           key={avatar.id}
                           onClick={() => setAiTutorSettings(s => ({ ...s, avatarId: avatar.id }))}

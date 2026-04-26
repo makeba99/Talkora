@@ -434,7 +434,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => { interruptAiRef.current = interruptAi; }, [interruptAi]);
 
   // ── Start with a specific persona (voice + name, locked for session) ──────
-  const startWithPersona = useCallback((voice: "Female" | "Male", pName: string) => {
+  const startWithPersona = useCallback((voice: VoicePersona, pName: string) => {
     if (aiActive) return;
     // Lock the persona for this session
     personaLockedRef.current = true;
@@ -516,7 +516,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       onSentenceEnd: () => {},
       onViseme: shape => setCurrentViseme(shape),
     });
-    engine.configure(voice as "Female" | "Male", speed, voiceId);
+    engine.configure(voice as VoicePersona, speed, voiceId);
     engine.enqueue(text);
   }, []);
 
@@ -538,7 +538,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => {
     if (!socket) return;
 
-    const onState = (data: { active: boolean; userId: string | null; username: string | null; speaking: boolean; avatarId?: string | null; voice?: "Female" | "Male" | null; voiceId?: string | null }) => {
+    const onState = (data: { active: boolean; userId: string | null; username: string | null; speaking: boolean; avatarId?: string | null; voice?: VoicePersona | null; voiceId?: string | null }) => {
       setAiRoomSession(data);
     };
 

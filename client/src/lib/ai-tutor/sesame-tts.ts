@@ -15,6 +15,7 @@
 import type { TtsCallbacks } from "./tts";
 import type { Viseme } from "./lipsync";
 import { getNextActiveViseme } from "./lipsync";
+import type { VoicePersona } from "./types";
 
 interface QueueItem {
   text: string;
@@ -24,7 +25,7 @@ interface QueueItem {
 export class SesameTtsEngine {
   private queue: QueueItem[] = [];
   private active = false;
-  private voice: "Female" | "Male" = "Female";
+  private voice: VoicePersona = "Eva";
   private voiceId: string | null = null;
   private speed = 1.0;
   private language = "en";
@@ -41,7 +42,7 @@ export class SesameTtsEngine {
     this.callbacks = callbacks;
   }
 
-  configure(voice: "Female" | "Male", speed: number, voiceId?: string | null) {
+  configure(voice: VoicePersona, speed: number, voiceId?: string | null) {
     this.voice = voice;
     this.speed = speed;
     this.voiceId = voiceId || null;

@@ -8,6 +8,7 @@
  */
 
 import { getWordViseme, getNextActiveViseme, type Viseme } from "./lipsync";
+import type { VoicePersona } from "./types";
 
 export type TtsCallbacks = {
   onStart: () => void;
@@ -23,6 +24,9 @@ export class TtsEngine {
   private watchdog: ReturnType<typeof setInterval> | null = null;
   private visemeTimer: ReturnType<typeof setInterval> | null = null;
   private boundarySupported = true;
+  // Browser engine internally treats Eva as Female (it's a bright young
+  // female voice); Eva is normally routed to Sesame, this is just the
+  // graceful fallback if Sesame is offline.
   private voice: "Female" | "Male" = "Female";
   private voiceId: string | null = null;
   // Natural conversational pace — 0.7 was robotically slow.
@@ -46,8 +50,9 @@ export class TtsEngine {
     }
   }
 
-  configure(voice: "Female" | "Male", speed: number, voiceId?: string | null) {
-    this.voice = voice;
+  configure(voice: VoicePersona, speed: number, voiceId?: string | null) {
+    // Browser engine has no Eva voice — collapse it onto Female.
+    this.voice = voice === "Male" ? "Male" : "Female";
     this.speed = speed;
     this.voiceId = voiceId || null;
   }

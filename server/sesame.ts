@@ -23,7 +23,7 @@ const CSM_TIMEOUT_MS = Math.max(2000, Number(process.env.SESAME_CSM_TIMEOUT_MS |
 
 export const isSesameConfigured = (): boolean => CSM_URL.length > 0;
 
-export type SesameVoice = "Female" | "Male";
+export type SesameVoice = "Female" | "Male" | "Eva";
 
 export interface SesameTtsRequest {
   text: string;
@@ -49,6 +49,10 @@ export interface SesameTtsResult {
 const VOICE_TO_SPEAKER: Record<SesameVoice, number> = {
   Female: 0,
   Male: 1,
+  // Eva uses the same Sesame female speaker tone as Female (speaker 0); the
+  // distinction here is only that Eva is *always* routed through Sesame —
+  // Female stays on the browser engine.
+  Eva: 0,
 };
 
 export async function sesameSynthesize(req: SesameTtsRequest): Promise<SesameTtsResult> {

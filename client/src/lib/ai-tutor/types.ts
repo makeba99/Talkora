@@ -1,8 +1,12 @@
+// "Eva" is the new Sesame-powered voice persona. Female/Male keep using the
+// browser SpeechSynthesis engine (the original "Afi K" / "Dude" personas).
+export type VoicePersona = "Female" | "Male" | "Eva";
+
 export interface AiTutorSettings {
   correctionMode: "live" | "after" | "off";
   teachingStyle: string;
   personality: string;
-  voice: "Female" | "Male";
+  voice: VoicePersona;
   voiceId?: string | null;
   avatarId: string;
   speed: number;
@@ -32,7 +36,7 @@ export interface RoomAiSession {
   username: string | null;
   speaking: boolean;
   avatarId?: string | null;
-  voice?: "Female" | "Male" | null;
+  voice?: VoicePersona | null;
   voiceId?: string | null;
 }
 
