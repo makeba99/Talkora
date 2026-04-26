@@ -1,7 +1,7 @@
 import type { Viseme, MouthShape } from "@/lib/ai-tutor/lipsync";
 import { MOUTH_SHAPES } from "@/lib/ai-tutor/lipsync";
 import femaleSrc from "@assets/ai-tutor-female-neumorphic.png";
-import maleSrc from "@assets/ai-tutor-male-nobg.png";
+import maleSrc from "@assets/ai-tutor-male-neumorphic.png";
 
 interface AiTutorFaceProps {
   gender: "Male" | "Female";
@@ -14,14 +14,20 @@ export function AiTutorFace({ gender, viseme, speaking }: AiTutorFaceProps) {
   const isMale = gender === "Male";
   const imgSrc = isMale ? maleSrc : femaleSrc;
 
-  const mouthX = isMale ? 100 : 100;
-  const mouthY = isMale ? 130 : 128;
-  const mouthW = isMale ? 44 : 38;
-  const skinColor = isMale ? "#b8956e" : "#e9c4b8";
-  const skinColorEdge = isMale ? "rgba(168,128,90,0)" : "rgba(233,196,184,0)";
+  // Mouth coordinates measured against the actual neumorphic portraits
+  // (both 1024x1024 source images mapped into a 200x200 SVG viewBox).
+  // viewBox-x = image-x / 1024 * 200, same for y.
+  const mouthX = isMale ? 101 : 101;
+  const mouthY = isMale ? 129 : 121;
+  const mouthW = isMale ? 26 : 24;
+  // Skin-blend ellipse colors — match each character's face tone so the
+  // patch covering their natural closed mouth disappears into their skin.
+  const skinColor = isMale ? "#d4a487" : "#f0c8b8";
+  const skinColorEdge = isMale ? "rgba(212,164,135,0)" : "rgba(240,200,184,0)";
   const gradId = isMale ? "skin-cover-m" : "skin-cover-f";
-  const lipU = isMale ? "#a87865" : "#d8788a";
-  const lipL = isMale ? "#bf9080" : "#e6909e";
+  // Lip colors for the animated overlay — tuned to each character's natural lips.
+  const lipU = isMale ? "#b07a6a" : "#d8788a";
+  const lipL = isMale ? "#c89080" : "#e6909e";
   const sx = mouthW / 60;
   const sy = 0.75;
   const tx = mouthX - 30 * sx;
@@ -80,14 +86,15 @@ export function AiTutorFace({ gender, viseme, speaking }: AiTutorFaceProps) {
           </radialGradient>
         </defs>
 
-        {/* Skin-blend patch to cover original closed-mouth smile */}
+        {/* Skin-blend patch to cover original closed-mouth smile.
+            Sized to roughly the natural mouth + a soft halo so edges fade. */}
         <ellipse
           cx={mouthX}
           cy={mouthY + 1}
-          rx={28}
-          ry={11}
+          rx={isMale ? 18 : 16}
+          ry={isMale ? 8 : 7}
           fill={`url(#${gradId})`}
-          opacity={speaking ? 0.9 : 0.6}
+          opacity={speaking ? 0.85 : 0.55}
         />
 
         {/* Animated mouth group */}
