@@ -746,7 +746,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               pixels outside the body never get clipped at the top. The outer
               card already owns the rounded-corner clipping. */}
           <div className="flex-1 flex flex-col justify-center px-3 pt-2 pb-1 min-h-0 overflow-visible">
-            <div className={`grid ${isPremiumAtmosphere ? "gap-3" : "gap-2"}`} style={{ gridTemplateColumns: `repeat(${gridCols}, auto)`, justifyContent: room.maxUsers <= 4 ? "center" : "start" }}>
+            <div className={`grid ${isPremiumAtmosphere ? "gap-3" : "gap-2"}`} style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
