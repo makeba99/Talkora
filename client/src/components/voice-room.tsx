@@ -6776,7 +6776,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     auto-advances the queue once a majority of the room agrees.
                     None of this affects the starter's playhead. */}
                 <div
-                  className="absolute bottom-3 right-3 z-20 flex items-center gap-2"
+                  className="absolute right-3 z-20 flex items-center gap-2 transition-[bottom] duration-200 bottom-3 group-hover/ytplayer:bottom-20"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {ytReactionsOpen && (
