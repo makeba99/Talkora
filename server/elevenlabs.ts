@@ -24,7 +24,10 @@ const API_KEYS: string[] = RAW_KEYS
   .map(s => s.trim())
   .filter(s => s.length > 0);
 
-const DEFAULT_VOICE_ID = (process.env.ELEVENLABS_EVA_VOICE_ID || "21m00Tcm4TlvDq8ikWAM").trim(); // Rachel
+// Default to "Sarah" (mature, reassuring, confident) — works on the free tier.
+// Rachel (21m00Tcm4TlvDq8ikWAM) sounds great but is a library voice that
+// requires a paid plan. Override via ELEVENLABS_EVA_VOICE_ID if upgrading.
+const DEFAULT_VOICE_ID = (process.env.ELEVENLABS_EVA_VOICE_ID || "EXAVITQu4vr4xnSDxMaL").trim(); // Sarah
 const MODEL_ID = (process.env.ELEVENLABS_MODEL_ID || "eleven_turbo_v2_5").trim();
 const TIMEOUT_MS = Math.max(2000, Number(process.env.ELEVENLABS_TIMEOUT_MS || 30000));
 const BASE_URL = "https://api.elevenlabs.io/v1";
@@ -120,14 +123,16 @@ export async function elevenLabsSynthesize(req: ElevenLabsTtsRequest): Promise<E
   const safeText = text.length > 1000 ? text.slice(0, 1000) : text;
   const voiceId = resolveVoiceId(req.voice);
 
+  // NOTE: `style` and `use_speaker_boost` are PAID-PLAN-ONLY features on
+  // ElevenLabs. Including them on a free-tier key causes the API to respond
+  // with HTTP 402 paid_plan_required, even though the model itself is free.
+  // Keep voice_settings to the two free-tier-safe knobs only.
   const payload: Record<string, unknown> = {
     text: safeText,
     model_id: MODEL_ID,
     voice_settings: {
       stability: 0.40,
       similarity_boost: 0.75,
-      style: 0.35,
-      use_speaker_boost: true,
     },
   };
   if (req.language && req.language.length >= 2) {
