@@ -910,6 +910,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [ytPlayerError, setYtPlayerError] = useState<null | { code?: number; message: string }>(null);
   const [ytRetryNonce, setYtRetryNonce] = useState(0);
   const ytHostFallbackRef = useRef(false);
+  // Tracks whether we've already auto-retried the alternate host for the
+  // currently-mounted video. Reset every time activeYoutubeId changes so each
+  // new video gets its own one-shot recovery attempt before showing an error.
+  const ytHostAutoRetriedRef = useRef(false);
   const ytLoadTimeoutRef = useRef<number | null>(null);
 
   const [ytFloatingReactions, setYtFloatingReactions] = useState<Array<{ id: string; emoji: string; left: number; userId: string }>>([]);
@@ -2315,6 +2319,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setYtIsPlaying(false);
       setYoutubeActive(false);
       ytHostFallbackRef.current = false;
+      ytHostAutoRetriedRef.current = false;
       if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); ytLoadTimeoutRef.current = null; }
       return;
     }
@@ -2503,6 +2508,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               //   100 – video not found / private / removed
               //   101 / 150 – embed disabled by owner
               const code = Number(e?.data);
+              // Auto-retry once on the *other* host before showing an error.
+              // Some videos are blocked on youtube-nocookie.com but work on
+              // www.youtube.com (and vice-versa for ad-blockers). This avoids
+              // making every user click "Retry" by hand.
+              const isRecoverable = code === 5 || code === 101 || code === 150;
+              if (isRecoverable && !ytHostAutoRetriedRef.current) {
+                console.log("[YT] auto-retry on alternate host");
+                ytHostAutoRetriedRef.current = true;
+                ytHostFallbackRef.current = !ytHostFallbackRef.current;
+                setYtPlayerLoading(true);
+                setYtPlayerReady(false);
+                setYtRetryNonce((n) => n + 1);
+                return;
+              }
               const messages: Record<number, string> = {
                 2:   "Invalid video ID.",
                 5:   "Playback error in this browser. Try a refresh.",

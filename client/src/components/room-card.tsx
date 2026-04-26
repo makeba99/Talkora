@@ -455,28 +455,32 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const displaySlots = Array.from({ length: Math.min(room.maxUsers, 10) });
 
   /* viewport-based scale factor so the participant circles grow on bigger screens
-     while the card itself stays a comfortable, fixed-feeling size */
+     while the card itself stays a comfortable, fixed-feeling size.
+     Crowded rooms (6+ users, two-row grids) scale less aggressively so the
+     avatars never push past the card's available vertical space. */
   const [circleScale, setCircleScale] = useState(1);
   useEffect(() => {
     const compute = () => {
       const w = window.innerWidth;
-      if (w >= 1536) setCircleScale(1.35);
-      else if (w >= 1280) setCircleScale(1.18);
-      else if (w >= 1024) setCircleScale(1.05);
-      else setCircleScale(1);
+      const crowded = room.maxUsers >= 6;
+      if (w >= 1536) setCircleScale(crowded ? 1.12 : 1.35);
+      else if (w >= 1280) setCircleScale(crowded ? 1.04 : 1.18);
+      else if (w >= 1024) setCircleScale(crowded ? 0.98 : 1.05);
+      else setCircleScale(crowded ? 0.94 : 1);
     };
     compute();
     window.addEventListener("resize", compute);
     return () => window.removeEventListener("resize", compute);
-  }, []);
+  }, [room.maxUsers]);
 
-  /* circle size is based on room.maxUsers — fixed per room, never changes with current participants */
+  /* circle size is based on room.maxUsers — fixed per room, never changes with current participants.
+     Sized so two rows fit comfortably inside the card body without ever clipping the top row. */
   const baseCircleSize =
     room.maxUsers <= 2 ? 76 :
     room.maxUsers <= 4 ? 68 :
-    room.maxUsers <= 6 ? 60 :
-    room.maxUsers <= 8 ? 52 :
-    room.maxUsers <= 10 ? 46 : 40;
+    room.maxUsers <= 6 ? 54 :
+    room.maxUsers <= 8 ? 46 :
+    room.maxUsers <= 10 ? 42 : 38;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -663,8 +667,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             </div>
           </div>
 
-          {/* ── Body: unified neon ring circle grid ── */}
-          <div className="flex-1 flex flex-col justify-center px-3 pt-2 pb-1 overflow-hidden">
+          {/* ── Body: unified neon ring circle grid ──
+              `overflow-visible` so avatar rings/decorations that extend a few
+              pixels outside the body never get clipped at the top. The outer
+              card already owns the rounded-corner clipping. */}
+          <div className="flex-1 flex flex-col justify-center px-3 pt-2 pb-1 min-h-0 overflow-visible">
             <div className={`grid ${isPremiumAtmosphere ? "gap-3" : "gap-2"}`} style={{ gridTemplateColumns: `repeat(${gridCols}, auto)`, justifyContent: room.maxUsers <= 4 ? "center" : "start" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];

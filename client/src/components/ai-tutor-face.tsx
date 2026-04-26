@@ -1,5 +1,5 @@
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
-import femaleSrc from "@assets/ai-tutor-female-neumorphic.png";
+import femaleSrc from "@assets/ai-tutor-female-v3.png";
 import maleSrc from "@assets/ai-tutor-male-neumorphic.png";
 
 interface AiTutorFaceProps {

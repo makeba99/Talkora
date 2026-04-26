@@ -11,7 +11,7 @@
  * events the way SpeechSynthesisUtterance does.
  */
 
-import type { TtsCallbacks } from "./tts";
+import { TtsEngine, type TtsCallbacks } from "./tts";
 import type { Viseme } from "./lipsync";
 import { getNextActiveViseme } from "./lipsync";
 import type { VoicePersona } from "./types";
@@ -29,6 +29,12 @@ export class EvaTtsEngine {
   private speed = 1.0;
   private language = "en";
   private callbacks: TtsCallbacks;
+  // Browser fallback engine — used automatically when ElevenLabs returns any
+  // error (rate-limit, invalid key, out of credits, network) so the AI Tutor
+  // ALWAYS has a voice. The user gets a one-time toast about Eva being
+  // unavailable but the conversation keeps flowing through the system voice.
+  private fallback: TtsEngine | null = null;
+  private fallbackEngaged = false;
 
   // Web Audio
   private audioCtx: AudioContext | null = null;
@@ -54,6 +60,10 @@ export class EvaTtsEngine {
   enqueue(sentence: string) {
     const text = (sentence || "").trim();
     if (!text) return;
+    if (this.fallbackEngaged) {
+      this.ensureFallback().enqueue(sentence);
+      return;
+    }
     this.queue.push({ text, abort: new AbortController() });
     if (!this.active) this.playNext();
   }
@@ -72,6 +82,36 @@ export class EvaTtsEngine {
     if (this.visemeRaf != null) {
       cancelAnimationFrame(this.visemeRaf);
       this.visemeRaf = null;
+    }
+    this.active = false;
+    this.callbacks.onViseme?.("rest");
+    this.fallback?.cancel();
+  }
+
+  private ensureFallback(): TtsEngine {
+    if (!this.fallback) {
+      this.fallback = new TtsEngine(this.callbacks);
+    }
+    // Use the Female persona on the browser so Afi K still sounds female
+    // when ElevenLabs is unreachable.
+    this.fallback.configure("Female", this.speed, null);
+    return this.fallback;
+  }
+
+  private engageFallback(reason: string, queuedItem?: QueueItem) {
+    if (this.fallbackEngaged) return;
+    this.fallbackEngaged = true;
+    if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
+      (window as any).__vextornOnEvaTtsError(
+        `Eva voice unavailable (${reason}) — switched to the system voice for this session.`
+      );
+    }
+    const fb = this.ensureFallback();
+    if (queuedItem) fb.enqueue(queuedItem.text);
+    // Drain remaining queue through the fallback so the conversation continues
+    while (this.queue.length > 0) {
+      const next = this.queue.shift()!;
+      fb.enqueue(next.text);
     }
     this.active = false;
     this.callbacks.onViseme?.("rest");
@@ -121,20 +161,30 @@ export class EvaTtsEngine {
       });
 
       if (!res.ok) {
-        // Surface the error so the caller can show a toast — DO NOT silently
-        // fall back to the browser voice (the user explicitly picked Eva).
+        // Try to extract the real ElevenLabs error message from the JSON body
+        // so the user sees the actual reason (rate limit / wrong voice id /
+        // missing permission / etc) instead of a generic "may be invalid".
         const errText = await res.text().catch(() => "");
-        const msg = res.status === 502 || res.status === 504
-          ? "Eva voice is unreachable — ElevenLabs didn't respond. Check your API key and quota."
+        let detail = "";
+        try {
+          const j = JSON.parse(errText);
+          detail = j?.error || j?.detail?.message || j?.detail || "";
+        } catch {}
+        const reason = res.status === 502 || res.status === 504
+          ? "ElevenLabs unreachable"
           : res.status === 501
-            ? "Eva voice isn't configured — add an ELEVENLABS_API_KEY secret."
+            ? "no API key configured"
             : res.status === 401 || res.status === 403
-              ? "Eva voice rejected — your ElevenLabs API key may be invalid or out of credits."
-              : `Eva voice failed (${res.status})`;
-        if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
-          (window as any).__vextornOnEvaTtsError(msg);
-        }
-        throw new Error(`tts ${res.status}: ${errText.slice(0, 120)}`);
+              ? "API key rejected (invalid or out of credits)"
+              : res.status === 429
+                ? "rate limited"
+                : detail
+                  ? `HTTP ${res.status}: ${String(detail).slice(0, 120)}`
+                  : `HTTP ${res.status}`;
+        // Engage browser-TTS fallback for THIS sentence and all following
+        // sentences in the session, so the AI Tutor never goes silent.
+        this.engageFallback(reason, item);
+        return;
       }
 
       const audioData = await res.arrayBuffer();
@@ -192,20 +242,11 @@ export class EvaTtsEngine {
         }
         return;
       }
-      // Bubble error so the wrapping factory can fall back to browser TTS.
-      console.warn("[EvaTts] sentence failed, skipping:", err?.message || err);
-      this.callbacks.onSentenceEnd();
-      // Try the next sentence; if none, end.
-      if (this.queue.length > 0) {
-        this.playNext();
-      } else {
-        this.active = false;
-        this.callbacks.onViseme?.("rest");
-        this.callbacks.onEnd();
-        // Re-throw via callback? No — emit a soft signal by returning quietly.
-        // The factory probes /health up front so most cases never reach here.
-        throw err;
-      }
+      // Network or other unexpected error — engage browser-TTS fallback for
+      // this sentence and the rest of the session so the AI Tutor never
+      // goes silent. The user gets a one-time toast explaining the swap.
+      console.warn("[EvaTts] sentence failed, falling back to browser TTS:", err?.message || err);
+      this.engageFallback(`network error (${(err?.message || err || "unknown")})`, item);
     }
   }
 

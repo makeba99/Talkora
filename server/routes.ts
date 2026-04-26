@@ -656,8 +656,13 @@ export async function registerRoutes(
 
       if (!result.ok || !result.body) {
         console.error("[AI Tutor TTS] ElevenLabs error:", result.status, result.error);
-        return res.status(result.status >= 500 ? 502 : result.status).json({
+        const status = result.status >= 500 ? 502 : result.status;
+        // Surface the actual ElevenLabs error message (e.g. "voice_not_found",
+        // "quota_exceeded", "missing_permissions") so the client can show the
+        // real reason instead of a generic "may be invalid" message.
+        return res.status(status).json({
           error: result.error || "tts-failed",
+          detail: { message: result.error, status: result.status },
         });
       }
 
