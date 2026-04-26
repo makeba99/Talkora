@@ -496,12 +496,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
      with 1–2 people get big, friendly portraits; crowded rooms shrink so two
      rows still fit comfortably inside the card body without ever clipping. */
   const baseCircleSize =
-    displayCount <= 1 ? 92 :
-    displayCount === 2 ? 84 :
-    displayCount <= 4 ? 70 :
-    displayCount <= 6 ? 58 :
-    displayCount <= 8 ? 50 :
-    44;
+    displayCount <= 1 ? 102 :
+    displayCount === 2 ? 92 :
+    displayCount <= 4 ? 80 :
+    displayCount <= 6 ? 70 :
+    displayCount <= 8 ? 60 :
+    52;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -616,10 +616,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     displayCount <= 1 ? 1 :
     displayCount === 2 ? 2 :
     displayCount === 3 ? 3 :
-    displayCount === 4 ? 4 :
+    displayCount === 4 ? 2 :
     displayCount <= 6 ? 3 :
-    displayCount <= 8 ? 4 :
-    5;
+    displayCount <= 9 ? 3 :
+    4;
 
   return (
     <div
@@ -940,6 +940,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             {isFull ? (
               <div
                 className="door-3d-wrap door-3d-disabled"
+                title="Room is full"
                 data-testid={`button-join-room-${room.id}`}
               >
                 <div className="door-frame">
@@ -950,12 +951,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     <div className="door-knob" />
                   </div>
                 </div>
-                <span className="door-3d-label">Full</span>
               </div>
             ) : !isLoggedIn ? (
               <a
                 href="/api/login"
                 className="door-3d-wrap"
+                title="Enter room"
                 data-testid={`button-signin-room-${room.id}`}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -967,13 +968,13 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     <div className="door-knob" />
                   </div>
                 </div>
-                <span className="door-3d-label">Enter</span>
               </a>
             ) : (
               <div
                 className="door-3d-wrap"
                 role="button"
                 tabIndex={0}
+                title="Enter room"
                 onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
                 onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
@@ -986,7 +987,6 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     <div className="door-knob" />
                   </div>
                 </div>
-                <span className="door-3d-label">Enter</span>
               </div>
             )}
           </div>

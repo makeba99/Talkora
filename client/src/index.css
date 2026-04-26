@@ -2276,9 +2276,9 @@ html.synthwave .neon-text {
 /* Outer frame — neumorphic raised slab */
 .door-frame {
   position: relative;
-  width: 42px;
-  height: 56px;
-  perspective: 140px;
+  width: 34px;
+  height: 44px;
+  perspective: 110px;
   perspective-origin: 85% 50%;
   /* neumorphic raised frame */
   background: hsl(244 28% 16%);
@@ -2374,21 +2374,21 @@ html.synthwave .neon-text {
     0 1px 0 rgba(255,255,255,0.05);
 }
 .door-panel-inset-top {
-  top: 6px;
-  height: 17px;
+  top: 5px;
+  height: 13px;
 }
 .door-panel-inset-bot {
-  top: 29px;
-  bottom: 5px;
+  top: 23px;
+  bottom: 4px;
 }
 
 /* Accent knob — platform violet */
 .door-knob {
   position: absolute;
-  right: 7px;
+  right: 5px;
   top: 50%;
   transform: translateY(-50%);
-  width: 5px; height: 5px;
+  width: 4px; height: 4px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 35% 30%,
