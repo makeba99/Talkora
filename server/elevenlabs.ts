@@ -24,15 +24,20 @@ const API_KEYS: string[] = RAW_KEYS
   .map(s => s.trim())
   .filter(s => s.length > 0);
 
-// Default to "Jessica" (playful, bright, warm) — gives Eva that natural,
-// emotional Sesame-Maya feel rather than Turbo's flatter delivery.
-// All free-tier-safe voice options:
-//   Jessica  cgSgspJ2msm6clMCkdW9  (warm, expressive — current default)
-//   Bella    hpp4J3VqNfWAUOO0d1Us  (professional, bright, warm)
-//   Lily     pFZP5JQG7iQjIQuC4Bku  (velvety actress)
-//   Sarah    EXAVITQu4vr4xnSDxMaL  (mature, reassuring, confident)
+// Default to "Charlotte" (XB0fDUnXU5powFXDhCwa) — the stock ElevenLabs voice
+// that lands closest to Sesame's "Maya": breathy, intimate, conversational,
+// slightly slow, with natural prosody rather than newscaster delivery.
+// (Sesame's actual Maya runs on their proprietary CSM model and is not
+// available outside the Sesame app — Charlotte + low stability is the best
+// off-the-shelf approximation.)
+// All free-tier-safe voice options to A/B test:
+//   Charlotte XB0fDUnXU5powFXDhCwa (breathy, intimate, conversational — Maya-like, current default)
+//   Jessica   cgSgspJ2msm6clMCkdW9 (playful, bright, warm)
+//   Matilda   XrExE9yKIg1WjnnlVkGX (warm, friendly American)
+//   Lily      pFZP5JQG7iQjIQuC4Bku (velvety actress)
+//   Sarah     EXAVITQu4vr4xnSDxMaL (mature, reassuring, confident)
 // Override via ELEVENLABS_EVA_VOICE_ID env var.
-const DEFAULT_VOICE_ID = (process.env.ELEVENLABS_EVA_VOICE_ID || "cgSgspJ2msm6clMCkdW9").trim(); // Jessica
+const DEFAULT_VOICE_ID = (process.env.ELEVENLABS_EVA_VOICE_ID || "XB0fDUnXU5powFXDhCwa").trim(); // Charlotte
 // `eleven_multilingual_v2` is dramatically more emotional and natural than
 // `eleven_turbo_v2_5` (which is tuned for ~300ms latency and sounds flatter).
 // The extra ~600ms latency is worth it for a tutor voice. Free-tier-safe.
@@ -137,13 +142,15 @@ export async function elevenLabsSynthesize(req: ElevenLabsTtsRequest): Promise<E
   // Keep voice_settings to the two free-tier-safe knobs only.
   //   stability ↓ → more emotional/expressive (Sesame-like) but more variable
   //   stability ↑ → more consistent/monotone
-  // 0.30 hits the sweet spot: warm, expressive, not robotic, not chaotic.
+  //   similarity_boost ↑ → hugs the voice's signature timbre tightly
+  // 0.22 / 0.85 dials Charlotte toward Sesame-Maya: breathy, intimate, with
+  // expressive prosody and natural micro-pauses rather than newsreader flat.
   const payload: Record<string, unknown> = {
     text: safeText,
     model_id: MODEL_ID,
     voice_settings: {
-      stability: 0.30,
-      similarity_boost: 0.80,
+      stability: 0.22,
+      similarity_boost: 0.85,
     },
   };
   if (req.language && req.language.length >= 2) {
