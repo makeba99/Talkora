@@ -2256,7 +2256,7 @@ html.synthwave .neon-text {
     inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
-/* ── 3D Animated Door "Enter" ─────────────────────────── */
+/* ── 3D Neumorphic Animated Door "Enter" ─────────────────────────── */
 .door-3d-wrap {
   position: relative;
   display: inline-flex;
@@ -2270,123 +2270,119 @@ html.synthwave .neon-text {
 .door-3d-wrap.door-3d-disabled {
   cursor: not-allowed;
   pointer-events: none;
+  opacity: 0.55;
 }
 
-/* Frame — establishes perspective for the swinging panel */
+/* Outer frame — neumorphic raised slab */
 .door-frame {
   position: relative;
-  width: 40px;
-  height: 54px;
-  perspective: 130px;
-  perspective-origin: 80% 50%;
-  border: 2.5px solid hsl(var(--neu-orange-hi) / 0.65);
+  width: 42px;
+  height: 56px;
+  perspective: 140px;
+  perspective-origin: 85% 50%;
+  /* neumorphic raised frame */
+  background: hsl(244 28% 16%);
   border-radius: 3px 3px 0 0;
+  border: 1.5px solid hsl(var(--neu-orange-hi) / 0.22);
   box-shadow:
-    -2px -2px 6px rgba(255,255,255,0.04),
-    3px 4px 12px rgba(0,0,0,0.75),
-    inset 0 0 4px rgba(0,0,0,0.35);
+    -3px -3px 7px rgba(255,255,255,0.055),
+    4px 5px 14px rgba(0,0,0,0.88),
+    1px 1px 3px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.30);
   overflow: visible;
-  background: transparent;
 }
-.door-3d-disabled .door-frame {
-  border-color: rgba(255,255,255,0.07);
-  box-shadow: 2px 3px 8px rgba(0,0,0,0.55);
+.door-3d-wrap:hover .door-frame {
+  border-color: hsl(var(--neu-orange-hi) / 0.40);
+  box-shadow:
+    -4px -4px 9px rgba(255,255,255,0.07),
+    5px 6px 18px rgba(0,0,0,0.90),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 14px hsl(var(--neu-orange) / 0.18);
+  transition: box-shadow 0.52s ease, border-color 0.52s ease;
 }
 
-/* Dark interior revealed as door swings open */
+/* Dark interior room — revealed when panel swings open */
 .door-interior {
   position: absolute;
   inset: 0;
-  border-radius: 1px 1px 0 0;
-  background: linear-gradient(170deg, #03030e 0%, #07071a 55%, #0b0b22 100%);
-  box-shadow: inset 0 0 22px rgba(110, 70, 255, 0.30), inset 0 -8px 16px rgba(0,0,0,0.55);
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(170deg, hsl(244 40% 6%) 0%, hsl(252 35% 8%) 60%, hsl(258 30% 10%) 100%);
+  box-shadow:
+    inset 0 0 18px hsl(var(--neo-accent-from, 260 64% 46%) / 0.18),
+    inset 0 -6px 14px rgba(0,0,0,0.55);
 }
-/* Subtle glow brightens when door opens */
 .door-3d-wrap:hover .door-interior {
-  box-shadow: inset 0 0 28px rgba(130, 90, 255, 0.50), inset 0 -8px 16px rgba(0,0,0,0.4);
-  transition: box-shadow 0.55s ease;
+  box-shadow:
+    inset 0 0 26px hsl(var(--neo-accent-from, 260 64% 46%) / 0.35),
+    inset 0 -6px 14px rgba(0,0,0,0.40);
+  transition: box-shadow 0.52s ease;
 }
 
-/* The door panel that swings open on hover */
+/* The door panel — same neumorphic dark material as the rest of the UI */
 .door-panel {
   position: absolute;
   inset: 0;
   border-radius: 2px 2px 0 0;
+  /* dark neumorphic surface — matches card/slot material */
   background: linear-gradient(
-    158deg,
-    hsl(258 62% 40%) 0%,
-    hsl(258 54% 30%) 52%,
-    hsl(258 48% 24%) 100%
+    160deg,
+    hsl(244 26% 19%) 0%,
+    hsl(248 24% 16%) 50%,
+    hsl(252 22% 13%) 100%
   );
   transform-origin: left center;
   transform: rotateY(0deg);
-  transition: transform 0.52s cubic-bezier(0.35, 0, 0.15, 1);
+  transition: transform 0.52s cubic-bezier(0.30, 0, 0.15, 1);
+  /* raised neumorphic look */
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.20),
-    inset -1px 0 0 rgba(255,255,255,0.07),
-    3px 0 10px rgba(0,0,0,0.60);
+    inset 0 1.5px 0 rgba(255,255,255,0.10),
+    inset -1px 0 0 rgba(255,255,255,0.05),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    2px 0 8px rgba(0,0,0,0.70);
   overflow: hidden;
-  transform-style: preserve-3d;
-}
-.door-3d-disabled .door-panel {
-  background: linear-gradient(158deg, hsl(228 14% 19%) 0%, hsl(228 12% 13%) 100%);
-  box-shadow: none;
 }
 /* Swing open on hover */
 .door-3d-wrap:hover .door-panel {
-  transform: rotateY(-70deg);
+  transform: rotateY(-72deg);
 }
 
-/* Shine sweep across panel face */
+/* Shine sweep on panel face */
 .door-panel::before {
   content: "";
   position: absolute;
-  inset: 0;
-  top: 0; left: -75%;
+  top: 0; left: -80%;
   width: 45%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,240,220,0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
   transform: skewX(-14deg);
   transition: left 0.52s ease;
   pointer-events: none;
-  z-index: 2;
 }
-.door-3d-wrap:hover .door-panel::before { left: 145%; }
+.door-3d-wrap:hover .door-panel::before { left: 150%; }
 
-/* Door edge — visible thickness when swinging */
-.door-panel-edge {
-  position: absolute;
-  top: 0; right: -6px;
-  width: 6px; height: 100%;
-  background: linear-gradient(90deg, hsl(258 50% 20%), hsl(258 44% 15%));
-  border-radius: 0 1px 1px 0;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.6);
-  transform-origin: left center;
-  /* backface is part of the panel, so it rotates as a unit */
-}
-
-/* Recessed panel insets — top & bottom */
+/* Recessed inset panels — carved into the door face */
 .door-panel-inset {
   position: absolute;
   left: 5px; right: 5px;
-  border: 1.5px solid rgba(255,255,255,0.10);
   border-radius: 2px;
-  background: hsl(258 52% 27%);
-  box-shadow: inset 1px 1px 4px rgba(0,0,0,0.50), 0 1px 0 rgba(255,255,255,0.06);
-}
-.door-3d-disabled .door-panel-inset {
-  background: hsl(228 12% 16%);
-  border-color: rgba(255,255,255,0.05);
+  /* dark inset — neumorphic pressed */
+  background: hsl(244 32% 11%);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow:
+    inset 2px 2px 5px rgba(0,0,0,0.75),
+    inset -1px -1px 2px rgba(255,255,255,0.03),
+    0 1px 0 rgba(255,255,255,0.05);
 }
 .door-panel-inset-top {
   top: 6px;
   height: 17px;
 }
 .door-panel-inset-bot {
-  top: 28px;
+  top: 29px;
   bottom: 5px;
 }
 
-/* Gold door knob */
+/* Accent knob — platform violet */
 .door-knob {
   position: absolute;
   right: 7px;
@@ -2394,32 +2390,38 @@ html.synthwave .neon-text {
   transform: translateY(-50%);
   width: 5px; height: 5px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffe08a, #c8960a);
-  box-shadow: 0 0 5px rgba(255,210,0,0.65), 0 1px 2px rgba(0,0,0,0.55);
+  background: radial-gradient(
+    circle at 35% 30%,
+    hsl(var(--neu-orange-hi)),
+    hsl(var(--neu-orange-lo))
+  );
+  box-shadow:
+    0 0 5px hsl(var(--neu-orange-hi) / 0.70),
+    0 1px 2px rgba(0,0,0,0.60),
+    inset 0 -1px 1px rgba(0,0,0,0.30);
   z-index: 3;
 }
-.door-3d-disabled .door-knob {
-  background: radial-gradient(circle at 35% 30%, #666, #333);
-  box-shadow: none;
+.door-3d-wrap:hover .door-knob {
+  box-shadow:
+    0 0 8px hsl(var(--neu-orange-hi) / 0.90),
+    0 0 14px hsl(var(--neu-orange) / 0.45),
+    0 1px 2px rgba(0,0,0,0.60);
+  transition: box-shadow 0.52s ease;
 }
 
-/* "Enter" / "Full" label below the door */
+/* "ENTER" / "FULL" label */
 .door-3d-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: hsl(var(--neu-orange-hi));
-  transition: color 200ms ease, text-shadow 200ms ease;
+  color: hsl(var(--neu-orange-hi) / 0.70);
+  transition: color 220ms ease, text-shadow 220ms ease;
   line-height: 1;
 }
 .door-3d-wrap:hover .door-3d-label {
-  color: hsl(var(--neu-orange));
-  text-shadow: 0 0 10px hsl(var(--neu-orange) / 0.55);
-}
-.door-3d-disabled .door-3d-label {
-  color: rgba(255,255,255,0.22);
-  text-shadow: none;
+  color: hsl(var(--neu-orange-hi));
+  text-shadow: 0 0 8px hsl(var(--neu-orange) / 0.50);
 }
 
 /* ── Premium Animated Borders ── */
