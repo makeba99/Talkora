@@ -359,7 +359,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
       await apiRequest("POST", `/api/rooms/${room.id}/knock`);
     },
     onSuccess: () => {
-      toast({ title: "🚪 Knock sent!", description: "The room owner has been notified. They can let you in." });
+      import("@/lib/sound-fx").then((m) => m.sfxKnock()).catch(() => {});
+      toast({ title: "🚪 Knock sent!", description: "The host will see your knock inside the room." });
     },
     onError: () => {
       toast({ title: "Couldn't send knock", description: "Please try again.", variant: "destructive" });

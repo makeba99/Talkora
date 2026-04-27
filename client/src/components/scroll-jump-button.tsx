@@ -109,6 +109,7 @@ export function ScrollJumpButton({ targetSelector = ".app-scrollbar" }: ScrollJu
     const el = targetRef.current;
     if (el) el.scrollTo({ top: 0, behavior: "smooth" });
     else window.scrollTo({ top: 0, behavior: "smooth" });
+    import("@/lib/sound-fx").then((m) => m.sfxScrollEdge()).catch(() => {});
   };
 
   const handleDown = () => {
@@ -125,6 +126,7 @@ export function ScrollJumpButton({ targetSelector = ".app-scrollbar" }: ScrollJu
       );
       window.scrollTo({ top: fullHeight, behavior: "smooth" });
     }
+    import("@/lib/sound-fx").then((m) => m.sfxScrollEdge()).catch(() => {});
   };
 
   return (

@@ -19,7 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid, Pin } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid, Pin, Volume2, VolumeX, Zap, ZapOff } from "lucide-react";
+import { isSoundEnabled, setSoundEnabled, onSoundEnabledChange, sfxToggle } from "@/lib/sound-fx";
+import { isBoostMode, setBoostMode, onBoostModeChange } from "@/lib/perf-bus";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
@@ -666,18 +668,22 @@ export function ProfileDropdown({
                 {appearOffline ? "Appearing offline" : "Online"}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setAppearOffline(!appearOffline)}
-              className="orbit-mini-toggle"
-              data-testid="menu-appear-offline"
-              title={appearOffline ? "Currently appearing offline" : "Click to appear offline"}
-              aria-label="Toggle appear offline"
-            >
-              {appearOffline
-                ? <EyeOff className="w-3.5 h-3.5 text-amber-400" />
-                : <Eye className="w-3.5 h-3.5" />}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <SoundFxMiniToggle />
+              <BoostModeMiniToggle />
+              <button
+                type="button"
+                onClick={() => setAppearOffline(!appearOffline)}
+                className="orbit-mini-toggle"
+                data-testid="menu-appear-offline"
+                title={appearOffline ? "Currently appearing offline" : "Click to appear offline"}
+                aria-label="Toggle appear offline"
+              >
+                {appearOffline
+                  ? <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                  : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
           )}
 
@@ -1106,3 +1112,54 @@ export function ProfileDropdown({
     </>
   );
 }
+
+function SoundFxMiniToggle() {
+  const [enabled, setEnabledState] = useState<boolean>(() => isSoundEnabled());
+  useEffect(() => onSoundEnabledChange(setEnabledState), []);
+  const toggle = () => {
+    const next = !enabled;
+    setSoundEnabled(next);
+    if (next) sfxToggle(true);
+  };
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      className="orbit-mini-toggle"
+      data-testid="menu-sound-fx"
+      title={enabled ? "Sound effects ON — tap to mute" : "Sound effects OFF — tap to enable"}
+      aria-label="Toggle sound effects"
+      aria-pressed={enabled}
+    >
+      {enabled
+        ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+        : <VolumeX className="w-3.5 h-3.5 text-amber-400" />}
+    </button>
+  );
+}
+
+function BoostModeMiniToggle() {
+  const [enabled, setEnabledState] = useState<boolean>(() => isBoostMode());
+  useEffect(() => onBoostModeChange(setEnabledState), []);
+  const toggle = () => {
+    const next = !enabled;
+    setBoostMode(next);
+    sfxToggle(next);
+  };
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      className="orbit-mini-toggle"
+      data-testid="menu-boost-mode"
+      title={enabled ? "Boost mode ON — tap to restore full visuals" : "Boost mode OFF — tap for faster scrolling"}
+      aria-label="Toggle boost mode"
+      aria-pressed={enabled}
+    >
+      {enabled
+        ? <Zap className="w-3.5 h-3.5 text-amber-400" strokeWidth={2.6} />
+        : <ZapOff className="w-3.5 h-3.5" strokeWidth={2.2} />}
+    </button>
+  );
+}
+

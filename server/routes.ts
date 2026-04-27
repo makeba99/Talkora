@@ -1569,20 +1569,13 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId === requesterId) return res.status(400).json({ message: "You own this room" });
 
-      await storage.createNotification({
-        userId: room.ownerId,
-        fromUserId: requesterId,
-        type: `join_request:${roomId}`,
-      });
-
+      // Knocks are IN-ROOM only — no persistent notification, no global toast.
+      // The host sees the Allow / Deny prompt while they are inside the room
+      // (or, if they happen to be browsing the lobby with a socket, they'll
+      // get the in-room style prompt only). We deliberately skip
+      // storage.createNotification + admin:notification here so the host's
+      // notification bell stays clean.
       const ownerSocketId = userSockets.get(room.ownerId);
-      if (ownerSocketId) {
-        io.to(ownerSocketId).emit("admin:notification", {
-          type: "join_request",
-          roomId,
-          roomTitle: room.title,
-        });
-      }
 
       // Push a real-time knock prompt directly to the host's personal socket
       // so they can Allow / Deny whether they are inside the room or browsing

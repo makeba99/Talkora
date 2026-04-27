@@ -1188,14 +1188,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     const onKnock = (data: { roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number }) => {
       if (!data || data.roomId !== room.id) return;
       if (data.fromUserId === user?.id) return; // shouldn't happen, but guard
+      let added = false;
       setPendingKnocks((prev) => {
         // De-dupe — only one pending knock per user at a time.
         if (prev.some((k) => k.userId === data.fromUserId)) return prev;
+        added = true;
         return [
           ...prev,
           { id: `${data.fromUserId}-${data.ts}`, userId: data.fromUserId, userName: data.fromUserName, userAvatar: data.fromUserAvatar, ts: data.ts },
         ];
       });
+      if (added) {
+        import("@/lib/sound-fx").then((m) => m.sfxKnock()).catch(() => {});
+      }
     };
     socket.on("room:knock-request", onKnock);
     return () => { socket.off("room:knock-request", onKnock); };
@@ -1768,6 +1773,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       }
       socket.emit("room:join", { roomId: room.id, userId: user.id });
       socket.emit("room:mute", { roomId: room.id, userId: user.id, isMuted: true });
+      // Subtle "you're in" chime for the local user.
+      import("@/lib/sound-fx").then((m) => m.sfxEnterRoom()).catch(() => {});
       try {
         const bc = new BroadcastChannel(`connect-room-${user.id}`);
         bc.postMessage({ type: "room-joined", roomId: room.id });
@@ -3046,6 +3053,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     });
     audioElements.current.clear();
     socket?.emit("room:leave", { roomId: room.id, userId: user?.id });
+    import("@/lib/sound-fx").then((m) => m.sfxLeaveRoom()).catch(() => {});
     onLeave(reason);
   };
 
