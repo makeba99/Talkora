@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from "react";
-import { ChevronRight, X, Sparkles, Mic, Globe, Search, Hammer, UserCircle, Users, Compass, Pin, Bell } from "lucide-react";
+import { ChevronRight, X, Sparkles, Mic, Globe, Search, Hammer, UserCircle, Users, Compass, Pin, Bell, Check, MousePointerClick } from "lucide-react";
 
 const STORAGE_KEY = "vextorn:onboarding:v2";
 const STORAGE_STEP_KEY = "vextorn:onboarding:v2:step";
@@ -18,6 +18,16 @@ type OnboardingStep = {
   ghostType?: string;
   /** If true, render confetti when this step becomes active. */
   celebrate?: boolean;
+  /**
+   * Optional CSS selector. While set, the tour blocks Continue and waits for
+   * the user to click any element matching this selector. Once they do, a
+   * confirmation overlay flashes and the tour auto-advances.
+   */
+  waitForClick?: string;
+  /** Confirmation copy shown when the waitForClick interaction is satisfied. */
+  successText?: string;
+  /** Optional hint shown above the buttons while waiting for an interaction. */
+  waitHint?: string;
 };
 
 const STEPS: OnboardingStep[] = [
@@ -94,9 +104,12 @@ const STEPS: OnboardingStep[] = [
     target: '[data-testid="orbit-ring"]',
     icon: Pin,
     title: "Pin what matters to your header.",
-    body: "See the tiny **pin badge** on each satellite? Tap it to lift that satellite out of the orbit and dock it as a quick-access icon next to your avatar. Tap the pin again to send it back into orbit.",
+    body: "See the tiny **pin badge** on each satellite? Tap any one to lift it out of the orbit and dock it as a quick-access icon next to your avatar. Try it now — pick any satellite.",
     primary: "And the alerts?",
     secondary: "Skip tour",
+    waitForClick: '[data-testid^="button-pin-"]',
+    successText: "Nice — pinned!",
+    waitHint: "Try it: tap any pin badge",
   },
   {
     id: "orbit-notifs",
@@ -144,6 +157,8 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
   const [step, setStep] = useState<number>(7);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardPos, setCardPos] = useState<{ top: number; left: number; placement: "top" | "bottom" } | null>(null);
+  /** Whether the user has satisfied the current step's `waitForClick`. */
+  const [interactionDone, setInteractionDone] = useState(false);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const prevStepRef = useRef<{ active: boolean; step: number }>({ active: false, step });
 
@@ -207,6 +222,42 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
   }, []);
 
   const current = STEPS[step];
+
+  // Reset the interactive "try-it" satisfaction whenever the active step
+  // changes — each step gets its own clean slate.
+  useEffect(() => {
+    setInteractionDone(false);
+  }, [step, active]);
+
+  // Listen (capture-phase, document-level) for clicks that satisfy the
+  // current step's `waitForClick` selector. When matched: show the success
+  // flash and auto-advance after a short beat.
+  useEffect(() => {
+    if (!active || !current.waitForClick || interactionDone) return;
+    const selector = current.waitForClick;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (!target) return;
+      const match = target.closest(selector);
+      if (match) {
+        setInteractionDone(true);
+        // Give the success overlay time to read, then advance.
+        window.setTimeout(() => {
+          // Only advance if still on the same step.
+          setStep((s) => {
+            if (STEPS[s]?.id !== current.id) return s;
+            if (s + 1 >= STEPS.length) {
+              complete();
+              return 0;
+            }
+            return s + 1;
+          });
+        }, 1100);
+      }
+    };
+    document.addEventListener("click", handler, true);
+    return () => document.removeEventListener("click", handler, true);
+  }, [active, current, interactionDone, complete]);
 
   // Notify the host (lobby) about step transitions so it can switch tabs,
   // start a ghost-typing demo, etc.
@@ -401,6 +452,22 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
           {current.title}
         </h3>
         <p className="onboarding-card-body">{renderRichBody(current.body)}</p>
+        {current.waitForClick && !interactionDone && (
+          <div className="onboarding-tryit" data-testid="onboarding-tryit-hint">
+            <span className="onboarding-tryit-pulse" aria-hidden="true">
+              <MousePointerClick className="w-3 h-3" />
+            </span>
+            <span>{current.waitHint || "Try it"}</span>
+          </div>
+        )}
+        {current.waitForClick && interactionDone && (
+          <div className="onboarding-tryit is-done" data-testid="onboarding-tryit-success">
+            <span className="onboarding-tryit-check" aria-hidden="true">
+              <Check className="w-3 h-3" />
+            </span>
+            <span>{current.successText || "Nice — done!"}</span>
+          </div>
+        )}
         <div className="onboarding-card-footer">
           <div className="onboarding-dots" role="tablist" aria-label="Tour progress">
             {STEPS.map((s, i) => (
@@ -431,6 +498,7 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
                 type="button"
                 className="onboarding-btn onboarding-btn-primary"
                 onClick={next}
+                disabled={!!current.waitForClick && !interactionDone}
                 data-testid="button-onboarding-primary"
               >
                 <span>{current.primary}</span>
