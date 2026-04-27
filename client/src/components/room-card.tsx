@@ -913,62 +913,89 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               )}
             </div>
 
-            {/* Step In — 3D animated swinging door with OPEN/CLOSED label above */}
-            {isFull ? (
-              <div
-                className="door-3d-wrap door-3d-disabled"
-                title="Room is full"
-                data-testid={`button-join-room-${room.id}`}
-              >
-                <span className="door-status-label door-status-closed">CLOSED</span>
-                <div className="door-frame">
-                  <div className="door-interior" />
-                  <div className="door-panel">
-                    <div className="door-panel-inset door-panel-inset-top" />
-                    <div className="door-panel-inset door-panel-inset-bot" />
-                    <div className="door-knob" />
+            {/* Step In — 3D animated swinging door.
+                States:
+                  • FULL   → solid closed door, red "FULL" label, no swing
+                  • LOCKED → door with brass keyhole + key plate, amber "LOCKED" label
+                             (still clickable so the join flow / DM-owner can run)
+                  • OPEN   → standard door with engraved "ENTER" plaque, green label
+            */}
+            {(() => {
+              const isPrivate = !room.isPublic;
+              const stateClass = isFull
+                ? "door-3d-disabled door-3d-full"
+                : isPrivate
+                  ? "door-3d-locked"
+                  : "";
+              const labelClass = isFull
+                ? "door-status-closed"
+                : isPrivate
+                  ? "door-status-locked"
+                  : "door-status-open";
+              const labelText = isFull ? "FULL" : isPrivate ? "LOCKED" : "OPEN";
+
+              const doorBody = (
+                <>
+                  <span className={`door-status-label ${labelClass}`}>{labelText}</span>
+                  <div className="door-frame">
+                    <div className="door-interior" />
+                    <div className="door-panel">
+                      <div className="door-panel-inset door-panel-inset-top">
+                        {!isPrivate && !isFull && (
+                          <span className="door-engraved-text">ENTER</span>
+                        )}
+                        {isPrivate && (
+                          <span className="door-keyplate" aria-hidden="true">
+                            <span className="door-keyhole-circle" />
+                            <span className="door-keyhole-slot" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="door-panel-inset door-panel-inset-bot" />
+                      <div className="door-knob" />
+                    </div>
                   </div>
-                </div>
-              </div>
-            ) : !isLoggedIn ? (
-              <a
-                href="/api/login"
-                className="door-3d-wrap"
-                title="Enter room"
-                data-testid={`button-signin-room-${room.id}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="door-status-label door-status-open">OPEN</span>
-                <div className="door-frame">
-                  <div className="door-interior" />
-                  <div className="door-panel">
-                    <div className="door-panel-inset door-panel-inset-top" />
-                    <div className="door-panel-inset door-panel-inset-bot" />
-                    <div className="door-knob" />
+                </>
+              );
+
+              if (isFull) {
+                return (
+                  <div
+                    className={`door-3d-wrap ${stateClass}`}
+                    title="Room is full"
+                    data-testid={`button-join-room-${room.id}`}
+                  >
+                    {doorBody}
                   </div>
+                );
+              }
+              if (!isLoggedIn) {
+                return (
+                  <a
+                    href="/api/login"
+                    className={`door-3d-wrap ${stateClass}`}
+                    title={isPrivate ? "Sign in to request access" : "Enter room"}
+                    data-testid={`button-signin-room-${room.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {doorBody}
+                  </a>
+                );
+              }
+              return (
+                <div
+                  className={`door-3d-wrap ${stateClass}`}
+                  role="button"
+                  tabIndex={0}
+                  title={isPrivate ? "Locked room — request access" : "Enter room"}
+                  onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
+                  onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
+                  data-testid={`button-join-room-${room.id}`}
+                >
+                  {doorBody}
                 </div>
-              </a>
-            ) : (
-              <div
-                className="door-3d-wrap"
-                role="button"
-                tabIndex={0}
-                title="Enter room"
-                onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
-                onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
-                data-testid={`button-join-room-${room.id}`}
-              >
-                <span className="door-status-label door-status-open">OPEN</span>
-                <div className="door-frame">
-                  <div className="door-interior" />
-                  <div className="door-panel">
-                    <div className="door-panel-inset door-panel-inset-top" />
-                    <div className="door-panel-inset door-panel-inset-bot" />
-                    <div className="door-knob" />
-                  </div>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       </div>
