@@ -8341,6 +8341,258 @@ html.neomorphic-light .scroll-jump-btn {
   font-weight: 500;
 }
 
+/* ===========================================================================
+   Host Controls — neumorphic permission tile grid (Edit Room dialog)
+   Each tile is a one-tap cycler that announces who can use a capability:
+   Mic / Camera / Screen / YouTube. The accent colour and pill copy update
+   instantly so the host always knows the current state at a glance.
+   =========================================================================== */
+.host-perm-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg,
+      hsl(232 35% 13% / 0.6) 0%,
+      hsl(232 38% 9%  / 0.6) 100%);
+  border: 1px solid hsl(232 30% 24% / 0.7);
+  box-shadow:
+    inset 0 1px 0 hsl(232 60% 70% / 0.06),
+    0 6px 18px hsl(232 50% 4% / 0.35);
+}
+
+.host-perm-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.host-perm-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: hsl(220 25% 96%);
+}
+
+.host-perm-section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 30% 25%, hsl(256 70% 60% / 0.85), hsl(256 70% 30% / 0.85));
+  color: hsl(0 0% 100%);
+  border: 1px solid hsl(256 70% 70% / 0.55);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.2),
+    0 2px 8px hsl(256 70% 30% / 0.5);
+}
+
+.host-perm-section-hint {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(220 15% 65%);
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: hsl(232 30% 18% / 0.7);
+  border: 1px solid hsl(232 30% 30% / 0.6);
+}
+
+.host-perm-section-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: hsl(220 15% 70%);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: hsl(232 30% 14% / 0.55);
+  border: 1px solid hsl(232 30% 22% / 0.6);
+}
+
+.host-perm-section-foot-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: hsl(256 70% 78%);
+}
+
+.host-perm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 480px) {
+  .host-perm-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.host-perm-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 10px 10px 10px;
+  min-height: 96px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg,
+      hsl(232 35% 16% / 0.95) 0%,
+      hsl(232 38% 11% / 0.95) 100%);
+  border: 1px solid hsl(232 30% 28% / 0.7);
+  box-shadow:
+    inset 0 1px 0 hsl(232 60% 70% / 0.08),
+    inset 0 -1px 0 hsl(232 50% 4% / 0.6),
+    0 4px 14px hsl(232 50% 4% / 0.45);
+  color: hsl(220 20% 92%);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 140ms ease, box-shadow 200ms ease, border-color 200ms ease, background 200ms ease;
+}
+
+.host-perm-tile:hover {
+  transform: translateY(-1px);
+  border-color: hsl(232 40% 40% / 0.85);
+  box-shadow:
+    inset 0 1px 0 hsl(232 60% 70% / 0.12),
+    inset 0 -1px 0 hsl(232 50% 4% / 0.6),
+    0 8px 22px hsl(232 50% 4% / 0.55),
+    0 0 0 1px var(--perm-ring-from, hsl(232 60% 70% / 0.25));
+}
+
+.host-perm-tile:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 2px 4px hsl(232 50% 4% / 0.65),
+    inset 0 -1px 0 hsl(232 60% 70% / 0.04);
+}
+
+.host-perm-tile:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 hsl(232 60% 70% / 0.12),
+    0 0 0 2px var(--perm-ring-from, hsl(232 70% 70% / 0.55)),
+    0 8px 22px hsl(232 50% 4% / 0.55);
+}
+
+/* Top-edge accent strip — coloured by the current scope. Reads from a
+   distance so a host scanning the four tiles sees the lockdown level
+   instantly: green (open) → blue (co-hosts) → amber (host) → red (muted). */
+.host-perm-tile-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--perm-ring-from, hsl(232 60% 70% / 0.55)) 0%,
+    var(--perm-ring-to, hsl(232 60% 70% / 0.10)) 100%
+  );
+  box-shadow: 0 1px 6px var(--perm-ring-from, hsl(232 60% 70% / 0.4));
+}
+
+.host-perm-tile-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.host-perm-tile-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 30% 25%, hsl(232 50% 30% / 0.95), hsl(232 50% 14% / 0.95));
+  color: hsl(220 30% 96%);
+  border: 1px solid hsl(232 40% 40% / 0.6);
+  box-shadow:
+    inset 0 1px 0 hsl(232 60% 80% / 0.18),
+    0 2px 6px hsl(232 50% 4% / 0.5);
+  flex-shrink: 0;
+}
+
+.host-perm-tile-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: hsl(220 25% 95%);
+  line-height: 1;
+}
+
+/* Scope pill — full-width, accent-tinted, with a leading status dot.
+   Replaces the cramped "All" / "Hosts" labels with readable copy like
+   "Everyone" / "Co-hosts only" / "Host only" / "All muted". */
+.host-perm-tile-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: linear-gradient(
+    180deg,
+    var(--perm-ring-from, hsl(232 60% 70% / 0.18)),
+    var(--perm-ring-to, hsl(232 60% 70% / 0.04))
+  );
+  border: 1px solid var(--perm-ring-from, hsl(232 60% 70% / 0.4));
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06);
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.host-perm-tile-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--perm-ring-from, hsl(232 60% 70% / 0.8));
+  box-shadow: 0 0 6px var(--perm-ring-from, hsl(232 60% 70% / 0.6));
+  flex-shrink: 0;
+}
+
+.host-perm-tile-scope-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Per-accent text colour for the scope pill — kept here (rather than via
+   utility classes) so the colour stays in lockstep with the strip and
+   ring. */
+.host-perm-tile[data-accent="emerald"] .host-perm-tile-scope-text { color: hsl(150 75% 78%); }
+.host-perm-tile[data-accent="sky"]     .host-perm-tile-scope-text { color: hsl(200 85% 80%); }
+.host-perm-tile[data-accent="amber"]   .host-perm-tile-scope-text { color: hsl(40  90% 75%); }
+.host-perm-tile[data-accent="rose"]    .host-perm-tile-scope-text { color: hsl(350 85% 82%); }
+
+/* Subtle accent-tinted glow on the icon tile so each scope feels distinct
+   without being noisy. */
+.host-perm-tile[data-accent="emerald"] .host-perm-tile-icon { color: hsl(150 80% 88%); }
+.host-perm-tile[data-accent="sky"]     .host-perm-tile-icon { color: hsl(200 85% 88%); }
+.host-perm-tile[data-accent="amber"]   .host-perm-tile-icon { color: hsl(40  90% 85%); }
+.host-perm-tile[data-accent="rose"]    .host-perm-tile-icon { color: hsl(350 85% 88%); }
+
 /* "Try it" interaction chip — shown while the tour waits for the user to
    perform the click that satisfies a step. Switches to a green confirmation
    state once the interaction lands. */

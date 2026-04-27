@@ -21,7 +21,7 @@ import {
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
-  Sparkles, Upload, MonitorPlay
+  Sparkles, Upload, MonitorPlay, Megaphone
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -740,25 +740,43 @@ function PermTile({ label, Icon, value, onChange, withMuted, testId }: PermTileP
     : ["everyone", "co_owners", "owner_only"];
   const i = Math.max(0, order.indexOf(value));
   const next = order[(i + 1) % order.length];
-  const meta: Record<PermValue, { short: string; tone: string; ringFrom: string; ringTo: string }> = {
-    everyone:   { short: "All",    tone: "text-emerald-300", ringFrom: "rgba(16,185,129,0.55)", ringTo: "rgba(16,185,129,0.10)" },
-    co_owners:  { short: "Hosts",  tone: "text-sky-300",     ringFrom: "rgba(56,189,248,0.55)", ringTo: "rgba(56,189,248,0.10)" },
-    owner_only: { short: "Host",   tone: "text-amber-300",   ringFrom: "rgba(251,191,36,0.55)", ringTo: "rgba(251,191,36,0.10)" },
-    muted:      { short: "Muted",  tone: "text-rose-300",    ringFrom: "rgba(244,63,94,0.55)",  ringTo: "rgba(244,63,94,0.10)" },
+  // Per-scope visual + copy tokens. Long labels make the pill self-explanatory
+  // ("Everyone", "Co-hosts only") while the accent colour tells the host at a
+  // glance how locked-down each capability is (green = open → red = muted).
+  const meta: Record<PermValue, {
+    short: string;
+    long: string;
+    accent: string;     // e.g. "emerald"
+    ringFrom: string;
+    ringTo: string;
+  }> = {
+    everyone:   { short: "All",    long: "Everyone",      accent: "emerald", ringFrom: "rgba(16,185,129,0.55)", ringTo: "rgba(16,185,129,0.10)" },
+    co_owners:  { short: "Hosts",  long: "Co-hosts only", accent: "sky",     ringFrom: "rgba(56,189,248,0.55)", ringTo: "rgba(56,189,248,0.10)" },
+    owner_only: { short: "Host",   long: "Host only",     accent: "amber",   ringFrom: "rgba(251,191,36,0.55)", ringTo: "rgba(251,191,36,0.10)" },
+    muted:      { short: "Muted",  long: "All muted",     accent: "rose",    ringFrom: "rgba(244,63,94,0.55)",  ringTo: "rgba(244,63,94,0.10)" },
   };
   const m = meta[value];
+  const nextMeta = meta[next];
   return (
     <button
       type="button"
       onClick={() => onChange(next)}
       className="host-perm-tile"
+      data-accent={m.accent}
       style={{ ["--perm-ring-from" as any]: m.ringFrom, ["--perm-ring-to" as any]: m.ringTo }}
-      title={`${label}: ${m.short} — tap to change`}
+      title={`${label}: ${m.long} — tap to set to ${nextMeta.long}`}
+      aria-label={`${label} permission: ${m.long}. Tap to change to ${nextMeta.long}.`}
       data-testid={testId}
     >
-      <span className="host-perm-tile-icon"><Icon className="w-[18px] h-[18px]" /></span>
-      <span className="host-perm-tile-label">{label}</span>
-      <span className={`host-perm-tile-scope ${m.tone}`}>{m.short}</span>
+      <span className="host-perm-tile-strip" aria-hidden="true" />
+      <span className="host-perm-tile-head">
+        <span className="host-perm-tile-icon"><Icon className="w-[16px] h-[16px]" /></span>
+        <span className="host-perm-tile-label">{label}</span>
+      </span>
+      <span className="host-perm-tile-scope">
+        <span className="host-perm-tile-dot" aria-hidden="true" />
+        <span className="host-perm-tile-scope-text">{m.long}</span>
+      </span>
     </button>
   );
 }
@@ -6526,13 +6544,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
 
             {/* Smart neumorphic Host Controls panel — one tap cycles each tile */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-primary/80" />
-                  Host Controls
-                </Label>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Tap a tile to change</span>
+            <div className="host-perm-section">
+              <div className="host-perm-section-head">
+                <span className="host-perm-section-title">
+                  <span className="host-perm-section-icon"><Shield className="w-3.5 h-3.5" /></span>
+                  <span>Host Controls</span>
+                </span>
+                <span className="host-perm-section-hint">Tap a tile to change</span>
               </div>
               <div className="host-perm-grid">
                 <PermTile
@@ -6565,9 +6583,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   testId="tile-perm-youtube"
                 />
               </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                Each change is announced in the room chat so everyone sees the new rules.
-              </p>
+              <div className="host-perm-section-foot">
+                <Megaphone className="w-3.5 h-3.5 host-perm-section-foot-icon" />
+                <span>Each change is announced in the room chat so everyone sees the new rules.</span>
+              </div>
             </div>
 
             <Button
