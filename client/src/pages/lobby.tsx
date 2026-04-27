@@ -1119,7 +1119,6 @@ export default function Lobby() {
                   <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
                   <span className="hidden sm:inline">Book Teacher</span>
                 </button>
-                <ThemePicker />
                 <a
                   href="/api/login"
                   data-testid="button-sign-in"

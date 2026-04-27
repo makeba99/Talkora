@@ -6394,8 +6394,8 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 3px 12px 3px 3px;
+  gap: 0.55rem;
+  padding: 4px 14px 4px 4px;
   border-radius: 999px;
   background: linear-gradient(
     180deg,

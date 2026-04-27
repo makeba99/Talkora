@@ -425,9 +425,9 @@ export function ProfileDropdown({
             aria-label="Open profile menu"
           >
             <span className="orbit-trigger-avatar-wrap">
-              <Avatar className="w-7 h-7">
+              <Avatar className="w-9 h-9">
                 <AvatarImage src={user?.profileImageUrl || undefined} />
-                <AvatarFallback className="text-[11px] bg-primary/10 text-primary">
+                <AvatarFallback className="text-[13px] bg-primary/10 text-primary font-semibold">
                   {getUserInitials(user)}
                 </AvatarFallback>
               </Avatar>
@@ -446,12 +446,12 @@ export function ProfileDropdown({
               )}
             </span>
             <span
-              className="text-[12px] font-semibold hidden sm:inline truncate max-w-[110px]"
+              className="text-[13.5px] font-semibold hidden sm:inline truncate max-w-[140px] tracking-tight"
               data-testid="text-current-user"
             >
               {getUserDisplayName(user)}
             </span>
-            <ChevronDown className="orbit-trigger-chev w-3 h-3 hidden sm:block" />
+            <ChevronDown className="orbit-trigger-chev w-3.5 h-3.5 hidden sm:block" />
           </button>
         </PopoverTrigger>
         <PopoverContent
