@@ -7806,7 +7806,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       onReconnect={handleReconnect}
                       volume={participantVolumes[p.id] ?? 1}
                       onVolumeChange={handleVolumeChange}
-                      youtubeVideoId={activeYoutubeId}
+                      youtubeVideoId={youtubeHosts.get(p.id) || null}
                       remoteVideoStream={isMe && isVideoOn && miniCameraMode ? localVideoStreamObj : (!isMe && availableVideoUsers.has(p.id) ? remoteVideoStreams.current.get(p.id) : undefined)}
                       localVideoFlipped={isMe ? videoFlipped : false}
                       isBlocked={isBlockedUser}
