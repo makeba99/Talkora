@@ -9315,3 +9315,265 @@ html.neomorphic-light .scroll-jump-btn {
     0 0 0 1px rgba(251, 191, 36, 0.25),
     0 0 14px rgba(251, 191, 36, 0.18);
 }
+
+/* ============================================================================
+   Door — LOCKED state shares amber/brass treatment for FULL rooms too.
+   The lock icon in the door panel uses warm amber instead of red.
+   ============================================================================ */
+.door-3d-locked .door-knock-lock {
+  color: hsl(40 90% 70%);
+  filter:
+    drop-shadow(0 1px 1.5px rgba(0,0,0,0.85))
+    drop-shadow(0 0 5px hsl(40 95% 50% / 0.55));
+}
+.door-3d-locked:hover .door-knock-lock {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.55) rotate(8deg);
+}
+.door-3d-locked:hover .door-knock-hand {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  animation: door-knock-tap 0.55s ease-in-out 0.18s infinite;
+}
+.door-3d-locked .door-panel-inset-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================================
+   Boost Mode toggle — premium pill button. Pulses softly when ON so the
+   user can always tell at a glance. Compact icon-only on mobile.
+   ============================================================================ */
+.boost-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.015) 100%);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 160ms ease, color 200ms ease, border-color 200ms ease, box-shadow 220ms ease, background 200ms ease;
+  white-space: nowrap;
+}
+.boost-toggle:hover {
+  color: hsl(46 100% 78%);
+  border-color: hsl(46 90% 56% / 0.55);
+  background: linear-gradient(180deg, hsl(46 80% 30% / 0.18) 0%, rgba(0,0,0,0.10) 100%);
+  box-shadow: 0 0 18px -2px hsl(46 90% 50% / 0.32);
+  transform: translateY(-1px);
+}
+.boost-toggle.is-on {
+  color: hsl(46 100% 70%);
+  border-color: hsl(46 95% 56% / 0.65);
+  background: linear-gradient(180deg, hsl(46 90% 30% / 0.24) 0%, hsl(28 90% 25% / 0.12) 100%);
+  box-shadow:
+    0 0 0 1px hsl(46 95% 56% / 0.20) inset,
+    0 0 22px -2px hsl(46 95% 50% / 0.55),
+    0 0 0 1px hsl(46 95% 56% / 0.35);
+  animation: boost-pulse 2.4s ease-in-out infinite;
+}
+.boost-toggle:active { transform: translateY(0); }
+.boost-toggle-label { line-height: 1; }
+@keyframes boost-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px hsl(46 95% 56% / 0.20) inset, 0 0 22px -2px hsl(46 95% 50% / 0.50), 0 0 0 1px hsl(46 95% 56% / 0.35); }
+  50%      { box-shadow: 0 0 0 1px hsl(46 95% 56% / 0.30) inset, 0 0 30px -2px hsl(46 95% 50% / 0.85), 0 0 0 1px hsl(46 95% 56% / 0.55); }
+}
+@media (max-width: 640px) {
+  .boost-toggle {
+    height: 34px;
+    padding: 0 9px 0 8px;
+    gap: 4px;
+  }
+  .boost-toggle-label {
+    font-size: 11px;
+  }
+}
+@media (max-width: 380px) {
+  .boost-toggle-label { display: none; }
+  .boost-toggle { padding: 0 9px; width: 34px; justify-content: center; }
+}
+
+/* ============================================================================
+   Boost Mode global suppression — when html.boost-mode is set, kill the
+   heavy visual effects across the app (animated bg, hologram videos, blurs,
+   parallax layers, decorative animations). Static UI stays intact.
+   ============================================================================ */
+html.boost-mode #animated-bg-canvas {
+  opacity: 0 !important;
+  display: none !important;
+}
+html.boost-mode .room-card-hologram-video,
+html.boost-mode .card-hologram-video,
+html.boost-mode video.card-hologram-bg,
+html.boost-mode .room-hologram-iframe,
+html.boost-mode .hologram-bg-video {
+  display: none !important;
+}
+html.boost-mode .floating-decor,
+html.boost-mode .floating-decor-layer,
+html.boost-mode .ambient-orb,
+html.boost-mode .plasma-orb,
+html.boost-mode .ai-tutor-orbit-overlay {
+  display: none !important;
+}
+/* Disable nearly all decorative animations & blurs to keep scrolling smooth */
+html.boost-mode *,
+html.boost-mode *::before,
+html.boost-mode *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 120ms !important;
+}
+/* Re-enable critical animations users actually need (loading spinners, mood floats) */
+html.boost-mode .animate-spin,
+html.boost-mode [data-keep-animation="true"] {
+  animation-duration: revert !important;
+  animation-iteration-count: revert !important;
+}
+html.boost-mode .door-3d-wrap,
+html.boost-mode .room-card,
+html.boost-mode .neu-card,
+html.boost-mode .glass-panel,
+html.boost-mode .header-pro {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ============================================================================
+   Create Room button — RESPONSIVE refinement. Compact icon-only on small
+   phones, label visible on >=420px. Smaller, smoother, more polished.
+   ============================================================================ */
+.create-room-neu {
+  height: 44px;
+  padding: 0 14px 0 5px;
+  gap: 8px;
+}
+.create-room-neu-icon {
+  width: 34px;
+  height: 34px;
+}
+.create-room-neu-label {
+  font-size: 13px;
+}
+@media (max-width: 640px) {
+  .create-room-neu {
+    height: 40px;
+    padding: 0 12px 0 5px;
+    gap: 6px;
+  }
+  .create-room-neu-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .create-room-neu-label {
+    font-size: 12.5px;
+  }
+}
+@media (max-width: 420px) {
+  .create-room-neu {
+    height: 38px;
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .create-room-neu-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .create-room-neu-label {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   Scroll-jump (up/down) — refined glassy pill with brighter accent ring
+   on hover and chunkier touch targets on mobile. Adds a subtle inner sheen.
+   ============================================================================ */
+.scroll-jump {
+  right: 16px;
+  padding: 7px;
+  border-radius: 26px;
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.42);
+  background:
+    linear-gradient(180deg, hsl(var(--neu-bg-hi, 232 35% 20%) / 0.92) 0%, hsl(var(--neu-bg-lo, 232 35% 9%) / 0.96) 100%);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.55) inset,
+    0 18px 38px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 28px hsl(var(--neu-orange, 252 90% 70%) / 0.30);
+}
+.scroll-jump-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.scroll-jump-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(160deg, rgba(255,255,255,0.08), transparent 55%);
+  pointer-events: none;
+  opacity: 0.85;
+}
+.scroll-jump-btn:hover:not(:disabled) {
+  color: hsl(var(--neu-orange-hi, 252 100% 88%));
+  border-color: hsl(var(--neu-orange, 252 90% 70%));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.6) inset,
+    0 10px 20px rgba(0, 0, 0, 0.55),
+    0 0 26px hsl(var(--neu-orange, 252 90% 70%) / 0.65),
+    0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+}
+.scroll-jump-spacer {
+  width: 30px;
+  margin: 7px 0;
+}
+@media (max-width: 640px) {
+  .scroll-jump {
+    right: 10px;
+    padding: 5px;
+    border-radius: 22px;
+  }
+  .scroll-jump-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+  .scroll-jump-spacer {
+    margin: 5px 0;
+    width: 24px;
+  }
+}
+
+/* ============================================================================
+   Mobile responsiveness pass — keep Book Teacher / Admin / Boost compact in
+   the header on small phones so they don't push the profile orbit off-screen.
+   ============================================================================ */
+@media (max-width: 480px) {
+  .header-pro-btn {
+    height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 11.5px !important;
+  }
+  .header-pro-divider {
+    margin: 0 2px !important;
+  }
+}

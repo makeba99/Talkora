@@ -95,7 +95,9 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
       <DialogTrigger asChild>
         <Button
           data-testid="button-create-room"
-          className="create-room-neu hammer-btn h-12 px-4 pl-1.5 font-semibold whitespace-nowrap flex-shrink-0 gap-2.5 rounded-full"
+          className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full"
+          aria-label="Create Room"
+          title="Create Room"
         >
           <span className="create-room-neu-icon">
             <Hammer className="sparkle-icon w-[14px] h-[14px]" />

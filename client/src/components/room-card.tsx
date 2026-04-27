@@ -964,7 +964,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               // Anything not freely enterable is rendered as the FULL/knock door,
               // but only if the viewer isn't already a member of the room.
               const isClosed = !alreadyIn && (isFull || isPrivate);
-              const stateClass = isClosed ? "door-3d-full" : "";
+              // Both "full" and "private" rooms now share the LOCKED visual
+              // (amber/brass keyhole + warm glow + amber LED caption). The old
+              // red sealed-shut FULL look is gone — every closed room reads as
+              // "locked", you knock to ask for entry the same way regardless of
+              // why the door isn't open.
+              const stateClass = isClosed ? "door-3d-locked" : "";
 
               const doorBody = (
                 <>

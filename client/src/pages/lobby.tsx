@@ -20,6 +20,7 @@ import { ProfileDropdown } from "@/components/profile-dropdown";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { ThemePicker } from "@/components/theme-picker";
 import { ScrollJumpButton } from "@/components/scroll-jump-button";
+import { BoostModeToggle } from "@/components/boost-mode-toggle";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
@@ -1072,6 +1073,7 @@ export default function Lobby() {
 
           {/* Action zone */}
           <div className="flex items-center gap-1 flex-shrink-0">
+            <BoostModeToggle />
             {user ? (
               <>
                 <button
