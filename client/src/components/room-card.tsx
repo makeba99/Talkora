@@ -503,10 +503,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     displayCount === 2 ? 78 :
     displayCount === 3 ? 66 :
     displayCount === 4 ? 60 :
-    displayCount <= 6 ? 52 :
-    displayCount <= 8 ? 44 :
-    displayCount <= 10 ? 36 :
-    32;
+    displayCount <= 6 ? 60 :
+    displayCount <= 8 ? 50 :
+    displayCount <= 10 ? 42 :
+    38;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -810,12 +810,18 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     </ProfileDecoration>
                   );
 
-                  const heartRow = (
+                  /* Heart/follower count is only useful in small, uncluttered
+                     rooms — in crowded rooms (5+ slots) it eats vertical space
+                     and pushes the first row of avatars into the language/level
+                     header. The full follower count is still shown in the
+                     hover popover, so it's safe to hide here. */
+                  const showHeartRow = displayCount <= 4;
+                  const heartRow = showHeartRow ? (
                     <div className="flex items-center justify-center gap-0.5 mt-0.5" data-testid={`text-follower-count-card-${p.id}`}>
                       <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" />
                       <span className="text-[9px] text-white/60 font-medium">{count}</span>
                     </div>
-                  );
+                  ) : null;
 
                   if (!isLoggedIn) {
                     return (
