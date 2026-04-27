@@ -7062,7 +7062,7 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 .filter-chip-teal   { --tone-h: 165; --tone-s: 78%; --tone-l: 52%; } /* Languages    */
 
 .filter-chip-lang {
-  margin-left: auto;
+  margin-left: 0;
 }
 @media (max-width: 640px) {
   .filter-chip-lang {

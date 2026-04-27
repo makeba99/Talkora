@@ -18,9 +18,10 @@ const CATEGORIES = [
 interface ThemePickerProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
-export function ThemePicker({ open: controlledOpen, onOpenChange }: ThemePickerProps = {}) {
+export function ThemePicker({ open: controlledOpen, onOpenChange, hideTrigger }: ThemePickerProps = {}) {
   const { theme, setTheme } = useTheme();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -40,19 +41,23 @@ export function ThemePicker({ open: controlledOpen, onOpenChange }: ThemePickerP
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          size="icon"
-          variant="ghost"
-          data-testid="button-theme-picker"
-          className="relative"
-          title="Choose theme"
-        >
-          <Palette className="w-4 h-4" />
-          <span
-            className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-background"
-            style={{ background: activeDef.swatchColors[2] }}
-          />
-        </Button>
+        {hideTrigger ? (
+          <span aria-hidden="true" style={{ display: "none" }} />
+        ) : (
+          <Button
+            size="icon"
+            variant="ghost"
+            data-testid="button-theme-picker"
+            className="relative"
+            title="Choose theme"
+          >
+            <Palette className="w-4 h-4" />
+            <span
+              className="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-background"
+              style={{ background: activeDef.swatchColors[2] }}
+            />
+          </Button>
+        )}
       </PopoverTrigger>
 
       <PopoverContent
