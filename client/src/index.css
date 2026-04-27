@@ -2492,56 +2492,111 @@ html.synthwave .neon-text {
   text-shadow: 0 0 4px hsl(358 70% 40% / 0.30);
 }
 
-/* ── Door status label (OPEN / CLOSED) — sits ABOVE the door, much
-   easier to read than the engraved text. Compact pill with neon glow. */
+/* ── Door status pills (OPEN / CLOSED) ─ engraved neumorphic capsule
+   with a glowing LED indicator that pulses softly when OPEN. Sits
+   above the 3D door so it stays readable on every card. */
 .door-status-label {
-  display: inline-block;
-  padding: 1px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
   border-radius: 999px;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  line-height: 1.4;
+  line-height: 1;
   white-space: nowrap;
   user-select: none;
   -webkit-user-select: none;
   pointer-events: none;
-  border: 1px solid transparent;
-  transition: transform 0.32s ease, box-shadow 0.32s ease,
-              background 0.32s ease, color 0.32s ease;
-}
-.door-status-open {
-  color: hsl(140 80% 78%);
-  background: linear-gradient(160deg,
-    hsl(150 60% 18% / 0.95) 0%,
-    hsl(140 55% 14% / 0.95) 100%);
-  border-color: hsl(140 70% 45% / 0.55);
+  /* Engraved neumorphic capsule body — same charcoal as the cards. */
+  background: linear-gradient(160deg, hsl(228 18% 9%) 0%, hsl(228 16% 13%) 100%);
   box-shadow:
-    0 0 6px hsl(140 80% 50% / 0.45),
-    0 0 12px hsl(140 80% 50% / 0.20),
-    inset 0 1px 0 hsl(140 80% 60% / 0.18);
-  text-shadow: 0 0 4px hsl(140 90% 55% / 0.55);
+    inset 2px 2px 4px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.05),
+    -1px -1px 2px rgba(255, 235, 215, 0.04),
+    1px 1px 3px rgba(0, 0, 0, 0.45);
+  transition: transform 0.32s ease, box-shadow 0.32s ease, color 0.32s ease;
+}
+/* The LED dot (rendered via ::before so we don't need DOM changes). */
+.door-status-label::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* OPEN — green LED, soft outer glow, cool minty text. */
+.door-status-open {
+  color: hsl(150 90% 80%);
+  text-shadow: 0 0 4px hsl(150 90% 55% / 0.45);
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.05),
+    -1px -1px 2px rgba(255, 235, 215, 0.04),
+    1px 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 1px hsl(150 80% 50% / 0.25),
+    0 0 10px hsl(150 80% 50% / 0.20);
+}
+.door-status-open::before {
+  background: radial-gradient(circle at 30% 30%, hsl(150 100% 80%), hsl(150 90% 50%) 70%);
+  box-shadow:
+    0 0 6px hsl(150 95% 55% / 0.95),
+    0 0 12px hsl(150 95% 55% / 0.50),
+    inset 0 0 1px rgba(255, 255, 255, 0.6);
+  animation: door-led-pulse 2.2s ease-in-out infinite;
 }
 .door-3d-wrap:hover .door-status-open {
   transform: translateY(-1px);
+  color: hsl(150 95% 88%);
   box-shadow:
-    0 0 10px hsl(140 90% 55% / 0.75),
-    0 0 18px hsl(140 90% 55% / 0.35),
-    inset 0 1px 0 hsl(140 80% 60% / 0.22);
-  color: hsl(140 90% 86%);
+    inset 2px 2px 4px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.05),
+    -1px -1px 2px rgba(255, 235, 215, 0.04),
+    1px 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 1px hsl(150 85% 55% / 0.45),
+    0 0 16px hsl(150 85% 55% / 0.40);
 }
+
+/* CLOSED — red LED, dimmer body, warm rose text. */
 .door-status-closed {
   color: hsl(358 80% 80%);
-  background: linear-gradient(160deg,
-    hsl(355 50% 16% / 0.95) 0%,
-    hsl(0 50% 12% / 0.95) 100%);
-  border-color: hsl(358 65% 45% / 0.55);
+  text-shadow: 0 0 4px hsl(358 90% 55% / 0.40);
   box-shadow:
-    0 0 6px hsl(358 80% 50% / 0.40),
-    0 0 12px hsl(358 80% 50% / 0.18),
-    inset 0 1px 0 hsl(358 80% 60% / 0.16);
-  text-shadow: 0 0 4px hsl(358 90% 55% / 0.50);
+    inset 2px 2px 4px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.05),
+    -1px -1px 2px rgba(255, 235, 215, 0.04),
+    1px 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 1px hsl(358 70% 50% / 0.28),
+    0 0 10px hsl(358 70% 50% / 0.18);
+}
+.door-status-closed::before {
+  background: radial-gradient(circle at 30% 30%, hsl(358 100% 78%), hsl(358 85% 48%) 70%);
+  box-shadow:
+    0 0 5px hsl(358 90% 55% / 0.85),
+    0 0 10px hsl(358 90% 55% / 0.40),
+    inset 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes door-led-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 6px hsl(150 95% 55% / 0.95),
+      0 0 12px hsl(150 95% 55% / 0.50),
+      inset 0 0 1px rgba(255, 255, 255, 0.6);
+  }
+  50% {
+    box-shadow:
+      0 0 9px hsl(150 100% 65% / 1),
+      0 0 18px hsl(150 100% 65% / 0.65),
+      inset 0 0 1px rgba(255, 255, 255, 0.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .door-status-open::before { animation: none; }
 }
 
 /* ── Premium Animated Borders ── */
