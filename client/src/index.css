@@ -6731,6 +6731,20 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   border-color: hsl(var(--neu-orange-hi, 252 95% 84%));
 }
 
+/* The center "all apps" button is bigger than a satellite, so its pin badge
+   sits a touch further out so it doesn't crowd the LayoutGrid icon. */
+.orbit-center-pin {
+  bottom: -2px;
+  right: -2px;
+}
+.orbit-center:hover .orbit-center-pin,
+.orbit-center:focus-within .orbit-center-pin,
+.orbit-center-pin:hover,
+.orbit-center-pin:focus-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
 /* ============================================================================
    HEADER PIN CHIPS
    ----------------------------------------------------------------------------

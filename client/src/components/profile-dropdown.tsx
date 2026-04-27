@@ -240,8 +240,22 @@ interface ProfileDropdownProps {
    * Pinned items disappear from the orbit ring; their pin badge in the orbit
    * is not rendered when they are pinned.
    */
-  pinned?: { messages?: boolean; notifications?: boolean; themes?: boolean; community?: boolean };
-  onTogglePin?: (key: "messages" | "notifications" | "themes" | "community") => void;
+  pinned?: { messages?: boolean; notifications?: boolean; themes?: boolean; community?: boolean; orbit?: boolean };
+  onTogglePin?: (key: "messages" | "notifications" | "themes" | "community" | "orbit") => void;
+  /**
+   * Rendering mode for the orbit popover content:
+   *  - "full" (default): orbit ring + identity card + footer actions
+   *  - "ring-only": just the orbit ring (used by the standalone orbit launcher chip)
+   *  - "profile-only": identity + footer (used when the orbit has been pinned out
+   *    of the avatar pill into its own header chip)
+   */
+  mode?: "full" | "ring-only" | "profile-only";
+  /**
+   * Optional custom trigger element. When provided, replaces the default
+   * avatar pill — used by the standalone orbit launcher chip so the orbit
+   * popover can be anchored to a separate header button.
+   */
+  customTrigger?: React.ReactElement;
 }
 
 export function ProfileDropdown({
@@ -255,6 +269,8 @@ export function ProfileDropdown({
   onOpenChange,
   pinned,
   onTogglePin,
+  mode = "full",
+  customTrigger,
 }: ProfileDropdownProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
   const orbitOpen = controlledOpen ?? internalOpen;
@@ -419,6 +435,7 @@ export function ProfileDropdown({
     <>
       <Popover open={orbitOpen} onOpenChange={setOrbitOpen}>
         <PopoverTrigger asChild>
+          {customTrigger ?? (
           <button
             className="orbit-trigger-pill"
             data-testid="button-profile-dropdown"
@@ -453,6 +470,7 @@ export function ProfileDropdown({
             </span>
             <ChevronDown className="orbit-trigger-chev w-3.5 h-3.5 hidden sm:block" />
           </button>
+          )}
         </PopoverTrigger>
         <PopoverContent
           align="end"
@@ -465,12 +483,17 @@ export function ProfileDropdown({
           {/* Orbit ring with 4 satellites: items only appear here when NOT
               pinned to the header. Tap a satellite to open it; tap its small
               pin badge to pin it to the header (it then disappears from the
-              orbit and shows as a chip next to the avatar). */}
+              orbit and shows as a chip next to the avatar). The center
+              "close" button is itself pinnable: pinning it lifts the whole
+              orbit out of the avatar pill into a standalone header chip.
+              In "profile-only" mode the ring is hidden entirely. */}
+          {mode !== "profile-only" && (
           <div className="orbit-ring" data-testid="orbit-ring">
             <span className="orbit-ring-outer" aria-hidden="true" />
             <span className="orbit-ring-inner" aria-hidden="true" />
 
-            {/* center: collapse / "all apps" */}
+            {/* center: collapse / "all apps" — also pinnable so the orbit
+                can live as its own header chip, separated from the profile. */}
             <button
               type="button"
               className="orbit-center"
@@ -480,6 +503,20 @@ export function ProfileDropdown({
               aria-label="Close menu"
             >
               <LayoutGrid className="w-5 h-5" />
+              {onTogglePin && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="orbit-sat-pin orbit-center-pin"
+                  onClick={(e) => { e.stopPropagation(); onTogglePin?.("orbit"); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onTogglePin?.("orbit"); } }}
+                  data-testid="button-pin-orbit"
+                  aria-label={pinned?.orbit ? "Move Orbit back into profile" : "Pin Orbit as a separate header button"}
+                  title={pinned?.orbit ? "Move back into profile" : "Pin orbit to header"}
+                >
+                  <Pin className="w-2.5 h-2.5" />
+                </span>
+              )}
             </button>
 
             {!pinned?.messages && (
@@ -596,8 +633,10 @@ export function ProfileDropdown({
               </button>
             )}
           </div>
+          )}
 
-          {/* identity card under the orbit */}
+          {/* identity card under the orbit (hidden in ring-only mode) */}
+          {mode !== "ring-only" && (
           <div className="orbit-identity">
             <div className="relative flex-shrink-0">
               <Avatar className="w-9 h-9 ring-1 ring-white/15">
@@ -640,8 +679,10 @@ export function ProfileDropdown({
                 : <Eye className="w-3.5 h-3.5" />}
             </button>
           </div>
+          )}
 
-          {/* secondary actions footer */}
+          {/* secondary actions footer (hidden in ring-only mode) */}
+          {mode !== "ring-only" && (
           <div className="orbit-footer">
             <button
               type="button"
@@ -689,6 +730,7 @@ export function ProfileDropdown({
               <span>Logout</span>
             </button>
           </div>
+          )}
         </PopoverContent>
       </Popover>
 

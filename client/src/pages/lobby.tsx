@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, ArrowRight } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, ArrowRight, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CommentThreadDialog } from "@/components/comment-thread-dialog";
@@ -413,7 +413,7 @@ export default function Lobby() {
   // header bar (and demote it back). Choice persists per browser via
   // localStorage so it survives reloads.
   // -------------------------------------------------------------------------
-  type PinnedKey = "messages" | "notifications" | "themes" | "community";
+  type PinnedKey = "messages" | "notifications" | "themes" | "community" | "orbit";
   const PIN_STORAGE_KEY = "vextorn:header:pinned:v1";
   const [pinned, setPinned] = useState<Record<PinnedKey, boolean>>(() => {
     const fallback: Record<PinnedKey, boolean> = {
@@ -421,6 +421,7 @@ export default function Lobby() {
       notifications: false,
       themes: false,
       community: false,
+      orbit: false,
     };
     if (typeof window === "undefined") return fallback;
     try {
@@ -1215,9 +1216,55 @@ export default function Lobby() {
                   </button>
                 )}
 
+                {/* Standalone orbit launcher chip: appears once the user pins
+                    the orbit out of the avatar pill. Opens the orbit ring on
+                    its own popover so the orbit lives separately from the
+                    profile menu. The avatar pill keeps profile-only content. */}
+                {pinned.orbit && (
+                  <ProfileDropdown
+                    open={orbitOpen}
+                    onOpenChange={setOrbitOpen}
+                    onOpenTheme={() => setThemePickerOpen(true)}
+                    onOpenNotifications={() => setNotificationsOpen(true)}
+                    onOpenMessages={() => setMessagesOpen(true)}
+                    onOpenCommunity={() => setSocialOpen(true)}
+                    unreadMessages={unreadMessages}
+                    unreadNotifications={unreadNotifications}
+                    pinned={pinned}
+                    onTogglePin={togglePin}
+                    mode="ring-only"
+                    customTrigger={
+                      <button
+                        type="button"
+                        className="header-pin-chip mr-1"
+                        data-testid="chip-pinned-orbit"
+                        aria-label="Open orbit menu"
+                        title="Orbit"
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                        {(unreadMessages + unreadNotifications) > 0 && (
+                          <span className="header-pin-dot" aria-hidden="true" />
+                        )}
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => { e.stopPropagation(); togglePin("orbit"); }}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); togglePin("orbit"); } }}
+                          className="header-pin-unpin"
+                          data-testid="button-unpin-orbit"
+                          aria-label="Move Orbit back into profile"
+                          title="Move back into profile"
+                        >
+                          <PinOff className="w-2.5 h-2.5" />
+                        </span>
+                      </button>
+                    }
+                  />
+                )}
+
                 <ProfileDropdown
-                  open={orbitOpen}
-                  onOpenChange={setOrbitOpen}
+                  open={pinned.orbit ? false : orbitOpen}
+                  onOpenChange={pinned.orbit ? undefined : setOrbitOpen}
                   onOpenTheme={() => setThemePickerOpen(true)}
                   onOpenNotifications={() => setNotificationsOpen(true)}
                   onOpenMessages={() => setMessagesOpen(true)}
@@ -1226,6 +1273,7 @@ export default function Lobby() {
                   unreadNotifications={unreadNotifications}
                   pinned={pinned}
                   onTogglePin={togglePin}
+                  mode={pinned.orbit ? "profile-only" : "full"}
                 />
               </>
             ) : (
