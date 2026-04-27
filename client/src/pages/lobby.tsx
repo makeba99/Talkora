@@ -444,29 +444,15 @@ export default function Lobby() {
   // unread messages — only TRUE deltas (new arrivals during the session) trigger.
   const orbitBaselineSetRef = useRef<boolean>(false);
   useEffect(() => {
+    // Keep counters in sync so the trigger-pill badge always reflects the
+    // current unread totals, but no longer auto-pop the orbit on growth —
+    // Messages and Notifications are no longer in the orbit ring; the user
+    // opts them into the header bar via the "Pin to header" row in the
+    // profile menu. They still receive everything in the background.
     if (!user) return;
-    if (!orbitBaselineSetRef.current) {
-      prevUnreadMsgRef.current = unreadMessages;
-      prevUnreadNotifRef.current = unreadNotifications;
-      orbitBaselineSetRef.current = true;
-      return;
-    }
-    const grew =
-      unreadMessages > prevUnreadMsgRef.current ||
-      unreadNotifications > prevUnreadNotifRef.current;
     prevUnreadMsgRef.current = unreadMessages;
     prevUnreadNotifRef.current = unreadNotifications;
-    if (grew) {
-      setOrbitOpen(true);
-      if (orbitAutoCloseTimerRef.current) {
-        clearTimeout(orbitAutoCloseTimerRef.current);
-      }
-      // Auto-close after a short peek so the orbit doesn't get sticky.
-      orbitAutoCloseTimerRef.current = setTimeout(() => {
-        setOrbitOpen(false);
-        orbitAutoCloseTimerRef.current = null;
-      }, 4500);
-    }
+    orbitBaselineSetRef.current = true;
   }, [unreadMessages, unreadNotifications, user]);
   useEffect(() => () => {
     if (orbitAutoCloseTimerRef.current) clearTimeout(orbitAutoCloseTimerRef.current);

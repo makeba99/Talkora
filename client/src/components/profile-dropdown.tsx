@@ -479,72 +479,15 @@ export function ProfileDropdown({
               <LayoutGrid className="w-5 h-5" />
             </button>
 
-            {/* satellites — 4 cardinal positions: top, right, bottom, left.
-                Pinned items are hidden from the orbit (they live in the header bar instead). */}
-            {!pinned?.messages && (
-              <button
-                type="button"
-                className="orbit-sat orbit-sat-top"
-                onClick={closeOrbitAnd(onOpenMessages)}
-                data-testid="orbit-sat-messages"
-                aria-label="Messages"
-              >
-                <span className="orbit-sat-bubble">
-                  <MessageCircle className="w-[18px] h-[18px]" />
-                  {unreadMessages > 0 && (
-                    <span className="orbit-sat-dot" aria-hidden="true" />
-                  )}
-                </span>
-                <span className="orbit-sat-label">Messages</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="orbit-sat-pin"
-                  onClick={(e) => { e.stopPropagation(); onTogglePin?.("messages"); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onTogglePin?.("messages"); } }}
-                  data-testid="button-pin-messages"
-                  aria-label="Pin Messages to header"
-                  title="Pin to header"
-                >
-                  <Pin className="w-2.5 h-2.5" />
-                </span>
-              </button>
-            )}
-
-            {!pinned?.notifications && (
-              <button
-                type="button"
-                className="orbit-sat orbit-sat-right"
-                onClick={closeOrbitAnd(onOpenNotifications)}
-                data-testid="orbit-sat-notifications"
-                aria-label="Notifications"
-              >
-                <span className="orbit-sat-bubble">
-                  <Bell className="w-[18px] h-[18px]" />
-                  {unreadNotifications > 0 && (
-                    <span className="orbit-sat-dot" aria-hidden="true" />
-                  )}
-                </span>
-                <span className="orbit-sat-label">Notifications</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="orbit-sat-pin"
-                  onClick={(e) => { e.stopPropagation(); onTogglePin?.("notifications"); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onTogglePin?.("notifications"); } }}
-                  data-testid="button-pin-notifications"
-                  aria-label="Pin Notifications to header"
-                  title="Pin to header"
-                >
-                  <Pin className="w-2.5 h-2.5" />
-                </span>
-              </button>
-            )}
-
+            {/* satellites — Themes (top) + Community (bottom). Messages and
+                Notifications are intentionally NOT in the orbit anymore — the
+                user opts them in via the "Pin to header" row below. They still
+                arrive in the background and the unread count keeps flowing
+                onto the trigger pill so the user always knows. */}
             {!pinned?.themes && (
               <button
                 type="button"
-                className="orbit-sat orbit-sat-bottom"
+                className="orbit-sat orbit-sat-top"
                 onClick={closeOrbitAnd(onOpenTheme)}
                 data-testid="orbit-sat-themes"
                 aria-label="Themes"
@@ -571,7 +514,7 @@ export function ProfileDropdown({
             {!pinned?.community && (
               <button
                 type="button"
-                className="orbit-sat orbit-sat-left"
+                className="orbit-sat orbit-sat-bottom"
                 onClick={closeOrbitAnd(onOpenCommunity)}
                 data-testid="orbit-sat-community"
                 aria-label="Community"
@@ -594,6 +537,42 @@ export function ProfileDropdown({
                 </span>
               </button>
             )}
+          </div>
+
+          {/* Pin-to-header row: Messages and Notifications no longer live in
+              the orbit ring. The user opts them into the header bar via these
+              two pill toggles. New messages/notifications still arrive in the
+              background regardless of pin state. */}
+          <div className="orbit-pin-row" data-testid="orbit-pin-row">
+            <span className="orbit-pin-row-label">Pin to header</span>
+            <div className="orbit-pin-row-pills">
+              <button
+                type="button"
+                onClick={() => onTogglePin?.("messages")}
+                className={`orbit-pin-pill ${pinned?.messages ? "is-pinned" : ""}`}
+                data-testid="toggle-pin-messages"
+                aria-pressed={!!pinned?.messages}
+                title={pinned?.messages ? "Unpin Messages" : "Pin Messages to header"}
+              >
+                <MessageCircle className="w-3 h-3" />
+                <span>Messages</span>
+                {unreadMessages > 0 && <span className="orbit-pin-pill-dot" aria-hidden="true" />}
+                {pinned?.messages && <Pin className="w-2.5 h-2.5 ml-0.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => onTogglePin?.("notifications")}
+                className={`orbit-pin-pill ${pinned?.notifications ? "is-pinned" : ""}`}
+                data-testid="toggle-pin-notifications"
+                aria-pressed={!!pinned?.notifications}
+                title={pinned?.notifications ? "Unpin Notifications" : "Pin Notifications to header"}
+              >
+                <Bell className="w-3 h-3" />
+                <span>Notifications</span>
+                {unreadNotifications > 0 && <span className="orbit-pin-pill-dot" aria-hidden="true" />}
+                {pinned?.notifications && <Pin className="w-2.5 h-2.5 ml-0.5" />}
+              </button>
+            </div>
           </div>
 
           {/* identity card under the orbit */}

@@ -6848,6 +6848,82 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
+
+/* "Pin to header" row — Messages and Notifications opt-in toggles. */
+.orbit-pin-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.022);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.orbit-pin-row-label {
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+}
+.orbit-pin-row-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.orbit-pin-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.orbit-pin-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.30);
+}
+.orbit-pin-pill.is-pinned {
+  background: hsl(var(--neu-orange, 252 90% 60%) / 0.18);
+  border-color: hsl(var(--neu-orange, 252 90% 60%) / 0.55);
+  color: hsl(var(--neu-orange-hi, 252 95% 88%));
+  box-shadow: 0 0 12px hsl(var(--neu-orange, 252 90% 60%) / 0.30);
+}
+.orbit-pin-pill-dot {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(239, 68, 68);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+}
+html.neomorphic-light .orbit-pin-row {
+  background: rgba(0, 0, 0, 0.025);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+html.neomorphic-light .orbit-pin-row-label {
+  color: rgba(0, 0, 0, 0.5);
+}
+html.neomorphic-light .orbit-pin-pill {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.10);
+  color: rgba(0, 0, 0, 0.72);
+}
+html.neomorphic-light .orbit-pin-pill:hover {
+  background: rgba(0, 0, 0, 0.07);
+  color: rgba(0, 0, 0, 0.92);
+}
 .orbit-mini-toggle {
   flex-shrink: 0;
   display: inline-flex;
