@@ -1208,39 +1208,10 @@ export default function Lobby() {
               })}
             </div>
           )}
-          {/* Pro search bar: scope icons live INSIDE the input on the left
-              (Rooms / Top Speakers / Famous Users) and a Languages icon
-              toggles the language filter strip on the right. The active room
-              count next to the Languages icon hints at how many rooms match. */}
+          {/* Search bar — clean input on its own line */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <div className="search-pro-shell relative flex-1">
-              {/* Scope icon group */}
-              <div className="search-pro-scope" role="tablist" aria-label="Discovery scope">
-                {([
-                  { id: "rooms", label: "Rooms", icon: Mic },
-                  { id: "top-speakers", label: "Speakers", icon: Radio },
-                  { id: "famous-users", label: "Famous", icon: Heart },
-                ] as const).map((filter) => {
-                  const Icon = filter.icon;
-                  const isActive = activeDiscovery === filter.id;
-                  return (
-                    <button
-                      key={filter.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={isActive}
-                      onClick={() => setActiveDiscovery(filter.id)}
-                      className={`search-pro-scope-btn ${isActive ? "is-active" : ""}`}
-                      title={filter.label}
-                      data-testid={`filter-discovery-${filter.id}`}
-                    >
-                      <Icon className="w-[14px] h-[14px]" />
-                      <span className="search-pro-scope-label">{filter.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
+            <div className="search-clean-shell relative flex-1">
+              <Search className="search-clean-icon w-[18px] h-[18px]" />
               <Input
                 placeholder={
                   activeDiscovery === "rooms"
@@ -1251,17 +1222,15 @@ export default function Lobby() {
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-pro-input neu-inset h-11 border-0 rounded-full text-white placeholder:text-white/35 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="search-clean-input neu-inset h-12 border-0 rounded-full text-white placeholder:text-white/35 focus-visible:ring-0 focus-visible:ring-offset-0"
                 data-testid="input-search-rooms"
               />
-
-              {/* Right-side controls */}
-              <div className="search-pro-actions">
+              <div className="search-clean-right">
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="search-pro-clear"
+                    className="search-clean-clear"
                     data-testid="button-clear-search"
                     aria-label="Clear search"
                     title="Clear"
@@ -1269,25 +1238,7 @@ export default function Lobby() {
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                {activeDiscovery === "rooms" && (
-                  <button
-                    type="button"
-                    onClick={() => setShowLanguageFilters((v) => !v)}
-                    className={`search-pro-lang-btn ${showLanguageFilters ? "is-active" : ""}`}
-                    aria-expanded={showLanguageFilters}
-                    aria-pressed={showLanguageFilters}
-                    title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
-                    data-testid="button-toggle-language-filters"
-                  >
-                    <Globe className="w-[15px] h-[15px]" />
-                    {selectedLanguage !== "All" && (
-                      <span className="search-pro-lang-chip" data-testid="badge-active-language">
-                        {selectedLanguage}
-                      </span>
-                    )}
-                  </button>
-                )}
-                <kbd className="search-pro-kbd hidden sm:flex">⌘K</kbd>
+                <kbd className="search-clean-kbd hidden sm:flex">⌘K</kbd>
               </div>
             </div>
             {user && (
@@ -1297,6 +1248,63 @@ export default function Lobby() {
                   isPending={createRoomMutation.isPending}
                 />
               </div>
+            )}
+          </div>
+
+          {/* Filter strip: each chip has its own colour family so Rooms,
+              Speakers, Famous and Languages stay easy to tell apart. */}
+          <div className="filter-strip" data-testid="filters-discovery-search">
+            <div className="filter-strip-group">
+              {([
+                { id: "rooms",         label: "Rooms",        icon: Mic,   tone: "purple" },
+                { id: "top-speakers",  label: "Top Speakers", icon: Radio, tone: "cyan"   },
+                { id: "famous-users",  label: "Famous Users", icon: Heart, tone: "pink"   },
+              ] as const).map((filter) => {
+                const Icon = filter.icon;
+                const isActive = activeDiscovery === filter.id;
+                return (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    onClick={() => setActiveDiscovery(filter.id)}
+                    className={`filter-chip filter-chip-${filter.tone} ${isActive ? "is-active" : ""}`}
+                    aria-pressed={isActive}
+                    data-testid={`filter-discovery-${filter.id}`}
+                  >
+                    <span className="filter-chip-icon">
+                      <Icon className="w-[14px] h-[14px]" />
+                    </span>
+                    <span className="filter-chip-label">{filter.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {activeDiscovery === "rooms" && (
+              <button
+                type="button"
+                onClick={() => setShowLanguageFilters((v) => !v)}
+                className={`filter-chip filter-chip-teal filter-chip-lang ${showLanguageFilters ? "is-active" : ""}`}
+                aria-expanded={showLanguageFilters}
+                aria-pressed={showLanguageFilters}
+                title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
+                data-testid="button-toggle-language-filters"
+              >
+                <span className="filter-chip-icon">
+                  <Globe className="w-[14px] h-[14px]" />
+                </span>
+                <span className="filter-chip-label">Languages</span>
+                {selectedLanguage !== "All" && (
+                  <span className="filter-chip-meta" data-testid="badge-active-language">
+                    {selectedLanguage}
+                  </span>
+                )}
+                {showLanguageFilters ? (
+                  <ChevronUp className="w-3.5 h-3.5 opacity-80" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+                )}
+              </button>
             )}
           </div>
 

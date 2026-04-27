@@ -6869,13 +6869,217 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 }
 
 /* ============================================================================
-   PRO SEARCH BAR
+   CLEAN SEARCH BAR + FILTER CHIPS
    ----------------------------------------------------------------------------
-   A unified search bar that hosts inline scope-icon filters on the left
-   (Rooms / Speakers / Famous) and a Languages-toggle icon on the right,
-   replacing the older standalone tab pill row. Keeps Languages as the
-   single expandable filter, and exposes a clear button when text is typed.
+   The search bar is intentionally minimal: just a soft inset pill with the
+   search icon on the left and a clear/⌘K cluster on the right. Discovery
+   scope (Rooms / Top Speakers / Famous Users) and Languages live below it
+   as colour-tinted neumorphic chips so each filter is unmistakable at a
+   glance and never crowds the input.
    ============================================================================ */
+.search-clean-shell {
+  position: relative;
+}
+.search-clean-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  z-index: 2;
+}
+.search-clean-input {
+  padding-left: 48px !important;
+  padding-right: 88px !important;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+.search-clean-right {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+.search-clean-clear {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+.search-clean-clear:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+.search-clean-kbd {
+  align-items: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  pointer-events: none;
+}
+
+/* Filter strip --------------------------------------------------------------- */
+.filter-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.filter-strip-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 14%) / 0.55) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 8%) / 0.55) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+    0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.filter-chip {
+  --tone-h: 252;
+  --tone-s: 90%;
+  --tone-l: 70%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px 0 8px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.78);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 18%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 10%)) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+    0 4px 10px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 200ms ease, background 200ms ease;
+}
+.filter-chip:hover {
+  transform: translateY(-1px);
+  color: #fff;
+  border-color: hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.55);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 6px 14px rgba(0, 0, 0, 0.45),
+    0 0 16px hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.32);
+}
+.filter-chip:active {
+  transform: translateY(0);
+}
+.filter-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: hsl(var(--tone-h) var(--tone-s) var(--tone-l));
+  background: hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.12);
+  border: 1px solid hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.32);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+.filter-chip:hover .filter-chip-icon {
+  background: hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.22);
+}
+.filter-chip-label {
+  white-space: nowrap;
+}
+.filter-chip-meta {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.32);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Active state — chip glows in its own tone so each filter remains distinct. */
+.filter-chip.is-active {
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--tone-h) var(--tone-s) calc(var(--tone-l) + 6%)) 0%,
+    hsl(var(--tone-h) var(--tone-s) calc(var(--tone-l) - 12%)) 100%
+  );
+  border-color: hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.65);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.35) inset,
+    0 0 18px hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.55),
+    0 0 36px hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.22);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+.filter-chip.is-active .filter-chip-icon {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Tone palette --------------------------------------------------------------- */
+.filter-chip-purple { --tone-h: 258; --tone-s: 92%; --tone-l: 72%; } /* Rooms        */
+.filter-chip-cyan   { --tone-h: 195; --tone-s: 95%; --tone-l: 60%; } /* Top Speakers */
+.filter-chip-pink   { --tone-h: 338; --tone-s: 90%; --tone-l: 68%; } /* Famous Users */
+.filter-chip-teal   { --tone-h: 165; --tone-s: 78%; --tone-l: 52%; } /* Languages    */
+
+.filter-chip-lang {
+  margin-left: auto;
+}
+@media (max-width: 640px) {
+  .filter-chip-lang {
+    margin-left: 0;
+  }
+  .filter-chip-label {
+    display: inline;
+  }
+  .filter-chip {
+    height: 34px;
+    padding: 0 12px 0 6px;
+    font-size: 12px;
+  }
+}
+
+/* Legacy unified-search-bar selectors (no longer rendered, kept to avoid
+   stray references). ------------------------------------------------------- */
 .search-pro-shell {
   position: relative;
 }
