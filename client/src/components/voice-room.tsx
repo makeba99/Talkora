@@ -19,7 +19,8 @@ import {
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
+  Sparkles, Upload
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -36,7 +37,8 @@ import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageCon
 import { ChessPanel } from "@/components/chess-panel";
 import { CenterChessOverlay, ChessPlayerBadge } from "@/components/center-chess-overlay";
 import { getAvatarRingClass, FlairBadgeDisplay } from "@/components/profile-dropdown";
-import { ProfileDecoration, ROOM_THEMES, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
+import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
+import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
@@ -836,14 +838,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [editThemeOffset, setEditThemeOffset] = useState(0);
   const [hologramPreviewVR, setHologramPreviewVR] = useState<string | null>(null);
   const [hologramFileVR, setHologramFileVR] = useState<File | null>(null);
+  const [hologramKindVR, setHologramKindVR] = useState<"video" | "image" | null>(null);
   const [uploadingVideoVR, setUploadingVideoVR] = useState(false);
-  const [videoTabVR, setVideoTabVR] = useState<"upload" | "youtube">("upload");
-  const [ytLinkVR, setYtLinkVR] = useState("");
-  const [ytQueryVR, setYtQueryVR] = useState("");
-  const [ytResultsVR, setYtResultsVR] = useState<any[]>([]);
-  const [ytSearchingVR, setYtSearchingVR] = useState(false);
-  const [selectedYtVR, setSelectedYtVR] = useState<string | null>(null);
-  const ytTimeoutVR = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [bgSourceVR, setBgSourceVR] = useState<"gallery" | "upload">("gallery");
+  const [presetBgUrlVR, setPresetBgUrlVR] = useState<string | null>(null);
+  const [editTalkPermission, setEditTalkPermission] = useState<"everyone" | "co_owners" | "owner_only" | "muted">(
+    ((roomProp as any).talkPermission as any) || "everyone"
+  );
   const videoInputVR = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
@@ -2845,6 +2846,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const toggleMute = () => {
+    // If the host has restricted talking and we're trying to UNMUTE, block.
+    // Re-muting is always allowed (going silent never violates a restriction).
+    if (isMuted && !canUseTalkControls) {
+      toast({ title: "Mic locked", description: talkLockReason || "Talking is disabled in this room.", variant: "destructive" });
+      return;
+    }
     if (localStream.current) {
       localStream.current.getAudioTracks().forEach((track) => {
         track.enabled = isMuted;
@@ -3142,13 +3149,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           <div className="relative group">
             <button
               onClick={toggleMute}
-              disabled={micError}
+              disabled={micError || (isMuted && !canUseTalkControls)}
               data-testid="button-toggle-mute"
-              title={isMuted ? "Unmute" : "Mute"}
+              title={(isMuted && !canUseTalkControls) ? talkLockReason : (isMuted ? "Unmute" : "Mute")}
               className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
               style={isMuted ? ghostStyle : micLiveStyle}
             >
-              {isMuted
+              {(isMuted && !canUseTalkControls)
+                ? (
+                  <span className="relative flex items-center justify-center">
+                    <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                    <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
+                  </span>
+                )
+                : isMuted
                 ? <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                 : (
                   <span className="relative flex items-center justify-center">
@@ -3195,12 +3209,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={toggleVideo}
+            disabled={!isVideoOn && !canUseTalkControls}
             data-testid="button-toggle-video"
-            title={isVideoOn ? "Stop Camera" : "Camera"}
-            className={btnBase}
+            title={(!isVideoOn && !canUseTalkControls) ? talkLockReason : (isVideoOn ? "Stop Camera" : "Camera")}
+            className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
             style={isVideoOn ? videoActiveStyle : ghostStyle}
           >
-            {isVideoOn ? <Video className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" /> : <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />}
+            {(!isVideoOn && !canUseTalkControls) ? (
+              <span className="relative flex items-center justify-center">
+                <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
+              </span>
+            ) : isVideoOn ? <Video className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" /> : <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />}
           </button>
           <span className={labelBase} style={isVideoOn ? { color: "rgba(147,197,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             Camera
@@ -3211,12 +3231,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={handleScreenShare}
+            disabled={!isScreenSharing && !canUseTalkControls}
             data-testid="button-screen-share"
-            title={isScreenSharing ? "Stop Share" : "Share Screen"}
-            className={btnBase}
+            title={(!isScreenSharing && !canUseTalkControls) ? talkLockReason : (isScreenSharing ? "Stop Share" : "Share Screen")}
+            className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
             style={isScreenSharing ? screenShareActiveStyle : ghostStyle}
           >
-            <Monitor className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+            {(!isScreenSharing && !canUseTalkControls) ? (
+              <span className="relative flex items-center justify-center">
+                <Monitor className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
+              </span>
+            ) : <Monitor className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />}
           </button>
           <span className={labelBase} style={isScreenSharing ? { color: "rgba(196,181,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             Share
@@ -3484,6 +3510,36 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const myRole = participantRoles[user?.id || ""] || "guest";
   const canAssignRoles = isHost || myRole === "co-owner";
+
+  // ----- Talk-permission gating -----
+  // The host can restrict who can use mic / camera / screen-share. Modes:
+  //   everyone    — anyone may speak (default)
+  //   co_owners   — owner + co-owners only
+  //   owner_only  — owner only
+  //   muted       — silent room (text only); host stays unrestricted so they
+  //                 can broadcast announcements without unlocking the room.
+  const talkPermission = ((room as any).talkPermission as
+    | "everyone" | "co_owners" | "owner_only" | "muted" | undefined) || "everyone";
+  const canUseTalkControls = (() => {
+    if (isHost) return true;
+    if (talkPermission === "everyone") return true;
+    if (talkPermission === "co_owners") return myRole === "co-owner";
+    return false;
+  })();
+  const talkLockReason = (() => {
+    if (canUseTalkControls) return "";
+    if (talkPermission === "muted") return "Silent room — only text chat is allowed.";
+    if (talkPermission === "owner_only") return "Only the host can use mic, camera or screen-share.";
+    if (talkPermission === "co_owners") return "Only the host and co-hosts can use mic, camera or screen-share.";
+    return "Talk is disabled for your role.";
+  })();
+  const talkBadge = (() => {
+    if (talkPermission === "everyone") return null;
+    if (talkPermission === "muted") return { label: "Silent Room", tone: "tone-mute" as const, icon: VolumeX };
+    if (talkPermission === "owner_only") return { label: "Host Only", tone: "tone-warn" as const, icon: Crown };
+    if (talkPermission === "co_owners") return { label: "Hosts & Co-hosts", tone: "" as const, icon: Shield };
+    return null;
+  })();
   // Anyone in the room can play / queue YouTube videos. The person who starts
   // a video becomes its host — they are the only one who can stop it for
   // everyone. Other participants can hide it locally without affecting anyone.
@@ -3521,6 +3577,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const handleScreenShare = async () => {
     if (isScreenSharing) {
       await stopMyScreenShare();
+      return;
+    }
+    if (!canUseTalkControls) {
+      toast({ title: "Screen-share locked", description: talkLockReason || "Sharing is disabled in this room.", variant: "destructive" });
       return;
     }
     try {
@@ -3573,6 +3633,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const toggleVideo = async () => {
+    // Turning the camera OFF is always permitted. Turning it ON requires
+    // talk privileges so a guest can't bypass a "host only" / "silent room"
+    // restriction by going on camera.
+    if (!isVideoOn && !canUseTalkControls) {
+      toast({ title: "Camera locked", description: talkLockReason || "Camera is disabled in this room.", variant: "destructive" });
+      return;
+    }
     if (isVideoOn) {
       peerConnections.current.forEach((pc, peerId) => {
         const sender = videoSenders.current.get(peerId);
@@ -4176,16 +4243,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     e.preventDefault();
     if (!editTitle.trim()) return;
 
-    if (videoTabVR === "youtube" && selectedYtVR) {
-      await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: buildYtEmbed(selectedYtVR) });
+    if (bgSourceVR === "gallery" && presetBgUrlVR) {
+      await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: presetBgUrlVR });
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-    } else if (videoTabVR === "youtube" && ytLinkVR.trim()) {
-      const id = extractYtId(ytLinkVR.trim());
-      if (id) {
-        await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: buildYtEmbed(id) });
-        queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-      }
-    } else if (hologramFileVR) {
+    } else if (bgSourceVR === "upload" && hologramFileVR) {
       setUploadingVideoVR(true);
       try {
         const formData = new FormData();
@@ -4207,6 +4268,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       level: editLevel,
       maxUsers: editMaxUsers,
       roomTheme: editRoomTheme,
+      talkPermission: editTalkPermission,
     });
   };
 
@@ -6184,17 +6246,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
             <div className="space-y-2">
               <Label>Max Participants</Label>
-              <Select value={String(editMaxUsers)} onValueChange={(v) => setEditMaxUsers(Number(v))}>
-                <SelectTrigger data-testid="select-edit-max-users">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">∞ Unlimited</SelectItem>
-                  {[2, 4, 6, 8, 10, 12].map((n) => (
-                    <SelectItem key={n} value={String(n)}>{n} people</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <NeuParticipantSlider
+                value={editMaxUsers}
+                onChange={setEditMaxUsers}
+                testId="slider-edit-max-users"
+              />
             </div>
 
             <div className="space-y-2">
@@ -6274,8 +6330,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Card Background Video</Label>
-                {(room as any).hologramVideoUrl && (
+                <Label>Card Background</Label>
+                {((room as any).hologramVideoUrl || presetBgUrlVR || hologramPreviewVR) && (
                   <button
                     type="button"
                     onClick={async () => {
@@ -6283,88 +6339,127 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
                       setHologramPreviewVR(null);
                       setHologramFileVR(null);
-                      setSelectedYtVR(null);
+                      setHologramKindVR(null);
+                      setPresetBgUrlVR(null);
                     }}
-                    className="text-xs text-destructive hover:underline"
+                    className="text-[11px] text-destructive hover:underline"
+                    data-testid="button-edit-clear-bg"
                   >
                     Remove
                   </button>
                 )}
               </div>
-              <div className="flex rounded-md border border-border overflow-hidden text-xs">
+
+              <div className="bg-source-tabs">
                 <button
                   type="button"
-                  onClick={() => setVideoTabVR("upload")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 transition-colors ${videoTabVR === "upload" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  onClick={() => setBgSourceVR("gallery")}
+                  className={`bg-source-tab ${bgSourceVR === "gallery" ? "is-active" : ""}`}
+                  data-testid="tab-edit-bg-gallery"
                 >
-                  <Video className="w-3 h-3" /> Upload File
+                  <Sparkles className="w-3.5 h-3.5" /> Gallery
                 </button>
                 <button
                   type="button"
-                  onClick={() => setVideoTabVR("youtube")}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 transition-colors ${videoTabVR === "youtube" ? "bg-red-600 text-white" : "hover:bg-muted"}`}
+                  onClick={() => setBgSourceVR("upload")}
+                  className={`bg-source-tab ${bgSourceVR === "upload" ? "is-active" : ""}`}
+                  data-testid="tab-edit-bg-upload"
                 >
-                  <Youtube className="w-3 h-3" /> YouTube
+                  <Upload className="w-3.5 h-3.5" /> Upload Pic / Video
                 </button>
               </div>
 
-              {videoTabVR === "upload" && (
+              {bgSourceVR === "gallery" && (
+                <div className="bg-gallery-grid" data-testid="grid-edit-bg-gallery">
+                  {PRESET_BACKGROUNDS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setPresetBgUrlVR(p.url);
+                        setHologramFileVR(null);
+                        setHologramPreviewVR(null);
+                        setHologramKindVR(null);
+                      }}
+                      className={`bg-gallery-tile ${presetBgUrlVR === p.url ? "is-active" : ""}`}
+                      title={p.label}
+                      data-testid={`button-edit-bg-preset-${p.id}`}
+                    >
+                      <img src={p.thumb} alt={p.label} loading="lazy" />
+                      <span className="bg-gallery-label">{p.label}</span>
+                      {presetBgUrlVR === p.url && (
+                        <div className="bg-gallery-check">
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 6l3 3 5-5" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {bgSourceVR === "upload" && (
                 <div className="flex items-center gap-3">
                   {hologramPreviewVR && (
-                    <video src={hologramPreviewVR} autoPlay loop muted playsInline className="w-12 h-12 rounded-md object-cover border-2 border-cyan-400" />
+                    hologramKindVR === "video" ? (
+                      <video src={hologramPreviewVR} autoPlay loop muted playsInline className="w-12 h-12 rounded-md object-cover border-2 border-primary/60" />
+                    ) : (
+                      <img src={hologramPreviewVR} alt="Background preview" className="w-12 h-12 rounded-md object-cover border-2 border-primary/60" />
+                    )
                   )}
-                  <Button type="button" variant="outline" size="sm" onClick={() => videoInputVR.current?.click()} className="flex items-center gap-2">
-                    <Video className="w-4 h-4" />
-                    {hologramFileVR ? "Change File" : (room as any).hologramVideoUrl ? "Replace Video" : "Upload Video"}
-                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => videoInputVR.current?.click()}
+                    className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
+                    data-testid="button-edit-upload-bg"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    {hologramFileVR ? "Change Background" : (room as any).hologramVideoUrl ? "Replace Background" : "Upload Pic, GIF or Video"}
+                  </button>
                   <input
                     ref={videoInputVR}
                     type="file"
-                    accept="video/mp4,video/webm,video/quicktime"
+                    accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       setHologramFileVR(file);
+                      setHologramKindVR(file.type.startsWith("video/") ? "video" : "image");
                       setHologramPreviewVR(URL.createObjectURL(file));
+                      setPresetBgUrlVR(null);
                     }}
                   />
                 </div>
               )}
+            </div>
 
-              {videoTabVR === "youtube" && (
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                    <Input placeholder="Paste YouTube link or search..." value={ytLinkVR || ytQueryVR} onChange={(e) => {
-                      const val = e.target.value;
-                      if (val.includes("youtube.com") || val.includes("youtu.be")) { setYtLinkVR(val); setYtQueryVR(""); }
-                      else { setYtQueryVR(val); setYtLinkVR(""); handleYtQueryVR(val); }
-                    }} className="pl-8 text-sm h-8" />
-                    {ytSearchingVR && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />}
-                    {ytResultsVR.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-popover border border-border rounded-md shadow-lg max-h-44 overflow-y-auto">
-                        {ytResultsVR.map((v: any) => (
-                          <button key={v.id} type="button"
-                            onClick={() => { setSelectedYtVR(v.id); setYtResultsVR([]); setYtQueryVR(""); }}
-                            className={`w-full flex items-center gap-2 p-1.5 text-left text-xs transition-colors hover:bg-muted ${selectedYtVR === v.id ? "bg-red-500/10" : ""}`}
-                          >
-                            <img src={v.thumbnail?.url || `https://img.youtube.com/vi/${v.id}/default.jpg`} className="w-10 h-7 object-cover rounded flex-shrink-0" />
-                            <span className="truncate">{v.title}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {selectedYtVR && (
-                    <div className="flex items-center gap-2 p-2 bg-red-500/10 rounded-md border border-red-500/30">
-                      <img src={`https://img.youtube.com/vi/${selectedYtVR}/default.jpg`} className="w-10 h-7 object-cover rounded" />
-                      <span className="text-xs flex-1">YouTube video selected</span>
-                      <button type="button" onClick={() => setSelectedYtVR(null)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
-                    </div>
-                  )}
-                </div>
-              )}
+            <div className="space-y-2">
+              <Label>Who Can Talk</Label>
+              <Select value={editTalkPermission} onValueChange={(v) => setEditTalkPermission(v as any)}>
+                <SelectTrigger data-testid="select-edit-talk-permission">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="everyone">
+                    <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-emerald-400" /> Everyone — anyone can talk</span>
+                  </SelectItem>
+                  <SelectItem value="co_owners">
+                    <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-sky-400" /> Hosts & Co-hosts only</span>
+                  </SelectItem>
+                  <SelectItem value="owner_only">
+                    <span className="flex items-center gap-2"><Crown className="w-3.5 h-3.5 text-amber-400" /> Host only</span>
+                  </SelectItem>
+                  <SelectItem value="muted">
+                    <span className="flex items-center gap-2"><VolumeX className="w-3.5 h-3.5 text-rose-400" /> Silent room — text only</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground leading-snug flex items-start gap-1.5">
+                <Mic className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                Restrict mic, camera, and screen-share to chosen roles. Applies instantly to everyone in the room.
+              </p>
             </div>
 
             <Button
@@ -6601,6 +6696,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       HOST
                     </span>
                   )}
+                  {talkBadge && (() => {
+                    const TalkIcon = talkBadge.icon;
+                    const toneClass = talkBadge.tone ? ` talk-mode-badge--${talkBadge.tone}` : "";
+                    return (
+                      <span
+                        className={`talk-mode-badge${toneClass}`}
+                        title={talkLockReason || talkBadge.label}
+                        data-testid="badge-talk-mode"
+                      >
+                        <TalkIcon className="w-[9px] h-[9px]" />
+                        {talkBadge.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="flex items-center gap-1 mt-[2px]">
                   <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.40)" }}>{room.language}</span>

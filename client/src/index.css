@@ -6115,3 +6115,155 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 .footer-policy-body::-webkit-scrollbar-thumb:hover {
   background: hsl(228 16% 24%);
 }
+
+/* ==========================================================================
+   CARD BACKGROUND PICKER — Gallery vs Upload tabs and preset image grid
+   Used by Create Room dialog and the in-room "Edit Room Settings" dialog.
+   Keeps the brand neumorphic indigo/violet palette and matches the soft
+   surface treatment of the rest of the dialog.
+   ========================================================================== */
+
+.bg-source-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, hsl(228 18% 9%), hsl(228 18% 12%));
+  border: 1px solid hsl(228 22% 22%);
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 5px rgba(255, 255, 255, 0.025);
+}
+.bg-source-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: hsl(228 12% 70%);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 180ms ease;
+  cursor: pointer;
+}
+.bg-source-tab:hover {
+  color: hsl(0 0% 96%);
+  background: hsl(228 18% 14%);
+}
+.bg-source-tab.is-active {
+  color: hsl(0 0% 100%);
+  background: linear-gradient(135deg, hsl(258 75% 58%), hsl(268 70% 56%));
+  border-color: hsl(258 70% 70% / 0.45);
+  box-shadow:
+    0 4px 12px hsl(258 70% 30% / 0.45),
+    inset 0 1px 0 hsl(258 100% 90% / 0.25);
+}
+
+.bg-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+  max-height: 184px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.bg-gallery-grid::-webkit-scrollbar { width: 6px; }
+.bg-gallery-grid::-webkit-scrollbar-track { background: transparent; }
+.bg-gallery-grid::-webkit-scrollbar-thumb {
+  background: hsl(228 16% 22%);
+  border-radius: 3px;
+}
+.bg-gallery-grid::-webkit-scrollbar-thumb:hover { background: hsl(258 30% 36%); }
+
+.bg-gallery-tile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: hsl(228 18% 12%);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 200ms ease;
+  opacity: 0.78;
+}
+.bg-gallery-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.bg-gallery-tile:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+  border-color: hsl(258 60% 60% / 0.5);
+}
+.bg-gallery-tile.is-active {
+  opacity: 1;
+  border-color: hsl(258 90% 75%);
+  box-shadow:
+    0 0 0 2px hsl(258 90% 60% / 0.35),
+    0 6px 14px hsl(258 70% 25% / 0.5);
+}
+.bg-gallery-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 4px 5px 4px;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: center;
+  color: hsl(0 0% 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.78) 100%);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bg-gallery-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(258 90% 60%);
+  color: white;
+  box-shadow: 0 2px 6px hsl(258 70% 20% / 0.55);
+  border: 1.5px solid hsl(0 0% 100% / 0.92);
+}
+
+/* Talk-permission badge that appears in the room header so guests immediately
+   see why mic/camera might be locked. Uses indigo/violet brand surface. */
+.talk-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: hsl(228 28% 14% / 0.82);
+  border: 1px solid hsl(258 60% 55% / 0.4);
+  color: hsl(258 80% 88%);
+  box-shadow: inset 0 1px 0 hsl(258 90% 80% / 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.talk-mode-badge.tone-warn {
+  border-color: hsl(35 80% 55% / 0.45);
+  color: hsl(40 95% 78%);
+}
+.talk-mode-badge.tone-mute {
+  border-color: hsl(355 70% 55% / 0.5);
+  color: hsl(355 90% 82%);
+}

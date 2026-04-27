@@ -23,12 +23,16 @@ export const rooms = pgTable("rooms", {
   welcomeMediaTypes: text("welcome_media_types").array().notNull().default(sql`'{}'::text[]`),
   welcomeMediaPosition: varchar("welcome_media_position", { length: 20 }).notNull().default("below"),
   welcomeAccentColor: varchar("welcome_accent_color", { length: 30 }).notNull().default("#8B5CF6"),
+  talkPermission: varchar("talk_permission", { length: 20 }).notNull().default("everyone"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   roomsShortIdIdx: uniqueIndex("rooms_short_id_idx").on(table.shortId),
   roomsOwnerIdx: index("rooms_owner_id_idx").on(table.ownerId),
   roomsCreatedAtIdx: index("rooms_created_at_idx").on(table.createdAt),
 }));
+
+export const TALK_PERMISSIONS = ["everyone", "co_owners", "owner_only", "muted"] as const;
+export type TalkPermission = typeof TALK_PERMISSIONS[number];
 
 export const insertRoomSchema = createInsertSchema(rooms).pick({
   title: true,
@@ -38,6 +42,7 @@ export const insertRoomSchema = createInsertSchema(rooms).pick({
   isPublic: true,
   roomTheme: true,
   hologramVideoUrl: true,
+  talkPermission: true,
 });
 
 export type InsertRoom = z.infer<typeof insertRoomSchema>;

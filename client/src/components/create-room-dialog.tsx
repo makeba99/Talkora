@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Hammer, Image as ImageIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Hammer, Image as ImageIcon, Sparkles, Upload, Mic, Crown, Shield, VolumeX, Users } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { ROOM_THEMES } from "@/components/profile-decorations";
+import { ROOM_THEMES, PRESET_BACKGROUNDS } from "@/components/profile-decorations";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 
 interface CreateRoomDialogProps {
@@ -20,6 +20,7 @@ interface CreateRoomDialogProps {
     isPublic: boolean;
     roomTheme?: string | null;
     hologramVideoUrl?: string | null;
+    talkPermission?: "everyone" | "co_owners" | "owner_only" | "muted";
   }) => void;
   isPending?: boolean;
 }
@@ -35,10 +36,13 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   const [roomTheme, setRoomTheme] = useState("none");
   const [themeOffset, setThemeOffset] = useState(0);
   const THEMES_PER_PAGE = 4;
+  const [bgSource, setBgSource] = useState<"gallery" | "upload">("gallery");
+  const [presetBgUrl, setPresetBgUrl] = useState<string | null>(null);
   const [hologramFile, setHologramFile] = useState<File | null>(null);
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);
   const [hologramKind, setHologramKind] = useState<"video" | "image" | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [talkPermission, setTalkPermission] = useState<"everyone" | "co_owners" | "owner_only" | "muted">("everyone");
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,6 +59,9 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
     setHologramFile(null);
     setHologramPreview(null);
     setHologramKind(null);
+    setPresetBgUrl(null);
+    setBgSource("gallery");
+    setTalkPermission("everyone");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,7 +70,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
     let hologramVideoUrl: string | null = null;
 
-    if (hologramFile) {
+    if (bgSource === "upload" && hologramFile) {
       setUploadingVideo(true);
       try {
         const formData = new FormData();
@@ -83,9 +90,11 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
       } finally {
         setUploadingVideo(false);
       }
+    } else if (bgSource === "gallery" && presetBgUrl) {
+      hologramVideoUrl = presetBgUrl;
     }
 
-    onCreateRoom({ title: title.trim(), language, level, maxUsers, isPublic, roomTheme, hologramVideoUrl });
+    onCreateRoom({ title: title.trim(), language, level, maxUsers, isPublic, roomTheme, hologramVideoUrl, talkPermission });
     resetForm();
     setOpen(false);
   };
@@ -250,60 +259,142 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
           </div>
 
           <div className="space-y-2">
-            <Label>Card Background</Label>
-            <div className="flex items-center gap-3">
-              {hologramPreview && (
-                hologramKind === "video" ? (
-                  <video
-                    src={hologramPreview}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-12 h-12 rounded-md object-cover border-2 border-orange-400"
-                    data-testid="video-create-preview"
-                  />
-                ) : (
-                  <img
-                    src={hologramPreview}
-                    alt="Background preview"
-                    className="w-12 h-12 rounded-md object-cover border-2 border-orange-400"
-                    data-testid="img-create-preview"
-                  />
-                )
-              )}
-              <button
-                type="button"
-                onClick={() => videoInputRef.current?.click()}
-                className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
-                data-testid="button-create-upload-video"
-              >
-                <ImageIcon className="w-4 h-4" />
-                {hologramFile ? "Change Background" : "Upload Video, GIF or Image"}
-              </button>
-              {hologramFile && (
+            <div className="flex items-center justify-between">
+              <Label>Card Background</Label>
+              {(presetBgUrl || hologramPreview) && (
                 <button
                   type="button"
                   onClick={() => {
+                    setPresetBgUrl(null);
                     setHologramFile(null);
                     setHologramPreview(null);
                     setHologramKind(null);
                   }}
-                  className="text-xs text-destructive hover:underline"
-                  data-testid="button-create-clear-video"
+                  className="text-[11px] text-destructive hover:underline"
+                  data-testid="button-create-clear-bg"
                 >
-                  Remove
+                  Clear
                 </button>
               )}
-              <input
-                ref={videoInputRef}
-                type="file"
-                accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
-                className="hidden"
-                onChange={handleVideoSelect}
-                data-testid="input-create-video-file"
-              />
             </div>
+
+            <div className="bg-source-tabs">
+              <button
+                type="button"
+                onClick={() => setBgSource("gallery")}
+                className={`bg-source-tab ${bgSource === "gallery" ? "is-active" : ""}`}
+                data-testid="tab-bg-gallery"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Gallery
+              </button>
+              <button
+                type="button"
+                onClick={() => setBgSource("upload")}
+                className={`bg-source-tab ${bgSource === "upload" ? "is-active" : ""}`}
+                data-testid="tab-bg-upload"
+              >
+                <Upload className="w-3.5 h-3.5" /> Upload Pic / Video
+              </button>
+            </div>
+
+            {bgSource === "gallery" && (
+              <div className="bg-gallery-grid" data-testid="grid-bg-gallery">
+                {PRESET_BACKGROUNDS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setPresetBgUrl(p.url);
+                      setHologramFile(null);
+                      setHologramPreview(null);
+                      setHologramKind(null);
+                    }}
+                    className={`bg-gallery-tile ${presetBgUrl === p.url ? "is-active" : ""}`}
+                    title={p.label}
+                    data-testid={`button-bg-preset-${p.id}`}
+                  >
+                    <img src={p.thumb} alt={p.label} loading="lazy" />
+                    <span className="bg-gallery-label">{p.label}</span>
+                    {presetBgUrl === p.url && (
+                      <div className="bg-gallery-check">
+                        <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 6l3 3 5-5" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {bgSource === "upload" && (
+              <div className="flex items-center gap-3">
+                {hologramPreview && (
+                  hologramKind === "video" ? (
+                    <video
+                      src={hologramPreview}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-12 h-12 rounded-md object-cover border-2 border-primary/60"
+                      data-testid="video-create-preview"
+                    />
+                  ) : (
+                    <img
+                      src={hologramPreview}
+                      alt="Background preview"
+                      className="w-12 h-12 rounded-md object-cover border-2 border-primary/60"
+                      data-testid="img-create-preview"
+                    />
+                  )
+                )}
+                <button
+                  type="button"
+                  onClick={() => videoInputRef.current?.click()}
+                  className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
+                  data-testid="button-create-upload-video"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  {hologramFile ? "Change Background" : "Upload Pic, GIF or Video"}
+                </button>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={handleVideoSelect}
+                  data-testid="input-create-video-file"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Who Can Talk</Label>
+            <Select value={talkPermission} onValueChange={(v) => setTalkPermission(v as any)}>
+              <SelectTrigger data-testid="select-create-talk-permission">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="everyone">
+                  <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-emerald-400" /> Everyone — anyone can talk</span>
+                </SelectItem>
+                <SelectItem value="co_owners">
+                  <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-sky-400" /> Hosts & Co-hosts only</span>
+                </SelectItem>
+                <SelectItem value="owner_only">
+                  <span className="flex items-center gap-2"><Crown className="w-3.5 h-3.5 text-amber-400" /> Host only</span>
+                </SelectItem>
+                <SelectItem value="muted">
+                  <span className="flex items-center gap-2"><VolumeX className="w-3.5 h-3.5 text-rose-400" /> Silent room — text only</span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground leading-snug flex items-start gap-1.5">
+              <Mic className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              Controls who can use mic, camera, and screen-share. The host can change this any time.
+            </p>
           </div>
 
           <button

@@ -1437,12 +1437,12 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
-      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor } = req.body;
+      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission } = req.body;
       const updateData: any = {};
       if (title) updateData.title = title;
       if (language) updateData.language = language;
       if (level) updateData.level = level;
-      if (maxUsers) updateData.maxUsers = maxUsers;
+      if (maxUsers !== undefined && maxUsers !== null) updateData.maxUsers = maxUsers;
       if (roomTheme !== undefined) updateData.roomTheme = roomTheme;
       if (hologramVideoUrl !== undefined) updateData.hologramVideoUrl = hologramVideoUrl;
       if (welcomeMessage !== undefined) updateData.welcomeMessage = welcomeMessage;
@@ -1450,6 +1450,9 @@ export async function registerRoutes(
       if (welcomeMediaTypes !== undefined) updateData.welcomeMediaTypes = Array.isArray(welcomeMediaTypes) ? welcomeMediaTypes : [];
       if (welcomeMediaPosition !== undefined) updateData.welcomeMediaPosition = welcomeMediaPosition;
       if (welcomeAccentColor !== undefined) updateData.welcomeAccentColor = welcomeAccentColor;
+      if (talkPermission !== undefined && ["everyone", "co_owners", "owner_only", "muted"].includes(talkPermission)) {
+        updateData.talkPermission = talkPermission;
+      }
 
       const updated = await storage.updateRoom(roomId, updateData);
       io.emit("room:updated", updated);

@@ -1235,6 +1235,26 @@ export const ROOM_THEMES = [
 
 export type RoomThemeId = typeof ROOM_THEMES[number]["id"];
 
+// Curated gallery of preset card-background images that hosts can pick from
+// without having to upload anything. Each item stores `url` (used as the
+// hologram video/image source) plus a tiny `thumb` for the picker grid.
+export const PRESET_BACKGROUNDS = [
+  { id: "neon-skyline", label: "Neon Skyline", url: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=180&h=120&fit=crop&q=70" },
+  { id: "violet-galaxy", label: "Violet Galaxy", url: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=180&h=120&fit=crop&q=70" },
+  { id: "soft-aurora", label: "Soft Aurora", url: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=180&h=120&fit=crop&q=70" },
+  { id: "ocean-glow", label: "Ocean Glow", url: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=180&h=120&fit=crop&q=70" },
+  { id: "warm-sunset", label: "Warm Sunset", url: "https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?w=180&h=120&fit=crop&q=70" },
+  { id: "cherry-petals", label: "Cherry Petals", url: "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=180&h=120&fit=crop&q=70" },
+  { id: "misty-forest", label: "Misty Forest", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=180&h=120&fit=crop&q=70" },
+  { id: "indigo-haze", label: "Indigo Haze", url: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=180&h=120&fit=crop&q=70" },
+  { id: "plasma-lights", label: "Plasma Lights", url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=180&h=120&fit=crop&q=70" },
+  { id: "lava-embers", label: "Lava Embers", url: "https://images.unsplash.com/photo-1495953557-73f0ba4c50af?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1495953557-73f0ba4c50af?w=180&h=120&fit=crop&q=70" },
+  { id: "calm-clouds", label: "Calm Clouds", url: "https://images.unsplash.com/photo-1504370805625-d37c82b94a8e?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1504370805625-d37c82b94a8e?w=180&h=120&fit=crop&q=70" },
+  { id: "study-cafe", label: "Study Café", url: "https://images.unsplash.com/photo-1497091071254-cc9b2ba7c48a?w=1280&q=80&auto=format&fit=crop", thumb: "https://images.unsplash.com/photo-1497091071254-cc9b2ba7c48a?w=180&h=120&fit=crop&q=70" },
+] as const;
+
+export type PresetBackgroundId = typeof PRESET_BACKGROUNDS[number]["id"];
+
 const ROOM_THEME_KEYFRAMES = `
   @keyframes rt-premium-drift {
     0%,100% { transform: translate(0,0) scale(1); opacity: 0.52; }
