@@ -13,6 +13,8 @@ const STEPS: { value: number; label: string; short: string }[] = [
   { value: 12, label: "12 people", short: "12" },
 ];
 
+const KNOB = 26;
+
 interface NeuParticipantSliderProps {
   value: number;
   onChange: (v: number) => void;
@@ -32,9 +34,8 @@ export function NeuParticipantSlider({ value, onChange, testId }: NeuParticipant
       const track = trackRef.current;
       if (!track) return;
       const rect = track.getBoundingClientRect();
-      const knobSize = 38;
-      const usable = rect.width - knobSize;
-      const x = Math.max(0, Math.min(usable, clientX - rect.left - knobSize / 2));
+      const usable = rect.width - KNOB;
+      const x = Math.max(0, Math.min(usable, clientX - rect.left - KNOB / 2));
       const ratio = usable === 0 ? 0 : x / usable;
       const idx = Math.round(ratio * (STEPS.length - 1));
       const next = STEPS[idx].value;
@@ -79,9 +80,10 @@ export function NeuParticipantSlider({ value, onChange, testId }: NeuParticipant
   };
 
   const ratio = safeIndex / (STEPS.length - 1);
+  const fillWidth = `calc(${KNOB / 2}px + ${ratio} * (100% - ${KNOB}px))`;
 
   return (
-    <div className="space-y-2.5" data-testid={testId}>
+    <div className="space-y-2" data-testid={testId}>
       <div
         ref={trackRef}
         role="slider"
@@ -99,20 +101,30 @@ export function NeuParticipantSlider({ value, onChange, testId }: NeuParticipant
           setDragging(true);
           setFromClientX(e.touches[0].clientX);
         }}
-        className="neu-participant-track relative h-12 w-full rounded-full select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40"
+        className="neu-participant-track relative w-full rounded-full select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/40"
+        style={{ height: 30 }}
         data-testid={testId ? `${testId}-track` : undefined}
       >
+        {/* Fill from start to knob center */}
+        <div
+          className="neu-participant-fill pointer-events-none absolute left-0 top-0 bottom-0 rounded-full"
+          style={{
+            width: fillWidth,
+            transition: dragging ? "none" : "width 220ms cubic-bezier(0.4, 0.0, 0.2, 1)",
+          }}
+        />
+
         {/* Step tick marks */}
-        <div className="pointer-events-none absolute inset-0 flex items-center px-[19px]">
+        <div className="pointer-events-none absolute inset-0 flex items-center" style={{ paddingLeft: KNOB / 2, paddingRight: KNOB / 2 }}>
           <div className="relative flex-1 h-px">
             {STEPS.map((s, i) => {
               const left = (i / (STEPS.length - 1)) * 100;
-              const isActive = i === safeIndex;
+              const isPast = i <= safeIndex;
               return (
                 <span
                   key={s.value}
                   className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full transition-all duration-200 ${
-                    isActive ? "w-1.5 h-1.5 bg-orange-300/70" : "w-1 h-1 bg-white/15"
+                    isPast ? "w-1 h-1 bg-white/40" : "w-1 h-1 bg-white/12"
                   }`}
                   style={{ left: `${left}%` }}
                 />
@@ -123,35 +135,35 @@ export function NeuParticipantSlider({ value, onChange, testId }: NeuParticipant
 
         {/* Knob */}
         <div
-          className="neu-participant-knob absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-[11px] font-semibold text-white/85"
+          className="neu-participant-knob absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-[10px] font-bold text-white/90"
           style={{
-            width: 38,
-            height: 38,
-            left: `calc(${ratio} * (100% - 38px))`,
+            width: KNOB,
+            height: KNOB,
+            left: `calc(${ratio} * (100% - ${KNOB}px))`,
             transition: dragging ? "none" : "left 220ms cubic-bezier(0.4, 0.0, 0.2, 1)",
           }}
           data-testid={testId ? `${testId}-knob` : undefined}
         >
-          {current.value === 0 ? <InfinityIcon className="w-4 h-4" /> : current.short}
+          {current.value === 0 ? <InfinityIcon className="w-3 h-3" /> : current.short}
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-white/45 flex items-center gap-1">
-          <InfinityIcon className="w-3 h-3" />
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-white/40 flex items-center gap-1">
+          <InfinityIcon className="w-2.5 h-2.5" />
           <span>Unlimited</span>
         </span>
         <span
-          className="text-white/85 font-medium tracking-wide"
+          className="text-orange-200/90 font-semibold tracking-wide"
           data-testid={testId ? `${testId}-label` : undefined}
         >
           {current.value === 0
             ? "∞ Unlimited room"
             : current.value === 1
-              ? "1 person · solo room"
-              : `${current.value} people max`}
+              ? "1 person · solo"
+              : `${current.value} people`}
         </span>
-        <span className="text-white/45">12 max</span>
+        <span className="text-white/40">12 max</span>
       </div>
     </div>
   );

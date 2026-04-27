@@ -5,20 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Hammer, Link, Loader2, Search, Video, X, Youtube } from "lucide-react";
+import { ChevronLeft, ChevronRight, Hammer, Video } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { ROOM_THEMES } from "@/components/profile-decorations";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
-
-function extractYoutubeId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return match ? match[1] : null;
-}
-
-function buildYoutubeEmbed(id: string) {
-  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&rel=0`;
-}
 
 interface CreateRoomDialogProps {
   onCreateRoom: (room: {
@@ -44,44 +35,15 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   const [roomTheme, setRoomTheme] = useState("none");
   const [themeOffset, setThemeOffset] = useState(0);
   const THEMES_PER_PAGE = 4;
-  const [videoTab, setVideoTab] = useState<"upload" | "youtube">("upload");
   const [hologramFile, setHologramFile] = useState<File | null>(null);
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);
-  const [ytLinkInput, setYtLinkInput] = useState("");
-  const [ytSearchQuery, setYtSearchQuery] = useState("");
-  const [ytSearchResults, setYtSearchResults] = useState<any[]>([]);
-  const [selectedYtId, setSelectedYtId] = useState<string | null>(null);
-  const [ytSearching, setYtSearching] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const ytSearchTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  const handleYtSearch = async (query: string) => {
-    if (!query.trim()) {
-      setYtSearchResults([]);
-      return;
-    }
-    setYtSearching(true);
-    try {
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`, { credentials: "include" });
-      if (res.ok) setYtSearchResults(await res.json());
-    } finally {
-      setYtSearching(false);
-    }
-  };
-
-  const handleYtSearchInput = (val: string) => {
-    setYtSearchQuery(val);
-    if (ytSearchTimeout.current) clearTimeout(ytSearchTimeout.current);
-    ytSearchTimeout.current = setTimeout(() => handleYtSearch(val), 400);
-  };
 
   const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setHologramFile(file);
-    setSelectedYtId(null);
-    setYtLinkInput("");
     setHologramPreview(URL.createObjectURL(file));
   };
 
@@ -90,11 +52,6 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
     setRoomTheme("premium-atmosphere");
     setHologramFile(null);
     setHologramPreview(null);
-    setYtLinkInput("");
-    setYtSearchQuery("");
-    setYtSearchResults([]);
-    setSelectedYtId(null);
-    setVideoTab("upload");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,14 +60,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
     let hologramVideoUrl: string | null = null;
 
-    if (videoTab === "youtube") {
-      const ytId = selectedYtId || extractYoutubeId(ytLinkInput.trim());
-      if (ytId) hologramVideoUrl = buildYoutubeEmbed(ytId);
-      if (ytLinkInput.trim() && !ytId && !selectedYtId) {
-        toast({ title: "Please paste a valid YouTube link", variant: "destructive" });
-        return;
-      }
-    } else if (hologramFile) {
+    if (hologramFile) {
       setUploadingVideo(true);
       try {
         const formData = new FormData();
@@ -298,125 +248,42 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
           <div className="space-y-2">
             <Label>Card Background Video</Label>
-            <div className="neu-tab-group text-xs">
+            <div className="flex items-center gap-3">
+              {hologramPreview && (
+                <video
+                  src={hologramPreview}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-12 h-12 rounded-md object-cover border-2 border-orange-400"
+                  data-testid="video-create-preview"
+                />
+              )}
               <button
                 type="button"
-                onClick={() => setVideoTab("upload")}
-                className={`neu-tab ${videoTab === "upload" ? "is-active" : ""}`}
-                data-testid="button-create-video-upload-tab"
+                onClick={() => videoInputRef.current?.click()}
+                className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
+                data-testid="button-create-upload-video"
               >
-                <Video className="w-3 h-3" /> Upload File
+                <Video className="w-4 h-4" />
+                {hologramFile ? "Change Video" : "Upload Video"}
               </button>
-              <button
-                type="button"
-                onClick={() => setVideoTab("youtube")}
-                className={`neu-tab ${videoTab === "youtube" ? "is-active-red" : ""}`}
-                data-testid="button-create-video-youtube-tab"
-              >
-                <Youtube className="w-3 h-3" /> YouTube
-              </button>
-            </div>
-
-            {videoTab === "upload" && (
-              <div className="flex items-center gap-3">
-                {hologramPreview && (
-                  <video
-                    src={hologramPreview}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-12 h-12 rounded-md object-cover border-2 border-orange-400"
-                    data-testid="video-create-preview"
-                  />
-                )}
-                <Button
+              {hologramFile && (
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => videoInputRef.current?.click()}
-                  className="flex items-center gap-2"
-                  data-testid="button-create-upload-video"
+                  onClick={() => {
+                    setHologramFile(null);
+                    setHologramPreview(null);
+                  }}
+                  className="text-xs text-destructive hover:underline"
+                  data-testid="button-create-clear-video"
                 >
-                  <Video className="w-4 h-4" />
-                  {hologramFile ? "Change File" : "Upload Video"}
-                </Button>
-                {hologramFile && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHologramFile(null);
-                      setHologramPreview(null);
-                    }}
-                    className="text-xs text-destructive hover:underline"
-                    data-testid="button-create-clear-video"
-                  >
-                    Remove
-                  </button>
-                )}
-                <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={handleVideoSelect} data-testid="input-create-video-file" />
-              </div>
-            )}
-
-            {videoTab === "youtube" && (
-              <div className="space-y-2">
-                <div className="relative">
-                  <Link className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Paste YouTube URL..."
-                    value={ytLinkInput}
-                    onChange={(e) => {
-                      setYtLinkInput(e.target.value);
-                      setSelectedYtId(null);
-                    }}
-                    className="pl-8 text-sm h-8"
-                    data-testid="input-create-youtube-url"
-                  />
-                </div>
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                  <Input
-                    placeholder="Or search YouTube..."
-                    value={ytSearchQuery}
-                    onChange={(e) => handleYtSearchInput(e.target.value)}
-                    className="pl-8 text-sm h-8"
-                    data-testid="input-create-youtube-search"
-                  />
-                  {ytSearching && <Loader2 className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin z-10" />}
-                  {ytSearchResults.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-popover border border-border rounded-md shadow-lg max-h-44 overflow-y-auto">
-                      {ytSearchResults.map((v) => (
-                        <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedYtId(v.id);
-                            setYtSearchResults([]);
-                            setYtSearchQuery(v.title);
-                            setYtLinkInput("");
-                            setHologramFile(null);
-                            setHologramPreview(null);
-                          }}
-                          className={`w-full flex items-center gap-2 p-1.5 text-left text-xs transition-colors hover:bg-muted ${selectedYtId === v.id ? "bg-red-500/10" : ""}`}
-                          data-testid={`button-create-youtube-result-${v.id}`}
-                        >
-                          <img src={v.thumbnail?.url || v.thumbnail || `https://img.youtube.com/vi/${v.id}/default.jpg`} className="w-10 h-7 object-cover rounded flex-shrink-0" alt="" />
-                          <span className="truncate">{v.title}</span>
-                          {selectedYtId === v.id && <Youtube className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {selectedYtId && (
-                  <div className="flex items-center gap-2 p-2 bg-red-500/10 rounded-md border border-red-500/30" data-testid="status-create-youtube-selected">
-                    <img src={`https://img.youtube.com/vi/${selectedYtId}/default.jpg`} className="w-10 h-7 object-cover rounded" alt="" />
-                    <span className="text-xs flex-1">YouTube video selected</span>
-                    <button type="button" onClick={() => setSelectedYtId(null)} className="text-muted-foreground hover:text-foreground" data-testid="button-create-clear-youtube"><X className="w-3 h-3" /></button>
-                  </div>
-                )}
-              </div>
-            )}
+                  Remove
+                </button>
+              )}
+              <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={handleVideoSelect} data-testid="input-create-video-file" />
+            </div>
           </div>
 
           <button

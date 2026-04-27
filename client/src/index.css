@@ -3542,48 +3542,97 @@ html.synthwave .neon-text {
 }
 
 /* ── Neumorphic participant slider ───────────────────────────────────
-   Pill-shaped inset track with a soft raised knob, matching the
-   light-on-dark Vextorn neumorphism palette. */
+   Slim pill-shaped inset track with a glowing fill bar and a soft
+   raised knob. Matches the dark-mode Vextorn palette. */
 .neu-participant-track {
   background: linear-gradient(
     155deg,
-    hsl(228 18% 9%) 0%,
-    hsl(228 16% 13%) 55%,
-    hsl(228 14% 17%) 100%
+    hsl(228 18% 8%) 0%,
+    hsl(228 16% 11%) 55%,
+    hsl(228 14% 14%) 100%
   );
   box-shadow:
-    inset 5px 5px 12px rgba(0, 0, 0, 0.78),
-    inset -4px -4px 10px rgba(255, 235, 215, 0.035),
+    inset 3px 3px 7px rgba(0, 0, 0, 0.78),
+    inset -2px -2px 6px rgba(255, 235, 215, 0.04),
     inset 0 1px 0 rgba(0, 0, 0, 0.45),
     inset 0 -1px 0 rgba(255, 235, 215, 0.05),
-    0 1px 0 rgba(255, 235, 215, 0.03);
+    0 1px 0 rgba(255, 235, 215, 0.025);
+}
+
+.neu-participant-fill {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--neu-orange) / 0.30) 0%,
+    hsl(var(--neu-orange) / 0.55) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 215, 0.08),
+    0 0 12px hsl(var(--neu-orange) / 0.28);
 }
 
 .neu-participant-knob {
   background: linear-gradient(
     145deg,
-    hsl(228 14% 26%) 0%,
-    hsl(228 16% 18%) 100%
+    hsl(228 12% 32%) 0%,
+    hsl(228 14% 18%) 100%
   );
   border-radius: 9999px;
   box-shadow:
-    -4px -4px 10px rgba(255, 235, 215, 0.06),
-    5px 5px 12px rgba(0, 0, 0, 0.7),
-    inset 1px 1px 1px rgba(255, 235, 215, 0.08),
+    -2px -2px 5px rgba(255, 235, 215, 0.07),
+    3px 3px 7px rgba(0, 0, 0, 0.65),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.10),
     inset -1px -1px 1px rgba(0, 0, 0, 0.35),
-    0 0 0 1px hsl(var(--neu-orange) / 0.18),
-    0 0 14px hsl(var(--neu-orange) / 0.22);
+    0 0 0 1px hsl(var(--neu-orange) / 0.30),
+    0 0 12px hsl(var(--neu-orange) / 0.30);
   cursor: grab;
 }
 .neu-participant-knob:active {
   cursor: grabbing;
   box-shadow:
-    -3px -3px 8px rgba(255, 235, 215, 0.05),
-    4px 4px 10px rgba(0, 0, 0, 0.6),
-    inset 1px 1px 1px rgba(255, 235, 215, 0.08),
+    -1px -1px 4px rgba(255, 235, 215, 0.06),
+    2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.10),
     inset -1px -1px 1px rgba(0, 0, 0, 0.35),
-    0 0 0 1px hsl(var(--neu-orange) / 0.32),
-    0 0 18px hsl(var(--neu-orange) / 0.32);
+    0 0 0 1px hsl(var(--neu-orange) / 0.45),
+    0 0 16px hsl(var(--neu-orange) / 0.45);
+}
+
+/* ── Pro neumorphic upload button ──────────────────────────────────── */
+.neu-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  color: hsl(var(--neu-text, 0 0% 92%));
+  background: linear-gradient(
+    145deg,
+    hsl(228 14% 22%) 0%,
+    hsl(228 16% 14%) 100%
+  );
+  box-shadow:
+    -3px -3px 8px rgba(255, 235, 215, 0.06),
+    4px 4px 10px rgba(0, 0, 0, 0.6),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.07),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 180ms ease, transform 120ms ease;
+}
+.neu-upload-btn:hover {
+  box-shadow:
+    -3px -3px 8px rgba(255, 235, 215, 0.07),
+    4px 4px 10px rgba(0, 0, 0, 0.55),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.08),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.3),
+    0 0 0 1px hsl(var(--neu-orange) / 0.30),
+    0 0 14px hsl(var(--neu-orange) / 0.18);
+}
+.neu-upload-btn:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 4px 4px 9px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 6px rgba(255, 235, 215, 0.05);
 }
 
 /* Raised neumorphic button (ghost / inactive). */
