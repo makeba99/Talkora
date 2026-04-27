@@ -10,7 +10,8 @@ import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Image as ImageIcon, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints, Hand } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Image as ImageIcon, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints, Hand, Sparkles, Upload } from "lucide-react";
+import { GifPickerButton } from "@/components/chat-picker";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass, ROOM_THEMES } from "@/components/profile-decorations";
@@ -397,10 +398,16 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const [editLanguage, setEditLanguage] = useState(room.language);
   const [editLevel, setEditLevel] = useState(room.level);
   const [editMaxUsers, setEditMaxUsers] = useState(room.maxUsers);
-  const [editBgUrl, setEditBgUrl] = useState<string>(((room as any).hologramVideoUrl as string) || "");
-  const [bgUploadFile, setBgUploadFile] = useState<File | null>(null);
-  const [bgUploadBusy, setBgUploadBusy] = useState(false);
-  const bgFileRef = useRef<HTMLInputElement>(null);
+  const [editHologramUrl, setEditHologramUrl] = useState<string | null>(((room as any).hologramVideoUrl as string) || null);
+  const [editHologramKind, setEditHologramKind] = useState<"gif" | "image" | "video">(() => {
+    const u = ((room as any).hologramVideoUrl as string) || "";
+    if (!u) return "gif";
+    if (/\.(mp4|webm|mov)(\?|$)/i.test(u)) return "video";
+    if (/\.gif(\?|$)/i.test(u) || /tenor\.com|giphy\.com/i.test(u)) return "gif";
+    return "image";
+  });
+  const [editHologramUploading, setEditHologramUploading] = useState(false);
+  const editHologramFileRef = useRef<HTMLInputElement>(null);
 
   // Reset background editor whenever the dialog opens so it reflects the
   // room's current saved background.
@@ -410,10 +417,46 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
       setEditLanguage(room.language);
       setEditLevel(room.level);
       setEditMaxUsers(room.maxUsers);
-      setEditBgUrl(((room as any).hologramVideoUrl as string) || "");
-      setBgUploadFile(null);
+      const u = ((room as any).hologramVideoUrl as string) || null;
+      setEditHologramUrl(u);
+      if (u) {
+        if (/\.(mp4|webm|mov)(\?|$)/i.test(u)) setEditHologramKind("video");
+        else if (/\.gif(\?|$)/i.test(u) || /tenor\.com|giphy\.com/i.test(u)) setEditHologramKind("gif");
+        else setEditHologramKind("image");
+      } else {
+        setEditHologramKind("gif");
+      }
+      setEditHologramUploading(false);
     }
   }, [editOpen, room]);
+
+  const handleEditHologramFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Pick a file under 25 MB.", variant: "destructive" });
+      return;
+    }
+    setEditHologramUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+      const res = await fetch("/api/upload/hologram", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Upload failed");
+      setEditHologramUrl(data.url);
+      setEditHologramKind(file.type.startsWith("video/") ? "video" : file.type === "image/gif" ? "gif" : "image");
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setEditHologramUploading(false);
+    }
+  };
 
   const editMutation = useMutation({
     mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; hologramVideoUrl: string | null }) => {
@@ -429,30 +472,12 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editTitle.trim()) return;
-    let nextBgUrl: string | null = editBgUrl.trim() ? editBgUrl.trim() : null;
-    // If the host picked a file, upload it first and use the returned URL.
-    if (bgUploadFile) {
-      try {
-        setBgUploadBusy(true);
-        const formData = new FormData();
-        formData.append("video", bgUploadFile);
-        const res = await fetch("/api/upload/hologram", { method: "POST", body: formData, credentials: "include" });
-        if (!res.ok) throw new Error("Upload failed");
-        const data = await res.json();
-        nextBgUrl = (data.url as string) || nextBgUrl;
-      } catch (err) {
-        toast({ title: "Background upload failed", description: "Please try a different file.", variant: "destructive" });
-        setBgUploadBusy(false);
-        return;
-      }
-      setBgUploadBusy(false);
-    }
     editMutation.mutate({
       title: editTitle.trim(),
       language: editLanguage,
       level: editLevel,
       maxUsers: editMaxUsers,
-      hologramVideoUrl: nextBgUrl,
+      hologramVideoUrl: editHologramUrl,
     });
   };
 
@@ -1084,63 +1109,82 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               />
             </div>
 
-            {/* Card Background — only editable from outside the room. Inside-room
+            {/* Card Media — only editable from outside the room. Inside-room
                 settings are reserved for live theme & animation tweaks. */}
-            <div className="space-y-2 rounded-lg border border-border/40 bg-muted/20 p-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-1.5 text-sm">
-                  <ImageIcon className="w-3.5 h-3.5 text-primary/80" />
-                  Card Background
+                <Label className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary/80" />
+                  Card Media
+                  <span className="text-[11px] font-normal text-muted-foreground">(optional)</span>
                 </Label>
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {editBgUrl || bgUploadFile ? "Custom" : "Default"}
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                Paste an image or video URL, or upload a short clip. This shows behind the room card in the lobby.
-              </p>
-              <Input
-                type="url"
-                placeholder="https://… (image/video URL or YouTube link)"
-                value={editBgUrl}
-                onChange={(e) => { setEditBgUrl(e.target.value); if (e.target.value) setBgUploadFile(null); }}
-                data-testid="input-edit-bg-url"
-              />
-              <div className="flex items-center gap-2">
-                <input
-                  ref={bgFileRef}
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime,image/*"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] || null;
-                    setBgUploadFile(f);
-                    if (f) setEditBgUrl("");
-                  }}
-                  className="hidden"
-                  data-testid="input-edit-bg-file"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => bgFileRef.current?.click()}
-                  className="flex-1"
-                  data-testid="button-edit-bg-upload"
-                >
-                  {bgUploadFile ? `Selected: ${bgUploadFile.name.slice(0, 22)}` : "Upload File"}
-                </Button>
-                {(editBgUrl || bgUploadFile) && (
-                  <Button
+                {editHologramUrl && !editHologramUploading && (
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setEditBgUrl(""); setBgUploadFile(null); if (bgFileRef.current) bgFileRef.current.value = ""; }}
-                    data-testid="button-edit-bg-clear"
+                    onClick={() => { setEditHologramUrl(null); setEditHologramKind("gif"); }}
+                    className="text-[11px] text-destructive hover:underline flex items-center gap-1"
+                    data-testid="button-clear-edit-card-media"
                   >
-                    Clear
-                  </Button>
+                    <X className="w-3 h-3" /> Clear
+                  </button>
                 )}
               </div>
+              <div className="flex items-center gap-3">
+                {editHologramUrl ? (
+                  editHologramKind === "video" ? (
+                    <video
+                      src={editHologramUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
+                      data-testid="video-edit-card-media-preview"
+                    />
+                  ) : (
+                    <img
+                      src={editHologramUrl}
+                      alt="Selected media"
+                      className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
+                      data-testid="img-edit-card-media-preview"
+                    />
+                  )
+                ) : (
+                  <div className="w-14 h-14 rounded-md border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-[10px] text-muted-foreground font-medium">
+                    {editHologramUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Empty"}
+                  </div>
+                )}
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <GifPickerButton
+                    onGifSelect={(url) => { setEditHologramUrl(url); setEditHologramKind("gif"); }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => editHologramFileRef.current?.click()}
+                    disabled={editHologramUploading}
+                    className="neu-upload-btn flex items-center justify-center gap-1.5 text-sm font-medium disabled:opacity-50"
+                    data-testid="button-upload-edit-card-media"
+                  >
+                    {editHologramUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    {editHologramUploading ? "Uploading..." : "Upload"}
+                  </button>
+                  <input
+                    ref={editHologramFileRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={handleEditHologramFilePick}
+                    data-testid="input-edit-card-media-file"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Pick a GIF, upload your own picture / short video, or tap Clear to remove the current card background.
+              </p>
             </div>
 
             <p className="text-[11px] text-muted-foreground leading-snug bg-muted/30 border border-border/40 rounded-md px-3 py-2">
@@ -1150,10 +1194,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             <Button
               type="submit"
               className="w-full"
-              disabled={!editTitle.trim() || editMutation.isPending || bgUploadBusy}
+              disabled={!editTitle.trim() || editMutation.isPending || editHologramUploading}
               data-testid="button-save-room-edit"
             >
-              {editMutation.isPending || bgUploadBusy ? "Saving..." : "Save Changes"}
+              {editMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </form>
         </DialogContent>

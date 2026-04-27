@@ -152,8 +152,8 @@ export function NeuParticipantSlider({ value, onChange, testId }: NeuParticipant
 
       <div className="flex items-center justify-between text-[11px]">
         <span className="text-white/40 flex items-center gap-1">
-          <InfinityIcon className="w-2.5 h-2.5" />
-          <span>Unlimited</span>
+          <span className="font-medium">1</span>
+          <span>min</span>
         </span>
         <span
           className="text-orange-200/90 font-semibold tracking-wide"
@@ -165,7 +165,10 @@ export function NeuParticipantSlider({ value, onChange, testId }: NeuParticipant
               ? "1 person · solo"
               : `${current.value} people`}
         </span>
-        <span className="text-white/40">12 max</span>
+        <span className="text-white/40 flex items-center gap-1">
+          <InfinityIcon className="w-2.5 h-2.5" />
+          <span>Unlimited</span>
+        </span>
       </div>
     </div>
   );
