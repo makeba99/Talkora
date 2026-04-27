@@ -19,9 +19,10 @@ import { useToast } from "@/hooks/use-toast";
 interface NotificationsDropdownProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
-export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: NotificationsDropdownProps = {}) {
+export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hideTrigger = false }: NotificationsDropdownProps = {}) {
   const { user } = useAuth();
   const { socket } = useSocket();
   const { toast } = useToast();
@@ -151,22 +152,40 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange }: No
   return (
     <DropdownMenu open={controlledOpen} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
-        <Button size="icon" variant="ghost" className="relative" data-testid="button-notifications">
-          <Bell className="w-4 h-4" />
-          {unreadCount > 0 && (
-            <span
-              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none animate-pulse-badge"
-              style={{
-                background: "linear-gradient(145deg, hsl(0 90% 58%) 0%, hsl(0 78% 44%) 100%)",
-                border: "1.5px solid hsl(228 18% 8%)",
-                boxShadow: "0 0 10px rgba(239,68,68,0.7), 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
-              }}
-              data-testid="badge-notifications-unread"
-            >
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </Button>
+        {hideTrigger ? (
+          <span
+            aria-hidden="true"
+            tabIndex={-1}
+            data-testid="notifications-anchor"
+            style={{
+              position: "fixed",
+              top: 56,
+              right: 16,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: "none",
+              zIndex: -1,
+            }}
+          />
+        ) : (
+          <Button size="icon" variant="ghost" className="relative" data-testid="button-notifications">
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none animate-pulse-badge"
+                style={{
+                  background: "linear-gradient(145deg, hsl(0 90% 58%) 0%, hsl(0 78% 44%) 100%)",
+                  border: "1.5px solid hsl(228 18% 8%)",
+                  boxShadow: "0 0 10px rgba(239,68,68,0.7), 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
+                }}
+                data-testid="badge-notifications-unread"
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between gap-2 p-3 border-b">

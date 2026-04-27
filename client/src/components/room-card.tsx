@@ -397,9 +397,26 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const [editLanguage, setEditLanguage] = useState(room.language);
   const [editLevel, setEditLevel] = useState(room.level);
   const [editMaxUsers, setEditMaxUsers] = useState(room.maxUsers);
+  const [editBgUrl, setEditBgUrl] = useState<string>(((room as any).hologramVideoUrl as string) || "");
+  const [bgUploadFile, setBgUploadFile] = useState<File | null>(null);
+  const [bgUploadBusy, setBgUploadBusy] = useState(false);
+  const bgFileRef = useRef<HTMLInputElement>(null);
+
+  // Reset background editor whenever the dialog opens so it reflects the
+  // room's current saved background.
+  useEffect(() => {
+    if (editOpen) {
+      setEditTitle(room.title);
+      setEditLanguage(room.language);
+      setEditLevel(room.level);
+      setEditMaxUsers(room.maxUsers);
+      setEditBgUrl(((room as any).hologramVideoUrl as string) || "");
+      setBgUploadFile(null);
+    }
+  }, [editOpen, room]);
 
   const editMutation = useMutation({
-    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number }) => {
+    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; hologramVideoUrl: string | null }) => {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return res.json();
     },
@@ -409,10 +426,34 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     },
   });
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editTitle.trim()) return;
-    editMutation.mutate({ title: editTitle.trim(), language: editLanguage, level: editLevel, maxUsers: editMaxUsers });
+    let nextBgUrl: string | null = editBgUrl.trim() ? editBgUrl.trim() : null;
+    // If the host picked a file, upload it first and use the returned URL.
+    if (bgUploadFile) {
+      try {
+        setBgUploadBusy(true);
+        const formData = new FormData();
+        formData.append("video", bgUploadFile);
+        const res = await fetch("/api/upload/hologram", { method: "POST", body: formData, credentials: "include" });
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+        nextBgUrl = (data.url as string) || nextBgUrl;
+      } catch (err) {
+        toast({ title: "Background upload failed", description: "Please try a different file.", variant: "destructive" });
+        setBgUploadBusy(false);
+        return;
+      }
+      setBgUploadBusy(false);
+    }
+    editMutation.mutate({
+      title: editTitle.trim(),
+      language: editLanguage,
+      level: editLevel,
+      maxUsers: editMaxUsers,
+      hologramVideoUrl: nextBgUrl,
+    });
   };
 
   const languages = LANGUAGES.filter((l) => l !== "All");
@@ -1043,17 +1084,76 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               />
             </div>
 
+            {/* Card Background — only editable from outside the room. Inside-room
+                settings are reserved for live theme & animation tweaks. */}
+            <div className="space-y-2 rounded-lg border border-border/40 bg-muted/20 p-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5 text-sm">
+                  <ImageIcon className="w-3.5 h-3.5 text-primary/80" />
+                  Card Background
+                </Label>
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {editBgUrl || bgUploadFile ? "Custom" : "Default"}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Paste an image or video URL, or upload a short clip. This shows behind the room card in the lobby.
+              </p>
+              <Input
+                type="url"
+                placeholder="https://… (image/video URL or YouTube link)"
+                value={editBgUrl}
+                onChange={(e) => { setEditBgUrl(e.target.value); if (e.target.value) setBgUploadFile(null); }}
+                data-testid="input-edit-bg-url"
+              />
+              <div className="flex items-center gap-2">
+                <input
+                  ref={bgFileRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null;
+                    setBgUploadFile(f);
+                    if (f) setEditBgUrl("");
+                  }}
+                  className="hidden"
+                  data-testid="input-edit-bg-file"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => bgFileRef.current?.click()}
+                  className="flex-1"
+                  data-testid="button-edit-bg-upload"
+                >
+                  {bgUploadFile ? `Selected: ${bgUploadFile.name.slice(0, 22)}` : "Upload File"}
+                </Button>
+                {(editBgUrl || bgUploadFile) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setEditBgUrl(""); setBgUploadFile(null); if (bgFileRef.current) bgFileRef.current.value = ""; }}
+                    data-testid="button-edit-bg-clear"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <p className="text-[11px] text-muted-foreground leading-snug bg-muted/30 border border-border/40 rounded-md px-3 py-2">
-              Card themes, backgrounds and host controls are now managed inside the room — open the room and tap Settings.
+              Card themes, host controls and in-room animations are managed inside the room — open the room and tap Settings.
             </p>
 
             <Button
               type="submit"
               className="w-full"
-              disabled={!editTitle.trim() || editMutation.isPending}
+              disabled={!editTitle.trim() || editMutation.isPending || bgUploadBusy}
               data-testid="button-save-room-edit"
             >
-              {editMutation.isPending ? "Saving..." : "Save Changes"}
+              {editMutation.isPending || bgUploadBusy ? "Saving..." : "Save Changes"}
             </Button>
           </form>
         </DialogContent>

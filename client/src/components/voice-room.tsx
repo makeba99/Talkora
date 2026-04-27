@@ -877,12 +877,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [themeDialogOffset, setThemeDialogOffset] = useState(0);
   const [editRoomTheme, setEditRoomTheme] = useState((roomProp as any).roomTheme || "none");
   const [editThemeOffset, setEditThemeOffset] = useState(0);
-  const [hologramPreviewVR, setHologramPreviewVR] = useState<string | null>(null);
-  const [hologramFileVR, setHologramFileVR] = useState<File | null>(null);
-  const [hologramKindVR, setHologramKindVR] = useState<"video" | "image" | null>(null);
-  const [uploadingVideoVR, setUploadingVideoVR] = useState(false);
-  const [bgSourceVR, setBgSourceVR] = useState<"gallery" | "upload">("gallery");
-  const [presetBgUrlVR, setPresetBgUrlVR] = useState<string | null>(null);
   const [editTalkPermission, setEditTalkPermission] = useState<"everyone" | "co_owners" | "owner_only" | "muted">(
     ((roomProp as any).talkPermission as any) || "everyone"
   );
@@ -895,11 +889,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [editYoutubePermission, setEditYoutubePermission] = useState<"everyone" | "co_owners" | "owner_only">(
     ((roomProp as any).youtubePermission as any) || "everyone"
   );
-  // The Card Background editor lives in its own dialog now so the main Edit
-  // Room dialog stays short. Hosts get to it from a small picture-icon next to
-  // the gear in the room header (see headerSettingsBtnRow further down).
-  const [bgDialogOpen, setBgDialogOpen] = useState(false);
-  const videoInputVR = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
   const [youtubeCategory, setYoutubeCategory] = useState<string>("conversation");
@@ -3263,13 +3252,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={toggleVideo}
-            disabled={!isVideoOn && !canUseTalkControls}
+            disabled={!isVideoOn && !canOpenCameraByPerm}
             data-testid="button-toggle-video"
-            title={(!isVideoOn && !canUseTalkControls) ? talkLockReason : (isVideoOn ? "Stop Camera" : "Camera")}
+            title={(!isVideoOn && !canOpenCameraByPerm) ? cameraLockReason : (isVideoOn ? "Stop Camera" : "Camera")}
             className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
             style={isVideoOn ? videoActiveStyle : ghostStyle}
           >
-            {(!isVideoOn && !canUseTalkControls) ? (
+            {(!isVideoOn && !canOpenCameraByPerm) ? (
               <span className="relative flex items-center justify-center">
                 <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                 <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
@@ -3285,13 +3274,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={handleScreenShare}
-            disabled={!isScreenSharing && !canUseTalkControls}
+            disabled={!isScreenSharing && !canShareScreenByPerm}
             data-testid="button-screen-share"
-            title={(!isScreenSharing && !canUseTalkControls) ? talkLockReason : (isScreenSharing ? "Stop Share" : "Share Screen")}
+            title={(!isScreenSharing && !canShareScreenByPerm) ? screenLockReason : (isScreenSharing ? "Stop Share" : "Share Screen")}
             className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
             style={isScreenSharing ? screenShareActiveStyle : ghostStyle}
           >
-            {(!isScreenSharing && !canUseTalkControls) ? (
+            {(!isScreenSharing && !canShareScreenByPerm) ? (
               <span className="relative flex items-center justify-center">
                 <Monitor className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                 <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
@@ -3609,18 +3598,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (perm === "co_owners") return myRole === "co-owner";
     return false;
   };
-  const canOpenCameraByPerm = checkPerm(cameraPermission) && canUseTalkControls;
+  // Camera and screen-share are decoupled from mic/talk permission so a
+  // "silent room" or "owner-only mic" room can still allow guests to use
+  // their camera and share their screen, gated by their own perm fields.
+  const canOpenCameraByPerm = checkPerm(cameraPermission);
   const cameraLockReason = (() => {
     if (canOpenCameraByPerm) return "";
-    if (!canUseTalkControls) return talkLockReason;
     if (cameraPermission === "owner_only") return "Only the host can open the camera.";
     if (cameraPermission === "co_owners") return "Only the host and co-hosts can open the camera.";
     return "Camera is locked.";
   })();
-  const canShareScreenByPerm = checkPerm(screenPermission) && canUseTalkControls;
+  const canShareScreenByPerm = checkPerm(screenPermission);
   const screenLockReason = (() => {
     if (canShareScreenByPerm) return "";
-    if (!canUseTalkControls) return talkLockReason;
     if (screenPermission === "owner_only") return "Only the host can share screen.";
     if (screenPermission === "co_owners") return "Only the host and co-hosts can share screen.";
     return "Screen-share is locked.";
@@ -3721,11 +3711,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const toggleVideo = async () => {
-    // Turning the camera OFF is always permitted. Turning it ON requires
-    // talk privileges so a guest can't bypass a "host only" / "silent room"
-    // restriction by going on camera.
-    if (!isVideoOn && !canUseTalkControls) {
-      toast({ title: "Camera locked", description: talkLockReason || "Camera is disabled in this room.", variant: "destructive" });
+    // Turning the camera OFF is always permitted. Turning it ON is gated by
+    // the room's camera permission only — independent from mic/talk perms,
+    // so a "silent room" can still allow video.
+    if (!isVideoOn && !canOpenCameraByPerm) {
+      toast({ title: "Camera locked", description: cameraLockReason || "Camera is disabled in this room.", variant: "destructive" });
       return;
     }
     if (isVideoOn) {
@@ -4335,25 +4325,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     e.preventDefault();
     if (!editTitle.trim()) return;
 
-    if (bgSourceVR === "gallery" && presetBgUrlVR) {
-      await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: presetBgUrlVR });
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-    } else if (bgSourceVR === "upload" && hologramFileVR) {
-      setUploadingVideoVR(true);
-      try {
-        const formData = new FormData();
-        formData.append("video", hologramFileVR);
-        const res = await fetch("/api/upload/hologram", { method: "POST", body: formData, credentials: "include" });
-        const data = await res.json();
-        if (res.ok) {
-          await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: data.url });
-          queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-        }
-      } finally {
-        setUploadingVideoVR(false);
-      }
-    }
-
+    // Card background editing has moved to the lobby room card. In-room
+    // settings only manage live theme/animations and host control permissions.
     updateRoomMutation.mutate({
       title: editTitle.trim(),
       language: editLanguage,
@@ -6423,22 +6396,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </div>
             </div>
 
-            {/* Card Background lives in its own dialog now — keep this row tiny */}
-            <button
-              type="button"
-              onClick={() => setBgDialogOpen(true)}
-              className="w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 bg-muted/30 hover:bg-muted/50 border border-border/40 transition-colors text-left"
-              data-testid="button-open-bg-editor"
-            >
-              <span className="flex items-center gap-2 text-sm">
-                <ImageIcon className="w-4 h-4 text-primary/80" />
-                <span className="font-medium">Card Background</span>
-                <span className="text-[11px] text-muted-foreground">
-                  {(room as any).hologramVideoUrl ? "Custom" : "Default"}
-                </span>
+            {/* Card Background is now edited from outside the room (lobby room
+                card → Settings). In-room settings only tweak live themes,
+                animations and host controls. */}
+            <p className="text-[11px] text-muted-foreground leading-snug bg-muted/20 border border-border/40 rounded-md px-3 py-2 flex items-center gap-2">
+              <ImageIcon className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" />
+              <span>
+                Card background is edited from the lobby room card. In here, host
+                controls only change live themes, animations and permissions.
               </span>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </button>
+            </p>
 
             {/* Smart neumorphic Host Controls panel — one tap cycles each tile */}
             <div className="space-y-2">
@@ -6488,10 +6455,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             <Button
               type="submit"
               className="w-full"
-              disabled={!editTitle.trim() || updateRoomMutation.isPending || uploadingVideoVR}
+              disabled={!editTitle.trim() || updateRoomMutation.isPending}
               data-testid="button-submit-edit-room"
             >
-              {updateRoomMutation.isPending || uploadingVideoVR ? "Saving..." : "Save Changes"}
+              {updateRoomMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </form>
 

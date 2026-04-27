@@ -104,8 +104,28 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      {!hideTrigger && (
-        <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild>
+        {hideTrigger ? (
+          // Invisible anchor so the dropdown content has something to position
+          // against when the panel is opened programmatically (e.g. from the
+          // profile orbit's quick-open Messages button). Pinned to top-right
+          // so the panel pops up under the user's profile pill area.
+          <span
+            aria-hidden="true"
+            tabIndex={-1}
+            data-testid="messages-anchor"
+            style={{
+              position: "fixed",
+              top: 56,
+              right: 16,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: "none",
+              zIndex: -1,
+            }}
+          />
+        ) : (
           <Button size="icon" variant="ghost" className="relative" data-testid="button-messages">
             <MessageSquare className="w-4 h-4" />
             {unreadCount > 0 && (
@@ -122,8 +142,8 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
               </span>
             )}
           </Button>
-        </DropdownMenuTrigger>
-      )}
+        )}
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between gap-2 p-3 border-b">
           <span className="font-semibold text-sm">Messages</span>
