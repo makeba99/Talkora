@@ -495,14 +495,16 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
   /* circle size is based on how many people are actually visible — small rooms
      with 1–2 people get big, friendly portraits; crowded rooms shrink so two
-     rows still fit comfortably inside the card body without ever clipping. */
+     rows still fit comfortably inside the card body without ever clipping.
+     Sized down so the lobby fits 2 rows of cards on smaller screens like
+     Free4Talk does. */
   const baseCircleSize =
-    displayCount <= 1 ? 102 :
-    displayCount === 2 ? 92 :
-    displayCount <= 4 ? 80 :
-    displayCount <= 6 ? 70 :
-    displayCount <= 8 ? 60 :
-    52;
+    displayCount <= 1 ? 78 :
+    displayCount === 2 ? 70 :
+    displayCount <= 4 ? 62 :
+    displayCount <= 6 ? 54 :
+    displayCount <= 8 ? 46 :
+    40;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -644,7 +646,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             : "linear-gradient(160deg, rgba(16, 20, 50, 0.88) 0%, rgba(11, 15, 42, 0.92) 100%)",
           backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
           WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
-          height: isPremiumAtmosphere ? 370 : 352,
+          height: isPremiumAtmosphere ? 268 : 252,
         }}
       >
         {isPremiumAtmosphere && (
@@ -660,7 +662,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         <div className="relative z-[2] flex flex-col h-full">
 
           {/* ── Header ── */}
-          <div className="relative z-10 flex items-start justify-between gap-2 px-4 pt-3 pb-3 sm:pb-4">
+          <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-1.5">
             <div className="flex-1 min-w-0 pr-2">
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
@@ -762,8 +764,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               `overflow-visible` so avatar rings/decorations that extend a few
               pixels outside the body never get clipped at the top. The outer
               card already owns the rounded-corner clipping. */}
-          <div className="flex-1 flex flex-col justify-center px-3 pt-2 pb-1 min-h-0 overflow-visible">
-            <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
+          <div className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 min-h-0 overflow-visible">
+            <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
@@ -1070,6 +1072,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">∞ Unlimited</SelectItem>
+                  <SelectItem value="1">1 person (solo)</SelectItem>
                   {[2, 3, 4, 6, 8, 10, 12].map((n) => (
                     <SelectItem key={n} value={String(n)}>{n} people</SelectItem>
                   ))}

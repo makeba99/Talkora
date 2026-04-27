@@ -208,6 +208,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="0">∞ Unlimited</SelectItem>
+                <SelectItem value="1">1 person (solo)</SelectItem>
                 {[2, 3, 4, 6, 8, 10, 12].map((n) => (
                   <SelectItem key={n} value={String(n)}>
                     {n} people

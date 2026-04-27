@@ -3094,7 +3094,8 @@ export async function registerRoutes(
 
       const currentParticipants = roomParticipants.get(roomId)!;
       const isAdminUser = user.role === "admin" || user.role === "superadmin";
-      if (currentParticipants.size >= room.maxUsers && !currentParticipants.has(userId) && !isAdminUser) {
+      const isUnlimitedRoom = room.maxUsers === 0;
+      if (!isUnlimitedRoom && currentParticipants.size >= room.maxUsers && !currentParticipants.has(userId) && !isAdminUser) {
         socket.emit("room:full", { roomId });
         return;
       }
