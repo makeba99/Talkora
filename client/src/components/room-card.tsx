@@ -355,17 +355,9 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const [editLanguage, setEditLanguage] = useState(room.language);
   const [editLevel, setEditLevel] = useState(room.level);
   const [editMaxUsers, setEditMaxUsers] = useState(room.maxUsers);
-  const [editTheme, setEditTheme] = useState((room as any).roomTheme || "premium-atmosphere");
-  const [editThemeOffset, setEditThemeOffset] = useState(0);
-  const [hologramPreview, setHologramPreview] = useState<string | null>(null);
-  const [hologramFile, setHologramFile] = useState<File | null>(null);
-  const [hologramKind, setHologramKind] = useState<"video" | "image" | null>(null);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-
 
   const editMutation = useMutation({
-    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme: string }) => {
+    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number }) => {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return res.json();
     },
@@ -375,50 +367,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     },
   });
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
+  const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editTitle.trim()) return;
-
-    if (hologramFile) {
-      setUploadingVideo(true);
-      try {
-        const formData = new FormData();
-        formData.append("video", hologramFile);
-        const res = await fetch("/api/upload/hologram", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (res.ok) {
-          await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: data.url });
-          queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-        }
-      } finally {
-        setUploadingVideo(false);
-      }
-    }
-
-    editMutation.mutate({ title: editTitle.trim(), language: editLanguage, level: editLevel, maxUsers: editMaxUsers, roomTheme: editTheme });
-  };
-
-  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setHologramFile(file);
-    setHologramKind(file.type.startsWith("video/") ? "video" : "image");
-    const url = URL.createObjectURL(file);
-    setHologramPreview(url);
-  };
-
-  const clearHologram = async () => {
-    setHologramFile(null);
-    setHologramPreview(null);
-    setHologramKind(null);
-    if ((room as any).hologramVideoUrl) {
-      await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: null });
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-    }
+    editMutation.mutate({ title: editTitle.trim(), language: editLanguage, level: editLevel, maxUsers: editMaxUsers });
   };
 
   const languages = LANGUAGES.filter((l) => l !== "All");
@@ -489,9 +441,6 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         setEditLanguage(room.language);
         setEditLevel(room.level);
         setEditMaxUsers(room.maxUsers);
-        setEditTheme((room as any).roomTheme || "cosmic");
-        setHologramPreview(null);
-        setHologramFile(null);
         setEditOpen(true);
       }}
       data-testid={`button-room-settings-${room.id}`}
@@ -1052,118 +1001,17 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Card Theme</Label>
-                <span className="text-xs text-muted-foreground">
-                  {ROOM_THEMES.find((t) => t.id === editTheme)?.label || "Default"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditThemeOffset((o) => Math.max(0, o - 4))}
-                  disabled={editThemeOffset === 0}
-                  className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <div className="flex-1 grid grid-cols-4 gap-2">
-                  {ROOM_THEMES.slice(editThemeOffset, editThemeOffset + 4).map((theme) => (
-                    <button
-                      key={theme.id}
-                      type="button"
-                      onClick={() => setEditTheme(theme.id)}
-                      className={`relative rounded-lg overflow-hidden transition-all border-2 ${editTheme === theme.id ? "border-white shadow-lg" : "border-transparent opacity-70 hover:opacity-100"}`}
-                      title={theme.label}
-                    >
-                      <img
-                        src={theme.img}
-                        alt={theme.label}
-                        className="w-full h-[52px] object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = "none";
-                          const fallback = e.currentTarget.nextSibling as HTMLElement;
-                          if (fallback) fallback.style.display = "flex";
-                        }}
-                      />
-                      <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-0.5 truncate">
-                        {theme.label}
-                      </span>
-                      {editTheme === theme.id && (
-                        <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white flex items-center justify-center">
-                          <svg className="w-1.5 h-1.5" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M2 6l3 3 5-5" />
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditThemeOffset((o) => Math.min(Math.max(0, ROOM_THEMES.length - 4), o + 4))}
-                  disabled={editThemeOffset + 4 >= ROOM_THEMES.length}
-                  className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex justify-center gap-1">
-                {Array.from({ length: Math.ceil(ROOM_THEMES.length / 4) }).map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setEditThemeOffset(i * 4)}
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${editThemeOffset === i * 4 ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Card Background</Label>
-                {hologramVideoUrl && (
-                  <button type="button" onClick={clearHologram} className="text-xs text-destructive hover:underline">Remove</button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                {hologramPreview && (
-                  hologramKind === "video" ? (
-                    <video src={hologramPreview} autoPlay loop muted playsInline className="w-12 h-12 rounded-md object-cover border-2 border-cyan-400" />
-                  ) : (
-                    <img src={hologramPreview} alt="Background preview" className="w-12 h-12 rounded-md object-cover border-2 border-cyan-400" />
-                  )
-                )}
-                <button
-                  type="button"
-                  onClick={() => videoInputRef.current?.click()}
-                  className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
-                >
-                  <ImageIcon className="w-4 h-4" />
-                  {hologramFile ? "Change Background" : hologramVideoUrl ? "Replace Background" : "Upload Video, GIF or Image"}
-                </button>
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
-                  className="hidden"
-                  onChange={handleVideoSelect}
-                />
-              </div>
-            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug bg-muted/30 border border-border/40 rounded-md px-3 py-2">
+              Card themes, backgrounds and host controls are now managed inside the room — open the room and tap Settings.
+            </p>
 
             <Button
               type="submit"
               className="w-full"
-              disabled={!editTitle.trim() || editMutation.isPending || uploadingVideo}
+              disabled={!editTitle.trim() || editMutation.isPending}
               data-testid="button-save-room-edit"
             >
-              {editMutation.isPending || uploadingVideo ? "Saving..." : "Save Changes"}
+              {editMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </form>
         </DialogContent>

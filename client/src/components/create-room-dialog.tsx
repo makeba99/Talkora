@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Hammer, X, Sparkles } from "lucide-react";
+import { Hammer, X, Sparkles, Upload, Loader2 } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { GifPickerButton } from "@/components/chat-picker";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
+import { useToast } from "@/hooks/use-toast";
 
 interface CreateRoomDialogProps {
   onCreateRoom: (room: {
@@ -23,17 +24,53 @@ interface CreateRoomDialogProps {
 }
 
 export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogProps) {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState("English");
   const [level, setLevel] = useState("Beginner");
   const [maxUsers, setMaxUsers] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
-  const [gifUrl, setGifUrl] = useState<string | null>(null);
+  // mediaUrl is the chosen card hologram. It can come from either the Tenor
+  // GIF picker or a direct upload (image / GIF / short video). Whichever the
+  // host selects last wins, since the card slot only shows one piece of media.
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [mediaKind, setMediaKind] = useState<"gif" | "image" | "video">("gif");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setTitle("");
-    setGifUrl(null);
+    setMediaUrl(null);
+    setMediaKind("gif");
+  };
+
+  const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Pick a file under 25 MB.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+      const res = await fetch("/api/upload/hologram", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Upload failed");
+      setMediaUrl(data.url);
+      setMediaKind(file.type.startsWith("video/") ? "video" : file.type === "image/gif" ? "gif" : "image");
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,7 +82,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
       level,
       maxUsers,
       isPublic,
-      hologramVideoUrl: gifUrl,
+      hologramVideoUrl: mediaUrl,
     });
     resetForm();
     setOpen(false);
@@ -139,42 +176,75 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-primary/80" />
-                Card GIF
+                Card Media
                 <span className="text-[11px] font-normal text-muted-foreground">(optional)</span>
               </Label>
-              {gifUrl && (
+              {mediaUrl && !uploading && (
                 <button
                   type="button"
-                  onClick={() => setGifUrl(null)}
+                  onClick={() => { setMediaUrl(null); setMediaKind("gif"); }}
                   className="text-[11px] text-destructive hover:underline flex items-center gap-1"
-                  data-testid="button-clear-gif"
+                  data-testid="button-clear-card-media"
                 >
                   <X className="w-3 h-3" /> Clear
                 </button>
               )}
             </div>
             <div className="flex items-center gap-3">
-              {gifUrl ? (
-                <img
-                  src={gifUrl}
-                  alt="Selected GIF"
-                  className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
-                  data-testid="img-card-gif-preview"
-                />
+              {mediaUrl ? (
+                mediaKind === "video" ? (
+                  <video
+                    src={mediaUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
+                    data-testid="video-card-media-preview"
+                  />
+                ) : (
+                  <img
+                    src={mediaUrl}
+                    alt="Selected media"
+                    className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
+                    data-testid="img-card-media-preview"
+                  />
+                )
               ) : (
                 <div className="w-14 h-14 rounded-md border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                  No GIF
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Empty"}
                 </div>
               )}
-              <div className="flex-1 flex items-center gap-2">
-                <GifPickerButton onGifSelect={(url) => setGifUrl(url)} />
-                <span className="text-sm text-muted-foreground">
-                  {gifUrl ? "Tap GIF to change" : "Tap GIF to browse Tenor"}
-                </span>
+              <div className="flex-1 grid grid-cols-2 gap-2">
+                <GifPickerButton
+                  onGifSelect={(url) => { setMediaUrl(url); setMediaKind("gif"); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="neu-upload-btn flex items-center justify-center gap-1.5 text-sm font-medium disabled:opacity-50"
+                  data-testid="button-upload-card-media"
+                >
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  {uploading ? "Uploading..." : "Upload"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={handleFilePick}
+                  data-testid="input-card-media-file"
+                />
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground leading-snug">
-              Themes, backgrounds and roles are configured inside the room once you join.
+              Pick a GIF from Tenor or upload your own picture / short video. Themes and host controls are set inside the room.
             </p>
           </div>
 
