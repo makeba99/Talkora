@@ -664,7 +664,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         <div className="relative z-[2] flex flex-col h-full">
 
           {/* ── Header ── */}
-          <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-1.5">
+          <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-3">
             <div className="flex-1 min-w-0 pr-2">
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
@@ -766,8 +766,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               `overflow-visible` so avatar rings/decorations that extend a few
               pixels outside the body never get clipped at the top. The outer
               card already owns the rounded-corner clipping. */}
-          <div className="flex-1 flex flex-col justify-center px-3 pt-1 pb-1 min-h-0 overflow-visible">
-            <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
+          <div className="flex-1 flex flex-col justify-center px-3 pt-2 pb-2 min-h-0 overflow-visible">
+            <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
