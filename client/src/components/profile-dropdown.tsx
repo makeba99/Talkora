@@ -462,87 +462,11 @@ export function ProfileDropdown({
           {/* connector tail from the trigger pill into the orbit */}
           <span className="orbit-tail" aria-hidden="true" />
 
-          <div className="orbit-ring" data-testid="orbit-ring">
-            {/* outer dotted ring decoration */}
-            <span className="orbit-ring-outer" aria-hidden="true" />
-            <span className="orbit-ring-inner" aria-hidden="true" />
-
-            {/* center: 4-dot grid acts as collapse / "all apps" */}
-            <button
-              type="button"
-              className="orbit-center"
-              onClick={() => setOrbitOpen(false)}
-              data-testid="button-orbit-center"
-              title="Close menu"
-              aria-label="Close menu"
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-
-            {/* satellites — Themes (top) + Community (bottom). Messages and
-                Notifications are intentionally NOT in the orbit anymore — the
-                user opts them in via the "Pin to header" row below. They still
-                arrive in the background and the unread count keeps flowing
-                onto the trigger pill so the user always knows. */}
-            {!pinned?.themes && (
-              <button
-                type="button"
-                className="orbit-sat orbit-sat-top"
-                onClick={closeOrbitAnd(onOpenTheme)}
-                data-testid="orbit-sat-themes"
-                aria-label="Themes"
-              >
-                <span className="orbit-sat-bubble">
-                  <Palette className="w-[18px] h-[18px]" />
-                </span>
-                <span className="orbit-sat-label">Themes</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="orbit-sat-pin"
-                  onClick={(e) => { e.stopPropagation(); onTogglePin?.("themes"); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onTogglePin?.("themes"); } }}
-                  data-testid="button-pin-themes"
-                  aria-label="Pin Themes to header"
-                  title="Pin to header"
-                >
-                  <Pin className="w-2.5 h-2.5" />
-                </span>
-              </button>
-            )}
-
-            {!pinned?.community && (
-              <button
-                type="button"
-                className="orbit-sat orbit-sat-bottom"
-                onClick={closeOrbitAnd(onOpenCommunity)}
-                data-testid="orbit-sat-community"
-                aria-label="Community"
-              >
-                <span className="orbit-sat-bubble">
-                  <UsersIcon className="w-[18px] h-[18px]" />
-                </span>
-                <span className="orbit-sat-label">Community</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="orbit-sat-pin"
-                  onClick={(e) => { e.stopPropagation(); onTogglePin?.("community"); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onTogglePin?.("community"); } }}
-                  data-testid="button-pin-community"
-                  aria-label="Pin Community to header"
-                  title="Pin to header"
-                >
-                  <Pin className="w-2.5 h-2.5" />
-                </span>
-              </button>
-            )}
-          </div>
-
-          {/* Pin-to-header row: Messages and Notifications no longer live in
-              the orbit ring. The user opts them into the header bar via these
-              two pill toggles. New messages/notifications still arrive in the
-              background regardless of pin state. */}
+          {/* Pin-to-header row: NONE of these items live next to the user
+              profile by default. The user opts each one into the header bar
+              via these pill toggles. Notifications & messages still arrive
+              in the background regardless of pin state — the trigger pill's
+              badge keeps reflecting unread totals. */}
           <div className="orbit-pin-row" data-testid="orbit-pin-row">
             <span className="orbit-pin-row-label">Pin to header</span>
             <div className="orbit-pin-row-pills">
@@ -572,7 +496,78 @@ export function ProfileDropdown({
                 {unreadNotifications > 0 && <span className="orbit-pin-pill-dot" aria-hidden="true" />}
                 {pinned?.notifications && <Pin className="w-2.5 h-2.5 ml-0.5" />}
               </button>
+              <button
+                type="button"
+                onClick={() => onTogglePin?.("themes")}
+                className={`orbit-pin-pill ${pinned?.themes ? "is-pinned" : ""}`}
+                data-testid="toggle-pin-themes"
+                aria-pressed={!!pinned?.themes}
+                title={pinned?.themes ? "Unpin Themes" : "Pin Themes to header"}
+              >
+                <Palette className="w-3 h-3" />
+                <span>Themes</span>
+                {pinned?.themes && <Pin className="w-2.5 h-2.5 ml-0.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => onTogglePin?.("community")}
+                className={`orbit-pin-pill ${pinned?.community ? "is-pinned" : ""}`}
+                data-testid="toggle-pin-community"
+                aria-pressed={!!pinned?.community}
+                title={pinned?.community ? "Unpin Community" : "Pin Community to header"}
+              >
+                <UsersIcon className="w-3 h-3" />
+                <span>Community</span>
+                {pinned?.community && <Pin className="w-2.5 h-2.5 ml-0.5" />}
+              </button>
             </div>
+          </div>
+
+          {/* Quick-open shortcuts: tapping these opens the panel in-place
+              without pinning. The user can pin via the row above. */}
+          <div className="orbit-quick-row" data-testid="orbit-quick-row">
+            <button
+              type="button"
+              className="orbit-quick-btn"
+              onClick={closeOrbitAnd(onOpenMessages)}
+              data-testid="quick-open-messages"
+              aria-label="Open Messages"
+              title="Open Messages"
+            >
+              <MessageCircle className="w-4 h-4" />
+              {unreadMessages > 0 && <span className="orbit-quick-dot" aria-hidden="true" />}
+            </button>
+            <button
+              type="button"
+              className="orbit-quick-btn"
+              onClick={closeOrbitAnd(onOpenNotifications)}
+              data-testid="quick-open-notifications"
+              aria-label="Open Notifications"
+              title="Open Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadNotifications > 0 && <span className="orbit-quick-dot" aria-hidden="true" />}
+            </button>
+            <button
+              type="button"
+              className="orbit-quick-btn"
+              onClick={closeOrbitAnd(onOpenTheme)}
+              data-testid="quick-open-themes"
+              aria-label="Open Themes"
+              title="Open Themes"
+            >
+              <Palette className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              className="orbit-quick-btn"
+              onClick={closeOrbitAnd(onOpenCommunity)}
+              data-testid="quick-open-community"
+              aria-label="Open Community"
+              title="Open Community"
+            >
+              <UsersIcon className="w-4 h-4" />
+            </button>
           </div>
 
           {/* identity card under the orbit */}
