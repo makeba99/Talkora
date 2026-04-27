@@ -1437,13 +1437,14 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
-      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission } = req.body;
+      const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission } = req.body;
       const updateData: any = {};
       if (title) updateData.title = title;
       if (language) updateData.language = language;
       if (level) updateData.level = level;
       if (maxUsers !== undefined && maxUsers !== null) updateData.maxUsers = maxUsers;
       if (roomTheme !== undefined) updateData.roomTheme = roomTheme;
+      if (isPublic !== undefined && typeof isPublic === "boolean") updateData.isPublic = isPublic;
       if (hologramVideoUrl !== undefined) updateData.hologramVideoUrl = hologramVideoUrl;
       if (welcomeMessage !== undefined) updateData.welcomeMessage = welcomeMessage;
       if (welcomeMediaUrls !== undefined) updateData.welcomeMediaUrls = Array.isArray(welcomeMediaUrls) ? welcomeMediaUrls : [];

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Mic, MicOff, PhoneOff, Hand, Globe, AlertCircle, MessageSquare,
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
@@ -889,6 +890,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [editYoutubePermission, setEditYoutubePermission] = useState<"everyone" | "co_owners" | "owner_only">(
     ((roomProp as any).youtubePermission as any) || "everyone"
   );
+  const [editIsPublic, setEditIsPublic] = useState<boolean>(((roomProp as any).isPublic ?? true) as boolean);
+  const [editHologramUrl, setEditHologramUrl] = useState<string | null>(((roomProp as any).hologramVideoUrl as string) || null);
+  const [editHologramKind, setEditHologramKind] = useState<"gif" | "image" | "video">(() => {
+    const u = ((roomProp as any).hologramVideoUrl as string) || "";
+    if (!u) return "gif";
+    if (/\.(mp4|webm|mov)(\?|$)/i.test(u)) return "video";
+    if (/\.(jpe?g|png|webp)(\?|$)/i.test(u)) return "image";
+    return "gif";
+  });
+  const [editHologramUploading, setEditHologramUploading] = useState(false);
+  const editHologramFileRef = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
   const [youtubeCategory, setYoutubeCategory] = useState<string>("conversation");
@@ -1281,7 +1293,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   });
 
   const updateRoomMutation = useMutation({
-    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme?: string; welcomeMessage?: string | null; welcomeMediaUrls?: string[]; welcomeMediaTypes?: string[]; welcomeMediaPosition?: string; welcomeAccentColor?: string }) => {
+    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme?: string; isPublic?: boolean; hologramVideoUrl?: string | null; welcomeMessage?: string | null; welcomeMediaUrls?: string[]; welcomeMediaTypes?: string[]; welcomeMediaPosition?: string; welcomeAccentColor?: string; talkPermission?: string; cameraPermission?: string; screenPermission?: string; youtubePermission?: string }) => {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return await res.json();
     },
@@ -4333,11 +4345,41 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       level: editLevel,
       maxUsers: editMaxUsers,
       roomTheme: editRoomTheme,
+      isPublic: editIsPublic,
+      hologramVideoUrl: editHologramUrl,
       talkPermission: editTalkPermission,
       cameraPermission: editCameraPermission,
       screenPermission: editScreenPermission,
       youtubePermission: editYoutubePermission,
     });
+  };
+
+  const handleEditHologramFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Pick a file under 25 MB.", variant: "destructive" });
+      return;
+    }
+    setEditHologramUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+      const res = await fetch("/api/upload/hologram", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Upload failed");
+      setEditHologramUrl(data.url);
+      setEditHologramKind(file.type.startsWith("video/") ? "video" : file.type === "image/gif" ? "gif" : "image");
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setEditHologramUploading(false);
+    }
   };
 
   const languages = LANGUAGES.filter((l) => l !== "All");
@@ -6396,16 +6438,92 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </div>
             </div>
 
-            {/* Card Background is now edited from outside the room (lobby room
-                card → Settings). In-room settings only tweak live themes,
-                animations and host controls. */}
-            <p className="text-[11px] text-muted-foreground leading-snug bg-muted/20 border border-border/40 rounded-md px-3 py-2 flex items-center gap-2">
-              <ImageIcon className="w-3.5 h-3.5 text-primary/70 flex-shrink-0" />
-              <span>
-                Card background is edited from the lobby room card. In here, host
-                controls only change live themes, animations and permissions.
-              </span>
-            </p>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="edit-public-toggle">Public Room</Label>
+              <Switch
+                id="edit-public-toggle"
+                data-testid="switch-edit-public"
+                checked={editIsPublic}
+                onCheckedChange={setEditIsPublic}
+                className="neu-switch"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary/80" />
+                  Card Media
+                  <span className="text-[11px] font-normal text-muted-foreground">(optional)</span>
+                </Label>
+                {editHologramUrl && !editHologramUploading && (
+                  <button
+                    type="button"
+                    onClick={() => { setEditHologramUrl(null); setEditHologramKind("gif"); }}
+                    className="text-[11px] text-destructive hover:underline flex items-center gap-1"
+                    data-testid="button-clear-edit-card-media"
+                  >
+                    <X className="w-3 h-3" /> Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {editHologramUrl ? (
+                  editHologramKind === "video" ? (
+                    <video
+                      src={editHologramUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
+                      data-testid="video-edit-card-media-preview"
+                    />
+                  ) : (
+                    <img
+                      src={editHologramUrl}
+                      alt="Selected media"
+                      className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
+                      data-testid="img-edit-card-media-preview"
+                    />
+                  )
+                ) : (
+                  <div className="w-14 h-14 rounded-md border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-[10px] text-muted-foreground font-medium">
+                    {editHologramUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Empty"}
+                  </div>
+                )}
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <GifPickerButton
+                    onGifSelect={(url) => { setEditHologramUrl(url); setEditHologramKind("gif"); }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => editHologramFileRef.current?.click()}
+                    disabled={editHologramUploading}
+                    className="neu-upload-btn flex items-center justify-center gap-1.5 text-sm font-medium disabled:opacity-50"
+                    data-testid="button-upload-edit-card-media"
+                  >
+                    {editHologramUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    {editHologramUploading ? "Uploading..." : "Upload"}
+                  </button>
+                  <input
+                    ref={editHologramFileRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={handleEditHologramFilePick}
+                    data-testid="input-edit-card-media-file"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Pick a GIF, upload your own picture / short video, or tap Clear to remove the current card background (including any YouTube link).
+              </p>
+            </div>
 
             {/* Smart neumorphic Host Controls panel — one tap cycles each tile */}
             <div className="space-y-2">
@@ -6756,6 +6874,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     setEditLanguage(room.language);
                     setEditLevel(room.level);
                     setEditMaxUsers(room.maxUsers);
+                    setEditIsPublic(((room as any).isPublic ?? true) as boolean);
+                    const currentHologram = ((room as any).hologramVideoUrl as string) || null;
+                    setEditHologramUrl(currentHologram);
+                    setEditHologramKind(
+                      currentHologram
+                        ? (/\.(mp4|webm|mov)(\?|$)/i.test(currentHologram)
+                            ? "video"
+                            : /\.(jpe?g|png|webp)(\?|$)/i.test(currentHologram)
+                            ? "image"
+                            : "gif")
+                        : "gif"
+                    );
                     const currentEditTheme = (room as any).roomTheme || "none";
                     const themeIndex = ROOM_THEMES.findIndex((theme) => theme.id === currentEditTheme);
                     setEditRoomTheme(currentEditTheme);
