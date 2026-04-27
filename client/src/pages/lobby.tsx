@@ -1262,9 +1262,16 @@ export default function Lobby() {
                   />
                 )}
 
+                {/* Avatar pill profile menu.
+                    When the orbit lives inside the avatar (default), this
+                    popover IS the orbit popover so it shares the orbitOpen
+                    controlled state with the rest of the page (auto-popups
+                    target it). When the orbit has been pinned out into its
+                    own header chip, the avatar pill becomes a pure profile
+                    dropdown — we drop the controlled state so it can open
+                    independently of the orbit chip's popover. */}
                 <ProfileDropdown
-                  open={pinned.orbit ? false : orbitOpen}
-                  onOpenChange={pinned.orbit ? undefined : setOrbitOpen}
+                  {...(pinned.orbit ? {} : { open: orbitOpen, onOpenChange: setOrbitOpen })}
                   onOpenTheme={() => setThemePickerOpen(true)}
                   onOpenNotifications={() => setNotificationsOpen(true)}
                   onOpenMessages={() => setMessagesOpen(true)}
