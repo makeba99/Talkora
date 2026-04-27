@@ -721,6 +721,47 @@ function ParticipantCard({
   );
 }
 
+// Single neumorphic permission tile shared by mic / camera / screen / youtube.
+// One tap cycles through the allowed scopes — far faster than 4 stacked
+// dropdowns when the host wants to lock things down quickly.
+type PermValue = "everyone" | "co_owners" | "owner_only" | "muted";
+type PermTileProps = {
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  value: PermValue;
+  onChange: (next: PermValue) => void;
+  withMuted?: boolean;
+  testId?: string;
+};
+function PermTile({ label, Icon, value, onChange, withMuted, testId }: PermTileProps) {
+  const order: PermValue[] = withMuted
+    ? ["everyone", "co_owners", "owner_only", "muted"]
+    : ["everyone", "co_owners", "owner_only"];
+  const i = Math.max(0, order.indexOf(value));
+  const next = order[(i + 1) % order.length];
+  const meta: Record<PermValue, { short: string; tone: string; ringFrom: string; ringTo: string }> = {
+    everyone:   { short: "All",    tone: "text-emerald-300", ringFrom: "rgba(16,185,129,0.55)", ringTo: "rgba(16,185,129,0.10)" },
+    co_owners:  { short: "Hosts",  tone: "text-sky-300",     ringFrom: "rgba(56,189,248,0.55)", ringTo: "rgba(56,189,248,0.10)" },
+    owner_only: { short: "Host",   tone: "text-amber-300",   ringFrom: "rgba(251,191,36,0.55)", ringTo: "rgba(251,191,36,0.10)" },
+    muted:      { short: "Muted",  tone: "text-rose-300",    ringFrom: "rgba(244,63,94,0.55)",  ringTo: "rgba(244,63,94,0.10)" },
+  };
+  const m = meta[value];
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(next)}
+      className="host-perm-tile"
+      style={{ ["--perm-ring-from" as any]: m.ringFrom, ["--perm-ring-to" as any]: m.ringTo }}
+      title={`${label}: ${m.short} — tap to change`}
+      data-testid={testId}
+    >
+      <span className="host-perm-tile-icon"><Icon className="w-[18px] h-[18px]" /></span>
+      <span className="host-perm-tile-label">{label}</span>
+      <span className={`host-perm-tile-scope ${m.tone}`}>{m.short}</span>
+    </button>
+  );
+}
+
 export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const { socket } = useSocket();
   const { user } = useAuth();
@@ -845,12 +886,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [editTalkPermission, setEditTalkPermission] = useState<"everyone" | "co_owners" | "owner_only" | "muted">(
     ((roomProp as any).talkPermission as any) || "everyone"
   );
+  const [editCameraPermission, setEditCameraPermission] = useState<"everyone" | "co_owners" | "owner_only">(
+    ((roomProp as any).cameraPermission as any) || "everyone"
+  );
   const [editScreenPermission, setEditScreenPermission] = useState<"everyone" | "co_owners" | "owner_only">(
     ((roomProp as any).screenPermission as any) || "everyone"
   );
   const [editYoutubePermission, setEditYoutubePermission] = useState<"everyone" | "co_owners" | "owner_only">(
     ((roomProp as any).youtubePermission as any) || "everyone"
   );
+  // The Card Background editor lives in its own dialog now so the main Edit
+  // Room dialog stays short. Hosts get to it from a small picture-icon next to
+  // the gear in the room header (see headerSettingsBtnRow further down).
+  const [bgDialogOpen, setBgDialogOpen] = useState(false);
   const videoInputVR = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
@@ -3549,6 +3597,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   // Per-feature host permissions. The host configures who can share screen and
   // who can play YouTube from Edit Room Settings. Each save is announced in
   // the chat as a system message (server-side).
+  const cameraPermission = ((room as any).cameraPermission as
+    | "everyone" | "co_owners" | "owner_only" | undefined) || "everyone";
   const screenPermission = ((room as any).screenPermission as
     | "everyone" | "co_owners" | "owner_only" | undefined) || "everyone";
   const youtubePermission = ((room as any).youtubePermission as
@@ -3559,6 +3609,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (perm === "co_owners") return myRole === "co-owner";
     return false;
   };
+  const canOpenCameraByPerm = checkPerm(cameraPermission) && canUseTalkControls;
+  const cameraLockReason = (() => {
+    if (canOpenCameraByPerm) return "";
+    if (!canUseTalkControls) return talkLockReason;
+    if (cameraPermission === "owner_only") return "Only the host can open the camera.";
+    if (cameraPermission === "co_owners") return "Only the host and co-hosts can open the camera.";
+    return "Camera is locked.";
+  })();
   const canShareScreenByPerm = checkPerm(screenPermission) && canUseTalkControls;
   const screenLockReason = (() => {
     if (canShareScreenByPerm) return "";
@@ -4303,6 +4361,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       maxUsers: editMaxUsers,
       roomTheme: editRoomTheme,
       talkPermission: editTalkPermission,
+      cameraPermission: editCameraPermission,
       screenPermission: editScreenPermission,
       youtubePermission: editYoutubePermission,
     });
@@ -6364,180 +6423,65 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </div>
             </div>
 
+            {/* Card Background lives in its own dialog now — keep this row tiny */}
+            <button
+              type="button"
+              onClick={() => setBgDialogOpen(true)}
+              className="w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 bg-muted/30 hover:bg-muted/50 border border-border/40 transition-colors text-left"
+              data-testid="button-open-bg-editor"
+            >
+              <span className="flex items-center gap-2 text-sm">
+                <ImageIcon className="w-4 h-4 text-primary/80" />
+                <span className="font-medium">Card Background</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {(room as any).hologramVideoUrl ? "Custom" : "Default"}
+                </span>
+              </span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+
+            {/* Smart neumorphic Host Controls panel — one tap cycles each tile */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Card Background</Label>
-                {((room as any).hologramVideoUrl || presetBgUrlVR || hologramPreviewVR) && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: null });
-                      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-                      setHologramPreviewVR(null);
-                      setHologramFileVR(null);
-                      setHologramKindVR(null);
-                      setPresetBgUrlVR(null);
-                    }}
-                    className="text-[11px] text-destructive hover:underline"
-                    data-testid="button-edit-clear-bg"
-                  >
-                    Remove
-                  </button>
-                )}
+                <Label className="flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-primary/80" />
+                  Host Controls
+                </Label>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Tap a tile to change</span>
               </div>
-
-              <div className="bg-source-tabs">
-                <button
-                  type="button"
-                  onClick={() => setBgSourceVR("gallery")}
-                  className={`bg-source-tab ${bgSourceVR === "gallery" ? "is-active" : ""}`}
-                  data-testid="tab-edit-bg-gallery"
-                >
-                  <Sparkles className="w-3.5 h-3.5" /> Gallery
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBgSourceVR("upload")}
-                  className={`bg-source-tab ${bgSourceVR === "upload" ? "is-active" : ""}`}
-                  data-testid="tab-edit-bg-upload"
-                >
-                  <Upload className="w-3.5 h-3.5" /> Upload Pic / Video
-                </button>
+              <div className="host-perm-grid">
+                <PermTile
+                  label="Mic"
+                  Icon={Mic}
+                  value={editTalkPermission}
+                  onChange={(v) => setEditTalkPermission(v as any)}
+                  withMuted
+                  testId="tile-perm-talk"
+                />
+                <PermTile
+                  label="Camera"
+                  Icon={Video}
+                  value={editCameraPermission}
+                  onChange={(v) => setEditCameraPermission(v as any)}
+                  testId="tile-perm-camera"
+                />
+                <PermTile
+                  label="Screen"
+                  Icon={MonitorPlay}
+                  value={editScreenPermission}
+                  onChange={(v) => setEditScreenPermission(v as any)}
+                  testId="tile-perm-screen"
+                />
+                <PermTile
+                  label="YouTube"
+                  Icon={Youtube}
+                  value={editYoutubePermission}
+                  onChange={(v) => setEditYoutubePermission(v as any)}
+                  testId="tile-perm-youtube"
+                />
               </div>
-
-              {bgSourceVR === "gallery" && (
-                <div className="bg-gallery-grid" data-testid="grid-edit-bg-gallery">
-                  {PRESET_BACKGROUNDS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setPresetBgUrlVR(p.url);
-                        setHologramFileVR(null);
-                        setHologramPreviewVR(null);
-                        setHologramKindVR(null);
-                      }}
-                      className={`bg-gallery-tile ${presetBgUrlVR === p.url ? "is-active" : ""}`}
-                      title={p.label}
-                      data-testid={`button-edit-bg-preset-${p.id}`}
-                    >
-                      <img src={p.thumb} alt={p.label} loading="lazy" />
-                      <span className="bg-gallery-label">{p.label}</span>
-                      {presetBgUrlVR === p.url && (
-                        <div className="bg-gallery-check">
-                          <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M2 6l3 3 5-5" />
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {bgSourceVR === "upload" && (
-                <div className="flex items-center gap-3">
-                  {hologramPreviewVR && (
-                    hologramKindVR === "video" ? (
-                      <video src={hologramPreviewVR} autoPlay loop muted playsInline className="w-12 h-12 rounded-md object-cover border-2 border-primary/60" />
-                    ) : (
-                      <img src={hologramPreviewVR} alt="Background preview" className="w-12 h-12 rounded-md object-cover border-2 border-primary/60" />
-                    )
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => videoInputVR.current?.click()}
-                    className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
-                    data-testid="button-edit-upload-bg"
-                  >
-                    <ImageIcon className="w-4 h-4" />
-                    {hologramFileVR ? "Change Background" : (room as any).hologramVideoUrl ? "Replace Background" : "Upload Pic, GIF or Video"}
-                  </button>
-                  <input
-                    ref={videoInputVR}
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setHologramFileVR(file);
-                      setHologramKindVR(file.type.startsWith("video/") ? "video" : "image");
-                      setHologramPreviewVR(URL.createObjectURL(file));
-                      setPresetBgUrlVR(null);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Who Can Talk</Label>
-              <Select value={editTalkPermission} onValueChange={(v) => setEditTalkPermission(v as any)}>
-                <SelectTrigger data-testid="select-edit-talk-permission">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="everyone">
-                    <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-emerald-400" /> Everyone — anyone can talk</span>
-                  </SelectItem>
-                  <SelectItem value="co_owners">
-                    <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-sky-400" /> Hosts & Co-hosts only</span>
-                  </SelectItem>
-                  <SelectItem value="owner_only">
-                    <span className="flex items-center gap-2"><Crown className="w-3.5 h-3.5 text-amber-400" /> Host only</span>
-                  </SelectItem>
-                  <SelectItem value="muted">
-                    <span className="flex items-center gap-2"><VolumeX className="w-3.5 h-3.5 text-rose-400" /> Silent room — text only</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-[11px] text-muted-foreground leading-snug flex items-start gap-1.5">
-                <Mic className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                Restrict mic and camera to chosen roles. Applies instantly to everyone in the room.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Who Can Share Screen</Label>
-              <Select value={editScreenPermission} onValueChange={(v) => setEditScreenPermission(v as any)}>
-                <SelectTrigger data-testid="select-edit-screen-permission">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="everyone">
-                    <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-emerald-400" /> Everyone</span>
-                  </SelectItem>
-                  <SelectItem value="co_owners">
-                    <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-sky-400" /> Hosts & Co-hosts only</span>
-                  </SelectItem>
-                  <SelectItem value="owner_only">
-                    <span className="flex items-center gap-2"><Crown className="w-3.5 h-3.5 text-amber-400" /> Host only</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Who Can Play YouTube</Label>
-              <Select value={editYoutubePermission} onValueChange={(v) => setEditYoutubePermission(v as any)}>
-                <SelectTrigger data-testid="select-edit-youtube-permission">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="everyone">
-                    <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-emerald-400" /> Everyone</span>
-                  </SelectItem>
-                  <SelectItem value="co_owners">
-                    <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-sky-400" /> Hosts & Co-hosts only</span>
-                  </SelectItem>
-                  <SelectItem value="owner_only">
-                    <span className="flex items-center gap-2"><Crown className="w-3.5 h-3.5 text-amber-400" /> Host only</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                Each change you save here is announced in the room chat so everyone knows the new rules.
+                Each change is announced in the room chat so everyone sees the new rules.
               </p>
             </div>
 

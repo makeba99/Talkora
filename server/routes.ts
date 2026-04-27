@@ -1437,7 +1437,7 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
-      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, screenPermission, youtubePermission } = req.body;
+      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission } = req.body;
       const updateData: any = {};
       if (title) updateData.title = title;
       if (language) updateData.language = language;
@@ -1452,6 +1452,9 @@ export async function registerRoutes(
       if (welcomeAccentColor !== undefined) updateData.welcomeAccentColor = welcomeAccentColor;
       if (talkPermission !== undefined && ["everyone", "co_owners", "owner_only", "muted"].includes(talkPermission)) {
         updateData.talkPermission = talkPermission;
+      }
+      if (cameraPermission !== undefined && ["everyone", "co_owners", "owner_only"].includes(cameraPermission)) {
+        updateData.cameraPermission = cameraPermission;
       }
       if (screenPermission !== undefined && ["everyone", "co_owners", "owner_only"].includes(screenPermission)) {
         updateData.screenPermission = screenPermission;
@@ -1488,6 +1491,9 @@ export async function registerRoutes(
         v === "owner_only" ? "host only" : v;
       if (updateData.talkPermission && updateData.talkPermission !== room.talkPermission) {
         emitSystemChatMsg(roomId, `🎙️ ${hostName} set who can use the mic to ${labelTalk(updateData.talkPermission)}.`);
+      }
+      if (updateData.cameraPermission && updateData.cameraPermission !== (room as any).cameraPermission) {
+        emitSystemChatMsg(roomId, `📹 ${hostName} set who can open camera to ${labelFeat(updateData.cameraPermission)}.`);
       }
       if (updateData.screenPermission && updateData.screenPermission !== (room as any).screenPermission) {
         emitSystemChatMsg(roomId, `🖥️ ${hostName} set who can share screen to ${labelFeat(updateData.screenPermission)}.`);

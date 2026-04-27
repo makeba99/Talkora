@@ -24,6 +24,7 @@ export const rooms = pgTable("rooms", {
   welcomeMediaPosition: varchar("welcome_media_position", { length: 20 }).notNull().default("below"),
   welcomeAccentColor: varchar("welcome_accent_color", { length: 30 }).notNull().default("#8B5CF6"),
   talkPermission: varchar("talk_permission", { length: 20 }).notNull().default("everyone"),
+  cameraPermission: varchar("camera_permission", { length: 20 }).notNull().default("everyone"),
   screenPermission: varchar("screen_permission", { length: 20 }).notNull().default("everyone"),
   youtubePermission: varchar("youtube_permission", { length: 20 }).notNull().default("everyone"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -48,6 +49,7 @@ export const insertRoomSchema = createInsertSchema(rooms).pick({
   roomTheme: true,
   hologramVideoUrl: true,
   talkPermission: true,
+  cameraPermission: true,
   screenPermission: true,
   youtubePermission: true,
 });

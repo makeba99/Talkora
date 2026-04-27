@@ -250,39 +250,81 @@ function buildYoutubeEmbed(id: string) {
   return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&rel=0`;
 }
 
+function isImageMedia(src: string): boolean {
+  // Treat anything that ends in a static-image / animated-GIF extension as an
+  // <img>. <video> tags silently fail on .gif / .png / .jpg / .webp, which was
+  // the reason GIF picks and image uploads "didn't display" on the card.
+  const cleaned = src.split("?")[0].toLowerCase();
+  return /\.(gif|png|jpe?g|webp|avif|bmp)$/.test(cleaned)
+    || cleaned.includes("media.tenor.com")
+    || cleaned.includes("/tenor/")
+    || cleaned.includes("c.tenor.com");
+}
+
 function CardHologramVideo({ src }: { src: string }) {
-  // Mobile-perf guard: a single lobby viewport can show 6+ room cards, each of
-  // which would otherwise auto-play a YouTube iframe or HTML5 video in the
-  // background. That's brutal for phone CPUs/batteries and torches the data
-  // budget on cellular. On phones (or for users who asked the OS to reduce
-  // motion) we just render the dimming overlay — the gradient + theme colour
-  // still set the mood without touching the video pipeline at all.
-  const skipVideo = typeof window !== "undefined" && (
-    window.matchMedia?.("(max-width: 767px), (pointer: coarse)").matches === true
-    || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
-  );
+  // Lobby cards stack 6+ at a time. We always paint the dimming overlay so the
+  // theme mood reads even when we skip animation. Static images render with a
+  // plain <img> (cheap), animated videos render with <video> on capable
+  // viewports, and YouTube URLs render through the muted lite-iframe.
   const overlay = (
     <div
       className="absolute inset-0 z-[1] pointer-events-none"
       style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.44) 0%, rgba(2,4,18,0.32) 58%, rgba(2,4,18,0.58) 100%)" }}
     />
   );
-  if (skipVideo) {
-    return overlay;
-  }
   const ytId = extractYoutubeId(src) || (src.includes("youtube.com/embed/") ? src.split("/embed/")[1]?.split("?")[0] : null);
+  // Only video/iframe playback is throttled on phones — images are essentially
+  // free, so we keep them visible everywhere.
+  const skipMotion = typeof window !== "undefined" && (
+    window.matchMedia?.("(max-width: 767px), (pointer: coarse)").matches === true
+    || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+  );
+
+  if (isImageMedia(src)) {
+    return (
+      <>
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          style={{ opacity: 0.65, filter: "brightness(0.7) saturate(0.85)" }}
+        />
+        {overlay}
+      </>
+    );
+  }
+
   if (ytId) {
+    if (skipMotion) {
+      return (
+        <>
+          <img
+            src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover z-0"
+            style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)" }}
+          />
+          {overlay}
+        </>
+      );
+    }
     return (
       <>
         <iframe
           src={buildYoutubeEmbed(ytId)}
           className="absolute inset-0 w-full h-full z-0"
           allow="autoplay; encrypted-media"
-          style={{ border: "none", pointerEvents: "none", opacity: 0.42, filter: "brightness(0.62) saturate(0.55)" }}
+          style={{ border: "none", pointerEvents: "none", opacity: 0.55, filter: "brightness(0.7) saturate(0.7)" }}
         />
         {overlay}
       </>
     );
+  }
+
+  if (skipMotion) {
+    return overlay;
   }
   return (
     <>
@@ -293,7 +335,7 @@ function CardHologramVideo({ src }: { src: string }) {
         muted
         playsInline
         className="absolute inset-0 w-full h-full object-cover z-0"
-        style={{ opacity: 0.42, filter: "brightness(0.62) saturate(0.55)" }}
+        style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)" }}
       />
       {overlay}
     </>
