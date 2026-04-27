@@ -1207,10 +1207,12 @@ export default function Lobby() {
               })}
             </div>
           )}
-          {/* Search bar — clean input on its own line */}
+          {/* Search bar — sculpted neumorphic capsule */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <div className="search-clean-shell relative flex-1">
-              <Search className="search-clean-icon w-[18px] h-[18px]" />
+            <div className={`search-neu-shell relative flex-1 ${searchQuery ? "is-filled" : ""}`}>
+              <span className="search-neu-icon-wrap" aria-hidden="true">
+                <Search className="w-[17px] h-[17px]" />
+              </span>
               <Input
                 placeholder={
                   activeDiscovery === "rooms"
@@ -1221,24 +1223,21 @@ export default function Lobby() {
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-clean-input neu-inset h-12 border-0 rounded-full text-white placeholder:text-white/35 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="search-neu-input border-0 bg-transparent text-white placeholder:text-white/40 focus-visible:ring-0 focus-visible:ring-offset-0"
                 data-testid="input-search-rooms"
               />
-              <div className="search-clean-right">
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="search-clean-clear"
-                    data-testid="button-clear-search"
-                    aria-label="Clear search"
-                    title="Clear"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                <kbd className="search-clean-kbd hidden sm:flex">⌘K</kbd>
-              </div>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="search-neu-clear"
+                  data-testid="button-clear-search"
+                  aria-label="Clear search"
+                  title="Clear"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
             {user && (
               <div className="w-full md:w-auto flex-shrink-0 [&_button]:w-full md:[&_button]:w-auto [&_button]:whitespace-nowrap" data-testid="container-create-room">
