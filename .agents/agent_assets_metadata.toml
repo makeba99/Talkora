@@ -7,12 +7,6 @@ type = "image"
 title = "generated_image"
 
 [[generated]]
-id = "YWoPVYeORNCLLHATv58o9"
-uri = "file://client/src/assets/ai-tutor-male.png"
-type = "image"
-title = "generated_image"
-
-[[generated]]
 id = "y8rs5xmLZhVz7DOXyzRTV"
 uri = "file://attached_assets/generated_images/eva-avatar.png"
 type = "image"
@@ -47,9 +41,3 @@ id = "dIqKfiAdwuanrSUyFEo4C"
 uri = "file://attached_assets/brand/vextorn-mark.svg"
 type = "image"
 title = "Vextorn — Icon / App Mark"
-
-[[outputs]]
-id = "iVE_JmszLUp2wZqDJl7xW"
-uri = "file://attached_assets/brand/options/option-b-sonic.png"
-type = "image"
-title = "Option B — Sonic V (voice-forward / monochrome)"
