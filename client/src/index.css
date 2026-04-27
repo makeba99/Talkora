@@ -5705,12 +5705,12 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   position: relative;
   width: 100%;
   margin-top: 32px;
-  padding: 18px 20px 16px;
-  background: linear-gradient(180deg, hsl(228 18% 8% / 0.55) 0%, hsl(228 20% 6% / 0.95) 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 22px 24px 0;
+  background: linear-gradient(180deg, hsl(228 18% 8% / 0.55) 0%, hsl(228 20% 6% / 0.97) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.045);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    0 -10px 30px rgba(0, 0, 0, 0.45);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 -10px 30px rgba(0, 0, 0, 0.4);
 }
 .footer-neu-inner {
   max-width: 1280px;
@@ -5719,14 +5719,17 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 22px;
+  padding-bottom: 18px;
 }
 @media (max-width: 760px) {
-  .footer-neu { padding: 16px 14px 14px; margin-top: 22px; }
-  .footer-neu-inner { grid-template-columns: 1fr; gap: 14px; text-align: center; }
+  .footer-neu { padding: 18px 16px 0; margin-top: 22px; }
+  .footer-neu-inner { grid-template-columns: 1fr; gap: 16px; text-align: center; padding-bottom: 14px; }
   .footer-brand-block { align-items: center; }
   .footer-brand { justify-content: center; }
-  .footer-links { justify-content: center; }
+  .footer-links { justify-content: center; flex-wrap: wrap; }
   .footer-socials { justify-content: center; }
+  .footer-bottom-bar { flex-direction: column; gap: 6px; }
+  .footer-bottom-divider { display: none; }
 }
 
 /* ── Brand block (left) ──────────────────────────────── */
@@ -5762,22 +5765,23 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: hsl(232 12% 55%);
+  color: hsl(232 12% 52%);
   margin-top: 1px;
 }
-.footer-copy {
-  font-size: 10.5px;
-  font-weight: 500;
-  color: hsl(232 12% 48%);
+.footer-desc {
+  font-size: 11px;
+  font-weight: 400;
+  color: hsl(232 12% 44%);
   letter-spacing: 0.01em;
   margin: 0;
+  line-height: 1.5;
 }
 
 /* ── Quick links (center) ────────────────────────────── */
 .footer-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 4px;
   border-radius: 999px;
   background: linear-gradient(160deg, hsl(228 18% 9%) 0%, hsl(228 16% 12%) 100%);
@@ -5791,13 +5795,13 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 .footer-link-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
+  gap: 5px;
+  padding: 6px 11px;
   border-radius: 999px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.015em;
-  color: hsl(232 14% 68%);
+  color: hsl(232 14% 64%);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -5821,14 +5825,14 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.55),
     inset -1px -1px 2px rgba(255, 235, 215, 0.04);
 }
-.footer-link svg { opacity: 0.85; }
+.footer-link svg { opacity: 0.8; }
 .footer-link:hover svg { opacity: 1; color: hsl(var(--neu-orange-hi)); }
 
 /* ── Socials (right) ─────────────────────────────────── */
 .footer-socials {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   justify-content: flex-end;
 }
 .footer-social {
@@ -5839,7 +5843,7 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  color: hsl(232 14% 68%);
+  color: hsl(232 14% 60%);
   background: linear-gradient(160deg, hsl(228 18% 11%) 0%, hsl(228 16% 14%) 100%);
   box-shadow:
     -2px -2px 4px rgba(255, 235, 215, 0.05),
@@ -5849,11 +5853,11 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 }
 .footer-social:hover {
   color: hsl(var(--social-hue) / 1);
-  transform: translateY(-1.5px);
+  transform: translateY(-2px);
   box-shadow:
     -2.5px -2.5px 5px rgba(255, 235, 215, 0.06),
     3px 3px 7px rgba(0, 0, 0, 0.65),
-    0 0 12px hsl(var(--social-hue) / 0.45),
+    0 0 14px hsl(var(--social-hue) / 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .footer-social:active {
@@ -5861,4 +5865,40 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   box-shadow:
     inset 2px 2px 4px rgba(0, 0, 0, 0.55),
     inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+}
+
+/* ── Bottom bar ──────────────────────────────────────── */
+.footer-bottom-bar {
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 0 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+.footer-copy {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: hsl(232 12% 40%);
+  letter-spacing: 0.01em;
+  margin: 0;
+  white-space: nowrap;
+}
+.footer-bottom-divider {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.06) 60%, transparent);
+}
+.footer-made-with {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: hsl(232 12% 40%);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.footer-heart {
+  color: hsl(350 70% 58%);
+  font-size: 11px;
 }

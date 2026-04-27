@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Mail, Share2, Heart, Check } from "lucide-react";
-import { SiX, SiInstagram, SiFacebook, SiTiktok } from "react-icons/si";
+import { Mail, Share2, Check, Globe, Shield, FileText, Mic } from "lucide-react";
+import { SiX, SiInstagram, SiFacebook, SiTiktok, SiDiscord } from "react-icons/si";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,10 +12,17 @@ type SocialLink = {
 };
 
 const SOCIALS: SocialLink[] = [
-  { name: "X (Twitter)", href: "https://twitter.com/vextorn",  Icon: SiX,         hoverHue: "210 80% 60%" },
-  { name: "Instagram",    href: "https://instagram.com/vextorn", Icon: SiInstagram, hoverHue: "330 75% 60%" },
-  { name: "Facebook",     href: "https://facebook.com/vextorn",  Icon: SiFacebook,  hoverHue: "220 90% 60%" },
-  { name: "TikTok",       href: "https://tiktok.com/@vextorn",   Icon: SiTiktok,    hoverHue: "180 80% 55%" },
+  { name: "X (Twitter)", href: "https://twitter.com/vextorn",    Icon: SiX,        hoverHue: "210 80% 60%" },
+  { name: "Instagram",   href: "https://instagram.com/vextorn",  Icon: SiInstagram, hoverHue: "330 75% 60%" },
+  { name: "TikTok",      href: "https://tiktok.com/@vextorn",    Icon: SiTiktok,   hoverHue: "180 80% 55%" },
+  { name: "Discord",     href: "https://discord.gg/vextorn",     Icon: SiDiscord,  hoverHue: "248 80% 65%" },
+];
+
+const NAV_LINKS = [
+  { label: "Rooms",    href: "/",         Icon: Mic },
+  { label: "Contact",  href: "mailto:hello@vextorn.app", Icon: Mail, external: false },
+  { label: "Privacy",  href: "/privacy",  Icon: Shield },
+  { label: "Terms",    href: "/terms",    Icon: FileText },
 ];
 
 export function SiteFooter() {
@@ -34,7 +41,7 @@ export function SiteFooter() {
         await navigator.share(shareData);
         return;
       }
-    } catch (_) { /* user cancelled */ }
+    } catch (_) {}
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -49,8 +56,9 @@ export function SiteFooter() {
 
   return (
     <footer className="footer-neu" data-testid="site-footer">
+      {/* ── Main row ─────────────────────────────────────── */}
       <div className="footer-neu-inner">
-        {/* ─── Left: brand + copyright ─── */}
+        {/* Left: brand */}
         <div className="footer-brand-block">
           <div className="footer-brand">
             <VextornMark size={26} />
@@ -59,21 +67,24 @@ export function SiteFooter() {
               <span className="footer-brand-tag">Talk. Share. Belong.</span>
             </div>
           </div>
-          <p className="footer-copy" data-testid="text-footer-copyright">
-            © {year} Vextorn. All rights reserved.
+          <p className="footer-desc">
+            Real-time voice rooms for language learners worldwide.
           </p>
         </div>
 
-        {/* ─── Center: quick links ─── */}
-        <nav className="footer-links" aria-label="Footer">
-          <a
-            href="mailto:hello@vextorn.app"
-            className="footer-link"
-            data-testid="link-footer-contact"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Contact Us</span>
-          </a>
+        {/* Center: nav pill */}
+        <nav className="footer-links" aria-label="Footer navigation">
+          {NAV_LINKS.map(({ label, href, Icon }) => (
+            <a
+              key={label}
+              href={href}
+              className="footer-link"
+              data-testid={`link-footer-${label.toLowerCase()}`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{label}</span>
+            </a>
+          ))}
           <button
             type="button"
             onClick={handleShare}
@@ -81,19 +92,11 @@ export function SiteFooter() {
             data-testid="button-footer-share"
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
-            <span>{copied ? "Copied" : "Share"}</span>
+            <span>{copied ? "Copied!" : "Share"}</span>
           </button>
-          <a
-            href="/teachers"
-            className="footer-link"
-            data-testid="link-footer-teachers"
-          >
-            <Heart className="w-3.5 h-3.5" />
-            <span>Book a Teacher</span>
-          </a>
         </nav>
 
-        {/* ─── Right: social icons ─── */}
+        {/* Right: socials */}
         <div className="footer-socials" data-testid="footer-socials">
           {SOCIALS.map(({ name, href, Icon, hoverHue }) => (
             <a
@@ -111,6 +114,17 @@ export function SiteFooter() {
             </a>
           ))}
         </div>
+      </div>
+
+      {/* ── Bottom bar ───────────────────────────────────── */}
+      <div className="footer-bottom-bar">
+        <span className="footer-copy" data-testid="text-footer-copyright">
+          © {year} Vextorn. All rights reserved.
+        </span>
+        <span className="footer-bottom-divider" aria-hidden="true" />
+        <span className="footer-made-with">
+          Made with <span className="footer-heart">♥</span> for language learners
+        </span>
       </div>
     </footer>
   );
