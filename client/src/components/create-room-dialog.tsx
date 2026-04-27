@@ -1,14 +1,13 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Hammer, Image as ImageIcon, Sparkles, Upload, Mic, Crown, Shield, VolumeX, Users } from "lucide-react";
+import { Hammer, X, Sparkles } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
-import { ROOM_THEMES, PRESET_BACKGROUNDS } from "@/components/profile-decorations";
+import { GifPickerButton } from "@/components/chat-picker";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 
 interface CreateRoomDialogProps {
@@ -18,83 +17,36 @@ interface CreateRoomDialogProps {
     level: string;
     maxUsers: number;
     isPublic: boolean;
-    roomTheme?: string | null;
     hologramVideoUrl?: string | null;
-    talkPermission?: "everyone" | "co_owners" | "owner_only" | "muted";
   }) => void;
   isPending?: boolean;
 }
 
 export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogProps) {
-  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState("English");
   const [level, setLevel] = useState("Beginner");
   const [maxUsers, setMaxUsers] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
-  const [roomTheme, setRoomTheme] = useState("none");
-  const [themeOffset, setThemeOffset] = useState(0);
-  const THEMES_PER_PAGE = 4;
-  const [bgSource, setBgSource] = useState<"gallery" | "upload">("gallery");
-  const [presetBgUrl, setPresetBgUrl] = useState<string | null>(null);
-  const [hologramFile, setHologramFile] = useState<File | null>(null);
-  const [hologramPreview, setHologramPreview] = useState<string | null>(null);
-  const [hologramKind, setHologramKind] = useState<"video" | "image" | null>(null);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [talkPermission, setTalkPermission] = useState<"everyone" | "co_owners" | "owner_only" | "muted">("everyone");
-  const videoInputRef = useRef<HTMLInputElement>(null);
-
-  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setHologramFile(file);
-    setHologramKind(file.type.startsWith("video/") ? "video" : "image");
-    setHologramPreview(URL.createObjectURL(file));
-  };
+  const [gifUrl, setGifUrl] = useState<string | null>(null);
 
   const resetForm = () => {
     setTitle("");
-    setRoomTheme("premium-atmosphere");
-    setHologramFile(null);
-    setHologramPreview(null);
-    setHologramKind(null);
-    setPresetBgUrl(null);
-    setBgSource("gallery");
-    setTalkPermission("everyone");
+    setGifUrl(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-
-    let hologramVideoUrl: string | null = null;
-
-    if (bgSource === "upload" && hologramFile) {
-      setUploadingVideo(true);
-      try {
-        const formData = new FormData();
-        formData.append("video", hologramFile);
-        const res = await fetch("/api/upload/hologram", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || "Failed to upload video");
-        hologramVideoUrl = data.url;
-      } catch (err: any) {
-        toast({ title: err.message || "Failed to upload video", variant: "destructive" });
-        setUploadingVideo(false);
-        return;
-      } finally {
-        setUploadingVideo(false);
-      }
-    } else if (bgSource === "gallery" && presetBgUrl) {
-      hologramVideoUrl = presetBgUrl;
-    }
-
-    onCreateRoom({ title: title.trim(), language, level, maxUsers, isPublic, roomTheme, hologramVideoUrl, talkPermission });
+    onCreateRoom({
+      title: title.trim(),
+      language,
+      level,
+      maxUsers,
+      isPublic,
+      hologramVideoUrl: gifUrl,
+    });
     resetForm();
     setOpen(false);
   };
@@ -185,225 +137,54 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Card Theme</Label>
-              <span className="text-xs text-muted-foreground" data-testid="text-create-theme-selected">
-                {ROOM_THEMES.find((t) => t.id === roomTheme)?.label || "Default"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setThemeOffset((o) => Math.max(0, o - THEMES_PER_PAGE))}
-                disabled={themeOffset === 0}
-                className="neu-tile-nav flex-shrink-0 w-7 h-12 rounded-md flex items-center justify-center"
-                data-testid="button-theme-prev"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div className="flex-1 grid grid-cols-4 gap-2">
-                {ROOM_THEMES.slice(themeOffset, themeOffset + THEMES_PER_PAGE).map((theme) => (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    onClick={() => setRoomTheme(theme.id)}
-                    className={`neu-tile ${roomTheme === theme.id ? "is-active" : ""}`}
-                    title={theme.label}
-                    data-testid={`button-create-theme-${theme.id}`}
-                  >
-                    <img
-                      src={theme.img}
-                      alt={theme.label}
-                      className="w-full h-[52px] object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                        const fallback = e.currentTarget.nextSibling as HTMLElement;
-                        if (fallback) fallback.style.display = "flex";
-                      }}
-                    />
-                    <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-0.5 truncate">
-                      {theme.label}
-                    </span>
-                    {roomTheme === theme.id && (
-                      <div className="neu-tile-check">
-                        <svg className="w-2 h-2" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M2 6l3 3 5-5" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => setThemeOffset((o) => Math.min(ROOM_THEMES.length - THEMES_PER_PAGE, o + THEMES_PER_PAGE))}
-                disabled={themeOffset + THEMES_PER_PAGE >= ROOM_THEMES.length}
-                className="neu-tile-nav flex-shrink-0 w-7 h-12 rounded-md flex items-center justify-center"
-                data-testid="button-theme-next"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex justify-center gap-1.5 pt-1">
-              {Array.from({ length: Math.ceil(ROOM_THEMES.length / THEMES_PER_PAGE) }).map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setThemeOffset(i * THEMES_PER_PAGE)}
-                  className={`neu-tile-dot ${themeOffset === i * THEMES_PER_PAGE ? "is-active" : ""}`}
-                  data-testid={`button-theme-page-${i}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Card Background</Label>
-              {(presetBgUrl || hologramPreview) && (
+              <Label className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary/80" />
+                Card GIF
+                <span className="text-[11px] font-normal text-muted-foreground">(optional)</span>
+              </Label>
+              {gifUrl && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setPresetBgUrl(null);
-                    setHologramFile(null);
-                    setHologramPreview(null);
-                    setHologramKind(null);
-                  }}
-                  className="text-[11px] text-destructive hover:underline"
-                  data-testid="button-create-clear-bg"
+                  onClick={() => setGifUrl(null)}
+                  className="text-[11px] text-destructive hover:underline flex items-center gap-1"
+                  data-testid="button-clear-gif"
                 >
-                  Clear
+                  <X className="w-3 h-3" /> Clear
                 </button>
               )}
             </div>
-
-            <div className="bg-source-tabs">
-              <button
-                type="button"
-                onClick={() => setBgSource("gallery")}
-                className={`bg-source-tab ${bgSource === "gallery" ? "is-active" : ""}`}
-                data-testid="tab-bg-gallery"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Gallery
-              </button>
-              <button
-                type="button"
-                onClick={() => setBgSource("upload")}
-                className={`bg-source-tab ${bgSource === "upload" ? "is-active" : ""}`}
-                data-testid="tab-bg-upload"
-              >
-                <Upload className="w-3.5 h-3.5" /> Upload Pic / Video
-              </button>
-            </div>
-
-            {bgSource === "gallery" && (
-              <div className="bg-gallery-grid" data-testid="grid-bg-gallery">
-                {PRESET_BACKGROUNDS.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      setPresetBgUrl(p.url);
-                      setHologramFile(null);
-                      setHologramPreview(null);
-                      setHologramKind(null);
-                    }}
-                    className={`bg-gallery-tile ${presetBgUrl === p.url ? "is-active" : ""}`}
-                    title={p.label}
-                    data-testid={`button-bg-preset-${p.id}`}
-                  >
-                    <img src={p.thumb} alt={p.label} loading="lazy" />
-                    <span className="bg-gallery-label">{p.label}</span>
-                    {presetBgUrl === p.url && (
-                      <div className="bg-gallery-check">
-                        <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M2 6l3 3 5-5" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {bgSource === "upload" && (
-              <div className="flex items-center gap-3">
-                {hologramPreview && (
-                  hologramKind === "video" ? (
-                    <video
-                      src={hologramPreview}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-12 h-12 rounded-md object-cover border-2 border-primary/60"
-                      data-testid="video-create-preview"
-                    />
-                  ) : (
-                    <img
-                      src={hologramPreview}
-                      alt="Background preview"
-                      className="w-12 h-12 rounded-md object-cover border-2 border-primary/60"
-                      data-testid="img-create-preview"
-                    />
-                  )
-                )}
-                <button
-                  type="button"
-                  onClick={() => videoInputRef.current?.click()}
-                  className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
-                  data-testid="button-create-upload-video"
-                >
-                  <ImageIcon className="w-4 h-4" />
-                  {hologramFile ? "Change Background" : "Upload Pic, GIF or Video"}
-                </button>
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
-                  className="hidden"
-                  onChange={handleVideoSelect}
-                  data-testid="input-create-video-file"
+            <div className="flex items-center gap-3">
+              {gifUrl ? (
+                <img
+                  src={gifUrl}
+                  alt="Selected GIF"
+                  className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
+                  data-testid="img-card-gif-preview"
                 />
+              ) : (
+                <div className="w-14 h-14 rounded-md border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-[10px] text-muted-foreground font-medium">
+                  No GIF
+                </div>
+              )}
+              <div className="flex-1 flex items-center gap-2">
+                <GifPickerButton onGifSelect={(url) => setGifUrl(url)} />
+                <span className="text-sm text-muted-foreground">
+                  {gifUrl ? "Tap GIF to change" : "Tap GIF to browse Tenor"}
+                </span>
               </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Who Can Talk</Label>
-            <Select value={talkPermission} onValueChange={(v) => setTalkPermission(v as any)}>
-              <SelectTrigger data-testid="select-create-talk-permission">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="everyone">
-                  <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-emerald-400" /> Everyone — anyone can talk</span>
-                </SelectItem>
-                <SelectItem value="co_owners">
-                  <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-sky-400" /> Hosts & Co-hosts only</span>
-                </SelectItem>
-                <SelectItem value="owner_only">
-                  <span className="flex items-center gap-2"><Crown className="w-3.5 h-3.5 text-amber-400" /> Host only</span>
-                </SelectItem>
-                <SelectItem value="muted">
-                  <span className="flex items-center gap-2"><VolumeX className="w-3.5 h-3.5 text-rose-400" /> Silent room — text only</span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-[11px] text-muted-foreground leading-snug flex items-start gap-1.5">
-              <Mic className="w-3 h-3 mt-0.5 flex-shrink-0" />
-              Controls who can use mic, camera, and screen-share. The host can change this any time.
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Themes, backgrounds and roles are configured inside the room once you join.
             </p>
           </div>
 
           <button
             type="submit"
             className="neu-submit"
-            disabled={!title.trim() || isPending || uploadingVideo}
+            disabled={!title.trim() || isPending}
             data-testid="button-submit-room"
           >
-            {isPending || uploadingVideo ? "Creating..." : "Create Room"}
+            {isPending ? "Creating..." : "Create Room"}
           </button>
         </form>
       </DialogContent>
