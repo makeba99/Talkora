@@ -19,11 +19,50 @@ const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
 const roomVideoStatus = new Map<string, Set<string>>();
 const roomScreenShareStatus = new Map<string, string | null>();
-const roomYoutubeState = new Map<string, { videoId: string; startedBy: string; playing: boolean; lastTime: number; lastTs: number }>();
-// Per-room vote tally for the currently-playing video. Resets whenever a new
-// video starts. Likes/dislikes are pure feedback; if more than half of the
-// active watchers vote skip, the server auto-advances to the next queue item.
-const roomYoutubeVotes = new Map<string, { videoId: string; likes: Set<string>; dislikes: Set<string>; skip: Set<string> }>();
+// Per-host YouTube state: each user can independently host their own video
+// (e.g. they pick a video to watch). Other users opt-in to "watch together"
+// by clicking the host's avatar — they can switch between hosts freely
+// without disturbing each other. Outer Map = roomId → inner Map = hostId → state.
+type YtHostState = { videoId: string; startedBy: string; playing: boolean; lastTime: number; lastTs: number };
+const roomYoutubeState = new Map<string, Map<string, YtHostState>>();
+function getYtHost(roomId: string, hostId: string): YtHostState | undefined {
+  return roomYoutubeState.get(roomId)?.get(hostId);
+}
+function setYtHost(roomId: string, hostId: string, state: YtHostState) {
+  let m = roomYoutubeState.get(roomId);
+  if (!m) { m = new Map(); roomYoutubeState.set(roomId, m); }
+  m.set(hostId, state);
+}
+function deleteYtHost(roomId: string, hostId: string): boolean {
+  const m = roomYoutubeState.get(roomId);
+  if (!m) return false;
+  const had = m.delete(hostId);
+  if (m.size === 0) roomYoutubeState.delete(roomId);
+  return had;
+}
+function listYtHosts(roomId: string): Array<{ hostId: string; state: YtHostState }> {
+  const m = roomYoutubeState.get(roomId);
+  if (!m) return [];
+  return Array.from(m.entries()).map(([hostId, state]) => ({ hostId, state }));
+}
+// Per-host vote tally: votes are now scoped to (roomId, hostId, videoId) so two
+// people watching different hosts don't share a vote pool. Resets whenever a
+// host swaps their video.
+const roomYoutubeVotes = new Map<string, Map<string, { videoId: string; likes: Set<string>; dislikes: Set<string>; skip: Set<string> }>>();
+function getYtVotes(roomId: string, hostId: string) {
+  return roomYoutubeVotes.get(roomId)?.get(hostId);
+}
+function setYtVotes(roomId: string, hostId: string, v: { videoId: string; likes: Set<string>; dislikes: Set<string>; skip: Set<string> }) {
+  let m = roomYoutubeVotes.get(roomId);
+  if (!m) { m = new Map(); roomYoutubeVotes.set(roomId, m); }
+  m.set(hostId, v);
+}
+function deleteYtVotes(roomId: string, hostId: string) {
+  const m = roomYoutubeVotes.get(roomId);
+  if (!m) return;
+  m.delete(hostId);
+  if (m.size === 0) roomYoutubeVotes.delete(roomId);
+}
 type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
 const roomYoutubeQueue = new Map<string, YtQueueItem[]>();
 const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
@@ -1282,9 +1321,11 @@ export async function registerRoutes(
       io.to(roomId).emit("room:screen-share", { userId, active: false });
     }
 
-    const ytState = roomYoutubeState.get(roomId);
-    if (ytState && ytState.startedBy === userId) {
-      roomYoutubeState.delete(roomId);
+    // Per-host model: only clear THIS user's host slot. Other users' videos
+    // keep playing for everyone watching them.
+    if (deleteYtHost(roomId, userId)) {
+      deleteYtVotes(roomId, userId);
+      io.to(roomId).emit("room:youtube", { hostId: userId, videoId: null, startedBy: userId });
     }
 
     const bkState = roomBookState.get(roomId);
@@ -3157,12 +3198,13 @@ export async function registerRoutes(
       }
       io.emit("room:participants-update", { roomId, participants });
 
-      const ytState = roomYoutubeState.get(roomId);
-      if (ytState) {
-        socket.emit("room:youtube", { videoId: ytState.videoId, startedBy: ytState.startedBy });
-        // Send authoritative playhead so newcomer can seek to the right spot without ping-pong
+      // Per-host snapshot: tell the newcomer about every active host in the
+      // room so they can render the host avatars and pick which one to watch.
+      for (const { hostId, state: ytState } of listYtHosts(roomId)) {
+        socket.emit("room:youtube", { hostId, videoId: ytState.videoId, startedBy: ytState.startedBy });
         const elapsed = ytState.playing ? Math.max(0, (Date.now() - ytState.lastTs) / 1000) : 0;
         socket.emit("room:youtube-state", {
+          hostId,
           action: ytState.playing ? "play" : "pause",
           time: ytState.lastTime + elapsed,
           ts: Date.now(),
@@ -3430,32 +3472,28 @@ export async function registerRoutes(
     // the "video host" for that playback session. Closing the video for
     // everyone is restricted to the original starter — others can only hide it
     // for themselves locally.
+    // Per-host model: every user owns their own host slot. Setting videoId
+    // to null clears only THIS user's slot — other users keep their videos.
     socket.on("room:youtube", async (data: { roomId: string; videoId: string | null }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      const existing = roomYoutubeState.get(data.roomId);
       if (data.videoId) {
-        // Anyone in the room can play a video. The starter becomes the host
-        // that watchers sync to when they opt in by clicking the avatar.
-        roomYoutubeState.set(data.roomId, {
+        setYtHost(data.roomId, currentUserId, {
           videoId: data.videoId,
           startedBy: currentUserId,
           playing: true,
           lastTime: 0,
           lastTs: Date.now(),
         });
-        io.to(data.roomId).emit("room:youtube", { videoId: data.videoId, startedBy: currentUserId });
+        // Reset votes for this host since it's a new video
+        deleteYtVotes(data.roomId, currentUserId);
+        io.to(data.roomId).emit("room:youtube", { hostId: currentUserId, videoId: data.videoId, startedBy: currentUserId });
       } else {
-        // Closing a video for everyone is allowed only for the original
-        // starter. Fallback: if the starter has already left the room, anyone
-        // can close so videos cannot get permanently stuck.
-        if (existing && existing.startedBy !== currentUserId) {
-          const starterStillPresent = participants.has(existing.startedBy);
-          if (starterStillPresent) return;
+        if (deleteYtHost(data.roomId, currentUserId)) {
+          deleteYtVotes(data.roomId, currentUserId);
+          io.to(data.roomId).emit("room:youtube", { hostId: currentUserId, videoId: null, startedBy: currentUserId });
         }
-        roomYoutubeState.delete(data.roomId);
-        io.to(data.roomId).emit("room:youtube", { videoId: null, startedBy: currentUserId });
       }
     });
 
@@ -3463,20 +3501,17 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      // Only the original starter can update the shared playhead anchor that
-      // late-joiners use to sync. Everyone else's playback is local-only and
-      // does not affect anyone — they should never reach this handler, but if
-      // they do we just ignore the event.
-      const ytState = roomYoutubeState.get(data.roomId);
+      // A user only updates their OWN host slot's playhead anchor.
+      const ytState = getYtHost(data.roomId, currentUserId);
       if (!ytState) return;
-      if (ytState.startedBy !== currentUserId) return;
       const t = typeof data.time === "number" ? data.time : ytState.lastTime;
       ytState.lastTime = t;
       ytState.lastTs = Date.now();
       if (data.action === "play") ytState.playing = true;
       else if (data.action === "pause") ytState.playing = false;
-      // "seek" keeps current playing state but updates the time anchor
+      // Broadcast scoped to this host so only watchers of this host listen.
       socket.to(data.roomId).emit("room:youtube-state", {
+        hostId: currentUserId,
         action: data.action,
         time: t,
         ts: data.ts ?? Date.now(),
@@ -3484,24 +3519,27 @@ export async function registerRoutes(
       });
     });
 
-    socket.on("room:youtube-watching", (data: { roomId: string; watching: boolean }) => {
+    // Watching now carries the hostId so other clients know WHICH host's video
+    // this user is currently watching (we can have multiple hosts at once).
+    socket.on("room:youtube-watching", (data: { roomId: string; hostId: string; watching: boolean }) => {
       if (!currentUserId) return;
-      socket.to(data.roomId).emit("room:youtube-watchers-update", {
+      io.to(data.roomId).emit("room:youtube-watchers-update", {
         userId: currentUserId,
+        hostId: data.hostId,
         watching: data.watching,
       });
     });
 
     // ---------- Watch-party voting (likes / dislikes / skip) ----------
-    const broadcastVotes = (roomId: string) => {
-      const v = roomYoutubeVotes.get(roomId);
+    // Votes are now scoped per-host, since each host has their own video.
+    const broadcastVotes = (roomId: string, hostId: string) => {
+      const v = getYtVotes(roomId, hostId);
       if (!v) {
-        io.to(roomId).emit("room:youtube-votes", { likes: 0, dislikes: 0, skip: 0, myVote: null, mySkip: false });
+        io.to(roomId).emit("room:youtube-votes", { hostId, likes: 0, dislikes: 0, skip: 0, myVote: null, mySkip: false });
         return;
       }
-      // Per-socket personalization is heavier; emit aggregate only and let the
-      // client track its own toggle state locally to keep this lightweight.
       io.to(roomId).emit("room:youtube-votes", {
+        hostId,
         videoId: v.videoId,
         likes: v.likes.size,
         dislikes: v.dislikes.size,
@@ -3510,66 +3548,68 @@ export async function registerRoutes(
       });
     };
 
-    socket.on("room:youtube-vote", (data: { roomId: string; kind: "like" | "dislike" | "none" }) => {
+    socket.on("room:youtube-vote", (data: { roomId: string; hostId?: string; kind: "like" | "dislike" | "none" }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      const ytState = roomYoutubeState.get(data.roomId);
+      const hostId = data.hostId || currentUserId;
+      const ytState = getYtHost(data.roomId, hostId);
       if (!ytState) return;
-      let v = roomYoutubeVotes.get(data.roomId);
+      let v = getYtVotes(data.roomId, hostId);
       if (!v || v.videoId !== ytState.videoId) {
         v = { videoId: ytState.videoId, likes: new Set(), dislikes: new Set(), skip: new Set() };
-        roomYoutubeVotes.set(data.roomId, v);
+        setYtVotes(data.roomId, hostId, v);
       }
       v.likes.delete(currentUserId);
       v.dislikes.delete(currentUserId);
       if (data.kind === "like") v.likes.add(currentUserId);
       else if (data.kind === "dislike") v.dislikes.add(currentUserId);
-      broadcastVotes(data.roomId);
+      broadcastVotes(data.roomId, hostId);
     });
 
-    socket.on("room:youtube-skip-vote", (data: { roomId: string; vote: boolean }) => {
+    socket.on("room:youtube-skip-vote", (data: { roomId: string; hostId?: string; vote: boolean }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      const ytState = roomYoutubeState.get(data.roomId);
+      const hostId = data.hostId || currentUserId;
+      const ytState = getYtHost(data.roomId, hostId);
       if (!ytState) return;
-      let v = roomYoutubeVotes.get(data.roomId);
+      let v = getYtVotes(data.roomId, hostId);
       if (!v || v.videoId !== ytState.videoId) {
         v = { videoId: ytState.videoId, likes: new Set(), dislikes: new Set(), skip: new Set() };
-        roomYoutubeVotes.set(data.roomId, v);
+        setYtVotes(data.roomId, hostId, v);
       }
       if (data.vote) v.skip.add(currentUserId);
       else v.skip.delete(currentUserId);
 
-      // Auto-skip when more than half of the people in the room agree (min 2 votes).
       const totalPeople = roomParticipants.get(data.roomId)?.size || 0;
       const threshold = Math.max(2, Math.ceil(totalPeople / 2));
       if (v.skip.size >= threshold) {
-        // Drop votes for this video and advance to the next queue item (if any).
-        roomYoutubeVotes.delete(data.roomId);
+        deleteYtVotes(data.roomId, hostId);
+        // Advance the SHARED queue but assign the next video to the current
+        // host's slot, so they keep being the host of the next clip.
         const queue = roomYoutubeQueue.get(data.roomId);
         if (queue && queue.length > 0) {
           const next = queue.shift()!;
           roomYoutubeQueue.set(data.roomId, queue);
-          roomYoutubeState.set(data.roomId, {
+          setYtHost(data.roomId, hostId, {
             videoId: next.videoId,
-            startedBy: next.addedBy,
+            startedBy: hostId,
             playing: true,
             lastTime: 0,
             lastTs: Date.now(),
           });
-          io.to(data.roomId).emit("room:youtube", { videoId: next.videoId, startedBy: next.addedBy });
+          io.to(data.roomId).emit("room:youtube", { hostId, videoId: next.videoId, startedBy: hostId });
           io.to(data.roomId).emit("room:youtube-queue-update", { queue });
         } else {
-          roomYoutubeState.delete(data.roomId);
-          io.to(data.roomId).emit("room:youtube", { videoId: null, startedBy: null });
+          deleteYtHost(data.roomId, hostId);
+          io.to(data.roomId).emit("room:youtube", { hostId, videoId: null, startedBy: hostId });
         }
-        io.to(data.roomId).emit("room:youtube-skipped", { reason: "vote" });
-        broadcastVotes(data.roomId);
+        io.to(data.roomId).emit("room:youtube-skipped", { hostId, reason: "vote" });
+        broadcastVotes(data.roomId, hostId);
         return;
       }
-      broadcastVotes(data.roomId);
+      broadcastVotes(data.roomId, hostId);
     });
 
     // Watch-party reactions: anyone watching can fire a quick emoji that floats
@@ -3601,14 +3641,16 @@ export async function registerRoutes(
     // Free4talk-style: any joining client receives the authoritative playhead snapshot via
     // room:youtube-state right after room:youtube on join, so per-client time-ping requests
     // are no longer necessary. Keep handlers as no-ops for backward compatibility.
-    socket.on("room:youtube-time-request", (data: { roomId: string; requesterId: string }) => {
+    socket.on("room:youtube-time-request", (data: { roomId: string; hostId?: string; requesterId: string }) => {
       if (!currentUserId) return;
-      const ytState = roomYoutubeState.get(data.roomId);
+      const hostId = data.hostId || currentUserId;
+      const ytState = getYtHost(data.roomId, hostId);
       if (!ytState) return;
       const elapsed = ytState.playing ? Math.max(0, (Date.now() - ytState.lastTs) / 1000) : 0;
       const requesterSocketId = userSockets.get(data.requesterId);
       if (requesterSocketId) {
         io.to(requesterSocketId).emit("room:youtube-time-responded", {
+          hostId,
           time: ytState.lastTime + elapsed,
           ts: Date.now(),
         });
@@ -3639,10 +3681,10 @@ export async function registerRoutes(
       // they exist) can remove it; everyone else just leaves it alone.
       const item = queue.find(q => q.id === data.id);
       if (!item) return;
-      const ytState = roomYoutubeState.get(data.roomId);
       const isAdder = item.addedBy === currentUserId;
-      const isCurrentStarter = ytState?.startedBy === currentUserId;
-      if (!isAdder && !isCurrentStarter) return;
+      // Any current host is allowed to curate the queue.
+      const isCurrentHost = !!getYtHost(data.roomId, currentUserId);
+      if (!isAdder && !isCurrentHost) return;
       const filtered = queue.filter(q => q.id !== data.id);
       roomYoutubeQueue.set(data.roomId, filtered);
       io.to(data.roomId).emit("room:youtube-queue-update", { queue: filtered });
@@ -3652,25 +3694,24 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      const allowed = await canControlYoutube(data.roomId, currentUserId);
-      if (!allowed) return;
+      // Per-host: advance the queue into THIS user's host slot.
       const queue = roomYoutubeQueue.get(data.roomId);
       if (!queue || queue.length === 0) {
-        // No next video — clear the active video
-        roomYoutubeState.delete(data.roomId);
-        io.to(data.roomId).emit("room:youtube", { videoId: null, startedBy: null });
+        if (deleteYtHost(data.roomId, currentUserId)) {
+          io.to(data.roomId).emit("room:youtube", { hostId: currentUserId, videoId: null, startedBy: currentUserId });
+        }
         return;
       }
       const next = queue.shift()!;
       roomYoutubeQueue.set(data.roomId, queue);
-      roomYoutubeState.set(data.roomId, {
+      setYtHost(data.roomId, currentUserId, {
         videoId: next.videoId,
-        startedBy: next.addedBy,
+        startedBy: currentUserId,
         playing: true,
         lastTime: 0,
         lastTs: Date.now(),
       });
-      io.to(data.roomId).emit("room:youtube", { videoId: next.videoId, startedBy: next.addedBy });
+      io.to(data.roomId).emit("room:youtube", { hostId: currentUserId, videoId: next.videoId, startedBy: currentUserId });
       io.to(data.roomId).emit("room:youtube-queue-update", { queue });
     });
 
@@ -4306,9 +4347,10 @@ export async function registerRoutes(
                   io.to(roomId).emit("room:ai-tutor-state", { active: false, userId: null, username: null, speaking: false });
                 }
 
-                const ytState = roomYoutubeState.get(roomId);
-                if (ytState && ytState.startedBy === disconnectingUserId) {
-                  roomYoutubeState.delete(roomId);
+                // Per-host: clear only the disconnecting user's slot.
+                if (deleteYtHost(roomId, disconnectingUserId)) {
+                  deleteYtVotes(roomId, disconnectingUserId);
+                  io.to(roomId).emit("room:youtube", { hostId: disconnectingUserId, videoId: null, startedBy: disconnectingUserId });
                 }
 
                 const bkState = roomBookState.get(roomId);

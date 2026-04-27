@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AiTutorFace } from "@/components/ai-tutor-face";
 import { VextornMark } from "@/components/vextorn-logo";
@@ -899,7 +899,26 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [miniPlayerPos, setMiniPlayerPos] = useState({ x: 16, y: 80 });
   const ytSlotRef = useRef<HTMLDivElement | null>(null);
   const [ytSlotRect, setYtSlotRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
-  const [youtubeWatchers, setYoutubeWatchers] = useState<Set<string>>(new Set());
+  // Per-host watch-party state. Each user can host their own YouTube video,
+  // and other people may pick whose video to watch. youtubeHosts maps
+  // hostUserId -> currently-playing videoId; youtubeWatchersByHost maps
+  // hostUserId -> set of viewer userIds.
+  const [youtubeHosts, setYoutubeHosts] = useState<Map<string, string>>(new Map());
+  const [youtubeWatchersByHost, setYoutubeWatchersByHost] = useState<Map<string, Set<string>>>(new Map());
+  // Backwards-compatible "watchers of the video I'm currently watching".
+  const youtubeWatchers = useMemo(() => {
+    if (!activeYoutubeId || !youtubeStartedBy) return new Set<string>();
+    return youtubeWatchersByHost.get(youtubeStartedBy) || new Set<string>();
+  }, [youtubeWatchersByHost, activeYoutubeId, youtubeStartedBy]);
+  // Flat set of every user who is currently watching some host (used to show
+  // a "watching" badge on watcher tiles).
+  const youtubeWatchersFlat = useMemo(() => {
+    const all = new Set<string>();
+    youtubeWatchersByHost.forEach((set, hostId) => {
+      set.forEach(uid => { if (uid !== hostId) all.add(uid); });
+    });
+    return all;
+  }, [youtubeWatchersByHost]);
   type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
   const [ytQueue, setYtQueue] = useState<YtQueueItem[]>([]);
   const [screenWatchers, setScreenWatchers] = useState<Set<string>>(new Set());
@@ -1694,6 +1713,35 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setAvailableVideoUsers((prev) => { const n = new Set(prev); n.delete(data.userId); return n; });
       setRemoteScreenShareUserId((prev) => prev === data.userId ? null : prev);
       setRemoteVideoUserId((prev) => prev === data.userId ? null : prev);
+      // Prune the leaving user from every host's watcher set, and clear their
+      // own host slot in case the disconnect handler hasn't broadcast yet.
+      setYoutubeWatchersByHost((prev) => {
+        const next = new Map<string, Set<string>>();
+        prev.forEach((set, hostId) => {
+          if (hostId === data.userId) return; // their host slot is gone
+          if (set.has(data.userId)) {
+            const ns = new Set(set);
+            ns.delete(data.userId);
+            if (ns.size > 0) next.set(hostId, ns);
+          } else {
+            next.set(hostId, set);
+          }
+        });
+        return next;
+      });
+      setYoutubeHosts((prev) => {
+        if (!prev.has(data.userId)) return prev;
+        const next = new Map(prev);
+        next.delete(data.userId);
+        return next;
+      });
+      // If I was watching the user who just left, close my view.
+      if (youtubeStartedByRef.current === data.userId) {
+        setActiveYoutubeId(null);
+        setYoutubeStartedBy(null);
+        setShowYoutube(false);
+        setMiniPlayerMode(false);
+      }
       if (data.userId !== user.id) {
         addSystemMessage(`${name} left the room`);
         playNotificationSound("leave");
@@ -1887,23 +1935,67 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       );
     });
 
-    socket.on("room:youtube", (data: { videoId: string | null; startedBy?: string }) => {
-      setActiveYoutubeId(data.videoId);
-      setYoutubeStartedBy(data.videoId ? (data.startedBy || null) : null);
-      // A new (or cleared) video resets the per-user "I dismissed this" flag,
-      // so the next video gets a fresh chance to be shown. Vote toggles also reset.
-      setUserDismissedYoutube(false);
-      setMyYtVote(null);
-      setMyYtSkipVote(false);
-      setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
+    socket.on("room:youtube", (data: { hostId?: string; videoId: string | null; startedBy?: string }) => {
+      // Per-host watch parties: each host owns their own slot. We must NOT
+      // change MY active video just because someone else started/stopped a
+      // video — only update my view if this is my own host slot, or if it's
+      // the host I'm currently watching (e.g. a queue advance).
+      const hostId = data.hostId || data.startedBy || "";
+      if (!hostId) return;
+
+      // Update the global hosts map.
+      setYoutubeHosts(prev => {
+        const next = new Map(prev);
+        if (data.videoId) next.set(hostId, data.videoId);
+        else next.delete(hostId);
+        return next;
+      });
+      // Clear per-host watcher set when a host stops broadcasting.
       if (!data.videoId) {
-        setShowYoutube(false);
-        setMiniPlayerMode(false);
-        setYoutubeWatchers(new Set());
-      } else if (data.startedBy === user.id) {
-        // Only auto-open for the broadcaster — watchers must click the broadcaster's avatar
-        setShowYoutube(true);
+        setYoutubeWatchersByHost(prev => {
+          const next = new Map(prev);
+          next.delete(hostId);
+          return next;
+        });
       }
+
+      const isMine = hostId === user.id;
+      const watchingThisHost = youtubeStartedByRef.current === hostId;
+
+      if (!data.videoId) {
+        // The host I was watching (or my own slot) is now empty — close my view.
+        if (isMine || watchingThisHost) {
+          setActiveYoutubeId(null);
+          setYoutubeStartedBy(null);
+          setShowYoutube(false);
+          setMiniPlayerMode(false);
+          setUserDismissedYoutube(false);
+          setMyYtVote(null);
+          setMyYtSkipVote(false);
+          setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
+        }
+        return;
+      }
+
+      if (isMine) {
+        // I just (re)started my own broadcast — open the player automatically.
+        setActiveYoutubeId(data.videoId);
+        setYoutubeStartedBy(hostId);
+        setShowYoutube(true);
+        setUserDismissedYoutube(false);
+        setMyYtVote(null);
+        setMyYtSkipVote(false);
+        setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
+      } else if (watchingThisHost) {
+        // The host I'm watching switched videos (e.g. queue advanced).
+        setActiveYoutubeId(data.videoId);
+        setUserDismissedYoutube(false);
+        setMyYtVote(null);
+        setMyYtSkipVote(false);
+        setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
+      }
+      // Otherwise: another participant started a video. Leave my view alone —
+      // I can choose to join from their participant tile.
     });
 
     socket.on("room:book", (data: { book: any | null; hostId: string | null; scrollPct: number; watchers?: string[] }) => {
@@ -1949,11 +2041,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       });
     });
 
-    socket.on("room:youtube-watchers-update", (data: { userId: string; watching: boolean }) => {
-      setYoutubeWatchers(prev => {
-        const next = new Set(prev);
-        if (data.watching) next.add(data.userId);
-        else next.delete(data.userId);
+    socket.on("room:youtube-watchers-update", (data: { hostId?: string; userId: string; watching: boolean }) => {
+      const hostId = data.hostId || "";
+      if (!hostId) return;
+      setYoutubeWatchersByHost(prev => {
+        const next = new Map(prev);
+        const set = new Set(next.get(hostId) || []);
+        if (data.watching) set.add(data.userId);
+        else set.delete(data.userId);
+        if (set.size > 0) next.set(hostId, set);
+        else next.delete(hostId);
         return next;
       });
     });
@@ -2033,11 +2130,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       });
     });
 
-    socket.on("room:youtube-votes", (data: { videoId?: string; likes: number; dislikes: number; skip: number; watchers: number }) => {
+    socket.on("room:youtube-votes", (data: { hostId?: string; videoId?: string; likes: number; dislikes: number; skip: number; watchers: number }) => {
+      // Per-host votes — only update my UI if this update is for the host I'm watching.
+      if (data.hostId && youtubeStartedByRef.current && data.hostId !== youtubeStartedByRef.current) return;
       setYtVotes({ likes: data.likes || 0, dislikes: data.dislikes || 0, skip: data.skip || 0, watchers: data.watchers || 0 });
     });
 
-    socket.on("room:youtube-skipped", () => {
+    socket.on("room:youtube-skipped", (data: { hostId?: string }) => {
+      if (data?.hostId && youtubeStartedByRef.current && data.hostId !== youtubeStartedByRef.current) return;
       // Server advanced past this video — reset our local vote toggles.
       setMyYtVote(null);
       setMyYtSkipVote(false);
@@ -2235,7 +2335,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const handleYtSyncToStarter = useCallback(() => {
     if (!socket || !user || !activeYoutubeId) return;
     if (user.id === youtubeStartedByRef.current) return;
-    socket.emit("room:youtube-time-request", { roomId: room.id, requesterId: user.id });
+    const hostId = youtubeStartedByRef.current;
+    if (!hostId) return;
+    socket.emit("room:youtube-time-request", { roomId: room.id, hostId, requesterId: user.id });
   }, [socket, user, activeYoutubeId, room.id]);
 
   useEffect(() => {
@@ -2508,7 +2610,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 // affect anyone else, and they can press "Sync" again any time
                 // to re-catch-up to the starter.
                 if (user?.id !== youtubeStartedByRef.current && socketRef.current) {
-                  socketRef.current.emit("room:youtube-time-request", { roomId: room.id, requesterId: user?.id });
+                  const _hostId = youtubeStartedByRef.current;
+                  if (_hostId) {
+                    socketRef.current.emit("room:youtube-time-request", { roomId: room.id, hostId: _hostId, requesterId: user?.id });
+                  }
                 }
               } catch (err) { console.error("[YT] playVideo/unMute error:", err); }
             },
@@ -2643,21 +2748,36 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   useEffect(() => {
     if (!socket || !activeYoutubeId) return;
-    socket.emit("room:youtube-watching", { roomId: room.id, watching: showYoutube });
+    const hostId = youtubeStartedByRef.current;
+    if (!hostId) return;
+    socket.emit("room:youtube-watching", { roomId: room.id, hostId, watching: showYoutube });
     if (showYoutube) {
-      setYoutubeWatchers(prev => { const n = new Set(prev); n.add(user?.id || ""); return n; });
-      // Pre-fetch the starter's current playhead the moment a watcher opens the
+      setYoutubeWatchersByHost(prev => {
+        const next = new Map(prev);
+        const set = new Set(next.get(hostId) || []);
+        set.add(user?.id || "");
+        next.set(hostId, set);
+        return next;
+      });
+      // Pre-fetch the host's current playhead the moment a watcher opens the
       // panel — BEFORE the iframe even mounts. The response populates
       // ytSyncTimeRef so that when the player's onReady fires moments later,
       // it can seek directly to the correct position. This eliminates the
       // "starts at 0, then jumps" flash that happened when we waited until
       // onReady to ask for the time.
-      if (user?.id && user.id !== youtubeStartedByRef.current) {
+      if (user?.id && user.id !== hostId) {
         ytSyncTimeRef.current = 0;
-        socket.emit("room:youtube-time-request", { roomId: room.id, requesterId: user.id });
+        socket.emit("room:youtube-time-request", { roomId: room.id, hostId, requesterId: user.id });
       }
     } else {
-      setYoutubeWatchers(prev => { const n = new Set(prev); n.delete(user?.id || ""); return n; });
+      setYoutubeWatchersByHost(prev => {
+        const next = new Map(prev);
+        const set = new Set(next.get(hostId) || []);
+        set.delete(user?.id || "");
+        if (set.size > 0) next.set(hostId, set);
+        else next.delete(hostId);
+        return next;
+      });
     }
   }, [showYoutube, activeYoutubeId]);
 
@@ -3556,9 +3676,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (showEReader || selectedBook) {
       handleCloseBook();
     }
+    // I become the host of my own video. Other people in the room can choose
+    // to watch it from my participant tile, but my selection no longer
+    // hijacks anyone else's player.
     setActiveYoutubeId(videoId);
+    setYoutubeStartedBy(user?.id || null);
     setShowYoutube(true);
-    socket?.emit("room:youtube", { roomId: room.id, videoId });
+    setYoutubeHosts(prev => {
+      const next = new Map(prev);
+      if (user?.id) next.set(user.id, videoId);
+      return next;
+    });
+    socket?.emit("room:youtube", { roomId: room.id, hostId: user?.id, videoId });
     setYoutubeSearch("");
     setYoutubeResults([]);
   };
@@ -3570,18 +3699,29 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const handleStopYoutube = () => {
+    const wasMyOwnHost = !!user?.id && youtubeStartedByRef.current === user.id;
     setActiveYoutubeId(null);
+    setYoutubeStartedBy(null);
     setShowYoutube(false);
     setMiniPlayerMode(false);
     setFocusedUserId(null);
-    setYoutubeWatchers(new Set());
     setYtIsPlaying(false);
     setYtCurrentTime(0);
     setYtDuration(0);
-    setYtQueue([]);
     youtubePlayerRef.current?.destroy();
     youtubePlayerRef.current = null;
-    socket?.emit("room:youtube", { roomId: room.id, videoId: null });
+    if (wasMyOwnHost) {
+      // Tear down MY broadcast for everyone watching me.
+      setYtQueue([]);
+      setYoutubeHosts(prev => {
+        const next = new Map(prev);
+        next.delete(user!.id);
+        return next;
+      });
+      socket?.emit("room:youtube", { roomId: room.id, hostId: user!.id, videoId: null });
+    }
+    // If I was just watching someone else, the watching=false signal already
+    // goes out via the showYoutube effect — no broadcast needed here.
   };
 
   const handleAddToQueue = (video: { id: string; title?: string; thumbnail?: string }) => {
@@ -5275,9 +5415,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         key={v.id}
                         onClick={() => {
                           setSidePanelTab("youtube");
-                          setActiveYoutubeId(v.id);
-                          setShowYoutube(true);
-                          socket?.emit("room:youtube", { roomId: room.id, videoId: v.id });
+                          handleSelectYoutubeVideo(v.id);
                         }}
                         className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
                         data-testid={`button-video-${v.id}`}
@@ -6838,7 +6976,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           if (!socket) return;
                           const next = myYtVote === "like" ? null : "like";
                           setMyYtVote(next);
-                          socket.emit("room:youtube-vote", { roomId: room.id, kind: next || "none" });
+                          socket.emit("room:youtube-vote", { roomId: room.id, hostId: youtubeStartedBy, kind: next || "none" });
                         }}
                         className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "like" ? "bg-emerald-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
                         title="Like this video"
@@ -6853,7 +6991,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           if (!socket) return;
                           const next = myYtVote === "dislike" ? null : "dislike";
                           setMyYtVote(next);
-                          socket.emit("room:youtube-vote", { roomId: room.id, kind: next || "none" });
+                          socket.emit("room:youtube-vote", { roomId: room.id, hostId: youtubeStartedBy, kind: next || "none" });
                         }}
                         className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "dislike" ? "bg-red-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
                         title="Dislike this video"
@@ -6868,7 +7006,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           if (!socket) return;
                           const next = !myYtSkipVote;
                           setMyYtSkipVote(next);
-                          socket.emit("room:youtube-skip-vote", { roomId: room.id, vote: next });
+                          socket.emit("room:youtube-skip-vote", { roomId: room.id, hostId: youtubeStartedBy, vote: next });
                         }}
                         className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtSkipVote ? "bg-amber-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
                         title={`Vote to skip — auto-advances when ${Math.max(2, Math.ceil((ytVotes.watchers || participants.length) / 2))} people agree`}
@@ -7289,6 +7427,49 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </div>
                     )}
 
+                    {/* Watch-party watchers stacked above the host's tile.
+                        Each user can host their own video, so this only renders
+                        for participants who are currently broadcasting. */}
+                    {youtubeHosts.has(p.id) && (() => {
+                      const watchers = youtubeWatchersByHost.get(p.id) || new Set<string>();
+                      const watcherIds = Array.from(watchers).filter(uid => uid !== p.id);
+                      if (watcherIds.length === 0) return null;
+                      return (
+                        <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`yt-watchers-card-${p.id}`}>
+                          <div className="flex items-center">
+                            {watcherIds.slice(0, 4).map((watcherId, wi) => {
+                              const watcher = participants.find(rp => rp.id === watcherId);
+                              const wIndex = participants.findIndex(rp => rp.id === watcherId);
+                              const wGrad = getAvatarGradient(wIndex >= 0 ? wIndex : wi);
+                              return (
+                                <div
+                                  key={watcherId}
+                                  className="w-5 h-5 rounded-full border border-background overflow-hidden flex items-center justify-center shadow-sm"
+                                  style={{ marginLeft: wi === 0 ? 0 : -6, zIndex: 4 - wi }}
+                                  title={watcher ? getUserDisplayName(watcher) : watcherId}
+                                  data-testid={`yt-watcher-avatar-${p.id}-${watcherId}`}
+                                >
+                                  {watcher?.profileImageUrl ? (
+                                    <img src={watcher.profileImageUrl} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
+                                      <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            {watcherIds.length > 4 && (
+                              <div className="w-5 h-5 rounded-full border border-background bg-rose-700 flex items-center justify-center shadow-sm text-[7px] font-bold text-white" style={{ marginLeft: -6, zIndex: 0 }}>
+                                +{watcherIds.length - 4}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[8px] text-rose-300/85">{watcherIds.length} watching</span>
+                        </div>
+                      );
+                    })()}
+
                     {bookReaders.has(p.id) && (
                       <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`book-readers-card-${p.id}`}>
                         {p.id === bookHostId ? (
@@ -7345,11 +7526,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       unfollowMutation={unfollowMutation}
                       onNavigateDm={(userId: string) => setDmUserId(userId)}
                       user={user}
-                      hasActiveYoutube={!!activeYoutubeId && youtubeStartedBy === p.id}
+                      hasActiveYoutube={youtubeHosts.has(p.id)}
                       hasActiveBook={bookReaders.has(p.id)}
                       participantRole={participantRoles[p.id] || "guest"}
                       onProfileClick={() => handleParticipantClick(p.id)}
-                      isYoutubeWatcher={youtubeWatchers.has(p.id) && youtubeStartedBy !== p.id}
+                      isYoutubeWatcher={youtubeWatchersFlat.has(p.id) && !youtubeHosts.has(p.id)}
                       isSharing={isMe && isScreenSharing}
                       hasRemoteVideo={!isMe && availableVideoUsers.has(p.id)}
                       hasRemoteScreen={!isMe && availableScreenUsers.has(p.id)}
