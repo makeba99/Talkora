@@ -2775,38 +2775,59 @@ html.synthwave .neon-text {
   align-items: center;
   justify-content: center;
 }
-.door-no-entry {
+/* ── Locked door indicator ─────────────────────────────────────
+   A solid Lock icon sits centred on the door panel. On hover the
+   lock fades / scales out and a Hand icon (knocking) takes its
+   place with a tiny tap animation, signalling the click action. */
+.door-knock-indicator {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, hsl(8 70% 58%), hsl(355 65% 40%) 65%, hsl(352 60% 26%) 100%);
-  box-shadow:
-    0 0 0 1px hsl(355 50% 18%),
-    0 2px 3px rgba(0,0,0,0.85),
-    inset 0 1.5px 0 rgba(255,210,200,0.40),
-    inset 0 -1.5px 0 rgba(0,0,0,0.4),
-    0 0 8px hsl(355 70% 45% / 0.50);
+  width: 16px;
+  height: 16px;
+  display: block;
   pointer-events: none;
   z-index: 3;
 }
-/* The diagonal white bar across the red disc */
-.door-no-entry::before {
-  content: "";
+.door-knock-lock,
+.door-knock-hand {
   position: absolute;
   top: 50%;
-  left: 12%;
-  right: 12%;
-  height: 2.5px;
-  background: linear-gradient(to bottom, hsl(0 0% 98%), hsl(0 0% 80%));
-  transform: translateY(-50%);
-  border-radius: 0.5px;
-  box-shadow:
-    0 0.5px 0 rgba(0,0,0,0.45),
-    inset 0 0.5px 0 rgba(255,255,255,0.85);
+  left: 50%;
+  transition:
+    opacity 0.25s ease,
+    transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter:
+    drop-shadow(0 1px 1.5px rgba(0,0,0,0.85))
+    drop-shadow(0 0 4px hsl(355 75% 45% / 0.45));
+}
+.door-knock-lock {
+  color: hsl(355 80% 65%);
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+}
+.door-knock-hand {
+  color: hsl(40 95% 70%);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6) rotate(-18deg);
+  filter:
+    drop-shadow(0 1px 1.5px rgba(0,0,0,0.85))
+    drop-shadow(0 0 5px hsl(40 95% 50% / 0.55));
+}
+.door-3d-full:hover .door-knock-lock {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.55) rotate(8deg);
+}
+.door-3d-full:hover .door-knock-hand {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  animation: door-knock-tap 0.55s ease-in-out 0.18s infinite;
+}
+@keyframes door-knock-tap {
+  0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  30%      { transform: translate(-52%, -50%) scale(1) rotate(-12deg); }
+  60%      { transform: translate(-48%, -50%) scale(1) rotate(10deg); }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -5728,7 +5749,9 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   .footer-neu-inner { grid-template-columns: 1fr; gap: 16px; text-align: center; padding-bottom: 14px; }
   .footer-brand-block { align-items: center; }
   .footer-brand { justify-content: center; }
+  .footer-contact-cta { align-self: center; }
   .footer-links { justify-content: center; flex-wrap: wrap; }
+  .footer-socials-block { align-items: center; }
   .footer-socials { justify-content: center; }
   .footer-bottom-bar { flex-direction: column; gap: 6px; }
   .footer-bottom-divider { display: none; }
@@ -5867,6 +5890,95 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   box-shadow:
     inset 2px 2px 4px rgba(0, 0, 0, 0.55),
     inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+}
+
+/* ── Contact CTA (lives in the brand block, deliberately
+   NOT in the social row so users never confuse "talk to the
+   team" with "follow us on X / Instagram"). ─────────────── */
+.footer-contact-cta {
+  margin-top: 8px;
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px 7px 8px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: hsl(232 18% 86%);
+  background: linear-gradient(160deg, hsl(228 18% 11%) 0%, hsl(228 16% 14%) 100%);
+  box-shadow:
+    -2px -2px 4px rgba(255, 235, 215, 0.05),
+    2px 2px 5px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: transform 220ms ease, box-shadow 220ms ease, color 220ms ease;
+}
+.footer-contact-cta:hover {
+  transform: translateY(-1px);
+  color: #ffffff;
+  box-shadow:
+    -2.5px -2.5px 5px rgba(255, 235, 215, 0.06),
+    3px 3px 7px rgba(0, 0, 0, 0.65),
+    0 0 14px hsl(var(--neu-orange) / 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.footer-contact-cta:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+}
+.footer-contact-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  color: hsl(var(--neu-orange-hi));
+  background: linear-gradient(140deg, hsl(var(--neu-orange) / 0.22) 0%, hsl(var(--neu-orange) / 0.08) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 215, 0.16),
+    0 0 8px hsl(var(--neu-orange) / 0.25);
+}
+.footer-contact-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 0;
+}
+.footer-contact-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.footer-contact-mail {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: hsl(232 12% 56%);
+  margin-top: 1px;
+}
+
+/* ── Socials block wrapper (right column) ──────────────
+   Wraps the social icons with a quiet "Follow us" caption
+   to keep them visually distinct from the contact CTA. */
+.footer-socials-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  min-width: 0;
+}
+.footer-socials-caption {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(232 12% 42%);
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
 }
 
 /* ── Bottom bar ──────────────────────────────────────── */

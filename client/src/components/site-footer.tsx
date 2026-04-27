@@ -135,7 +135,9 @@ export function SiteFooter() {
     <footer className="footer-neu" data-testid="site-footer">
       {/* ── Main row ─────────────────────────────────────── */}
       <div className="footer-neu-inner">
-        {/* Left: brand */}
+        {/* Left: brand + standalone Contact CTA (intentionally separated
+            from the social handles on the right so users never confuse
+            "talk to the team" with "follow us on X / Instagram"). */}
         <div className="footer-brand-block">
           <div className="footer-brand">
             <VextornMark size={26} />
@@ -149,19 +151,25 @@ export function SiteFooter() {
           <p className="footer-desc">
             Real-time voice rooms for language learners worldwide.
           </p>
-        </div>
-
-        {/* Center: nav pill — Contact, Privacy, Terms */}
-        <nav className="footer-links" aria-label="Footer navigation">
           <a
             href="mailto:hello@vextorn.app"
-            className="footer-link"
+            className="footer-contact-cta"
             data-testid="link-footer-contact"
+            title="Email the Vextorn team"
           >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Contact</span>
+            <span className="footer-contact-icon">
+              <Mail className="w-3.5 h-3.5" />
+            </span>
+            <span className="footer-contact-text">
+              <span className="footer-contact-label">Contact us</span>
+              <span className="footer-contact-mail">hello@vextorn.app</span>
+            </span>
           </a>
+        </div>
 
+        {/* Center: nav pill — policies + share (Contact lives on the
+            brand block above and is intentionally NOT in this group). */}
+        <nav className="footer-links" aria-label="Footer navigation">
           <button
             type="button"
             onClick={() => setPrivacyOpen(true)}
@@ -250,23 +258,30 @@ export function SiteFooter() {
           </Popover>
         </nav>
 
-        {/* Right: socials */}
-        <div className="footer-socials" data-testid="footer-socials">
-          {SOCIALS.map(({ name, href, Icon, hoverHue }) => (
-            <a
-              key={name}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={name}
-              title={name}
-              className="footer-social"
-              style={{ ["--social-hue" as any]: hoverHue }}
-              data-testid={`link-social-${name.toLowerCase().split(" ")[0]}`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-            </a>
-          ))}
+        {/* Right: social handles (follow / community), with a small
+            "Follow us" caption so users immediately see this is the
+            social block — not a "contact support" block. */}
+        <div className="footer-socials-block">
+          <span className="footer-socials-caption" aria-hidden="true">
+            Follow us
+          </span>
+          <div className="footer-socials" data-testid="footer-socials">
+            {SOCIALS.map(({ name, href, Icon, hoverHue }) => (
+              <a
+                key={name}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={name}
+                title={name}
+                className="footer-social"
+                style={{ ["--social-hue" as any]: hoverHue }}
+                data-testid={`link-social-${name.toLowerCase().split(" ")[0]}`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 

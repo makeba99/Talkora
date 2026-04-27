@@ -10,7 +10,7 @@ import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Image as ImageIcon, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Image as ImageIcon, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints, Hand } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass, ROOM_THEMES } from "@/components/profile-decorations";
@@ -892,8 +892,13 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             */}
             {(() => {
               const isPrivate = !room.isPublic;
-              // Anything not freely enterable is rendered as the FULL/knock door.
-              const isClosed = isFull || isPrivate;
+              // If the viewer is the owner OR is already listed as a participant
+              // (e.g. they joined from another tab) they should ALWAYS see the
+              // open door — never asked to knock on a room they're already in.
+              const alreadyIn = !!isOwner || (!!user && participants.some(p => p.id === user.id));
+              // Anything not freely enterable is rendered as the FULL/knock door,
+              // but only if the viewer isn't already a member of the room.
+              const isClosed = !alreadyIn && (isFull || isPrivate);
               const stateClass = isClosed ? "door-3d-full" : "";
 
               const doorBody = (
@@ -907,9 +912,13 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                     </div>
                     <div className="door-panel">
                       <div className="door-panel-inset door-panel-inset-top">
-                        {/* FULL: red no-entry sign — click to knock */}
+                        {/* FULL/PRIVATE: solid lock that morphs into a knocking
+                            hand on hover, signalling the click action. */}
                         {isClosed && (
-                          <span className="door-no-entry" aria-hidden="true" />
+                          <span className="door-knock-indicator" aria-hidden="true">
+                            <Lock className="door-knock-lock w-[13px] h-[13px]" strokeWidth={2.5} />
+                            <Hand className="door-knock-hand w-[13px] h-[13px]" strokeWidth={2.5} />
+                          </span>
                         )}
                       </div>
                       <div className="door-panel-inset door-panel-inset-bot" />
@@ -918,7 +927,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   </div>
                   {/* Tiny state caption under the door */}
                   <span className={`door-caption door-caption-${isClosed ? "full" : "open"}`}>
-                    {isClosed ? "Knock" : "Enter"}
+                    {isClosed ? "Locked" : "Enter"}
                   </span>
                 </>
               );
@@ -956,7 +965,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   className={`door-3d-wrap ${stateClass}`}
                   role="button"
                   tabIndex={0}
-                  title="Enter room"
+                  title={alreadyIn ? "Re-enter room" : "Enter room"}
                   onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
                   onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
                   data-testid={`button-join-room-${room.id}`}
