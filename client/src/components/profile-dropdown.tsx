@@ -231,9 +231,10 @@ interface ProfileDropdownProps {
   onOpenNotifications?: () => void;
   onOpenMessages?: () => void;
   onOpenCommunity?: () => void;
-  onBookTeacher?: () => void;
   unreadMessages?: number;
   unreadNotifications?: number;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ProfileDropdown({
@@ -241,11 +242,17 @@ export function ProfileDropdown({
   onOpenNotifications,
   onOpenMessages,
   onOpenCommunity,
-  onBookTeacher,
   unreadMessages = 0,
   unreadNotifications = 0,
+  open: controlledOpen,
+  onOpenChange,
 }: ProfileDropdownProps = {}) {
-  const [orbitOpen, setOrbitOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const orbitOpen = controlledOpen ?? internalOpen;
+  const setOrbitOpen = (next: boolean) => {
+    if (onOpenChange) onOpenChange(next);
+    if (controlledOpen === undefined) setInternalOpen(next);
+  };
   const closeOrbitAnd = (fn?: () => void) => () => { setOrbitOpen(false); fn?.(); };
   const { user, logout } = useAuth();
   const { appearOffline, setAppearOffline } = useSocket();
@@ -463,10 +470,10 @@ export function ProfileDropdown({
               <LayoutGrid className="w-5 h-5" />
             </button>
 
-            {/* satellites — positioned via .orbit-sat-{n} (5 slots, 72° apart) */}
+            {/* satellites — 4 cardinal positions: top, right, bottom, left */}
             <button
               type="button"
-              className="orbit-sat orbit-sat-1"
+              className="orbit-sat orbit-sat-top"
               onClick={closeOrbitAnd(onOpenMessages)}
               data-testid="orbit-sat-messages"
               aria-label="Messages"
@@ -482,7 +489,7 @@ export function ProfileDropdown({
 
             <button
               type="button"
-              className="orbit-sat orbit-sat-2"
+              className="orbit-sat orbit-sat-right"
               onClick={closeOrbitAnd(onOpenNotifications)}
               data-testid="orbit-sat-notifications"
               aria-label="Notifications"
@@ -498,7 +505,7 @@ export function ProfileDropdown({
 
             <button
               type="button"
-              className="orbit-sat orbit-sat-3"
+              className="orbit-sat orbit-sat-bottom"
               onClick={closeOrbitAnd(onOpenTheme)}
               data-testid="orbit-sat-themes"
               aria-label="Themes"
@@ -511,20 +518,7 @@ export function ProfileDropdown({
 
             <button
               type="button"
-              className="orbit-sat orbit-sat-4"
-              onClick={closeOrbitAnd(onBookTeacher)}
-              data-testid="orbit-sat-teacher"
-              aria-label="Book Teacher"
-            >
-              <span className="orbit-sat-bubble orbit-sat-bubble-accent">
-                <GraduationCap className="w-[18px] h-[18px]" />
-              </span>
-              <span className="orbit-sat-label orbit-sat-label-accent">Book Teacher</span>
-            </button>
-
-            <button
-              type="button"
-              className="orbit-sat orbit-sat-5"
+              className="orbit-sat orbit-sat-left"
               onClick={closeOrbitAnd(onOpenCommunity)}
               data-testid="orbit-sat-community"
               aria-label="Community"

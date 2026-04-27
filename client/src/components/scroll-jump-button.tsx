@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
-const NEAR_TOP = 200;
-const NEAR_BOTTOM = 200;
+const NEAR_TOP = 80;
+const NEAR_BOTTOM = 80;
+// How long the jump pill stays visible after the last scroll movement.
+const IDLE_HIDE_MS = 1400;
 
 interface ScrollJumpButtonProps {
   /**
@@ -17,7 +19,12 @@ export function ScrollJumpButton({ targetSelector = ".app-scrollbar" }: ScrollJu
   const [scrollable, setScrollable] = useState(false);
   const [atTop, setAtTop] = useState(true);
   const [atBottom, setAtBottom] = useState(false);
+  // The pill is hidden by default and only appears while the user is actively
+  // scrolling (or hovering it, so they can complete a click).
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const targetRef = useRef<HTMLElement | null>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resolveTarget = useCallback((): HTMLElement | Window => {
     if (targetSelector) {
@@ -63,26 +70,40 @@ export function ScrollJumpButton({ targetSelector = ".app-scrollbar" }: ScrollJu
   useEffect(() => {
     recompute();
     const target = resolveTarget();
-    const onScroll = () => recompute();
+    const handleScrollActivity = () => {
+      recompute();
+      setIsScrolling(true);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(() => {
+        setIsScrolling(false);
+        idleTimerRef.current = null;
+      }, IDLE_HIDE_MS);
+    };
     const onResize = () => recompute();
 
-    target.addEventListener("scroll", onScroll, { passive: true } as AddEventListenerOptions);
+    target.addEventListener("scroll", handleScrollActivity, { passive: true } as AddEventListenerOptions);
     window.addEventListener("resize", onResize);
 
     const observer = new MutationObserver(() => recompute());
     observer.observe(document.body, { childList: true, subtree: true });
 
-    const interval = window.setInterval(recompute, 1500);
+    const interval = window.setInterval(recompute, 2000);
 
     return () => {
-      target.removeEventListener("scroll", onScroll);
+      target.removeEventListener("scroll", handleScrollActivity);
       window.removeEventListener("resize", onResize);
       observer.disconnect();
       window.clearInterval(interval);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
   }, [recompute, resolveTarget]);
 
+  // Don't even render if scrolling isn't meaningful here.
   if (!scrollable) return null;
+  // Hide unless the user is actively scrolling or pointer is on the pill.
+  // We KEEP rendering the wrapper (with opacity 0) so the fade transition feels
+  // smooth instead of popping in/out abruptly.
+  const visible = isScrolling || isHovering;
 
   const handleUp = () => {
     const el = targetRef.current;
@@ -107,12 +128,19 @@ export function ScrollJumpButton({ targetSelector = ".app-scrollbar" }: ScrollJu
   };
 
   return (
-    <div className="scroll-jump" data-testid="scroll-jump">
+    <div
+      className="scroll-jump"
+      data-testid="scroll-jump"
+      data-visible={visible ? "true" : "false"}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
       <button
         type="button"
         className="scroll-jump-btn scroll-jump-up"
         onClick={handleUp}
         disabled={atTop}
+        tabIndex={visible ? 0 : -1}
         aria-label="Scroll to top"
         data-testid="button-scroll-up"
       >
@@ -124,6 +152,7 @@ export function ScrollJumpButton({ targetSelector = ".app-scrollbar" }: ScrollJu
         className="scroll-jump-btn scroll-jump-down"
         onClick={handleDown}
         disabled={atBottom}
+        tabIndex={visible ? 0 : -1}
         aria-label="Scroll to bottom"
         data-testid="button-scroll-down"
       >

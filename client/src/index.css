@@ -6611,11 +6611,10 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   opacity: 0;
   animation: orbitSatPop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
-.orbit-sat-1 { top: calc(50% - 110px); left: 50%; animation-delay: 60ms; }   /* top         */
-.orbit-sat-2 { top: calc(50% - 34px);  left: calc(50% + 105px); animation-delay: 120ms; } /* upper-right */
-.orbit-sat-3 { top: calc(50% + 89px);  left: calc(50% + 65px);  animation-delay: 180ms; } /* lower-right */
-.orbit-sat-4 { top: calc(50% + 89px);  left: calc(50% - 65px);  animation-delay: 240ms; } /* lower-left  */
-.orbit-sat-5 { top: calc(50% - 34px);  left: calc(50% - 105px); animation-delay: 300ms; } /* upper-left  */
+.orbit-sat-top    { top: calc(50% - 110px); left: 50%;                animation-delay: 60ms;  }
+.orbit-sat-right  { top: 50%;               left: calc(50% + 110px);  animation-delay: 140ms; }
+.orbit-sat-bottom { top: calc(50% + 110px); left: 50%;                animation-delay: 220ms; }
+.orbit-sat-left   { top: 50%;               left: calc(50% - 110px);  animation-delay: 300ms; }
 
 @keyframes orbitSatPop {
   0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
@@ -6829,7 +6828,7 @@ html.neomorphic-light .orbit-trigger-pill {
   position: fixed;
   top: 50%;
   right: 14px;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateX(8px);
   z-index: 40;
   display: inline-flex;
   flex-direction: column;
@@ -6847,7 +6846,14 @@ html.neomorphic-light .orbit-trigger-pill {
     0 -2px 0 rgba(0, 0, 0, 0.5) inset,
     0 12px 28px rgba(0, 0, 0, 0.55),
     0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.22);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease, transform 240ms ease;
+}
+.scroll-jump[data-visible="true"] {
+  opacity: 1;
   pointer-events: auto;
+  transform: translateY(-50%) translateX(0);
 }
 .scroll-jump-btn {
   width: 42px;
@@ -6932,10 +6938,9 @@ html.neomorphic-light .scroll-jump-btn {
     width: 250px;
     height: 250px;
   }
-  .orbit-sat-1 { top: calc(50% - 96px);  left: 50%; }
-  .orbit-sat-2 { top: calc(50% - 30px);  left: calc(50% + 92px); }
-  .orbit-sat-3 { top: calc(50% + 78px);  left: calc(50% + 57px); }
-  .orbit-sat-4 { top: calc(50% + 78px);  left: calc(50% - 57px); }
-  .orbit-sat-5 { top: calc(50% - 30px);  left: calc(50% - 92px); }
+  .orbit-sat-top    { top: calc(50% - 96px); left: 50%; }
+  .orbit-sat-right  { top: 50%;              left: calc(50% + 96px); }
+  .orbit-sat-bottom { top: calc(50% + 96px); left: 50%; }
+  .orbit-sat-left   { top: 50%;              left: calc(50% - 96px); }
   .orbit-sat-bubble { width: 42px; height: 42px; }
 }

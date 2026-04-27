@@ -390,6 +390,52 @@ export default function Lobby() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [socialOpen, setSocialOpen] = useState(false);
+  const [orbitOpen, setOrbitOpen] = useState(false);
+  // Live unread counters drive the auto-popup behavior of the orbital menu.
+  const { data: unreadMsgData } = useQuery<{ count: number }>({
+    queryKey: ["/api/messages/unread/count"],
+    enabled: !!user,
+  });
+  const { data: notificationsList } = useQuery<any[]>({
+    queryKey: ["/api/notifications"],
+    enabled: !!user,
+  });
+  const unreadMessages = unreadMsgData?.count ?? 0;
+  const unreadNotifications = (notificationsList ?? []).filter((n: any) => !n.read).length;
+  const prevUnreadMsgRef = useRef<number>(0);
+  const prevUnreadNotifRef = useRef<number>(0);
+  const orbitAutoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // First load is treated as the baseline so we don't auto-popup for pre-existing
+  // unread messages — only TRUE deltas (new arrivals during the session) trigger.
+  const orbitBaselineSetRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (!user) return;
+    if (!orbitBaselineSetRef.current) {
+      prevUnreadMsgRef.current = unreadMessages;
+      prevUnreadNotifRef.current = unreadNotifications;
+      orbitBaselineSetRef.current = true;
+      return;
+    }
+    const grew =
+      unreadMessages > prevUnreadMsgRef.current ||
+      unreadNotifications > prevUnreadNotifRef.current;
+    prevUnreadMsgRef.current = unreadMessages;
+    prevUnreadNotifRef.current = unreadNotifications;
+    if (grew) {
+      setOrbitOpen(true);
+      if (orbitAutoCloseTimerRef.current) {
+        clearTimeout(orbitAutoCloseTimerRef.current);
+      }
+      // Auto-close after a short peek so the orbit doesn't get sticky.
+      orbitAutoCloseTimerRef.current = setTimeout(() => {
+        setOrbitOpen(false);
+        orbitAutoCloseTimerRef.current = null;
+      }, 4500);
+    }
+  }, [unreadMessages, unreadNotifications, user]);
+  useEffect(() => () => {
+    if (orbitAutoCloseTimerRef.current) clearTimeout(orbitAutoCloseTimerRef.current);
+  }, []);
   const viewedAnnouncementIdsRef = useRef<Set<string>>(new Set());
   const [liveVoteCounts, setLiveVoteCounts] = useState<Record<string, number>>({ ...BASE_SAMPLE_VOTE_COUNTS });
   const [liveParticipants, setLiveParticipants] = useState<Record<string, User[]>>({ ...BASE_SAMPLE_PARTICIPANTS });
@@ -885,6 +931,14 @@ export default function Lobby() {
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {user ? (
               <>
+                <button
+                  onClick={() => navigate("/teachers")}
+                  className="neu-btn mr-1 inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
+                  data-testid="button-book-teacher-nav"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
+                  <span className="hidden sm:inline">Book Teacher</span>
+                </button>
                 {isAdminUser && (
                   <button
                     onClick={() => navigate("/admin")}
@@ -916,11 +970,14 @@ export default function Lobby() {
                 <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} hideTrigger />
                 <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} hideTrigger />
                 <ProfileDropdown
+                  open={orbitOpen}
+                  onOpenChange={setOrbitOpen}
                   onOpenTheme={() => setThemePickerOpen(true)}
                   onOpenNotifications={() => setNotificationsOpen(true)}
                   onOpenMessages={() => setMessagesOpen(true)}
                   onOpenCommunity={() => setSocialOpen(true)}
-                  onBookTeacher={() => navigate("/teachers")}
+                  unreadMessages={unreadMessages}
+                  unreadNotifications={unreadNotifications}
                 />
               </>
             ) : (
