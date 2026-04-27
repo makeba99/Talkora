@@ -1100,6 +1100,45 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   }, [roomProp]);
 
   const isHost = room.ownerId === user?.id;
+
+  // ── Knock-knock prompts (host-only) ──
+  // When a non-member clicks the FULL door on the lobby, we receive a
+  // `room:knock-request` here so the host can Allow / Deny in-room without
+  // ever leaving the conversation. Each entry stays until the host responds.
+  type PendingKnock = { id: string; userId: string; userName: string; userAvatar: string | null; ts: number };
+  const [pendingKnocks, setPendingKnocks] = useState<PendingKnock[]>([]);
+
+  useEffect(() => {
+    if (!socket || !isHost) return;
+    const onKnock = (data: { roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number }) => {
+      if (!data || data.roomId !== room.id) return;
+      if (data.fromUserId === user?.id) return; // shouldn't happen, but guard
+      setPendingKnocks((prev) => {
+        // De-dupe — only one pending knock per user at a time.
+        if (prev.some((k) => k.userId === data.fromUserId)) return prev;
+        return [
+          ...prev,
+          { id: `${data.fromUserId}-${data.ts}`, userId: data.fromUserId, userName: data.fromUserName, userAvatar: data.fromUserAvatar, ts: data.ts },
+        ];
+      });
+    };
+    socket.on("room:knock-request", onKnock);
+    return () => { socket.off("room:knock-request", onKnock); };
+  }, [socket, isHost, room.id, user?.id]);
+
+  const handleAllowKnock = useCallback((knock: PendingKnock) => {
+    if (!socket) return;
+    socket.emit("room:knock-allow", { roomId: room.id, userId: knock.userId });
+    setPendingKnocks((prev) => prev.filter((k) => k.userId !== knock.userId));
+    toast({ title: "✅ Allowed", description: `${knock.userName} can now join.` });
+  }, [socket, room.id, toast]);
+
+  const handleDenyKnock = useCallback((knock: PendingKnock) => {
+    if (!socket) return;
+    socket.emit("room:knock-deny", { roomId: room.id, userId: knock.userId });
+    setPendingKnocks((prev) => prev.filter((k) => k.userId !== knock.userId));
+  }, [socket, room.id]);
+
   const isAiTutorOwner = aiTutorActive || roomAiTutorSession.userId === user?.id;
   const aiTutorVisible = aiTutorActive || (!!roomAiTutorSession.active && roomAiTutorSession.userId !== user?.id);
   const aiTutorDisplaySpeaking = isAiTutorOwner ? aiTutorSpeaking : roomAiTutorSession.speaking;
@@ -5807,6 +5846,52 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   return (
     <div className="flex h-full relative overflow-hidden" style={getRoomThemeStyle(currentTheme)}>
       <RoomThemeOverlay themeId={currentTheme} />
+
+      {/* Knock-knock prompts — floats top-center for the host only */}
+      {isHost && pendingKnocks.length > 0 && (
+        <div
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"
+          data-testid="knock-prompts"
+        >
+          {pendingKnocks.map((knock) => (
+            <div
+              key={knock.id}
+              className="pointer-events-auto flex items-center gap-3 rounded-xl px-3 py-2 shadow-2xl border border-amber-400/40 bg-[hsl(228_18%_10%)]/95 backdrop-blur-md min-w-[280px] animate-in fade-in slide-in-from-top-2"
+              style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(251,191,36,0.25), 0 0 24px rgba(251,191,36,0.15)" }}
+              data-testid={`knock-prompt-${knock.userId}`}
+            >
+              <div className="text-lg leading-none animate-bounce" aria-hidden="true">🚪</div>
+              <Avatar className="w-9 h-9 flex-shrink-0">
+                <AvatarImage src={knock.userAvatar || undefined} />
+                <AvatarFallback className="text-xs bg-amber-500/20 text-amber-200">
+                  {(knock.userName || "?").slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white leading-snug">
+                  <span className="font-semibold text-amber-300">{knock.userName}</span>
+                  <span className="text-white/70"> wants to join</span>
+                </p>
+              </div>
+              <button
+                onClick={() => handleAllowKnock(knock)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-white transition-colors"
+                data-testid={`button-knock-allow-${knock.userId}`}
+              >
+                Allow
+              </button>
+              <button
+                onClick={() => handleDenyKnock(knock)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
+                data-testid={`button-knock-deny-${knock.userId}`}
+              >
+                Deny
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <CenterChessOverlay
         socket={socket}
         roomId={room.id}

@@ -870,30 +870,6 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 </span>
               </div>
 
-              {/* Knock / Message button */}
-              {isLoggedIn && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isFull) {
-                      knockMutation.mutate();
-                    } else if (onOpenDm) {
-                      onOpenDm(room.ownerId);
-                    }
-                  }}
-                  disabled={knockMutation.isPending}
-                  className={`transition-all duration-200 disabled:opacity-50 ${isFull ? "text-amber-400 hover:text-amber-300 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" : "text-white/35 hover:text-white/70"}`}
-                  title={isFull ? "🚪 Knock knock — notify the owner" : "Message owner"}
-                  data-testid={`button-messages-${room.id}`}
-                >
-                  {knockMutation.isPending ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <MessageSquare className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              )}
-
               {isLoggedIn && onVote && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onVote(); }}
@@ -908,42 +884,31 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             </div>
 
             {/* Step In — 3D animated swinging door.
-                States:
-                  • FULL   → solid closed door, red "FULL" label, no swing
-                  • LOCKED → door with brass keyhole + key plate, amber "LOCKED" label
-                             (still clickable so the join flow / DM-owner can run)
-                  • OPEN   → standard door with engraved "ENTER" plaque, green label
+                Just two states now:
+                  • ENTER → ajar door with green ▸ chevron, click to walk in
+                  • FULL  → red NO-ENTRY ⊘ sign, click to knock (host gets an
+                            in-room prompt with your name + Allow / Deny)
+                Private rooms are treated as FULL — the only way in is to knock.
             */}
             {(() => {
               const isPrivate = !room.isPublic;
-              // Each state gets a *visually distinct* door so users instantly
-              // recognize what'll happen when they click:
-              //   • OPEN   → door ajar with green ▸ chevron beckoning inside
-              //   • LOCKED → big brass padlock visibly hanging on the door
-              //   • FULL   → red NO-ENTRY ⊘ sign mounted on the door
-              const stateClass = isFull
-                ? "door-3d-disabled door-3d-full"
-                : isPrivate
-                  ? "door-3d-locked"
-                  : "";
+              // Anything not freely enterable is rendered as the FULL/knock door.
+              const isClosed = isFull || isPrivate;
+              const stateClass = isClosed ? "door-3d-full" : "";
 
               const doorBody = (
                 <>
                   <div className="door-frame">
                     <div className="door-interior">
-                      {/* OPEN: bobbing green chevron peeks through the ajar gap */}
-                      {!isPrivate && !isFull && (
+                      {/* ENTER: bobbing green chevron peeks through the ajar gap */}
+                      {!isClosed && (
                         <span className="door-welcome-arrow" aria-hidden="true" />
                       )}
                     </div>
                     <div className="door-panel">
                       <div className="door-panel-inset door-panel-inset-top">
-                        {/* LOCKED: hanging brass padlock with shackle */}
-                        {isPrivate && !isFull && (
-                          <span className="door-keyplate" aria-hidden="true" />
-                        )}
-                        {/* FULL: red no-entry sign */}
-                        {isFull && (
+                        {/* FULL: red no-entry sign — click to knock */}
+                        {isClosed && (
                           <span className="door-no-entry" aria-hidden="true" />
                         )}
                       </div>
@@ -951,30 +916,19 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                       <div className="door-knob" />
                     </div>
                   </div>
-                  {/* Tiny state caption under the door — triple-clarity for users */}
-                  <span className={`door-caption door-caption-${isFull ? "full" : isPrivate ? "locked" : "open"}`}>
-                    {isFull ? "Full" : isPrivate ? "Knock" : "Enter"}
+                  {/* Tiny state caption under the door */}
+                  <span className={`door-caption door-caption-${isClosed ? "full" : "open"}`}>
+                    {isClosed ? "Knock" : "Enter"}
                   </span>
                 </>
               );
 
-              if (isFull) {
-                return (
-                  <div
-                    className={`door-3d-wrap ${stateClass}`}
-                    title="Room is full"
-                    data-testid={`button-join-room-${room.id}`}
-                  >
-                    {doorBody}
-                  </div>
-                );
-              }
               if (!isLoggedIn) {
                 return (
                   <a
                     href="/api/login"
                     className={`door-3d-wrap ${stateClass}`}
-                    title={isPrivate ? "Sign in to request access" : "Enter room"}
+                    title={isClosed ? "Sign in to knock" : "Enter room"}
                     data-testid={`button-signin-room-${room.id}`}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -982,12 +936,27 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   </a>
                 );
               }
+              if (isClosed) {
+                return (
+                  <div
+                    className={`door-3d-wrap ${stateClass}`}
+                    role="button"
+                    tabIndex={0}
+                    title={knockMutation.isPending ? "Knocking…" : "🚪 Knock — ask the host to let you in"}
+                    onClick={(e) => { e.stopPropagation(); if (!knockMutation.isPending) knockMutation.mutate(); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !knockMutation.isPending) knockMutation.mutate(); }}
+                    data-testid={`button-knock-room-${room.id}`}
+                  >
+                    {doorBody}
+                  </div>
+                );
+              }
               return (
                 <div
                   className={`door-3d-wrap ${stateClass}`}
                   role="button"
                   tabIndex={0}
-                  title={isPrivate ? "Locked room — request access" : "Enter room"}
+                  title="Enter room"
                   onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
                   onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
                   data-testid={`button-join-room-${room.id}`}

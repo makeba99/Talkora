@@ -70,6 +70,10 @@ const roomRoles = new Map<string, Map<string, string>>();
 const roomMuteStatus = new Map<string, Map<string, boolean>>();
 const userSockets = new Map<string, string>();
 const userCurrentRoom = new Map<string, string>();
+// Ephemeral per-room set of userIds whom the host has Allowed via knock —
+// these users get to bypass the capacity check on their next room:join, then
+// the grant is consumed.
+const roomKnockGrants = new Map<string, Set<string>>();
 const roomDeleteTimers = new Map<string, NodeJS.Timeout>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
@@ -1378,6 +1382,7 @@ export async function registerRoutes(
       roomYoutubeQueue.delete(roomId);
       roomRoles.delete(roomId);
       roomMuteStatus.delete(roomId);
+      roomKnockGrants.delete(roomId);
       startRoomDeleteTimer(roomId);
     } else {
       roomMuteStatus.get(roomId)?.delete(userId);
@@ -1527,6 +1532,26 @@ export async function registerRoutes(
           type: "join_request",
           roomId,
           roomTitle: room.title,
+        });
+      }
+
+      // If the host is currently inside their room, push a real-time prompt
+      // (with the knocker's name + avatar) so they can Allow / Deny without
+      // leaving the room. Broadcast to the whole room — the client only renders
+      // the prompt for the host.
+      const requester = await storage.getUser(requesterId);
+      if (requester) {
+        io.to(roomId).emit("room:knock-request", {
+          roomId,
+          fromUserId: requesterId,
+          fromUserName:
+            (requester as any).displayName ||
+            [requester.firstName, requester.lastName].filter(Boolean).join(" ") ||
+            (requester as any).username ||
+            requester.email ||
+            "Someone",
+          fromUserAvatar: requester.profileImageUrl || null,
+          ts: Date.now(),
         });
       }
 
@@ -3141,7 +3166,11 @@ export async function registerRoutes(
       const currentParticipants = roomParticipants.get(roomId)!;
       const isAdminUser = user.role === "admin" || user.role === "superadmin";
       const isUnlimitedRoom = room.maxUsers === 0;
-      if (!isUnlimitedRoom && currentParticipants.size >= room.maxUsers && !currentParticipants.has(userId) && !isAdminUser) {
+      // Honor a pending knock-allow grant from the host: it lets this user in
+      // even if the room is at capacity. Consumed on use.
+      const knockGrants = roomKnockGrants.get(roomId);
+      const hasKnockGrant = !!knockGrants?.has(userId);
+      if (!isUnlimitedRoom && currentParticipants.size >= room.maxUsers && !currentParticipants.has(userId) && !isAdminUser && !hasKnockGrant) {
         socket.emit("room:full", { roomId });
         return;
       }
@@ -3151,6 +3180,11 @@ export async function registerRoutes(
       currentParticipants.set(userId, user);
       userSockets.set(userId, socket.id);
       userCurrentRoom.set(userId, roomId);
+      // Consume the knock-allow grant (one-shot).
+      if (hasKnockGrant) {
+        knockGrants!.delete(userId);
+        if (knockGrants!.size === 0) roomKnockGrants.delete(roomId);
+      }
 
       if (!roomMuteStatus.has(roomId)) {
         roomMuteStatus.set(roomId, new Map());
@@ -4287,6 +4321,46 @@ export async function registerRoutes(
           roomAiTutorState.delete(roomId);
           io.to(roomId).emit("room:ai-tutor-state", { active: false, userId: null, username: null, speaking: false });
         }
+      }
+    });
+
+    // ── Knock allow / deny — host responds to a "🚪 knock-knock" prompt ──
+    // The host is in their room and clicks Allow / Deny on a knocker's prompt.
+    // We verify the host owns the room, then either grant a one-shot bypass
+    // (so the knocker can join even if full) or notify them they were denied.
+    socket.on("room:knock-allow", async (data: { roomId: string; userId: string }) => {
+      try {
+        if (!currentUserId || !data?.roomId || !data?.userId) return;
+        const room = await storage.getRoom(data.roomId);
+        if (!room || room.ownerId !== currentUserId) return; // only host
+        if (!roomKnockGrants.has(data.roomId)) roomKnockGrants.set(data.roomId, new Set());
+        roomKnockGrants.get(data.roomId)!.add(data.userId);
+        const knockerSocketId = userSockets.get(data.userId);
+        if (knockerSocketId) {
+          io.to(knockerSocketId).emit("room:knock-allowed", {
+            roomId: data.roomId,
+            roomTitle: room.title,
+          });
+        }
+      } catch (err) {
+        console.error("[knock-allow]", err);
+      }
+    });
+
+    socket.on("room:knock-deny", async (data: { roomId: string; userId: string }) => {
+      try {
+        if (!currentUserId || !data?.roomId || !data?.userId) return;
+        const room = await storage.getRoom(data.roomId);
+        if (!room || room.ownerId !== currentUserId) return; // only host
+        const knockerSocketId = userSockets.get(data.userId);
+        if (knockerSocketId) {
+          io.to(knockerSocketId).emit("room:knock-denied", {
+            roomId: data.roomId,
+            roomTitle: room.title,
+          });
+        }
+      } catch (err) {
+        console.error("[knock-deny]", err);
       }
     });
 

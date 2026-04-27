@@ -660,6 +660,25 @@ export default function Lobby() {
       });
     });
 
+    // Host responded to my knock — let me in (or politely turn me away).
+    socket.on("room:knock-allowed", (data: { roomId: string; roomTitle: string }) => {
+      toast({
+        title: "🚪 You're in!",
+        description: `${data.roomTitle || "The host"} opened the door — joining now…`,
+      });
+      // Auto-redirect into the room. The capacity bypass grant on the server
+      // is one-shot, so we go straight there.
+      if (data?.roomId) navigate(`/room/${data.roomId}`);
+    });
+
+    socket.on("room:knock-denied", (data: { roomId: string; roomTitle: string }) => {
+      toast({
+        title: "Knock declined",
+        description: `The host of "${data.roomTitle || "the room"}" isn't taking visitors right now.`,
+        variant: "destructive",
+      });
+    });
+
     return () => {
       socket.off("presence:online");
       socket.off("presence:update");
@@ -667,6 +686,8 @@ export default function Lobby() {
       socket.off("room:created");
       socket.off("room:deleted");
       socket.off("room:full");
+      socket.off("room:knock-allowed");
+      socket.off("room:knock-denied");
     };
   }, [socket, toast]);
 
