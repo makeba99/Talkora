@@ -7027,6 +7027,277 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     inset 0 -1px 0 rgba(255, 255, 255, 0.04);
 }
 
+/* ============================================================================
+   Language dropdown — sits on the search row beside Create Room.
+   Matches the sculpted neumorphic capsule language of search-neu-shell.
+   ============================================================================ */
+.lang-neu-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 16px 0 6px;
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 16%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 10%)) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 12px 24px -10px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: box-shadow 240ms ease, transform 200ms ease, color 200ms ease;
+  white-space: nowrap;
+}
+.lang-neu-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.18),
+    0 14px 28px -10px rgba(0, 0, 0, 0.6),
+    0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.lang-neu-trigger[data-state="open"],
+.lang-neu-trigger.is-active {
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.55),
+    0 0 0 4px hsl(var(--neu-orange, 252 90% 70%) / 0.10),
+    0 0 28px -4px hsl(var(--neu-orange, 252 90% 70%) / 0.40),
+    0 12px 24px -10px rgba(0, 0, 0, 0.55);
+}
+.lang-neu-trigger[data-state="open"] .lang-neu-chev {
+  transform: rotate(180deg);
+}
+.lang-neu-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: hsl(var(--neu-orange, 252 90% 70%));
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 20%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 12%)) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 0 16px hsl(var(--neu-orange, 252 90% 70%) / 0.30);
+}
+.lang-neu-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+  gap: 3px;
+}
+.lang-neu-label-key {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+.lang-neu-label-value {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: #fff;
+}
+.lang-neu-chev {
+  transition: transform 220ms ease;
+}
+
+.lang-neu-popover {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(
+      120% 80% at 50% 0%,
+      hsl(var(--neu-orange, 252 90% 70%) / 0.10),
+      transparent 60%
+    ),
+    linear-gradient(180deg, rgba(20, 22, 36, 0.96), rgba(12, 13, 22, 0.97));
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+.lang-neu-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.lang-neu-popover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.lang-neu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.lang-neu-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+}
+.lang-neu-item.is-active {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-orange, 252 90% 70%) / 0.18) 0%,
+    hsl(var(--neu-orange, 252 90% 70%) / 0.08) 100%
+  );
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.40);
+}
+.lang-neu-item-name {
+  letter-spacing: -0.005em;
+}
+.lang-neu-item-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 999px;
+  min-width: 28px;
+  text-align: center;
+}
+.lang-neu-item.is-active .lang-neu-item-count {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* ============================================================================
+   Create Room button — sculpted neumorphic capsule that matches the search
+   bar + language dropdown (same pill height, same medallion icon, same
+   violet glow on hover/active).
+   ============================================================================ */
+.create-room-neu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-orange-hi, 252 92% 72%)) 0%,
+    hsl(var(--neu-orange-lo, 258 84% 56%)) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.55),
+    0 14px 28px -10px rgba(0, 0, 0, 0.55),
+    0 0 30px -4px hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+  transition: transform 200ms ease, box-shadow 240ms ease;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+.create-room-neu:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.7),
+    0 18px 32px -12px rgba(0, 0, 0, 0.6),
+    0 0 38px -2px hsl(var(--neu-orange, 252 90% 70%) / 0.7);
+}
+.create-room-neu:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.35),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.55),
+    0 0 22px -4px hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+}
+.create-room-neu-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.18));
+}
+.create-room-neu-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+  gap: 3px;
+}
+.create-room-neu-key {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+.create-room-neu-value {
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  color: #fff;
+}
+.create-room-neu .sparkle-icon {
+  color: #fff;
+  filter:
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.6))
+    drop-shadow(0 0 10px hsl(var(--neu-orange, 252 90% 70%) / 0.55));
+}
+
 /* Filter strip --------------------------------------------------------------- */
 .filter-strip {
   display: flex;

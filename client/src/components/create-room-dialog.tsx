@@ -95,10 +95,15 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
       <DialogTrigger asChild>
         <Button
           data-testid="button-create-room"
-          className="hammer-btn create-room-btn h-10 px-4 font-semibold whitespace-nowrap flex-shrink-0 gap-2 rounded-md"
+          className="create-room-neu hammer-btn h-14 px-5 pl-2.5 font-semibold whitespace-nowrap flex-shrink-0 gap-3 rounded-full"
         >
-          <Hammer className="sparkle-icon w-4 h-4" />
-          Create Room
+          <span className="create-room-neu-icon">
+            <Hammer className="sparkle-icon w-[15px] h-[15px]" />
+          </span>
+          <span className="create-room-neu-label">
+            <span className="create-room-neu-key">New</span>
+            <span className="create-room-neu-value">Create Room</span>
+          </span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>

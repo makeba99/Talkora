@@ -3,7 +3,8 @@ import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Search, Mic, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CommentThreadDialog } from "@/components/comment-thread-dialog";
@@ -368,17 +369,6 @@ export default function Lobby() {
   const [selectedLanguage, setSelectedLanguage] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
-  const [languagesExpanded, setLanguagesExpanded] = useState(false);
-  const [showLanguageFilters, setShowLanguageFilters] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    const saved = window.localStorage.getItem("vextorn:showLanguageFilters");
-    return saved === null ? false : saved === "true";
-  });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("vextorn:showLanguageFilters", String(showLanguageFilters));
-    }
-  }, [showLanguageFilters]);
   const [activeDiscovery, setActiveDiscovery] = useState<DiscoveryFilter>("rooms");
   const [speakerVotes, setSpeakerVotes] = useState<Set<string>>(new Set());
   const [dmUserId, setDmUserId] = useState<string | null>(null);
@@ -905,8 +895,6 @@ export default function Lobby() {
     (lang) => lang === "All" || (languageCounts[lang] || 0) > 0
   );
 
-  const visibleLanguages = languagesExpanded ? languageTags : languageTags.slice(0, 8);
-
   return (
     <div className="flex flex-col h-full neu-canvas">
       <header
@@ -1239,6 +1227,56 @@ export default function Lobby() {
                 </button>
               )}
             </div>
+            {activeDiscovery === "rooms" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={`lang-neu-trigger ${selectedLanguage !== "All" ? "is-active" : ""}`}
+                    data-testid="button-toggle-language-filters"
+                    aria-label="Filter rooms by language"
+                  >
+                    <span className="lang-neu-icon">
+                      <Globe className="w-[15px] h-[15px]" />
+                    </span>
+                    <span className="lang-neu-label">
+                      <span className="lang-neu-label-key">Language</span>
+                      <span className="lang-neu-label-value">{selectedLanguage}</span>
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-70 lang-neu-chev" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  sideOffset={10}
+                  className="lang-neu-popover w-[280px] p-2"
+                  data-testid="popover-languages"
+                >
+                  <div className="lang-neu-popover-header">
+                    <Globe className="w-3.5 h-3.5 opacity-70" />
+                    <span>Filter by language</span>
+                  </div>
+                  <div className="lang-neu-popover-list">
+                    {languageTags.map((lang) => {
+                      const count = lang === "All" ? rooms.length : languageCounts[lang] || 0;
+                      const isActive = selectedLanguage === lang;
+                      return (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => setSelectedLanguage(lang)}
+                          className={`lang-neu-item ${isActive ? "is-active" : ""}`}
+                          data-testid={`tab-language-${lang.toLowerCase()}`}
+                        >
+                          <span className="lang-neu-item-name">{lang}</span>
+                          <span className="lang-neu-item-count">{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
             {user && (
               <div className="w-full md:w-auto flex-shrink-0 [&_button]:w-full md:[&_button]:w-auto [&_button]:whitespace-nowrap" data-testid="container-create-room">
                 <CreateRoomDialog
@@ -1278,84 +1316,7 @@ export default function Lobby() {
               })}
             </div>
 
-            {activeDiscovery === "rooms" && (
-              <button
-                type="button"
-                onClick={() => setShowLanguageFilters((v) => !v)}
-                className={`filter-chip filter-chip-teal filter-chip-lang ${showLanguageFilters ? "is-active" : ""}`}
-                aria-expanded={showLanguageFilters}
-                aria-pressed={showLanguageFilters}
-                title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
-                data-testid="button-toggle-language-filters"
-              >
-                <span className="filter-chip-icon">
-                  <Globe className="w-[14px] h-[14px]" />
-                </span>
-                <span className="filter-chip-label">Languages</span>
-                {selectedLanguage !== "All" && (
-                  <span className="filter-chip-meta" data-testid="badge-active-language">
-                    {selectedLanguage}
-                  </span>
-                )}
-                {showLanguageFilters ? (
-                  <ChevronUp className="w-3.5 h-3.5 opacity-80" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 opacity-80" />
-                )}
-              </button>
-            )}
           </div>
-
-          {activeDiscovery === "rooms" && showLanguageFilters && (
-          <div className="flex gap-2 flex-wrap items-center" data-testid="row-language-filters">
-            {visibleLanguages.map((lang) => {
-              const count = lang === "All" ? rooms.length : languageCounts[lang] || 0;
-              const isActive = selectedLanguage === lang;
-              return (
-                <button
-                  key={lang}
-                  onClick={() => setSelectedLanguage(lang)}
-                  className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
-                  style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
-                    color: "#fff",
-                    border: "1px solid hsl(var(--neu-orange) / 0.45)",
-                    boxShadow: "0 0 18px hsl(var(--neu-orange) / 0.40), 0 0 38px hsl(var(--neu-orange) / 0.16), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.62), inset 0 1px 0 rgba(220,210,255,0.40)",
-                    textShadow: "0 1px 1px rgba(0,0,0,0.30)",
-                  } : undefined}
-                  data-testid={`tab-language-${lang.toLowerCase()}`}
-                >
-                  {lang}
-                  <span
-                    className="text-[11px] font-bold min-w-4 text-center"
-                    style={{ opacity: isActive ? 0.9 : 0.6 }}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-            {languageTags.length > 8 && (
-              <button
-                onClick={() => setLanguagesExpanded(!languagesExpanded)}
-                className="neu-pill flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium"
-                data-testid="button-toggle-languages"
-              >
-                {languagesExpanded ? (
-                  <>
-                    <ChevronUp className="w-3.5 h-3.5" />
-                    Collapse
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-3.5 h-3.5" />
-                    More
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-          )}
 
           {activeDiscovery !== "rooms" ? (
             <section className="space-y-3" data-testid="section-people-discovery">
