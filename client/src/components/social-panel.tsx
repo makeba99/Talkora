@@ -261,13 +261,21 @@ function UserProfileDialog({
 interface SocialPanelProps {
   onOpenDm?: (userId: string) => void;
   onlineUsers: Set<string>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
-export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
+export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpenChange, hideTrigger }: SocialPanelProps) {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (onOpenChange) onOpenChange(next);
+    if (controlledOpen === undefined) setInternalOpen(next);
+  };
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [onlyOnline, setOnlyOnline] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
@@ -546,11 +554,13 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button size="icon" variant="ghost" data-testid="button-social-panel">
-            <Users className="w-4 h-4" />
-          </Button>
-        </SheetTrigger>
+        {!hideTrigger && (
+          <SheetTrigger asChild>
+            <Button size="icon" variant="ghost" data-testid="button-social-panel">
+              <Users className="w-4 h-4" />
+            </Button>
+          </SheetTrigger>
+        )}
         <SheetContent
           className="w-80 sm:w-96 p-0 flex flex-col bg-gradient-to-b from-background via-background to-background/95"
           style={{ paddingTop: "env(safe-area-inset-top)" }}

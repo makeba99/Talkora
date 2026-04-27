@@ -24,12 +24,20 @@ interface Conversation {
 
 interface MessagesDropdownProps {
   onOpenDm: (userId: string) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
-export function MessagesDropdown({ onOpenDm }: MessagesDropdownProps) {
+export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange, hideTrigger }: MessagesDropdownProps) {
   const { user } = useAuth();
   const { socket } = useSocket();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (onOpenChange) onOpenChange(next);
+    if (controlledOpen === undefined) setInternalOpen(next);
+  };
 
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/messages/conversations"],
@@ -96,24 +104,26 @@ export function MessagesDropdown({ onOpenDm }: MessagesDropdownProps) {
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button size="icon" variant="ghost" className="relative" data-testid="button-messages">
-          <MessageSquare className="w-4 h-4" />
-          {unreadCount > 0 && (
-            <span
-              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none animate-pulse-badge"
-              style={{
-                background: "linear-gradient(145deg, hsl(0 90% 58%) 0%, hsl(0 78% 44%) 100%)",
-                border: "1.5px solid hsl(228 18% 8%)",
-                boxShadow: "0 0 10px rgba(239,68,68,0.7), 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
-              }}
-              data-testid="badge-messages-unread"
-            >
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
+      {!hideTrigger && (
+        <DropdownMenuTrigger asChild>
+          <Button size="icon" variant="ghost" className="relative" data-testid="button-messages">
+            <MessageSquare className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none animate-pulse-badge"
+                style={{
+                  background: "linear-gradient(145deg, hsl(0 90% 58%) 0%, hsl(0 78% 44%) 100%)",
+                  border: "1.5px solid hsl(228 18% 8%)",
+                  boxShadow: "0 0 10px rgba(239,68,68,0.7), 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
+                }}
+                data-testid="badge-messages-unread"
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+      )}
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between gap-2 p-3 border-b">
           <span className="font-semibold text-sm">Messages</span>

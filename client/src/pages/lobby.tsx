@@ -15,6 +15,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { ThemePicker } from "@/components/theme-picker";
+import { ScrollJumpButton } from "@/components/scroll-jump-button";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
@@ -387,6 +388,8 @@ export default function Lobby() {
   >({});
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [socialOpen, setSocialOpen] = useState(false);
   const viewedAnnouncementIdsRef = useRef<Set<string>>(new Set());
   const [liveVoteCounts, setLiveVoteCounts] = useState<Record<string, number>>({ ...BASE_SAMPLE_VOTE_COUNTS });
   const [liveParticipants, setLiveParticipants] = useState<Record<string, User[]>>({ ...BASE_SAMPLE_PARTICIPANTS });
@@ -882,14 +885,6 @@ export default function Lobby() {
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {user ? (
               <>
-                <button
-                  onClick={() => navigate("/teachers")}
-                  className="neu-btn mr-1 inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
-                  data-testid="button-book-teacher-nav"
-                >
-                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
-                  <span className="hidden sm:inline">Book Teacher</span>
-                </button>
                 {isAdminUser && (
                   <button
                     onClick={() => navigate("/admin")}
@@ -904,14 +899,28 @@ export default function Lobby() {
                     <span className="hidden sm:inline">Admin</span>
                   </button>
                 )}
-                <SocialPanel onlineUsers={onlineUsers} onOpenDm={(userId) => setDmUserId(userId)} />
-                <MessagesDropdown onOpenDm={(userId) => setDmUserId(userId)} />
-                <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} />
-                <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} />
-                <div className="w-px h-5 mx-1.5 flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
+                {/* hidden controlled triggers — opened from the orbital profile menu */}
+                <SocialPanel
+                  onlineUsers={onlineUsers}
+                  onOpenDm={(userId) => setDmUserId(userId)}
+                  open={socialOpen}
+                  onOpenChange={setSocialOpen}
+                  hideTrigger
+                />
+                <MessagesDropdown
+                  onOpenDm={(userId) => setDmUserId(userId)}
+                  open={messagesOpen}
+                  onOpenChange={setMessagesOpen}
+                  hideTrigger
+                />
+                <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} hideTrigger />
+                <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} hideTrigger />
                 <ProfileDropdown
                   onOpenTheme={() => setThemePickerOpen(true)}
                   onOpenNotifications={() => setNotificationsOpen(true)}
+                  onOpenMessages={() => setMessagesOpen(true)}
+                  onOpenCommunity={() => setSocialOpen(true)}
+                  onBookTeacher={() => navigate("/teachers")}
                 />
               </>
             ) : (
@@ -1348,6 +1357,8 @@ export default function Lobby() {
           ))}
         </div>
       )}
+
+      <ScrollJumpButton />
     </div>
   );
 }

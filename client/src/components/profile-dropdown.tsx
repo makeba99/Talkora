@@ -2,12 +2,10 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
@@ -231,9 +229,24 @@ function ImageCropDialog({
 interface ProfileDropdownProps {
   onOpenTheme?: () => void;
   onOpenNotifications?: () => void;
+  onOpenMessages?: () => void;
+  onOpenCommunity?: () => void;
+  onBookTeacher?: () => void;
+  unreadMessages?: number;
+  unreadNotifications?: number;
 }
 
-export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDropdownProps = {}) {
+export function ProfileDropdown({
+  onOpenTheme,
+  onOpenNotifications,
+  onOpenMessages,
+  onOpenCommunity,
+  onBookTeacher,
+  unreadMessages = 0,
+  unreadNotifications = 0,
+}: ProfileDropdownProps = {}) {
+  const [orbitOpen, setOrbitOpen] = useState(false);
+  const closeOrbitAnd = (fn?: () => void) => () => { setOrbitOpen(false); fn?.(); };
   const { user, logout } = useAuth();
   const { appearOffline, setAppearOffline } = useSocket();
   const { toast } = useToast();
@@ -388,127 +401,235 @@ export function ProfileDropdown({ onOpenTheme, onOpenNotifications }: ProfileDro
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 px-2" data-testid="button-profile-dropdown">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={user?.profileImageUrl || undefined} />
-              <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                {getUserInitials(user)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-medium hidden sm:inline truncate max-w-24" data-testid="text-current-user">
-              {getUserDisplayName(user)}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 p-0 overflow-hidden">
-          <div className="flex items-center gap-3 px-3 py-3 border-b border-border bg-muted/30">
-            <div className="relative flex-shrink-0">
-              <Avatar className="w-10 h-10">
+      <Popover open={orbitOpen} onOpenChange={setOrbitOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className="orbit-trigger-pill"
+            data-testid="button-profile-dropdown"
+            aria-label="Open profile menu"
+          >
+            <span className="orbit-trigger-avatar-wrap">
+              <Avatar className="w-7 h-7">
                 <AvatarImage src={user?.profileImageUrl || undefined} />
-                <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                <AvatarFallback className="text-[11px] bg-primary/10 text-primary">
                   {getUserInitials(user)}
                 </AvatarFallback>
               </Avatar>
               <span
-                className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background"
+                className="orbit-trigger-status"
                 style={{
                   background: appearOffline ? "#6b7280" : "#22c55e",
                   boxShadow: appearOffline ? "none" : "0 0 6px rgba(34,197,94,0.7)",
                 }}
-                data-testid="status-dot-dropdown"
+                aria-hidden="true"
+              />
+              {(unreadMessages + unreadNotifications) > 0 && (
+                <span className="orbit-trigger-badge" aria-hidden="true">
+                  {Math.min(unreadMessages + unreadNotifications, 99)}
+                </span>
+              )}
+            </span>
+            <span
+              className="text-[12px] font-semibold hidden sm:inline truncate max-w-[110px]"
+              data-testid="text-current-user"
+            >
+              {getUserDisplayName(user)}
+            </span>
+            <ChevronDown className="orbit-trigger-chev w-3 h-3 hidden sm:block" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          sideOffset={10}
+          className="orbit-popover-content"
+        >
+          {/* connector tail from the trigger pill into the orbit */}
+          <span className="orbit-tail" aria-hidden="true" />
+
+          <div className="orbit-ring" data-testid="orbit-ring">
+            {/* outer dotted ring decoration */}
+            <span className="orbit-ring-outer" aria-hidden="true" />
+            <span className="orbit-ring-inner" aria-hidden="true" />
+
+            {/* center: 4-dot grid acts as collapse / "all apps" */}
+            <button
+              type="button"
+              className="orbit-center"
+              onClick={() => setOrbitOpen(false)}
+              data-testid="button-orbit-center"
+              title="Close menu"
+              aria-label="Close menu"
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+
+            {/* satellites — positioned via .orbit-sat-{n} (5 slots, 72° apart) */}
+            <button
+              type="button"
+              className="orbit-sat orbit-sat-1"
+              onClick={closeOrbitAnd(onOpenMessages)}
+              data-testid="orbit-sat-messages"
+              aria-label="Messages"
+            >
+              <span className="orbit-sat-bubble">
+                <MessageCircle className="w-[18px] h-[18px]" />
+                {unreadMessages > 0 && (
+                  <span className="orbit-sat-dot" aria-hidden="true" />
+                )}
+              </span>
+              <span className="orbit-sat-label">Messages</span>
+            </button>
+
+            <button
+              type="button"
+              className="orbit-sat orbit-sat-2"
+              onClick={closeOrbitAnd(onOpenNotifications)}
+              data-testid="orbit-sat-notifications"
+              aria-label="Notifications"
+            >
+              <span className="orbit-sat-bubble">
+                <Bell className="w-[18px] h-[18px]" />
+                {unreadNotifications > 0 && (
+                  <span className="orbit-sat-dot" aria-hidden="true" />
+                )}
+              </span>
+              <span className="orbit-sat-label">Notifications</span>
+            </button>
+
+            <button
+              type="button"
+              className="orbit-sat orbit-sat-3"
+              onClick={closeOrbitAnd(onOpenTheme)}
+              data-testid="orbit-sat-themes"
+              aria-label="Themes"
+            >
+              <span className="orbit-sat-bubble">
+                <Palette className="w-[18px] h-[18px]" />
+              </span>
+              <span className="orbit-sat-label">Themes</span>
+            </button>
+
+            <button
+              type="button"
+              className="orbit-sat orbit-sat-4"
+              onClick={closeOrbitAnd(onBookTeacher)}
+              data-testid="orbit-sat-teacher"
+              aria-label="Book Teacher"
+            >
+              <span className="orbit-sat-bubble orbit-sat-bubble-accent">
+                <GraduationCap className="w-[18px] h-[18px]" />
+              </span>
+              <span className="orbit-sat-label orbit-sat-label-accent">Book Teacher</span>
+            </button>
+
+            <button
+              type="button"
+              className="orbit-sat orbit-sat-5"
+              onClick={closeOrbitAnd(onOpenCommunity)}
+              data-testid="orbit-sat-community"
+              aria-label="Community"
+            >
+              <span className="orbit-sat-bubble">
+                <UsersIcon className="w-[18px] h-[18px]" />
+              </span>
+              <span className="orbit-sat-label">Community</span>
+            </button>
+          </div>
+
+          {/* identity card under the orbit */}
+          <div className="orbit-identity">
+            <div className="relative flex-shrink-0">
+              <Avatar className="w-9 h-9 ring-1 ring-white/15">
+                <AvatarImage src={user?.profileImageUrl || undefined} />
+                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                  {getUserInitials(user)}
+                </AvatarFallback>
+              </Avatar>
+              <span
+                className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
+                style={{
+                  background: appearOffline ? "#6b7280" : "#22c55e",
+                  borderColor: "rgb(15 17 28 / 1)",
+                  boxShadow: appearOffline ? "none" : "0 0 6px rgba(34,197,94,0.7)",
+                }}
               />
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate" data-testid="text-dropdown-user-name">{getUserDisplayName(user)}</p>
-              <p className="text-xs truncate" data-testid="text-dropdown-status"
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold truncate" data-testid="text-dropdown-user-name">
+                {getUserDisplayName(user)}
+              </p>
+              <p
+                className="text-[10.5px] truncate"
+                data-testid="text-dropdown-status"
                 style={{ color: appearOffline ? "rgba(251,191,36,0.85)" : "rgba(34,197,94,0.85)" }}
               >
                 {appearOffline ? "Appearing offline" : "Online"}
               </p>
             </div>
-          </div>
-          <div className="p-1">
-            <DropdownMenuItem onClick={handleOpenEdit} data-testid="menu-edit-profile">
-              <User className="w-4 h-4 mr-2" />
-              My Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleOpenSettings} data-testid="menu-settings">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => { onOpenNotifications?.(); }}
-              data-testid="menu-notifications"
+            <button
+              type="button"
+              onClick={() => setAppearOffline(!appearOffline)}
+              className="orbit-mini-toggle"
+              data-testid="menu-appear-offline"
+              title={appearOffline ? "Currently appearing offline" : "Click to appear offline"}
+              aria-label="Toggle appear offline"
             >
-              <Bell className="w-4 h-4 mr-2" />
-              Notifications
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setBadgeApplyOpen(true)}
+              {appearOffline
+                ? <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {/* secondary actions footer */}
+          <div className="orbit-footer">
+            <button
+              type="button"
+              className="orbit-footer-btn"
+              onClick={closeOrbitAnd(handleOpenEdit)}
+              data-testid="menu-edit-profile"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Edit</span>
+            </button>
+            <button
+              type="button"
+              className="orbit-footer-btn"
+              onClick={closeOrbitAnd(handleOpenSettings)}
+              data-testid="menu-settings"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Settings</span>
+            </button>
+            <button
+              type="button"
+              className="orbit-footer-btn"
+              onClick={closeOrbitAnd(() => setBadgeApplyOpen(true))}
               data-testid="menu-apply-badge"
             >
-              <Award className="w-4 h-4 mr-2" />
-              Apply for Badge
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setBlockedOpen(true)}
+              <Award className="w-3.5 h-3.5" />
+              <span>Badge</span>
+            </button>
+            <button
+              type="button"
+              className="orbit-footer-btn"
+              onClick={closeOrbitAnd(() => setBlockedOpen(true))}
               data-testid="menu-blocked-users"
             >
-              <Ban className="w-4 h-4 mr-2" />
-              Blocked Users
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setAppearOffline(!appearOffline)}
-              data-testid="menu-appear-offline"
-              className="cursor-pointer"
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center">
-                  {appearOffline
-                    ? <EyeOff className="w-4 h-4 mr-2 text-amber-400" />
-                    : <Eye className="w-4 h-4 mr-2" />
-                  }
-                  <span className={appearOffline ? "text-amber-400" : ""}>
-                    Appear Offline
-                  </span>
-                </div>
-                <div
-                  className="relative ml-3 flex-shrink-0 w-8 h-4 rounded-full transition-colors duration-200"
-                  style={{
-                    background: appearOffline
-                      ? "rgba(251,191,36,0.85)"
-                      : "rgba(255,255,255,0.15)",
-                    border: appearOffline
-                      ? "1px solid rgba(251,191,36,0.5)"
-                      : "1px solid rgba(255,255,255,0.2)",
-                  }}
-                >
-                  <span
-                    className="absolute top-0.5 w-3 h-3 rounded-full transition-all duration-200"
-                    style={{
-                      background: "#fff",
-                      left: appearOffline ? "calc(100% - 14px)" : "2px",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                    }}
-                  />
-                </div>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => logout()}
-              className="text-destructive focus:text-destructive"
+              <Ban className="w-3.5 h-3.5" />
+              <span>Blocked</span>
+            </button>
+            <button
+              type="button"
+              className="orbit-footer-btn orbit-footer-btn-danger"
+              onClick={closeOrbitAnd(() => logout())}
               data-testid="menu-logout"
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </DropdownMenuItem>
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
           </div>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </PopoverContent>
+      </Popover>
 
       <input
         ref={fileInputRef}

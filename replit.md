@@ -358,6 +358,22 @@ Badge applications table (shared/schema.ts):
   left alone — those are Twitch's own brand color in the
   documentation panel.
 
+## Header & Navigation
+- The logged-in user header uses an **OrbitalProfileMenu** (in
+  `client/src/components/profile-dropdown.tsx`): a glowing radial
+  ring of 5 satellites around a central 4-dot core, replacing the
+  vertical dropdown. Satellites: Messages, Notifications, Themes,
+  Book Teacher, Community. Underneath the orbit is an identity
+  card and a 5-button footer (Edit / Settings / Badge / Blocked /
+  Logout). The orbit drives **controlled-open** copies of
+  `MessagesDropdown`, `NotificationsDropdown`, `ThemePicker`, and
+  `SocialPanel` (rendered with `hideTrigger`) so only the avatar
+  pill is visible in the header.
+- A **ScrollJumpButton** (`client/src/components/scroll-jump-button.tsx`)
+  is mounted in the lobby. It targets `.app-scrollbar` (lobby's
+  internal scroll surface), shows a fat neumorphic up/down pill on
+  the right edge, and auto-hides when the page is not scrollable.
+
 ## User Preferences
 - No landing page gate - lobby always shown
 - Collapse/expand for language filters instead of scrollbar
