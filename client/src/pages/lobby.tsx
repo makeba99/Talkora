@@ -1309,8 +1309,8 @@ export default function Lobby() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-auto app-scrollbar">
-        <div className="max-w-[1600px] mx-auto p-3 sm:p-4 lg:px-6 xl:px-8 pb-0 space-y-5 animate-fade-in">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden app-scrollbar">
+        <div className="max-w-[1600px] mx-auto p-3 sm:p-4 lg:px-6 xl:px-8 pb-0 space-y-5 animate-fade-in min-w-0">
           {announcements.length > 0 && (
             <div className="space-y-2" data-testid="container-lobby-announcements">
               {announcements.map((announcement) => {
