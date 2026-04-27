@@ -905,12 +905,6 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                   <span className="text-[11px] font-semibold">{voteCount}</span>
                 </button>
               )}
-              {isFull && (
-                <div className="flex items-center gap-1 text-red-400/70">
-                  <Ban className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-medium">Full</span>
-                </div>
-              )}
             </div>
 
             {/* Step In — 3D animated swinging door.
@@ -922,21 +916,14 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             */}
             {(() => {
               const isPrivate = !room.isPublic;
+              // Always use the sculpted/locked-style door look for every state.
+              // The door art itself communicates state (keyhole = locked, FULL panel = full).
               const stateClass = isFull
-                ? "door-3d-disabled door-3d-full"
-                : isPrivate
-                  ? "door-3d-locked"
-                  : "";
-              const labelClass = isFull
-                ? "door-status-closed"
-                : isPrivate
-                  ? "door-status-locked"
-                  : "door-status-open";
-              const labelText = isFull ? "FULL" : isPrivate ? "LOCKED" : "OPEN";
+                ? "door-3d-disabled door-3d-full door-3d-locked"
+                : "door-3d-locked";
 
               const doorBody = (
                 <>
-                  <span className={`door-status-label ${labelClass}`}>{labelText}</span>
                   <div className="door-frame">
                     <div className="door-interior" />
                     <div className="door-panel">
