@@ -839,9 +839,10 @@ export default function Lobby() {
       current: { id: string; tab?: "rooms" | "top-speakers" | "famous-users"; ghostType?: string } | null,
       prev: { id: string; tab?: "rooms" | "top-speakers" | "famous-users"; ghostType?: string } | null,
     ) => {
-      // Tour closed — make sure typing is cleaned up and we're back on rooms.
+      // Tour closed — make sure typing is cleaned up, orbit is closed, and we're back on rooms.
       if (!current) {
         ghostTypingRef.current?.cancel();
+        setOrbitOpen(false);
         if (prev?.tab && prev.tab !== "rooms") setActiveDiscovery("rooms");
         return;
       }
@@ -859,6 +860,12 @@ export default function Lobby() {
         const text = current.ghostType;
         setTimeout(() => startGhostTyping(text), 450);
       }
+      // Auto-open the orbit popover for the orbit-related steps so the user
+      // sees the actual ring, satellites, and pin badges while reading the
+      // explanation. Close it again when the tour moves to any other step.
+      const orbitSteps = new Set(["profile", "orbit-pin", "orbit-notifs"]);
+      const wantOrbit = orbitSteps.has(current.id);
+      setOrbitOpen(wantOrbit);
     },
     [startGhostTyping],
   );
