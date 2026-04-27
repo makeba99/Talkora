@@ -45,6 +45,12 @@ import {
   Filter,
   SlidersHorizontal,
   CreditCard,
+  ChevronLeft,
+  ChevronRight,
+  Zap,
+  Award,
+  Wallet,
+  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { PaymentMethodForm, SavedCardItem, type CardFormData } from "@/components/payment-method-form";
@@ -221,151 +227,271 @@ const SAMPLE_TEACHERS: Teacher[] = [
   },
 ];
 
+/* ── MiniCalendar — sculpted neumorphic month grid picker ────────── */
+function MiniCalendar({
+  value,
+  onChange,
+  minDate,
+}: {
+  value: string;          // "YYYY-MM-DD" or ""
+  onChange: (v: string) => void;
+  minDate?: Date;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const initial = value ? new Date(value + "T00:00") : today;
+  const [viewMonth, setViewMonth] = useState(new Date(initial.getFullYear(), initial.getMonth(), 1));
+
+  const monthName = viewMonth.toLocaleString("en", { month: "long", year: "numeric" });
+  const firstDow = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1).getDay();
+  const daysInMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
+  const daysInPrevMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 0).getDate();
+
+  const cells: { day: number; isOtherMonth: boolean; date: Date }[] = [];
+  for (let i = firstDow - 1; i >= 0; i--) {
+    const d = daysInPrevMonth - i;
+    cells.push({ day: d, isOtherMonth: true, date: new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, d) });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, isOtherMonth: false, date: new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d) });
+  }
+  while (cells.length % 7 !== 0 || cells.length < 42) {
+    const dayIndex = cells.length - (firstDow + daysInMonth) + 1;
+    cells.push({ day: dayIndex, isOtherMonth: true, date: new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, dayIndex) });
+    if (cells.length >= 42) break;
+  }
+
+  function fmt(d: Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  const min = minDate || today;
+  min.setHours(0, 0, 0, 0);
+
+  return (
+    <div className="neu-mini-cal" data-testid="mini-calendar">
+      <div className="neu-cal-header">
+        <button
+          type="button"
+          className="neu-cal-nav"
+          onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))}
+          data-testid="button-cal-prev"
+          aria-label="Previous month"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <div className="neu-cal-title" data-testid="text-cal-month">{monthName}</div>
+        <button
+          type="button"
+          className="neu-cal-nav"
+          onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}
+          data-testid="button-cal-next"
+          aria-label="Next month"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="neu-cal-grid">
+        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          <div key={`dow-${i}`} className="neu-cal-dow">{d}</div>
+        ))}
+        {cells.map((c, idx) => {
+          const isPast = c.date < min;
+          const dateStr = fmt(c.date);
+          const isSelected = value === dateStr;
+          const isToday =
+            c.date.getFullYear() === today.getFullYear() &&
+            c.date.getMonth() === today.getMonth() &&
+            c.date.getDate() === today.getDate();
+          return (
+            <button
+              key={idx}
+              type="button"
+              disabled={isPast || c.isOtherMonth}
+              className={`neu-cal-day ${c.isOtherMonth ? "is-other-month" : ""} ${isToday ? "is-today" : ""} ${isSelected ? "is-selected" : ""}`}
+              onClick={() => !c.isOtherMonth && !isPast && onChange(dateStr)}
+              data-testid={`button-cal-day-${dateStr}`}
+            >
+              {c.day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── TimeChips — generates morning/afternoon/evening time slots ──── */
+function TimeChips({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const sections: { label: string; icon: React.ReactNode; slots: string[] }[] = [
+    { label: "Morning",   icon: <Sparkles className="w-3 h-3" />, slots: ["08:00", "09:00", "10:00", "11:00"] },
+    { label: "Afternoon", icon: <Zap className="w-3 h-3" />,      slots: ["12:00", "13:00", "14:00", "15:00", "16:00", "17:00"] },
+    { label: "Evening",   icon: <Star className="w-3 h-3" />,     slots: ["18:00", "19:00", "20:00", "21:00", "22:00"] },
+  ];
+  function toLabel(t: string) {
+    const [h, m] = t.split(":").map(Number);
+    const period = h >= 12 ? "PM" : "AM";
+    const hh = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${hh}:${String(m).padStart(2, "0")} ${period}`;
+  }
+  return (
+    <div className="space-y-3" data-testid="time-chips">
+      {sections.map((sec) => (
+        <div key={sec.label} className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <span className="text-violet-400/70">{sec.icon}</span>
+            {sec.label}
+          </div>
+          <div className="neu-time-strip">
+            {sec.slots.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`neu-time-chip ${value === t ? "is-active" : ""}`}
+                onClick={() => onChange(t)}
+                data-testid={`button-time-${t.replace(":", "")}`}
+              >
+                {toLabel(t)}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher; onView: () => void; onBook: () => void; isLoggedIn: boolean }) {
+  const isFeatured = teacher.rating >= 49;
+  const sessionMins = teacher.sessionDurations.map(Number).sort((a, b) => a - b);
+
   return (
     <div
-      className="relative rounded-xl overflow-hidden cursor-pointer group transition-all duration-300"
-      style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.border = "1px solid rgba(0,210,255,0.25)";
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 32px rgba(0,0,0,0.4), 0 0 20px rgba(0,210,255,0.07)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.border = "1px solid rgba(255,255,255,0.08)";
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.3)";
-      }}
+      className="neu-teacher-card cursor-pointer"
       onClick={onView}
       data-testid={`card-teacher-${teacher.id}`}
     >
-      {teacher.id.startsWith("sample-") && (
-        <div
-          className="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide uppercase"
-          style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.25)", color: "#c4b5fd" }}
-        >
-          Trial Course
+      {/* Top status row */}
+      <div className="absolute top-3 left-3 right-3 z-10 flex items-start justify-between gap-2 pointer-events-none">
+        <div className="flex flex-wrap gap-1.5">
+          {teacher.id.startsWith("sample-") && (
+            <span className="neu-status-pill is-trial">
+              <Sparkles className="w-2.5 h-2.5" />
+              Trial
+            </span>
+          )}
+          {isFeatured && (
+            <span className="neu-status-pill is-trial">
+              <Trophy className="w-2.5 h-2.5" />
+              Featured
+            </span>
+          )}
         </div>
-      )}
-      {!teacher.isAvailable && (
-        <div
-          className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-          style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}
-        >
-          Unavailable
-        </div>
-      )}
-      {teacher.isAvailable && (
-        <div
-          className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-          style={{ background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.25)", color: "#34d399" }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Available
-        </div>
-      )}
+        {teacher.isAvailable ? (
+          <span className="neu-status-pill is-available">
+            <span className="dot" />
+            Live
+          </span>
+        ) : (
+          <span className="neu-status-pill is-unavailable">Offline</span>
+        )}
+      </div>
 
-      <div className="p-4 space-y-3">
-        <div className="flex items-start gap-3">
-          <div className="relative flex-shrink-0">
-            <div
-              className="rounded-full p-[2px]"
-              style={{ background: "linear-gradient(135deg, rgba(0,200,255,0.7) 0%, rgba(110,60,255,0.7) 100%)" }}
-            >
-              <Avatar className="w-11 h-11 border-2 border-background">
-                <AvatarImage src={teacher.avatarUrl || undefined} />
-                <AvatarFallback className="text-base font-bold" style={{ background: "rgba(0,200,255,0.1)" }}>
-                  {teacher.name.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </div>
+      <div className="p-5 pt-12 space-y-3.5">
+        {/* Header row: avatar + name + rate */}
+        <div className="flex items-start gap-3.5">
+          <div className="neu-avatar-plate">
+            <Avatar className="w-full h-full">
+              <AvatarImage src={teacher.avatarUrl || undefined} />
+              <AvatarFallback
+                className="text-base font-extrabold tracking-wide"
+                style={{
+                  background: "linear-gradient(140deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
+                  color: "#fff",
+                }}
+              >
+                {teacher.name.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-[15px] leading-tight text-white truncate" data-testid={`text-teacher-name-${teacher.id}`}>{teacher.name}</h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <h3
+              className="font-extrabold text-[15px] leading-tight text-white truncate tracking-tight"
+              data-testid={`text-teacher-name-${teacher.id}`}
+              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
+            >
+              {teacher.name}
+            </h3>
+            <div className="flex items-center gap-1.5 mt-1">
               <StarRating rating={teacher.rating} />
-              <span className="text-[11px] text-white/50">
-                {teacher.rating > 0 ? (teacher.rating > 5 ? (teacher.rating / 10).toFixed(1) : teacher.rating.toFixed(1)) : "New"} {teacher.reviewCount > 0 ? `(${teacher.reviewCount})` : ""}
+              <span className="text-[11px] text-white/55 font-semibold">
+                {teacher.rating > 0
+                  ? (teacher.rating > 5 ? (teacher.rating / 10).toFixed(1) : teacher.rating.toFixed(1))
+                  : "New"}
+                {teacher.reviewCount > 0 ? <span className="text-white/35"> · {teacher.reviewCount}</span> : null}
               </span>
             </div>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span
-                className="text-[13px] font-bold"
-                style={{ background: "linear-gradient(135deg, #22d3ee, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                data-testid={`text-teacher-rate-${teacher.id}`}
-              >
-                ${teacher.hourlyRate}/hr
+            <div className="mt-2">
+              <span className="neu-rate-badge" data-testid={`text-teacher-rate-${teacher.id}`}>
+                <span className="currency">$</span>{teacher.hourlyRate}<span className="per">/hr</span>
               </span>
             </div>
           </div>
         </div>
 
         {teacher.bio && (
-          <p className="text-[12px] text-white/55 leading-relaxed line-clamp-2">{teacher.bio}</p>
+          <p className="text-[12px] text-white/55 leading-relaxed line-clamp-2 italic">
+            "{teacher.bio}"
+          </p>
         )}
 
         <div className="flex flex-wrap gap-1.5">
           {teacher.languages.slice(0, 3).map((lang) => (
-            <div
-              key={lang}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
-              style={{ background: "rgba(0,200,255,0.08)", border: "1px solid rgba(0,200,255,0.15)", color: "rgba(34,211,238,0.9)" }}
-            >
+            <div key={lang} className="neu-tag is-cyan">
               <LanguageFlag language={lang} />
               {lang}
             </div>
           ))}
           {teacher.languages.length > 3 && (
-            <div
-              className="px-2 py-0.5 rounded-full text-[11px] font-medium"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)" }}
-            >
-              +{teacher.languages.length - 3}
-            </div>
+            <div className="neu-tag">+{teacher.languages.length - 3}</div>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-1">
-          {teacher.levels.slice(0, 3).map((level) => (
-            <span key={level} className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${getLevelColor(level)}`}>
-              {level}
-            </span>
-          ))}
+        <div className="flex flex-wrap gap-1.5">
+          {teacher.levels.slice(0, 3).map((level) => {
+            const cls =
+              level === "Beginner"     ? "is-emerald" :
+              level === "Intermediate" ? "is-amber"   :
+              level === "Advanced"     ? "is-rose"    :
+              level === "Native"       ? "is-violet"  : "is-cyan";
+            return <span key={level} className={`neu-tag ${cls}`}>{level}</span>;
+          })}
         </div>
 
         {teacher.specializations.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {teacher.specializations.slice(0, 3).map((s) => (
-              <span
-                key={s}
-                className="px-2 py-0.5 rounded-full text-[10px]"
-                style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)", color: "rgba(167,139,250,0.8)" }}
-              >
-                {s}
-              </span>
+              <span key={s} className="neu-tag is-violet">{s}</span>
             ))}
           </div>
         )}
 
-        <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-          <div className="flex items-center gap-1 text-[11px] text-white/40">
-            <Clock className="w-3 h-3" />
-            {teacher.sessionDurations.map(Number).sort((a, b) => a - b).join(" / ")} min
+        <div
+          className="flex items-center gap-2 pt-3"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.045)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.025)" }}
+        >
+          <div className="flex items-center gap-1 text-[11px] text-white/45 font-semibold">
+            <Clock className="w-3 h-3 text-violet-400/70" />
+            {sessionMins.join(" / ")}<span className="opacity-60 ml-0.5">min</span>
           </div>
           <div className="flex-1" />
-          <Button
-            size="sm"
-            className="h-7 text-xs font-semibold px-3"
-            style={{
-              background: teacher.isAvailable
-                ? "linear-gradient(135deg, rgba(0,200,255,0.85) 0%, rgba(100,50,240,0.85) 100%)"
-                : "rgba(255,255,255,0.08)",
-              border: teacher.isAvailable ? "1px solid rgba(0,210,255,0.3)" : "1px solid rgba(255,255,255,0.1)",
-              color: teacher.isAvailable ? "#fff" : "rgba(255,255,255,0.3)",
-              boxShadow: teacher.isAvailable ? "0 0 14px rgba(0,200,255,0.18)" : "none",
-            }}
+          <button
+            type="button"
+            className={`neu-book-button ${!teacher.isAvailable ? "is-disabled" : ""}`}
             onClick={(e) => {
               e.stopPropagation();
               if (!isLoggedIn) { window.location.href = "/api/login"; return; }
@@ -374,9 +500,9 @@ function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher
             disabled={!teacher.isAvailable}
             data-testid={`button-book-teacher-${teacher.id}`}
           >
-            <CalendarCheck className="w-3 h-3 mr-1.5" />
-            Book
-          </Button>
+            <CalendarCheck className="w-3.5 h-3.5" />
+            Book Now
+          </button>
         </div>
       </div>
     </div>
@@ -468,17 +594,35 @@ function BookingDialog({
   minDate.setDate(minDate.getDate() + 1);
   const minDateStr = minDate.toISOString().split("T")[0];
 
+  const formattedDateTime = date && time
+    ? `${new Date(date + "T" + time).toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric" })} · ${(() => {
+        const [h, m] = time.split(":").map(Number);
+        const period = h >= 12 ? "PM" : "AM";
+        const hh = h === 0 ? 12 : h > 12 ? h - 12 : h;
+        return `${hh}:${String(m).padStart(2, "0")} ${period}`;
+      })()}`
+    : "";
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
         className="max-w-md border-0 p-0 overflow-hidden"
-        style={{ background: "#0d1117" }}
+        style={{
+          background: "linear-gradient(160deg, hsl(228 16% 12%) 0%, hsl(228 18% 9%) 100%)",
+          boxShadow:
+            "0 0 0 1px rgba(255,255,255,0.05), -8px -8px 24px rgba(255,255,255,0.025), 16px 20px 60px rgba(0,0,0,0.85)",
+        }}
       >
+        {/* Top accent rail */}
         <div
-          className="h-1 w-full"
-          style={{ background: "linear-gradient(90deg, #22d3ee, #a78bfa, #22d3ee)", backgroundSize: "200% 100%", animation: "shimmer 3s linear infinite" }}
+          className="h-[3px] w-full"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent 0%, hsl(var(--neu-orange-hi) / 0.85) 25%, hsl(var(--neu-orange) / 0.85) 50%, hsl(var(--neu-orange-hi) / 0.85) 75%, transparent 100%)",
+            boxShadow: "0 0 16px hsl(var(--neu-orange) / 0.6)",
+          }}
         />
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-3">
@@ -486,32 +630,39 @@ function BookingDialog({
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="text-white/40 hover:text-white/70 transition-colors mr-1"
+                    className="neu-cal-nav"
+                    aria-label="Back"
                     data-testid="button-booking-back"
                   >
-                    ←
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
                 )}
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={teacher.avatarUrl || undefined} />
-                  <AvatarFallback>{teacher.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
+                <div className="neu-avatar-plate" style={{ width: 44, height: 44 }}>
+                  <Avatar className="w-full h-full">
+                    <AvatarImage src={teacher.avatarUrl || undefined} />
+                    <AvatarFallback
+                      style={{
+                        background: "linear-gradient(140deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
+                        color: "#fff",
+                      }}
+                    >
+                      {teacher.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
                 <div>
-                  <DialogTitle className="text-[15px]">
-                    {step === 1 ? "Book a Session" : "Payment"}
+                  <DialogTitle className="text-[15px] font-extrabold tracking-tight" style={{ color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                    {step === 1 ? "Schedule Session" : "Secure Payment"}
                   </DialogTitle>
-                  <p className="text-[12px] text-white/50">with {teacher.name}</p>
+                  <p className="text-[11px] text-white/50 font-medium tracking-wide">with {teacher.name}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
                 {[1, 2].map((s) => (
                   <div
                     key={s}
-                    className="h-1.5 rounded-full transition-all"
-                    style={{
-                      width: step === s ? "24px" : "8px",
-                      background: step >= s ? "rgba(0,200,255,0.7)" : "rgba(255,255,255,0.15)",
-                    }}
+                    className={`neu-step-dot ${step >= s ? "is-active" : ""}`}
+                    style={{ width: step === s ? 28 : 10 }}
                   />
                 ))}
               </div>
@@ -520,91 +671,93 @@ function BookingDialog({
 
           {step === 1 && (
             <>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[12px] text-white/60">Date</Label>
-                  <Input
-                    type="date"
-                    value={date}
-                    min={minDateStr}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="h-9 text-sm"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                    data-testid="input-booking-date"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[12px] text-white/60">Time</Label>
-                  <Input
-                    type="time"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className="h-9 text-sm"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                    data-testid="input-booking-time"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45 flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3 text-violet-400" />
+                  Pick a date
+                </Label>
+                <MiniCalendar
+                  value={date}
+                  onChange={setDate}
+                  minDate={minDate}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3 text-violet-400" />
+                  Pick a time
+                </Label>
+                <TimeChips value={time} onChange={setTime} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-[12px] text-white/60">Duration</Label>
-                  <Select value={String(duration)} onValueChange={setDuration}>
-                    <SelectTrigger
-                      className="h-9 text-sm"
-                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                      data-testid="select-booking-duration"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teacher.sessionDurations.map((d) => (
-                        <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45">Duration</Label>
+                  <div
+                    className="neu-segmented"
+                    style={{ gridTemplateColumns: `repeat(${teacher.sessionDurations.length}, 1fr)` }}
+                  >
+                    {teacher.sessionDurations.map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        className={`neu-segmented-item ${String(duration) === String(d) ? "is-active" : ""}`}
+                        onClick={() => setDuration(String(d))}
+                        data-testid={`button-duration-${d}`}
+                      >
+                        {d}<span className="opacity-60 ml-0.5">m</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[12px] text-white/60">Session Type</Label>
-                  <Select value={sessionType} onValueChange={setSessionType}>
-                    <SelectTrigger
-                      className="h-9 text-sm"
-                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                      data-testid="select-booking-type"
+                  <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45">Session Type</Label>
+                  <div className="neu-segmented" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                    <button
+                      type="button"
+                      className={`neu-segmented-item ${sessionType === "private" ? "is-active" : ""}`}
+                      onClick={() => setSessionType("private")}
+                      data-testid="button-type-private"
                     >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="private">Private</SelectItem>
-                      <SelectItem value="group">Group</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      Private
+                    </button>
+                    <button
+                      type="button"
+                      className={`neu-segmented-item ${sessionType === "group" ? "is-active" : ""}`}
+                      onClick={() => setSessionType("group")}
+                      data-testid="button-type-group"
+                    >
+                      Group
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[12px] text-white/60">Notes (optional)</Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Topics to cover, your level, specific goals..."
-                  rows={3}
-                  className="text-sm resize-none"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
-                  data-testid="textarea-booking-notes"
-                />
+                <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45">Notes <span className="opacity-60 normal-case font-medium">(optional)</span></Label>
+                <div className="neu-input-well" style={{ height: "auto", padding: "10px 12px", alignItems: "flex-start" }}>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Topics to cover, your level, specific goals…"
+                    rows={3}
+                    className="resize-none"
+                    style={{ minHeight: 60 }}
+                    data-testid="textarea-booking-notes"
+                  />
+                </div>
               </div>
 
-              <div
-                className="flex items-center justify-between p-3 rounded-lg"
-                style={{ background: "rgba(0,200,255,0.06)", border: "1px solid rgba(0,200,255,0.12)" }}
-              >
-                <div className="text-[12px] text-white/60">Total ({duration} min)</div>
-                <div
-                  className="text-[16px] font-bold"
-                  style={{ background: "linear-gradient(135deg, #22d3ee, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                  data-testid="text-booking-total"
-                >
+              <div className="neu-total-bar">
+                <div className="flex items-center gap-2.5">
+                  <Wallet className="w-4 h-4 text-violet-300" />
+                  <div>
+                    <div className="text-[10px] font-bold tracking-widest uppercase text-white/45">Total · {duration} min</div>
+                    <div className="text-[11px] text-white/55 font-medium mt-0.5">{sessionType === "private" ? "Private session" : "Group session"}</div>
+                  </div>
+                </div>
+                <div className="total-amount" data-testid="text-booking-total">
                   ${totalPrice}
                 </div>
               </div>
@@ -612,48 +765,46 @@ function BookingDialog({
               <div className="flex gap-2 pt-1">
                 <Button
                   variant="ghost"
-                  className="flex-1 h-9"
+                  className="flex-1 h-10"
                   onClick={handleClose}
-                  style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                  style={{ border: "1px solid rgba(255,255,255,0.08)" }}
                   data-testid="button-booking-cancel"
                 >
                   Cancel
                 </Button>
-                <Button
-                  className="flex-1 h-9 font-semibold"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,50,240,0.9) 100%)",
-                    border: "1px solid rgba(0,210,255,0.3)",
-                    boxShadow: "0 0 18px rgba(0,200,255,0.2)",
-                  }}
+                <button
+                  type="button"
+                  className={`flex-1 neu-book-button h-10 justify-center ${(!date || !time) ? "is-disabled" : ""}`}
                   onClick={handleNextStep}
                   disabled={!date || !time}
                   data-testid="button-booking-next"
                 >
-                  Next: Payment →
-                </Button>
+                  Continue to Payment
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </>
           )}
 
           {step === 2 && (
             <>
-              <div
-                className="flex items-center justify-between px-3 py-2 rounded-lg text-[12px]"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-              >
-                <span className="text-white/50">{duration} min · {date} at {time}</span>
-                <span
-                  className="font-bold text-[14px]"
-                  style={{ background: "linear-gradient(135deg, #22d3ee, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                >
-                  ${totalPrice}
-                </span>
+              <div className="neu-total-bar" style={{ padding: "10px 14px" }}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <CalendarCheck className="w-4 h-4 text-violet-300 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold tracking-widest uppercase text-white/45">Confirmed for</div>
+                    <div className="text-[12px] text-white/85 font-semibold truncate">{formattedDateTime}</div>
+                  </div>
+                </div>
+                <div className="total-amount" style={{ fontSize: 18 }}>${totalPrice}</div>
               </div>
 
               {paymentMethods.length > 0 && !showNewCard && (
                 <div className="space-y-2">
-                  <Label className="text-[12px] text-white/60">Saved cards</Label>
+                  <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45 flex items-center gap-1.5">
+                    <CreditCard className="w-3 h-3 text-violet-400" />
+                    Choose a card
+                  </Label>
                   <div className="space-y-2">
                     {paymentMethods.map((pm) => (
                       <SavedCardItem
@@ -667,8 +818,13 @@ function BookingDialog({
                   <button
                     type="button"
                     onClick={() => setShowNewCard(true)}
-                    className="w-full text-[12px] text-cyan-400/70 hover:text-cyan-400 py-2 rounded-lg transition-colors"
-                    style={{ border: "1px dashed rgba(0,200,255,0.2)" }}
+                    className="w-full text-[12px] font-semibold py-2.5 rounded-xl transition-colors"
+                    style={{
+                      color: "hsl(var(--neu-orange-hi))",
+                      background: "linear-gradient(155deg, hsl(228 18% 10%) 0%, hsl(228 16% 13%) 100%)",
+                      border: "1px dashed hsl(var(--neu-orange-hi) / 0.35)",
+                      boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.45), inset -1px -1px 3px rgba(255,255,255,0.025)",
+                    }}
                     data-testid="button-add-new-card"
                   >
                     + Add a new card
@@ -682,14 +838,15 @@ function BookingDialog({
                     <button
                       type="button"
                       onClick={() => setShowNewCard(false)}
-                      className="text-[12px] text-white/40 hover:text-white/60 transition-colors"
+                      className="text-[12px] text-white/45 hover:text-violet-300 transition-colors flex items-center gap-1"
                       data-testid="button-back-to-cards"
                     >
-                      ← Back to saved cards
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      Back to saved cards
                     </button>
                   )}
                   {paymentMethods.length === 0 && (
-                    <p className="text-[12px] text-white/40 text-center py-1">
+                    <p className="text-[12px] text-white/45 text-center py-1 italic">
                       No saved cards yet — add one to continue
                     </p>
                   )}
@@ -705,26 +862,23 @@ function BookingDialog({
                 <div className="flex gap-2 pt-1">
                   <Button
                     variant="ghost"
-                    className="flex-1 h-9"
+                    className="flex-1 h-10"
                     onClick={handleClose}
-                    style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+                    style={{ border: "1px solid rgba(255,255,255,0.08)" }}
                     data-testid="button-booking-cancel-2"
                   >
                     Cancel
                   </Button>
-                  <Button
-                    className="flex-1 h-9 font-semibold"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(0,200,255,0.9) 0%, rgba(100,50,240,0.9) 100%)",
-                      border: "1px solid rgba(0,210,255,0.3)",
-                      boxShadow: "0 0 18px rgba(0,200,255,0.2)",
-                    }}
+                  <button
+                    type="button"
+                    className={`flex-1 neu-book-button h-10 justify-center ${(!selectedPmId || bookMutation.isPending) ? "is-disabled" : ""}`}
                     onClick={() => bookMutation.mutate()}
                     disabled={!selectedPmId || bookMutation.isPending}
                     data-testid="button-booking-confirm"
                   >
-                    {bookMutation.isPending ? "Booking..." : `Confirm & Pay $${totalPrice}`}
-                  </Button>
+                    <Lock className="w-3.5 h-3.5" />
+                    {bookMutation.isPending ? "Booking…" : `Confirm & Pay $${totalPrice}`}
+                  </button>
                 </div>
               )}
             </>
@@ -1071,60 +1225,58 @@ function TeacherProfileDialog({
 }
 
 function MyBookingCard({ booking, onCancel }: { booking: BookingWithTeacher; onCancel: (id: string) => void }) {
-  const statusColor: Record<string, string> = {
-    pending: "text-amber-400 border-amber-400/20 bg-amber-400/10",
-    confirmed: "text-emerald-400 border-emerald-400/20 bg-emerald-400/10",
-    cancelled: "text-red-400 border-red-400/20 bg-red-400/10",
-    completed: "text-blue-400 border-blue-400/20 bg-blue-400/10",
+  const statusMeta: Record<string, { cls: string; label: string }> = {
+    pending:   { cls: "is-amber",   label: "Pending" },
+    confirmed: { cls: "is-emerald", label: "Confirmed" },
+    cancelled: { cls: "is-rose",    label: "Cancelled" },
+    completed: { cls: "is-cyan",    label: "Completed" },
   };
+  const status = statusMeta[booking.status] || statusMeta.pending;
 
   return (
     <div
-      className="p-4 rounded-xl"
-      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+      className="neu-saved-card"
+      style={{ cursor: "default" }}
       data-testid={`card-my-booking-${booking.id}`}
     >
-      <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, rgba(0,200,255,0.15) 0%, rgba(100,50,240,0.15) 100%)", border: "1px solid rgba(0,200,255,0.2)" }}>
-          <GraduationCap className="w-4 h-4 text-cyan-400" />
+      <div className="neu-icon-plate" style={{ width: 40, height: 40 }}>
+        <GraduationCap className="w-4 h-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-extrabold text-[13px] text-white truncate" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+            {booking.teacher?.name || "Teacher"}
+          </span>
+          <span className={`neu-tag ${status.cls}`}>{status.label}</span>
+          <span className="neu-tag is-violet">{booking.sessionType === "private" ? "Private" : "Group"}</span>
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-[13px] text-white">{booking.teacher?.name || "Teacher"}</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusColor[booking.status] || statusColor.pending}`}>
-              {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-            </span>
-            <span
-              className="text-[10px] px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)", color: "rgba(167,139,250,0.8)" }}
-            >
-              {booking.sessionType === "private" ? "Private" : "Group"}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 mt-1 text-[12px] text-white/45">
-            <Calendar className="w-3 h-3" />
-            {format(new Date(booking.scheduledAt), "MMM d, yyyy · h:mm a")}
-            <span className="text-white/25">·</span>
-            <Clock className="w-3 h-3" />
-            {booking.durationMinutes} min
-          </div>
-          {booking.notes && (
-            <p className="mt-1 text-[11px] text-white/35 italic truncate">{booking.notes}</p>
-          )}
+        <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-white/55 font-semibold">
+          <Calendar className="w-3 h-3 text-violet-400/70" />
+          {format(new Date(booking.scheduledAt), "MMM d, yyyy · h:mm a")}
+          <span className="text-white/25">·</span>
+          <Clock className="w-3 h-3 text-violet-400/70" />
+          {booking.durationMinutes} min
         </div>
-        {booking.status !== "cancelled" && booking.status !== "completed" && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-[11px] text-red-400/70 hover:text-red-400 hover:bg-red-400/10 flex-shrink-0"
-            onClick={() => onCancel(booking.id)}
-            data-testid={`button-cancel-booking-${booking.id}`}
-          >
-            Cancel
-          </Button>
+        {booking.notes && (
+          <p className="mt-1 text-[11px] text-white/40 italic truncate">"{booking.notes}"</p>
         )}
       </div>
+      {booking.status !== "cancelled" && booking.status !== "completed" && (
+        <button
+          type="button"
+          className="text-red-400/70 hover:text-red-400 p-2 rounded-md transition-colors flex-shrink-0"
+          style={{
+            background: "linear-gradient(150deg, hsl(228 14% 17%) 0%, hsl(228 14% 13%) 100%)",
+            border: "1px solid rgba(239,68,68,0.18)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 1px 2px 4px rgba(0,0,0,0.4)",
+          }}
+          onClick={() => onCancel(booking.id)}
+          data-testid={`button-cancel-booking-${booking.id}`}
+          title="Cancel booking"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 }
@@ -1255,18 +1407,19 @@ export default function TeachersPage() {
   const pastBookings = myBookings.filter((b) => b.status === "cancelled" || b.status === "completed");
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full neu-canvas">
       <header
-        className="sticky top-0 z-50 bg-background/90 backdrop-blur-md flex-shrink-0"
+        className="sticky top-0 z-50 backdrop-blur-md flex-shrink-0"
         style={{
-          borderBottom: "1px solid rgba(0,220,255,0.12)",
-          boxShadow: "0 1px 0 rgba(0,220,255,0.08), 0 4px 24px rgba(0,0,0,0.35)",
+          background: "linear-gradient(180deg, hsl(228 18% 11% / 0.95) 0%, hsl(228 18% 9% / 0.85) 100%)",
+          borderBottom: "1px solid hsl(var(--neu-orange-hi) / 0.18)",
+          boxShadow: "0 1px 0 hsl(var(--neu-orange-hi) / 0.12), 0 8px 28px rgba(0,0,0,0.55)",
         }}
       >
         <div className="flex items-center gap-3 px-4 py-2.5">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 text-sm text-white/55 hover:text-white transition-colors"
             data-testid="button-back-to-lobby"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -1276,21 +1429,18 @@ export default function TeachersPage() {
           <div className="w-px h-5" style={{ background: "rgba(255,255,255,0.08)" }} />
 
           <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{
-                background: "linear-gradient(135deg, rgba(110,60,255,0.25) 0%, rgba(0,200,255,0.18) 100%)",
-                border: "1px solid rgba(110,60,255,0.3)",
-                boxShadow: "0 0 14px rgba(110,60,255,0.15)",
-              }}
-            >
-              <GraduationCap className="w-4 h-4 text-violet-400" />
+            <div className="neu-icon-plate" style={{ width: 36, height: 36, borderRadius: 10 }}>
+              <GraduationCap className="w-4 h-4" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-[15px] font-extrabold leading-tight tracking-tight">
-                Book a <span style={{ color: "#a78bfa" }}>Teacher</span>
+              <h1 className="text-[15px] font-extrabold leading-tight tracking-tight" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}>
+                Book a <span style={{
+                  background: "linear-gradient(135deg, hsl(var(--neu-orange-hi)) 0%, #c4b5fd 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}>Teacher</span>
               </h1>
-              <p className="text-[10px] text-muted-foreground leading-tight tracking-widest uppercase opacity-70">
+              <p className="text-[10px] text-muted-foreground leading-tight tracking-widest uppercase opacity-70 font-semibold">
                 Expert Instructors & Speakers
               </p>
             </div>
@@ -1299,48 +1449,43 @@ export default function TeachersPage() {
           <div className="flex-1" />
 
           {!user && (
-            <Button
-              asChild
-              size="sm"
-              className="font-semibold"
-              style={{
-                background: "linear-gradient(135deg, rgba(110,60,255,0.9) 0%, rgba(0,200,255,0.9) 100%)",
-                border: "1px solid rgba(110,60,255,0.35)",
-              }}
+            <a
+              href="/api/login"
+              className="neu-book-button"
               data-testid="button-sign-in-teachers"
             >
-              <a href="/api/login">
-                <LogIn className="w-4 h-4 mr-1.5" />
-                Sign In to Book
-              </a>
-            </Button>
+              <LogIn className="w-4 h-4" />
+              Sign In to Book
+            </a>
           )}
         </div>
       </header>
 
       <div className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto p-4 space-y-5">
+        <div className="max-w-6xl mx-auto p-4 space-y-5 relative z-[1]">
 
           {user && (
             <button
               onClick={() => navigate("/payment-methods")}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-colors hover:opacity-80"
-              style={{ background: "rgba(0,200,255,0.05)", border: "1px solid rgba(0,200,255,0.15)" }}
+              className="neu-saved-card w-full"
+              style={{ padding: "10px 14px" }}
               data-testid="button-manage-payment-methods"
             >
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-cyan-400" />
-                <span className="text-[13px] text-white/70">Payment Methods</span>
+              <div className="neu-icon-plate" style={{ width: 36, height: 36, borderRadius: 10 }}>
+                <CreditCard className="w-3.5 h-3.5" />
               </div>
-              <span className="text-[11px] text-cyan-400/50">Manage cards →</span>
+              <div className="flex-1 text-left">
+                <div className="text-[13px] font-bold text-white/85">Payment Methods</div>
+                <div className="text-[11px] text-white/45 font-medium">Manage your saved cards</div>
+              </div>
+              <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: "hsl(var(--neu-orange-hi))" }}>
+                Manage →
+              </span>
             </button>
           )}
 
           {user && myBookings.length > 0 && (
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{ background: "rgba(110,60,255,0.06)", border: "1px solid rgba(110,60,255,0.2)" }}
-            >
+            <div className="neu-section-panel overflow-hidden">
               <button
                 className="w-full flex items-center justify-between px-4 py-3 text-left"
                 onClick={() => setMyBookingsExpanded(!myBookingsExpanded)}
@@ -1384,43 +1529,28 @@ export default function TeachersPage() {
             </div>
           )}
 
-          <div
-            className="relative rounded-xl p-5 overflow-hidden"
-            style={{
-              background: "linear-gradient(135deg, rgba(110,60,255,0.08) 0%, rgba(0,200,255,0.06) 100%)",
-              border: "1px solid rgba(110,60,255,0.2)",
-            }}
-          >
-            <div
-              className="absolute -top-12 -right-12 w-36 h-36 rounded-full pointer-events-none opacity-20"
-              style={{ background: "radial-gradient(circle, rgba(110,60,255,0.5), transparent 70%)" }}
-            />
+          <div className="neu-section-panel p-5">
             <div className="flex items-start gap-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, rgba(110,60,255,0.3), rgba(0,200,255,0.2))", border: "1px solid rgba(110,60,255,0.3)" }}
-              >
-                <BookOpen className="w-6 h-6 text-violet-300" />
+              <div className="neu-icon-plate">
+                <BookOpen className="w-6 h-6" />
               </div>
-              <div>
-                <h2 className="font-bold text-[15px] text-white">Expert-Led Sessions</h2>
-                <p className="text-[12px] text-white/50 mt-0.5 max-w-sm">
+              <div className="flex-1">
+                <h2 className="font-extrabold text-[16px] text-white tracking-tight" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}>
+                  Expert-Led Sessions
+                </h2>
+                <p className="text-[12px] text-white/55 mt-0.5 max-w-md leading-relaxed">
                   Connect with verified teachers and native speakers for personalized language lessons, pronunciation coaching, and exam preparation.
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-3 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4">
               {[
                 { icon: <Users className="w-3.5 h-3.5" />, label: `${allTeachers.length} Teachers` },
                 { icon: <Globe className="w-3.5 h-3.5" />, label: `${[...new Set(allTeachers.flatMap((t) => t.languages))].length} Languages` },
-                { icon: <Star className="w-3.5 h-3.5" />, label: "Verified Experts" },
+                { icon: <Award className="w-3.5 h-3.5" />, label: "Verified Experts" },
                 { icon: <Mic className="w-3.5 h-3.5" />, label: "Live Sessions" },
               ].map(({ icon, label }) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.65)" }}
-                >
+                <div key={label} className="neu-stat-pill">
                   {icon}
                   {label}
                 </div>
@@ -1429,28 +1559,20 @@ export default function TeachersPage() {
           </div>
 
           {/* ── Advanced Search & Filter Bar ─────────────────────────── */}
-          <div
-            className="rounded-2xl p-4 space-y-3"
-            style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.07)",
-            }}
-          >
+          <div className="neu-section-panel p-4 space-y-3">
             {/* Search row */}
             <div className="flex gap-2.5">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
-                <Input
+              <div className="neu-input-well flex-1">
+                <Search className="w-4 h-4 text-white/35 flex-shrink-0" />
+                <input
                   placeholder="Search by name, language, specialization or keywords…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-9 h-10 text-sm"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
                   data-testid="input-search-teachers"
                 />
                 {searchQuery && (
                   <button
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                    className="text-white/40 hover:text-white/80 transition-colors flex-shrink-0"
                     onClick={() => setSearchQuery("")}
                     data-testid="button-clear-search"
                   >
@@ -1461,11 +1583,17 @@ export default function TeachersPage() {
               {/* Sort */}
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger
-                  className="w-44 h-10 text-sm shrink-0"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  className="w-44 h-[42px] text-sm shrink-0 border-0"
+                  style={{
+                    background: "linear-gradient(155deg, hsl(228 18% 10%) 0%, hsl(228 16% 13%) 100%)",
+                    border: "1px solid rgba(255,255,255,0.04)",
+                    boxShadow: "inset 3px 3px 7px rgba(0,0,0,0.55), inset -2px -2px 5px rgba(255,255,255,0.025)",
+                    borderRadius: 12,
+                    color: "rgba(255,255,255,0.85)",
+                  }}
                   data-testid="select-sort-teachers"
                 >
-                  <ArrowUpDown className="w-3.5 h-3.5 mr-1.5 opacity-50 flex-shrink-0" />
+                  <ArrowUpDown className="w-3.5 h-3.5 mr-1.5 text-violet-400/70 flex-shrink-0" />
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1480,25 +1608,19 @@ export default function TeachersPage() {
             {/* Quick filter chips */}
             <div className="flex flex-wrap gap-2">
               {[
-                { id: "top-rated", label: "Top Rated", icon: <Trophy className="w-3.5 h-3.5" />, color: "amber" },
-                { id: "featured", label: "Featured", icon: <Sparkles className="w-3.5 h-3.5" />, color: "violet" },
-                { id: "most-reviewed", label: "Popular", icon: <Flame className="w-3.5 h-3.5" />, color: "orange" },
-                { id: "available", label: "Available Now", icon: <CircleCheckBig className="w-3.5 h-3.5" />, color: "green" },
-                { id: "budget", label: "Budget ≤$25", icon: <BadgeDollarSign className="w-3.5 h-3.5" />, color: "cyan" },
-              ].map(({ id, label, icon, color }) => {
+                { id: "top-rated", label: "Top Rated", icon: <Trophy className="w-3.5 h-3.5" /> },
+                { id: "featured", label: "Featured", icon: <Sparkles className="w-3.5 h-3.5" /> },
+                { id: "most-reviewed", label: "Popular", icon: <Flame className="w-3.5 h-3.5" /> },
+                { id: "available", label: "Available Now", icon: <CircleCheckBig className="w-3.5 h-3.5" /> },
+                { id: "budget", label: "Budget ≤$25", icon: <BadgeDollarSign className="w-3.5 h-3.5" /> },
+              ].map(({ id, label, icon }) => {
                 const active = quickFilter === id;
-                const colorMap: Record<string, string> = {
-                  amber: active ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-amber-500/30 hover:text-amber-300/70",
-                  violet: active ? "bg-violet-500/20 text-violet-300 border-violet-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-violet-500/30 hover:text-violet-300/70",
-                  orange: active ? "bg-orange-500/20 text-orange-300 border-orange-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-orange-500/30 hover:text-orange-300/70",
-                  green: active ? "bg-green-500/20 text-green-300 border-green-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-green-500/30 hover:text-green-300/70",
-                  cyan: active ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" : "bg-white/4 text-white/45 border-white/10 hover:border-cyan-500/30 hover:text-cyan-300/70",
-                };
                 return (
                   <button
                     key={id}
                     onClick={() => setQuickFilter(active ? null : id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all ${colorMap[color]}`}
+                    className={`neu-time-chip flex items-center gap-1.5 ${active ? "is-active" : ""}`}
+                    style={{ borderRadius: 999, padding: "6px 12px" }}
                     data-testid={`chip-quick-${id}`}
                   >
                     {icon}{label}
@@ -1510,71 +1632,54 @@ export default function TeachersPage() {
 
             {/* Dropdown filters row */}
             <div className="flex flex-wrap gap-2">
-              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                <SelectTrigger
-                  className="w-36 h-9 text-xs"
-                  style={{
-                    background: selectedLanguage !== "All" ? "rgba(0,200,255,0.1)" : "rgba(255,255,255,0.04)",
-                    border: selectedLanguage !== "All" ? "1px solid rgba(0,200,255,0.35)" : "1px solid rgba(255,255,255,0.1)",
-                    color: selectedLanguage !== "All" ? "rgba(0,200,255,0.9)" : undefined,
-                  }}
-                  data-testid="select-filter-language"
-                >
-                  <Globe className="w-3.5 h-3.5 mr-1.5 opacity-60 flex-shrink-0" />
-                  <SelectValue placeholder="Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                <SelectTrigger
-                  className="w-36 h-9 text-xs"
-                  style={{
-                    background: selectedLevel !== "All" ? "rgba(110,60,255,0.12)" : "rgba(255,255,255,0.04)",
-                    border: selectedLevel !== "All" ? "1px solid rgba(110,60,255,0.35)" : "1px solid rgba(255,255,255,0.1)",
-                    color: selectedLevel !== "All" ? "rgba(167,139,250,0.9)" : undefined,
-                  }}
-                  data-testid="select-filter-level"
-                >
-                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 opacity-60 flex-shrink-0" />
-                  <SelectValue placeholder="Level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {levels.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedSpec} onValueChange={setSelectedSpec}>
-                <SelectTrigger
-                  className="w-44 h-9 text-xs"
-                  style={{
-                    background: selectedSpec !== "All" ? "rgba(251,146,60,0.1)" : "rgba(255,255,255,0.04)",
-                    border: selectedSpec !== "All" ? "1px solid rgba(251,146,60,0.35)" : "1px solid rgba(255,255,255,0.1)",
-                    color: selectedSpec !== "All" ? "rgba(251,146,60,0.9)" : undefined,
-                  }}
-                  data-testid="select-filter-spec"
-                >
-                  <BookOpen className="w-3.5 h-3.5 mr-1.5 opacity-60 flex-shrink-0" />
-                  <SelectValue placeholder="Specialization" />
-                </SelectTrigger>
-                <SelectContent>
-                  {specs.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {[
+                { value: selectedLanguage, onChange: setSelectedLanguage, options: languages, placeholder: "Language", icon: <Globe className="w-3.5 h-3.5 mr-1.5 text-violet-400/70 flex-shrink-0" />, defaultVal: "All", testId: "select-filter-language", w: "w-36" },
+                { value: selectedLevel, onChange: setSelectedLevel, options: levels, placeholder: "Level", icon: <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-violet-400/70 flex-shrink-0" />, defaultVal: "All", testId: "select-filter-level", w: "w-36" },
+                { value: selectedSpec, onChange: setSelectedSpec, options: specs, placeholder: "Specialization", icon: <BookOpen className="w-3.5 h-3.5 mr-1.5 text-violet-400/70 flex-shrink-0" />, defaultVal: "All", testId: "select-filter-spec", w: "w-44" },
+              ].map((s) => {
+                const active = s.value !== s.defaultVal;
+                return (
+                  <Select key={s.testId} value={s.value} onValueChange={s.onChange}>
+                    <SelectTrigger
+                      className={`${s.w} h-9 text-xs border-0`}
+                      style={{
+                        background: "linear-gradient(155deg, hsl(228 18% 10%) 0%, hsl(228 16% 13%) 100%)",
+                        border: active ? "1px solid hsl(var(--neu-orange-hi) / 0.5)" : "1px solid rgba(255,255,255,0.04)",
+                        boxShadow: active
+                          ? "inset 3px 3px 7px rgba(0,0,0,0.55), inset -2px -2px 5px rgba(255,255,255,0.025), 0 0 12px hsl(var(--neu-orange) / 0.25)"
+                          : "inset 3px 3px 7px rgba(0,0,0,0.55), inset -2px -2px 5px rgba(255,255,255,0.025)",
+                        borderRadius: 10,
+                        color: active ? "hsl(var(--neu-orange-hi))" : "rgba(255,255,255,0.65)",
+                        fontWeight: 600,
+                      }}
+                      data-testid={s.testId}
+                    >
+                      {s.icon}
+                      <SelectValue placeholder={s.placeholder} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {s.options.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                );
+              })}
 
               <Select value={priceRange} onValueChange={setPriceRange}>
                 <SelectTrigger
-                  className="w-36 h-9 text-xs"
+                  className="w-36 h-9 text-xs border-0"
                   style={{
-                    background: priceRange !== "all" ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.04)",
-                    border: priceRange !== "all" ? "1px solid rgba(34,197,94,0.35)" : "1px solid rgba(255,255,255,0.1)",
-                    color: priceRange !== "all" ? "rgba(74,222,128,0.9)" : undefined,
+                    background: "linear-gradient(155deg, hsl(228 18% 10%) 0%, hsl(228 16% 13%) 100%)",
+                    border: priceRange !== "all" ? "1px solid hsl(var(--neu-orange-hi) / 0.5)" : "1px solid rgba(255,255,255,0.04)",
+                    boxShadow: priceRange !== "all"
+                      ? "inset 3px 3px 7px rgba(0,0,0,0.55), inset -2px -2px 5px rgba(255,255,255,0.025), 0 0 12px hsl(var(--neu-orange) / 0.25)"
+                      : "inset 3px 3px 7px rgba(0,0,0,0.55), inset -2px -2px 5px rgba(255,255,255,0.025)",
+                    borderRadius: 10,
+                    color: priceRange !== "all" ? "hsl(var(--neu-orange-hi))" : "rgba(255,255,255,0.65)",
+                    fontWeight: 600,
                   }}
                   data-testid="select-filter-price"
                 >
-                  <DollarSign className="w-3.5 h-3.5 mr-1.5 opacity-60 flex-shrink-0" />
+                  <DollarSign className="w-3.5 h-3.5 mr-1.5 text-violet-400/70 flex-shrink-0" />
                   <SelectValue placeholder="Price range" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1596,12 +1701,17 @@ export default function TeachersPage() {
                     setPriceRange("all");
                     setQuickFilter(null);
                   }}
-                  className="flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs text-red-400/70 hover:text-red-400 border border-red-500/20 hover:border-red-500/40 transition-all"
-                  style={{ background: "rgba(239,68,68,0.05)" }}
+                  className="flex items-center gap-1.5 px-3 h-9 text-xs text-red-400/85 hover:text-red-400 transition-all font-bold"
+                  style={{
+                    background: "linear-gradient(150deg, hsl(228 14% 17%) 0%, hsl(228 14% 13%) 100%)",
+                    border: "1px solid rgba(239,68,68,0.28)",
+                    borderRadius: 10,
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 1px 2px 4px rgba(0,0,0,0.4)",
+                  }}
                   data-testid="button-clear-filters"
                 >
                   <X className="w-3.5 h-3.5" />
-                  Clear all ({activeFilterCount})
+                  Clear ({activeFilterCount})
                 </button>
               )}
             </div>

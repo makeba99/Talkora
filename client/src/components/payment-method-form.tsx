@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, CreditCard, CheckCircle2 } from "lucide-react";
+import { Lock, CreditCard, CheckCircle2, ShieldCheck, Trash2, Star } from "lucide-react";
 
 type CardBrand = "visa" | "mastercard" | "amex" | "discover" | "unknown";
 
@@ -15,30 +14,32 @@ function detectBrand(number: string): CardBrand {
   return "unknown";
 }
 
-function BrandLogo({ brand }: { brand: CardBrand }) {
+function BrandLogo({ brand, size = "md" }: { brand: CardBrand; size?: "sm" | "md" | "lg" }) {
+  const h = size === "lg" ? "h-7" : size === "sm" ? "h-4" : "h-5";
   if (brand === "visa") return (
-    <svg viewBox="0 0 48 16" className="h-5 w-auto" fill="none">
-      <text x="0" y="13" fontFamily="Arial" fontWeight="bold" fontSize="14" fill="#1A1F71">VISA</text>
+    <svg viewBox="0 0 60 20" className={`${h} w-auto`}>
+      <text x="0" y="16" fontFamily="Arial Black, sans-serif" fontStyle="italic" fontWeight="900" fontSize="18" fill="#fff">VISA</text>
     </svg>
   );
   if (brand === "mastercard") return (
-    <svg viewBox="0 0 38 24" className="h-5 w-auto">
-      <circle cx="14" cy="12" r="12" fill="#EB001B" />
-      <circle cx="24" cy="12" r="12" fill="#F79E1B" />
-      <path d="M19 5.4A12 12 0 0 1 23.6 12 12 12 0 0 1 19 18.6 12 12 0 0 1 14.4 12 12 12 0 0 1 19 5.4z" fill="#FF5F00" />
+    <svg viewBox="0 0 42 26" className={`${h} w-auto`}>
+      <circle cx="15" cy="13" r="12" fill="#EB001B" />
+      <circle cx="27" cy="13" r="12" fill="#F79E1B" />
+      <path d="M21 4.7A12 12 0 0 1 26 13a12 12 0 0 1 -5 8.3A12 12 0 0 1 16 13 12 12 0 0 1 21 4.7z" fill="#FF5F00" />
     </svg>
   );
   if (brand === "amex") return (
-    <svg viewBox="0 0 48 16" className="h-5 w-auto">
-      <text x="0" y="13" fontFamily="Arial" fontWeight="bold" fontSize="11" fill="#2E77BC">AMEX</text>
+    <svg viewBox="0 0 60 20" className={`${h} w-auto`}>
+      <rect width="60" height="20" rx="3" fill="#2E77BC" />
+      <text x="6" y="14" fontFamily="Arial Black, sans-serif" fontWeight="900" fontSize="10" fill="#fff" letterSpacing="1">AMEX</text>
     </svg>
   );
   if (brand === "discover") return (
-    <svg viewBox="0 0 60 16" className="h-5 w-auto">
-      <text x="0" y="13" fontFamily="Arial" fontWeight="bold" fontSize="11" fill="#E65C1B">DISCOVER</text>
+    <svg viewBox="0 0 80 20" className={`${h} w-auto`}>
+      <text x="0" y="15" fontFamily="Arial Black, sans-serif" fontWeight="900" fontSize="13" fill="#fff">DISC<tspan fill="#FF6E1B">●</tspan>VER</text>
     </svg>
   );
-  return <CreditCard className="w-5 h-5 text-white/30" />;
+  return <CreditCard className="w-5 h-5 text-white/55" />;
 }
 
 function formatCardNumber(value: string, brand: CardBrand): string {
@@ -72,6 +73,82 @@ function validateExpiry(expiry: string): string | null {
   return null;
 }
 
+function maskedDisplay(number: string, brand: CardBrand): string {
+  const groups = brand === "amex" ? [4, 6, 5] : [4, 4, 4, 4];
+  const digits = number.replace(/\D/g, "");
+  let cursor = 0;
+  const out = groups.map((g) => {
+    const slice = digits.slice(cursor, cursor + g);
+    cursor += g;
+    return (slice + "•".repeat(Math.max(0, g - slice.length)));
+  });
+  return out.join(" ");
+}
+
+/** Animated 3D credit-card preview that flips on CVV focus. */
+export function CreditCardPreview({
+  number,
+  expiry,
+  cvv,
+  name,
+  flipped,
+}: {
+  number: string;
+  expiry: string;
+  cvv: string;
+  name: string;
+  flipped: boolean;
+}) {
+  const brand = detectBrand(number);
+  return (
+    <div className="neu-credit-card-wrap" data-testid="preview-credit-card">
+      <div className={`neu-credit-card ${flipped ? "is-flipped" : ""}`}>
+        {/* FRONT */}
+        <div className="neu-cc-face">
+          <div className="neu-cc-row">
+            <div className="neu-cc-chip" />
+            <div className="neu-cc-wave" />
+          </div>
+          <div className="neu-cc-number" data-testid="preview-cc-number">
+            {maskedDisplay(number, brand)}
+          </div>
+          <div className="neu-cc-row items-end">
+            <div className="min-w-0 flex-1">
+              <div className="neu-cc-label">Cardholder</div>
+              <div className="neu-cc-value" data-testid="preview-cc-name">
+                {name.trim() || "YOUR NAME"}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="neu-cc-label">Expires</div>
+              <div className="neu-cc-value" data-testid="preview-cc-expiry">
+                {expiry || "MM/YY"}
+              </div>
+            </div>
+            <div className="ml-2">
+              {brand === "unknown"
+                ? <span className="neu-cc-brand">VEXTORN</span>
+                : <BrandLogo brand={brand} size="lg" />}
+            </div>
+          </div>
+        </div>
+
+        {/* BACK */}
+        <div className="neu-cc-face neu-cc-back">
+          <div className="neu-cc-mag" />
+          <div className="neu-cc-cvv-row">
+            <div className="neu-cc-cvv-strip" />
+            <div className="neu-cc-cvv-box" data-testid="preview-cc-cvv">
+              {cvv ? cvv.padEnd(brand === "amex" ? 4 : 3, "•") : (brand === "amex" ? "••••" : "•••")}
+            </div>
+          </div>
+          <div className="neu-cc-back-label">Authorized signature · {brand !== "unknown" ? brand.toUpperCase() : "VEXTORN"}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export interface CardFormData {
   last4: string;
   brand: string;
@@ -85,15 +162,18 @@ interface Props {
   onCancel?: () => void;
   isPending?: boolean;
   submitLabel?: string;
+  /** Optionally hide the embedded card preview (when caller renders its own). */
+  hidePreview?: boolean;
 }
 
-export function PaymentMethodForm({ onSubmit, onCancel, isPending, submitLabel = "Save Card" }: Props) {
+export function PaymentMethodForm({ onSubmit, onCancel, isPending, submitLabel = "Save Card", hidePreview = false }: Props) {
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
   const [name, setName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [cvvFocused, setCvvFocused] = useState(false);
 
   const brand = detectBrand(cardNumber);
   const maxCardLen = brand === "amex" ? 17 : 19;
@@ -129,28 +209,27 @@ export function PaymentMethodForm({ onSubmit, onCancel, isPending, submitLabel =
     });
   }
 
-  const inputStyle: React.CSSProperties = {
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    color: "rgba(255,255,255,0.92)",
-  };
-
-  const errorInputStyle: React.CSSProperties = {
-    background: "rgba(239,68,68,0.06)",
-    border: "1px solid rgba(239,68,68,0.40)",
-    color: "rgba(255,255,255,0.92)",
-  };
-
-  function field(key: string) {
-    return touched[key] && errors[key] ? errorInputStyle : inputStyle;
+  function wellClass(key: string) {
+    return `neu-input-well ${touched[key] && errors[key] ? "is-error" : ""}`;
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {!hidePreview && (
+        <CreditCardPreview
+          number={cardNumber}
+          expiry={expiry}
+          cvv={cvv}
+          name={name}
+          flipped={cvvFocused}
+        />
+      )}
+
       <div className="space-y-1.5">
-        <Label className="text-[12px] text-white/60">Card Number</Label>
-        <div className="relative">
-          <Input
+        <Label className="text-[11px] font-bold tracking-wider uppercase text-white/45">Card Number</Label>
+        <div className={wellClass("cardNumber")}>
+          <CreditCard className="w-4 h-4 text-white/35 flex-shrink-0" />
+          <input
             value={cardNumber}
             onChange={(e) => {
               const raw = e.target.value.replace(/\D/g, "").slice(0, brand === "amex" ? 15 : 16);
@@ -162,97 +241,91 @@ export function PaymentMethodForm({ onSubmit, onCancel, isPending, submitLabel =
             maxLength={maxCardLen}
             inputMode="numeric"
             autoComplete="cc-number"
-            className="h-10 text-sm pr-12 font-mono tracking-wider"
-            style={field("cardNumber")}
+            className="font-mono tracking-wider"
             data-testid="input-card-number"
           />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <BrandLogo brand={brand} />
-          </div>
+          <BrandLogo brand={brand} size="sm" />
         </div>
         {touched.cardNumber && errors.cardNumber && (
-          <p className="text-[11px] text-red-400" data-testid="error-card-number">{errors.cardNumber}</p>
+          <p className="text-[11px] text-red-400 pl-1" data-testid="error-card-number">{errors.cardNumber}</p>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-[12px] text-white/60">Expiry</Label>
-          <Input
-            value={expiry}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
-              setExpiry(formatExpiry(raw));
-              setErrors((p) => ({ ...p, expiry: "" }));
-            }}
-            onBlur={() => setTouched((p) => ({ ...p, expiry: true }))}
-            placeholder="MM/YY"
-            maxLength={5}
-            inputMode="numeric"
-            autoComplete="cc-exp"
-            className="h-10 text-sm font-mono"
-            style={field("expiry")}
-            data-testid="input-card-expiry"
-          />
+          <Label className="text-[11px] font-bold tracking-wider uppercase text-white/45">Expiry</Label>
+          <div className={wellClass("expiry")}>
+            <input
+              value={expiry}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+                setExpiry(formatExpiry(raw));
+                setErrors((p) => ({ ...p, expiry: "" }));
+              }}
+              onBlur={() => setTouched((p) => ({ ...p, expiry: true }))}
+              placeholder="MM/YY"
+              maxLength={5}
+              inputMode="numeric"
+              autoComplete="cc-exp"
+              className="font-mono"
+              data-testid="input-card-expiry"
+            />
+          </div>
           {touched.expiry && errors.expiry && (
-            <p className="text-[11px] text-red-400" data-testid="error-card-expiry">{errors.expiry}</p>
+            <p className="text-[11px] text-red-400 pl-1" data-testid="error-card-expiry">{errors.expiry}</p>
           )}
         </div>
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <Label className="text-[12px] text-white/60">CVV</Label>
-            <span className="text-[10px] text-white/30" title={`${cvvLen}-digit security code on ${brand === "amex" ? "the front" : "the back"} of your card`}>
-              (?)</span>
+          <Label className="text-[11px] font-bold tracking-wider uppercase text-white/45">CVV</Label>
+          <div className={wellClass("cvv")}>
+            <input
+              value={cvv}
+              onChange={(e) => {
+                setCvv(e.target.value.replace(/\D/g, "").slice(0, cvvLen));
+                setErrors((p) => ({ ...p, cvv: "" }));
+              }}
+              onFocus={() => setCvvFocused(true)}
+              onBlur={() => { setCvvFocused(false); setTouched((p) => ({ ...p, cvv: true })); }}
+              placeholder={"•".repeat(cvvLen)}
+              maxLength={cvvLen}
+              inputMode="numeric"
+              autoComplete="cc-csc"
+              type="password"
+              className="font-mono"
+              data-testid="input-card-cvv"
+            />
+            <Lock className="w-3.5 h-3.5 text-white/30" />
           </div>
-          <Input
-            value={cvv}
-            onChange={(e) => {
-              setCvv(e.target.value.replace(/\D/g, "").slice(0, cvvLen));
-              setErrors((p) => ({ ...p, cvv: "" }));
-            }}
-            onBlur={() => setTouched((p) => ({ ...p, cvv: true }))}
-            placeholder={"•".repeat(cvvLen)}
-            maxLength={cvvLen}
-            inputMode="numeric"
-            autoComplete="cc-csc"
-            type="password"
-            className="h-10 text-sm font-mono"
-            style={field("cvv")}
-            data-testid="input-card-cvv"
-          />
           {touched.cvv && errors.cvv && (
-            <p className="text-[11px] text-red-400" data-testid="error-card-cvv">{errors.cvv}</p>
+            <p className="text-[11px] text-red-400 pl-1" data-testid="error-card-cvv">{errors.cvv}</p>
           )}
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-[12px] text-white/60">Cardholder Name</Label>
-        <Input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setErrors((p) => ({ ...p, name: "" }));
-          }}
-          onBlur={() => setTouched((p) => ({ ...p, name: true }))}
-          placeholder="Full name as on card"
-          autoComplete="cc-name"
-          className="h-10 text-sm"
-          style={field("name")}
-          data-testid="input-cardholder-name"
-        />
+        <Label className="text-[11px] font-bold tracking-wider uppercase text-white/45">Cardholder Name</Label>
+        <div className={wellClass("name")}>
+          <input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setErrors((p) => ({ ...p, name: "" }));
+            }}
+            onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+            placeholder="Full name as on card"
+            autoComplete="cc-name"
+            data-testid="input-cardholder-name"
+          />
+        </div>
         {touched.name && errors.name && (
-          <p className="text-[11px] text-red-400" data-testid="error-cardholder-name">{errors.name}</p>
+          <p className="text-[11px] text-red-400 pl-1" data-testid="error-cardholder-name">{errors.name}</p>
         )}
       </div>
 
-      <div
-        className="flex items-center gap-2 px-3 py-2 rounded-lg"
-        style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)" }}
-      >
-        <Lock className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-        <p className="text-[11px] text-white/45 leading-tight">
-          Your card details are encrypted and never stored in full. Only the last 4 digits are saved.
+      <div className="neu-lock-badge">
+        <ShieldCheck className="w-4 h-4 text-emerald-400/85 flex-shrink-0" />
+        <p className="text-[11px] text-white/55 leading-tight">
+          End-to-end encrypted. We never store your full card — only the last 4 digits.
         </p>
       </div>
 
@@ -261,27 +334,23 @@ export function PaymentMethodForm({ onSubmit, onCancel, isPending, submitLabel =
           <Button
             type="button"
             variant="ghost"
-            className="flex-1 h-9"
+            className="flex-1 h-10"
             onClick={onCancel}
-            style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+            style={{ border: "1px solid rgba(255,255,255,0.08)" }}
             data-testid="button-payment-cancel"
           >
             Cancel
           </Button>
         )}
-        <Button
+        <button
           type="submit"
           disabled={isPending}
-          className="flex-1 h-9 font-semibold"
-          style={{
-            background: "linear-gradient(135deg, rgba(0,200,255,0.88) 0%, rgba(100,50,240,0.88) 100%)",
-            border: "1px solid rgba(0,210,255,0.3)",
-            boxShadow: "0 0 16px rgba(0,200,255,0.18)",
-          }}
+          className="flex-1 neu-book-button h-10 justify-center"
           data-testid="button-payment-submit"
         >
-          {isPending ? "Saving..." : submitLabel}
-        </Button>
+          <Lock className="w-3.5 h-3.5" />
+          {isPending ? "Saving…" : submitLabel}
+        </button>
       </div>
     </form>
   );
@@ -310,46 +379,39 @@ export function SavedCardItem({
   return (
     <div
       onClick={onSelect}
-      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${onSelect ? "hover:opacity-90" : ""}`}
-      style={{
-        background: selected
-          ? "linear-gradient(135deg, rgba(0,200,255,0.12) 0%, rgba(100,50,240,0.12) 100%)"
-          : "rgba(255,255,255,0.04)",
-        border: selected
-          ? "1px solid rgba(0,200,255,0.35)"
-          : "1px solid rgba(255,255,255,0.09)",
-      }}
+      className={`neu-saved-card ${selected ? "is-selected" : ""}`}
       data-testid={`card-payment-method-${last4}`}
     >
-      <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: "rgba(255,255,255,0.07)" }}
-      >
-        <BrandLogo brand={brand as CardBrand} />
+      <div className="neu-saved-card-brand">
+        <BrandLogo brand={brand as CardBrand} size="sm" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[13px] font-medium text-white/90">{brandLabel} ···· {last4}</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[13px] font-bold text-white/92 tracking-wide">
+            {brandLabel} <span className="text-white/45 mx-0.5">•••• ••••</span> {last4}
+          </span>
           {isDefault && (
-            <span
-              className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
-              style={{ background: "rgba(0,200,255,0.15)", color: "rgba(0,200,255,0.85)", border: "1px solid rgba(0,200,255,0.25)" }}
-            >
+            <span className="neu-status-pill is-trial !text-[8px] !py-[2px] !px-[6px]">
+              <Star className="w-2.5 h-2.5" />
               Default
             </span>
           )}
         </div>
-        <div className="text-[11px] text-white/40 mt-0.5">{cardholderName} · Expires {exp}</div>
+        <div className="text-[11px] text-white/45 mt-0.5 font-medium">{cardholderName} · Exp {exp}</div>
       </div>
-      {selected && <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0" />}
+      {selected && <CheckCircle2 className="w-5 h-5 text-violet-300 flex-shrink-0" style={{ filter: "drop-shadow(0 0 6px rgba(167,139,250,0.65))" }} />}
       {showActions && (
         <div className="flex items-center gap-1 ml-2">
           {!isDefault && onSetDefault && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onSetDefault(); }}
-              className="text-[10px] text-white/40 hover:text-white/70 px-1.5 py-0.5 rounded transition-colors"
-              style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+              className="text-[10px] text-white/45 hover:text-violet-300 px-2 py-1 rounded-md transition-colors"
+              style={{
+                background: "linear-gradient(150deg, hsl(228 14% 17%) 0%, hsl(228 14% 13%) 100%)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 1px 2px 4px rgba(0,0,0,0.4)",
+              }}
               data-testid={`button-set-default-${last4}`}
             >
               Set default
@@ -359,11 +421,16 @@ export function SavedCardItem({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              className="text-[10px] text-red-400/70 hover:text-red-400 px-1.5 py-0.5 rounded transition-colors"
-              style={{ border: "1px solid rgba(239,68,68,0.15)" }}
+              className="text-red-400/70 hover:text-red-400 p-1.5 rounded-md transition-colors"
+              style={{
+                background: "linear-gradient(150deg, hsl(228 14% 17%) 0%, hsl(228 14% 13%) 100%)",
+                border: "1px solid rgba(239,68,68,0.18)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05), 1px 2px 4px rgba(0,0,0,0.4)",
+              }}
               data-testid={`button-delete-card-${last4}`}
+              title="Remove card"
             >
-              Remove
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
