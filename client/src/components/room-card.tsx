@@ -532,10 +532,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     displayCount === 2 ? 78 :
     displayCount === 3 ? 66 :
     displayCount === 4 ? 60 :
-    displayCount <= 6 ? 60 :
-    displayCount <= 8 ? 50 :
-    displayCount <= 10 ? 42 :
-    38;
+    displayCount <= 6 ? 56 :
+    displayCount <= 8 ? 46 :
+    displayCount <= 10 ? 40 :
+    36;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -635,17 +635,25 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     ? "0 0 10px rgba(0,210,255,0.28), 0 0 22px rgba(110,50,255,0.18), 0 0 42px rgba(0,100,255,0.08)"
     : `0 0 10px ${glow.from.replace(/[\d.]+\)$/, "0.25)")}`;
 
-  /* ── grid columns: balanced rows that hug the actual people present so we
-     never leave dead space on the right of the card. With 1–4 people we use a
-     single tight row; from 5+ we wrap into 2 rows. ── */
+  /* ── grid columns: every capacity must fill its grid EXACTLY (no dangling
+     bottom-row cells). Otherwise the missing cell sits right where the ENTER
+     door is in the footer corner, and the door reads as a phantom slot —
+     making an 8-room look like 9, a 10-room look like 12, etc. So we pick
+     factor pairs whenever possible (6→3×2, 8→4×2, 9→3×3, 10→5×2, 12→4×3) and
+     only use a "stair" layout for genuinely awkward counts (5, 7, 11). ── */
   const gridCols =
     displayCount <= 1 ? 1 :
     displayCount === 2 ? 2 :
     displayCount === 3 ? 3 :
     displayCount === 4 ? 4 :
-    displayCount <= 6 ? 3 :
-    displayCount <= 9 ? 3 :
-    4;
+    displayCount === 5 ? 3 :       // 3+2
+    displayCount === 6 ? 3 :       // 3×2 ✓ exact
+    displayCount === 7 ? 4 :       // 4+3
+    displayCount === 8 ? 4 :       // 4×2 ✓ exact
+    displayCount === 9 ? 3 :       // 3×3 ✓ exact
+    displayCount === 10 ? 5 :      // 5×2 ✓ exact
+    displayCount === 11 ? 4 :      // 4+4+3
+    4;                              // 12 → 4×3 ✓ exact
 
   return (
     <div
