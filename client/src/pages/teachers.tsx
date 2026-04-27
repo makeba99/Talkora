@@ -377,7 +377,7 @@ function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher
       data-testid={`card-teacher-${teacher.id}`}
     >
       {/* Top status row */}
-      <div className="absolute top-3 left-3 right-3 z-10 flex items-start justify-between gap-2 pointer-events-none">
+      <div className="absolute top-3 left-3 right-3 z-10 flex items-start justify-between gap-2 pointer-events-none" style={{ position: "absolute" }}>
         <div className="flex flex-wrap gap-1.5">
           {teacher.id.startsWith("sample-") && (
             <span className="neu-status-pill is-trial">
@@ -1808,6 +1808,7 @@ export default function TeachersPage() {
             </div>
           )}
         </div>
+        <SiteFooter />
       </div>
 
       {/* ── Apply to Become a Teacher CTA ─────────────────────────── */}
@@ -2062,7 +2063,6 @@ export default function TeachersPage() {
         </DialogContent>
       </Dialog>
 
-      <SiteFooter />
     </div>
   );
 }
