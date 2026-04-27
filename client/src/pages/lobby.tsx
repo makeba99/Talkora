@@ -737,19 +737,40 @@ export default function Lobby() {
         } catch {}
         const url = data.path || `/room/${roomId}`;
         const target = `vextorn-room-${roomId}`;
-        const existing = window.open("", target);
-        if (existing && !existing.closed) {
-          try {
-            if (existing.location.href === "about:blank") {
-              existing.location.href = url;
-            }
-            existing.focus();
-          } catch {
-            existing.focus();
-          }
-        } else {
-          window.open(url, target);
+        // Try to focus an existing room tab without overwriting its state.
+        let popup: Window | null = null;
+        try {
+          popup = window.open("", target);
+        } catch {
+          popup = null;
         }
+        if (popup && !popup.closed) {
+          try {
+            if (popup.location.href === "about:blank") {
+              popup.location.href = url;
+            }
+            popup.focus();
+            return;
+          } catch {
+            try { popup.focus(); } catch {}
+            return;
+          }
+        }
+        // No existing tab — try to open a fresh one.
+        let opened: Window | null = null;
+        try {
+          opened = window.open(url, target);
+        } catch {
+          opened = null;
+        }
+        if (opened && !opened.closed) {
+          try { opened.focus(); } catch {}
+          return;
+        }
+        // Popup blocked (e.g. inside Replit preview iframe, mobile in-app
+        // browsers, strict popup blockers) — fall back to same-tab nav so
+        // the user can still actually enter the room.
+        window.location.href = url;
       } catch (error: any) {
         toast({
           title: "Unable to open room",

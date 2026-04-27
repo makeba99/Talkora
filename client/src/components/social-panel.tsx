@@ -352,19 +352,37 @@ export function SocialPanel({ onOpenDm, onlineUsers }: SocialPanelProps) {
     }
     const url = `/room/${roomId}`;
     const target = `vextorn-room-${roomId}`;
-    const existing = window.open("", target);
-    if (existing && !existing.closed) {
-      try {
-        if (existing.location.href === "about:blank") {
-          existing.location.href = url;
-        }
-        existing.focus();
-      } catch {
-        existing.focus();
-      }
-    } else {
-      window.open(url, target);
+    let popup: Window | null = null;
+    try {
+      popup = window.open("", target);
+    } catch {
+      popup = null;
     }
+    if (popup && !popup.closed) {
+      try {
+        if (popup.location.href === "about:blank") {
+          popup.location.href = url;
+        }
+        popup.focus();
+        return;
+      } catch {
+        try { popup.focus(); } catch {}
+        return;
+      }
+    }
+    let opened: Window | null = null;
+    try {
+      opened = window.open(url, target);
+    } catch {
+      opened = null;
+    }
+    if (opened && !opened.closed) {
+      try { opened.focus(); } catch {}
+      return;
+    }
+    // Popup blocked (Replit preview iframe / mobile in-app browsers /
+    // strict popup blockers) — fall back to same-tab nav.
+    window.location.href = url;
   };
 
   const renderUser = (u: User) => {
