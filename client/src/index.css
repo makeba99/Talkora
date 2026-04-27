@@ -3635,6 +3635,282 @@ html.synthwave .neon-text {
     inset -2px -2px 6px rgba(255, 235, 215, 0.05);
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   Neumorphic People Discovery Card
+   Used by Top Speakers + Famous Users panels.
+   Warm, layered, premium look matching the rest of the Vextorn theme.
+   ════════════════════════════════════════════════════════════════════ */
+.neu-people-card {
+  position: relative;
+  border-radius: 18px;
+  padding-top: 4px;                    /* space for accent bar */
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(255, 156, 86, 0.06) 0%, transparent 55%),
+    linear-gradient(160deg, hsl(228 14% 16%) 0%, hsl(228 18% 10%) 100%);
+  box-shadow:
+    -6px -6px 14px rgba(255, 235, 215, 0.045),
+    8px 8px 18px rgba(0, 0, 0, 0.55),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.06),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.35);
+  transition: transform 200ms ease, box-shadow 240ms ease;
+  overflow: hidden;
+  isolation: isolate;
+}
+.neu-people-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    220px 130px at 92% -20%,
+    hsl(var(--neu-orange) / 0.18) 0%,
+    transparent 70%
+  );
+  opacity: 0.7;
+  z-index: 0;
+}
+.neu-people-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    -6px -6px 16px rgba(255, 235, 215, 0.06),
+    10px 10px 22px rgba(0, 0, 0, 0.6),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.08),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.35),
+    0 0 0 1px hsl(var(--neu-orange) / 0.20),
+    0 0 22px hsl(var(--neu-orange) / 0.12);
+}
+
+.neu-people-accent {
+  height: 3px;
+  width: 60%;
+  margin: 0 auto;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--neu-orange) / 0.85) 30%,
+    hsl(28 95% 70% / 0.95) 50%,
+    hsl(var(--neu-orange) / 0.85) 70%,
+    transparent 100%
+  );
+  box-shadow: 0 0 10px hsl(var(--neu-orange) / 0.55);
+  position: relative;
+  z-index: 1;
+}
+
+.neu-people-talking {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  margin: 8px 14px 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffe8d4;
+  background: linear-gradient(135deg, hsl(var(--neu-orange) / 0.32), hsl(var(--neu-orange) / 0.18));
+  box-shadow:
+    inset 1px 1px 1px rgba(255, 235, 215, 0.12),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.25),
+    0 0 12px hsl(var(--neu-orange) / 0.35);
+  position: relative;
+  z-index: 1;
+}
+
+/* Avatar — raised neumorphic ring */
+.neu-people-avatar-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  padding: 3px;
+  background: linear-gradient(135deg, hsl(228 14% 22%) 0%, hsl(228 18% 12%) 100%);
+  box-shadow:
+    -3px -3px 6px rgba(255, 235, 215, 0.06),
+    4px 4px 8px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1.5px hsl(var(--neu-orange) / 0.55),
+    0 0 14px hsl(var(--neu-orange) / 0.22);
+}
+.neu-people-avatar-ring > * {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+}
+.neu-people-status {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: hsl(228 8% 32%);
+  box-shadow:
+    0 0 0 2.5px hsl(228 18% 11%),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+.neu-people-status.is-online {
+  background: hsl(150 80% 50%);
+  box-shadow:
+    0 0 0 2.5px hsl(228 18% 11%),
+    0 0 8px hsl(150 80% 50% / 0.85);
+}
+
+/* Language chips */
+.neu-people-lang {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #ffd9b8;
+  background: linear-gradient(135deg, hsl(228 14% 19%), hsl(228 16% 13%));
+  box-shadow:
+    -1px -1px 2px rgba(255, 235, 215, 0.05),
+    1px 1px 2px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px hsl(var(--neu-orange) / 0.30);
+}
+
+/* Engraved (inset) stats strip */
+.neu-people-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, hsl(228 18% 9%), hsl(228 16% 12%));
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 4px rgba(255, 235, 215, 0.04);
+}
+.neu-people-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Action buttons ───────────────────────────────────────────────── */
+/* Generic raised neumorphic (Follow) */
+.neu-people-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.78);
+  border-radius: 11px;
+  background: linear-gradient(145deg, hsl(228 14% 21%) 0%, hsl(228 16% 13%) 100%);
+  box-shadow:
+    -2px -2px 5px rgba(255, 235, 215, 0.05),
+    3px 3px 7px rgba(0, 0, 0, 0.55),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.06),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 180ms ease, transform 120ms ease, color 180ms ease;
+}
+.neu-people-btn:hover:not(:disabled) {
+  color: #fff;
+  box-shadow:
+    -2px -2px 5px rgba(255, 235, 215, 0.06),
+    3px 3px 7px rgba(0, 0, 0, 0.55),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.07),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.3),
+    0 0 0 1px hsl(var(--neu-orange) / 0.25);
+}
+.neu-people-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.55),
+    inset -2px -2px 4px rgba(255, 235, 215, 0.04);
+}
+.neu-people-btn.is-active {
+  color: #ffd9b8;
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.5),
+    inset -2px -2px 4px rgba(255, 235, 215, 0.05),
+    0 0 0 1px hsl(var(--neu-orange) / 0.45),
+    0 0 12px hsl(var(--neu-orange) / 0.25);
+}
+
+/* Primary filled (Message / Talk) */
+.neu-people-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #fff7ec;
+  border-radius: 11px;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange) / 0.95) 0%,
+    hsl(18 90% 48%) 100%
+  );
+  box-shadow:
+    -2px -2px 5px rgba(255, 235, 215, 0.06),
+    3px 3px 8px rgba(0, 0, 0, 0.6),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.18),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.25),
+    0 0 14px hsl(var(--neu-orange) / 0.40);
+  transition: box-shadow 180ms ease, transform 120ms ease, filter 180ms ease;
+}
+.neu-people-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow:
+    -2px -2px 5px rgba(255, 235, 215, 0.07),
+    3px 3px 8px rgba(0, 0, 0, 0.6),
+    inset 1px 1px 1px rgba(255, 235, 215, 0.22),
+    inset -1px -1px 1px rgba(0, 0, 0, 0.25),
+    0 0 18px hsl(var(--neu-orange) / 0.55);
+}
+.neu-people-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.95);
+}
+
+/* Soft secondary (Vote / Comments) */
+.neu-people-btn-soft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+  background: linear-gradient(160deg, hsl(228 18% 10%), hsl(228 16% 13%));
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 3px rgba(255, 235, 215, 0.04);
+  transition: color 180ms ease, box-shadow 180ms ease;
+}
+.neu-people-btn-soft:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 3px rgba(255, 235, 215, 0.05),
+    0 0 0 1px hsl(var(--neu-orange) / 0.25);
+}
+.neu-people-btn-soft.is-voted {
+  color: #ffd9b8;
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.5),
+    inset -1px -1px 3px rgba(255, 235, 215, 0.05),
+    0 0 0 1px hsl(var(--neu-orange) / 0.50),
+    0 0 14px hsl(var(--neu-orange) / 0.30);
+}
+
 /* Raised neumorphic button (ghost / inactive). */
 .neu-btn {
   background: linear-gradient(

@@ -202,37 +202,40 @@ function PeopleDiscoveryCard({
     .slice(0, 2)
     .toUpperCase();
 
+  const totalVotes = voteCount + (hasVoted ? 1 : 0);
+
   return (
     <article
-      className="flex-shrink-0 min-w-[260px] max-w-[260px] rounded-2xl border border-white/10 backdrop-blur-sm overflow-hidden flex flex-col"
-      style={{
-        background: "linear-gradient(160deg, rgba(8,15,40,0.92) 0%, rgba(5,10,30,0.88) 100%)",
-        boxShadow: "0 0 28px rgba(0,210,255,0.09), inset 0 1px 0 rgba(255,255,255,0.07)",
-      }}
+      className="neu-people-card group flex-shrink-0 w-[268px] flex flex-col"
       data-testid={`card-discovery-user-${person.id}`}
     >
-      {/* Top banner accent */}
-      <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #22d3ee, #818cf8, #e879f9)" }} />
+      {/* Subtle warm accent strip on top edge */}
+      <div className="neu-people-accent" />
 
-      <div className="p-4 flex flex-col flex-1 gap-3">
-        {/* Avatar + name row */}
+      {/* Talking ribbon (only when in a room) */}
+      {currentRoomId && (
+        <div className="neu-people-talking">
+          <Radio className="w-3 h-3" />
+          <span>Live in a room</span>
+        </div>
+      )}
+
+      <div className="p-4 pt-5 flex flex-col flex-1 gap-3.5">
+        {/* Avatar + identity */}
         <div className="flex items-center gap-3">
           <div className="relative flex-shrink-0">
-            <div
-              className="w-[72px] h-[72px] rounded-full p-[2.5px]"
-              style={{ background: "linear-gradient(135deg, #22d3ee, #818cf8, #e879f9)" }}
-            >
+            <div className="neu-people-avatar-ring">
               {person.profileImageUrl ? (
                 <img
                   src={person.profileImageUrl}
                   alt={name}
-                  className="w-full h-full rounded-full object-cover border-2 border-[#08102a]"
+                  className="w-full h-full rounded-full object-cover"
                   data-testid={`img-discovery-user-${person.id}`}
                 />
               ) : (
                 <div
-                  className="w-full h-full rounded-full flex items-center justify-center text-lg font-black text-white border-2 border-[#08102a]"
-                  style={{ background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(167,139,250,0.22))" }}
+                  className="w-full h-full rounded-full flex items-center justify-center text-base font-black text-white"
+                  style={{ background: "linear-gradient(135deg, rgba(255,156,86,0.35), rgba(255,98,0,0.25))" }}
                   data-testid={`avatar-discovery-user-${person.id}`}
                 >
                   {initials}
@@ -240,63 +243,68 @@ function PeopleDiscoveryCard({
               )}
             </div>
             <span
-              className={`absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full border-2 border-[#08102a] ${isOnline ? "bg-emerald-400" : "bg-slate-500"}`}
+              className={`neu-people-status ${isOnline ? "is-online" : ""}`}
               data-testid={`status-discovery-user-${person.id}`}
             />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-extrabold text-white leading-tight" data-testid={`text-discovery-name-${person.id}`}>
+            <h3
+              className="truncate text-[14px] font-extrabold text-white leading-tight tracking-tight"
+              data-testid={`text-discovery-name-${person.id}`}
+            >
               {name}
             </h3>
-            <p className={`text-[11px] font-semibold mt-0.5 ${isOnline ? "text-emerald-400" : "text-white/40"}`}>
-              {isOnline ? "● Online now" : "○ Offline"}
+            <p
+              className={`flex items-center gap-1.5 text-[10.5px] font-semibold mt-1 ${
+                isOnline ? "text-emerald-300" : "text-white/35"
+              }`}
+            >
+              <span
+                className={`inline-block w-1.5 h-1.5 rounded-full ${
+                  isOnline ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.85)]" : "bg-white/25"
+                }`}
+              />
+              {isOnline ? "Online now" : "Offline"}
             </p>
-            {currentRoomId && (
-              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-neu-orange bg-orange-400/10 rounded-full px-2 py-0.5">
-                <Radio className="w-2.5 h-2.5" />
-                Talking
-              </span>
-            )}
           </div>
         </div>
 
         {/* Bio */}
-        {bio && (
-          <p className="text-[11px] text-white/55 leading-relaxed line-clamp-2">{bio}</p>
+        {bio ? (
+          <p className="text-[11.5px] text-white/55 leading-relaxed line-clamp-2 min-h-[32px]">{bio}</p>
+        ) : (
+          <div className="min-h-[32px]" />
         )}
 
-        {/* Language badges */}
+        {/* Language chips */}
         {languages.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
             <Globe className="w-3 h-3 text-white/30 flex-shrink-0" />
             {languages.map((lang) => (
-              <span
-                key={lang}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-orange-400/25 bg-orange-400/10 text-orange-200"
-              >
+              <span key={lang} className="neu-people-lang">
                 {lang}
               </span>
             ))}
           </div>
         )}
 
-        {/* Stats row */}
-        <div className="flex items-center gap-3 text-[11px]">
-          <span className="flex items-center gap-1 text-white/60" data-testid={`text-discovery-followers-${person.id}`}>
-            <Heart className="w-3 h-3 text-red-400 fill-red-400" />
-            <span className="font-semibold text-white/80">{followerCount}</span>
-            <span className="text-white/35">followers</span>
+        {/* Inset stats strip — engraved into the card */}
+        <div className="neu-people-stats" data-testid={`text-discovery-followers-${person.id}`}>
+          <span className="neu-people-stat">
+            <Heart className="w-3 h-3 text-rose-400 fill-rose-400" />
+            <span className="font-bold text-white/85">{followerCount}</span>
+            <span className="text-white/40 text-[10px]">followers</span>
           </span>
-          {voteCount > 0 && (
-            <span className="flex items-center gap-1 text-white/60">
+          {totalVotes > 0 && (
+            <span className="neu-people-stat">
               <Flame className="w-3 h-3 text-orange-400" />
-              <span className="font-semibold text-white/80">{voteCount + (hasVoted ? 1 : 0)}</span>
+              <span className="font-bold text-white/85">{totalVotes}</span>
             </span>
           )}
           {commentCount > 0 && (
-            <span className="flex items-center gap-1 text-white/60">
-              <MessageSquare className="w-3 h-3 text-white/50" />
-              <span className="font-semibold text-white/80">{commentCount}</span>
+            <span className="neu-people-stat">
+              <MessageSquare className="w-3 h-3 text-white/45" />
+              <span className="font-bold text-white/85">{commentCount}</span>
             </span>
           )}
         </div>
@@ -307,48 +315,42 @@ function PeopleDiscoveryCard({
             <button
               onClick={onFollowToggle}
               disabled={isCurrentUser || isPending}
-              className={`rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
-                isFollowing
-                  ? "border-orange-400/35 bg-orange-400/15 text-orange-200 hover:bg-orange-400/20"
-                  : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
-              } disabled:opacity-45 disabled:cursor-not-allowed`}
+              className={`neu-people-btn ${isFollowing ? "is-active" : ""} disabled:opacity-45 disabled:cursor-not-allowed`}
               data-testid={`button-follow-discovery-${person.id}`}
             >
-              {isCurrentUser ? "You" : isFollowing ? "✓ Following" : "+ Follow"}
+              {isCurrentUser ? "You" : isFollowing ? "Following" : "Follow"}
             </button>
             <button
               onClick={onTalk}
               disabled={isCurrentUser || (!isOnline && !currentRoomId)}
-              className="flex items-center justify-center gap-1 rounded-xl border border-orange-400/25 bg-orange-400/10 px-3 py-2 text-xs font-bold text-orange-100 disabled:opacity-45 disabled:cursor-not-allowed hover:bg-orange-400/16 transition-colors"
+              className="neu-people-btn-primary disabled:opacity-45 disabled:cursor-not-allowed"
               data-testid={`button-talk-discovery-${person.id}`}
             >
-              <MessageCircle className="w-3 h-3" />
+              <MessageCircle className="w-3.5 h-3.5" />
               {isCurrentUser ? "You" : currentRoomId ? "Talk" : "Message"}
             </button>
           </div>
-          <button
-            onClick={onVote}
-            disabled={isCurrentUser}
-            className={`w-full flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-colors border ${
-              hasVoted
-                ? "border-orange-400/45 bg-orange-400/15 text-orange-200"
-                : "border-orange-400/18 bg-orange-400/8 text-orange-300/60 hover:bg-orange-400/12 hover:border-orange-400/30"
-            } disabled:opacity-45 disabled:cursor-not-allowed`}
-            data-testid={`button-vote-discovery-${person.id}`}
-          >
-            <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-orange-400 text-orange-400" : ""}`} />
-            {hasVoted ? "Voted!" : "Vote"}
-            {(voteCount > 0) && <span className="ml-1 opacity-60">{voteCount + (hasVoted ? 1 : 0)}</span>}
-          </button>
-          <button
-            onClick={onComment}
-            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/55 hover:bg-white/8 hover:border-white/18 transition-colors"
-            data-testid={`button-comment-discovery-${person.id}`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            Comments
-            {commentCount > 0 && <span className="ml-1 opacity-60">{commentCount}</span>}
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={onVote}
+              disabled={isCurrentUser}
+              className={`neu-people-btn-soft ${hasVoted ? "is-voted" : ""} disabled:opacity-45 disabled:cursor-not-allowed`}
+              data-testid={`button-vote-discovery-${person.id}`}
+            >
+              <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-orange-400 text-orange-400" : "text-orange-300/70"}`} />
+              {hasVoted ? "Voted" : "Vote"}
+              {totalVotes > 0 && <span className="ml-0.5 opacity-70">{totalVotes}</span>}
+            </button>
+            <button
+              onClick={onComment}
+              className="neu-people-btn-soft"
+              data-testid={`button-comment-discovery-${person.id}`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-white/50" />
+              Comments
+              {commentCount > 0 && <span className="ml-0.5 opacity-70">{commentCount}</span>}
+            </button>
+          </div>
         </div>
       </div>
     </article>
