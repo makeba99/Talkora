@@ -142,10 +142,15 @@ const uploadVideo = multer({
   storage: videoStorage,
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = /mp4|webm|mov|ogg/;
-    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
-    const mimeAllowed = /video\/(mp4|webm|quicktime|ogg)/.test(file.mimetype);
-    cb(null, ext || mimeAllowed);
+    /* Hologram backgrounds may be a video (mp4/webm/mov/ogg) OR a still
+       image / GIF (jpeg/png/gif/webp). The frontend renders the file with
+       a <video> tag for video MIME types and an <img> tag otherwise. */
+    const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExt = /\.(mp4|webm|mov|ogg|jpe?g|png|gif|webp)$/i.test(file.originalname);
+    const allowedMime =
+      /video\/(mp4|webm|quicktime|ogg)/.test(file.mimetype) ||
+      /^image\/(jpeg|png|gif|webp)$/.test(file.mimetype);
+    cb(null, allowedExt || allowedMime || !!ext);
   },
 });
 

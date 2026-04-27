@@ -10,7 +10,7 @@ import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Video, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints } from "lucide-react";
+import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Image as ImageIcon, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/components/profile-dropdown";
 import { ProfileDecoration, getRoomThemeBorderClass, ROOM_THEMES } from "@/components/profile-decorations";
@@ -359,6 +359,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const [editThemeOffset, setEditThemeOffset] = useState(0);
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);
   const [hologramFile, setHologramFile] = useState<File | null>(null);
+  const [hologramKind, setHologramKind] = useState<"video" | "image" | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -405,6 +406,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     const file = e.target.files?.[0];
     if (!file) return;
     setHologramFile(file);
+    setHologramKind(file.type.startsWith("video/") ? "video" : "image");
     const url = URL.createObjectURL(file);
     setHologramPreview(url);
   };
@@ -412,6 +414,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const clearHologram = async () => {
     setHologramFile(null);
     setHologramPreview(null);
+    setHologramKind(null);
     if ((room as any).hologramVideoUrl) {
       await apiRequest("PATCH", `/api/rooms/${room.id}`, { hologramVideoUrl: null });
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
@@ -1117,7 +1120,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Card Background Video</Label>
+                <Label>Card Background</Label>
                 {hologramVideoUrl && (
                   <button type="button" onClick={clearHologram} className="text-xs text-destructive hover:underline">Remove</button>
                 )}
@@ -1125,17 +1128,27 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
 
               <div className="flex items-center gap-3">
                 {hologramPreview && (
-                  <video src={hologramPreview} autoPlay loop muted playsInline className="w-12 h-12 rounded-md object-cover border-2 border-cyan-400" />
+                  hologramKind === "video" ? (
+                    <video src={hologramPreview} autoPlay loop muted playsInline className="w-12 h-12 rounded-md object-cover border-2 border-cyan-400" />
+                  ) : (
+                    <img src={hologramPreview} alt="Background preview" className="w-12 h-12 rounded-md object-cover border-2 border-cyan-400" />
+                  )
                 )}
                 <button
                   type="button"
                   onClick={() => videoInputRef.current?.click()}
                   className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
                 >
-                  <Video className="w-4 h-4" />
-                  {hologramFile ? "Change Video" : hologramVideoUrl ? "Replace Video" : "Upload Video"}
+                  <ImageIcon className="w-4 h-4" />
+                  {hologramFile ? "Change Background" : hologramVideoUrl ? "Replace Background" : "Upload Video, GIF or Image"}
                 </button>
-                <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={handleVideoSelect} />
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={handleVideoSelect}
+                />
               </div>
             </div>
 

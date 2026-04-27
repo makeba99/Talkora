@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Infinity as InfinityIcon } from "lucide-react";
 
+/* Steps run from solo (1) on the left up through 12, with the
+   Unlimited (∞) option pinned to the right end of the rail. */
 const STEPS: { value: number; label: string; short: string }[] = [
-  { value: 0, label: "Unlimited", short: "∞" },
   { value: 1, label: "Solo", short: "1" },
   { value: 2, label: "2 people", short: "2" },
   { value: 3, label: "3 people", short: "3" },
@@ -11,6 +12,7 @@ const STEPS: { value: number; label: string; short: string }[] = [
   { value: 8, label: "8 people", short: "8" },
   { value: 10, label: "10 people", short: "10" },
   { value: 12, label: "12 people", short: "12" },
+  { value: 0, label: "Unlimited", short: "∞" },
 ];
 
 const KNOB = 26;

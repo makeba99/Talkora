@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Hammer, Video } from "lucide-react";
+import { ChevronLeft, ChevronRight, Hammer, Image as ImageIcon } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { ROOM_THEMES } from "@/components/profile-decorations";
@@ -37,6 +37,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   const THEMES_PER_PAGE = 4;
   const [hologramFile, setHologramFile] = useState<File | null>(null);
   const [hologramPreview, setHologramPreview] = useState<string | null>(null);
+  const [hologramKind, setHologramKind] = useState<"video" | "image" | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,6 +45,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
     const file = e.target.files?.[0];
     if (!file) return;
     setHologramFile(file);
+    setHologramKind(file.type.startsWith("video/") ? "video" : "image");
     setHologramPreview(URL.createObjectURL(file));
   };
 
@@ -52,6 +54,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
     setRoomTheme("premium-atmosphere");
     setHologramFile(null);
     setHologramPreview(null);
+    setHologramKind(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -247,18 +250,27 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
           </div>
 
           <div className="space-y-2">
-            <Label>Card Background Video</Label>
+            <Label>Card Background</Label>
             <div className="flex items-center gap-3">
               {hologramPreview && (
-                <video
-                  src={hologramPreview}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-12 h-12 rounded-md object-cover border-2 border-orange-400"
-                  data-testid="video-create-preview"
-                />
+                hologramKind === "video" ? (
+                  <video
+                    src={hologramPreview}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-12 h-12 rounded-md object-cover border-2 border-orange-400"
+                    data-testid="video-create-preview"
+                  />
+                ) : (
+                  <img
+                    src={hologramPreview}
+                    alt="Background preview"
+                    className="w-12 h-12 rounded-md object-cover border-2 border-orange-400"
+                    data-testid="img-create-preview"
+                  />
+                )
               )}
               <button
                 type="button"
@@ -266,8 +278,8 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                 className="neu-upload-btn flex-1 flex items-center justify-center gap-2 text-sm font-medium"
                 data-testid="button-create-upload-video"
               >
-                <Video className="w-4 h-4" />
-                {hologramFile ? "Change Video" : "Upload Video"}
+                <ImageIcon className="w-4 h-4" />
+                {hologramFile ? "Change Background" : "Upload Video, GIF or Image"}
               </button>
               {hologramFile && (
                 <button
@@ -275,6 +287,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                   onClick={() => {
                     setHologramFile(null);
                     setHologramPreview(null);
+                    setHologramKind(null);
                   }}
                   className="text-xs text-destructive hover:underline"
                   data-testid="button-create-clear-video"
@@ -282,7 +295,14 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
                   Remove
                 </button>
               )}
-              <input ref={videoInputRef} type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={handleVideoSelect} data-testid="input-create-video-file" />
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={handleVideoSelect}
+                data-testid="input-create-video-file"
+              />
             </div>
           </div>
 
