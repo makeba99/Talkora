@@ -21,6 +21,7 @@ import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { ThemePicker } from "@/components/theme-picker";
 import { ScrollJumpButton } from "@/components/scroll-jump-button";
 import { BoostModeToggle } from "@/components/boost-mode-toggle";
+import { useLowBandwidthHint } from "@/hooks/use-low-bandwidth-hint";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
@@ -368,6 +369,7 @@ export default function Lobby() {
   const { user } = useAuth();
   const { socket } = useSocket();
   const { toast } = useToast();
+  useLowBandwidthHint();
   const [, navigate] = useLocation();
   const isAdminUser = user?.role === "admin" || user?.role === "superadmin" || user?.email === "dj55jggg@gmail.com";
   const [selectedLanguage, setSelectedLanguage] = useState("All");

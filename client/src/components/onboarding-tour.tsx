@@ -3,6 +3,7 @@ import { ChevronRight, X, Sparkles, Mic, Globe, Search, Hammer, UserCircle, User
 
 const STORAGE_KEY = "vextorn:onboarding:v2";
 const STORAGE_STEP_KEY = "vextorn:onboarding:v2:step";
+const STORAGE_DISMISS_RELAUNCH_KEY = "vextorn:onboarding:v2:relaunch-hidden";
 
 type OnboardingStep = {
   id: string;
@@ -154,7 +155,11 @@ type OnboardingTourProps = {
 export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
   const [active, setActive] = useState(false);
   const [reopenVisible, setReopenVisible] = useState(false);
-  const [step, setStep] = useState<number>(7);
+  const [relaunchPermanentlyHidden, setRelaunchPermanentlyHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(STORAGE_DISMISS_RELAUNCH_KEY) === "1";
+  });
+  const [step, setStep] = useState<number>(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardPos, setCardPos] = useState<{ top: number; left: number; placement: "top" | "bottom" } | null>(null);
   /** Whether the user has satisfied the current step's `waitForClick`. */
@@ -360,21 +365,39 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
   }, [active, skip]);
 
   if (!active) {
-    return reopenVisible ? (
-      <button
-        type="button"
-        className="onboarding-relaunch"
-        onClick={start}
-        data-testid="button-onboarding-relaunch"
-        aria-label="Restart guided tour"
-        title="Restart tour"
-      >
-        <span className="onboarding-relaunch-medallion">
-          <Compass className="w-3.5 h-3.5" />
-        </span>
-        <span className="onboarding-relaunch-label">Tour</span>
-      </button>
-    ) : null;
+    if (!reopenVisible || relaunchPermanentlyHidden) return null;
+    return (
+      <div className="onboarding-relaunch-wrap" data-testid="onboarding-relaunch-wrap">
+        <button
+          type="button"
+          className="onboarding-relaunch"
+          onClick={start}
+          data-testid="button-onboarding-relaunch"
+          aria-label="Restart guided tour"
+          title="Restart tour"
+        >
+          <span className="onboarding-relaunch-medallion">
+            <Compass className="w-3.5 h-3.5" />
+          </span>
+          <span className="onboarding-relaunch-label">Tour</span>
+        </button>
+        <button
+          type="button"
+          className="onboarding-relaunch-dismiss"
+          onClick={(e) => {
+            e.stopPropagation();
+            try { window.localStorage.setItem(STORAGE_DISMISS_RELAUNCH_KEY, "1"); } catch {}
+            setRelaunchPermanentlyHidden(true);
+            setReopenVisible(false);
+          }}
+          aria-label="Hide tour button permanently"
+          title="Hide tour button"
+          data-testid="button-onboarding-relaunch-dismiss"
+        >
+          <X className="w-2.5 h-2.5" />
+        </button>
+      </div>
+    );
   }
 
   const Icon = current.icon;
