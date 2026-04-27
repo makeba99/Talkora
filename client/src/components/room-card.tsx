@@ -501,7 +501,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const baseCircleSize =
     displayCount <= 1 ? 78 :
     displayCount === 2 ? 70 :
-    displayCount <= 4 ? 54 :
+    displayCount === 3 ? 60 :
+    displayCount === 4 ? 50 :
     displayCount <= 6 ? 50 :
     displayCount <= 8 ? 44 :
     38;
@@ -619,7 +620,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     displayCount <= 1 ? 1 :
     displayCount === 2 ? 2 :
     displayCount === 3 ? 3 :
-    displayCount === 4 ? 2 :
+    displayCount === 4 ? 4 :
     displayCount <= 6 ? 3 :
     displayCount <= 9 ? 3 :
     4;
@@ -939,20 +940,20 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               )}
             </div>
 
-            {/* Step In — 3D animated swinging door */}
+            {/* Step In — 3D animated swinging door with OPEN/CLOSED label above */}
             {isFull ? (
               <div
                 className="door-3d-wrap door-3d-disabled"
                 title="Room is full"
                 data-testid={`button-join-room-${room.id}`}
               >
+                <span className="door-status-label door-status-closed">CLOSED</span>
                 <div className="door-frame">
                   <div className="door-interior" />
                   <div className="door-panel">
                     <div className="door-panel-inset door-panel-inset-top" />
                     <div className="door-panel-inset door-panel-inset-bot" />
                     <div className="door-knob" />
-                    <span className="door-text">LOCKED</span>
                   </div>
                 </div>
               </div>
@@ -964,13 +965,13 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 data-testid={`button-signin-room-${room.id}`}
                 onClick={(e) => e.stopPropagation()}
               >
+                <span className="door-status-label door-status-open">OPEN</span>
                 <div className="door-frame">
                   <div className="door-interior" />
                   <div className="door-panel">
                     <div className="door-panel-inset door-panel-inset-top" />
                     <div className="door-panel-inset door-panel-inset-bot" />
                     <div className="door-knob" />
-                    <span className="door-text">ENTER</span>
                   </div>
                 </div>
               </a>
@@ -984,13 +985,13 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
                 onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
                 data-testid={`button-join-room-${room.id}`}
               >
+                <span className="door-status-label door-status-open">OPEN</span>
                 <div className="door-frame">
                   <div className="door-interior" />
                   <div className="door-panel">
                     <div className="door-panel-inset door-panel-inset-top" />
                     <div className="door-panel-inset door-panel-inset-bot" />
                     <div className="door-knob" />
-                    <span className="door-text">ENTER</span>
                   </div>
                 </div>
               </div>

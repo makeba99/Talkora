@@ -2464,7 +2464,7 @@ html.synthwave .neon-text {
   box-shadow: 0 1px 2px rgba(0,0,0,0.60), inset 0 -1px 1px rgba(0,0,0,0.30);
 }
 
-/* Text engraved ON the door panel face — vertical writing */
+/* Text engraved ON the door panel face — vertical writing (legacy) */
 .door-text {
   position: absolute;
   top: 50%;
@@ -2490,6 +2490,58 @@ html.synthwave .neon-text {
 .door-3d-disabled .door-text {
   color: hsl(358 70% 52% / 0.60);
   text-shadow: 0 0 4px hsl(358 70% 40% / 0.30);
+}
+
+/* ── Door status label (OPEN / CLOSED) — sits ABOVE the door, much
+   easier to read than the engraved text. Compact pill with neon glow. */
+.door-status-label {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  border: 1px solid transparent;
+  transition: transform 0.32s ease, box-shadow 0.32s ease,
+              background 0.32s ease, color 0.32s ease;
+}
+.door-status-open {
+  color: hsl(140 80% 78%);
+  background: linear-gradient(160deg,
+    hsl(150 60% 18% / 0.95) 0%,
+    hsl(140 55% 14% / 0.95) 100%);
+  border-color: hsl(140 70% 45% / 0.55);
+  box-shadow:
+    0 0 6px hsl(140 80% 50% / 0.45),
+    0 0 12px hsl(140 80% 50% / 0.20),
+    inset 0 1px 0 hsl(140 80% 60% / 0.18);
+  text-shadow: 0 0 4px hsl(140 90% 55% / 0.55);
+}
+.door-3d-wrap:hover .door-status-open {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 10px hsl(140 90% 55% / 0.75),
+    0 0 18px hsl(140 90% 55% / 0.35),
+    inset 0 1px 0 hsl(140 80% 60% / 0.22);
+  color: hsl(140 90% 86%);
+}
+.door-status-closed {
+  color: hsl(358 80% 80%);
+  background: linear-gradient(160deg,
+    hsl(355 50% 16% / 0.95) 0%,
+    hsl(0 50% 12% / 0.95) 100%);
+  border-color: hsl(358 65% 45% / 0.55);
+  box-shadow:
+    0 0 6px hsl(358 80% 50% / 0.40),
+    0 0 12px hsl(358 80% 50% / 0.18),
+    inset 0 1px 0 hsl(358 80% 60% / 0.16);
+  text-shadow: 0 0 4px hsl(358 90% 55% / 0.50);
 }
 
 /* ── Premium Animated Borders ── */
