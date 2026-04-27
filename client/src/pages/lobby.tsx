@@ -10,6 +10,8 @@ import { RoomCard } from "@/components/room-card";
 import { CommentThreadDialog } from "@/components/comment-thread-dialog";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
 import { OnboardingTour } from "@/components/onboarding-tour";
+import { ContextualHints } from "@/components/contextual-hints";
+import { showHintOnce } from "@/lib/hints";
 import { DmDialog } from "@/components/dm-dialog";
 import { MessagesDropdown } from "@/components/messages-dropdown";
 import { SocialPanel } from "@/components/social-panel";
@@ -801,6 +803,66 @@ export default function Lobby() {
     setPendingLobbyKnocks(prev => prev.filter(k => k.id !== knock.id));
   }, [socket]);
 
+  // Ghost-typing demo for the search step of the onboarding tour.
+  // We animate fake characters into the search input so first-timers
+  // can see "this is what searching looks like" without doing it themselves.
+  const ghostTypingRef = useRef<{ cancel: () => void } | null>(null);
+  const startGhostTyping = useCallback((text: string) => {
+    ghostTypingRef.current?.cancel();
+    let i = 0;
+    let typing: ReturnType<typeof setInterval> | null = null;
+    let clearTimer: ReturnType<typeof setTimeout> | null = null;
+    setSearchQuery("");
+    typing = setInterval(() => {
+      i += 1;
+      setSearchQuery(text.slice(0, i));
+      if (i >= text.length && typing) {
+        clearInterval(typing);
+        typing = null;
+        clearTimer = setTimeout(() => setSearchQuery(""), 1700);
+      }
+    }, 110);
+    ghostTypingRef.current = {
+      cancel: () => {
+        if (typing) clearInterval(typing);
+        if (clearTimer) clearTimeout(clearTimer);
+        setSearchQuery("");
+      },
+    };
+  }, []);
+  useEffect(() => () => ghostTypingRef.current?.cancel(), []);
+
+  // Hook the onboarding tour into the lobby for step-specific side effects:
+  // switching the discovery tab and triggering the ghost-typing demo.
+  const handleTourStepChange = useCallback(
+    (
+      current: { id: string; tab?: "rooms" | "top-speakers" | "famous-users"; ghostType?: string } | null,
+      prev: { id: string; tab?: "rooms" | "top-speakers" | "famous-users"; ghostType?: string } | null,
+    ) => {
+      // Tour closed — make sure typing is cleaned up and we're back on rooms.
+      if (!current) {
+        ghostTypingRef.current?.cancel();
+        if (prev?.tab && prev.tab !== "rooms") setActiveDiscovery("rooms");
+        return;
+      }
+      // Switch discovery tab if the new step wants a specific one.
+      if (current.tab) {
+        setActiveDiscovery(current.tab);
+      }
+      // Stop any in-flight ghost typing if we left the search step.
+      if (prev?.id === "search" && current.id !== "search") {
+        ghostTypingRef.current?.cancel();
+      }
+      // Trigger ghost typing on entering a step that asks for it. Wait a beat
+      // so the spotlight has settled on the search shell first.
+      if (current.ghostType && prev?.id !== current.id) {
+        const text = current.ghostType;
+        setTimeout(() => startGhostTyping(text), 450);
+      }
+    },
+    [startGhostTyping],
+  );
+
   const handleJoinRoom = useCallback(
     async (roomId: string) => {
       if (roomId.startsWith("sample-")) {
@@ -811,6 +873,12 @@ export default function Lobby() {
         window.location.href = "/api/login";
         return;
       }
+      showHintOnce({
+        id: "room-first-join",
+        title: "Welcome to your first room",
+        body: "Your mic stays muted at first — listen for a beat, then raise your hand when you're ready to speak.",
+        durationMs: 8000,
+      });
       try {
         const res = await apiRequest("POST", `/api/rooms/${encodeURIComponent(roomId)}/access-link`, {});
         const data = await res.json();
@@ -1274,7 +1342,15 @@ export default function Lobby() {
                   setSearchQuery(e.target.value);
                   setSearchSuggestOpen(true);
                 }}
-                onFocus={() => setSearchSuggestOpen(true)}
+                onFocus={(e) => {
+                  setSearchSuggestOpen(true);
+                  showHintOnce({
+                    id: "search-first-focus",
+                    title: "Search across the lobby",
+                    body: "Try a language like 'spanish', a topic, or a person's name — results update as you type.",
+                    anchor: searchShellRef.current,
+                  });
+                }}
                 className="search-neu-input border-0 bg-transparent text-white placeholder:text-white/40 focus-visible:ring-0 focus-visible:ring-offset-0"
                 data-testid="input-search-rooms"
               />
@@ -1548,8 +1624,11 @@ export default function Lobby() {
                     const isFollowing = followingIds.has(person.id);
                     const hasVoted = speakerVotes.has(person.id);
                     return (
-                      <PeopleDiscoveryCard
+                      <div
                         key={person.id}
+                        {...(person.id === filteredPeople[0]?.id ? { "data-tour-target": "people" } : {})}
+                      >
+                      <PeopleDiscoveryCard
                         person={person}
                         followerCount={getSpeakerFollowers(person.id)}
                         isOnline={isOnline}
@@ -1591,6 +1670,7 @@ export default function Lobby() {
                           else toast({ title: "This is a demo user", description: "Sign in and meet real language learners!" });
                         }}
                       />
+                      </div>
                     );
                   })}
                 </div>
@@ -1661,11 +1741,11 @@ export default function Lobby() {
                   />
                 );
                 return idx === 0 ? (
-                  <div key={room.id} data-tour-target="rooms" style={{ display: "contents" }}>
+                  <div key={room.id} data-tour-target="rooms">
                     {card}
                   </div>
                 ) : (
-                  <div key={room.id} style={{ display: "contents" }}>{card}</div>
+                  <div key={room.id}>{card}</div>
                 );
               })}
             </div>
@@ -1674,7 +1754,8 @@ export default function Lobby() {
         <SiteFooter />
       </div>
 
-      <OnboardingTour />
+      <OnboardingTour onStepChange={handleTourStepChange} />
+      <ContextualHints />
 
       {user && (
         <DmDialog

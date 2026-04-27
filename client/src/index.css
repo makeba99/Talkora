@@ -8476,3 +8476,162 @@ html.neomorphic-light .scroll-jump-btn {
 @media (max-width: 640px) {
   .onboarding-card { width: calc(100vw - 24px); }
 }
+
+/* ============================================================================
+   Contextual hints — sculpted floating tooltip for first-time interactions
+   ============================================================================ */
+.ctx-hint {
+  position: fixed;
+  z-index: 8500;
+  padding: 12px 14px 12px 14px;
+  border-radius: 16px;
+  pointer-events: auto;
+  background:
+    linear-gradient(180deg, hsl(var(--neu-bg-hi)) 0%, hsl(var(--neu-bg-lo)) 100%);
+  border: 1px solid hsl(var(--neu-orange) / 0.22);
+  box-shadow:
+    0 18px 44px -16px hsl(0 0% 0% / 0.6),
+    0 6px 18px -6px hsl(0 0% 0% / 0.4),
+    inset 0 1px 0 hsl(0 0% 100% / 0.06),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.4);
+  color: hsl(var(--foreground));
+  animation: ctxHintIn 320ms cubic-bezier(0.2, 0.9, 0.25, 1.05);
+}
+
+@keyframes ctxHintIn {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.ctx-hint::before {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, hsl(var(--neu-bg-hi)) 0%, hsl(var(--neu-bg-lo)) 100%);
+  border: 1px solid hsl(var(--neu-orange) / 0.22);
+  transform: rotate(45deg);
+  left: 50%;
+  margin-left: -5px;
+}
+
+.ctx-hint.is-bottom::before {
+  top: -6px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.ctx-hint.is-top::before {
+  bottom: -6px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.ctx-hint-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ctx-hint-medallion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, hsl(var(--neu-orange) / 0.32) 0%, hsl(var(--neu-orange) / 0.18) 100%);
+  color: hsl(var(--neu-orange));
+  border: 1px solid hsl(var(--neu-orange) / 0.32);
+  flex-shrink: 0;
+}
+
+.ctx-hint-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
+  color: hsl(var(--foreground));
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.ctx-hint-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  color: hsl(var(--foreground) / 0.5);
+  background: transparent;
+  border: 1px solid hsl(0 0% 100% / 0.06);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+  flex-shrink: 0;
+}
+
+.ctx-hint-close:hover {
+  color: hsl(var(--foreground));
+  background: hsl(0 0% 100% / 0.05);
+  border-color: hsl(0 0% 100% / 0.12);
+}
+
+.ctx-hint-body {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: hsl(var(--foreground) / 0.72);
+  margin: 0;
+}
+
+/* ----- Onboarding confetti burst (final step) ----- */
+.onboarding-confetti {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  animation-name: confettiBurst;
+  animation-timing-function: cubic-bezier(0.18, 0.72, 0.38, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+.confetti-piece.confetti-circle { border-radius: 50%; }
+.confetti-piece.confetti-square { border-radius: 1px; }
+
+.confetti-piece.confetti-violet {
+  background: hsl(var(--neu-orange));
+  box-shadow: 0 0 6px hsl(var(--neu-orange) / 0.65);
+}
+.confetti-piece.confetti-gold {
+  background: hsl(46 95% 62%);
+  box-shadow: 0 0 6px hsl(46 95% 62% / 0.55);
+}
+.confetti-piece.confetti-teal {
+  background: hsl(178 75% 58%);
+  box-shadow: 0 0 6px hsl(178 75% 58% / 0.55);
+}
+.confetti-piece.confetti-white {
+  background: hsl(0 0% 100% / 0.92);
+  box-shadow: 0 0 6px hsl(0 0% 100% / 0.55);
+}
+
+@keyframes confettiBurst {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(0.6); opacity: 0; }
+  12%  { opacity: 1; transform: translate(calc(var(--dx) * 0.18), calc(var(--dy) * 0.18)) rotate(calc(var(--rot) * 0.18)) scale(1); }
+  70%  { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 70px)) rotate(var(--rot)) scale(0.85); opacity: 0; }
+}

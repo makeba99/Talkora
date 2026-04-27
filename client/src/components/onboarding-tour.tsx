@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
-import { ChevronRight, X, Sparkles, Mic, Globe, Search } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from "react";
+import { ChevronRight, X, Sparkles, Mic, Globe, Search, Hammer, UserCircle, Users } from "lucide-react";
 
 const STORAGE_KEY = "vextorn:onboarding:v1";
 const STORAGE_STEP_KEY = "vextorn:onboarding:v1:step";
@@ -12,6 +12,12 @@ type OnboardingStep = {
   body: string;
   primary?: string;
   secondary?: string;
+  /** Optional tab to switch to in the lobby's discovery row before this step renders. */
+  tab?: "rooms" | "top-speakers" | "famous-users";
+  /** If true, fire the ghost-typing demo when this step becomes active. */
+  ghostType?: string;
+  /** If true, render confetti when this step becomes active. */
+  celebrate?: boolean;
 };
 
 const STEPS: OnboardingStep[] = [
@@ -31,6 +37,7 @@ const STEPS: OnboardingStep[] = [
     body: "People drop in, talk, listen, learn languages, hang out. Tap a card to peek inside — no pressure to speak.",
     primary: "Got it",
     secondary: "Skip tour",
+    tab: "rooms",
   },
   {
     id: "languages",
@@ -40,22 +47,55 @@ const STEPS: OnboardingStep[] = [
     body: "Tune the lobby to whatever you're learning today. You can change this anytime — nothing is locked in.",
     primary: "Cool, what's next?",
     secondary: "Skip tour",
+    tab: "rooms",
+  },
+  {
+    id: "people",
+    target: '[data-tour-target="people"]',
+    icon: Users,
+    title: "Meet the regulars.",
+    body: "Top speakers and famous voices live here. Follow someone to know when they're online — then pop into their room.",
+    primary: "Nice — keep going",
+    secondary: "Skip tour",
+    tab: "top-speakers",
   },
   {
     id: "search",
     target: '[data-tour-target="search"]',
     icon: Search,
     title: "Search like a regular.",
-    body: "Type anything — a room, a language, a person — and we'll find it instantly.",
+    body: "Type anything — a room, a language, a person — and we'll find it instantly. Watch:",
+    primary: "Cool, what's next?",
+    secondary: "Skip tour",
+    tab: "rooms",
+    ghostType: "spanish",
+  },
+  {
+    id: "create-room",
+    target: '[data-testid="button-create-room"]',
+    icon: Hammer,
+    title: "Spin up your own room.",
+    body: "Pick a topic, a language, a vibe. You're the host — others knock to come in.",
     primary: "Got it",
+    secondary: "Skip tour",
+    tab: "rooms",
+  },
+  {
+    id: "profile",
+    target: '[data-testid="button-profile-dropdown"]',
+    icon: UserCircle,
+    title: "This is you.",
+    body: "Your avatar opens an orbit menu — friends, messages, themes, your decoration. Make it yours.",
+    primary: "Almost done",
     secondary: "Skip tour",
   },
   {
     id: "done",
     icon: Sparkles,
     title: "You're all set.",
-    body: "Wander around. I'll be in the corner if you need me again.",
+    body: "Wander around. I'll pop a hint here and there as you explore — and I'm always in the corner if you want the tour again.",
     primary: "Start exploring",
+    celebrate: true,
   },
 ];
 
@@ -65,24 +105,26 @@ function readSavedStatus(): "completed" | "skipped" | null {
   return v === "completed" || v === "skipped" ? v : null;
 }
 
-export function OnboardingTour() {
+type OnboardingTourProps = {
+  onStepChange?: (current: OnboardingStep | null, prev: OnboardingStep | null) => void;
+};
+
+export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
   const [active, setActive] = useState(false);
   const [reopenVisible, setReopenVisible] = useState(false);
-  const [step, setStep] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    const saved = window.localStorage.getItem(STORAGE_STEP_KEY);
-    const n = saved ? parseInt(saved, 10) : 0;
-    return Number.isFinite(n) && n >= 0 && n < STEPS.length ? n : 0;
-  });
+  const [step, setStep] = useState<number>(7);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardPos, setCardPos] = useState<{ top: number; left: number; placement: "top" | "bottom" } | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const prevStepRef = useRef<{ active: boolean; step: number }>({ active: false, step });
 
   // Auto-launch on first visit (after letting the lobby settle for 1.2s)
   useEffect(() => {
     const status = readSavedStatus();
+    // eslint-disable-next-line no-console
+    console.log("[onboarding] mount status=", status);
     if (status === null) {
-      const t = setTimeout(() => setActive(true), 1200);
+      const t = setTimeout(() => setActive(true), 200);
       return () => clearTimeout(t);
     } else {
       // Already finished or skipped — show the relaunch capsule after a beat
@@ -137,7 +179,25 @@ export function OnboardingTour() {
 
   const current = STEPS[step];
 
-  // Recompute target rect + card position whenever step / size changes
+  // Notify the host (lobby) about step transitions so it can switch tabs,
+  // start a ghost-typing demo, etc.
+  useEffect(() => {
+    const prev = prevStepRef.current;
+    const wasActive = prev.active;
+    const wasStep = prev.step;
+    if (active) {
+      const prevStep = wasActive ? STEPS[wasStep] : null;
+      onStepChange?.(current, prevStep);
+    } else if (wasActive) {
+      // Tour just closed
+      onStepChange?.(null, STEPS[wasStep]);
+    }
+    prevStepRef.current = { active, step };
+  }, [active, step, current, onStepChange]);
+
+  // Recompute target rect + card position whenever step / size changes.
+  // Uses staggered retries so we catch elements that mount slightly after a
+  // step change (e.g. when switching the discovery tab for the People step).
   useLayoutEffect(() => {
     if (!active) {
       setTargetRect(null);
@@ -184,11 +244,16 @@ export function OnboardingTour() {
     };
 
     update();
+    const retry1 = window.setTimeout(update, 80);
+    const retry2 = window.setTimeout(update, 220);
+    const retry3 = window.setTimeout(update, 480);
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
-    // Catch any layout settling that happens after mount (images loading etc.)
     const interval = window.setInterval(update, 600);
     return () => {
+      window.clearTimeout(retry1);
+      window.clearTimeout(retry2);
+      window.clearTimeout(retry3);
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
       window.clearInterval(interval);
@@ -288,6 +353,7 @@ export function OnboardingTour() {
         }
         data-testid={`onboarding-card-${current.id}`}
       >
+        {current.celebrate && <Confetti />}
         <div className="onboarding-card-head">
           <span className="onboarding-card-medallion" aria-hidden="true">
             <Icon className="w-4 h-4" />
@@ -345,6 +411,53 @@ export function OnboardingTour() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Tiny CSS-only confetti burst from card center for the final step. */
+function Confetti() {
+  const particles = useMemo(() => {
+    const palette = ["violet", "gold", "teal", "white"] as const;
+    return Array.from({ length: 28 }, (_, i) => {
+      const angle = (Math.PI * 2 * i) / 28 + (Math.random() - 0.5) * 0.5;
+      const dist = 70 + Math.random() * 110;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      return {
+        dx: Math.round(dx),
+        dy: Math.round(dy),
+        rot: Math.round((Math.random() - 0.5) * 720),
+        delay: Math.round(Math.random() * 90),
+        duration: 950 + Math.round(Math.random() * 700),
+        color: palette[i % palette.length],
+        shape: i % 2 === 0 ? "square" : "circle",
+        size: 6 + Math.round(Math.random() * 4),
+      };
+    });
+  }, []);
+
+  return (
+    <div className="onboarding-confetti" aria-hidden="true">
+      {particles.map((p, i) => (
+        <span
+          key={i}
+          className={`confetti-piece confetti-${p.color} confetti-${p.shape}`}
+          style={
+            {
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              marginLeft: `-${p.size / 2}px`,
+              marginTop: `-${p.size / 2}px`,
+              ["--dx" as any]: `${p.dx}px`,
+              ["--dy" as any]: `${p.dy}px`,
+              ["--rot" as any]: `${p.rot}deg`,
+              animationDelay: `${p.delay}ms`,
+              animationDuration: `${p.duration}ms`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
     </div>
   );
 }
