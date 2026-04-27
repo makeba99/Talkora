@@ -501,10 +501,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
   const baseCircleSize =
     displayCount <= 1 ? 78 :
     displayCount === 2 ? 70 :
-    displayCount <= 4 ? 62 :
-    displayCount <= 6 ? 54 :
-    displayCount <= 8 ? 46 :
-    40;
+    displayCount <= 4 ? 54 :
+    displayCount <= 6 ? 50 :
+    displayCount <= 8 ? 44 :
+    38;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
