@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CommentThreadDialog } from "@/components/comment-thread-dialog";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
+import { OnboardingTour } from "@/components/onboarding-tour";
 import { DmDialog } from "@/components/dm-dialog";
 import { MessagesDropdown } from "@/components/messages-dropdown";
 import { SocialPanel } from "@/components/social-panel";
@@ -1254,6 +1255,7 @@ export default function Lobby() {
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <div
               ref={searchShellRef}
+              data-tour-target="search"
               className={`search-neu-shell relative flex-1 ${searchQuery ? "is-filled" : ""} ${searchSuggestOpen && hasSuggestions ? "is-suggesting" : ""}`}
             >
               <span className="search-neu-icon-wrap" aria-hidden="true">
@@ -1443,6 +1445,7 @@ export default function Lobby() {
                   aria-expanded={showLanguageFilters}
                   aria-pressed={showLanguageFilters}
                   title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
+                  data-tour-target="languages"
                   data-testid="button-toggle-language-filters"
                 >
                   <span className="filter-chip-icon">
@@ -1640,12 +1643,11 @@ export default function Lobby() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 xl:gap-5">
-              {filteredRooms.map((room) => {
+              {filteredRooms.map((room, idx) => {
                 const mergedParticipants = allRoomParticipants(roomParticipants);
                 const isSample = room.id.startsWith("sample-");
-                return (
+                const card = (
                   <RoomCard
-                    key={room.id}
                     room={room}
                     participants={mergedParticipants[room.id] || []}
                     onJoin={handleJoinRoom}
@@ -1658,12 +1660,21 @@ export default function Lobby() {
                     followerCountsOverride={isSample ? SAMPLE_FOLLOWER_COUNTS : undefined}
                   />
                 );
+                return idx === 0 ? (
+                  <div key={room.id} data-tour-target="rooms" style={{ display: "contents" }}>
+                    {card}
+                  </div>
+                ) : (
+                  <div key={room.id} style={{ display: "contents" }}>{card}</div>
+                );
               })}
             </div>
           )}
         </div>
         <SiteFooter />
       </div>
+
+      <OnboardingTour />
 
       {user && (
         <DmDialog

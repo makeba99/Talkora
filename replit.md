@@ -26,6 +26,7 @@ client/src/
     room-card.tsx       - Voice room card with room-theme gradient border + participant decorations + badge pips
     user-badge-pips.tsx - Compact badge display used on room avatars and popovers
     create-room-dialog.tsx - Room creation dialog
+    onboarding-tour.tsx - First-visit guided tour for the lobby (welcome → rooms → languages → search → done) with sculpted neumorphic card, inverse-depth SVG spotlight, dot progress, and bottom-left "Tour" relauncher capsule. State persisted in localStorage (`vextorn:onboarding:v1`, `…:v1:step`). Step targets resolved via `[data-tour-target="..."]` attributes on the lobby's first room card, Languages chip, and search shell.
     voice-room.tsx      - Active voice room with WebRTC + chat + tools + room theme panel
     profile-decorations.tsx - ProfileDecoration component + ROOM_THEMES + getRoomThemeStyle helpers
     social-panel.tsx    - Friends/followers side panel
