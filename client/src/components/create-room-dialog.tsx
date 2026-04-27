@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Hammer, Link, Loader2, Search, Video, X, You
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { ROOM_THEMES } from "@/components/profile-decorations";
+import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 
 function extractYoutubeId(url: string): string | null {
   const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -202,20 +203,11 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
           <div className="space-y-2">
             <Label>Max Participants</Label>
-            <Select value={String(maxUsers)} onValueChange={(v) => setMaxUsers(Number(v))}>
-              <SelectTrigger data-testid="select-max-users">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">∞ Unlimited</SelectItem>
-                <SelectItem value="1">1 person (solo)</SelectItem>
-                {[2, 3, 4, 6, 8, 10, 12].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n} people
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <NeuParticipantSlider
+              value={maxUsers}
+              onChange={setMaxUsers}
+              testId="slider-max-users"
+            />
           </div>
 
           <div className="flex items-center justify-between">

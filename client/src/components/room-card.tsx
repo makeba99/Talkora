@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReportDialog } from "@/components/report-dialog";
+import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1076,18 +1077,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             </div>
             <div className="space-y-2">
               <Label>Max Participants</Label>
-              <Select value={String(editMaxUsers)} onValueChange={(v) => setEditMaxUsers(Number(v))}>
-                <SelectTrigger data-testid="select-edit-max-users">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">∞ Unlimited</SelectItem>
-                  <SelectItem value="1">1 person (solo)</SelectItem>
-                  {[2, 3, 4, 6, 8, 10, 12].map((n) => (
-                    <SelectItem key={n} value={String(n)}>{n} people</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <NeuParticipantSlider
+                value={editMaxUsers}
+                onChange={setEditMaxUsers}
+                testId="slider-edit-max-users"
+              />
             </div>
 
             <div className="space-y-2">
