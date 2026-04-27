@@ -6821,6 +6821,220 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   color: hsl(var(--neu-orange-hi, 252 95% 84%));
 }
 
+/* ============================================================================
+   PROFESSIONAL HEADER POLISH
+   ----------------------------------------------------------------------------
+   Refines the lobby header: tighter buttons with subtle gradient borders,
+   a thin vertical divider that separates primary navigation from the
+   account/orbit cluster, and consistent height/spacing rules.
+   ============================================================================ */
+.header-pro-btn {
+  position: relative;
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 18%) / 0.85) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 10%) / 0.85) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: transform 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 200ms ease;
+}
+.header-pro-btn:hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+  color: #fff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+    0 6px 16px rgba(0, 0, 0, 0.5),
+    0 0 18px hsl(var(--neu-orange, 252 90% 70%) / 0.35);
+}
+.header-pro-btn:active {
+  transform: translateY(0);
+}
+.header-pro-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* ============================================================================
+   PRO SEARCH BAR
+   ----------------------------------------------------------------------------
+   A unified search bar that hosts inline scope-icon filters on the left
+   (Rooms / Speakers / Famous) and a Languages-toggle icon on the right,
+   replacing the older standalone tab pill row. Keeps Languages as the
+   single expandable filter, and exposes a clear button when text is typed.
+   ============================================================================ */
+.search-pro-shell {
+  position: relative;
+}
+.search-pro-input {
+  padding-left: 168px !important;
+  padding-right: 96px !important;
+}
+@media (max-width: 640px) {
+  .search-pro-input {
+    padding-left: 132px !important;
+    padding-right: 76px !important;
+  }
+}
+.search-pro-scope {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 2;
+}
+.search-pro-scope-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.62);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 200ms ease;
+}
+.search-pro-scope-btn:hover {
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.04);
+}
+.search-pro-scope-btn.is-active {
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange-hi, 252 95% 76%)) 0%,
+    hsl(var(--neu-orange-lo, 252 90% 60%)) 100%
+  );
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+  box-shadow:
+    0 0 14px hsl(var(--neu-orange, 252 90% 70%) / 0.45),
+    0 0 28px hsl(var(--neu-orange, 252 90% 70%) / 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.35) inset;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+.search-pro-scope-label {
+  display: inline;
+}
+@media (max-width: 640px) {
+  .search-pro-scope-label {
+    display: none;
+  }
+  .search-pro-scope-btn {
+    padding: 0 8px;
+  }
+}
+.search-pro-actions {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+.search-pro-clear {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+.search-pro-clear:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.search-pro-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 200ms ease;
+}
+.search-pro-lang-btn:hover {
+  color: #fff;
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+  box-shadow: 0 0 14px hsl(var(--neu-orange, 252 90% 70%) / 0.25);
+}
+.search-pro-lang-btn.is-active {
+  color: #fff;
+  background: linear-gradient(
+    145deg,
+    hsl(var(--neu-orange-hi, 252 95% 76%)) 0%,
+    hsl(var(--neu-orange-lo, 252 90% 60%)) 100%
+  );
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+  box-shadow:
+    0 0 14px hsl(var(--neu-orange, 252 90% 70%) / 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.35) inset;
+}
+.search-pro-lang-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.search-pro-kbd {
+  align-items: center;
+  gap: 1px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  pointer-events: none;
+}
+
 .orbit-sat-label {
   font-size: 10.5px;
   font-weight: 600;

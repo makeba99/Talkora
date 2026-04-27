@@ -910,70 +910,75 @@ export default function Lobby() {
   return (
     <div className="flex flex-col h-full neu-canvas">
       <header
-        className="sticky top-0 z-50 backdrop-blur-xl transition-all duration-300"
+        className="header-pro sticky top-0 z-50 backdrop-blur-xl transition-all duration-300"
         style={{
-          background: "linear-gradient(180deg, hsl(220 9% 9% / 0.92) 0%, hsl(220 9% 10% / 0.78) 100%)",
-          borderBottom: "1px solid rgba(255,255,255,0.04)",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
+          background: "linear-gradient(180deg, hsl(220 9% 8% / 0.94) 0%, hsl(220 9% 10% / 0.82) 100%)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.04) inset",
         }}
       >
-        <div className="flex items-center justify-between gap-3 px-4 py-3 max-w-[1600px] mx-auto">
+        <div className="header-pro-inner flex items-center justify-between gap-4 px-4 sm:px-5 py-2.5 max-w-[1600px] mx-auto">
+          {/* Brand */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex-shrink-0 relative group">
               <div
-                className="absolute -inset-1.5 rounded-[16px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"
+                className="absolute -inset-2 rounded-[18px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(91,108,255,0.45), rgba(155,92,255,0.45), rgba(255,107,161,0.45))",
+                    "linear-gradient(135deg, rgba(91,108,255,0.55), rgba(155,92,255,0.55), rgba(255,107,161,0.55))",
                 }}
               />
-              <VextornMark size={40} className="relative z-10 drop-shadow-[0_0_10px_rgba(155,92,255,0.45)]" />
+              <VextornMark size={36} className="relative z-10 drop-shadow-[0_0_12px_rgba(155,92,255,0.50)]" />
             </div>
-            <div className="min-w-0 hidden sm:flex flex-col justify-center">
+            <div className="min-w-0 hidden sm:flex flex-col justify-center leading-none">
               <h1
-                className="text-lg leading-none tracking-tight"
+                className="text-[17px] leading-none tracking-tight"
                 style={{
                   fontWeight: 700,
-                  letterSpacing: "-0.02em",
+                  letterSpacing: "-0.025em",
                   fontFamily: '"Space Grotesk", system-ui, sans-serif',
                 }}
               >
                 Vextorn
               </h1>
               <p
-                className="text-[10px] leading-none mt-1 bg-gradient-to-r from-[#9D86FF] via-[#7B5CF6] to-[#3D8FFF] bg-clip-text text-transparent"
-                style={{ fontWeight: 600 }}
+                className="text-[9.5px] leading-none mt-1.5 bg-gradient-to-r from-[#9D86FF] via-[#7B5CF6] to-[#3D8FFF] bg-clip-text text-transparent uppercase tracking-[0.18em]"
+                style={{ fontWeight: 700 }}
               >
-                Talk. Share. Belong.
+                Talk · Share · Belong
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-0.5 flex-shrink-0">
+          {/* Action zone */}
+          <div className="flex items-center gap-1 flex-shrink-0">
             {user ? (
               <>
                 <button
                   onClick={() => navigate("/teachers")}
-                  className="neu-btn mr-1 inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
+                  className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
                   data-testid="button-book-teacher-nav"
+                  title="Book a teacher"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
+                  <GraduationCap className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
                   <span className="hidden sm:inline">Book Teacher</span>
                 </button>
                 {isAdminUser && (
                   <button
                     onClick={() => navigate("/admin")}
-                    className="neu-btn mr-1 inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
+                    className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
                     data-testid="button-admin-panel"
+                    title="Admin panel"
                   >
                     {user.role === "superadmin" || user.email === "dj55jggg@gmail.com" ? (
-                      <Crown className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
+                      <Crown className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
                     ) : (
-                      <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
+                      <ShieldCheck className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
                     )}
                     <span className="hidden sm:inline">Admin</span>
                   </button>
                 )}
+                <span className="header-pro-divider hidden sm:inline-block" aria-hidden="true" />
                 {/* hidden controlled triggers — opened from the orbital profile menu OR from pinned chips */}
                 <SocialPanel
                   onlineUsers={onlineUsers}
@@ -1203,19 +1208,87 @@ export default function Lobby() {
               })}
             </div>
           )}
+          {/* Pro search bar: scope icons live INSIDE the input on the left
+              (Rooms / Top Speakers / Famous Users) and a Languages icon
+              toggles the language filter strip on the right. The active room
+              count next to the Languages icon hints at how many rooms match. */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
+            <div className="search-pro-shell relative flex-1">
+              {/* Scope icon group */}
+              <div className="search-pro-scope" role="tablist" aria-label="Discovery scope">
+                {([
+                  { id: "rooms", label: "Rooms", icon: Mic },
+                  { id: "top-speakers", label: "Speakers", icon: Radio },
+                  { id: "famous-users", label: "Famous", icon: Heart },
+                ] as const).map((filter) => {
+                  const Icon = filter.icon;
+                  const isActive = activeDiscovery === filter.id;
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setActiveDiscovery(filter.id)}
+                      className={`search-pro-scope-btn ${isActive ? "is-active" : ""}`}
+                      title={filter.label}
+                      data-testid={`filter-discovery-${filter.id}`}
+                    >
+                      <Icon className="w-[14px] h-[14px]" />
+                      <span className="search-pro-scope-label">{filter.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <Input
-                placeholder={activeDiscovery === "rooms" ? "Search rooms and languages..." : "Search speakers and famous users..."}
+                placeholder={
+                  activeDiscovery === "rooms"
+                    ? "Search rooms…"
+                    : activeDiscovery === "top-speakers"
+                      ? "Search top speakers…"
+                      : "Search famous users…"
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="neu-inset pl-10 pr-14 h-11 border-0 rounded-full text-white placeholder:text-white/35 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="search-pro-input neu-inset h-11 border-0 rounded-full text-white placeholder:text-white/35 focus-visible:ring-0 focus-visible:ring-offset-0"
                 data-testid="input-search-rooms"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 text-[10px] text-muted-foreground/40 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 font-mono pointer-events-none">
-                ⌘K
-              </kbd>
+
+              {/* Right-side controls */}
+              <div className="search-pro-actions">
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="search-pro-clear"
+                    data-testid="button-clear-search"
+                    aria-label="Clear search"
+                    title="Clear"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {activeDiscovery === "rooms" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowLanguageFilters((v) => !v)}
+                    className={`search-pro-lang-btn ${showLanguageFilters ? "is-active" : ""}`}
+                    aria-expanded={showLanguageFilters}
+                    aria-pressed={showLanguageFilters}
+                    title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
+                    data-testid="button-toggle-language-filters"
+                  >
+                    <Globe className="w-[15px] h-[15px]" />
+                    {selectedLanguage !== "All" && (
+                      <span className="search-pro-lang-chip" data-testid="badge-active-language">
+                        {selectedLanguage}
+                      </span>
+                    )}
+                  </button>
+                )}
+                <kbd className="search-pro-kbd hidden sm:flex">⌘K</kbd>
+              </div>
             </div>
             {user && (
               <div className="w-full md:w-auto flex-shrink-0 [&_button]:w-full md:[&_button]:w-auto [&_button]:whitespace-nowrap" data-testid="container-create-room">
@@ -1224,59 +1297,6 @@ export default function Lobby() {
                   isPending={createRoomMutation.isPending}
                 />
               </div>
-            )}
-          </div>
-
-          <div className="flex gap-2 flex-wrap items-center" data-testid="filters-discovery-search">
-            {([
-              { id: "rooms", label: "Rooms", icon: Mic },
-              { id: "top-speakers", label: "Top Speakers", icon: Radio },
-              { id: "famous-users", label: "Famous Users", icon: Heart },
-            ] as const).map((filter) => {
-              const Icon = filter.icon;
-              const isActive = activeDiscovery === filter.id;
-              return (
-                <button
-                  key={filter.id}
-                  onClick={() => setActiveDiscovery(filter.id)}
-                  className={`neu-pill flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap ${isActive ? "is-active" : ""}`}
-                  style={isActive ? {
-                    background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
-                    color: "#fff",
-                    border: "1px solid hsl(var(--neu-orange) / 0.45)",
-                    boxShadow: "0 0 18px hsl(var(--neu-orange) / 0.45), 0 0 38px hsl(var(--neu-orange) / 0.18), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.62), inset 0 1px 0 rgba(220,210,255,0.40)",
-                    textShadow: "0 1px 1px rgba(0,0,0,0.30)",
-                  } : undefined}
-                  data-testid={`filter-discovery-${filter.id}`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {filter.label}
-                </button>
-              );
-            })}
-            {activeDiscovery === "rooms" && (
-              <button
-                onClick={() => setShowLanguageFilters((v) => !v)}
-                className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ml-auto ${showLanguageFilters ? "is-active" : ""}`}
-                style={showLanguageFilters ? {
-                  background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
-                  color: "#fff",
-                  border: "1px solid hsl(var(--neu-orange) / 0.45)",
-                  boxShadow: "0 0 16px hsl(var(--neu-orange) / 0.35), -3px -3px 8px rgba(255,235,215,0.04), 4px 4px 14px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,230,200,0.36)",
-                  textShadow: "0 1px 1px rgba(0,0,0,0.25)",
-                } : undefined}
-                title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
-                aria-expanded={showLanguageFilters}
-                data-testid="button-toggle-language-filters"
-              >
-                <Globe className="w-3.5 h-3.5" />
-                Languages
-                {showLanguageFilters ? (
-                  <ChevronUp className="w-3.5 h-3.5 opacity-80" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 opacity-80" />
-                )}
-              </button>
             )}
           </div>
 
