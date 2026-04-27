@@ -2576,61 +2576,347 @@ html.synthwave .neon-text {
   letter-spacing: 0.22em;
 }
 
-/* ── Brass keyhole assembly on the LOCKED door's upper panel ─────
-   A small round brass plate with a classic keyhole silhouette
-   (a circle on top + a tapered slot below). Sits centered on the
-   tall upper inset so it reads instantly as "needs a key". */
+/* ══════════════════════════════════════════════════════════════
+   OPEN-STATE chevron — inviting green arrow visible in the gap
+   when the door is ajar. Replaces the engraved "ENTER" plaque so
+   users instantly recognize "you can walk through".
+   ══════════════════════════════════════════════════════════════ */
+.door-engraved-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 5.5px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: hsl(150 95% 80%);
+  text-shadow:
+    0 1px 0 rgba(0,0,0,0.55),
+    0 0 4px hsl(150 95% 55% / 0.55);
+  pointer-events: none;
+  z-index: 2;
+  transition: color 0.35s ease, text-shadow 0.35s ease, letter-spacing 0.35s ease;
+}
+
+/* Default (OPEN) doors get a soft ajar tilt at rest so they feel inviting.
+   The frame renders the green chevron through the slim opening. */
+.door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-panel {
+  transform: rotateY(-15deg);
+}
+.door-3d-wrap:not(.door-3d-locked):not(.door-3d-full):hover .door-panel {
+  transform: rotateY(-78deg);
+}
+
+/* Welcoming green glow inside the OPEN door's interior (visible through the ajar gap) */
+.door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-interior {
+  background: linear-gradient(170deg, hsl(150 50% 6%) 0%, hsl(155 45% 9%) 60%, hsl(160 40% 11%) 100%);
+  box-shadow:
+    inset 0 0 20px hsl(150 95% 50% / 0.40),
+    inset 0 -6px 14px rgba(0,0,0,0.45);
+  animation: door-open-glow 3.2s ease-in-out infinite;
+}
+@keyframes door-open-glow {
+  0%, 100% { box-shadow: inset 0 0 20px hsl(150 95% 50% / 0.40), inset 0 -6px 14px rgba(0,0,0,0.45); }
+  50%      { box-shadow: inset 0 0 28px hsl(150 100% 55% / 0.62), inset 0 -6px 14px rgba(0,0,0,0.40); }
+}
+
+/* The OPEN door frame gets a soft green outline */
+.door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-frame {
+  border-color: hsl(150 75% 50% / 0.45);
+  box-shadow:
+    -3px -3px 7px rgba(255,255,255,0.045),
+    4px 6px 16px rgba(0,0,0,0.90),
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 14px hsl(150 90% 45% / 0.30);
+}
+.door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-frame::before {
+  border-color: hsl(150 75% 50% / 0.45);
+}
+.door-3d-wrap:not(.door-3d-locked):not(.door-3d-full):hover .door-frame {
+  border-color: hsl(150 90% 60% / 0.75);
+  box-shadow:
+    -4px -4px 10px rgba(255,255,255,0.06),
+    5px 7px 22px rgba(0,0,0,0.92),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 22px hsl(150 95% 55% / 0.55);
+}
+
+/* The actual welcome chevron — ▸ rendered as CSS (no extra DOM needed).
+   Sits inside the door interior, peeking out through the ajar gap. */
+.door-welcome-arrow {
+  position: absolute;
+  top: 50%;
+  left: 18%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid hsl(150 95% 65%);
+  filter: drop-shadow(0 0 3px hsl(150 100% 55% / 0.85));
+  pointer-events: none;
+  z-index: 3;
+  animation: door-arrow-bob 1.6s ease-in-out infinite;
+}
+@keyframes door-arrow-bob {
+  0%, 100% { left: 18%; opacity: 0.85; }
+  50%      { left: 26%; opacity: 1;    }
+}
+.door-3d-wrap:not(.door-3d-locked):not(.door-3d-full):hover .door-welcome-arrow {
+  border-left-color: hsl(150 100% 78%);
+  filter: drop-shadow(0 0 6px hsl(150 100% 60% / 1));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LOCKED-STATE — big hanging padlock right in the middle of the
+   door, with a clearly-visible shackle. Replaces the small keyhole
+   so it reads instantly as "you need permission to enter".
+   ══════════════════════════════════════════════════════════════ */
 .door-keyplate {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 30% 25%,
-    hsl(48 90% 70%),
-    hsl(40 80% 45%) 55%,
-    hsl(32 70% 25%) 100%
+  width: 14px;
+  height: 12px;
+  border-radius: 2.5px;
+  /* Brass-gold padlock body with strong dimensional shading */
+  background: linear-gradient(
+    160deg,
+    hsl(48 95% 75%) 0%,
+    hsl(42 90% 58%) 40%,
+    hsl(36 80% 38%) 100%
   );
   box-shadow:
-    0 1px 1px rgba(0,0,0,0.65),
-    inset 0 -1px 1px rgba(0,0,0,0.45),
-    inset 0 1px 1px rgba(255,235,180,0.45),
-    0 0 5px hsl(40 90% 50% / 0.45);
+    /* Outer chiseled rim */
+    0 0 0 0.5px hsl(28 60% 22%),
+    /* Drop shadow under padlock */
+    0 2px 3px rgba(0,0,0,0.85),
+    /* Inner bevel */
+    inset 0 1.5px 0 rgba(255,245,210,0.55),
+    inset 0 -1.5px 0 rgba(0,0,0,0.45),
+    /* Brass glow halo */
+    0 0 7px hsl(40 95% 55% / 0.55);
   pointer-events: none;
-  z-index: 2;
-  transition: box-shadow 0.35s ease;
+  z-index: 3;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
-.door-keyhole-circle {
+/* The U-shaped shackle, drawn with two pseudo borders */
+.door-keyplate::before {
+  content: "";
   position: absolute;
-  top: 24%;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  width: 3.5px;
-  height: 3.5px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 60%, #050505, #1a1208 80%);
-  box-shadow: inset 0 1px 1px rgba(0,0,0,0.95);
-}
-.door-keyhole-slot {
-  position: absolute;
-  top: 48%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1.6px;
-  height: 4px;
-  background: linear-gradient(to bottom, #050505, #1a1208);
-  clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
-  border-radius: 0 0 1px 1px;
-}
-.door-3d-locked:hover .door-keyplate {
+  margin-bottom: -1px;
+  width: 9px;
+  height: 7px;
+  border: 1.6px solid hsl(0 0% 75%);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  /* Polished steel shading on the shackle */
   box-shadow:
-    0 1px 1px rgba(0,0,0,0.65),
-    inset 0 -1px 1px rgba(0,0,0,0.45),
-    inset 0 1px 1px rgba(255,240,200,0.55),
-    0 0 9px hsl(40 95% 55% / 0.85);
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    0 -1px 1.5px rgba(0,0,0,0.7);
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.6));
+}
+/* The keyhole drilled into the padlock body (small dot) */
+.door-keyplate::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 4px;
+  background:
+    radial-gradient(circle at 50% 30%, #060606 60%, transparent 70%) center 0 / 3px 3px no-repeat,
+    linear-gradient(to bottom, transparent 1.5px, #0c0c0c 1.5px);
+  box-shadow:
+    0 0 1.5px rgba(0,0,0,0.85),
+    inset 0 -0.5px 0 rgba(255,235,180,0.25);
+  border-radius: 1px;
+}
+/* Keep the removed inner-circle/slot DOM bits invisible (they're empty now) */
+.door-keyhole-circle,
+.door-keyhole-slot { display: none; }
+
+/* On hover, the padlock wiggles like it's being rattled — knock-knock! */
+.door-3d-locked:hover .door-keyplate {
+  animation: door-padlock-rattle 0.45s ease-in-out infinite;
+  box-shadow:
+    0 0 0 0.5px hsl(28 60% 22%),
+    0 2px 3px rgba(0,0,0,0.85),
+    inset 0 1.5px 0 rgba(255,250,220,0.7),
+    inset 0 -1.5px 0 rgba(0,0,0,0.45),
+    0 0 12px hsl(40 100% 60% / 0.95),
+    0 0 22px hsl(40 95% 50% / 0.55);
+}
+@keyframes door-padlock-rattle {
+  0%   { transform: translate(-50%, -50%) rotate(0deg); }
+  25%  { transform: translate(-50%, -50%) rotate(-5deg); }
+  50%  { transform: translate(-50%, -50%) rotate(0deg); }
+  75%  { transform: translate(-50%, -50%) rotate(5deg); }
+  100% { transform: translate(-50%, -50%) rotate(0deg); }
+}
+/* Locked door doesn't swing — the padlock holds it shut */
+.door-3d-locked:hover .door-panel { transform: rotateY(0deg) !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   FULL-STATE — bold red NO-ENTRY ⊘ sign mounted on the door,
+   instantly readable as "no more room here".
+   ══════════════════════════════════════════════════════════════ */
+.door-3d-full .door-panel-inset-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.door-no-entry {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, hsl(358 92% 62%), hsl(358 85% 40%) 65%, hsl(358 80% 26%) 100%);
+  box-shadow:
+    0 0 0 1px hsl(358 70% 18%),
+    0 2px 3px rgba(0,0,0,0.85),
+    inset 0 1.5px 0 rgba(255,200,200,0.45),
+    inset 0 -1.5px 0 rgba(0,0,0,0.4),
+    0 0 8px hsl(358 95% 50% / 0.55);
+  pointer-events: none;
+  z-index: 3;
+}
+/* The diagonal white bar across the red disc */
+.door-no-entry::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 12%;
+  right: 12%;
+  height: 2.5px;
+  background: linear-gradient(to bottom, hsl(0 0% 98%), hsl(0 0% 80%));
+  transform: translateY(-50%);
+  border-radius: 0.5px;
+  box-shadow:
+    0 0.5px 0 rgba(0,0,0,0.45),
+    inset 0 0.5px 0 rgba(255,255,255,0.85);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Tiny caption pill under every door — triple-clarity for users.
+   Renders as a sculpted neumorphic chip with a colored LED dot
+   matching the door's state. Sits beneath the door thanks to the
+   parent `.door-3d-wrap` being a column flex container.
+   ══════════════════════════════════════════════════════════════ */
+.door-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px 2px 6px;
+  margin-top: 2px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  background: linear-gradient(160deg, hsl(228 18% 9%) 0%, hsl(228 16% 13%) 100%);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
+    inset -1px -1px 1.5px rgba(255,235,215,0.045),
+    -1px -1px 2px rgba(255,235,215,0.04),
+    1px 1px 2px rgba(0,0,0,0.5);
+  transition: transform 0.32s ease, box-shadow 0.32s ease, color 0.32s ease;
+}
+.door-caption::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  display: block;
+}
+/* OPEN — emerald LED, soft inviting halo */
+.door-caption-open {
+  color: hsl(150 95% 82%);
+  text-shadow: 0 0 3px hsl(150 90% 55% / 0.55);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
+    inset -1px -1px 1.5px rgba(255,235,215,0.045),
+    1px 1px 2px rgba(0,0,0,0.5),
+    0 0 0 1px hsl(150 80% 50% / 0.30),
+    0 0 8px hsl(150 80% 50% / 0.28);
+}
+.door-caption-open::before {
+  background: radial-gradient(circle at 30% 30%, hsl(150 100% 80%), hsl(150 95% 50%) 70%);
+  box-shadow:
+    0 0 5px hsl(150 95% 55% / 1),
+    0 0 10px hsl(150 95% 55% / 0.55);
+  animation: door-led-pulse 2.2s ease-in-out infinite;
+}
+.door-3d-wrap:hover .door-caption-open {
+  transform: translateY(-1px);
+  color: hsl(150 100% 90%);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
+    inset -1px -1px 1.5px rgba(255,235,215,0.045),
+    1px 1px 2px rgba(0,0,0,0.5),
+    0 0 0 1px hsl(150 90% 55% / 0.55),
+    0 0 14px hsl(150 90% 55% / 0.50);
+}
+/* LOCKED — amber/brass LED, subtle "knock" feel */
+.door-caption-locked {
+  color: hsl(40 95% 80%);
+  text-shadow: 0 0 3px hsl(40 95% 55% / 0.55);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
+    inset -1px -1px 1.5px rgba(255,235,215,0.045),
+    1px 1px 2px rgba(0,0,0,0.5),
+    0 0 0 1px hsl(40 85% 50% / 0.32),
+    0 0 9px hsl(40 90% 50% / 0.28);
+}
+.door-caption-locked::before {
+  background: radial-gradient(circle at 30% 30%, hsl(48 100% 82%), hsl(40 95% 50%) 70%);
+  box-shadow:
+    0 0 5px hsl(40 95% 55% / 1),
+    0 0 10px hsl(40 95% 55% / 0.6);
+  animation: door-led-pulse-amber 2.6s ease-in-out infinite;
+}
+.door-3d-locked:hover .door-caption-locked {
+  transform: translateY(-1px);
+  color: hsl(48 100% 90%);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
+    inset -1px -1px 1.5px rgba(255,235,215,0.045),
+    1px 1px 2px rgba(0,0,0,0.5),
+    0 0 0 1px hsl(40 90% 55% / 0.55),
+    0 0 14px hsl(40 90% 55% / 0.55);
+}
+/* FULL — red LED, dim/closed feel, no hover lift */
+.door-caption-full {
+  color: hsl(358 85% 82%);
+  text-shadow: 0 0 3px hsl(358 90% 55% / 0.45);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
+    inset -1px -1px 1.5px rgba(255,235,215,0.045),
+    1px 1px 2px rgba(0,0,0,0.5),
+    0 0 0 1px hsl(358 70% 50% / 0.30),
+    0 0 9px hsl(358 80% 50% / 0.25);
+}
+.door-caption-full::before {
+  background: radial-gradient(circle at 30% 30%, hsl(358 100% 78%), hsl(358 85% 48%) 70%);
+  box-shadow:
+    0 0 4px hsl(358 90% 55% / 0.85),
+    0 0 8px hsl(358 90% 55% / 0.40);
 }
 
 /* ── Door status pills (OPEN / CLOSED) ─ engraved neumorphic capsule

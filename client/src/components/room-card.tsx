@@ -916,32 +916,45 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             */}
             {(() => {
               const isPrivate = !room.isPublic;
-              // Always use the sculpted/locked-style door look for every state.
-              // The door art itself communicates state (keyhole = locked, FULL panel = full).
+              // Each state gets a *visually distinct* door so users instantly
+              // recognize what'll happen when they click:
+              //   • OPEN   → door ajar with green ▸ chevron beckoning inside
+              //   • LOCKED → big brass padlock visibly hanging on the door
+              //   • FULL   → red NO-ENTRY ⊘ sign mounted on the door
               const stateClass = isFull
-                ? "door-3d-disabled door-3d-full door-3d-locked"
-                : "door-3d-locked";
+                ? "door-3d-disabled door-3d-full"
+                : isPrivate
+                  ? "door-3d-locked"
+                  : "";
 
               const doorBody = (
                 <>
                   <div className="door-frame">
-                    <div className="door-interior" />
+                    <div className="door-interior">
+                      {/* OPEN: bobbing green chevron peeks through the ajar gap */}
+                      {!isPrivate && !isFull && (
+                        <span className="door-welcome-arrow" aria-hidden="true" />
+                      )}
+                    </div>
                     <div className="door-panel">
                       <div className="door-panel-inset door-panel-inset-top">
-                        {!isPrivate && !isFull && (
-                          <span className="door-engraved-text">ENTER</span>
+                        {/* LOCKED: hanging brass padlock with shackle */}
+                        {isPrivate && !isFull && (
+                          <span className="door-keyplate" aria-hidden="true" />
                         )}
-                        {isPrivate && (
-                          <span className="door-keyplate" aria-hidden="true">
-                            <span className="door-keyhole-circle" />
-                            <span className="door-keyhole-slot" />
-                          </span>
+                        {/* FULL: red no-entry sign */}
+                        {isFull && (
+                          <span className="door-no-entry" aria-hidden="true" />
                         )}
                       </div>
                       <div className="door-panel-inset door-panel-inset-bot" />
                       <div className="door-knob" />
                     </div>
                   </div>
+                  {/* Tiny state caption under the door — triple-clarity for users */}
+                  <span className={`door-caption door-caption-${isFull ? "full" : isPrivate ? "locked" : "open"}`}>
+                    {isFull ? "Full" : isPrivate ? "Knock" : "Enter"}
+                  </span>
                 </>
               );
 
