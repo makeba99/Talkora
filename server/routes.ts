@@ -1535,13 +1535,14 @@ export async function registerRoutes(
         });
       }
 
-      // If the host is currently inside their room, push a real-time prompt
-      // (with the knocker's name + avatar) so they can Allow / Deny without
-      // leaving the room. Broadcast to the whole room — the client only renders
-      // the prompt for the host.
+      // Push a real-time knock prompt directly to the host's personal socket
+      // so they can Allow / Deny whether they are inside the room or browsing
+      // the lobby. Targeting ownerSocketId (not the room channel) means we
+      // never broadcast to every room participant and the host gets exactly
+      // one prompt no matter where they are.
       const requester = await storage.getUser(requesterId);
-      if (requester) {
-        io.to(roomId).emit("room:knock-request", {
+      if (requester && ownerSocketId) {
+        io.to(ownerSocketId).emit("room:knock-request", {
           roomId,
           fromUserId: requesterId,
           fromUserName:

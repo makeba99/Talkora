@@ -390,6 +390,8 @@ export default function Lobby() {
   const viewedAnnouncementIdsRef = useRef<Set<string>>(new Set());
   const [liveVoteCounts, setLiveVoteCounts] = useState<Record<string, number>>({ ...BASE_SAMPLE_VOTE_COUNTS });
   const [liveParticipants, setLiveParticipants] = useState<Record<string, User[]>>({ ...BASE_SAMPLE_PARTICIPANTS });
+  type LobbyKnock = { id: string; roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number };
+  const [pendingLobbyKnocks, setPendingLobbyKnocks] = useState<LobbyKnock[]>([]);
 
   useEffect(() => {
     // Mobile-perf guard: this interval simulates "live" activity on the SAMPLE
@@ -660,6 +662,15 @@ export default function Lobby() {
       });
     });
 
+    // Someone knocked on MY room while I'm on the lobby — show Allow/Deny prompt.
+    socket.on("room:knock-request", (data: { roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number }) => {
+      if (!data?.fromUserId) return;
+      setPendingLobbyKnocks(prev => {
+        if (prev.some(k => k.fromUserId === data.fromUserId && k.roomId === data.roomId)) return prev;
+        return [...prev, { id: `${data.fromUserId}-${data.ts}`, roomId: data.roomId, fromUserId: data.fromUserId, fromUserName: data.fromUserName, fromUserAvatar: data.fromUserAvatar, ts: data.ts }];
+      });
+    });
+
     // Host responded to my knock — let me in (or politely turn me away).
     socket.on("room:knock-allowed", (data: { roomId: string; roomTitle: string }) => {
       toast({
@@ -686,10 +697,24 @@ export default function Lobby() {
       socket.off("room:created");
       socket.off("room:deleted");
       socket.off("room:full");
+      socket.off("room:knock-request");
       socket.off("room:knock-allowed");
       socket.off("room:knock-denied");
     };
   }, [socket, toast]);
+
+  const handleLobbyKnockAllow = useCallback((knock: LobbyKnock) => {
+    if (!socket) return;
+    socket.emit("room:knock-allow", { roomId: knock.roomId, userId: knock.fromUserId });
+    setPendingLobbyKnocks(prev => prev.filter(k => k.id !== knock.id));
+    toast({ title: "✅ Allowed", description: `${knock.fromUserName} can now join.` });
+  }, [socket, toast]);
+
+  const handleLobbyKnockDeny = useCallback((knock: LobbyKnock) => {
+    if (!socket) return;
+    socket.emit("room:knock-deny", { roomId: knock.roomId, userId: knock.fromUserId });
+    setPendingLobbyKnocks(prev => prev.filter(k => k.id !== knock.id));
+  }, [socket]);
 
   const handleJoinRoom = useCallback(
     async (roomId: string) => {
@@ -1256,6 +1281,50 @@ export default function Lobby() {
           targetUserName={commentTargetUser.name}
           onClose={() => setCommentTargetUser(null)}
         />
+      )}
+
+      {/* Knock-knock notifications for hosts on the lobby */}
+      {pendingLobbyKnocks.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-3 items-end pointer-events-none">
+          {pendingLobbyKnocks.map(knock => (
+            <div
+              key={knock.id}
+              className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 bg-[hsl(var(--card))] shadow-2xl px-4 py-3 min-w-[280px] max-w-[340px] animate-in slide-in-from-right-4 fade-in duration-300"
+              data-testid={`lobby-knock-card-${knock.fromUserId}`}
+            >
+              <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-white/15 bg-muted flex items-center justify-center">
+                {knock.fromUserAvatar ? (
+                  <img src={knock.fromUserAvatar} alt={knock.fromUserName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm font-bold text-foreground/70">{knock.fromUserName.slice(0, 2).toUpperCase()}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">{knock.fromUserName}</p>
+                <p className="text-[11px] text-muted-foreground">wants to join your room</p>
+              </div>
+              <div className="flex gap-1.5 flex-shrink-0">
+                <Button
+                  size="sm"
+                  className="h-7 px-3 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg"
+                  onClick={() => handleLobbyKnockAllow(knock)}
+                  data-testid={`button-knock-allow-${knock.fromUserId}`}
+                >
+                  Allow
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-3 text-xs rounded-lg text-muted-foreground hover:text-foreground"
+                  onClick={() => handleLobbyKnockDeny(knock)}
+                  data-testid={`button-knock-deny-${knock.fromUserId}`}
+                >
+                  Deny
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

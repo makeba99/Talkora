@@ -3866,6 +3866,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       return;
     }
 
+    // If the clicked participant is hosting a YouTube video and we're not
+    // watching anyone yet, tap-to-join their watch party just like book/screen.
+    if (isClickingOther && youtubeHosts.has(peerId) && !activeYoutubeId && !remoteScreenShareUserId) {
+      handleJoinYoutubeParty(peerId);
+      return;
+    }
+
     if (activeYoutubeId) {
       const isBroadcaster = user?.id === youtubeStartedBy;
       const clickedBroadcaster = peerId === youtubeStartedBy;
@@ -3960,6 +3967,34 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const handleWatchYoutube = () => {
     setShowYoutube((prev) => !prev);
   };
+
+  // Join a specific host's YouTube watch party from their participant card.
+  const handleJoinYoutubeParty = useCallback((hostPeerId: string) => {
+    const videoId = youtubeHosts.get(hostPeerId);
+    if (!videoId || !socket || !user) return;
+    // If already watching this host, just show the panel.
+    if (youtubeStartedByRef.current === hostPeerId) {
+      setShowYoutube(true);
+      return;
+    }
+    // Leave any previous watch party.
+    const prevHost = youtubeStartedByRef.current;
+    if (prevHost && prevHost !== user.id) {
+      socket.emit("room:youtube-watching", { roomId: room.id, hostId: prevHost, watching: false });
+    }
+    setYoutubeStartedBy(hostPeerId);
+    setActiveYoutubeId(videoId);
+    setShowYoutube(true);
+    setUserDismissedYoutube(false);
+    setMyYtVote(null);
+    setMyYtSkipVote(false);
+    setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
+    socket.emit("room:youtube-watching", { roomId: room.id, hostId: hostPeerId, watching: true });
+    // Request a time sync so we start near where the host is.
+    setTimeout(() => {
+      socket?.emit("room:youtube-time-request", { roomId: room.id, hostId: hostPeerId, requesterId: user.id });
+    }, 800);
+  }, [socket, user, room.id, youtubeHosts]);
 
   const mentionFilteredParticipants = mentionQuery !== null
     ? participants.filter((p) => {
@@ -7628,7 +7663,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       onAssignRole={(role: string) => handleAssignRole(p.id, role)}
                       onTransferHost={() => handleTransferHost(p.id)}
                       hasActiveYoutubeGlobal={!!activeYoutubeId}
-                      onWatchYoutube={handleWatchYoutube}
+                      onWatchYoutube={() => handleJoinYoutubeParty(p.id)}
                       isWatchingYoutube={showYoutube}
                       onForceMute={handleForceMute}
                       onKick={handleKick}
