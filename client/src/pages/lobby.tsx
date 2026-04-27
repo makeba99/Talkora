@@ -11,6 +11,7 @@ import { CreateRoomDialog } from "@/components/create-room-dialog";
 import { DmDialog } from "@/components/dm-dialog";
 import { MessagesDropdown } from "@/components/messages-dropdown";
 import { SocialPanel } from "@/components/social-panel";
+import { SiteFooter } from "@/components/site-footer";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { ThemePicker } from "@/components/theme-picker";
@@ -1235,6 +1236,7 @@ export default function Lobby() {
         />
       )}
 
+      <SiteFooter />
     </div>
   );
 }

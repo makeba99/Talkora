@@ -54,6 +54,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { PaymentMethodForm, SavedCardItem, type CardFormData } from "@/components/payment-method-form";
+import { SiteFooter } from "@/components/site-footer";
 import type { PaymentMethod } from "@shared/schema";
 
 type ReviewWithUser = {
@@ -2060,6 +2061,8 @@ export default function TeachersPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SiteFooter />
     </div>
   );
 }
