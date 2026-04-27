@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CommentThreadDialog } from "@/components/comment-thread-dialog";
@@ -381,6 +381,29 @@ export default function Lobby() {
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [socialOpen, setSocialOpen] = useState(false);
   const [orbitOpen, setOrbitOpen] = useState(false);
+  const [languagesExpanded, setLanguagesExpanded] = useState(false);
+  const [showLanguageFilters, setShowLanguageFilters] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const saved = window.localStorage.getItem("vextorn:showLanguageFilters");
+    return saved === null ? false : saved === "true";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("vextorn:showLanguageFilters", String(showLanguageFilters));
+    }
+  }, [showLanguageFilters]);
+  const [searchSuggestOpen, setSearchSuggestOpen] = useState(false);
+  const searchShellRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!searchSuggestOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (searchShellRef.current && !searchShellRef.current.contains(e.target as Node)) {
+        setSearchSuggestOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [searchSuggestOpen]);
 
   // -------------------------------------------------------------------------
   // Pinned header items: users can promote any orbit satellite into the
@@ -894,6 +917,38 @@ export default function Lobby() {
   const languageTags = LANGUAGES.filter(
     (lang) => lang === "All" || (languageCounts[lang] || 0) > 0
   );
+  const visibleLanguages = languagesExpanded ? languageTags : languageTags.slice(0, 8);
+
+  // ---------------------------------------------------------------------------
+  // Live search suggestions: matching rooms, languages and people, capped so
+  // the dropdown stays glanceable. Only computed when there's a query.
+  // ---------------------------------------------------------------------------
+  const sq = searchQuery.trim().toLowerCase();
+  const suggestRooms = sq
+    ? rooms
+        .filter((r) =>
+          r.title.toLowerCase().includes(sq) ||
+          r.language.toLowerCase().includes(sq)
+        )
+        .slice(0, 4)
+    : [];
+  const suggestLanguages = sq
+    ? LANGUAGES.filter(
+        (l) => l !== "All" && l.toLowerCase().includes(sq) && (languageCounts[l] || 0) > 0
+      ).slice(0, 4)
+    : [];
+  const suggestPeople = sq
+    ? mergedPeople
+        .filter((p) => {
+          const name = getUserName(p).toLowerCase();
+          const email = (p.email || "").toLowerCase();
+          return name.includes(sq) || email.includes(sq);
+        })
+        .slice(0, 4)
+    : [];
+  const hasSuggestions =
+    sq.length > 0 &&
+    (suggestRooms.length + suggestLanguages.length + suggestPeople.length) > 0;
 
   return (
     <div className="flex flex-col h-full neu-canvas">
@@ -1195,29 +1250,36 @@ export default function Lobby() {
               })}
             </div>
           )}
-          {/* Search bar — sculpted neumorphic capsule */}
+          {/* Search bar — sculpted neumorphic capsule with live suggestions */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <div className={`search-neu-shell relative flex-1 ${searchQuery ? "is-filled" : ""}`}>
+            <div
+              ref={searchShellRef}
+              className={`search-neu-shell relative flex-1 ${searchQuery ? "is-filled" : ""} ${searchSuggestOpen && hasSuggestions ? "is-suggesting" : ""}`}
+            >
               <span className="search-neu-icon-wrap" aria-hidden="true">
                 <Search className="w-[17px] h-[17px]" />
               </span>
               <Input
                 placeholder={
                   activeDiscovery === "rooms"
-                    ? "Search rooms…"
+                    ? "Search rooms, languages, people…"
                     : activeDiscovery === "top-speakers"
                       ? "Search top speakers…"
                       : "Search famous users…"
                 }
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchSuggestOpen(true);
+                }}
+                onFocus={() => setSearchSuggestOpen(true)}
                 className="search-neu-input border-0 bg-transparent text-white placeholder:text-white/40 focus-visible:ring-0 focus-visible:ring-offset-0"
                 data-testid="input-search-rooms"
               />
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => { setSearchQuery(""); setSearchSuggestOpen(false); }}
                   className="search-neu-clear"
                   data-testid="button-clear-search"
                   aria-label="Clear search"
@@ -1226,57 +1288,115 @@ export default function Lobby() {
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
-            </div>
-            {activeDiscovery === "rooms" && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={`lang-neu-trigger ${selectedLanguage !== "All" ? "is-active" : ""}`}
-                    data-testid="button-toggle-language-filters"
-                    aria-label="Filter rooms by language"
-                  >
-                    <span className="lang-neu-icon">
-                      <Globe className="w-[15px] h-[15px]" />
-                    </span>
-                    <span className="lang-neu-label">
-                      <span className="lang-neu-label-key">Language</span>
-                      <span className="lang-neu-label-value">{selectedLanguage}</span>
-                    </span>
-                    <ChevronDown className="w-3.5 h-3.5 opacity-70 lang-neu-chev" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  sideOffset={10}
-                  className="lang-neu-popover w-[280px] p-2"
-                  data-testid="popover-languages"
-                >
-                  <div className="lang-neu-popover-header">
-                    <Globe className="w-3.5 h-3.5 opacity-70" />
-                    <span>Filter by language</span>
-                  </div>
-                  <div className="lang-neu-popover-list">
-                    {languageTags.map((lang) => {
-                      const count = lang === "All" ? rooms.length : languageCounts[lang] || 0;
-                      const isActive = selectedLanguage === lang;
-                      return (
+
+              {/* Live suggestions dropdown */}
+              {searchSuggestOpen && hasSuggestions && (
+                <div className="search-suggest" data-testid="popover-search-suggestions">
+                  {suggestRooms.length > 0 && (
+                    <div className="search-suggest-group">
+                      <div className="search-suggest-group-label">
+                        <Mic className="w-3 h-3" />
+                        <span>Rooms</span>
+                      </div>
+                      {suggestRooms.map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          className="search-suggest-item"
+                          onClick={() => { setSearchSuggestOpen(false); handleJoinRoom(r.id); }}
+                          data-testid={`suggest-room-${r.id}`}
+                        >
+                          <span className="search-suggest-item-icon search-suggest-item-icon-room">
+                            <Mic className="w-3.5 h-3.5" />
+                          </span>
+                          <span className="search-suggest-item-body">
+                            <span className="search-suggest-item-title">{r.title}</span>
+                            <span className="search-suggest-item-sub">{r.language}</span>
+                          </span>
+                          <ArrowRight className="search-suggest-item-arrow w-3.5 h-3.5" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {suggestLanguages.length > 0 && (
+                    <div className="search-suggest-group">
+                      <div className="search-suggest-group-label">
+                        <Globe className="w-3 h-3" />
+                        <span>Languages</span>
+                      </div>
+                      {suggestLanguages.map((lang) => (
                         <button
                           key={lang}
                           type="button"
-                          onClick={() => setSelectedLanguage(lang)}
-                          className={`lang-neu-item ${isActive ? "is-active" : ""}`}
-                          data-testid={`tab-language-${lang.toLowerCase()}`}
+                          className="search-suggest-item"
+                          onClick={() => {
+                            setSelectedLanguage(lang);
+                            setShowLanguageFilters(true);
+                            setSearchQuery("");
+                            setSearchSuggestOpen(false);
+                          }}
+                          data-testid={`suggest-language-${lang.toLowerCase()}`}
                         >
-                          <span className="lang-neu-item-name">{lang}</span>
-                          <span className="lang-neu-item-count">{count}</span>
+                          <span className="search-suggest-item-icon search-suggest-item-icon-lang">
+                            <Globe className="w-3.5 h-3.5" />
+                          </span>
+                          <span className="search-suggest-item-body">
+                            <span className="search-suggest-item-title">{lang}</span>
+                            <span className="search-suggest-item-sub">
+                              {languageCounts[lang] || 0} room{(languageCounts[lang] || 0) === 1 ? "" : "s"}
+                            </span>
+                          </span>
+                          <ArrowRight className="search-suggest-item-arrow w-3.5 h-3.5" />
                         </button>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                      ))}
+                    </div>
+                  )}
+                  {suggestPeople.length > 0 && (
+                    <div className="search-suggest-group">
+                      <div className="search-suggest-group-label">
+                        <Users className="w-3 h-3" />
+                        <span>People</span>
+                      </div>
+                      {suggestPeople.map((p) => {
+                        const name = getUserName(p);
+                        const initial = (name || "?").charAt(0).toUpperCase();
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            className="search-suggest-item"
+                            onClick={() => {
+                              setActiveDiscovery("famous-users");
+                              setSearchSuggestOpen(false);
+                            }}
+                            data-testid={`suggest-person-${p.id}`}
+                          >
+                            {p.profileImageUrl ? (
+                              <img
+                                src={p.profileImageUrl}
+                                alt={name}
+                                className="search-suggest-item-avatar"
+                              />
+                            ) : (
+                              <span className="search-suggest-item-icon search-suggest-item-icon-people">
+                                {initial}
+                              </span>
+                            )}
+                            <span className="search-suggest-item-body">
+                              <span className="search-suggest-item-title">{name}</span>
+                              <span className="search-suggest-item-sub">
+                                {getSpeakerOnline(p) ? "Online now" : "Tap to view"}
+                              </span>
+                            </span>
+                            <ArrowRight className="search-suggest-item-arrow w-3.5 h-3.5" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             {user && (
               <div className="w-full md:w-auto flex-shrink-0 [&_button]:w-full md:[&_button]:w-auto [&_button]:whitespace-nowrap" data-testid="container-create-room">
                 <CreateRoomDialog
@@ -1314,9 +1434,87 @@ export default function Lobby() {
                   </button>
                 );
               })}
+
+              {activeDiscovery === "rooms" && (
+                <button
+                  type="button"
+                  onClick={() => setShowLanguageFilters((v) => !v)}
+                  className={`filter-chip filter-chip-teal filter-chip-lang ${showLanguageFilters ? "is-active" : ""}`}
+                  aria-expanded={showLanguageFilters}
+                  aria-pressed={showLanguageFilters}
+                  title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
+                  data-testid="button-toggle-language-filters"
+                >
+                  <span className="filter-chip-icon">
+                    <Globe className="w-[14px] h-[14px]" />
+                  </span>
+                  <span className="filter-chip-label">Languages</span>
+                  {selectedLanguage !== "All" && (
+                    <span className="filter-chip-meta" data-testid="badge-active-language">
+                      {selectedLanguage}
+                    </span>
+                  )}
+                  {showLanguageFilters ? (
+                    <ChevronUp className="w-3.5 h-3.5 opacity-80" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+                  )}
+                </button>
+              )}
             </div>
 
           </div>
+
+          {activeDiscovery === "rooms" && showLanguageFilters && (
+          <div className="flex gap-2 flex-wrap items-center" data-testid="row-language-filters">
+            {visibleLanguages.map((lang) => {
+              const count = lang === "All" ? rooms.length : languageCounts[lang] || 0;
+              const isActive = selectedLanguage === lang;
+              return (
+                <button
+                  key={lang}
+                  onClick={() => setSelectedLanguage(lang)}
+                  className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
+                  style={isActive ? {
+                    background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
+                    color: "#fff",
+                    border: "1px solid hsl(var(--neu-orange) / 0.45)",
+                    boxShadow: "0 0 18px hsl(var(--neu-orange) / 0.40), 0 0 38px hsl(var(--neu-orange) / 0.16), -3px -3px 8px rgba(255,255,255,0.05), 4px 4px 14px rgba(0,0,0,0.62), inset 0 1px 0 rgba(220,210,255,0.40)",
+                    textShadow: "0 1px 1px rgba(0,0,0,0.30)",
+                  } : undefined}
+                  data-testid={`tab-language-${lang.toLowerCase()}`}
+                >
+                  {lang}
+                  <span
+                    className="text-[11px] font-bold min-w-4 text-center"
+                    style={{ opacity: isActive ? 0.9 : 0.6 }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+            {languageTags.length > 8 && (
+              <button
+                onClick={() => setLanguagesExpanded(!languagesExpanded)}
+                className="neu-pill flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium"
+                data-testid="button-toggle-languages"
+              >
+                {languagesExpanded ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    Collapse
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    More
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+          )}
 
           {activeDiscovery !== "rooms" ? (
             <section className="space-y-3" data-testid="section-people-discovery">

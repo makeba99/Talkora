@@ -7209,9 +7209,10 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 }
 
 /* ============================================================================
-   Create Room button — sculpted neumorphic capsule that matches the search
-   bar + language dropdown (same pill height, same medallion icon, same
-   violet glow on hover/active).
+   Create Room button — sculpted DARK neumorphic capsule (matches the search
+   bar shell). The accent lives only inside the icon medallion: a glowing
+   violet coin sitting in a deep inset socket. The button itself stays dark
+   so the lobby has one quiet "control bar" tone, not two bright candies.
    ============================================================================ */
 .create-room-neu {
   position: relative;
@@ -7222,39 +7223,42 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   color: #fff;
   background: linear-gradient(
     180deg,
-    hsl(var(--neu-orange-hi, 252 92% 72%)) 0%,
-    hsl(var(--neu-orange-lo, 258 84% 56%)) 100%
+    hsl(var(--neu-bg-hi, 232 35% 16%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 10%)) 100%
   );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.55),
-    0 14px 28px -10px rgba(0, 0, 0, 0.55),
-    0 0 30px -4px hsl(var(--neu-orange, 252 90% 70%) / 0.55);
-  transition: transform 200ms ease, box-shadow 240ms ease;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 12px 24px -10px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: transform 200ms ease, box-shadow 240ms ease, color 200ms ease;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  letter-spacing: -0.005em;
 }
 .create-room-neu:hover:not(:disabled) {
   transform: translateY(-1px);
+  color: #fff;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.7),
-    0 18px 32px -12px rgba(0, 0, 0, 0.6),
-    0 0 38px -2px hsl(var(--neu-orange, 252 90% 70%) / 0.7);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.30),
+    0 16px 30px -10px rgba(0, 0, 0, 0.6),
+    0 0 26px -2px hsl(var(--neu-orange, 252 90% 70%) / 0.32),
+    0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .create-room-neu:active:not(:disabled) {
   transform: translateY(0);
   box-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.35),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.55),
-    0 0 22px -4px hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+    inset 0 2px 5px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.30),
+    0 0 18px -4px hsl(var(--neu-orange, 252 90% 70%) / 0.40);
 }
 .create-room-neu-icon {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7262,40 +7266,216 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   color: #fff;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    rgba(255, 255, 255, 0.06) 100%
+    hsl(var(--neu-orange-hi, 252 92% 72%)) 0%,
+    hsl(var(--neu-orange-lo, 258 84% 56%)) 100%
   );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.30),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-    0 4px 12px rgba(0, 0, 0, 0.35);
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.18));
+    inset 0 -1px 0 rgba(0, 0, 0, 0.30),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.55),
+    0 4px 10px rgba(0, 0, 0, 0.5),
+    0 0 16px hsl(var(--neu-orange, 252 90% 70%) / 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+  transition: box-shadow 240ms ease, transform 200ms ease;
+}
+.create-room-neu:hover:not(:disabled) .create-room-neu-icon {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.30),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.7),
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.75),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 .create-room-neu-label {
   display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1;
-  gap: 3px;
-}
-.create-room-neu-key {
-  font-size: 9.5px;
+  align-items: center;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
-}
-.create-room-neu-value {
-  font-size: 13.5px;
-  font-weight: 800;
-  letter-spacing: -0.005em;
   color: #fff;
+  letter-spacing: -0.005em;
 }
 .create-room-neu .sparkle-icon {
   color: #fff;
   filter:
-    drop-shadow(0 0 4px rgba(255, 255, 255, 0.6))
-    drop-shadow(0 0 10px hsl(var(--neu-orange, 252 90% 70%) / 0.55));
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.55))
+    drop-shadow(0 0 8px hsl(var(--neu-orange, 252 90% 70%) / 0.55));
+}
+
+/* ============================================================================
+   Live search suggestions dropdown — a sculpted glass panel that drops out
+   of the bottom of the search shell. Mirrors the inset capsule language.
+   ============================================================================ */
+.search-neu-shell.is-suggesting {
+  border-radius: 28px 28px 18px 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.28),
+    0 0 0 4px hsl(var(--neu-orange, 252 90% 70%) / 0.08),
+    0 0 24px -4px hsl(var(--neu-orange, 252 90% 70%) / 0.30),
+    0 12px 22px -8px rgba(0, 0, 0, 0.55);
+}
+.search-suggest {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  border-radius: 18px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(
+      120% 80% at 50% 0%,
+      hsl(var(--neu-orange, 252 90% 70%) / 0.10),
+      transparent 60%
+    ),
+    linear-gradient(180deg, rgba(20, 22, 36, 0.97), rgba(12, 13, 22, 0.98));
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 0 30px -6px hsl(var(--neu-orange, 252 90% 70%) / 0.25);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  max-height: 460px;
+  overflow-y: auto;
+  animation: searchSuggestIn 180ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes searchSuggestIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.search-suggest-group + .search-suggest-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+.search-suggest-group-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+.search-suggest-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  text-align: left;
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+.search-suggest-item:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.20);
+  color: #fff;
+}
+.search-suggest-item:hover .search-suggest-item-arrow {
+  opacity: 1;
+  transform: translateX(2px);
+  color: hsl(var(--neu-orange, 252 90% 70%));
+}
+.search-suggest-item-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 20%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 12%)) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.4);
+}
+.search-suggest-item-icon-room {
+  color: hsl(280 90% 78%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    0 0 14px hsl(280 90% 70% / 0.30);
+}
+.search-suggest-item-icon-lang {
+  color: hsl(180 80% 70%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    0 0 14px hsl(180 80% 60% / 0.30);
+}
+.search-suggest-item-icon-people {
+  color: hsl(340 85% 75%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    0 0 14px hsl(340 85% 65% / 0.30);
+}
+.search-suggest-item-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  object-fit: cover;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+    0 3px 8px rgba(0, 0, 0, 0.4);
+}
+.search-suggest-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+.search-suggest-item-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-suggest-item-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.01em;
+}
+.search-suggest-item-arrow {
+  flex-shrink: 0;
+  opacity: 0;
+  color: rgba(255, 255, 255, 0.5);
+  transition: opacity 160ms ease, transform 160ms ease, color 160ms ease;
 }
 
 /* Filter strip --------------------------------------------------------------- */
