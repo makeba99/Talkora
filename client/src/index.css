@@ -9017,3 +9017,301 @@ html.neomorphic-light .scroll-jump-btn {
   70%  { opacity: 1; }
   100% { transform: translate(var(--dx), calc(var(--dy) + 70px)) rotate(var(--rot)) scale(0.85); opacity: 0; }
 }
+
+/* ============================================================================
+   IN-ROOM SIDE PANEL — POLISHED NEUMORPHIC CONTROLS
+   ----------------------------------------------------------------------------
+   Used in voice-room.tsx for the right-hand side panel: the icon tab row at
+   the top, the All/@Mentions/Add Welcome filter row, the bottom toolbar
+   (chat-mode, color, gif, image), the Send button, and the chat composer
+   textarea. All rules are dark-only (the room is always rendered on the
+   dark surface) and pull their accents from the existing --neu-orange and
+   theme HSL vars so they automatically follow the rest of the room palette.
+   ============================================================================ */
+
+/* ---- 1. Tab buttons (top icon row) ---------------------------------------- */
+.room-tab-btn {
+  --tab-accent-h: 256;
+  --tab-accent-s: 90%;
+  --tab-accent-l: 70%;
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.42);
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.018) 0%,
+    rgba(0, 0, 0, 0.18) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 1.5px rgba(255, 255, 255, 0.025),
+    0 1px 0 rgba(255, 255, 255, 0.025);
+  transition:
+    color 180ms ease,
+    background 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.room-tab-btn:hover {
+  color: rgba(255, 255, 255, 0.78);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.045) 0%,
+    rgba(0, 0, 0, 0.10) 100%
+  );
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255, 255, 255, 0.045),
+    -2px -2px 6px rgba(255, 255, 255, 0.025),
+    3px 3px 8px rgba(0, 0, 0, 0.55);
+  transform: translateY(-1px);
+}
+.room-tab-btn:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.04);
+}
+.room-tab-btn[data-active="true"] {
+  color: hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.98);
+  background: linear-gradient(
+    155deg,
+    hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.22) 0%,
+    hsla(var(--tab-accent-h), var(--tab-accent-s), 30%, 0.32) 100%
+  );
+  border-color: hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.55);
+  box-shadow:
+    inset 0 1px 0 hsla(var(--tab-accent-h), 100%, 90%, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 0 14px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.35),
+    0 0 28px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.18),
+    -2px -2px 6px rgba(255, 255, 255, 0.04),
+    3px 3px 9px rgba(0, 0, 0, 0.6);
+  transform: translateY(-1px);
+}
+/* Per-tab accent overrides — keep colors expressive but unified system */
+.room-tab-btn[data-accent="primary"]   { --tab-accent-h: var(--neu-orange-h, 256); --tab-accent-s: 90%; --tab-accent-l: 72%; }
+.room-tab-btn[data-accent="youtube"]   { --tab-accent-h: 0;   --tab-accent-s: 84%; --tab-accent-l: 64%; }
+.room-tab-btn[data-accent="read"]      { --tab-accent-h: 158; --tab-accent-s: 70%; --tab-accent-l: 58%; }
+.room-tab-btn[data-accent="chess"]     { --tab-accent-h: 45;  --tab-accent-s: 92%; --tab-accent-l: 62%; }
+.room-tab-btn[data-accent="golive"]    { --tab-accent-h: 4;   --tab-accent-s: 88%; --tab-accent-l: 62%; }
+.room-tab-btn[data-accent="people"]    { --tab-accent-h: 256; --tab-accent-s: 90%; --tab-accent-l: 72%; }
+
+/* ---- 2. Filter pills (All / @Mentions) ----------------------------------- */
+.room-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.46);
+  background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.32) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.5),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.025);
+  transition: color 180ms ease, background 200ms ease, border-color 200ms ease, box-shadow 220ms ease, transform 160ms ease;
+}
+.room-filter-pill:hover {
+  color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+.room-filter-pill[data-active="true"] {
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    hsla(var(--neu-orange) / 0.95) 0%,
+    hsla(var(--neu-orange) / 0.70) 100%
+  );
+  border-color: hsla(var(--neu-orange) / 0.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.30),
+    0 0 12px hsla(var(--neu-orange) / 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+.room-filter-pill[data-active="true"]:hover { color: #fff; }
+
+/* ---- 3. Welcome pill (host) — special amber/orange treatment -------------- */
+.room-welcome-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.32) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.5),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.025);
+  transition: color 180ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, transform 160ms ease;
+}
+.room-welcome-pill:hover {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: hsla(var(--neu-orange) / 0.45);
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255, 255, 255, 0.045),
+    0 0 10px hsla(var(--neu-orange) / 0.20);
+}
+.room-welcome-pill[data-active="true"] {
+  color: hsla(var(--neu-orange-hi, 252 95% 84%));
+  background: linear-gradient(
+    180deg,
+    hsla(var(--neu-orange) / 0.32) 0%,
+    hsla(var(--neu-orange) / 0.18) 100%
+  );
+  border-color: hsla(var(--neu-orange) / 0.60);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.30),
+    0 0 14px hsla(var(--neu-orange) / 0.40),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- 4. Toolbar icon buttons (globe, color, gif, image) ------------------- */
+.room-tool-btn {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(155deg, rgba(255,255,255,0.018) 0%, rgba(0,0,0,0.18) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 1px 1px 1.5px rgba(0, 0, 0, 0.50),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.022);
+  transition: color 180ms ease, background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 160ms ease;
+}
+.room-tool-btn:hover {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(155deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.10) 100%);
+  box-shadow:
+    inset 1px 1px 1.5px rgba(255, 255, 255, 0.045),
+    -1.5px -1.5px 5px rgba(255, 255, 255, 0.022),
+    2.5px 2.5px 7px rgba(0, 0, 0, 0.55);
+  transform: translateY(-1px);
+}
+.room-tool-btn:active {
+  transform: translateY(0) scale(0.95);
+  box-shadow:
+    inset 2px 2px 3px rgba(0, 0, 0, 0.6),
+    inset -1px -1px 1.5px rgba(255, 255, 255, 0.035);
+}
+.room-tool-btn[data-active="true"] {
+  color: rgba(252, 211, 77, 0.98);
+  background: linear-gradient(155deg, rgba(251,191,36,0.20) 0%, rgba(180,120,20,0.30) 100%);
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 130, 0.30),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 0 10px rgba(251, 191, 36, 0.32),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- 5. Send button — premium accent CTA --------------------------------- */
+.room-send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px 0 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    hsla(var(--neu-orange) / 1) 0%,
+    hsla(var(--neu-orange) / 0.78) 100%
+  );
+  border: 1px solid hsla(var(--neu-orange) / 0.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 0 14px hsla(var(--neu-orange) / 0.45),
+    0 0 28px hsla(var(--neu-orange) / 0.20),
+    0 3px 8px rgba(0, 0, 0, 0.50);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.30);
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease, filter 200ms ease;
+}
+.room-send-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 0 18px hsla(var(--neu-orange) / 0.55),
+    0 0 36px hsla(var(--neu-orange) / 0.28),
+    0 4px 10px rgba(0, 0, 0, 0.55);
+}
+.room-send-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+.room-send-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.40;
+  filter: grayscale(0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- 6. Composer textarea — sunken neumorphic well ----------------------- */
+.room-composer {
+  width: 100%;
+  border-radius: 12px;
+  padding: 10px 36px 10px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.18) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.025),
+    0 1px 0 rgba(255, 255, 255, 0.025);
+  resize: none;
+  transition: border-color 180ms ease, box-shadow 220ms ease;
+}
+.room-composer::placeholder { color: rgba(255, 255, 255, 0.32); }
+.room-composer:focus-visible {
+  outline: none;
+  border-color: hsla(var(--neu-orange) / 0.55);
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.03),
+    0 0 0 1px hsla(var(--neu-orange) / 0.30),
+    0 0 14px hsla(var(--neu-orange) / 0.20);
+}
+.room-composer:disabled { opacity: 0.55; cursor: wait; }
+/* Whisper / private-mode tint applied via data attribute on the textarea */
+.room-composer[data-whisper="true"] {
+  border-color: rgba(251, 191, 36, 0.45);
+  box-shadow:
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(251, 191, 36, 0.25),
+    0 0 14px rgba(251, 191, 36, 0.18);
+}
