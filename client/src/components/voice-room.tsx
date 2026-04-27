@@ -1211,12 +1211,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket.emit("room:knock-allow", { roomId: room.id, userId: knock.userId });
     setPendingKnocks((prev) => prev.filter((k) => k.userId !== knock.userId));
     toast({ title: "✅ Allowed", description: `${knock.userName} can now join.` });
+    import("@/lib/sound-fx").then((s) => s.sfxKnockAllowed()).catch(() => {});
   }, [socket, room.id, toast]);
 
   const handleDenyKnock = useCallback((knock: PendingKnock) => {
     if (!socket) return;
     socket.emit("room:knock-deny", { roomId: room.id, userId: knock.userId });
     setPendingKnocks((prev) => prev.filter((k) => k.userId !== knock.userId));
+    import("@/lib/sound-fx").then((s) => s.sfxKnockDenied()).catch(() => {});
   }, [socket, room.id]);
 
   const isAiTutorOwner = aiTutorActive || roomAiTutorSession.userId === user?.id;
@@ -1304,6 +1306,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/follows/following", user?.id] });
+      import("@/lib/sound-fx").then((s) => s.sfxFollow()).catch(() => {});
     },
   });
 
@@ -1313,6 +1316,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/follows/following", user?.id] });
+      import("@/lib/sound-fx").then((s) => s.sfxUnfollow()).catch(() => {});
     },
   });
 
@@ -1331,9 +1335,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       if (updatedRoom.welcomeMediaPosition !== undefined) setWelcomeMediaPositionState(updatedRoom.welcomeMediaPosition || "below");
       if (updatedRoom.welcomeAccentColor !== undefined) setWelcomeAccentColorState(updatedRoom.welcomeAccentColor || "#8B5CF6");
       toast({ title: "Room settings updated" });
+      import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },
     onError: () => {
       toast({ title: "Failed to update room settings", variant: "destructive" });
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 
@@ -1341,8 +1347,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     mutationFn: async () => {
       await apiRequest("DELETE", `/api/rooms/${room.id}`);
     },
+    onSuccess: () => {
+      import("@/lib/sound-fx").then((s) => s.sfxDelete()).catch(() => {});
+    },
     onError: () => {
       toast({ title: "Failed to delete room", variant: "destructive" });
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 
@@ -1356,9 +1366,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
       setThemeDialogOpen(false);
       toast({ title: "Room theme updated!" });
+      import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },
     onError: () => {
       toast({ title: "Failed to update theme", variant: "destructive" });
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 
@@ -1378,9 +1390,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
       setWelcomeDialogOpen(false);
       toast({ title: "Welcome message saved & sent to all users in the room!" });
+      import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },
     onError: () => {
       toast({ title: "Failed to update welcome message", variant: "destructive" });
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 
@@ -4312,6 +4326,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       privateToId: privateChatToId === "public" ? null : privateChatToId,
       replyTo: replyingTo || undefined,
     });
+    import("@/lib/sound-fx").then((s) => s.sfxSend()).catch(() => {});
     setChatText("");
     setMentionQuery(null);
     setReplyingTo(null);
@@ -4320,6 +4335,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const handleReact = (messageId: string, emoji: string) => {
     if (!socket || !user) return;
     socket.emit("room:react", { roomId: room.id, messageId, emoji });
+    import("@/lib/sound-fx").then((s) => s.sfxLike()).catch(() => {});
   };
 
   const avatarGradients = [

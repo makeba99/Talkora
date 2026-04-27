@@ -311,6 +311,10 @@ export function ProfileDropdown({
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       setEditOpen(false);
       toast({ title: "Profile updated" });
+      import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
+    },
+    onError: () => {
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 
@@ -333,9 +337,11 @@ export function ProfileDropdown({
       queryClient.invalidateQueries({ queryKey: ["/api/blocks"] });
       refetchBlockedUsers();
       toast({ title: "User unblocked" });
+      import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },
     onError: () => {
       toast({ title: "Failed to unblock user", variant: "destructive" });
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 
@@ -348,6 +354,10 @@ export function ProfileDropdown({
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       setSettingsOpen(false);
       toast({ title: "Settings saved" });
+      import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
+    },
+    onError: () => {
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 
@@ -364,9 +374,11 @@ export function ProfileDropdown({
       setRequestedBadge("");
       setBadgeReason("");
       toast({ title: "Badge application sent", description: "Admins can now review your request." });
+      import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },
     onError: (err: any) => {
       toast({ title: "Could not apply", description: err?.message, variant: "destructive" });
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 
@@ -385,6 +397,10 @@ export function ProfileDropdown({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({ title: "Avatar updated" });
+      import("@/lib/sound-fx").then((s) => s.sfxUpload()).catch(() => {});
+    },
+    onError: () => {
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
 

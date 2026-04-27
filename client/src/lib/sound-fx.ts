@@ -253,3 +253,90 @@ export function sfxKnockDenied() {
     tone({ freq: 330, endFreq: 220, duration: 0.22, gain: 0.30, type: "sawtooth", filterFreq: 1800 });
   });
 }
+
+/** Crisp three-note major arpeggio — successful save / create / publish. */
+export function sfxSuccess() {
+  safe(() => {
+    tone({ freq: 587, duration: 0.10, gain: 0.30, type: "sine", filterFreq: 5000 });
+    tone({ freq: 740, duration: 0.12, gain: 0.32, type: "sine", filterFreq: 5000, startAt: 0.06 });
+    tone({ freq: 988, duration: 0.16, gain: 0.34, type: "triangle", filterFreq: 5500, startAt: 0.13 });
+  });
+}
+
+/** Soft buzz — failed action / validation error. */
+export function sfxError() {
+  safe(() => {
+    tone({ freq: 280, endFreq: 180, duration: 0.18, gain: 0.30, type: "square", filterFreq: 900, filterQ: 1.4 });
+    tone({ freq: 240, endFreq: 150, duration: 0.18, gain: 0.22, type: "sawtooth", filterFreq: 900, startAt: 0.04 });
+  });
+}
+
+/** Whoosh-up — a panel/dialog opens. */
+export function sfxOpen() {
+  safe(() => {
+    tone({ freq: 330, endFreq: 660, duration: 0.16, gain: 0.22, type: "sine", filterFreq: 3500 });
+    noiseBurst({ duration: 0.10, gain: 0.04, filterFreq: 4200 });
+  });
+}
+
+/** Whoosh-down — a panel/dialog closes. */
+export function sfxClose() {
+  safe(() => {
+    tone({ freq: 660, endFreq: 330, duration: 0.14, gain: 0.20, type: "sine", filterFreq: 3500 });
+  });
+}
+
+/** Pluck — outgoing message sent. */
+export function sfxSend() {
+  safe(() => {
+    tone({ freq: 740, endFreq: 1480, duration: 0.10, gain: 0.28, type: "triangle", filterFreq: 5000 });
+    noiseBurst({ duration: 0.04, gain: 0.04, filterFreq: 5500 });
+  });
+}
+
+/** Two-up sparkle — followed someone / favorited. */
+export function sfxFollow() {
+  safe(() => {
+    tone({ freq: 660, duration: 0.09, gain: 0.28, type: "triangle" });
+    tone({ freq: 990, duration: 0.12, gain: 0.32, type: "triangle", startAt: 0.05 });
+  });
+}
+
+/** Two-down — unfollowed / removed. */
+export function sfxUnfollow() {
+  safe(() => {
+    tone({ freq: 660, duration: 0.09, gain: 0.24, type: "sine" });
+    tone({ freq: 440, duration: 0.10, gain: 0.22, type: "sine", startAt: 0.05 });
+  });
+}
+
+/** Quick affirm tap — like / heart / reaction. */
+export function sfxLike() {
+  safe(() => {
+    tone({ freq: 1200, endFreq: 1600, duration: 0.06, gain: 0.20, type: "sine", filterFreq: 6000 });
+  });
+}
+
+/** Soft pop — uploaded / attached. */
+export function sfxUpload() {
+  safe(() => {
+    noiseBurst({ duration: 0.05, gain: 0.10, filterFreq: 1200 });
+    tone({ freq: 540, endFreq: 880, duration: 0.10, gain: 0.26, type: "triangle", startAt: 0.02 });
+  });
+}
+
+/** Soft chime — generic info / arrived notification. */
+export function sfxNotify() {
+  safe(() => {
+    tone({ freq: 1046, duration: 0.12, gain: 0.26, type: "sine" });
+    tone({ freq: 1318, duration: 0.16, gain: 0.28, type: "sine", startAt: 0.07 });
+  });
+}
+
+/** Trash whoosh — destructive delete confirmed. */
+export function sfxDelete() {
+  safe(() => {
+    noiseBurst({ duration: 0.18, gain: 0.10, filterFreq: 900, filterQ: 0.9 });
+    tone({ freq: 220, endFreq: 110, duration: 0.18, gain: 0.20, type: "sawtooth", filterFreq: 1200 });
+  });
+}

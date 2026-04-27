@@ -75,7 +75,11 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
+      return;
+    }
+    import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     onCreateRoom({
       title: title.trim(),
       language,

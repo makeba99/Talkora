@@ -311,6 +311,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/follows/following"] });
       queryClient.invalidateQueries({ queryKey: ["/api/follows/followers"] });
+      import("@/lib/sound-fx").then((s) => s.sfxFollow()).catch(() => {});
     },
   });
 
@@ -321,6 +322,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/follows/following"] });
       queryClient.invalidateQueries({ queryKey: ["/api/follows/followers"] });
+      import("@/lib/sound-fx").then((s) => s.sfxUnfollow()).catch(() => {});
     },
   });
 

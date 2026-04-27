@@ -668,8 +668,10 @@ export default function Lobby() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       toast({ title: "Room created! Click 'Join & Talk' to enter." });
+      import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },
     onError: (err: any) => {
+      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
       let message = "Failed to create room";
       try {
         const text = err?.message || "";
