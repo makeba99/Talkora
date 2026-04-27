@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { CommentThreadDialog } from "@/components/comment-thread-dialog";
@@ -391,6 +391,41 @@ export default function Lobby() {
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [socialOpen, setSocialOpen] = useState(false);
   const [orbitOpen, setOrbitOpen] = useState(false);
+
+  // -------------------------------------------------------------------------
+  // Pinned header items: users can promote any orbit satellite into the
+  // header bar (and demote it back). Choice persists per browser via
+  // localStorage so it survives reloads.
+  // -------------------------------------------------------------------------
+  type PinnedKey = "messages" | "notifications" | "themes" | "community";
+  const PIN_STORAGE_KEY = "vextorn:header:pinned:v1";
+  const [pinned, setPinned] = useState<Record<PinnedKey, boolean>>(() => {
+    const fallback: Record<PinnedKey, boolean> = {
+      messages: false,
+      notifications: false,
+      themes: false,
+      community: false,
+    };
+    if (typeof window === "undefined") return fallback;
+    try {
+      const raw = window.localStorage.getItem(PIN_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return { ...fallback, ...parsed };
+      }
+    } catch {}
+    return fallback;
+  });
+  const togglePin = useCallback((key: PinnedKey) => {
+    setPinned((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        window.localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   // Live unread counters drive the auto-popup behavior of the orbital menu.
   const { data: unreadMsgData } = useQuery<{ count: number }>({
     queryKey: ["/api/messages/unread/count"],
@@ -953,7 +988,7 @@ export default function Lobby() {
                     <span className="hidden sm:inline">Admin</span>
                   </button>
                 )}
-                {/* hidden controlled triggers — opened from the orbital profile menu */}
+                {/* hidden controlled triggers — opened from the orbital profile menu OR from pinned chips */}
                 <SocialPanel
                   onlineUsers={onlineUsers}
                   onOpenDm={(userId) => setDmUserId(userId)}
@@ -969,6 +1004,107 @@ export default function Lobby() {
                 />
                 <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} hideTrigger />
                 <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} hideTrigger />
+
+                {/* Pinned chips: items the user promoted out of the orbit. Hover reveals a tiny unpin badge. */}
+                {pinned.messages && (
+                  <button
+                    type="button"
+                    onClick={() => setMessagesOpen(true)}
+                    className="header-pin-chip mr-1"
+                    data-testid="chip-pinned-messages"
+                    aria-label="Messages"
+                    title="Messages"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {unreadMessages > 0 && <span className="header-pin-dot" aria-hidden="true" />}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); togglePin("messages"); }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); togglePin("messages"); } }}
+                      className="header-pin-unpin"
+                      data-testid="button-unpin-messages"
+                      aria-label="Move Messages back to orbit"
+                      title="Move back to orbit"
+                    >
+                      <PinOff className="w-2.5 h-2.5" />
+                    </span>
+                  </button>
+                )}
+                {pinned.notifications && (
+                  <button
+                    type="button"
+                    onClick={() => setNotificationsOpen(true)}
+                    className="header-pin-chip mr-1"
+                    data-testid="chip-pinned-notifications"
+                    aria-label="Notifications"
+                    title="Notifications"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {unreadNotifications > 0 && <span className="header-pin-dot" aria-hidden="true" />}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); togglePin("notifications"); }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); togglePin("notifications"); } }}
+                      className="header-pin-unpin"
+                      data-testid="button-unpin-notifications"
+                      aria-label="Move Notifications back to orbit"
+                      title="Move back to orbit"
+                    >
+                      <PinOff className="w-2.5 h-2.5" />
+                    </span>
+                  </button>
+                )}
+                {pinned.themes && (
+                  <button
+                    type="button"
+                    onClick={() => setThemePickerOpen(true)}
+                    className="header-pin-chip mr-1"
+                    data-testid="chip-pinned-themes"
+                    aria-label="Themes"
+                    title="Themes"
+                  >
+                    <Palette className="w-4 h-4" />
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); togglePin("themes"); }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); togglePin("themes"); } }}
+                      className="header-pin-unpin"
+                      data-testid="button-unpin-themes"
+                      aria-label="Move Themes back to orbit"
+                      title="Move back to orbit"
+                    >
+                      <PinOff className="w-2.5 h-2.5" />
+                    </span>
+                  </button>
+                )}
+                {pinned.community && (
+                  <button
+                    type="button"
+                    onClick={() => setSocialOpen(true)}
+                    className="header-pin-chip mr-1"
+                    data-testid="chip-pinned-community"
+                    aria-label="Community"
+                    title="Community"
+                  >
+                    <UsersIcon className="w-4 h-4" />
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.stopPropagation(); togglePin("community"); }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); togglePin("community"); } }}
+                      className="header-pin-unpin"
+                      data-testid="button-unpin-community"
+                      aria-label="Move Community back to orbit"
+                      title="Move back to orbit"
+                    >
+                      <PinOff className="w-2.5 h-2.5" />
+                    </span>
+                  </button>
+                )}
+
                 <ProfileDropdown
                   open={orbitOpen}
                   onOpenChange={setOrbitOpen}
@@ -978,6 +1114,8 @@ export default function Lobby() {
                   onOpenCommunity={() => setSocialOpen(true)}
                   unreadMessages={unreadMessages}
                   unreadNotifications={unreadNotifications}
+                  pinned={pinned}
+                  onTogglePin={togglePin}
                 />
               </>
             ) : (

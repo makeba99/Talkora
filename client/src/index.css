@@ -6690,6 +6690,137 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   box-shadow: 0 0 0 2px hsl(var(--neu-bg-lo, 232 35% 11%)), 0 0 8px rgba(255, 77, 109, 0.7);
 }
 
+/* small "pin" chip on each satellite — hover-reveal, click promotes the
+   satellite into the header bar so the user can keep it always visible. */
+.orbit-sat-pin {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 22%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 12%)) 100%
+  );
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 4px 10px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: translateY(2px) scale(0.85);
+  transition: opacity 160ms ease, transform 200ms ease, color 160ms ease, border-color 160ms ease;
+  z-index: 3;
+}
+.orbit-sat:hover .orbit-sat-pin,
+.orbit-sat:focus-within .orbit-sat-pin,
+.orbit-sat-pin:hover,
+.orbit-sat-pin:focus-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.orbit-sat-pin:hover {
+  color: hsl(var(--neu-orange-hi, 252 95% 84%));
+  border-color: hsl(var(--neu-orange-hi, 252 95% 84%));
+}
+
+/* ============================================================================
+   HEADER PIN CHIPS
+   ----------------------------------------------------------------------------
+   Small neumorphic round buttons that sit inline in the header for any orbit
+   item the user has chosen to pin. A hover-revealed unpin badge in the corner
+   moves the item back into the orbit.
+   ============================================================================ */
+.header-pin-chip {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 20%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 11%)) 100%
+  );
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.32);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+    0 6px 14px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 200ms ease;
+}
+.header-pin-chip:hover {
+  transform: translateY(-1px);
+  color: hsl(var(--neu-orange-hi, 252 95% 84%));
+  border-color: hsl(var(--neu-orange-hi, 252 95% 84%));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+    0 8px 18px rgba(0, 0, 0, 0.55),
+    0 0 14px hsl(var(--neu-orange, 252 90% 70%) / 0.4);
+}
+.header-pin-chip:active {
+  transform: translateY(0);
+}
+.header-pin-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ff4d6d;
+  box-shadow: 0 0 0 2px hsl(var(--neu-bg-lo, 232 35% 11%)), 0 0 6px rgba(255, 77, 109, 0.7);
+}
+.header-pin-unpin {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 22%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 12%)) 100%
+  );
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.5);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 4px 10px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 160ms ease, transform 200ms ease, color 160ms ease;
+  cursor: pointer;
+  z-index: 2;
+}
+.header-pin-chip:hover .header-pin-unpin,
+.header-pin-chip:focus-within .header-pin-unpin,
+.header-pin-unpin:hover,
+.header-pin-unpin:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.header-pin-unpin:hover {
+  color: hsl(var(--neu-orange-hi, 252 95% 84%));
+}
+
 .orbit-sat-label {
   font-size: 10.5px;
   font-weight: 600;
