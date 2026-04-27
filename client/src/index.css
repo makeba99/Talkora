@@ -8216,14 +8216,19 @@ html.neomorphic-light .scroll-jump-btn {
   border-radius: 22px;
   pointer-events: auto;
   background:
-    linear-gradient(180deg, hsl(var(--neu-bg-hi)) 0%, hsl(var(--neu-bg-lo)) 100%);
-  border: 1px solid hsl(var(--neu-orange) / 0.18);
+    linear-gradient(180deg, hsl(var(--neu-bg-hi, 232 35% 18%)) 0%, hsl(var(--neu-bg-lo, 232 35% 11%)) 100%),
+    hsl(232 35% 13%);
+  background-color: hsl(232 35% 13%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid hsl(var(--neu-orange) / 0.32);
   box-shadow:
-    0 24px 60px -20px hsl(0 0% 0% / 0.65),
-    0 8px 24px -8px hsl(0 0% 0% / 0.45),
-    inset 0 1px 0 hsl(0 0% 100% / 0.06),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.4),
-    0 0 0 1px hsl(0 0% 100% / 0.02);
+    0 32px 80px -20px hsl(0 0% 0% / 0.85),
+    0 12px 32px -8px hsl(0 0% 0% / 0.6),
+    inset 0 1px 0 hsl(0 0% 100% / 0.09),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.5),
+    0 0 0 1px hsl(0 0% 100% / 0.04),
+    0 0 32px -4px hsl(var(--neu-orange) / 0.18);
   color: hsl(var(--foreground));
   animation: onboardingCardIn 360ms cubic-bezier(0.2, 0.9, 0.25, 1.05);
 }
@@ -8256,36 +8261,57 @@ html.neomorphic-light .scroll-jump-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 12px;
   background:
-    linear-gradient(135deg, hsl(var(--neu-orange) / 0.32) 0%, hsl(var(--neu-orange) / 0.18) 100%);
-  color: hsl(var(--neu-orange));
-  border: 1px solid hsl(var(--neu-orange) / 0.32);
+    radial-gradient(circle at 30% 25%, hsl(var(--neu-orange-hi, 256 70% 60%) / 0.55) 0%, transparent 60%),
+    linear-gradient(135deg, hsl(var(--neu-orange) / 0.42) 0%, hsl(var(--neu-orange) / 0.24) 100%);
+  color: hsl(0 0% 100%);
+  border: 1px solid hsl(var(--neu-orange) / 0.55);
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.12),
-    0 4px 12px -4px hsl(var(--neu-orange) / 0.45);
+    inset 0 1px 0 hsl(0 0% 100% / 0.22),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.25),
+    0 6px 18px -6px hsl(var(--neu-orange) / 0.65),
+    0 0 16px -2px hsl(var(--neu-orange) / 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.onboarding-card-medallion::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, hsl(0 0% 100% / 0.18) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .onboarding-card-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
-  color: hsl(var(--foreground) / 0.55);
-  background: transparent;
-  border: 1px solid hsl(0 0% 100% / 0.06);
-  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  color: hsl(var(--foreground) / 0.7);
+  background: linear-gradient(180deg, hsl(0 0% 100% / 0.04) 0%, hsl(0 0% 0% / 0.18) 100%);
+  border: 1px solid hsl(0 0% 100% / 0.1);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.07),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.25);
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, transform 120ms ease;
   cursor: pointer;
 }
 
 .onboarding-card-close:hover {
   color: hsl(var(--foreground));
-  background: hsl(0 0% 100% / 0.05);
-  border-color: hsl(0 0% 100% / 0.12);
+  background: linear-gradient(180deg, hsl(0 0% 100% / 0.08) 0%, hsl(0 0% 0% / 0.14) 100%);
+  border-color: hsl(var(--neu-orange) / 0.4);
+}
+
+.onboarding-card-close:active {
+  transform: translateY(1px);
 }
 
 .onboarding-card-title {
@@ -8299,9 +8325,20 @@ html.neomorphic-light .scroll-jump-btn {
 
 .onboarding-card-body {
   font-size: 14px;
-  line-height: 1.55;
-  color: hsl(var(--foreground) / 0.72);
+  line-height: 1.6;
+  color: hsl(var(--foreground) / 0.92);
   margin: 0 0 16px 0;
+}
+
+.onboarding-card-body strong {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.onboarding-card-body em {
+  font-style: normal;
+  color: hsl(var(--neu-orange-hi, 256 70% 78%));
+  font-weight: 500;
 }
 
 .onboarding-card-footer {

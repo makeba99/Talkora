@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from "react";
-import { ChevronRight, X, Sparkles, Mic, Globe, Search, Hammer, UserCircle, Users } from "lucide-react";
+import { ChevronRight, X, Sparkles, Mic, Globe, Search, Hammer, UserCircle, Users, Compass, Pin, Bell } from "lucide-react";
 
-const STORAGE_KEY = "vextorn:onboarding:v1";
-const STORAGE_STEP_KEY = "vextorn:onboarding:v1:step";
+const STORAGE_KEY = "vextorn:onboarding:v2";
+const STORAGE_STEP_KEY = "vextorn:onboarding:v2:step";
 
 type OnboardingStep = {
   id: string;
@@ -23,7 +23,7 @@ type OnboardingStep = {
 const STEPS: OnboardingStep[] = [
   {
     id: "welcome",
-    icon: Sparkles,
+    icon: Compass,
     title: "Hey — welcome to Vextorn.",
     body: "I'll be your guide for the next sixty seconds. Ready?",
     primary: "Show me around",
@@ -85,8 +85,26 @@ const STEPS: OnboardingStep[] = [
     target: '[data-testid="button-profile-dropdown"]',
     icon: UserCircle,
     title: "This is you.",
-    body: "Your avatar opens an orbit menu — friends, messages, themes, your decoration. Make it yours.",
-    primary: "Almost done",
+    body: "Tap your avatar to open your **orbit menu** — a ring of satellites for friends, messages, themes, and your decoration. Everything personal lives here.",
+    primary: "Show me the orbit",
+    secondary: "Skip tour",
+  },
+  {
+    id: "orbit-pin",
+    target: '[data-testid="button-profile-dropdown"]',
+    icon: Pin,
+    title: "Pin what matters to your header.",
+    body: "Inside the orbit, each satellite has a **pin** — pin Messages, Notifications, Themes, or Community to put a quick-access icon next to your avatar. Unpin anything you don't need on screen.",
+    primary: "Got it — what about alerts?",
+    secondary: "Skip tour",
+  },
+  {
+    id: "orbit-notifs",
+    target: '[data-testid="button-profile-dropdown"]',
+    icon: Bell,
+    title: "You'll never miss a thing — pinned or not.",
+    body: "Even if you **don't pin** Messages or Notifications to the header, you'll still get the **red dot on your avatar** the moment something new arrives. Open the orbit anytime to read it. Pinning is just a shortcut, never a requirement.",
+    primary: "Perfect — what's next?",
     secondary: "Skip tour",
   },
   {
@@ -98,6 +116,17 @@ const STEPS: OnboardingStep[] = [
     celebrate: true,
   },
 ];
+
+/** Tiny inline renderer that turns **bold** segments into <strong> nodes. */
+function renderRichBody(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
 
 function readSavedStatus(): "completed" | "skipped" | null {
   if (typeof window === "undefined") return null;
@@ -290,7 +319,7 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
         title="Restart tour"
       >
         <span className="onboarding-relaunch-medallion">
-          <Sparkles className="w-3.5 h-3.5" />
+          <Compass className="w-3.5 h-3.5" />
         </span>
         <span className="onboarding-relaunch-label">Tour</span>
       </button>
@@ -371,7 +400,7 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
         <h3 className="onboarding-card-title" data-testid="text-onboarding-title">
           {current.title}
         </h3>
-        <p className="onboarding-card-body">{current.body}</p>
+        <p className="onboarding-card-body">{renderRichBody(current.body)}</p>
         <div className="onboarding-card-footer">
           <div className="onboarding-dots" role="tablist" aria-label="Tour progress">
             {STEPS.map((s, i) => (
