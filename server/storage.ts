@@ -73,7 +73,7 @@ export interface IStorage {
   getRoomByShortId(shortId: string): Promise<Room | undefined>;
   getAllRooms(): Promise<Room[]>;
   getRoomsByOwner(ownerId: string): Promise<Room[]>;
-  updateRoom(id: string, data: Partial<{ title: string; language: string; level: string; maxUsers: number; ownerId: string; roomTheme: string | null; hologramVideoUrl: string | null; welcomeMessage: string | null; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string }>): Promise<Room | undefined>;
+  updateRoom(id: string, data: Partial<{ title: string; language: string; level: string; maxUsers: number; ownerId: string; roomTheme: string | null; hologramVideoUrl: string | null; welcomeMessage: string | null; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string; talkPermission: string; screenPermission: string; youtubePermission: string }>): Promise<Room | undefined>;
   updateRoomActiveUsers(id: string, count: number): Promise<void>;
   deleteRoom(id: string): Promise<void>;
 

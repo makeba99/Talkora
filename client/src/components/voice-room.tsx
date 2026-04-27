@@ -845,6 +845,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [editTalkPermission, setEditTalkPermission] = useState<"everyone" | "co_owners" | "owner_only" | "muted">(
     ((roomProp as any).talkPermission as any) || "everyone"
   );
+  const [editScreenPermission, setEditScreenPermission] = useState<"everyone" | "co_owners" | "owner_only">(
+    ((roomProp as any).screenPermission as any) || "everyone"
+  );
+  const [editYoutubePermission, setEditYoutubePermission] = useState<"everyone" | "co_owners" | "owner_only">(
+    ((roomProp as any).youtubePermission as any) || "everyone"
+  );
   const videoInputVR = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
@@ -3540,10 +3546,34 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (talkPermission === "co_owners") return { label: "Hosts & Co-hosts", tone: "" as const, icon: Shield };
     return null;
   })();
-  // Anyone in the room can play / queue YouTube videos. The person who starts
-  // a video becomes its host — they are the only one who can stop it for
-  // everyone. Other participants can hide it locally without affecting anyone.
-  const canPlayYoutube = true;
+  // Per-feature host permissions. The host configures who can share screen and
+  // who can play YouTube from Edit Room Settings. Each save is announced in
+  // the chat as a system message (server-side).
+  const screenPermission = ((room as any).screenPermission as
+    | "everyone" | "co_owners" | "owner_only" | undefined) || "everyone";
+  const youtubePermission = ((room as any).youtubePermission as
+    | "everyone" | "co_owners" | "owner_only" | undefined) || "everyone";
+  const checkPerm = (perm: "everyone" | "co_owners" | "owner_only") => {
+    if (perm === "everyone") return true;
+    if (isHost) return true;
+    if (perm === "co_owners") return myRole === "co-owner";
+    return false;
+  };
+  const canShareScreenByPerm = checkPerm(screenPermission) && canUseTalkControls;
+  const screenLockReason = (() => {
+    if (canShareScreenByPerm) return "";
+    if (!canUseTalkControls) return talkLockReason;
+    if (screenPermission === "owner_only") return "Only the host can share screen.";
+    if (screenPermission === "co_owners") return "Only the host and co-hosts can share screen.";
+    return "Screen-share is locked.";
+  })();
+  const canPlayYoutube = checkPerm(youtubePermission);
+  const youtubeLockReason = (() => {
+    if (canPlayYoutube) return "";
+    if (youtubePermission === "owner_only") return "Only the host can play YouTube videos.";
+    if (youtubePermission === "co_owners") return "Only the host and co-hosts can play YouTube videos.";
+    return "YouTube is locked.";
+  })();
 
   const removeScreenTracksFromPeers = async () => {
     peerConnections.current.forEach((pc, peerId) => {
@@ -3579,8 +3609,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       await stopMyScreenShare();
       return;
     }
-    if (!canUseTalkControls) {
-      toast({ title: "Screen-share locked", description: talkLockReason || "Sharing is disabled in this room.", variant: "destructive" });
+    if (!canShareScreenByPerm) {
+      toast({ title: "Screen-share locked", description: screenLockReason || "Sharing is disabled in this room.", variant: "destructive" });
       return;
     }
     try {
@@ -3779,6 +3809,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   };
 
   const handleSelectYoutubeVideo = (videoId: string) => {
+    if (!canPlayYoutube) {
+      toast({ title: "YouTube locked", description: youtubeLockReason || "YouTube is disabled in this room.", variant: "destructive" });
+      return;
+    }
     if (showEReader || selectedBook) {
       handleCloseBook();
     }
@@ -4269,6 +4303,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       maxUsers: editMaxUsers,
       roomTheme: editRoomTheme,
       talkPermission: editTalkPermission,
+      screenPermission: editScreenPermission,
+      youtubePermission: editYoutubePermission,
     });
   };
 
@@ -6458,7 +6494,50 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </Select>
               <p className="text-[11px] text-muted-foreground leading-snug flex items-start gap-1.5">
                 <Mic className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                Restrict mic, camera, and screen-share to chosen roles. Applies instantly to everyone in the room.
+                Restrict mic and camera to chosen roles. Applies instantly to everyone in the room.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Who Can Share Screen</Label>
+              <Select value={editScreenPermission} onValueChange={(v) => setEditScreenPermission(v as any)}>
+                <SelectTrigger data-testid="select-edit-screen-permission">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="everyone">
+                    <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-emerald-400" /> Everyone</span>
+                  </SelectItem>
+                  <SelectItem value="co_owners">
+                    <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-sky-400" /> Hosts & Co-hosts only</span>
+                  </SelectItem>
+                  <SelectItem value="owner_only">
+                    <span className="flex items-center gap-2"><Crown className="w-3.5 h-3.5 text-amber-400" /> Host only</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Who Can Play YouTube</Label>
+              <Select value={editYoutubePermission} onValueChange={(v) => setEditYoutubePermission(v as any)}>
+                <SelectTrigger data-testid="select-edit-youtube-permission">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="everyone">
+                    <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-emerald-400" /> Everyone</span>
+                  </SelectItem>
+                  <SelectItem value="co_owners">
+                    <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-sky-400" /> Hosts & Co-hosts only</span>
+                  </SelectItem>
+                  <SelectItem value="owner_only">
+                    <span className="flex items-center gap-2"><Crown className="w-3.5 h-3.5 text-amber-400" /> Host only</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Each change you save here is announced in the room chat so everyone knows the new rules.
               </p>
             </div>
 

@@ -1437,7 +1437,7 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
-      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission } = req.body;
+      const { title, language, level, maxUsers, roomTheme, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, screenPermission, youtubePermission } = req.body;
       const updateData: any = {};
       if (title) updateData.title = title;
       if (language) updateData.language = language;
@@ -1453,6 +1453,12 @@ export async function registerRoutes(
       if (talkPermission !== undefined && ["everyone", "co_owners", "owner_only", "muted"].includes(talkPermission)) {
         updateData.talkPermission = talkPermission;
       }
+      if (screenPermission !== undefined && ["everyone", "co_owners", "owner_only"].includes(screenPermission)) {
+        updateData.screenPermission = screenPermission;
+      }
+      if (youtubePermission !== undefined && ["everyone", "co_owners", "owner_only"].includes(youtubePermission)) {
+        updateData.youtubePermission = youtubePermission;
+      }
 
       const updated = await storage.updateRoom(roomId, updateData);
       io.emit("room:updated", updated);
@@ -1465,6 +1471,39 @@ export async function registerRoutes(
           welcomeMediaPosition: updateData.welcomeMediaPosition ?? updated.welcomeMediaPosition ?? "below",
           welcomeAccentColor: updateData.welcomeAccentColor ?? updated.welcomeAccentColor ?? "#8B5CF6",
         });
+      }
+
+      // Announce host control changes to the room chat as system messages so
+      // every participant sees who tightened or relaxed each control.
+      const host = await storage.getUser(userId).catch(() => null);
+      const hostName = host ? getDisplayName(host) : "The host";
+      const labelTalk = (v: string) =>
+        v === "everyone" ? "everyone" :
+        v === "co_owners" ? "hosts & co-hosts only" :
+        v === "owner_only" ? "host only" :
+        v === "muted" ? "silent room (text only)" : v;
+      const labelFeat = (v: string) =>
+        v === "everyone" ? "everyone" :
+        v === "co_owners" ? "hosts & co-hosts only" :
+        v === "owner_only" ? "host only" : v;
+      if (updateData.talkPermission && updateData.talkPermission !== room.talkPermission) {
+        emitSystemChatMsg(roomId, `🎙️ ${hostName} set who can use the mic to ${labelTalk(updateData.talkPermission)}.`);
+      }
+      if (updateData.screenPermission && updateData.screenPermission !== (room as any).screenPermission) {
+        emitSystemChatMsg(roomId, `🖥️ ${hostName} set who can share screen to ${labelFeat(updateData.screenPermission)}.`);
+      }
+      if (updateData.youtubePermission && updateData.youtubePermission !== (room as any).youtubePermission) {
+        emitSystemChatMsg(roomId, `📺 ${hostName} set who can play YouTube to ${labelFeat(updateData.youtubePermission)}.`);
+      }
+      if (updateData.title && updateData.title !== room.title) {
+        emitSystemChatMsg(roomId, `✏️ ${hostName} renamed the room to "${updateData.title}".`);
+      }
+      if (updateData.maxUsers && updateData.maxUsers !== room.maxUsers) {
+        const cap = updateData.maxUsers === 0 ? "unlimited" : String(updateData.maxUsers);
+        emitSystemChatMsg(roomId, `👥 ${hostName} changed max participants to ${cap}.`);
+      }
+      if (updateData.roomTheme && updateData.roomTheme !== room.roomTheme) {
+        emitSystemChatMsg(roomId, `🎨 ${hostName} changed the room theme.`);
       }
 
       res.json(updated);
