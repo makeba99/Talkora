@@ -2577,9 +2577,9 @@ html.synthwave .neon-text {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   OPEN-STATE chevron — inviting green arrow visible in the gap
-   when the door is ajar. Replaces the engraved "ENTER" plaque so
-   users instantly recognize "you can walk through".
+   OPEN-STATE chevron — refined cool teal-cyan arrow in the gap
+   when the door is ajar. Tuned to harmonize with the platform's
+   indigo/violet neumorphism rather than fluorescent green.
    ══════════════════════════════════════════════════════════════ */
 .door-engraved-text {
   position: absolute;
@@ -2590,17 +2590,17 @@ html.synthwave .neon-text {
   font-size: 5.5px;
   font-weight: 900;
   letter-spacing: 0.18em;
-  color: hsl(150 95% 80%);
+  color: hsl(178 55% 75%);
   text-shadow:
     0 1px 0 rgba(0,0,0,0.55),
-    0 0 4px hsl(150 95% 55% / 0.55);
+    0 0 4px hsl(178 60% 45% / 0.55);
   pointer-events: none;
   z-index: 2;
   transition: color 0.35s ease, text-shadow 0.35s ease, letter-spacing 0.35s ease;
 }
 
 /* Default (OPEN) doors get a soft ajar tilt at rest so they feel inviting.
-   The frame renders the green chevron through the slim opening. */
+   The frame renders the cool chevron through the slim opening. */
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-panel {
   transform: rotateY(-15deg);
 }
@@ -2608,42 +2608,44 @@ html.synthwave .neon-text {
   transform: rotateY(-78deg);
 }
 
-/* Welcoming green glow inside the OPEN door's interior (visible through the ajar gap) */
+/* Welcoming cool glow inside the OPEN door's interior (visible through the ajar gap).
+   Refined teal-indigo blend reads as "soft entrance light" rather than candy green. */
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-interior {
-  background: linear-gradient(170deg, hsl(150 50% 6%) 0%, hsl(155 45% 9%) 60%, hsl(160 40% 11%) 100%);
+  background: linear-gradient(170deg, hsl(220 35% 6%) 0%, hsl(208 32% 8%) 60%, hsl(192 30% 10%) 100%);
   box-shadow:
-    inset 0 0 20px hsl(150 95% 50% / 0.40),
+    inset 0 0 20px hsl(184 70% 42% / 0.30),
     inset 0 -6px 14px rgba(0,0,0,0.45);
-  animation: door-open-glow 3.2s ease-in-out infinite;
+  animation: door-open-glow 3.4s ease-in-out infinite;
 }
 @keyframes door-open-glow {
-  0%, 100% { box-shadow: inset 0 0 20px hsl(150 95% 50% / 0.40), inset 0 -6px 14px rgba(0,0,0,0.45); }
-  50%      { box-shadow: inset 0 0 28px hsl(150 100% 55% / 0.62), inset 0 -6px 14px rgba(0,0,0,0.40); }
+  0%, 100% { box-shadow: inset 0 0 20px hsl(184 70% 42% / 0.30), inset 0 -6px 14px rgba(0,0,0,0.45); }
+  50%      { box-shadow: inset 0 0 28px hsl(180 75% 48% / 0.48), inset 0 -6px 14px rgba(0,0,0,0.40); }
 }
 
-/* The OPEN door frame gets a soft green outline */
+/* The OPEN door frame gets a soft cool-cyan outline */
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-frame {
-  border-color: hsl(150 75% 50% / 0.45);
+  border-color: hsl(184 50% 45% / 0.38);
   box-shadow:
     -3px -3px 7px rgba(255,255,255,0.045),
     4px 6px 16px rgba(0,0,0,0.90),
     inset 0 1px 0 rgba(255,255,255,0.06),
-    0 0 14px hsl(150 90% 45% / 0.30);
+    0 0 14px hsl(184 70% 40% / 0.24);
 }
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-frame::before {
-  border-color: hsl(150 75% 50% / 0.45);
+  border-color: hsl(184 50% 45% / 0.38);
 }
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full):hover .door-frame {
-  border-color: hsl(150 90% 60% / 0.75);
+  border-color: hsl(180 65% 55% / 0.65);
   box-shadow:
     -4px -4px 10px rgba(255,255,255,0.06),
     5px 7px 22px rgba(0,0,0,0.92),
     inset 0 1px 0 rgba(255,255,255,0.08),
-    0 0 22px hsl(150 95% 55% / 0.55);
+    0 0 22px hsl(180 70% 48% / 0.45);
 }
 
 /* The actual welcome chevron — ▸ rendered as CSS (no extra DOM needed).
-   Sits inside the door interior, peeking out through the ajar gap. */
+   Sits inside the door interior, peeking out through the ajar gap.
+   Cool muted cyan instead of bright lime — feels professional. */
 .door-welcome-arrow {
   position: absolute;
   top: 50%;
@@ -2653,8 +2655,8 @@ html.synthwave .neon-text {
   height: 0;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
-  border-left: 7px solid hsl(150 95% 65%);
-  filter: drop-shadow(0 0 3px hsl(150 100% 55% / 0.85));
+  border-left: 7px solid hsl(180 65% 62%);
+  filter: drop-shadow(0 0 3px hsl(180 75% 48% / 0.80));
   pointer-events: none;
   z-index: 3;
   animation: door-arrow-bob 1.6s ease-in-out infinite;
@@ -2664,8 +2666,8 @@ html.synthwave .neon-text {
   50%      { left: 26%; opacity: 1;    }
 }
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full):hover .door-welcome-arrow {
-  border-left-color: hsl(150 100% 78%);
-  filter: drop-shadow(0 0 6px hsl(150 100% 60% / 1));
+  border-left-color: hsl(178 80% 75%);
+  filter: drop-shadow(0 0 6px hsl(180 80% 55% / 1));
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2781,13 +2783,13 @@ html.synthwave .neon-text {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, hsl(358 92% 62%), hsl(358 85% 40%) 65%, hsl(358 80% 26%) 100%);
+  background: radial-gradient(circle at 35% 30%, hsl(8 70% 58%), hsl(355 65% 40%) 65%, hsl(352 60% 26%) 100%);
   box-shadow:
-    0 0 0 1px hsl(358 70% 18%),
+    0 0 0 1px hsl(355 50% 18%),
     0 2px 3px rgba(0,0,0,0.85),
-    inset 0 1.5px 0 rgba(255,200,200,0.45),
+    inset 0 1.5px 0 rgba(255,210,200,0.40),
     inset 0 -1.5px 0 rgba(0,0,0,0.4),
-    0 0 8px hsl(358 95% 50% / 0.55);
+    0 0 8px hsl(355 70% 45% / 0.50);
   pointer-events: none;
   z-index: 3;
 }
@@ -2845,33 +2847,33 @@ html.synthwave .neon-text {
   flex-shrink: 0;
   display: block;
 }
-/* OPEN — deep forest LED, subdued inviting halo */
+/* OPEN — refined cool teal-cyan LED, subdued inviting halo */
 .door-caption-open {
-  color: hsl(150 60% 52%);
-  text-shadow: 0 0 3px hsl(150 60% 28% / 0.55);
+  color: hsl(184 50% 62%);
+  text-shadow: 0 0 3px hsl(184 60% 32% / 0.55);
   box-shadow:
     inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
     inset -1px -1px 1.5px rgba(255,235,215,0.045),
     1px 1px 2px rgba(0,0,0,0.5),
-    0 0 0 1px hsl(150 55% 28% / 0.30),
-    0 0 8px hsl(150 55% 28% / 0.28);
+    0 0 0 1px hsl(184 55% 32% / 0.30),
+    0 0 8px hsl(184 55% 32% / 0.28);
 }
 .door-caption-open::before {
-  background: radial-gradient(circle at 30% 30%, hsl(150 65% 38%), hsl(150 70% 22%) 70%);
+  background: radial-gradient(circle at 30% 30%, hsl(184 65% 45%), hsl(190 70% 26%) 70%);
   box-shadow:
-    0 0 5px hsl(150 65% 30% / 1),
-    0 0 10px hsl(150 65% 30% / 0.55);
+    0 0 5px hsl(184 65% 36% / 1),
+    0 0 10px hsl(184 65% 36% / 0.55);
   animation: door-led-pulse 2.2s ease-in-out infinite;
 }
 .door-3d-wrap:hover .door-caption-open {
   transform: translateY(-1px);
-  color: hsl(150 65% 60%);
+  color: hsl(180 60% 70%);
   box-shadow:
     inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
     inset -1px -1px 1.5px rgba(255,235,215,0.045),
     1px 1px 2px rgba(0,0,0,0.5),
-    0 0 0 1px hsl(150 60% 32% / 0.55),
-    0 0 14px hsl(150 60% 32% / 0.50);
+    0 0 0 1px hsl(180 60% 38% / 0.55),
+    0 0 14px hsl(180 60% 38% / 0.50);
 }
 /* LOCKED — amber/brass LED, subtle "knock" feel */
 .door-caption-locked {
@@ -5901,4 +5903,215 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 .footer-heart {
   color: hsl(350 70% 58%);
   font-size: 11px;
+}
+
+/* ── Share popover ───────────────────────────────────── */
+.footer-share-popover {
+  width: 280px;
+  padding: 14px 14px 12px;
+  background: linear-gradient(160deg, hsl(228 22% 10%) 0%, hsl(228 20% 7%) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow:
+    -2px -2px 6px rgba(255, 235, 215, 0.04),
+    8px 12px 32px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.footer-share-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(232 14% 60%);
+  margin-bottom: 10px;
+  text-align: center;
+}
+.footer-share-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.footer-share-item {
+  --social-hue: 232 80% 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px 9px;
+  border-radius: 12px;
+  text-decoration: none;
+  border: 0;
+  background: linear-gradient(160deg, hsl(228 18% 11%) 0%, hsl(228 16% 14%) 100%);
+  box-shadow:
+    -1.5px -1.5px 3px rgba(255, 235, 215, 0.045),
+    2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  color: hsl(232 14% 70%);
+  cursor: pointer;
+  transition: transform 220ms ease, color 220ms ease, box-shadow 220ms ease;
+}
+.footer-share-item:hover {
+  color: hsl(var(--social-hue) / 1);
+  transform: translateY(-2px);
+  box-shadow:
+    -2px -2px 4px rgba(255, 235, 215, 0.06),
+    3px 4px 8px rgba(0, 0, 0, 0.65),
+    0 0 14px hsl(var(--social-hue) / 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.footer-share-item:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+}
+.footer-share-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, hsl(228 22% 8%) 0%, hsl(228 20% 12%) 100%);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 1.5px rgba(255, 235, 215, 0.05);
+}
+.footer-share-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.footer-share-url {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: hsl(228 22% 6%);
+  box-shadow: inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.6);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: hsl(232 14% 55%);
+  font-family: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+}
+
+/* ── Policy dialog (Privacy / Terms) ─────────────────── */
+.footer-policy-dialog {
+  max-width: 540px;
+  width: calc(100vw - 32px);
+  max-height: 84vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(170deg, hsl(228 22% 10%) 0%, hsl(228 20% 7%) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  box-shadow:
+    -3px -3px 8px rgba(255, 235, 215, 0.04),
+    10px 14px 40px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: 22px 22px 18px;
+}
+.footer-policy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  margin-bottom: 8px;
+  color: hsl(258 70% 75%);
+  background: linear-gradient(160deg, hsl(258 40% 16%) 0%, hsl(248 35% 12%) 100%);
+  box-shadow:
+    -2px -2px 5px rgba(255, 235, 215, 0.05),
+    3px 3px 6px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 16px hsl(258 60% 40% / 0.35);
+}
+.footer-policy-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #e8e6ff 0%, #b8b4ff 60%, #f0a8d8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.footer-policy-sub {
+  font-size: 12.5px;
+  color: hsl(232 14% 58%);
+  margin-top: 2px;
+}
+.footer-policy-body {
+  margin-top: 14px;
+  overflow-y: auto;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.footer-policy-body section {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, hsl(228 18% 9%) 0%, hsl(228 16% 12%) 100%);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.5),
+    inset -1px -1px 2px rgba(255, 235, 215, 0.04);
+}
+.footer-policy-body h4 {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(258 50% 78%);
+  margin: 0 0 6px;
+}
+.footer-policy-body p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: hsl(232 14% 75%);
+  margin: 0;
+}
+.footer-policy-body ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.footer-policy-body li {
+  font-size: 13px;
+  line-height: 1.5;
+  color: hsl(232 14% 75%);
+}
+.footer-policy-body li::marker {
+  color: hsl(258 60% 60%);
+}
+.footer-policy-link {
+  color: hsl(258 70% 75%);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 200ms ease;
+}
+.footer-policy-link:hover {
+  color: hsl(258 80% 85%);
+}
+
+/* Custom scrollbar for the policy body so it matches the dark theme */
+.footer-policy-body::-webkit-scrollbar {
+  width: 6px;
+}
+.footer-policy-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.footer-policy-body::-webkit-scrollbar-thumb {
+  background: hsl(228 16% 18%);
+  border-radius: 3px;
+}
+.footer-policy-body::-webkit-scrollbar-thumb:hover {
+  background: hsl(228 16% 24%);
 }
