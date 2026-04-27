@@ -499,13 +499,14 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
      Sized down so the lobby fits 2 rows of cards on smaller screens like
      Free4Talk does. */
   const baseCircleSize =
-    displayCount <= 1 ? 78 :
-    displayCount === 2 ? 70 :
-    displayCount === 3 ? 60 :
-    displayCount === 4 ? 50 :
-    displayCount <= 6 ? 50 :
+    displayCount <= 1 ? 88 :
+    displayCount === 2 ? 78 :
+    displayCount === 3 ? 66 :
+    displayCount === 4 ? 60 :
+    displayCount <= 6 ? 52 :
     displayCount <= 8 ? 44 :
-    38;
+    displayCount <= 10 ? 36 :
+    32;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -878,9 +879,11 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               })}
             </div>
 
-            {/* + Join Spot */}
-            {!isFull && (
-              <div className="flex items-center justify-center gap-1 mt-2">
+            {/* + Join Spot — only for very small rooms (1-3 spots) where there's
+                room to breathe; crowded rooms (5+) need every vertical pixel for
+                avatars so the first row never crowds the language/level header. */}
+            {!isFull && displayCount <= 3 && (
+              <div className="flex items-center justify-center gap-1 mt-1.5">
                 <Plus className="w-3 h-3 text-white/50" />
                 <span className="text-[11px] text-white/50 font-medium">Join Spot</span>
               </div>
