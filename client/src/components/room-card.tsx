@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -236,6 +236,7 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
                 onOpenDm(participant.id);
               }}
               data-testid={`button-card-dm-${participant.id}`}
+              aria-label={`Send a direct message to ${getUserDisplayName(participant)}`}
             >
               <MessageSquare className="w-4 h-4" />
             </Button>
@@ -351,7 +352,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   );
 }
 
-export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, followerCountsOverride, priority = false }: RoomCardProps) {
+function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, followerCountsOverride, priority = false }: RoomCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme } = useTheme();
@@ -561,6 +562,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         setEditOpen(true);
       }}
       data-testid={`button-room-settings-${room.id}`}
+      aria-label={`Edit settings for room ${room.title}`}
     >
       <Settings className="w-3.5 h-3.5" />
     </Button>
@@ -581,6 +583,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             className="flex-shrink-0 w-7 h-7 text-white/50 hover:text-white hover:bg-white/10"
             onClick={(e) => e.stopPropagation()}
             data-testid={`button-room-info-${room.id}`}
+            aria-label={`Show details for room ${room.title}`}
           >
             <Settings className="w-3.5 h-3.5" />
           </Button>
@@ -1227,3 +1230,14 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
     </div>
   );
 }
+
+/**
+ * `RoomCard` is wrapped in `React.memo` because the lobby renders 9+ cards in
+ * a grid and a "live activity" interval ticks every few seconds, mutating
+ * unrelated rooms. Without memoization every tick re-runs every card's
+ * render + heart/badge effects, which is the primary contributor to high TBT
+ * on the lobby. The default shallow prop comparison is correct here — all
+ * props are primitives, the participants array reference is stable from the
+ * parent's `useMemo`, and the callbacks come from the lobby (also stable).
+ */
+export const RoomCard = memo(RoomCardImpl);

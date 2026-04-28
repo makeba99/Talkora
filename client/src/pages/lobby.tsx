@@ -1807,12 +1807,21 @@ export default function Lobby() {
                     priority={idx < 3}
                   />
                 );
+                /* Cards beyond the first row use `content-visibility: auto`
+                 * so the browser can skip layout/paint work for the ones
+                 * scrolled off-screen. `contain-intrinsic-size` reserves the
+                 * card's natural footprint to avoid CLS while it's skipped.
+                 * The first 3 cards stay normal so the LCP candidate isn't
+                 * deferred. */
+                const offscreenStyle = idx >= 3
+                  ? { contentVisibility: "auto" as const, containIntrinsicSize: "270px 270px" }
+                  : undefined;
                 return idx === 0 ? (
-                  <div key={room.id} data-tour-target="rooms">
+                  <div key={room.id} data-tour-target="rooms" style={offscreenStyle}>
                     {card}
                   </div>
                 ) : (
-                  <div key={room.id}>{card}</div>
+                  <div key={room.id} style={offscreenStyle}>{card}</div>
                 );
               })}
             </div>
