@@ -827,9 +827,33 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           {/* ── Body: unified neon ring circle grid ──
               `overflow-visible` so avatar rings/decorations that extend a few
               pixels outside the body never get clipped at the top. The outer
-              card already owns the rounded-corner clipping. */}
+              card already owns the rounded-corner clipping.
+
+              `tightSpacing` applies to crowded multi-row layouts whose bottom
+              row reaches the rightmost column (7, 8, 11, 12). Without it the
+              4th-column avatar in the bottom row drifts directly under the
+              ENTER door icon and the top-row 4th avatar crowds the settings
+              cog. We pull the spots horizontally closer together (smaller
+              column gap) AND nudge the whole grid slightly inward from the
+              right so the rightmost column clears the door, while still
+              keeping the design exactly as-is for sparser rooms. */}
+          {(() => {
+            const tightSpacing = displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
+            const colGapPx = tightSpacing ? 2 : 6;       // 2px ↔ tailwind gap-1.5 (6px)
+            const rowGapPx = 6;                            // vertical rhythm unchanged
+            const gridRightPad = tightSpacing ? 18 : 0;   // pull bottom-right spot away from the door
+            return (
           <div className="flex-1 flex flex-col justify-center px-3 pt-5 pb-2 min-h-0 overflow-visible">
-            <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+                justifyItems: "center",
+                columnGap: colGapPx,
+                rowGap: rowGapPx,
+                paddingRight: gridRightPad,
+              }}
+            >
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
@@ -957,6 +981,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               </div>
             )}
           </div>
+            );
+          })()}
 
           {/* ── Footer ── */}
           <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
