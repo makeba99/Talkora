@@ -1873,8 +1873,12 @@ export default function Lobby() {
                  * card's natural footprint to avoid CLS while it's skipped.
                  * The first 3 cards stay normal so the LCP candidate isn't
                  * deferred. */
+                /* Reserve a footprint that matches the actual rendered card
+                 * height (352–370px premium) so off-screen cards don't trigger
+                 * CLS when they scroll into view. The width is the card
+                 * column width — the grid's auto-fill handles intrinsic width. */
                 const offscreenStyle = idx >= 3
-                  ? { contentVisibility: "auto" as const, containIntrinsicSize: "270px 270px" }
+                  ? { contentVisibility: "auto" as const, containIntrinsicSize: "320px 360px" }
                   : undefined;
                 return idx === 0 ? (
                   <div key={room.id} data-tour-target="rooms" style={offscreenStyle}>

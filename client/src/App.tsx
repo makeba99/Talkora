@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense, startTransition } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
-import { AnimatedBackground } from "@/components/animated-background";
 import { SocketProvider } from "@/lib/socket";
 import { useSocket } from "@/lib/socket";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,12 +12,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BadgeAnnouncement } from "@/components/badge-announcement";
 import Lobby from "@/pages/lobby";
-import RoomPage from "@/pages/room";
-import DmPage from "@/pages/dm";
-import AdminPage from "@/pages/admin";
-import TeachersPage from "@/pages/teachers";
-import PaymentMethodsPage from "@/pages/payment-methods";
-import { PwaInstallBanner } from "@/components/pwa-install-banner";
+
+const RoomPage = lazy(() => import("@/pages/room"));
+const DmPage = lazy(() => import("@/pages/dm"));
+const AdminPage = lazy(() => import("@/pages/admin"));
+const TeachersPage = lazy(() => import("@/pages/teachers"));
+const PaymentMethodsPage = lazy(() => import("@/pages/payment-methods"));
+const AnimatedBackground = lazy(() =>
+  import("@/components/animated-background").then((m) => ({ default: m.AnimatedBackground }))
+);
+const PwaInstallBanner = lazy(() =>
+  import("@/components/pwa-install-banner").then((m) => ({ default: m.PwaInstallBanner }))
+);
 
 const SEVERITY_LABELS: Record<string, string> = {
   critical: "CRITICAL",
@@ -97,19 +102,31 @@ function AppContent() {
     );
   }
 
+  const routeFallback = (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="space-y-4 w-64">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    </div>
+  );
+
   const content = (
     <div className="h-screen flex flex-col overflow-hidden">
-      <Switch>
-        <Route path="/" component={Lobby} />
-        <Route path="/admin" component={AdminPage} />
-        <Route path="/teachers" component={TeachersPage} />
-        <Route path="/payment-methods" component={PaymentMethodsPage} />
-        <Route path="/room/:id" component={RoomPage} />
-        <Route path="/messages/:userId" component={DmPage} />
-        <Route>
-          <Lobby />
-        </Route>
-      </Switch>
+      <Suspense fallback={routeFallback}>
+        <Switch>
+          <Route path="/" component={Lobby} />
+          <Route path="/admin" component={AdminPage} />
+          <Route path="/teachers" component={TeachersPage} />
+          <Route path="/payment-methods" component={PaymentMethodsPage} />
+          <Route path="/room/:id" component={RoomPage} />
+          <Route path="/messages/:userId" component={DmPage} />
+          <Route>
+            <Lobby />
+          </Route>
+        </Switch>
+      </Suspense>
     </div>
   );
 
@@ -125,15 +142,35 @@ function AppContent() {
   return content;
 }
 
+function DeferredOverlays() {
+  // Defer mounting non-critical visual chrome until after the main route paints,
+  // so the LCP candidate isn't held back by canvas/banner JS parsing.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const w: any = window;
+    const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
+    const handle = idle(() => setReady(true), { timeout: 2000 });
+    return () => {
+      if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
+    };
+  }, []);
+  if (!ready) return null;
+  return (
+    <Suspense fallback={null}>
+      <AnimatedBackground />
+      <PwaInstallBanner />
+    </Suspense>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ThemeProvider>
-          <AnimatedBackground />
+          <DeferredOverlays />
           <AppContent />
           <Toaster />
-          <PwaInstallBanner />
         </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
