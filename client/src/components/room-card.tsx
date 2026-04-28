@@ -513,10 +513,10 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
       const w = window.innerWidth;
       // 4-person 2×2 grids overflow body at uncrowded scale — treat ≥4 as crowded
       const crowded = displayCount >= 4;
-      if (w >= 1536) setCircleScale(crowded ? 1.10 : 1.35);
-      else if (w >= 1280) setCircleScale(crowded ? 1.00 : 1.18);
-      else if (w >= 1024) setCircleScale(crowded ? 0.94 : 1.06);
-      else setCircleScale(crowded ? 0.90 : 0.98);
+      if (w >= 1536) setCircleScale(crowded ? 1.22 : 1.50);
+      else if (w >= 1280) setCircleScale(crowded ? 1.12 : 1.32);
+      else if (w >= 1024) setCircleScale(crowded ? 1.02 : 1.16);
+      else setCircleScale(crowded ? 0.94 : 1.04);
     };
     compute();
     window.addEventListener("resize", compute);
@@ -694,7 +694,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
         <div className="relative z-[2] flex flex-col h-full">
 
           {/* ── Header ── */}
-          <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-3">
+          <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-4">
             <div className="flex-1 min-w-0 pr-2">
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
@@ -796,8 +796,8 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
               `overflow-visible` so avatar rings/decorations that extend a few
               pixels outside the body never get clipped at the top. The outer
               card already owns the rounded-corner clipping. */}
-          <div className="flex-1 flex flex-col justify-center px-3 pt-2 pb-2 min-h-0 overflow-visible">
-            <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
+          <div className="flex-1 flex flex-col justify-center px-3 pt-5 pb-2 min-h-0 overflow-visible">
+            <div className="grid gap-x-0.5 gap-y-1.5" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
