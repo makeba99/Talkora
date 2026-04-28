@@ -3,6 +3,7 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { UpdateAvailableToast } from "@/components/update-available-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { SocketProvider } from "@/lib/socket";
@@ -170,6 +171,7 @@ function App() {
         <ThemeProvider>
           <DeferredOverlays />
           <AppContent />
+          <UpdateAvailableToast />
           <Toaster />
         </ThemeProvider>
       </TooltipProvider>

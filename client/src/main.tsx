@@ -33,7 +33,48 @@ try {
 createRoot(document.getElementById("root")!).render(<App />);
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+  window.addEventListener("load", async () => {
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+
+      // Notify the app whenever a fresh SW finishes installing in the background
+      // (i.e. the user is on a stale shell and a new deploy is now waiting).
+      const notifyIfWaiting = () => {
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          window.dispatchEvent(new CustomEvent("vextorn:sw-update", { detail: registration }));
+        }
+      };
+
+      notifyIfWaiting();
+      registration.addEventListener("updatefound", () => {
+        const installing = registration.installing;
+        if (!installing) return;
+        installing.addEventListener("statechange", () => {
+          if (installing.state === "installed" && navigator.serviceWorker.controller) {
+            window.dispatchEvent(new CustomEvent("vextorn:sw-update", { detail: registration }));
+          }
+        });
+      });
+
+      // Reload once the new SW takes control (after the user clicks "Refresh"
+      // and we post SKIP_WAITING). The guard prevents reload loops on first
+      // install (when there is no previous controller).
+      let reloading = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloading) return;
+        reloading = true;
+        window.location.reload();
+      });
+
+      // Catch new builds during long sessions: poll every 30 minutes, and also
+      // re-check whenever the tab becomes visible again.
+      const checkForUpdate = () => { registration.update().catch(() => {}); };
+      setInterval(checkForUpdate, 30 * 60 * 1000);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") checkForUpdate();
+      });
+    } catch {
+      /* registration failed — app still works without offline cache */
+    }
   });
 }
