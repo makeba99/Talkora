@@ -1,0 +1,204 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[cleanup] 2026-04-28T15:39:35.841Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-04-28T15:39:35.841Z Retention: messages=7d, room_messages=7d, notifications=14d, reports=30d, orphan_files=7d
+[cleanup] 2026-04-28T15:39:35.842Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion (grace=120s)
+[cleanup] 2026-04-28T15:39:35.878Z Cleanup complete in 36ms — files=0 (0 bytes)
+3:39:36 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+3:39:41 PM [express] GET /api/auth/user 401 in 4ms
+3:39:41 PM [express] GET /api/rooms/participants 304 in 2ms
+3:39:41 PM [express] GET /api/rooms 304 in 31ms
+3:39:41 PM [express] POST /api/users/badges/batch 200 in 18ms
+3:39:41 PM [express] GET /api/announcements 304 in 15ms
+3:39:41 PM [express] POST /api/rooms/votes/batch 200 in 33ms
+3:39:42 PM [express] GET /api/auth/user 401 in 1ms
+3:39:43 PM [express] GET /api/rooms 304 in 6ms
+3:39:43 PM [express] GET /api/rooms/participants 304 in 2ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 18ms
+3:39:43 PM [express] GET /api/announcements 304 in 16ms
+3:39:43 PM [express] POST /api/rooms/votes/batch 200 in 15ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 20ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 15ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 5ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 6ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 5ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 5ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 6ms
+3:39:43 PM [express] POST /api/users/badges/batch 200 in 4ms
+3:39:58 PM [express] GET /api/rooms 304 in 2ms
+3:40:14 PM [express] POST /api/rooms/votes/batch 200 in 4ms
+3:40:14 PM [express] GET /api/rooms/participants 304 in 0ms
+3:40:14 PM [express] GET /api/announcements 304 in 15ms
+3:40:14 PM [express] GET /api/rooms 304 in 2ms
+3:40:29 PM [express] GET /api/rooms 304 in 2ms
+3:40:32 PM [express] POST /api/users/badges/batch 200 in 4ms
+3:40:39 PM [express] POST /api/users/badges/batch 200 in 3ms
+3:40:44 PM [express] GET /api/rooms/participants 304 in 1ms
+3:40:44 PM [express] GET /api/announcements 304 in 3ms
+3:40:45 PM [express] GET /api/rooms 304 in 2ms
+3:40:45 PM [express] POST /api/rooms/votes/batch 200 in 3ms
+3:41:00 PM [express] GET /api/rooms 304 in 2ms
+3:41:14 PM [express] GET /api/rooms/participants 304 in 2ms
+3:41:14 PM [express] GET /api/announcements 304 in 2ms
+3:41:15 PM [express] POST /api/rooms/votes/batch 200 in 4ms
+3:41:15 PM [express] GET /api/rooms 304 in 3ms
+3:41:50 PM [express] POST /api/users/badges/batch 200 in 12ms
+3:42:04 PM [express] POST /api/users/badges/batch 200 in 3ms
+3:42:25 PM [express] POST /api/users/badges/batch 200 in 2ms
+3:42:53 PM [express] POST /api/users/badges/batch 200 in 2ms
+3:43:03 PM [express] POST /api/users/badges/batch 200 in 3ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:43:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:43:28 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:43:51 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:44:15 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x2)[39m
+3:44:17 PM [express] POST /api/users/badges/batch 200 in 14ms
+3:44:37 PM [express] POST /api/users/badges/batch 200 in 3ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:44:48 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x3)[39m
+3:44:52 PM [express] GET /api/auth/user 401 in 1ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:45:00 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x4)[39m
