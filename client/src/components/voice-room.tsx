@@ -2488,28 +2488,54 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   }, [chatMessages]);
 
   useEffect(() => {
-    if (isVideoOn && videoStream.current && localVideoRef.current) {
-      localVideoRef.current.srcObject = videoStream.current;
+    const el = localVideoRef.current;
+    if (isVideoOn && videoStream.current && el && el.srcObject !== videoStream.current) {
+      el.srcObject = videoStream.current;
     }
   }, [isVideoOn]);
 
   useEffect(() => {
-    if (remoteVideoUserId && remoteVideoRef.current) {
+    const el = remoteVideoRef.current;
+    if (remoteVideoUserId && el) {
       const stream = remoteVideoStreams.current.get(remoteVideoUserId);
-      if (stream) {
-        remoteVideoRef.current.srcObject = stream;
+      if (stream && el.srcObject !== stream) {
+        el.srcObject = stream;
       }
     }
   }, [remoteVideoUserId]);
 
   useEffect(() => {
-    if (remoteScreenShareUserId && remoteScreenRef.current) {
+    const el = remoteScreenRef.current;
+    if (remoteScreenShareUserId && el) {
       const stream = remoteScreenStreams.current.get(remoteScreenShareUserId);
-      if (stream) {
-        remoteScreenRef.current.srcObject = stream;
+      if (stream && el.srcObject !== stream) {
+        el.srcObject = stream;
       }
     }
   }, [remoteScreenShareUserId]);
+
+  // Stable ref callbacks for the remote-video and screen-share <video> elements.
+  // Inline `ref={(el) => ...}` arrow functions are recreated on every render,
+  // which makes React call the previous callback with `null` and the new one
+  // with the same element on EVERY parent re-render. If that callback assigns
+  // `el.srcObject = stream`, the video re-attaches its MediaStream and flickers
+  // to black for a frame. Using stable callbacks (and guarding srcObject sets
+  // with `!==`) means the stream is attached exactly once per change.
+  const attachRemoteScreen = useCallback((el: HTMLVideoElement | null) => {
+    remoteScreenRef.current = el;
+    if (el && remoteScreenShareUserId) {
+      const stream = remoteScreenStreams.current.get(remoteScreenShareUserId);
+      if (stream && el.srcObject !== stream) el.srcObject = stream;
+    }
+  }, [remoteScreenShareUserId]);
+
+  const attachRemoteVideo = useCallback((el: HTMLVideoElement | null) => {
+    remoteVideoRef.current = el;
+    if (el && remoteVideoUserId) {
+      const stream = remoteVideoStreams.current.get(remoteVideoUserId);
+      if (stream && el.srcObject !== stream) el.srcObject = stream;
+    }
+  }, [remoteVideoUserId]);
 
   // Track the YT slot's bounding rect so the persistent (fixed-position) player can
   // overlay it perfectly. Re-measures on resize, scroll, and layout-affecting state changes.
@@ -7644,13 +7670,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {remoteScreenShareUserId && !isScreenSharing && !(activeYoutubeId && showYoutube) && !showEReader && (
             <div className="flex-1 min-h-0 bg-black relative" data-testid="media-remote-screen">
               <video
-                ref={(el) => {
-                  remoteScreenRef.current = el;
-                  if (el && remoteScreenShareUserId) {
-                    const stream = remoteScreenStreams.current.get(remoteScreenShareUserId);
-                    if (stream) el.srcObject = stream;
-                  }
-                }}
+                ref={attachRemoteScreen}
                 autoPlay
                 playsInline
                 className="w-full h-full object-contain"
@@ -7700,13 +7720,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {remoteVideoUserId && !(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && (
             <div className="flex-1 min-h-0 bg-black relative" data-testid="media-remote-video">
               <video
-                ref={(el) => {
-                  remoteVideoRef.current = el;
-                  if (el && remoteVideoUserId) {
-                    const stream = remoteVideoStreams.current.get(remoteVideoUserId);
-                    if (stream) el.srcObject = stream;
-                  }
-                }}
+                ref={attachRemoteVideo}
                 autoPlay
                 playsInline
                 className="w-full h-full object-contain"
