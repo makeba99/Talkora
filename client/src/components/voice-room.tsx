@@ -1827,9 +1827,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     };
     socket.on("connect", handleReconnect);
 
+    // When the tab returns to the foreground, only re-join if the socket
+    // actually dropped — re-emitting on every focus made the server broadcast
+    // a global `room:participants-update` to every connected client, which
+    // looked to other users like we were rapidly leaving and re-joining.
+    // The dedicated `connect` listener above already handles real reconnects.
     const handleVisibilityForRoom = () => {
-      if (document.visibilityState === "visible" && socket.connected) {
-        socket.emit("room:join", { roomId: room.id, userId: user.id });
+      if (document.visibilityState === "visible" && !socket.connected) {
+        socket.connect();
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityForRoom);
@@ -2922,17 +2927,52 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     return () => clearInterval(id);
   }, [ytIsPlaying, showYoutube, user?.id, youtubeStartedBy]);
 
+  // Tracks the last (hostId, watching) pair we told the server about, so we
+  // can always clean up properly — even when the user fully closes YouTube
+  // (activeYoutubeId → null) and the effect would otherwise early-return
+  // before emitting `watching: false`. Without this, hosts saw "fake
+  // presence": stale watcher chips for users who already left the watch party.
+  const lastYtWatchEmitRef = useRef<{ hostId: string; watching: boolean } | null>(null);
+
   useEffect(() => {
-    if (!socket || !activeYoutubeId) return;
-    const hostId = youtubeStartedByRef.current;
-    if (!hostId) return;
-    socket.emit("room:youtube-watching", { roomId: room.id, hostId, watching: showYoutube });
-    if (showYoutube) {
+    if (!socket) return;
+    const hostId = activeYoutubeId ? youtubeStartedByRef.current : null;
+    const desired = hostId ? { hostId, watching: showYoutube } : null;
+    const last = lastYtWatchEmitRef.current;
+
+    // If the host we were last watching changed (or we left the watch party
+    // entirely), tell the previous host we're no longer watching them.
+    if (last && (!desired || last.hostId !== desired.hostId) && last.watching) {
+      socket.emit("room:youtube-watching", { roomId: room.id, hostId: last.hostId, watching: false });
+      const prevHost = last.hostId;
       setYoutubeWatchersByHost(prev => {
         const next = new Map(prev);
-        const set = new Set(next.get(hostId) || []);
+        const set = new Set(next.get(prevHost) || []);
+        set.delete(user?.id || "");
+        if (set.size > 0) next.set(prevHost, set);
+        else next.delete(prevHost);
+        return next;
+      });
+      lastYtWatchEmitRef.current = null;
+    }
+
+    if (!desired) return;
+
+    // Only emit when the watching flag actually flips for this host — avoids
+    // redundant socket chatter on unrelated state churn.
+    if (last && last.hostId === desired.hostId && last.watching === desired.watching) {
+      return;
+    }
+
+    socket.emit("room:youtube-watching", { roomId: room.id, hostId: desired.hostId, watching: desired.watching });
+    lastYtWatchEmitRef.current = desired;
+
+    if (desired.watching) {
+      setYoutubeWatchersByHost(prev => {
+        const next = new Map(prev);
+        const set = new Set(next.get(desired.hostId) || []);
         set.add(user?.id || "");
-        next.set(hostId, set);
+        next.set(desired.hostId, set);
         return next;
       });
       // Pre-fetch the host's current playhead the moment a watcher opens the
@@ -2941,21 +2981,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       // it can seek directly to the correct position. This eliminates the
       // "starts at 0, then jumps" flash that happened when we waited until
       // onReady to ask for the time.
-      if (user?.id && user.id !== hostId) {
+      if (user?.id && user.id !== desired.hostId) {
         ytSyncTimeRef.current = 0;
-        socket.emit("room:youtube-time-request", { roomId: room.id, hostId, requesterId: user.id });
+        socket.emit("room:youtube-time-request", { roomId: room.id, hostId: desired.hostId, requesterId: user.id });
       }
     } else {
       setYoutubeWatchersByHost(prev => {
         const next = new Map(prev);
-        const set = new Set(next.get(hostId) || []);
+        const set = new Set(next.get(desired.hostId) || []);
         set.delete(user?.id || "");
-        if (set.size > 0) next.set(hostId, set);
-        else next.delete(hostId);
+        if (set.size > 0) next.set(desired.hostId, set);
+        else next.delete(desired.hostId);
         return next;
       });
     }
-  }, [showYoutube, activeYoutubeId]);
+  }, [showYoutube, activeYoutubeId, youtubeStartedBy, socket, room.id, user?.id]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
