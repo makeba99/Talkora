@@ -1,6 +1,8 @@
-const CACHE_VERSION = "vextorn-v1";
+const CACHE_VERSION = "vextorn-v2";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
+const ASSET_CACHE = `${CACHE_VERSION}-assets`;
+const HTML_CACHE = `${CACHE_VERSION}-html`;
 
 const STATIC_ASSETS = [
   "/",
@@ -42,14 +44,15 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  const KEEP = new Set([STATIC_CACHE, DYNAMIC_CACHE, ASSET_CACHE, HTML_CACHE]);
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
-          .map((key) => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
+    Promise.all([
+      // Enable navigation preload so the network response races the SW boot.
+      self.registration.navigationPreload?.enable().catch(() => {}),
+      caches.keys().then((keys) =>
+        Promise.all(keys.filter((key) => !KEEP.has(key)).map((key) => caches.delete(key)))
+      ),
+    ]).then(() => self.clients.claim())
   );
 });
 
@@ -59,18 +62,31 @@ self.addEventListener("fetch", (event) => {
 
   if (request.method !== "GET") return;
 
+  // Same-origin only; never intercept the Replit workspace iframe shell.
+  if (url.hostname !== self.location.hostname || url.pathname.startsWith("/__replco/")) {
+    return;
+  }
+
+  // Live data + sockets must always hit the network.
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/socket.io/")) {
     event.respondWith(networkFirst(request));
     return;
   }
 
-  if (
-    url.hostname !== self.location.hostname ||
-    url.pathname.startsWith("/__replco/")
-  ) {
+  // Hashed Vite output in /assets/ is immutable — serve from cache forever.
+  if (url.pathname.startsWith("/assets/")) {
+    event.respondWith(cacheFirstImmutable(request));
     return;
   }
 
+  // HTML / navigations: stale-while-revalidate keeps repeat visits instant.
+  if (request.mode === "navigate" || request.destination === "document") {
+    event.respondWith(staleWhileRevalidateHtml(event));
+    return;
+  }
+
+  // Other static-by-destination resources (icons, manifest, fonts loaded
+  // from same origin) — cache-first with background refresh.
   if (
     request.destination === "script" ||
     request.destination === "style" ||
@@ -83,6 +99,19 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(networkFirstWithOfflineFallback(request));
 });
+
+async function cacheFirstImmutable(request) {
+  const cache = await caches.open(ASSET_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  try {
+    const response = await fetch(request);
+    if (response.ok) cache.put(request, response.clone());
+    return response;
+  } catch {
+    return new Response("Asset unavailable offline", { status: 503 });
+  }
+}
 
 async function cacheFirst(request) {
   const cached = await caches.match(request);
@@ -97,6 +126,40 @@ async function cacheFirst(request) {
   } catch {
     return new Response("Asset unavailable offline", { status: 503 });
   }
+}
+
+async function staleWhileRevalidateHtml(event) {
+  const { request } = event;
+  const cache = await caches.open(HTML_CACHE);
+  const cached = await cache.match(request, { ignoreSearch: true });
+
+  const networkFetch = (async () => {
+    try {
+      const preload = await event.preloadResponse;
+      const response = preload || (await fetch(request));
+      if (response && response.ok) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    } catch {
+      return null;
+    }
+  })();
+
+  if (cached) {
+    event.waitUntil(networkFetch);
+    return cached;
+  }
+
+  const fresh = await networkFetch;
+  if (fresh) return fresh;
+
+  const indexCached = await cache.match("/");
+  if (indexCached) return indexCached;
+  return new Response(OFFLINE_FALLBACK, {
+    status: 200,
+    headers: { "Content-Type": "text/html" },
+  });
 }
 
 async function networkFirst(request) {
@@ -135,6 +198,10 @@ async function networkFirstWithOfflineFallback(request) {
     });
   }
 }
+
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") self.skipWaiting();
+});
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
