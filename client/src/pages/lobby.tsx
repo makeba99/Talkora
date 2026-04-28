@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -7,19 +7,36 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, ArrowRight, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
-import { CommentThreadDialog } from "@/components/comment-thread-dialog";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
-import { OnboardingTour } from "@/components/onboarding-tour";
-import { ContextualHints } from "@/components/contextual-hints";
 import { showHintOnce } from "@/lib/hints";
-import { DmDialog } from "@/components/dm-dialog";
 import { MessagesDropdown } from "@/components/messages-dropdown";
-import { SocialPanel } from "@/components/social-panel";
 import { SiteFooter } from "@/components/site-footer";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
-import { ThemePicker } from "@/components/theme-picker";
 import { ScrollJumpButton } from "@/components/scroll-jump-button";
+
+// Heavy lobby surfaces that only mount on user interaction (clicks, hover,
+// or the once-per-session onboarding gate). Lazy-loading them keeps the
+// initial lobby chunk small without changing what users see — these never
+// render anything until the gating state becomes truthy.
+const CommentThreadDialog = lazy(() =>
+  import("@/components/comment-thread-dialog").then((m) => ({ default: m.CommentThreadDialog }))
+);
+const OnboardingTour = lazy(() =>
+  import("@/components/onboarding-tour").then((m) => ({ default: m.OnboardingTour }))
+);
+const ContextualHints = lazy(() =>
+  import("@/components/contextual-hints").then((m) => ({ default: m.ContextualHints }))
+);
+const DmDialog = lazy(() =>
+  import("@/components/dm-dialog").then((m) => ({ default: m.DmDialog }))
+);
+const SocialPanel = lazy(() =>
+  import("@/components/social-panel").then((m) => ({ default: m.SocialPanel }))
+);
+const ThemePicker = lazy(() =>
+  import("@/components/theme-picker").then((m) => ({ default: m.ThemePicker }))
+);
 import { useLowBandwidthHint } from "@/hooks/use-low-bandwidth-hint";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useAuth } from "@/hooks/use-auth";
@@ -1151,13 +1168,17 @@ export default function Lobby() {
                 )}
                 <span className="header-pro-divider hidden sm:inline-block" aria-hidden="true" />
                 {/* hidden controlled triggers — opened from the orbital profile menu OR from pinned chips */}
-                <SocialPanel
-                  onlineUsers={onlineUsers}
-                  onOpenDm={(userId) => setDmUserId(userId)}
-                  open={socialOpen}
-                  onOpenChange={setSocialOpen}
-                  hideTrigger
-                />
+                <Suspense fallback={null}>
+                  {socialOpen && (
+                    <SocialPanel
+                      onlineUsers={onlineUsers}
+                      onOpenDm={(userId) => setDmUserId(userId)}
+                      open={socialOpen}
+                      onOpenChange={setSocialOpen}
+                      hideTrigger
+                    />
+                  )}
+                </Suspense>
                 <MessagesDropdown
                   onOpenDm={(userId) => setDmUserId(userId)}
                   open={messagesOpen}
@@ -1165,7 +1186,11 @@ export default function Lobby() {
                   hideTrigger
                 />
                 <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} hideTrigger />
-                <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} hideTrigger />
+                <Suspense fallback={null}>
+                  {themePickerOpen && (
+                    <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} hideTrigger />
+                  )}
+                </Suspense>
 
                 {/* Pinned chips: items the user promoted out of the orbit. Hover reveals a tiny unpin badge. */}
                 {pinned.messages && (
@@ -1895,22 +1920,28 @@ export default function Lobby() {
         <SiteFooter />
       </div>
 
-      <OnboardingTour onStepChange={handleTourStepChange} />
-      <ContextualHints />
+      <Suspense fallback={null}>
+        <OnboardingTour onStepChange={handleTourStepChange} />
+        <ContextualHints />
+      </Suspense>
 
-      {user && (
-        <DmDialog
-          otherUserId={dmUserId}
-          onClose={() => setDmUserId(null)}
-        />
+      {user && dmUserId && (
+        <Suspense fallback={null}>
+          <DmDialog
+            otherUserId={dmUserId}
+            onClose={() => setDmUserId(null)}
+          />
+        </Suspense>
       )}
 
       {commentTargetUser && (
-        <CommentThreadDialog
-          targetUser={commentTargetUser.user}
-          targetUserName={commentTargetUser.name}
-          onClose={() => setCommentTargetUser(null)}
-        />
+        <Suspense fallback={null}>
+          <CommentThreadDialog
+            targetUser={commentTargetUser.user}
+            targetUserName={commentTargetUser.name}
+            onClose={() => setCommentTargetUser(null)}
+          />
+        </Suspense>
       )}
 
       {/* Knock-knock notifications for hosts on the lobby */}

@@ -1,7 +1,10 @@
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
-import femaleSrc from "@assets/ai-tutor-female-v3.png";
-import maleSrc from "@assets/ai-tutor-male-neumorphic.png";
-import evaSrc from "@assets/generated_images/eva-avatar.png";
+// Optimized 512px WebP versions (98% smaller than the original PNG portraits)
+// keep visual fidelity at the rendered avatar size — the source 1500–2000px
+// portraits are overkill for a circular ~256px avatar.
+import femaleSrc from "@/assets/ai-tutor-female-v3.webp";
+import maleSrc from "@/assets/ai-tutor-male-neumorphic.webp";
+import evaSrc from "@/assets/eva-avatar.webp";
 
 interface AiTutorFaceProps {
   gender: "Male" | "Female";

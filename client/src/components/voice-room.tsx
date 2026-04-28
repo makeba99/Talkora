@@ -45,7 +45,7 @@ import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
 import type { Room, User, Follow } from "@shared/schema";
-import evaAvatarUrl from "@assets/generated_images/eva-avatar.png";
+import evaAvatarUrl from "@/assets/eva-avatar.webp";
 
 interface VoiceRoomProps {
   room: Room;
