@@ -35,6 +35,10 @@ interface RoomCardProps {
   hasVoted?: boolean;
   onVote?: () => void;
   followerCountsOverride?: Record<string, number>;
+  /** Marks the card as above-the-fold so its hologram background image loads
+   *  eagerly with high fetch priority. Only set this for the first row of
+   *  cards in a list — the LCP candidate is typically one of these. */
+  priority?: boolean;
 }
 
 
@@ -262,7 +266,7 @@ function isImageMedia(src: string): boolean {
     || cleaned.includes("c.tenor.com");
 }
 
-function CardHologramVideo({ src }: { src: string }) {
+function CardHologramVideo({ src, priority = false }: { src: string; priority?: boolean }) {
   // Lobby cards stack 6+ at a time. We always paint the dimming overlay so the
   // theme mood reads even when we skip animation. Static images render with a
   // plain <img> (cheap), animated videos render with <video> on capable
@@ -287,8 +291,9 @@ function CardHologramVideo({ src }: { src: string }) {
         <img
           src={src}
           alt=""
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
           decoding="async"
+          {...(priority ? { fetchpriority: "high" } as any : {})}
           className="absolute inset-0 w-full h-full object-cover z-0"
           style={{ opacity: 0.65, filter: "brightness(0.7) saturate(0.85)" }}
         />
@@ -304,6 +309,9 @@ function CardHologramVideo({ src }: { src: string }) {
           <img
             src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
             alt=""
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            {...(priority ? { fetchpriority: "high" } as any : {})}
             className="absolute inset-0 w-full h-full object-cover z-0"
             style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)" }}
           />
@@ -343,7 +351,7 @@ function CardHologramVideo({ src }: { src: string }) {
   );
 }
 
-export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, followerCountsOverride }: RoomCardProps) {
+export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, followerCountsOverride, priority = false }: RoomCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme } = useTheme();
@@ -689,7 +697,7 @@ export function RoomCard({ room, participants, onJoin, onOpenDm, isOwner, isLogg
             <span className="premium-atmosphere-sweep" />
           </div>
         )}
-        {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} />}
+        {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} priority={priority} />}
 
         <div className="relative z-[2] flex flex-col h-full">
 

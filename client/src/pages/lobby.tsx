@@ -1804,6 +1804,7 @@ export default function Lobby() {
                     hasVoted={voteData?.userVotes?.[room.id] || false}
                     onVote={isSample ? undefined : (user ? () => voteMutation.mutate({ roomId: room.id, hasVoted: voteData?.userVotes?.[room.id] || false }) : undefined)}
                     followerCountsOverride={isSample ? SAMPLE_FOLLOWER_COUNTS : undefined}
+                    priority={idx < 3}
                   />
                 );
                 return idx === 0 ? (
