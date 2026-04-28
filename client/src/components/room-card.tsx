@@ -35,6 +35,11 @@ interface RoomCardProps {
   hasVoted?: boolean;
   onVote?: () => void;
   followerCountsOverride?: Record<string, number>;
+  /** When the parent (e.g. lobby) already runs a single batched fetch for
+   *  badges of all participants across all rooms, it can pass the result here
+   *  so each card doesn't fire its own duplicate /api/users/badges/batch
+   *  request. Huge perf win — drops 9 requests on a 9-card lobby down to 1. */
+  participantBadgesOverride?: Record<string, UserBadge[]>;
   /** Marks the card as above-the-fold so its hologram background image loads
    *  eagerly with high fetch priority. Only set this for the first row of
    *  cards in a list — the LCP candidate is typically one of these. */
@@ -352,7 +357,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   );
 }
 
-function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, followerCountsOverride, priority = false }: RoomCardProps) {
+function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, followerCountsOverride, participantBadgesOverride, priority = false }: RoomCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme } = useTheme();
@@ -390,16 +395,18 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
   const followerCounts = followerCountsOverride ?? fetchedFollowerCounts;
 
-  const { data: participantBadges = {} } = useQuery<Record<string, UserBadge[]>>({
+  const { data: fetchedParticipantBadges = {} } = useQuery<Record<string, UserBadge[]>>({
     queryKey: ["/api/users/badges/batch", ...participantIds],
     queryFn: async () => {
       if (participantIds.length === 0) return {};
       const res = await apiRequest("POST", "/api/users/badges/batch", { userIds: participantIds });
       return res.json();
     },
-    enabled: participantIds.length > 0,
+    enabled: participantIds.length > 0 && !participantBadgesOverride,
     staleTime: 60000,
   });
+
+  const participantBadges = participantBadgesOverride ?? fetchedParticipantBadges;
 
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -522,10 +529,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       const w = window.innerWidth;
       // 4-person 2×2 grids overflow body at uncrowded scale — treat ≥4 as crowded
       const crowded = displayCount >= 4;
-      if (w >= 1536) setCircleScale(crowded ? 1.22 : 1.50);
-      else if (w >= 1280) setCircleScale(crowded ? 1.12 : 1.32);
-      else if (w >= 1024) setCircleScale(crowded ? 1.02 : 1.16);
-      else setCircleScale(crowded ? 0.94 : 1.04);
+      if (w >= 1536) setCircleScale(crowded ? 1.10 : 1.35);
+      else if (w >= 1280) setCircleScale(crowded ? 1.00 : 1.18);
+      else if (w >= 1024) setCircleScale(crowded ? 0.94 : 1.06);
+      else setCircleScale(crowded ? 0.90 : 0.98);
     };
     compute();
     window.addEventListener("resize", compute);
@@ -808,7 +815,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               pixels outside the body never get clipped at the top. The outer
               card already owns the rounded-corner clipping. */}
           <div className="flex-1 flex flex-col justify-center px-3 pt-5 pb-2 min-h-0 overflow-visible">
-            <div className="grid gap-x-0.5 gap-y-1.5" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
+            <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${gridCols}, 1fr)`, justifyItems: "center" }}>
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 

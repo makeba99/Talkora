@@ -24,7 +24,7 @@ import { useLowBandwidthHint } from "@/hooks/use-low-bandwidth-hint";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LANGUAGES } from "@shared/schema";
 import type { Announcement, Follow, Room, User } from "@shared/schema";
@@ -572,6 +572,37 @@ export default function Lobby() {
     ...base,
   });
 
+  /* PERF: collect every unique participant id across every visible room so the
+   * lobby can fire ONE batched fetch for badges (and reuse the lobby-wide
+   * follower-count fetch) instead of letting each card fire its own. On a
+   * 9-card lobby this drops 18 POST round-trips down to 2. */
+  const allVisibleParticipantIds = (() => {
+    const seen = new Set<string>();
+    const merged = allRoomParticipants(roomParticipants);
+    Object.values(merged).forEach((arr) => {
+      (arr || []).forEach((p) => {
+        if (p?.id) seen.add(p.id);
+      });
+    });
+    return Array.from(seen).sort();
+  })();
+
+  const { data: lobbyParticipantBadges = {} } = useQuery<Record<string, any[]>>({
+    queryKey: ["/api/users/badges/batch", "lobby", allVisibleParticipantIds.join(",")],
+    queryFn: async () => {
+      if (allVisibleParticipantIds.length === 0) return {};
+      const res = await apiRequest("POST", "/api/users/badges/batch", { userIds: allVisibleParticipantIds });
+      return res.json();
+    },
+    enabled: allVisibleParticipantIds.length > 0,
+    staleTime: 60000,
+    /* Keep last successful badge map while a new fetch (triggered by a new
+     * participant id appearing) is in flight. Without this, `data` resets to
+     * undefined on every queryKey change and every RoomCard would briefly
+     * re-enable its own per-card batch query — defeating the consolidation. */
+    placeholderData: keepPreviousData,
+  });
+
   const roomIds = rooms.map((r) => r.id);
   const { data: voteData, refetch: refetchVotes } = useQuery<{ counts: Record<string, number>; userVotes: Record<string, boolean> }>({
     queryKey: ["/api/rooms/votes/batch", roomIds.join(",")],
@@ -634,6 +665,10 @@ export default function Lobby() {
     },
     enabled: discoverableUserIds.length > 0,
     refetchInterval: 30000,
+    /* Keep last successful counts while a refetch is in flight so the
+     * lobby-wide override passed to RoomCards stays populated and per-card
+     * follower-count queries don't briefly re-enable. */
+    placeholderData: keepPreviousData,
   });
 
   useEffect(() => {
@@ -1789,8 +1824,14 @@ export default function Lobby() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 xl:gap-5">
-              {filteredRooms.map((room, idx) => {
+              {(() => {
+                /* PERF: compute mergedParticipants ONCE per render outside the
+                 * map (was being rebuilt 9× for a 9-card lobby). Same for the
+                 * shared override objects passed to every card. */
                 const mergedParticipants = allRoomParticipants(roomParticipants);
+                const hasLobbyFollowerCounts = Object.keys(followerCounts).length > 0;
+                const hasLobbyBadges = Object.keys(lobbyParticipantBadges).length > 0;
+                return filteredRooms.map((room, idx) => {
                 const isSample = room.id.startsWith("sample-");
                 const card = (
                   <RoomCard
@@ -1803,7 +1844,14 @@ export default function Lobby() {
                     voteCount={isSample ? liveVoteCounts[room.id] ?? 0 : (voteData?.counts?.[room.id] || 0)}
                     hasVoted={voteData?.userVotes?.[room.id] || false}
                     onVote={isSample ? undefined : (user ? () => voteMutation.mutate({ roomId: room.id, hasVoted: voteData?.userVotes?.[room.id] || false }) : undefined)}
-                    followerCountsOverride={isSample ? SAMPLE_FOLLOWER_COUNTS : undefined}
+                    followerCountsOverride={
+                      isSample
+                        ? SAMPLE_FOLLOWER_COUNTS
+                        : hasLobbyFollowerCounts
+                          ? followerCounts
+                          : undefined
+                    }
+                    participantBadgesOverride={hasLobbyBadges ? lobbyParticipantBadges : undefined}
                     priority={idx < 3}
                   />
                 );
@@ -1823,7 +1871,8 @@ export default function Lobby() {
                 ) : (
                   <div key={room.id} style={offscreenStyle}>{card}</div>
                 );
-              })}
+                });
+              })()}
             </div>
           )}
         </div>
