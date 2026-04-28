@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /attached_assets/
+
+Sitemap: /sitemap.xml

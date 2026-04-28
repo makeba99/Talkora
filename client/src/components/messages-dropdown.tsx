@@ -42,13 +42,18 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/messages/conversations"],
     enabled: !!user,
-    refetchInterval: 10000,
+    /* Bumped 10s → 30s. New messages already invalidate this cache via
+     * mutations + socket events, so the poll is just a fallback. */
+    refetchInterval: 30000,
   });
 
   const { data: unreadData } = useQuery<{ count: number }>({
     queryKey: ["/api/messages/unread/count"],
     enabled: !!user,
-    refetchInterval: 5000,
+    /* Bumped 5s → 20s. Inbound DM events invalidate this cache instantly via
+     * socket; the poll is just a recovery path. 5s here was hitting the 180
+     * req/min API rate limiter together with all the other lobby polls. */
+    refetchInterval: 20000,
   });
 
   const { data: allUsers = [] } = useQuery<User[]>({

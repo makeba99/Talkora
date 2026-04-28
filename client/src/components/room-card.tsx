@@ -368,6 +368,13 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   const fallbackText = getFallbackTextClass(room.maxUsers);
   const [requestOpen, setRequestOpen] = useState(false);
 
+  /* Bullet-proof debounce for the knock button. The mutation already exposes
+   * `isPending`, but React state updates aren't synchronous — a fast double-
+   * click (or click+Enter combo) can fire two mutations before isPending
+   * flips. The ref lock is set synchronously in the click handler and held
+   * for a short cooldown after success/error, so rapid repeats can't slip
+   * past and trigger the API rate limiter. */
+  const knockInFlightRef = useRef(false);
   const knockMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", `/api/rooms/${room.id}/knock`);
@@ -375,11 +382,18 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
     onSuccess: () => {
       import("@/lib/sound-fx").then((m) => m.sfxKnock()).catch(() => {});
       toast({ title: "🚪 Knock sent!", description: "The host will see your knock inside the room." });
+      setTimeout(() => { knockInFlightRef.current = false; }, 1500);
     },
     onError: () => {
       toast({ title: "Couldn't send knock", description: "Please try again.", variant: "destructive" });
+      setTimeout(() => { knockInFlightRef.current = false; }, 1500);
     },
   });
+  const safeKnock = () => {
+    if (knockInFlightRef.current || knockMutation.isPending) return;
+    knockInFlightRef.current = true;
+    knockMutation.mutate();
+  };
   const participantIds = participants.map((p) => p.id);
 
   const { data: fetchedFollowerCounts = {} } = useQuery<Record<string, number>>({
@@ -1040,9 +1054,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     className={`door-3d-wrap ${stateClass}`}
                     role="button"
                     tabIndex={0}
+                    aria-disabled={knockMutation.isPending || undefined}
                     title={knockMutation.isPending ? "Knocking…" : "🚪 Knock — ask the host to let you in"}
-                    onClick={(e) => { e.stopPropagation(); if (!knockMutation.isPending) knockMutation.mutate(); }}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !knockMutation.isPending) knockMutation.mutate(); }}
+                    onClick={(e) => { e.stopPropagation(); safeKnock(); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); safeKnock(); } }}
                     data-testid={`button-knock-room-${room.id}`}
                   >
                     {doorBody}

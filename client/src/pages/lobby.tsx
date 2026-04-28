@@ -528,7 +528,11 @@ export default function Lobby() {
 
   const { data: fetchedRooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
-    refetchInterval: 5000,
+    /* Bumped from 5s to 15s. Live participant updates flow through the socket,
+     * so the lobby only needs the slower poll for newly-created/deleted rooms.
+     * 5s polling combined with 7+ other intervals was tripping the API rate
+     * limiter (180 req/min) within ~30s of activity. */
+    refetchInterval: 15000,
   });
 
   const { data: announcements = [] } = useQuery<LobbyAnnouncement[]>({
@@ -630,19 +634,27 @@ export default function Lobby() {
 
   const { data: initialParticipants } = useQuery<Record<string, User[]>>({
     queryKey: ["/api/rooms/participants"],
-    refetchInterval: 10000,
+    /* Bumped from 10s → 30s. Real-time per-room participant changes already
+     * arrive via the `room:participants-update` socket event (see effect that
+     * registers this listener), so this poll is just a recovery fallback. */
+    refetchInterval: 30000,
   });
 
   const { data: allUsers = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
     enabled: !!user,
-    refetchInterval: 15000,
+    /* Bumped from 15s → 45s. The full users list rarely changes between
+     * lobby visits — saving 4 calls/min at this single endpoint. */
+    refetchInterval: 45000,
   });
 
   const { data: usersCurrentRooms = {} } = useQuery<Record<string, string>>({
     queryKey: ["/api/users/rooms"],
     enabled: !!user,
-    refetchInterval: 5000,
+    /* Bumped from 5s → 30s. The "which room is X currently in" data drives
+     * presence dots in side widgets and changes infrequently. 5s polling for
+     * this was the single biggest contributor to /api rate-limit hits. */
+    refetchInterval: 30000,
   });
 
   const { data: following = [] } = useQuery<Follow[]>({
