@@ -17,7 +17,7 @@ import {
   Mic, MicOff, PhoneOff, Hand, Globe, AlertCircle, MessageSquare,
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
   Video, VideoOff, LogIn, LogOut, Search, Play, Pause, Loader2, Pencil, Shield, Crown,
-  Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Palette,
+  Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Minimize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
@@ -940,6 +940,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [videoFlipped, setVideoFlipped] = useState(true);
   const [remoteVideoUserId, setRemoteVideoUserId] = useState<string | null>(null);
   const [remoteScreenShareUserId, setRemoteScreenShareUserId] = useState<string | null>(null);
+  // Persisted per-viewer preference for how the remote screen-share fills the
+  // viewer pane: "fit" letterboxes (object-contain) so nothing is cropped,
+  // "fill" crops to edge-to-edge (object-cover). Useful when the sharer is on
+  // a portrait monitor and the default fit leaves big black bars.
+  const [screenFitMode, setScreenFitMode] = useState<"fit" | "fill">(() => {
+    if (typeof window === "undefined") return "fit";
+    return (localStorage.getItem("vextorn:screenFitMode") as "fit" | "fill") || "fit";
+  });
+  const toggleScreenFitMode = useCallback(() => {
+    setScreenFitMode((prev) => {
+      const next = prev === "fit" ? "fill" : "fit";
+      try { localStorage.setItem("vextorn:screenFitMode", next); } catch {}
+      return next;
+    });
+  }, []);
   const [availableVideoUsers, setAvailableVideoUsers] = useState<Set<string>>(new Set());
   const [availableScreenUsers, setAvailableScreenUsers] = useState<Set<string>>(new Set());
   const youtubeSearchTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -7673,8 +7688,27 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 ref={attachRemoteScreen}
                 autoPlay
                 playsInline
-                className="w-full h-full object-contain"
+                className={`w-full h-full ${screenFitMode === "fill" ? "object-cover" : "object-contain"}`}
               />
+              <button
+                onClick={toggleScreenFitMode}
+                className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-black/70 hover:bg-black/85 backdrop-blur-sm border border-white/15 rounded-full px-2.5 py-1 shadow-lg text-white text-[11px] font-medium transition-colors"
+                title={screenFitMode === "fit" ? "Switch to edge-to-edge (crop)" : "Switch to fit (no crop)"}
+                aria-label={screenFitMode === "fit" ? "Switch to fill mode" : "Switch to fit mode"}
+                data-testid="button-screen-fit-toggle"
+              >
+                {screenFitMode === "fit" ? (
+                  <>
+                    <Maximize2 className="w-3 h-3" />
+                    <span className="hidden sm:inline">Fill</span>
+                  </>
+                ) : (
+                  <>
+                    <Minimize2 className="w-3 h-3" />
+                    <span className="hidden sm:inline">Fit</span>
+                  </>
+                )}
+              </button>
               <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
                 <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/15 rounded-full px-3 py-1 shadow-lg">
                   <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse flex-shrink-0" />
