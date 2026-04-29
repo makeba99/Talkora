@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vextorn-v2";
+const CACHE_VERSION = "vextorn-v3";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
@@ -7,7 +7,6 @@ const HTML_CACHE = `${CACHE_VERSION}-html`;
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
-  "/favicon.png",
   "/vextorn-mark.svg",
   "/vextorn-icon-192.png",
   "/vextorn-icon-512.png",

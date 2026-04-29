@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -266,6 +267,11 @@ function StorageTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 }
 
 export default function AdminPage() {
+  useDocumentMeta({
+    title: "Admin",
+    description: "Vextorn admin tools.",
+    noIndex: true,
+  });
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -966,7 +972,7 @@ export default function AdminPage() {
                         newRegUsers.map((u) => (
                           <div key={u.id} data-testid={`card-newreg-${u.id}`} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                             <Avatar className="w-7 h-7 flex-shrink-0">
-                              <AvatarImage src={u.profileImageUrl ?? undefined} />
+                              <AvatarImage src={u.profileImageUrl ?? undefined} alt="" />
                               <AvatarFallback className="text-[10px] font-semibold bg-emerald-900/50 text-emerald-200">{getUserDisplayName(u).slice(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
@@ -1173,7 +1179,7 @@ export default function AdminPage() {
                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                           <div className="flex items-start gap-3">
                             <Avatar className="h-10 w-10 border border-primary/20">
-                              <AvatarImage src={app.user?.profileImageUrl ?? undefined} />
+                              <AvatarImage src={app.user?.profileImageUrl ?? undefined} alt="" />
                               <AvatarFallback className="bg-primary/10 text-primary text-xs">
                                 {(app.user?.firstName?.[0] ?? app.name?.[0] ?? "?").toUpperCase()}
                               </AvatarFallback>
@@ -1603,7 +1609,7 @@ export default function AdminPage() {
                         <div className="grid gap-3 sm:grid-cols-2">
                           {announcementMediaUrls.map((url, index) => (
                             <div key={url} className="overflow-hidden rounded-xl border border-border/70 bg-background/50" data-testid={`card-announcement-media-${index}`}>
-                              <img src={url} alt={`Announcement media ${index + 1}`} className="h-32 w-full object-cover" data-testid={`img-announcement-media-${index}`} />
+                              <img loading="lazy" decoding="async" src={url} alt={`Announcement media ${index + 1}`} className="h-32 w-full object-cover" data-testid={`img-announcement-media-${index}`} />
                               <div className="flex items-center justify-between p-2">
                                 <Badge variant="secondary" data-testid={`status-announcement-media-type-${index}`}>
                                   {announcementMediaTypes[index] || "image"}
@@ -1683,7 +1689,7 @@ export default function AdminPage() {
                         announcements.map((announcement) => (
                           <div key={announcement.id} className="rounded-xl border border-border/70 bg-background/55 p-4 space-y-3" data-testid={`card-owner-announcement-${announcement.id}`}>
                             {announcement.mediaUrls?.[0] && (
-                              <img src={announcement.mediaUrls[0]} alt={announcement.title} className="h-36 w-full rounded-lg object-cover" data-testid={`img-owner-announcement-${announcement.id}`} />
+                              <img loading="lazy" decoding="async" src={announcement.mediaUrls[0]} alt={announcement.title} className="h-36 w-full rounded-lg object-cover" data-testid={`img-owner-announcement-${announcement.id}`} />
                             )}
                             <div className="space-y-2">
                               <div className="flex flex-wrap items-center gap-2">

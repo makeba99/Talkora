@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { useLocation } from "wouter";
+import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -399,6 +400,11 @@ function PeopleDiscoveryCard({
 }
 
 export default function Lobby() {
+  useDocumentMeta({
+    title: "Live voice rooms by language",
+    description:
+      "Join live audio rooms by language and level. Practice English, Spanish, French, Korean, Japanese and more with real people on Vextorn.",
+  });
   const { user } = useAuth();
   const { socket } = useSocket();
   const { toast } = useToast();
@@ -1990,7 +1996,7 @@ export default function Lobby() {
             >
               <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-white/15 bg-muted flex items-center justify-center">
                 {knock.fromUserAvatar ? (
-                  <img src={knock.fromUserAvatar} alt={knock.fromUserName} className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={knock.fromUserAvatar} alt={knock.fromUserName} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-sm font-bold text-foreground/70">{knock.fromUserName.slice(0, 2).toUpperCase()}</span>
                 )}

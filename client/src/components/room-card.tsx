@@ -161,7 +161,7 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
   return (
     <div className="flex flex-col items-center gap-3 p-2" data-testid={`card-profile-popup-${participant.id}`}>
       <Avatar className="w-16 h-16 border-2 border-border">
-        <AvatarImage src={participant.profileImageUrl || undefined} />
+        <AvatarImage src={participant.profileImageUrl || undefined} alt="" />
         <AvatarFallback className="text-xl font-bold">
           {getUserInitials(participant)}
         </AvatarFallback>
@@ -620,7 +620,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             </div>
             <div className="flex flex-col items-center gap-1.5 pb-3">
               <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
-                <AvatarImage src={ownerAvatar} />
+                <AvatarImage src={ownerAvatar} alt="" />
                 <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
               </Avatar>
               <p className="text-sm font-medium text-white">{ownerName}</p>

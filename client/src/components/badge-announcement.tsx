@@ -367,7 +367,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                       style={{ ringColor: color } as any}
                       data-testid="badge-user-avatar"
                     >
-                      <AvatarImage src={event.userAvatar ?? undefined} />
+                      <AvatarImage src={event.userAvatar ?? undefined} alt="" />
                       <AvatarFallback
                         className="text-xl font-bold"
                         style={{ background: `${color}25`, color: color }}

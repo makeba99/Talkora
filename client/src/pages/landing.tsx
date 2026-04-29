@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ThemePicker } from "@/components/theme-picker";
@@ -37,6 +38,11 @@ function HeroOrb({
 }
 
 export default function LandingPage() {
+  useDocumentMeta({
+    title: "Talk. Share. Belong.",
+    description:
+      "Vextorn is a real-time voice community for language practice. Join live audio rooms by language and level — speak, listen, and belong.",
+  });
   const { theme, currentThemeDef } = useTheme();
   const isDark = currentThemeDef.isDark;
 

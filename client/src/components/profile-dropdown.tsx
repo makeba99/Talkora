@@ -422,7 +422,7 @@ export function ProfileDropdown({
           >
             <span className="orbit-trigger-avatar-wrap">
               <Avatar className="w-9 h-9">
-                <AvatarImage src={user?.profileImageUrl || undefined} />
+                <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.displayName || user?.firstName || "Your profile"} />
                 <AvatarFallback className="text-[13px] bg-primary/10 text-primary font-semibold">
                   {getUserInitials(user)}
                 </AvatarFallback>
@@ -619,7 +619,7 @@ export function ProfileDropdown({
           <div className="orbit-identity">
             <div className="relative flex-shrink-0">
               <Avatar className="w-9 h-9 ring-1 ring-white/15">
-                <AvatarImage src={user?.profileImageUrl || undefined} />
+                <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.displayName || user?.firstName || "Your profile"} />
                 <AvatarFallback className="text-xs bg-primary/10 text-primary">
                   {getUserInitials(user)}
                 </AvatarFallback>
@@ -742,7 +742,7 @@ export function ProfileDropdown({
               <div className="flex justify-center">
                 <div className="relative">
                   <Avatar className="w-20 h-20">
-                    <AvatarImage src={user?.profileImageUrl || undefined} />
+                    <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.displayName || user?.firstName || "Your profile"} />
                     <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                       {getUserInitials(user)}
                     </AvatarFallback>
@@ -858,7 +858,7 @@ export function ProfileDropdown({
                   <ProfileDecoration decorationId={selectedDecoration} size={64}>
                     <div className={`rounded-full p-0.5 ${getAvatarRingClass(selectedRing)}`}>
                       <Avatar className="w-16 h-16">
-                        <AvatarImage src={user?.profileImageUrl || undefined} />
+                        <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.displayName || user?.firstName || "Your profile"} />
                         <AvatarFallback className="text-xl bg-primary/10 text-primary">
                           {getUserInitials(user)}
                         </AvatarFallback>
@@ -1015,7 +1015,7 @@ export function ProfileDropdown({
               {blockedUsers.map((u: any) => (
                 <div key={u.id} className="flex items-center gap-3 p-2 rounded-md border border-border">
                   <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarImage src={u.profileImageUrl || undefined} />
+                    <AvatarImage src={u.profileImageUrl || undefined} alt="" />
                     <AvatarFallback className="text-xs">{getUserInitials(u)}</AvatarFallback>
                   </Avatar>
                   <span className="text-sm flex-1 truncate">{getUserDisplayName(u)}</span>

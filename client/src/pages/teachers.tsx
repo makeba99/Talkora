@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -407,7 +408,7 @@ function TeacherCard({ teacher, onView, onBook, isLoggedIn }: { teacher: Teacher
         <div className="flex items-start gap-3.5">
           <div className="neu-avatar-plate">
             <Avatar className="w-full h-full">
-              <AvatarImage src={teacher.avatarUrl || undefined} />
+              <AvatarImage src={teacher.avatarUrl || undefined} alt="" />
               <AvatarFallback
                 className="text-base font-extrabold tracking-wide"
                 style={{
@@ -640,7 +641,7 @@ function BookingDialog({
                 )}
                 <div className="neu-avatar-plate" style={{ width: 44, height: 44 }}>
                   <Avatar className="w-full h-full">
-                    <AvatarImage src={teacher.avatarUrl || undefined} />
+                    <AvatarImage src={teacher.avatarUrl || undefined} alt="" />
                     <AvatarFallback
                       style={{
                         background: "linear-gradient(140deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
@@ -1025,7 +1026,7 @@ function TeacherProfileDialog({
                   style={{ background: "linear-gradient(135deg, rgba(0,200,255,0.7) 0%, rgba(110,60,255,0.7) 100%)" }}
                 >
                   <Avatar className="w-20 h-20 border-2 border-background">
-                    <AvatarImage src={teacher.avatarUrl || undefined} />
+                    <AvatarImage src={teacher.avatarUrl || undefined} alt="" />
                     <AvatarFallback className="text-2xl font-bold" style={{ background: "rgba(0,200,255,0.1)" }}>
                       {teacher.name.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -1175,7 +1176,7 @@ function TeacherProfileDialog({
                       >
                         <div className="flex items-center gap-2 mb-1.5">
                           <Avatar className="w-7 h-7">
-                            <AvatarImage src={r.user?.profileImageUrl || undefined} />
+                            <AvatarImage src={r.user?.profileImageUrl || undefined} alt="" />
                             <AvatarFallback className="text-[10px]">{getInitials(r.user)}</AvatarFallback>
                           </Avatar>
                           <span className="text-[12px] font-medium text-white/80">{getDisplayName(r.user)}</span>
@@ -1283,6 +1284,11 @@ function MyBookingCard({ booking, onCancel }: { booking: BookingWithTeacher; onC
 }
 
 export default function TeachersPage() {
+  useDocumentMeta({
+    title: "Book a language teacher",
+    description:
+      "Browse and book verified language teachers on Vextorn. Filter by language, level, price, rating and availability.",
+  });
   const { user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();

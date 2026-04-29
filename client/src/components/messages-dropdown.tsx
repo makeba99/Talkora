@@ -175,7 +175,7 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
                     data-testid={`conversation-${conv.otherUserId}`}
                   >
                     <Avatar className="w-9 h-9 flex-shrink-0">
-                      <AvatarImage src={otherUser?.profileImageUrl || undefined} />
+                      <AvatarImage src={otherUser?.profileImageUrl || undefined} alt="" />
                       <AvatarFallback className="text-xs bg-primary/10 text-primary">
                         {getUserInitials(otherUser)}
                       </AvatarFallback>

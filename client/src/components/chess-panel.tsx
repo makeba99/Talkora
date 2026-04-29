@@ -377,7 +377,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
           {seat ? (
             <>
               <Avatar className="w-6 h-6">
-                {seat.avatar ? <AvatarImage src={seat.avatar} /> : null}
+                {seat.avatar ? <AvatarImage src={seat.avatar} alt="" /> : null}
                 <AvatarFallback className="text-[10px]">{seat.username?.[0]?.toUpperCase() || "?"}</AvatarFallback>
               </Avatar>
               <span className="text-xs font-medium truncate" data-testid={`text-chess-${color}-name`}>{seat.username}</span>
@@ -564,7 +564,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
                   <div key={p.id} className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-muted/40" data-testid={`row-challenge-${p.id}`}>
                     <div className="flex items-center gap-2 min-w-0">
                       <Avatar className="w-7 h-7">
-                        {p.profileImageUrl ? <AvatarImage src={p.profileImageUrl} /> : null}
+                        {p.profileImageUrl ? <AvatarImage src={p.profileImageUrl} alt="" /> : null}
                         <AvatarFallback className="text-[10px]">{nameOf(p)[0]?.toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <span className="text-xs truncate">{nameOf(p)}</span>
@@ -626,7 +626,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
                       <div key={p.id} className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-muted/40">
                         <div className="flex items-center gap-2">
                           <Avatar className="w-7 h-7">
-                            {p.profileImageUrl ? <AvatarImage src={p.profileImageUrl} /> : null}
+                            {p.profileImageUrl ? <AvatarImage src={p.profileImageUrl} alt="" /> : null}
                             <AvatarFallback className="text-[10px]">{nameOf(p)[0]?.toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <span className="text-xs">{nameOf(p)}</span>
@@ -775,7 +775,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
                 <span className="flex flex-col gap-2 mt-2">
                   <span className="flex items-center gap-2">
                     <Avatar className="w-8 h-8">
-                      {incoming.fromAvatar ? <AvatarImage src={incoming.fromAvatar} /> : null}
+                      {incoming.fromAvatar ? <AvatarImage src={incoming.fromAvatar} alt="" /> : null}
                       <AvatarFallback>{incoming.fromUsername?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <span>
@@ -814,7 +814,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
               {incomingTtt ? (
                 <span className="flex items-center gap-2 mt-2">
                   <Avatar className="w-8 h-8">
-                    {incomingTtt.fromAvatar ? <AvatarImage src={incomingTtt.fromAvatar} /> : null}
+                    {incomingTtt.fromAvatar ? <AvatarImage src={incomingTtt.fromAvatar} alt="" /> : null}
                     <AvatarFallback>{incomingTtt.fromUsername?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <span>

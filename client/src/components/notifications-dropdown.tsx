@@ -229,7 +229,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
                       </div>
                     ) : (
                       <Avatar className="w-8 h-8 flex-shrink-0">
-                        <AvatarImage src={fromUser?.profileImageUrl || undefined} />
+                        <AvatarImage src={fromUser?.profileImageUrl || undefined} alt="" />
                         <AvatarFallback className="text-xs bg-primary/10 text-primary">
                           {getUserInitials(fromUser)}
                         </AvatarFallback>

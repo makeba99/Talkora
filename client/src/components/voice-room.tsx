@@ -391,7 +391,7 @@ function ParticipantCard({
         <div className="flex flex-col p-3 gap-3">
           <div className="flex gap-3 items-start">
              <Avatar className="w-16 h-16 rounded-md border border-border flex-shrink-0">
-                <AvatarImage src={p.profileImageUrl || undefined} />
+                <AvatarImage src={p.profileImageUrl || undefined} alt="" />
                 <AvatarFallback className="bg-muted text-lg">{getUserInitials(p)}</AvatarFallback>
              </Avatar>
              <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -4865,7 +4865,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   const mediaBlock = wMediaUrls.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {wMediaUrls.map((url, i) => (
-                        <img key={i} src={url} alt="welcome" className="max-h-40 rounded-lg object-cover" data-testid={`img-welcome-media-${msg.id}-${i}`} />
+                        <img loading="lazy" decoding="async" key={i} src={url} alt="welcome" className="max-h-40 rounded-lg object-cover" data-testid={`img-welcome-media-${msg.id}-${i}`} />
                       ))}
                     </div>
                   ) : null;
@@ -4913,7 +4913,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       <div className="flex items-center gap-3 px-3 py-2.5">
                         <div className="relative flex-shrink-0">
                           <Avatar className="w-10 h-10 ring-2" style={{ "--ring-color": bColor } as any}>
-                            <AvatarImage src={msg.badgeUserAvatar ?? undefined} />
+                            <AvatarImage src={msg.badgeUserAvatar ?? undefined} alt="" />
                             <AvatarFallback className="text-sm font-bold" style={{ background: `${bColor}25`, color: bColor }}>{bInitials}</AvatarFallback>
                           </Avatar>
                           <span className="absolute -bottom-0.5 -right-0.5 text-sm leading-none">{msg.badgeEmoji}</span>
@@ -4979,7 +4979,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   >
                     <div className={`rounded-full p-[2px] bg-gradient-to-br ${gradient} flex-shrink-0 mt-0.5 shadow-sm`}>
                       <Avatar className="w-8 h-8 border border-background/80">
-                        <AvatarImage src={msgUser?.profileImageUrl || undefined} />
+                        <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
                         <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
                           {getUserInitials(msgUser)}
                         </AvatarFallback>
@@ -5121,7 +5121,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   data-testid={`mention-option-${p.id}`}
                 >
                   <Avatar className="w-6 h-6">
-                    <AvatarImage src={p.profileImageUrl || ""} />
+                    <AvatarImage src={p.profileImageUrl || ""} alt="" />
                     <AvatarFallback className="text-[10px]">{getUserInitials(p)}</AvatarFallback>
                   </Avatar>
                   <span>{getUserDisplayName(p)}</span>
@@ -5236,7 +5236,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           data-testid={`button-private-to-${p.id}`}
                         >
                           <Avatar className="w-5 h-5 flex-shrink-0">
-                            <AvatarImage src={p.profileImageUrl || ""} />
+                            <AvatarImage src={p.profileImageUrl || ""} alt="" />
                             <AvatarFallback className="text-[8px]">{getUserInitials(p)}</AvatarFallback>
                           </Avatar>
                           <span className="text-[12px] font-medium truncate">{getUserDisplayName(p)}</span>
@@ -5419,7 +5419,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     <div key={item.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted/20 transition-colors group" data-testid={`queue-item-${item.id}`}>
                       <span className="text-[10px] text-muted-foreground/50 font-mono w-3 flex-shrink-0">{idx + 1}</span>
                       {item.thumbnail ? (
-                        <img src={item.thumbnail} alt="" className="w-12 h-8 rounded object-cover flex-shrink-0 bg-muted" />
+                        <img loading="lazy" decoding="async" src={item.thumbnail} alt="" className="w-12 h-8 rounded object-cover flex-shrink-0 bg-muted" />
                       ) : (
                         <div className="w-12 h-8 rounded bg-muted flex-shrink-0 flex items-center justify-center">
                           <Youtube className="w-3 h-3 text-muted-foreground/40" />
@@ -5472,7 +5472,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         data-testid={`button-youtube-result-${video.id}`}
                       >
                         <div className="relative w-full aspect-video bg-muted overflow-hidden cursor-pointer" onClick={() => handleSelectYoutubeVideo(video.id)}>
-                          <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                          <img loading="lazy" decoding="async" src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                           {video.duration && (
                             <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
@@ -5566,7 +5566,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         className="rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:border-border/50 transition-all duration-150 group"
                       >
                         <div className="relative w-full aspect-video bg-muted overflow-hidden cursor-pointer" onClick={() => handleSelectYoutubeVideo(video.id)}>
-                          <img src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                          <img loading="lazy" decoding="async" src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                           {video.duration && (
                             <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
@@ -5621,7 +5621,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
             <div className="flex items-start gap-2">
               {sharedBook.formats?.["image/jpeg"] && (
-                <img src={sharedBook.formats["image/jpeg"]} alt="" className="w-8 h-11 rounded object-cover flex-shrink-0 bg-muted" />
+                <img loading="lazy" decoding="async" src={sharedBook.formats["image/jpeg"]} alt="" className="w-8 h-11 rounded object-cover flex-shrink-0 bg-muted" />
               )}
               <div className="min-w-0">
                 <p className="text-xs font-medium line-clamp-2">{sharedBook.title}</p>
@@ -5645,7 +5645,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             <div className="p-3 rounded-xl border space-y-3">
               <div className="flex items-start gap-2">
                 {selectedBook.formats?.["image/jpeg"] ? (
-                  <img src={selectedBook.formats["image/jpeg"]} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0 bg-muted" />
+                  <img loading="lazy" decoding="async" src={selectedBook.formats["image/jpeg"]} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0 bg-muted" />
                 ) : (
                   <div className="w-10 h-14 rounded bg-muted flex-shrink-0 flex items-center justify-center">
                     <BookOpen className="w-4 h-4 text-muted-foreground" />
@@ -5761,7 +5761,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     data-testid={`button-book-${book.id}`}
                   >
                     {book.formats?.["image/jpeg"] ? (
-                      <img src={book.formats["image/jpeg"]} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
+                      <img loading="lazy" decoding="async" src={book.formats["image/jpeg"]} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
                     ) : (
                       <div className="w-12 h-16 rounded bg-muted flex-shrink-0 flex items-center justify-center">
                         <BookOpen className="w-5 h-5 text-muted-foreground" />
@@ -5831,7 +5831,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         data-testid={`button-video-${v.id}`}
                       >
                         {v.thumbnail ? (
-                          <img src={v.thumbnail} alt="" className="w-16 h-10 rounded object-cover flex-shrink-0 bg-muted" />
+                          <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="w-16 h-10 rounded object-cover flex-shrink-0 bg-muted" />
                         ) : (
                           <div className="w-16 h-10 rounded bg-muted flex-shrink-0 flex items-center justify-center">
                             <Tv className="w-4 h-4 text-muted-foreground" />
@@ -5862,7 +5862,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         data-testid={`link-catalog-${c.key?.replace(/\W/g, '')}`}
                       >
                         {c.coverUrl ? (
-                          <img src={c.coverUrl} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
+                          <img loading="lazy" decoding="async" src={c.coverUrl} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
                         ) : (
                           <div className="w-12 h-16 rounded bg-muted flex-shrink-0 flex items-center justify-center">
                             <BookOpen className="w-5 h-5 text-muted-foreground" />
@@ -6156,7 +6156,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   >
                     <div className="relative flex-shrink-0">
                       <Avatar className="w-8 h-8">
-                        <AvatarImage src={u.profileImageUrl ?? undefined} />
+                        <AvatarImage src={u.profileImageUrl ?? undefined} alt="" />
                         <AvatarFallback className="text-[10px] font-semibold" style={{ background: "hsla(var(--neu-orange-lo) / 0.40)", color: "hsla(var(--neu-orange-hi) / 0.95)" }}>
                           {getUserInitials(u)}
                         </AvatarFallback>
@@ -6233,7 +6233,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             >
               <div className="text-lg leading-none animate-bounce" aria-hidden="true">🚪</div>
               <Avatar className="w-9 h-9 flex-shrink-0">
-                <AvatarImage src={knock.userAvatar || undefined} />
+                <AvatarImage src={knock.userAvatar || undefined} alt="" />
                 <AvatarFallback className="text-xs bg-amber-500/20 text-amber-200">
                   {(knock.userName || "?").slice(0, 2).toUpperCase()}
                 </AvatarFallback>
@@ -6846,7 +6846,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 <div className="grid grid-cols-3 gap-2">
                   {welcomeMediaUrlsState.map((url, i) => (
                     <div key={i} className="relative group overflow-hidden rounded-lg border border-border/50 bg-background/60" data-testid={`card-welcome-media-${i}`}>
-                      <img src={url} alt={`welcome media ${i + 1}`} className="h-20 w-full object-cover" data-testid={`img-welcome-media-${i}`} />
+                      <img loading="lazy" decoding="async" src={url} alt={`welcome media ${i + 1}`} className="h-20 w-full object-cover" data-testid={`img-welcome-media-${i}`} />
                       {welcomeMediaTypesState[i] === "gif" && (
                         <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-pink-500/90 text-white text-[9px] font-bold uppercase tracking-wide">gif</span>
                       )}
@@ -7096,7 +7096,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         </div>
                         <div className="flex flex-col items-center gap-1.5 pb-3">
                           <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
-                            <AvatarImage src={ownerAvatar} />
+                            <AvatarImage src={ownerAvatar} alt="" />
                             <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
                           </Avatar>
                           <p className="text-sm font-medium text-white">{ownerName}</p>
@@ -7199,7 +7199,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                      const fP = participants.find(p => p.id === focusedUserId);
                      if (!fP) return null;
                      return fP.profileImageUrl ? (
-                       <img src={fP.profileImageUrl} className="w-full h-full object-cover pointer-events-auto" />
+                       <img loading="lazy" decoding="async" src={fP.profileImageUrl} className="w-full h-full object-cover pointer-events-auto" />
                      ) : (
                        <div className="w-full h-full bg-slate-800 flex items-center justify-center pointer-events-auto">
                           <span className="text-7xl font-bold bg-transparent text-primary">{getUserInitials(fP as Participant)}</span>
@@ -7440,7 +7440,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         {sender && (
                           <div className="flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full pl-0.5 pr-2 py-0.5 border border-white/15 shadow-md">
                             <Avatar className="w-4 h-4">
-                              <AvatarImage src={sender.profileImageUrl || undefined} />
+                              <AvatarImage src={sender.profileImageUrl || undefined} alt="" />
                               <AvatarFallback className="text-[8px] bg-purple-500/40 text-white">
                                 {senderName.slice(0, 1).toUpperCase()}
                               </AvatarFallback>
@@ -7644,7 +7644,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                               title={reader ? getUserDisplayName(reader) : readerId}
                             >
                               {reader?.profileImageUrl ? (
-                                <img src={reader.profileImageUrl} className="w-full h-full object-cover" />
+                                <img loading="lazy" decoding="async" src={reader.profileImageUrl} className="w-full h-full object-cover" />
                               ) : (
                                 <div className={`w-full h-full bg-gradient-to-br ${rGrad} flex items-center justify-center`}>
                                   <span className="text-[6px] font-bold text-white">{reader ? getUserInitials(reader) : "?"}</span>
@@ -7768,7 +7768,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
                 <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-green-500/70 bg-green-700 flex items-center justify-center">
                   {user?.profileImageUrl ? (
-                    <img src={user.profileImageUrl} className="w-full h-full object-cover rounded-full" />
+                    <img loading="lazy" decoding="async" src={user.profileImageUrl} className="w-full h-full object-cover rounded-full" />
                   ) : (
                     <span className="text-[10px] font-bold text-white">{getUserInitials(user as any)}</span>
                   )}
@@ -7846,7 +7846,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
                     <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-orange-500/60 bg-orange-900/60 flex items-center justify-center">
                       {(sharer as any).profileImageUrl ? (
-                        <img src={(sharer as any).profileImageUrl} className="w-full h-full object-cover rounded-full" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        <img loading="lazy" decoding="async" src={(sharer as any).profileImageUrl} className="w-full h-full object-cover rounded-full" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                       ) : (
                         <span className="text-[10px] font-bold text-white">{getUserInitials(sharer as any)}</span>
                       )}
@@ -7887,7 +7887,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
                 <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-orange-500/60 bg-orange-900/60 flex items-center justify-center">
                   {user?.profileImageUrl ? (
-                    <img src={user.profileImageUrl} className="w-full h-full object-cover rounded-full" />
+                    <img loading="lazy" decoding="async" src={user.profileImageUrl} className="w-full h-full object-cover rounded-full" />
                   ) : (
                     <span className="text-[10px] font-bold text-white">{getUserInitials(user as any)}</span>
                   )}
@@ -7935,7 +7935,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                                 title={watcher ? getUserDisplayName(watcher) : watcherId}
                               >
                                 {watcher?.profileImageUrl ? (
-                                  <img src={watcher.profileImageUrl} className="w-full h-full object-cover" />
+                                  <img loading="lazy" decoding="async" src={watcher.profileImageUrl} className="w-full h-full object-cover" />
                                 ) : (
                                   <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
                                     <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
@@ -7977,7 +7977,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                                   data-testid={`yt-watcher-avatar-${p.id}-${watcherId}`}
                                 >
                                   {watcher?.profileImageUrl ? (
-                                    <img src={watcher.profileImageUrl} className="w-full h-full object-cover" />
+                                    <img loading="lazy" decoding="async" src={watcher.profileImageUrl} className="w-full h-full object-cover" />
                                   ) : (
                                     <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
                                       <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
@@ -8014,7 +8014,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                                     title={reader ? getUserDisplayName(reader) : readerId}
                                   >
                                     {reader?.profileImageUrl ? (
-                                      <img src={reader.profileImageUrl} className="w-full h-full object-cover" />
+                                      <img loading="lazy" decoding="async" src={reader.profileImageUrl} className="w-full h-full object-cover" />
                                     ) : (
                                       <div className={`w-full h-full bg-gradient-to-br ${rGrad} flex items-center justify-center`}>
                                         <span className="text-[7px] font-bold text-white">{reader ? getUserInitials(reader) : "?"}</span>
@@ -8373,7 +8373,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <NeumorphicPersonaCard
                     testId="button-persona-eva"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Eva"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="0,225,255" intense content={<img src={evaAvatarUrl} alt="Eva avatar" className="w-full h-full object-cover rounded-full" data-testid="img-eva-avatar" />} />}
+                    avatar={<NeumorphicAvatarRing glowRgb="0,225,255" intense content={<img loading="lazy" decoding="async" src={evaAvatarUrl} alt="Eva avatar" className="w-full h-full object-cover rounded-full" data-testid="img-eva-avatar" />} />}
                     name="Eva"
                     badge="NEW AI"
                     description="ElevenLabs · Natural & expressive"
@@ -8624,7 +8624,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
                     style={{ border: "1.5px solid rgba(0,225,255,0.50)", boxShadow: "0 0 8px rgba(0,225,255,0.30)" }}>
-                    <img src="/ai-face.png" alt="AI" className="w-full h-full object-cover object-top" />
+                    <img loading="lazy" decoding="async" src="/ai-face.png" alt="AI" className="w-full h-full object-cover object-top" />
                   </div>
                   <div>
                     <span className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>AI Tutor Chat</span>
@@ -9342,7 +9342,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           <div className="bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
             <div className="flex items-start gap-3 p-3">
               <Avatar className="w-10 h-10 flex-shrink-0 rounded-md">
-                <AvatarImage src={roomDmNotification.fromUser?.profileImageUrl || undefined} />
+                <AvatarImage src={roomDmNotification.fromUser?.profileImageUrl || undefined} alt="" />
                 <AvatarFallback className="rounded-md bg-primary/20 text-primary text-sm font-bold">
                   {getUserInitials(roomDmNotification.fromUser)}
                 </AvatarFallback>

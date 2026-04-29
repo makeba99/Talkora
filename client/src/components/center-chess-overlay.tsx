@@ -397,7 +397,7 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                 {/* Black player + clock */}
                 <div className={`flex items-center gap-2 mb-2 px-1 ${fullscreen ? "w-full" : ""}`} data-testid="chess-overlay-black">
                   <Avatar className="w-7 h-7">
-                    {state?.black?.avatar ? <AvatarImage src={state.black.avatar} /> : null}
+                    {state?.black?.avatar ? <AvatarImage src={state.black.avatar} alt="" /> : null}
                     <AvatarFallback className="text-[10px] bg-zinc-800 text-zinc-200">{state?.black?.username?.[0]?.toUpperCase() || "?"}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col leading-tight">
@@ -464,7 +464,7 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                 {/* White player + clock */}
                 <div className={`flex items-center gap-2 mt-2 px-1 ${fullscreen ? "w-full" : ""}`} data-testid="chess-overlay-white">
                   <Avatar className="w-7 h-7">
-                    {state?.white?.avatar ? <AvatarImage src={state.white.avatar} /> : null}
+                    {state?.white?.avatar ? <AvatarImage src={state.white.avatar} alt="" /> : null}
                     <AvatarFallback className="text-[10px] bg-zinc-100 text-zinc-800">{state?.white?.username?.[0]?.toUpperCase() || "?"}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col leading-tight">

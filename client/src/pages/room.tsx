@@ -11,6 +11,12 @@ export default function RoomPage() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
+  useDocumentMeta({
+    title: "Voice room",
+    description:
+      "Talk live with the room — Vextorn voice rooms keep your conversation private and high-quality.",
+    noIndex: true,
+  });
   const accessKey = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("key") : null;
 
   const { data: room, isLoading, isError } = useQuery<Room>({

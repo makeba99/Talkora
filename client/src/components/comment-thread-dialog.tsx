@@ -212,7 +212,7 @@ export function CommentThreadDialog({ targetUser, targetUserName, onClose }: Com
                 <div key={c.id} className="flex gap-2.5 group" data-testid={`comment-${c.id}`}>
                   <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-cyan-400/30 to-violet-400/30 flex items-center justify-center text-xs font-bold text-white border border-white/10">
                     {avatar ? (
-                      <img src={avatar} alt={name} className="w-full h-full object-cover" />
+                      <img loading="lazy" decoding="async" src={avatar} alt={name} className="w-full h-full object-cover" />
                     ) : (
                       getInitials(name)
                     )}
@@ -247,7 +247,7 @@ export function CommentThreadDialog({ targetUser, targetUserName, onClose }: Com
           className="flex items-center gap-2 px-4 py-3 border-t border-white/10 flex-shrink-0"
         >
           {user?.profileImageUrl ? (
-            <img src={user.profileImageUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-white/15" />
+            <img loading="lazy" decoding="async" src={user.profileImageUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-white/15" />
           ) : (
             <div className="w-7 h-7 rounded-full flex-shrink-0 border border-white/15 bg-gradient-to-br from-cyan-400/20 to-violet-400/20 flex items-center justify-center text-[10px] font-bold text-white/70">
               {user ? getInitials(`${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || "U") : "?"}

@@ -113,7 +113,7 @@ export function ReportDialog({
           {/* Reported user inline */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <Avatar className="w-8 h-8 border flex-shrink-0" style={{ borderColor: "rgba(239,68,68,0.35)" }}>
-              <AvatarImage src={reportedUser.profileImageUrl || undefined} />
+              <AvatarImage src={reportedUser.profileImageUrl || undefined} alt="" />
               <AvatarFallback className="text-xs font-bold text-white" style={{ background: "#1e2533" }}>
                 {reportedUser.initials || displayName[0]}
               </AvatarFallback>

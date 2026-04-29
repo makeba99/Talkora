@@ -12,10 +12,14 @@
 
     <!-- PWA / Theme -->
     <meta name="theme-color" content="#0d0b18" />
-    <meta name="color-scheme" content="dark" />
+    <!-- Allow UA to render light-mode form controls/scrollbars where the user
+         has forced light mode for accessibility, while still preferring dark. -->
+    <meta name="color-scheme" content="dark light" />
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- Favicon + Apple touch icons -->
+    <!-- Favicon: SVG-first (1.2 KB) so we never ship the legacy 350 KB PNG
+         on first paint. The 192 PNG is kept only for OS-level tile/install
+         contexts where SVG isn't honored. -->
     <link rel="icon" type="image/svg+xml" href="/vextorn-mark.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="/vextorn-icon-192.png" />
     <link rel="apple-touch-icon" href="/vextorn-icon-192.png" />
@@ -33,30 +37,63 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Vextorn — Talk. Share. Belong." />
     <meta property="og:description" content="Join live audio rooms to practice any language with real people around the world." />
-    <meta property="og:image" content="/vextorn-icon-512.png" />
+    <meta property="og:image" content="https://vextorn.com/vextorn-icon-512.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Vextorn — live voice rooms for language practice" />
     <meta property="og:site_name" content="Vextorn" />
+    <meta property="og:url" content="https://vextorn.com/" />
+    <meta property="og:locale" content="en_US" />
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary" />
+    <!-- Twitter Card: large image gives us the big preview, not the small thumbnail -->
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Vextorn — Talk. Share. Belong." />
     <meta name="twitter:description" content="Real-time voice rooms for language practice and community." />
-    <meta name="twitter:image" content="/vextorn-icon-512.png" />
+    <meta name="twitter:image" content="https://vextorn.com/vextorn-icon-512.png" />
+    <meta name="twitter:image:alt" content="Vextorn — live voice rooms for language practice" />
 
     <!-- SEO: canonical + robots + structured data -->
     <link rel="canonical" href="https://vextorn.com/" />
     <meta name="robots" content="index, follow" />
+    <meta name="format-detection" content="telephone=no" />
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Vextorn",
-      "alternateName": "Vextorn — Talk. Share. Belong.",
-      "url": "https://vextorn.com/",
-      "description": "Vextorn is a real-time, voice-first community where you join live audio rooms by language and level to talk, share, and belong.",
-      "applicationCategory": "CommunicationApplication",
-      "operatingSystem": "Web, iOS, Android",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-      "publisher": { "@type": "Organization", "name": "Vextorn", "logo": "/vextorn-icon-512.png" }
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://vextorn.com/#organization",
+          "name": "Vextorn",
+          "url": "https://vextorn.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://vextorn.com/vextorn-icon-512.png",
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://vextorn.com/#website",
+          "url": "https://vextorn.com/",
+          "name": "Vextorn",
+          "description": "Real-time voice rooms for language practice and community.",
+          "publisher": { "@id": "https://vextorn.com/#organization" },
+          "inLanguage": "en"
+        },
+        {
+          "@type": "WebApplication",
+          "name": "Vextorn",
+          "alternateName": "Vextorn — Talk. Share. Belong.",
+          "url": "https://vextorn.com/",
+          "description": "Vextorn is a real-time, voice-first community where you join live audio rooms by language and level to talk, share, and belong.",
+          "applicationCategory": "CommunicationApplication",
+          "operatingSystem": "Web, iOS, Android",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "publisher": { "@id": "https://vextorn.com/#organization" }
+        }
+      ]
     }
     </script>
 

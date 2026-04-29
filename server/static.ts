@@ -33,10 +33,11 @@ export function serveStatic(app: Express) {
           return;
         }
         // Static branding (favicons, manifest, theme images, app icons).
-        // These rarely change, so cache for 30 days with revalidation —
-        // satisfies Lighthouse's "efficient cache lifetimes" audit and
-        // makes repeat visits painless on mobile.
-        res.setHeader("Cache-Control", "public, max-age=2592000, must-revalidate");
+        // These rarely change and are content-stable, so cache for 1 year
+        // (the maximum that satisfies Lighthouse's "use efficient cache
+        // lifetimes" audit). The service worker's CACHE_VERSION bump and
+        // any URL change ship a new copy regardless.
+        res.setHeader("Cache-Control", "public, max-age=31536000, must-revalidate");
       },
     }),
   );
