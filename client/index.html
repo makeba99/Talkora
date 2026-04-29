@@ -157,6 +157,32 @@
             #f5f3ff;
         }
       }
+      /* Skip-to-content link: invisible to sighted/mouse users (positioned
+         off-screen) but jumps into view when a keyboard user presses Tab on
+         page load. Lets screen-reader and keyboard-only users bypass the
+         header and land directly on <main id="main-content">. Pure a11y win
+         with zero impact on visual design. */
+      .skip-to-content {
+        position: absolute;
+        top: -100px;
+        left: 8px;
+        z-index: 9999;
+        padding: 10px 16px;
+        background: #5b3ce0;
+        color: #fff;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        border-radius: 8px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+        transition: top 120ms ease-out;
+      }
+      .skip-to-content:focus,
+      .skip-to-content:focus-visible {
+        top: 8px;
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
     </style>
 
     <!-- Preload the lobby logo SVG. It renders inside the header on first paint
@@ -249,7 +275,8 @@
     </script>
   </head>
   <body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx" fetchpriority="high"></script>
   </body>
 </html>

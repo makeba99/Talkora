@@ -89,6 +89,19 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
     html = html.replace(/<\/head>/i, `${injection}\n  </head>`);
   }
 
+  // Ensure the entry module script gets `fetchpriority="high"`. Vite *may*
+  // preserve the attribute from our source index.html when it rewrites the
+  // script's src to the hashed bundle path, but if any plugin in the chain
+  // strips it we want it back — it tells the browser to prioritize the
+  // LCP-blocking JS over any other discovered resources on the page.
+  html = html.replace(
+    /<script\b([^>]*?)\s+src=("[^"]+\/assets\/index-[\w-]+\.js")([^>]*)><\/script>/i,
+    (match, before, src, after) => {
+      if (/fetchpriority\s*=/i.test(match)) return match;
+      return `<script${before} src=${src}${after} fetchpriority="high"></script>`;
+    },
+  );
+
   // Build the Link HTTP header — this beats the in-HTML link tags by a
   // round-trip because the browser sees it before HTML parsing starts.
   // Limit to ~6 entries to stay under common 8 KB header limits.
