@@ -374,6 +374,24 @@ Badge applications table (shared/schema.ts):
   is mounted in the lobby. It targets `.app-scrollbar` (lobby's
   internal scroll surface), shows a fat neumorphic up/down pill on
   the right edge, and auto-hides when the page is not scrollable.
+  On mobile (`<= 640px`) the buttons jump to 44×44 tap targets with a
+  stronger glow, and the pill keeps a faint baseline opacity so it's
+  always discoverable on touch devices that have no hover state.
+- A **PinnedSocialsButton**
+  (`client/src/components/pinned-socials-button.tsx`) is rendered in
+  the lobby for signed-in users when they enable "Pin socials to side"
+  in their profile editor. It shows a round floating button on the
+  right edge (below the scroll-jump pill) that fans out the user's
+  Instagram / LinkedIn / Facebook links, free4talk-style. Backed by
+  a `socials_pinned` boolean column on the `users` table (added via
+  `shared/models/auth.ts` and synced with `npm run db:push --force`),
+  whitelisted in `PATCH /api/users/:id`, and toggled in
+  `profile-dropdown.tsx` next to the social URL inputs.
+- The onboarding tour's bottom-left **Tour relauncher** capsule has a
+  small dismiss `X` that hides it permanently. On touch / mobile
+  (`@media (hover: none), (max-width: 640px)`) the X stays visible by
+  default (instead of only on hover) so mobile users can actually
+  close it.
 
 ## User Preferences
 - No landing page gate - lobby always shown

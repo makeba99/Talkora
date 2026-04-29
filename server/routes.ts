@@ -1203,7 +1203,7 @@ export async function registerRoutes(
       if (userId !== req.params.id) {
         return res.status(403).json({ message: "Cannot update other users" });
       }
-      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, instagramUrl, linkedinUrl, facebookUrl } = req.body;
+      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, instagramUrl, linkedinUrl, facebookUrl, socialsPinned } = req.body;
       const updateData: any = {};
       if (displayName !== undefined) updateData.displayName = displayName;
       if (profileImageUrl !== undefined) updateData.profileImageUrl = normalizeProfileImageUrl(profileImageUrl);
@@ -1214,6 +1214,7 @@ export async function registerRoutes(
       if (instagramUrl !== undefined) updateData.instagramUrl = instagramUrl;
       if (linkedinUrl !== undefined) updateData.linkedinUrl = linkedinUrl;
       if (facebookUrl !== undefined) updateData.facebookUrl = facebookUrl;
+      if (socialsPinned !== undefined) updateData.socialsPinned = !!socialsPinned;
       const updated = await storage.updateUser(userId, updateData);
       res.json(updated);
     } catch (err: any) {

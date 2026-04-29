@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const sessions = pgTable(
   "sessions",
@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   instagramUrl: varchar("instagram_url"),
   linkedinUrl: varchar("linkedin_url"),
   facebookUrl: varchar("facebook_url"),
+  socialsPinned: boolean("socials_pinned").notNull().default(false),
   status: text("status").notNull().default("offline"),
   role: varchar("role", { length: 20 }).notNull().default("user"),
   warningCount: integer("warning_count").notNull().default(0),

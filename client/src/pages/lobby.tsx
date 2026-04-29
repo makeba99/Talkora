@@ -28,6 +28,9 @@ const NotificationsDropdown = lazy(() =>
 const ProfileDropdown = lazy(() =>
   import("@/components/profile-dropdown").then((m) => ({ default: m.ProfileDropdown }))
 );
+const PinnedSocialsButton = lazy(() =>
+  import("@/components/pinned-socials-button").then((m) => ({ default: m.PinnedSocialsButton }))
+);
 
 // Heavy lobby surfaces that only mount on user interaction (clicks, hover,
 // or the once-per-session onboarding gate). Lazy-loading them keeps the
@@ -2021,6 +2024,11 @@ export default function Lobby() {
       )}
 
       <ScrollJumpButton />
+      {user && (
+        <Suspense fallback={null}>
+          <PinnedSocialsButton />
+        </Suspense>
+      )}
     </div>
   );
 }

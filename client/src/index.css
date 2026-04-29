@@ -8155,17 +8155,35 @@ html.neomorphic-light .scroll-jump-btn {
   border-color: hsl(var(--neu-orange, 252 90% 50%) / 0.35);
 }
 
-/* mobile: smaller and tighter */
+/* mobile: bigger tap targets + stronger glow so the jumper actually reads as
+   a real "scroll to top/bottom" affordance (44px minimum tap target). */
 @media (max-width: 640px) {
   .scroll-jump {
-    right: 8px;
-    padding: 4px;
-    border-radius: 18px;
+    right: 10px;
+    padding: 5px;
+    border-radius: 22px;
+    border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.07) inset,
+      0 -2px 0 rgba(0, 0, 0, 0.55) inset,
+      0 14px 30px rgba(0, 0, 0, 0.6),
+      0 0 28px hsl(var(--neu-orange, 252 90% 70%) / 0.38);
   }
   .scroll-jump-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+    border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+  }
+  .scroll-jump-spacer {
+    width: 32px;
+  }
+  /* Touch devices have no real hover, so keep the jumper visible a bit longer
+     and easier to discover. */
+  .scroll-jump:not([data-visible="true"]) {
+    opacity: 0.55;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
   }
   .orbit-popover-content {
     width: 290px;
@@ -9633,6 +9651,123 @@ html.boost-mode .header-pro {
   color: hsl(0 0% 100%);
   background: hsl(0 70% 38%);
   border-color: hsl(0 70% 50%);
+}
+/* Touch devices have no real hover, so the dismiss X must always be visible
+   and tappable — otherwise mobile users can never close the tour pill. */
+@media (hover: none), (max-width: 640px) {
+  .onboarding-relaunch-dismiss {
+    opacity: 1;
+    transform: scale(1);
+    width: 22px;
+    height: 22px;
+    top: -8px;
+    right: -8px;
+  }
+  .onboarding-relaunch-dismiss svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* ============================================================================
+   Pinned socials — round floating button on the right edge that fans out the
+   user's saved Instagram / LinkedIn / Facebook links, free4talk-style.
+   Sits below the scroll-jump pill so the two never collide.
+   ============================================================================ */
+.pinned-socials {
+  position: fixed;
+  right: 14px;
+  /* Below the vertically-centered scroll-jump pill. */
+  top: calc(50% + 110px);
+  z-index: 41;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.pinned-socials-toggle,
+.pinned-socials-link {
+  pointer-events: auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 22%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 11%)) 100%
+  );
+  color: hsl(var(--neu-orange-hi, 252 95% 80%));
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 220ms ease, border-color 220ms ease, opacity 200ms ease;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.55) inset,
+    0 8px 18px rgba(0, 0, 0, 0.5),
+    0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.28);
+  text-decoration: none;
+}
+.pinned-socials-toggle:hover,
+.pinned-socials-link:hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.85);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.6) inset,
+    0 10px 22px rgba(0, 0, 0, 0.55),
+    0 0 26px hsl(var(--neu-orange, 252 90% 70%) / 0.5);
+}
+.pinned-socials-toggle:active,
+.pinned-socials-link:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.5),
+    0 0 18px hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+}
+.pinned-socials-fan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: max-height 280ms ease, opacity 220ms ease, transform 240ms ease;
+  pointer-events: none;
+}
+.pinned-socials[data-open="true"] .pinned-socials-fan {
+  max-height: 220px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.pinned-socials-instagram { color: #ec4a8b; }
+.pinned-socials-linkedin  { color: #2d8eff; }
+.pinned-socials-facebook  { color: #4f8bff; }
+
+html.neomorphic-light .pinned-socials-toggle,
+html.neomorphic-light .pinned-socials-link {
+  background: linear-gradient(180deg, #ffffff 0%, #e7e8f0 100%);
+  border-color: hsl(var(--neu-orange, 252 90% 50%) / 0.4);
+}
+
+@media (max-width: 640px) {
+  .pinned-socials {
+    right: 10px;
+    /* Sit a touch lower on mobile to avoid the bigger scroll-jump pill. */
+    top: calc(50% + 130px);
+    gap: 8px;
+  }
+  .pinned-socials-toggle,
+  .pinned-socials-link {
+    width: 46px;
+    height: 46px;
+  }
 }
 
 /* ============================================================================

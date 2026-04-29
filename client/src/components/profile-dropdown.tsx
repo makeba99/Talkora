@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid, Pin, Volume2, VolumeX, Zap, ZapOff } from "lucide-react";
 import { isSoundEnabled, setSoundEnabled, onSoundEnabledChange, sfxToggle } from "@/lib/sound-fx";
@@ -250,6 +251,7 @@ export function ProfileDropdown({
   const [instagramUrl, setInstagramUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
+  const [socialsPinned, setSocialsPinned] = useState(false);
   const [selectedRing, setSelectedRing] = useState<string>("none");
   const [selectedFlair, setSelectedFlair] = useState<string>("none");
   const [selectedDecoration, setSelectedDecoration] = useState<string>("none");
@@ -260,7 +262,7 @@ export function ProfileDropdown({
   const [cropImgSrc, setCropImgSrc] = useState("");
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: { displayName?: string; bio?: string; instagramUrl?: string; linkedinUrl?: string; facebookUrl?: string }) => {
+    mutationFn: async (data: { displayName?: string; bio?: string; instagramUrl?: string; linkedinUrl?: string; facebookUrl?: string; socialsPinned?: boolean }) => {
       const res = await apiRequest("PATCH", `/api/users/${user?.id}`, data);
       return res.json();
     },
@@ -388,6 +390,7 @@ export function ProfileDropdown({
     setInstagramUrl((user as any)?.instagramUrl || "");
     setLinkedinUrl((user as any)?.linkedinUrl || "");
     setFacebookUrl((user as any)?.facebookUrl || "");
+    setSocialsPinned(!!(user as any)?.socialsPinned);
     setEditOpen(true);
   };
 
@@ -810,11 +813,27 @@ export function ProfileDropdown({
                     />
                   </div>
                 </div>
+                <div className="flex items-start justify-between gap-3 rounded-md border border-border/50 bg-muted/30 px-3 py-2">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="socials-pinned-toggle" className="text-sm font-medium">
+                      Pin socials to side
+                    </Label>
+                    <p className="text-xs text-muted-foreground leading-snug">
+                      Adds a round button on the right edge so your socials are always one tap away.
+                    </p>
+                  </div>
+                  <Switch
+                    id="socials-pinned-toggle"
+                    checked={socialsPinned}
+                    onCheckedChange={setSocialsPinned}
+                    data-testid="switch-socials-pinned"
+                  />
+                </div>
               </div>
 
               <Button
                 className="w-full"
-                onClick={() => updateProfileMutation.mutate({ displayName, bio, instagramUrl, linkedinUrl, facebookUrl })}
+                onClick={() => updateProfileMutation.mutate({ displayName, bio, instagramUrl, linkedinUrl, facebookUrl, socialsPinned })}
                 disabled={updateProfileMutation.isPending}
                 data-testid="button-save-profile"
               >
