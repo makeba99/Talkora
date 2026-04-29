@@ -1,0 +1,60 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development ./node_modules/.bin/tsx server/index.ts
+
+[1G[0K[cleanup] 2026-04-29T06:44:52.584Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-04-29T06:44:52.585Z Retention: messages=7d, room_messages=7d, notifications=14d, reports=30d, orphan_files=7d
+[cleanup] 2026-04-29T06:44:52.585Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion (grace=120s)
+[cleanup] 2026-04-29T06:44:52.631Z Cleanup complete in 46ms — files=0 (0 bytes)
+6:44:53 AM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+6:45:00 AM [express] GET /api/auth/user 401 in 8ms
+6:45:01 AM [express] GET /api/rooms 304 in 57ms
+6:45:01 AM [express] POST /api/users/badges/batch 200 in 40ms
+6:45:01 AM [express] GET /api/announcements 304 in 38ms
+6:45:01 AM [express] GET /api/rooms/participants 304 in 1ms
+6:45:01 AM [express] POST /api/rooms/votes/batch 200 in 57ms
+6:45:11 AM [express] GET /api/auth/user 401 in 1ms
+6:45:11 AM [express] GET /api/rooms 200 in 3ms
+6:45:11 AM [express] GET /api/announcements 200 in 3ms
+6:45:11 AM [express] POST /api/users/badges/batch 200 in 3ms
+6:45:11 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+6:45:12 AM [express] GET /api/rooms/participants 200 in 2ms
+6:45:12 AM [express] POST /api/users/badges/batch 200 in 2ms
+6:45:12 AM [express] POST /api/users/badges/batch 200 in 1ms
+6:45:12 AM [express] POST /api/users/badges/batch 200 in 4ms
+6:45:12 AM [express] POST /api/users/badges/batch 200 in 5ms
+6:45:12 AM [express] POST /api/users/badges/batch 200 in 4ms
+6:45:12 AM [express] POST /api/users/badges/batch 200 in 4ms
+6:45:12 AM [express] POST /api/users/badges/batch 200 in 3ms
+6:45:12 AM [express] POST /api/users/badges/batch 200 in 2ms
+6:45:34 AM [express] POST /api/users/badges/batch 200 in 4ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m6:45:38 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mindex.html[22m
