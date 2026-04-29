@@ -1,0 +1,408 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[cleanup] 2026-04-29T08:32:33.574Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-04-29T08:32:33.575Z Retention: messages=7d, room_messages=7d, notifications=14d, reports=30d, orphan_files=7d
+[cleanup] 2026-04-29T08:32:33.575Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion (grace=120s)
+[cleanup] 2026-04-29T08:32:33.605Z Cleanup complete in 30ms — files=0 (0 bytes)
+8:32:34 AM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+8:32:41 AM [express] GET /api/auth/user 401 in 2ms
+8:32:41 AM [express] GET /api/rooms/participants 200 in 1ms
+8:32:41 AM [express] GET /api/rooms 200 in 21ms
+8:32:41 AM [express] GET /api/announcements 200 in 19ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 15ms
+8:32:41 AM [express] POST /api/rooms/votes/batch 200 in 29ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 18ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 17ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 15ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 14ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 4ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 7ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 28ms
+8:32:41 AM [express] POST /api/users/badges/batch 200 in 35ms
+8:32:43 AM [express] GET /api/auth/user 401 in 1ms
+8:32:43 AM [express] GET /api/rooms 200 in 1ms
+8:32:43 AM [express] GET /api/announcements 200 in 3ms
+8:32:43 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+8:32:43 AM [express] POST /api/users/badges/batch 200 in 2ms
+8:32:43 AM [express] GET /api/rooms/participants 200 in 2ms
+8:32:44 AM [express] POST /api/users/badges/batch 200 in 2ms
+8:32:44 AM [express] POST /api/users/badges/batch 200 in 5ms
+8:32:44 AM [express] POST /api/users/badges/batch 200 in 2ms
+8:32:44 AM [express] POST /api/users/badges/batch 200 in 3ms
+8:32:44 AM [express] POST /api/users/badges/batch 200 in 1ms
+8:32:44 AM [express] POST /api/users/badges/batch 200 in 1ms
+8:32:44 AM [express] POST /api/users/badges/batch 200 in 2ms
+8:32:44 AM [express] POST /api/users/badges/batch 200 in 2ms
+8:32:48 AM [express] GET /api/auth/user 401 in 1ms
+8:32:48 AM [express] GET /api/rooms/participants 304 in 1ms
+8:32:48 AM [express] GET /api/rooms 304 in 7ms
+8:32:48 AM [express] POST /api/users/badges/batch 200 in 7ms
+8:32:48 AM [express] GET /api/announcements 304 in 5ms
+8:32:48 AM [express] POST /api/rooms/votes/batch 200 in 5ms
+8:32:54 AM [express] POST /api/users/badges/batch 200 in 2ms
+8:32:57 AM [express] GET /api/login 302 in 146ms
+8:33:04 AM [express] GET /api/callback 302 in 140ms
+8:33:06 AM [express] GET /api/auth/user 200 in 9ms
+8:33:07 AM [express] GET /api/messages/unread/count 200 in 212ms
+8:33:07 AM [express] GET /api/notifications 200 in 56ms
+8:33:07 AM [express] POST /api/users/badges/batch 200 in 8ms
+8:33:07 AM [express] POST /api/rooms/votes/batch 200 in 14ms
+8:33:07 AM [express] GET /api/rooms 304 in 7ms
+8:33:07 AM [express] GET /api/announcements 304 in 8ms
+8:33:07 AM [express] GET /api/users 200 in 8ms
+8:33:07 AM [express] GET /api/users/rooms 200 in 5ms
+8:33:07 AM [express] GET /api/follows/following/58361195 200 in 10ms
+8:33:08 AM [express] GET /api/rooms/participants 304 in 8ms
+8:33:08 AM [express] POST /api/follows/counts 200 in 13ms
+8:33:23 AM [express] GET /api/rooms 304 in 156ms
+8:33:38 AM [express] POST /api/rooms/votes/batch 200 in 93ms
+8:33:38 AM [express] GET /api/announcements 304 in 57ms
+8:33:38 AM [express] GET /api/users/rooms 304 in 81ms
+8:33:38 AM [express] GET /api/rooms/participants 304 in 25ms
+8:33:38 AM [express] GET /api/rooms 304 in 35ms
+8:33:38 AM [express] POST /api/follows/counts 200 in 35ms
+8:33:44 AM [express] POST /api/users/badges/batch 200 in 37ms
+8:33:53 AM [express] GET /api/users 200 in 35ms
+8:33:53 AM [express] GET /api/rooms 304 in 8ms
+8:34:06 AM [express] POST /api/users/badges/batch 200 in 22ms
+8:34:08 AM [express] POST /api/rooms/votes/batch 200 in 5ms
+8:34:08 AM [express] GET /api/users/rooms 304 in 5ms
+8:34:08 AM [express] GET /api/announcements 304 in 17ms
+8:34:08 AM [express] GET /api/rooms/participants 304 in 4ms
+8:34:08 AM [express] POST /api/follows/counts 200 in 6ms
+8:34:09 AM [express] GET /api/rooms 304 in 6ms
+8:34:51 AM [express] POST /api/users/badges/batch 200 in 26ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:35:47 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:36:03 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:36:17 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x3)[39m
+8:36:24 AM [express] GET /api/auth/user 401 in 0ms
+8:36:24 AM [express] GET /api/rooms/participants 304 in 1ms
+8:36:24 AM [express] GET /api/announcements 304 in 20ms
+8:36:24 AM [express] GET /api/rooms 304 in 23ms
+8:36:24 AM [express] POST /api/users/badges/batch 200 in 20ms
+8:36:24 AM [express] POST /api/rooms/votes/batch 200 in 20ms
+8:37:08 AM [express] POST /api/rooms/votes/batch 200 in 17ms
+8:37:08 AM [express] GET /api/users/rooms 304 in 5ms
+8:37:08 AM [express] GET /api/rooms/participants 304 in 14ms
+8:37:08 AM [express] GET /api/announcements 304 in 16ms
+8:37:08 AM [express] POST /api/follows/counts 200 in 7ms
+8:37:09 AM [express] GET /api/rooms 304 in 11ms
+8:37:24 AM [express] GET /api/rooms 304 in 15ms
+8:37:38 AM [express] GET /api/users 304 in 17ms
+8:37:38 AM [express] POST /api/rooms/votes/batch 200 in 6ms
+8:37:39 AM [express] GET /api/users/rooms 304 in 5ms
+8:37:39 AM [express] GET /api/rooms/participants 304 in 14ms
+8:37:39 AM [express] GET /api/announcements 304 in 20ms
+8:37:39 AM [express] POST /api/follows/counts 200 in 5ms
+8:37:40 AM [express] GET /api/rooms 304 in 7ms
+8:37:51 AM [express] GET /api/follows/followers/58361195 200 in 6ms
+8:37:53 AM [express] POST /api/users/badges/batch 200 in 6ms
+8:37:55 AM [express] GET /api/rooms 304 in 5ms
+8:38:08 AM [express] GET /api/auth/user 200 in 32ms
+8:38:09 AM [express] POST /api/rooms/votes/batch 200 in 7ms
+8:38:09 AM [express] GET /api/users/rooms 304 in 5ms
+8:38:09 AM [express] POST /api/follows/counts 200 in 17ms
+8:38:09 AM [express] GET /api/announcements 304 in 18ms
+8:38:09 AM [express] GET /api/rooms/participants 304 in 18ms
+8:38:10 AM [express] GET /api/rooms 304 in 6ms
+8:38:23 AM [express] GET /api/users 304 in 18ms
+8:38:25 AM [express] GET /api/rooms 304 in 5ms
+8:38:39 AM [express] POST /api/rooms/votes/batch 200 in 15ms
+8:38:39 AM [express] GET /api/users/rooms 304 in 5ms
+8:38:39 AM [express] POST /api/follows/counts 200 in 5ms
+8:38:39 AM [express] GET /api/rooms/participants 304 in 3ms
+8:38:39 AM [express] GET /api/announcements 304 in 15ms
+8:38:40 AM [express] GET /api/rooms 304 in 6ms
+8:38:56 AM [express] GET /api/rooms 304 in 18ms
+8:39:07 AM [express] POST /api/users/badges/batch 200 in 70ms
+8:39:08 AM [express] GET /api/users 304 in 6ms
+8:39:09 AM [express] POST /api/rooms/votes/batch 200 in 13ms
+8:39:09 AM [express] GET /api/users/rooms 304 in 5ms
+8:39:09 AM [express] POST /api/follows/counts 200 in 6ms
+8:39:09 AM [express] GET /api/rooms/participants 304 in 15ms
+8:39:09 AM [express] GET /api/announcements 304 in 6ms
+8:39:11 AM [express] GET /api/rooms 304 in 7ms
+8:39:14 AM [express] POST /api/users/badges/batch 200 in 5ms
+8:39:26 AM [express] GET /api/rooms 304 in 16ms
+8:39:29 AM [express] POST /api/users/badges/batch 200 in 6ms
+8:39:39 AM [express] POST /api/rooms/votes/batch 200 in 7ms
+8:39:40 AM [express] GET /api/users/rooms 304 in 5ms
+8:39:40 AM [express] POST /api/follows/counts 200 in 17ms
+8:39:40 AM [express] GET /api/rooms/participants 304 in 14ms
+8:39:40 AM [express] GET /api/announcements 304 in 19ms
+8:39:41 AM [express] GET /api/rooms 304 in 5ms
+8:39:54 AM [express] GET /api/users 304 in 15ms
+8:39:57 AM [express] GET /api/rooms 304 in 5ms
+8:40:10 AM [express] POST /api/rooms/votes/batch 200 in 48ms
+8:40:10 AM [express] GET /api/rooms/participants 304 in 6ms
+8:40:10 AM [express] GET /api/users/rooms 304 in 19ms
+8:40:10 AM [express] POST /api/follows/counts 200 in 19ms
+8:40:10 AM [express] GET /api/announcements 304 in 22ms
+8:40:12 AM [express] GET /api/rooms 304 in 6ms
+8:40:27 AM [express] GET /api/rooms 304 in 16ms
+8:40:39 AM [express] GET /api/users 304 in 14ms
+8:40:40 AM [express] POST /api/rooms/votes/batch 200 in 5ms
+8:40:40 AM [express] GET /api/rooms/participants 304 in 6ms
+8:40:40 AM [express] POST /api/follows/counts 200 in 18ms
+8:40:40 AM [express] GET /api/users/rooms 304 in 19ms
+8:40:40 AM [express] GET /api/announcements 304 in 5ms
+8:40:42 AM [express] GET /api/rooms 304 in 6ms
+8:40:58 AM [express] POST /api/users/badges/batch 200 in 16ms
+8:40:58 AM [express] GET /api/rooms 304 in 6ms
+8:41:10 AM [express] POST /api/rooms/votes/batch 200 in 16ms
+8:41:10 AM [express] GET /api/rooms/participants 304 in 5ms
+8:41:10 AM [express] POST /api/follows/counts 200 in 20ms
+8:41:11 AM [express] GET /api/users/rooms 304 in 38ms
+8:41:11 AM [express] GET /api/announcements 304 in 42ms
+8:41:13 AM [express] GET /api/rooms 304 in 5ms
+8:41:50 AM [express] POST /api/users/badges/batch 200 in 26ms
+8:42:04 AM [express] POST /api/users/badges/batch 200 in 31ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:42:26 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m
+[replit-cartographer] Error processing /home/runner/workspace/client/src/pages/lobby.tsx: SyntaxError: Expected corresponding JSX closing tag for <div>. (2080:6)
+    at toParseError [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parse-error.ts:95:45[90m)[39m
+    at raise [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/tokenizer/index.ts:1503:19[90m)[39m
+    at jsxParseElementAt [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/jsx/index.ts:527:18[90m)[39m
+    at jsxParseElement [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/jsx/index.ts:559:19[90m)[39m
+    at parseExprAtom [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/jsx/index.ts:573:21[90m)[39m
+    at parseExprSubscripts [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:734:23[90m)[39m
+    at parseUpdate [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:713:21[90m)[39m
+    at parseMaybeUnary [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:675:23[90m)[39m
+    at parseMaybeUnary [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/typescript/index.ts:3855:20[90m)[39m
+    at parseMaybeUnaryOrPrivate [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:409:14[90m)[39m
+    at parseExprOps [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:421:23[90m)[39m
+    at parseMaybeConditional [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:376:23[90m)[39m
+    at parseMaybeAssign [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:301:21[90m)[39m
+    at fn [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/typescript/index.ts:3708:23[90m)[39m
+    at tryParse [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/util.ts:174:20[90m)[39m
+    at parseMaybeAssign [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/typescript/index.ts:3707:20[90m)[39m
+    at callback [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:257:12[90m)[39m
+    at allowInAnd [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:3192:12[90m)[39m
+    at parseMaybeAssignAllowIn [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:256:17[90m)[39m
+    at parseMaybeAssignAllowInOrVoidPattern [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:3306:17[90m)[39m
+    at parseParenAndDistinguishExpression [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:1813:16[90m)[39m
+    at parseExprAtom [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:1162:21[90m)[39m
+    at parseExprAtom [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/jsx/index.ts:583:22[90m)[39m
+    at parseExprSubscripts [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:734:23[90m)[39m
+    at parseUpdate [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:713:21[90m)[39m
+    at parseMaybeUnary [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:675:23[90m)[39m
+    at parseMaybeUnary [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/typescript/index.ts:3855:20[90m)[39m
+    at parseMaybeUnaryOrPrivate [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:409:14[90m)[39m
+    at parseExprOps [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:421:23[90m)[39m
+    at parseMaybeConditional [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:376:23[90m)[39m
+    at parseMaybeAssign [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:301:21[90m)[39m
+    at parseMaybeAssign [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/typescript/index.ts:3727:22[90m)[39m
+    at parseExpressionBase [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:226:23[90m)[39m
+    at callback [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:217:39[90m)[39m
+    at allowInAnd [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:3187:16[90m)[39m
+    at parseExpression [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:217:17[90m)[39m
+    at parseReturnStatement [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:1110:28[90m)[39m
+    at parseStatementContent [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:538:21[90m)[39m
+    at parseStatementContent [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/typescript/index.ts:3185:20[90m)[39m
+    at parseStatementLike [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:477:17[90m)[39m
+    at parseStatementListItem [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:426:17[90m)[39m
+    at parseBlockOrModuleBlockBody [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:1439:16[90m)[39m
+    at parseBlockBody [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:1412:10[90m)[39m
+    at parseBlock [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:1380:10[90m)[39m
+    at parseFunctionBody [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:2616:24[90m)[39m
+    at parseFunctionBodyAndFinish [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:2585:10[90m)[39m
+    at parseFunctionBodyAndFinish [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/plugins/typescript/index.ts:2646:20[90m)[39m
+    at callback [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:1690:12[90m)[39m
+    at withSmartMixTopicForbiddingContext [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/expression.ts:3166:14[90m)[39m
+    at parseFunction [90m(/home/runner/workspace/[39mnode_modules/[4m@babel/parser[24m/src/parser/statement.ts:1688:10[90m)[39m {
+  code: [32m'BABEL_PARSER_SYNTAX_ERROR'[39m,
+  reasonCode: [32m'MissingClosingTagElement'[39m,
+  loc: Position { line: [33m2080[39m, column: [33m6[39m, index: [33m101000[39m },
+  pos: [33m101000[39m,
+  syntaxPlugin: [32m'jsx'[39m
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m8:42:26 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: /home/runner/workspace/client/src/pages/lobby.tsx: Expected corresponding JSX closing tag for <div>. (2080:6)
+
+[0m [90m 2078 |[31m
+ [90m 2079 |[31m       [33m<[31m[33mDeferredLobbyOverlays[31m onStepChange[33m=[31m{handleTourStepChange} [33m/[31m[33m>[31m
+[31m[1m>[22m[31m[90m 2080 |[31m       [33m<[31m[33m/[31m[33mSuspense[31m[33m>[31m
+ [90m      |[31m       [31m[1m^[22m[31m
+ [90m 2081 |[31m
+ [90m 2082 |[31m       {user [33m&&[31m dmUserId [33m&&[31m (
+ [90m 2083 |[31m         [33m<[31m[33mSuspense[31m fallback[33m=[31m{[36mnull[31m}[33m>[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36m/home/runner/workspace/client/src/pages/lobby.tsx[39m:2080:6
+[33m  2078 |  
+  2079 |        <DeferredLobbyOverlays onStepChange={handleTourStepChange} />
+  2080 |        </Suspense>
+       |        ^
+  2081 |  
+  2082 |        {user && dmUserId && ([39m
+      at toParseError (/home/runner/workspace/node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at raise (/home/runner/workspace/node_modules/@babel/parser/src/tokenizer/index.ts:1503:19)
+      at jsxParseElementAt (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:527:18)
+      at jsxParseElement (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:559:19)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:573:21)
+      at parseExprSubscripts (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:734:23)
+      at parseUpdate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:713:21)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:675:23)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3855:20)
+      at parseMaybeUnaryOrPrivate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:409:14)
+      at parseExprOps (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:421:23)
+      at parseMaybeConditional (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:376:23)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:301:21)
+      at fn (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3708:23)
+      at tryParse (/home/runner/workspace/node_modules/@babel/parser/src/parser/util.ts:174:20)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3707:20)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:257:12)
+      at allowInAnd (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3192:12)
+      at parseMaybeAssignAllowIn (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:256:17)
+      at parseMaybeAssignAllowInOrVoidPattern (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3306:17)
+      at parseParenAndDistinguishExpression (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:1813:16)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:1162:21)
+      at parseExprAtom (/home/runner/workspace/node_modules/@babel/parser/src/plugins/jsx/index.ts:583:22)
+      at parseExprSubscripts (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:734:23)
+      at parseUpdate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:713:21)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:675:23)
+      at parseMaybeUnary (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3855:20)
+      at parseMaybeUnaryOrPrivate (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:409:14)
+      at parseExprOps (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:421:23)
+      at parseMaybeConditional (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:376:23)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:301:21)
+      at parseMaybeAssign (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3727:22)
+      at parseExpressionBase (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:226:23)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:217:39)
+      at allowInAnd (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3187:16)
+      at parseExpression (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:217:17)
+      at parseReturnStatement (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1110:28)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:538:21)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3185:20)
+      at parseStatementLike (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:477:17)
+      at parseStatementListItem (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:426:17)
+      at parseBlockOrModuleBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1439:16)
+      at parseBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1412:10)
+      at parseBlock (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1380:10)
+      at parseFunctionBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:2616:24)
+      at parseFunctionBodyAndFinish (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:2585:10)
+      at parseFunctionBodyAndFinish (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:2646:20)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1690:12)
+      at withSmartMixTopicForbiddingContext (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3166:14)
+      at parseFunction (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1688:10)
+[1G[0K⠙[1G[0K
