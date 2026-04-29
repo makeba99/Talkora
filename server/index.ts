@@ -3,6 +3,7 @@ import compression from "compression";
 import zlib from "zlib";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
+import { storage } from "./storage";
 import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { startCleanupScheduler } from "./cleanup";
@@ -121,6 +122,22 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      // Cache-warming ping. The lobby's primary data fetch is `getAllRooms()`,
+      // and on a cold process it pays for: Postgres connection acquisition
+      // from the pool, Drizzle query compilation, and a cold Postgres query
+      // plan + page cache. Pre-executing it here means the very first real
+      // visitor's `/api/rooms` call hits a fully warm code path, shaving
+      // ~50–150 ms off their TTFB. Fire-and-forget — a warm-up failure must
+      // never affect server availability or block the listen callback.
+      void (async () => {
+        try {
+          const t0 = Date.now();
+          await storage.getAllRooms();
+          log(`cache-warmed /api/rooms in ${Date.now() - t0}ms`);
+        } catch (err) {
+          log(`cache-warm skipped: ${(err as Error)?.message || String(err)}`);
+        }
+      })();
     },
   );
 })();
