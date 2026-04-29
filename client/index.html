@@ -64,18 +64,42 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Font load: direct <link> in <head> so the browser can fetch in
-         parallel with the rest of the page (was an @import inside index.css
-         which sequenced the request *after* the CSS file). -->
+    <!-- Font load: non-render-blocking. The link starts as a print-only
+         stylesheet (which the browser doesn't render-block on), and a tiny
+         inline script flips it to "all" media once the file is ready. We
+         use a real <script> tag (not an inline event handler attribute) so
+         it stays compatible with the strict script-src-attr 'none' CSP.
+         The <noscript> fallback keeps the site readable without JS. -->
     <link
+      id="font-space-grotesk"
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      media="print"
     />
+    <script>
+      (function () {
+        var l = document.getElementById("font-space-grotesk");
+        if (!l) return;
+        function swap() { l.media = "all"; }
+        if (l.sheet) { swap(); return; }
+        l.addEventListener("load", swap);
+        l.addEventListener("error", swap);
+      })();
+    </script>
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
 
-    <link rel="preconnect" href="https://www.youtube-nocookie.com" crossorigin />
-    <link rel="preconnect" href="https://www.youtube.com" crossorigin />
-    <link rel="preconnect" href="https://i.ytimg.com" crossorigin />
-    <link rel="preconnect" href="https://s.ytimg.com" crossorigin />
+    <!-- Connect early to avatar/video CDNs the lobby reads from on first paint. -->
+    <link rel="preconnect" href="https://randomuser.me" crossorigin />
+    <link rel="dns-prefetch" href="https://randomuser.me" />
+
+    <!-- YouTube embeds are deferred and only load on user interaction, so use
+         dns-prefetch (cheap) instead of preconnect (opens TLS sockets that
+         fight the LCP candidate for bandwidth on slow mobile networks). -->
     <link rel="dns-prefetch" href="https://www.youtube.com" />
     <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
     <link rel="dns-prefetch" href="https://i.ytimg.com" />

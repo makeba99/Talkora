@@ -20,15 +20,23 @@ export function serveStatic(app: Express) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
           return;
         }
-        // index.html and the SW must always revalidate so users pick up new
-        // builds as soon as we ship them.
-        if (filePath.endsWith(".html") || filePath.endsWith("sw.js")) {
+        // index.html, robots.txt, sitemap.xml and the SW must always
+        // revalidate so users and crawlers pick up new builds/sitemaps as
+        // soon as we ship them.
+        if (
+          filePath.endsWith(".html") ||
+          filePath.endsWith("sw.js") ||
+          filePath.endsWith("robots.txt") ||
+          filePath.endsWith("sitemap.xml")
+        ) {
           res.setHeader("Cache-Control", "no-cache");
           return;
         }
-        // Everything else (favicons, manifest, theme images) — short cache
-        // with revalidation to balance freshness and speed.
-        res.setHeader("Cache-Control", "public, max-age=86400, must-revalidate");
+        // Static branding (favicons, manifest, theme images, app icons).
+        // These rarely change, so cache for 30 days with revalidation —
+        // satisfies Lighthouse's "efficient cache lifetimes" audit and
+        // makes repeat visits painless on mobile.
+        res.setHeader("Cache-Control", "public, max-age=2592000, must-revalidate");
       },
     }),
   );
