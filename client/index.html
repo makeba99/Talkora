@@ -126,6 +126,12 @@
       }
     </style>
 
+    <!-- Preload the lobby logo SVG. It renders inside the header on first paint
+         and is one of the LCP candidates Lighthouse picks. SVG is 1.2 KB so the
+         preload is essentially free, but it lets the browser fetch in parallel
+         with the JS bundle instead of waiting for React to render the header. -->
+    <link rel="preload" href="/vextorn-mark.svg" as="image" type="image/svg+xml" fetchpriority="high" />
+
     <!-- Connect early to avatar/video CDNs the lobby reads from on first paint. -->
     <link rel="preconnect" href="https://randomuser.me" crossorigin />
     <link rel="dns-prefetch" href="https://randomuser.me" />

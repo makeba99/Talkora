@@ -876,10 +876,20 @@ export function AnimatedBackground() {
     if (!ctx) return;
     canvas.style.opacity = "1";
 
-    const resize = () => {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-      const W = canvas.width, H = canvas.height;
+    // Last-applied dimensions — lets us skip the (expensive) data-builder
+    // calls when the viewport hasn't actually changed (e.g. iOS soft-keyboard
+    // dismiss fires "resize" with identical dimensions). Also eliminates a
+    // forced reflow each call: we only touch canvas.width/height when the
+    // value actually changed, so the layout-invalidating write is skipped.
+    let lastW = 0, lastH = 0;
+
+    const applyResize = () => {
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      if (W === lastW && H === lastH) return;
+      lastW = W; lastH = H;
+      canvas.width  = W;
+      canvas.height = H;
 
       if (theme === "starfield") {
         dataRef.current.starLayers = buildStarLayers(W, H, isMobile);
@@ -904,8 +914,21 @@ export function AnimatedBackground() {
       }
     };
 
-    resize();
-    window.addEventListener("resize", resize);
+    // rAF-throttled resize handler. Browsers fire "resize" rapidly during
+    // a window drag (sometimes 60+ times/sec). Coalescing into a single
+    // pre-frame call removes most of the forced-reflow cost Lighthouse
+    // flags, without losing any visual fidelity.
+    let resizeRaf = 0;
+    const resize = () => {
+      if (resizeRaf) return;
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0;
+        applyResize();
+      });
+    };
+
+    applyResize();
+    window.addEventListener("resize", resize, { passive: true });
     timeRef.current = 0;
 
     const shooterTimer = { v: 0 };

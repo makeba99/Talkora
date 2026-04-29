@@ -6,7 +6,10 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 export default defineConfig({
   plugins: [
     react(),
-    runtimeErrorOverlay(),
+    // Runtime error overlay is a dev-only debugging aid (full-screen modal on
+    // unhandled errors). Including it in production ships ~3 KB of overlay
+    // JS that runs on every page load. Dev-only keeps the prod bundle clean.
+    ...(process.env.NODE_ENV !== "production" ? [runtimeErrorOverlay()] : []),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
@@ -50,12 +53,18 @@ export default defineConfig({
             return "react-vendor";
           }
           if (id.includes("@tanstack/react-query")) return "query-vendor";
-          if (id.includes("@radix-ui")) return "radix-vendor";
+          if (id.includes("@radix-ui") || id.includes("@floating-ui")) return "radix-vendor";
           if (id.includes("lucide-react") || id.includes("react-icons")) return "icons-vendor";
           if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "socket-vendor";
+          if (id.includes("framer-motion") || id.includes("motion-dom") || id.includes("motion-utils")) {
+            return "motion-vendor";
+          }
           if (id.includes("date-fns") || id.includes("zod") || id.includes("react-hook-form") || id.includes("@hookform")) {
             return "forms-vendor";
           }
+          if (id.includes("recharts") || id.includes("d3-")) return "charts-vendor";
+          if (id.includes("emoji-picker-react")) return "emoji-vendor";
+          if (id.includes("chess.js") || id.includes("react-chessboard")) return "chess-vendor";
           return undefined;
         },
       },
