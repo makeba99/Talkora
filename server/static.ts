@@ -44,9 +44,16 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // intentionally excluded so we don't waste bandwidth pre-warming chunks
   // the user may never visit.
   //
-  // NOTE: react-vendor now includes Radix, framer-motion, react-query, and
-  // react-hook-form (merged to prevent React.forwardRef race on cold boot).
-  // query-vendor and radix-vendor no longer exist as separate chunks.
+  // NOTE: react-vendor includes React, react-dom, Radix, react-query, and
+  // wouter (merged to prevent React.forwardRef race on cold boot — anything
+  // that touches React.* at module-eval time MUST live in the same chunk
+  // as React itself). query-vendor and radix-vendor no longer exist as
+  // separate chunks. framer-motion (motion-vendor) and react-hook-form
+  // (form-vendor) were intentionally split OUT of react-vendor because
+  // they are only consumed by lazy children (badge-announcement and
+  // lobby/teacher forms respectively) — preloading them on the LCP path
+  // would burn ~100 kB of bandwidth for users who never trigger those
+  // code paths, so they are NOT listed below.
   // socket-vendor IS needed early — SocketProvider is statically imported
   // by App.tsx so socket.io-client must be ready before React renders.
   const criticalScriptPatterns: RegExp[] = [
