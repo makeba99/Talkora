@@ -2074,25 +2074,21 @@ export default function Lobby() {
                     priority={idx < 3}
                   />
                 );
-                /* Cards beyond the first row use `content-visibility: auto`
-                 * so the browser can skip layout/paint work for the ones
-                 * scrolled off-screen. `contain-intrinsic-size` reserves the
-                 * card's natural footprint to avoid CLS while it's skipped.
-                 * The first 3 cards stay normal so the LCP candidate isn't
-                 * deferred. */
-                /* Reserve a footprint that matches the actual rendered card
-                 * height (352–370px premium) so off-screen cards don't trigger
-                 * CLS when they scroll into view. The width is the card
-                 * column width — the grid's auto-fill handles intrinsic width. */
-                const offscreenStyle = idx >= 3
-                  ? { contentVisibility: "auto" as const, containIntrinsicSize: "320px 360px" }
-                  : undefined;
+                /* Note: previously used `content-visibility: auto` on off-screen
+                 * cards (idx >= 3) for paint-skipping, but that caused a visible
+                 * dark "shadow" artifact on the right half of cards as they
+                 * scrolled into view — the browser was painting the placeholder
+                 * background before the card's 3D door/avatar contents finished
+                 * rendering. Removed to preserve visual fidelity; the off-screen
+                 * cards still benefit from `contain: layout paint` via the inner
+                 * card styles, and React.memo on RoomCard plus the deferred
+                 * overlays in this round handle the perf side. */
                 return idx === 0 ? (
-                  <div key={room.id} data-tour-target="rooms" style={offscreenStyle}>
+                  <div key={room.id} data-tour-target="rooms">
                     {card}
                   </div>
                 ) : (
-                  <div key={room.id} style={offscreenStyle}>{card}</div>
+                  <div key={room.id}>{card}</div>
                 );
                 });
               })()}
