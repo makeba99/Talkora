@@ -138,6 +138,7 @@ function AppContent() {
           <Route path="/" component={Lobby} />
           <Route path="/admin" component={AdminPage} />
           <Route path="/teachers" component={TeachersPage} />
+          <Route path="/teachers/:teacherId" component={TeachersPage} />
           <Route path="/payment-methods" component={PaymentMethodsPage} />
           <Route path="/room/:id" component={RoomPage} />
           <Route path="/messages/:userId" component={DmPage} />

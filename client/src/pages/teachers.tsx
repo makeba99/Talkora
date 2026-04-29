@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useParams } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1284,14 +1284,10 @@ function MyBookingCard({ booking, onCancel }: { booking: BookingWithTeacher; onC
 }
 
 export default function TeachersPage() {
-  useDocumentMeta({
-    title: "Book a language teacher",
-    description:
-      "Browse and book verified language teachers on Vextorn. Filter by language, level, price, rating and availability.",
-  });
   const { user } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const routeParams = useParams<{ teacherId?: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("All");
   const [selectedLevel, setSelectedLevel] = useState("All");
@@ -1363,6 +1359,33 @@ export default function TeachersPage() {
   const sampleTeachersToShow = SAMPLE_TEACHERS.filter((s) => !realTeacherIds.has(s.id));
   const allTeachers = [...fetchedTeachers, ...sampleTeachersToShow];
   const showingSampleTeachers = fetchedTeachers.length === 0;
+
+  useEffect(() => {
+    const id = routeParams?.teacherId;
+    if (!id) return;
+    if (selectedTeacher?.id === id && profileOpen) return;
+    const match = allTeachers.find((t) => t.id === id);
+    if (match) {
+      setSelectedTeacher(match);
+      setProfileOpen(true);
+    }
+  }, [routeParams?.teacherId, allTeachers.length]);
+
+  useDocumentMeta(
+    selectedTeacher && profileOpen
+      ? {
+          title: `${selectedTeacher.name} — ${selectedTeacher.languages.join(", ")} teacher`,
+          description: selectedTeacher.bio
+            ? selectedTeacher.bio.slice(0, 155)
+            : `Book a ${selectedTeacher.languages.join("/")} lesson with ${selectedTeacher.name} on Vextorn.`,
+          canonical: `https://vextorn.com/teachers/${selectedTeacher.id}`,
+        }
+      : {
+          title: "Book a language teacher",
+          description:
+            "Browse and book verified language teachers on Vextorn. Filter by language, level, price, rating and availability.",
+        }
+  );
 
   const filteredTeachers = allTeachers
     .filter((t) => {

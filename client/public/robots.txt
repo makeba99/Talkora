@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /attached_assets/
-Disallow: /uploads/
-
-Sitemap: https://vextorn.com/sitemap.xml

@@ -5,18 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useDocumentMeta } from "@/hooks/use-document-meta";
 import type { Room } from "@shared/schema";
 
 export default function RoomPage() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
-  useDocumentMeta({
-    title: "Voice room",
-    description:
-      "Talk live with the room — Vextorn voice rooms keep your conversation private and high-quality.",
-    noIndex: true,
-  });
   const accessKey = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("key") : null;
 
   const { data: room, isLoading, isError } = useQuery<Room>({
@@ -30,6 +25,14 @@ export default function RoomPage() {
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
+  });
+
+  useDocumentMeta({
+    title: room?.title ? `${room.title} — ${room.language} voice room` : "Voice room",
+    description: room
+      ? `Join "${room.title}" on Vextorn — a live ${room.language} ${room.level} voice room. Practice speaking, listen to natives, and improve fluency together.`
+      : "Talk live with the room — Vextorn voice rooms keep your conversation private and high-quality.",
+    noIndex: !room?.isPublic,
   });
 
   if (isLoading || authLoading) {

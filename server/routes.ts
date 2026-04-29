@@ -290,6 +290,104 @@ export async function registerRoutes(
     res.sendFile(filePath);
   });
 
+  // Dynamic sitemap — listed in robots.txt and pinged from Google Search
+  // Console. Lists every public room (using its short ID URL) and every
+  // teacher (deep-linked into /teachers) so each one can be discovered and
+  // ranked individually instead of buried behind a SPA navigation. Cached
+  // for 1 hour at the edge so we don't hit the DB on every crawler request.
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+      const host = req.get("host") || "vextorn.com";
+      const origin = `${proto}://${host}`;
+
+      const [allRooms, allTeachers] = await Promise.all([
+        storage.getAllRooms(),
+        storage.getAllTeachers(),
+      ]);
+
+      const escape = (s: string) =>
+        s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&apos;");
+
+      const fmtDate = (d: Date | string | null | undefined): string => {
+        if (!d) return new Date().toISOString();
+        const date = d instanceof Date ? d : new Date(d);
+        return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+      };
+
+      const urls: string[] = [];
+
+      urls.push(
+        `<url><loc>${origin}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>`
+      );
+      urls.push(
+        `<url><loc>${origin}/teachers</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`
+      );
+
+      for (const room of allRooms) {
+        if (!room.isPublic) continue;
+        const slug = room.shortId || room.id;
+        if (!slug) continue;
+        urls.push(
+          `<url>` +
+            `<loc>${origin}/room/${escape(slug)}</loc>` +
+            `<lastmod>${fmtDate(room.createdAt)}</lastmod>` +
+            `<changefreq>hourly</changefreq>` +
+            `<priority>0.7</priority>` +
+            `</url>`
+        );
+      }
+
+      for (const teacher of allTeachers) {
+        if (!teacher.id) continue;
+        urls.push(
+          `<url>` +
+            `<loc>${origin}/teachers/${escape(teacher.id)}</loc>` +
+            `<lastmod>${fmtDate(teacher.createdAt)}</lastmod>` +
+            `<changefreq>weekly</changefreq>` +
+            `<priority>0.6</priority>` +
+            `</url>`
+        );
+      }
+
+      const xml =
+        `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+        urls.join("\n") +
+        `\n</urlset>`;
+
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
+      res.send(xml);
+    } catch (err: any) {
+      res.status(500).type("text/plain").send(`sitemap error: ${err.message}`);
+    }
+  });
+
+  // Robots.txt — generated dynamically so the sitemap URL always matches the
+  // host being served (preview, deploy, custom domain, etc.).
+  app.get("/robots.txt", (req, res) => {
+    const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const host = req.get("host") || "vextorn.com";
+    const origin = `${proto}://${host}`;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(
+      `User-agent: *\n` +
+        `Allow: /\n` +
+        `Disallow: /api/\n` +
+        `Disallow: /uploads/\n` +
+        `Disallow: /admin\n` +
+        `Disallow: /messages/\n\n` +
+        `Sitemap: ${origin}/sitemap.xml\n`
+    );
+  });
+
   app.get("/api/rooms/participants", async (_req, res) => {
     try {
       const allParticipants: Record<string, User[]> = {};
