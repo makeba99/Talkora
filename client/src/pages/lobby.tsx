@@ -2057,7 +2057,14 @@ export default function Lobby() {
                  * shared override objects passed to every card. */
                 const mergedParticipants = allRoomParticipants(roomParticipants);
                 const hasLobbyFollowerCounts = Object.keys(followerCounts).length > 0;
-                const hasLobbyBadges = Object.keys(lobbyParticipantBadges).length > 0;
+                /* PERF: ALWAYS pass the lobby badges override (even before it
+                 * resolves), so per-card queries stay disabled from the very
+                 * first render. Previously we waited for hasLobbyBadges to be
+                 * true, which meant on the first paint each card would race-fire
+                 * its own /api/users/badges/batch — turning 1 request into 9.
+                 * Now we accept ~50ms of empty badges on initial load in
+                 * exchange for eliminating 8 duplicate POSTs that were
+                 * appearing in the Lighthouse critical-request chain. */
                 return filteredRooms.map((room, idx) => {
                 const isSample = room.id.startsWith("sample-");
                 const card = (
@@ -2078,7 +2085,7 @@ export default function Lobby() {
                           ? followerCounts
                           : undefined
                     }
-                    participantBadgesOverride={hasLobbyBadges ? lobbyParticipantBadges : undefined}
+                    participantBadgesOverride={lobbyParticipantBadges}
                     priority={idx < 3}
                   />
                 );
