@@ -705,11 +705,22 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
         style={{
           borderRadius: "16px",
+          // Bumped both gradients to fully opaque (was 0.80–0.92 alpha) so we
+          // can drop the heavy `backdrop-filter: blur(22px) saturate(1.3)`
+          // that used to sit here. The blur caused two real problems:
+          //   1. On hover the card lifts via translateY(-3px); the backdrop
+          //      sampler then re-composites mid-transition against the
+          //      neighbouring card's pixels, producing a "blurry / mixing
+          //      colours" smear on the right edge of adjacent cards.
+          //   2. Every card paid for a 22px GPU blur on every scroll/hover
+          //      tick even though the original alpha was already 88–92%
+          //      opaque, so the visual contribution was negligible.
+          // Going opaque preserves the depth look (gradient still reads as
+          // glass thanks to the outer 1px gradient border + box-shadow ring)
+          // while eliminating the artifact and cutting paint cost.
           background: isPremiumAtmosphere
-            ? "linear-gradient(145deg, rgba(3,6,22,0.88) 0%, rgba(6,8,28,0.80) 38%, rgba(5,3,20,0.90) 72%, rgba(8,4,25,0.86) 100%)"
-            : "linear-gradient(160deg, rgba(16, 20, 50, 0.88) 0%, rgba(11, 15, 42, 0.92) 100%)",
-          backdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
-          WebkitBackdropFilter: isPremiumAtmosphere ? "blur(22px) saturate(1.3)" : "blur(18px) saturate(1.22)",
+            ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
+            : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
           height: isPremiumAtmosphere ? 268 : 252,
         }}
       >
