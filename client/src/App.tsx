@@ -2,8 +2,6 @@ import { useEffect, useState, lazy, Suspense, startTransition } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { UpdateAvailableToast } from "@/components/update-available-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { SocketProvider } from "@/lib/socket";
@@ -11,7 +9,6 @@ import { useSocket } from "@/lib/socket";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BadgeAnnouncement } from "@/components/badge-announcement";
 import Lobby from "@/pages/lobby";
 
 const RoomPage = lazy(() => import("@/pages/room"));
@@ -24,6 +21,20 @@ const AnimatedBackground = lazy(() =>
 );
 const PwaInstallBanner = lazy(() =>
   import("@/components/pwa-install-banner").then((m) => ({ default: m.PwaInstallBanner }))
+);
+
+/* Toast / update / badge chrome doesn't need to block first paint. The toast
+ * queue itself is just module-level state in `use-toast`, so calls to
+ * `toast(...)` keep working even before the visual `<Toaster />` mounts —
+ * the queued messages will render as soon as the lazy chunk arrives. */
+const Toaster = lazy(() =>
+  import("@/components/ui/toaster").then((m) => ({ default: m.Toaster }))
+);
+const UpdateAvailableToast = lazy(() =>
+  import("@/components/update-available-toast").then((m) => ({ default: m.UpdateAvailableToast }))
+);
+const BadgeAnnouncement = lazy(() =>
+  import("@/components/badge-announcement").then((m) => ({ default: m.BadgeAnnouncement }))
 );
 
 const SEVERITY_LABELS: Record<string, string> = {
@@ -85,7 +96,14 @@ function GlobalSocketEvents() {
     };
   }, [socket, toast, isAdmin]);
 
-  return <BadgeAnnouncement event={badgeEvent} onDismiss={() => setBadgeEvent(null)} />;
+  // BadgeAnnouncement is lazy — it only renders a celebratory popover when an
+  // event arrives, so we don't need it parsed until that first event fires.
+  if (!badgeEvent) return null;
+  return (
+    <Suspense fallback={null}>
+      <BadgeAnnouncement event={badgeEvent} onDismiss={() => setBadgeEvent(null)} />
+    </Suspense>
+  );
 }
 
 function AppContent() {
@@ -164,6 +182,29 @@ function DeferredOverlays() {
   );
 }
 
+function DeferredToasts() {
+  // Toaster + UpdateAvailableToast aren't on the LCP critical path — both
+  // render nothing visible at first paint anyway (Toaster has an empty queue,
+  // UpdateAvailableToast only triggers when a new SW takes over). Defer their
+  // import until after the main route paints to shave initial JS.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const w: any = window;
+    const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
+    const handle = idle(() => setReady(true), { timeout: 2000 });
+    return () => {
+      if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
+    };
+  }, []);
+  if (!ready) return null;
+  return (
+    <Suspense fallback={null}>
+      <UpdateAvailableToast />
+      <Toaster />
+    </Suspense>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -171,8 +212,7 @@ function App() {
         <ThemeProvider>
           <DeferredOverlays />
           <AppContent />
-          <UpdateAvailableToast />
-          <Toaster />
+          <DeferredToasts />
         </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
