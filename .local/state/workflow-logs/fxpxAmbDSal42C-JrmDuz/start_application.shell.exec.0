@@ -1,0 +1,188 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0K[cleanup] 2026-04-29T09:31:48.701Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-04-29T09:31:48.702Z Retention: messages=7d, room_messages=7d, notifications=14d, reports=30d, orphan_files=7d
+[cleanup] 2026-04-29T09:31:48.702Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion (grace=120s)
+[cleanup] 2026-04-29T09:31:48.745Z Cleanup complete in 43ms — files=0 (0 bytes)
+9:31:49 AM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+9:31:53 AM [express] GET /api/auth/user 401 in 3ms
+9:31:55 AM [express] POST /api/users/badges/batch 200 in 47ms
+9:31:55 AM [express] GET /api/rooms 304 in 45ms
+9:31:55 AM [express] GET /api/announcements 304 in 43ms
+9:31:55 AM [express] GET /api/rooms/participants 304 in 2ms
+9:31:55 AM [express] POST /api/rooms/votes/batch 200 in 165ms
+9:31:56 AM [express] GET /api/auth/user 401 in 1ms
+9:31:59 AM [express] GET /api/auth/user 401 in 2ms
+9:31:59 AM [express] POST /api/users/badges/batch 200 in 3ms
+9:31:59 AM [express] GET /api/rooms 304 in 1ms
+9:31:59 AM [express] GET /api/announcements 304 in 5ms
+9:31:59 AM [express] POST /api/rooms/votes/batch 200 in 4ms
+9:31:59 AM [express] GET /api/rooms 304 in 2ms
+9:31:59 AM [express] GET /api/rooms/participants 304 in 2ms
+9:31:59 AM [express] GET /api/announcements 304 in 10ms
+9:31:59 AM [express] POST /api/users/badges/batch 200 in 8ms
+9:31:59 AM [express] POST /api/rooms/votes/batch 200 in 7ms
+9:31:59 AM [express] GET /api/rooms/participants 304 in 1ms
+9:32:12 AM [express] POST /api/users/badges/batch 200 in 3ms
+9:32:15 AM [express] POST /api/users/badges/batch 200 in 3ms
+9:32:29 AM [express] GET /api/rooms 304 in 5ms
+9:32:29 AM [express] GET /api/announcements 304 in 3ms
+9:32:29 AM [express] POST /api/rooms/votes/batch 200 in 16ms
+9:32:30 AM [express] GET /api/rooms/participants 304 in 1ms
+9:32:45 AM [express] GET /api/rooms 304 in 3ms
+9:33:00 AM [express] POST /api/rooms/votes/batch 200 in 4ms
+9:33:00 AM [express] GET /api/announcements 304 in 13ms
+9:33:00 AM [express] GET /api/rooms 304 in 2ms
+9:33:00 AM [express] GET /api/rooms/participants 304 in 1ms
+9:33:15 AM [express] GET /api/rooms 304 in 3ms
+9:33:30 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+9:33:30 AM [express] GET /api/announcements 304 in 3ms
+9:33:30 AM [express] GET /api/rooms/participants 304 in 1ms
+9:33:30 AM [express] GET /api/rooms 304 in 3ms
+9:33:46 AM [express] GET /api/rooms 304 in 2ms
+9:34:00 AM [express] POST /api/users/badges/batch 200 in 3ms
+9:34:00 AM [express] GET /api/announcements 304 in 3ms
+9:34:00 AM [express] POST /api/rooms/votes/batch 200 in 2ms
+9:34:01 AM [express] GET /api/rooms/participants 304 in 1ms
+9:34:01 AM [express] GET /api/rooms 304 in 2ms
+9:34:12 AM [express] POST /api/users/badges/batch 200 in 3ms
+9:34:16 AM [express] GET /api/rooms 304 in 3ms
+9:34:30 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+9:34:30 AM [express] GET /api/announcements 304 in 13ms
+9:34:31 AM [express] GET /api/rooms/participants 304 in 1ms
+9:34:31 AM [express] GET /api/rooms 304 in 2ms
+9:34:47 AM [express] GET /api/rooms 304 in 2ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:34:56 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m
+9:35:01 AM [express] GET /api/announcements 304 in 3ms
+9:35:01 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+9:35:01 AM [express] GET /api/rooms/participants 304 in 1ms
+9:35:02 AM [express] GET /api/rooms 304 in 3ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:35:11 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x2)[39m
+9:35:17 AM [express] GET /api/rooms 304 in 3ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:35:17 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x3)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:35:25 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x4)[39m
+9:35:31 AM [express] POST /api/users/badges/batch 200 in 3ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m9:35:32 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m [33m(x5)[39m
