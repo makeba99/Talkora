@@ -1018,15 +1018,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   // incoming `ontrack` video tracks as screen vs camera, since track labels
   // are unreliable across browsers (often empty or generic).
   const screenSharingPeerIds = useRef<Set<string>>(new Set());
-  // Set of peer IDs whose screen share is currently typing in chat. While
-  // typing, we render a privacy blackout over their shared screen so
-  // passwords and other secrets aren't leaked to watchers.
-  const [screenTypingPeerIds, setScreenTypingPeerIds] = useState<Set<string>>(new Set());
-  const screenTypingEmitTimer = useRef<NodeJS.Timeout | null>(null);
-  const screenTypingActiveRef = useRef(false);
-  // Mirrors `screenTypingActiveRef` for rendering the local sharer's
-  // own "screen hidden while you type" overlay.
-  const [isMyScreenTypingBlackout, setIsMyScreenTypingBlackout] = useState(false);
   const [ytQualityState, setYtQualityState] = useState<"good" | "slow">("good");
   const [ytPlayerLoading, setYtPlayerLoading] = useState(false);
   const [ytPlayerReady, setYtPlayerReady] = useState(false);
@@ -1585,7 +1576,22 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           if (isScreenTrack) {
             remoteScreenStreams.current.set(peerId, stream);
             setAvailableScreenUsers((prev) => { const n = new Set(Array.from(prev)); n.add(peerId); return n; });
+            // If the local user has already chosen to watch this peer's screen
+            // (clicked their tile before the WebRTC track had arrived, or this
+            // is a renegotiated track replacing an old one), attach the new
+            // stream to the visible <video> element so it doesn't stay black.
+            setRemoteScreenShareUserId((prev) => {
+              const target = prev ?? peerId;
+              if (target === peerId && remoteScreenRef.current && remoteScreenRef.current.srcObject !== stream) {
+                try { remoteScreenRef.current.srcObject = stream; } catch (e) {}
+              }
+              return prev;
+            });
             track.onended = () => {
+              // Only remove if the *currently registered* stream for this peer
+              // is the one that ended — guards against renegotiation where a
+              // newer track has already replaced this one.
+              if (remoteScreenStreams.current.get(peerId) !== stream) return;
               remoteScreenStreams.current.delete(peerId);
               setAvailableScreenUsers((prev) => { const n = new Set(prev); n.delete(peerId); return n; });
               setRemoteScreenShareUserId((prev) => prev === peerId ? null : prev);
@@ -1593,15 +1599,21 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 remoteScreenRef.current.srcObject = null;
               }
             };
-            track.onmute = () => {
-              remoteScreenStreams.current.delete(peerId);
-              setAvailableScreenUsers((prev) => { const n = new Set(prev); n.delete(peerId); return n; });
-              setRemoteScreenShareUserId((prev) => prev === peerId ? null : prev);
-            };
+            // NOTE: deliberately no `track.onmute` here. WebRTC mutes tracks
+            // briefly during renegotiation (e.g. when a new viewer joins),
+            // and reacting to onmute caused existing watchers to lose the
+            // shared screen. The track recovers on its own via onunmute.
           } else {
             remoteVideoStreams.current.set(peerId, stream);
             setAvailableVideoUsers((prev) => { const n = new Set(Array.from(prev)); n.add(peerId); return n; });
+            setRemoteVideoUserId((prev) => {
+              if (prev === peerId && remoteVideoRef.current && remoteVideoRef.current.srcObject !== stream) {
+                try { remoteVideoRef.current.srcObject = stream; } catch (e) {}
+              }
+              return prev;
+            });
             track.onended = () => {
+              if (remoteVideoStreams.current.get(peerId) !== stream) return;
               remoteVideoStreams.current.delete(peerId);
               setAvailableVideoUsers((prev) => { const n = new Set(prev); n.delete(peerId); return n; });
               setRemoteVideoUserId((prev) => prev === peerId ? null : prev);
@@ -1609,11 +1621,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 remoteVideoRef.current.srcObject = null;
               }
             };
-            track.onmute = () => {
-              remoteVideoStreams.current.delete(peerId);
-              setAvailableVideoUsers((prev) => { const n = new Set(prev); n.delete(peerId); return n; });
-              setRemoteVideoUserId((prev) => prev === peerId ? null : prev);
-            };
+            // NOTE: no onmute for the same reason as above — camera tracks
+            // also briefly mute during renegotiation.
           }
         }
       };
@@ -2284,31 +2293,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         remoteScreenStreams.current.delete(data.userId);
         setAvailableScreenUsers((prev) => { const n = new Set(prev); n.delete(data.userId); return n; });
         setRemoteScreenShareUserId((prev) => prev === data.userId ? null : prev);
-        // Also clear any stale typing-privacy flag for this peer.
-        setScreenTypingPeerIds((prev) => {
-          if (!prev.has(data.userId)) return prev;
-          const n = new Set(prev); n.delete(data.userId); return n;
-        });
         if (remoteScreenRef.current) {
           remoteScreenRef.current.srcObject = null;
         }
       }
-    });
-
-    // Privacy blackout while the screen sharer is typing in chat. The sharer
-    // emits this event from their chat input; everyone else uses it to overlay
-    // a black "typing — screen hidden" surface on top of the shared screen.
-    socket.on("room:screen-typing", (data: { userId: string; typing: boolean }) => {
-      if (!data || data.userId === user.id) return;
-      setScreenTypingPeerIds((prev) => {
-        const has = prev.has(data.userId);
-        if (data.typing && has) return prev;
-        if (!data.typing && !has) return prev;
-        const n = new Set(prev);
-        if (data.typing) n.add(data.userId);
-        else n.delete(data.userId);
-        return n;
-      });
     });
 
     socket.on("room:video-status", (data: { userId: string; active: boolean }) => {
@@ -3836,16 +3824,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     screenStream.current?.getTracks().forEach((t) => t.stop());
     screenStream.current = null;
     setIsScreenSharing(false);
-    // Clear any pending typing-blackout signal so watchers don't see a stuck
-    // overlay if the sharer stops sharing while still typing in chat.
-    if (screenTypingEmitTimer.current) {
-      clearTimeout(screenTypingEmitTimer.current);
-      screenTypingEmitTimer.current = null;
-    }
-    if (screenTypingActiveRef.current) {
-      screenTypingActiveRef.current = false;
-      socket?.emit("room:screen-typing", { roomId: room.id, userId: user?.id, typing: false });
-    }
     socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
   };
 
@@ -4412,14 +4390,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
   }, []);
 
-  const emitScreenTyping = useCallback((typing: boolean) => {
-    if (!socket || !user || !isScreenSharing) return;
-    if (typing === screenTypingActiveRef.current) return;
-    screenTypingActiveRef.current = typing;
-    setIsMyScreenTypingBlackout(typing);
-    socket.emit("room:screen-typing", { roomId: room.id, userId: user.id, typing });
-  }, [socket, user, isScreenSharing, room.id]);
-
   const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const val = e.target.value;
     setChatText(val);
@@ -4431,19 +4401,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setMentionIndex(0);
     } else {
       setMentionQuery(null);
-    }
-    // Privacy: while sharing the screen, briefly hide it from watchers
-    // whenever the sharer is actively typing in chat. Auto-clears after a
-    // short idle window so the screen reappears once they stop typing.
-    if (isScreenSharing) {
-      if (val.length > 0) {
-        emitScreenTyping(true);
-        if (screenTypingEmitTimer.current) clearTimeout(screenTypingEmitTimer.current);
-        screenTypingEmitTimer.current = setTimeout(() => emitScreenTyping(false), 1500);
-      } else {
-        if (screenTypingEmitTimer.current) clearTimeout(screenTypingEmitTimer.current);
-        emitScreenTyping(false);
-      }
     }
   };
 
@@ -4483,13 +4440,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       return;
     }
     if (!chatText.trim() || !socket || !user) return;
-    // Clear the typing-blackout immediately on send so watchers see the
-    // shared screen the moment the message goes out.
-    if (screenTypingEmitTimer.current) {
-      clearTimeout(screenTypingEmitTimer.current);
-      screenTypingEmitTimer.current = null;
-    }
-    if (isScreenSharing) emitScreenTyping(false);
     socket.emit("room:chat", {
       roomId: room.id,
       userId: user.id,
@@ -7785,15 +7735,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 muted
                 className="w-full h-full object-contain"
               />
-              {isMyScreenTypingBlackout && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/95 animate-in fade-in duration-150" data-testid="overlay-screen-typing-self">
-                  <div className="flex flex-col items-center gap-2 text-white/85">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-sm font-semibold">Screen hidden while you type</span>
-                    <span className="text-[11px] text-white/55">Watchers see a blackout until you stop typing or send the message</span>
-                  </div>
-                </div>
-              )}
               <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/70 backdrop-blur-sm border border-green-500/40 rounded-full px-4 py-1.5 shadow-lg z-10">
                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
                 <Monitor className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
@@ -7830,15 +7771,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 playsInline
                 className={`w-full h-full ${screenFitMode === "fill" ? "object-cover" : "object-contain"}`}
               />
-              {screenTypingPeerIds.has(remoteScreenShareUserId) && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black animate-in fade-in duration-150" data-testid="overlay-screen-typing-remote">
-                  <div className="flex flex-col items-center gap-2 text-white/85">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-sm font-semibold">{getUserDisplayName(participants.find(p => p.id === remoteScreenShareUserId))} is typing…</span>
-                    <span className="text-[11px] text-white/55">Screen hidden for privacy</span>
-                  </div>
-                </div>
-              )}
               <button
                 onClick={toggleScreenFitMode}
                 className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-black/70 hover:bg-black/85 backdrop-blur-sm border border-white/15 rounded-full px-2.5 py-1 shadow-lg text-white text-[11px] font-medium transition-colors"

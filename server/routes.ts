@@ -4240,19 +4240,6 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:screen-share", { userId: currentUserId, active: data.active });
     });
 
-    // Privacy blackout: while the active screen sharer is typing in chat,
-    // watchers should see a black overlay instead of the live screen so
-    // passwords and other sensitive content aren't leaked. Only the user
-    // currently registered as the room's screen sharer can broadcast this.
-    socket.on("room:screen-typing", (data: { roomId: string; userId: string; typing: boolean }) => {
-      if (!currentUserId) return;
-      if (roomScreenShareStatus.get(data.roomId) !== currentUserId) return;
-      socket.to(data.roomId).emit("room:screen-typing", {
-        userId: currentUserId,
-        typing: !!data.typing,
-      });
-    });
-
     socket.on("room:video-status", (data: { roomId: string; active: boolean }) => {
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
