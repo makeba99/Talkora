@@ -10,8 +10,13 @@
     <meta name="keywords" content="vextorn, voice chat, language practice, speaking practice, language learning, conversation, community" />
     <meta name="author" content="Vextorn" />
 
-    <!-- PWA / Theme -->
-    <meta name="theme-color" content="#0d0b18" />
+    <!-- PWA / Theme — adaptive: matches the system color scheme so the
+         browser chrome (URL bar on iOS Safari, status bar on Android Chrome,
+         PWA splash) stays in sync with the user's preference. The dark value
+         matches the lobby's deep-indigo canvas; the light value matches the
+         lighter card surface so both modes look intentional. -->
+    <meta name="theme-color" content="#0d0b18" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f5f3ff" media="(prefers-color-scheme: light)" />
     <!-- Allow UA to render light-mode form controls/scrollbars where the user
          has forced light mode for accessibility, while still preferring dark. -->
     <meta name="color-scheme" content="dark light" />

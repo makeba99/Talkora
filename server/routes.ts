@@ -295,6 +295,127 @@ export async function registerRoutes(
   // teacher (deep-linked into /teachers) so each one can be discovered and
   // ranked individually instead of buried behind a SPA navigation. Cached
   // for 1 hour at the edge so we don't hit the DB on every crawler request.
+  /* ──────────────────────────────────────────────────────────────────
+   * Per-room dynamic Open Graph + Twitter Card meta tag injection.
+   * When a social media crawler (WhatsApp, Discord, Slack, X, iMessage,
+   * etc.) fetches /room/:id, we serve the built index.html with the
+   * OG title / description / image / canonical / JSON-LD rewritten to
+   * describe THIS room — so a shared link gets a rich preview with the
+   * room name, language, level and avatar/hologram art instead of the
+   * generic site card. Only runs in production (where we have a built
+   * dist/public/index.html); in development we let Vite's catch-all
+   * serve the regular HTML so HMR keeps working for the developer.
+   * ────────────────────────────────────────────────────────────────── */
+  app.get("/room/:roomId", async (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+    const accept = req.headers.accept || "";
+    if (!accept.includes("text/html")) return next();
+    try {
+      const roomParam = req.params.roomId;
+      if (!roomParam) return next();
+      const room = isUuid(roomParam)
+        ? await storage.getRoom(roomParam)
+        : await storage.getRoomByShortId(roomParam);
+      if (!room) return next();
+
+      // Match the production layout used by `serveStatic` in server/static.ts
+      // (`__dirname/public/index.html`). Only accessed in prod where the CJS
+      // bundle has __dirname defined natively.
+      const indexPath = path.resolve(__dirname, "public", "index.html");
+      if (!fs.existsSync(indexPath)) return next();
+      let html = await fs.promises.readFile(indexPath, "utf-8");
+
+      const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+      const host = req.get("host") || "vextorn.com";
+      const origin = `${proto}://${host}`;
+      const slug = room.shortId || room.id;
+      const url = `${origin}/room/${slug}`;
+
+      const title = `${room.title} — Live ${room.language} (${room.level}) voice room | Vextorn`;
+      const description = `Join "${room.title}", a live ${room.language} (${room.level}) voice room on Vextorn. ${room.activeUsers} talking now${room.maxUsers ? ` · ${room.maxUsers} max` : ""}.`;
+
+      // Pick the OG image. Prefer the room's hologram art when it's an image;
+      // for YouTube hologram URLs use the high-res YouTube thumbnail; fall
+      // back to the brand icon so the card never breaks.
+      const fallbackImage = `${origin}/vextorn-icon-512.png`;
+      let ogImage = fallbackImage;
+      const holo = room.hologramVideoUrl || "";
+      if (holo) {
+        if (/\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(holo)) {
+          ogImage = holo;
+        } else {
+          const yt = holo.match(
+            /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/,
+          );
+          if (yt) ogImage = `https://img.youtube.com/vi/${yt[1]}/maxresdefault.jpg`;
+        }
+      }
+
+      const escapeHtml = (s: string) =>
+        s
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      const eTitle = escapeHtml(title);
+      const eDesc = escapeHtml(description);
+      const eUrl = escapeHtml(url);
+      const eImage = escapeHtml(ogImage);
+
+      // Single-pass tag swap. Every regex below is anchored to the exact
+      // attribute layout in client/index.html — keep them in sync if you
+      // edit the template head.
+      html = html
+        .replace(/<title>[\s\S]*?<\/title>/, `<title>${eTitle}</title>`)
+        .replace(
+          /<meta name="description" content="[^"]*"\s*\/?>/,
+          `<meta name="description" content="${eDesc}" />`,
+        )
+        .replace(
+          /<link rel="canonical" href="[^"]*"\s*\/?>/,
+          `<link rel="canonical" href="${eUrl}" />`,
+        )
+        .replace(
+          /<meta property="og:title" content="[^"]*"\s*\/?>/,
+          `<meta property="og:title" content="${eTitle}" />`,
+        )
+        .replace(
+          /<meta property="og:description" content="[^"]*"\s*\/?>/,
+          `<meta property="og:description" content="${eDesc}" />`,
+        )
+        .replace(
+          /<meta property="og:url" content="[^"]*"\s*\/?>/,
+          `<meta property="og:url" content="${eUrl}" />`,
+        )
+        .replace(
+          /<meta property="og:image" content="[^"]*"\s*\/?>/,
+          `<meta property="og:image" content="${eImage}" />`,
+        )
+        .replace(
+          /<meta name="twitter:title" content="[^"]*"\s*\/?>/,
+          `<meta name="twitter:title" content="${eTitle}" />`,
+        )
+        .replace(
+          /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
+          `<meta name="twitter:description" content="${eDesc}" />`,
+        )
+        .replace(
+          /<meta name="twitter:image" content="[^"]*"\s*\/?>/,
+          `<meta name="twitter:image" content="${eImage}" />`,
+        );
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      // Short cache so updates to a room (rename, new hologram) propagate
+      // quickly to social-card refreshes, but crawlers still get a cached
+      // hit for repeat fetches in the same session.
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+      res.send(html);
+    } catch {
+      next();
+    }
+  });
+
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
