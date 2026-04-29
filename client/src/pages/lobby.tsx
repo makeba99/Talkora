@@ -1290,8 +1290,8 @@ export default function Lobby() {
             </div>
           </div>
 
-          {/* Action zone */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Action zone — nav landmark so screen readers can jump here */}
+          <nav aria-label="Site navigation" className="flex items-center gap-1 flex-shrink-0">
             {user ? (
               <>
                 <span className="header-pro-btn-wrap relative inline-flex">
@@ -1549,9 +1549,10 @@ export default function Lobby() {
                   onClick={() => navigate("/teachers")}
                   className="neu-btn inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
                   data-testid="button-book-teacher-nav-guest"
+                  aria-label="Book a teacher"
                 >
                   <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
-                  <span className="hidden sm:inline">Book Teacher</span>
+                  <span className="hidden sm:inline" aria-hidden="true">Book Teacher</span>
                 </button>
                 <a
                   href="/api/login"
@@ -1563,7 +1564,7 @@ export default function Lobby() {
                 </a>
               </>
             )}
-          </div>
+          </nav>
         </div>
       </header>
 
@@ -1650,6 +1651,7 @@ export default function Lobby() {
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <div
               ref={searchShellRef}
+              role="search"
               data-tour-target="search"
               className={`search-neu-shell relative flex-1 ${searchQuery ? "is-filled" : ""} ${searchSuggestOpen && hasSuggestions ? "is-suggesting" : ""}`}
             >
@@ -1657,6 +1659,13 @@ export default function Lobby() {
                 <Search className="w-[17px] h-[17px]" />
               </span>
               <Input
+                aria-label={
+                  activeDiscovery === "rooms"
+                    ? "Search rooms, languages, and people"
+                    : activeDiscovery === "top-speakers"
+                      ? "Search top speakers"
+                      : "Search famous users"
+                }
                 placeholder={
                   activeDiscovery === "rooms"
                     ? "Search rooms, languages, people…"
@@ -1817,7 +1826,7 @@ export default function Lobby() {
           {/* Filter strip: each chip has its own colour family so Rooms,
               Speakers, Famous and Languages stay easy to tell apart. */}
           <div className="filter-strip" data-testid="filters-discovery-search">
-            <div className="filter-strip-group">
+            <div role="group" aria-label="View filter" className="filter-strip-group">
               {([
                 { id: "rooms",         label: "Rooms",        icon: Mic,   tone: "purple" },
                 { id: "top-speakers",  label: "Top Speakers", icon: Radio, tone: "cyan"   },
@@ -2053,6 +2062,8 @@ export default function Lobby() {
               )}
             </div>
           ) : (
+            <section aria-label="Voice rooms">
+            <h2 className="sr-only">Voice rooms</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 xl:gap-5">
               {(() => {
                 /* PERF: compute mergedParticipants ONCE per render outside the
@@ -2111,6 +2122,7 @@ export default function Lobby() {
                 });
               })()}
             </div>
+            </section>
           )}
         </div>
         <Suspense fallback={null}>
