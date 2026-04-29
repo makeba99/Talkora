@@ -6726,30 +6726,31 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     /* glassy top sheen — sells the convex form */
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.07) 0%,
       rgba(255, 255, 255, 0) 36%,
       rgba(0, 0, 0, 0) 70%,
-      rgba(0, 0, 0, 0.16) 100%
+      rgba(0, 0, 0, 0.18) 100%
     ),
     linear-gradient(
       180deg,
-      hsl(var(--neu-bg-hi, 232 35% 19%) / 0.92) 0%,
-      hsl(var(--neu-bg-lo, 232 35% 10%) / 0.92) 100%
+      hsl(var(--neu-bg-hi, 232 35% 19%) / 0.94) 0%,
+      hsl(var(--neu-bg-lo, 232 35% 10%) / 0.94) 100%
     );
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.055);
   box-shadow:
-    /* refined neumorphic stack: brighter top rim, deeper base */
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
-    0 6px 14px -4px rgba(0, 0, 0, 0.5),
-    0 1px 0 rgba(255, 255, 255, 0.05);
+    /* refined neumorphic stack — brighter top rim, deeper base, etched edge */
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 7px 16px -5px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.06);
   transition:
     transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1),
     border-color 200ms ease,
     color 200ms ease,
     box-shadow 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.42);
 }
 .header-pro-btn:hover {
   transform: translateY(-1px);
@@ -6808,34 +6809,42 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
    that lifts the row above the page without becoming visually heavy. */
 .search-neu-shell {
   position: relative;
-  height: 56px;
+  height: 52px;
   border-radius: 999px;
-  padding: 6px;
+  padding: 5px;
   background:
     linear-gradient(
       180deg,
-      hsl(var(--neu-bg-lo, 232 35% 8%)) 0%,
-      hsl(var(--neu-bg-hi, 232 35% 14%)) 100%
+      hsl(var(--neu-bg-lo, 232 35% 7%)) 0%,
+      hsl(var(--neu-bg-hi, 232 35% 13%)) 100%
     );
   box-shadow:
-    /* deep inset top — the carve */
-    inset 0 3px 6px rgba(0, 0, 0, 0.7),
-    inset 0 1px 2px rgba(0, 0, 0, 0.55),
-    /* hairline of light along the inner bottom — polished rim */
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -2px 4px rgba(255, 255, 255, 0.03),
+    /* deep inset top — the carve, sharpened for premium feel */
+    inset 0 3px 7px rgba(0, 0, 0, 0.78),
+    inset 0 1px 2px rgba(0, 0, 0, 0.6),
+    /* hairline of light along the inner bottom — polished metal rim */
+    inset 0 -1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -2px 5px rgba(255, 255, 255, 0.035),
     /* faint inner border to crisp the edge */
-    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
-    /* outer light hairline above the pill */
-    0 1px 0 rgba(255, 255, 255, 0.06),
-    /* ambient drop */
-    0 22px 38px -14px rgba(0, 0, 0, 0.6),
-    0 6px 12px -6px rgba(0, 0, 0, 0.45);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    /* outer light hairline above the pill — etched separation */
+    0 1px 0 rgba(255, 255, 255, 0.07),
+    /* tight contact shadow */
+    0 2px 4px -1px rgba(0, 0, 0, 0.4),
+    /* ambient depth — wider, softer */
+    0 24px 42px -16px rgba(0, 0, 0, 0.62),
+    0 8px 16px -8px rgba(0, 0, 0, 0.45);
   transition:
     box-shadow 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
     transform 220ms ease;
   display: flex;
   align-items: center;
+}
+@media (max-width: 640px) {
+  .search-neu-shell {
+    height: 48px;
+    padding: 4px;
+  }
 }
 .search-neu-shell::before {
   content: "";
@@ -9085,48 +9094,51 @@ html.boost-mode .header-pro {
 }
 
 /* ============================================================================
-   Create Room button — RESPONSIVE refinement. Compact icon-only on small
-   phones, label visible on >=420px. Tightened so the CTA reads as a
-   nested control rather than a hero button — desktop is now 40px tall
-   with a 32px medallion, dropping to a clean 36px circle on phones.
+   Create Room button — RESPONSIVE refinement (Pro polish pass).
+   ----------------------------------------------------------------------------
+   The CTA is a nested control inside the search row, not a hero. Desktop is
+   a tight 36px capsule with a 26px brand medallion; tablet drops to 34px /
+   24px; phones below 480px collapse to a perfect 34px icon-only orb that
+   still carries the violet halo so it stays unmistakably the primary action.
    ============================================================================ */
 .create-room-neu {
-  height: 40px;
-  padding: 0 14px 0 4px;
-  gap: 8px;
+  height: 36px;
+  padding: 0 12px 0 4px;
+  gap: 7px;
 }
 .create-room-neu-icon {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
 }
 .create-room-neu-label {
-  font-size: 12.5px;
+  font-size: 11.75px;
+  letter-spacing: 0.01em;
 }
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .create-room-neu {
-    height: 38px;
-    padding: 0 12px 0 4px;
-    gap: 7px;
+    height: 34px;
+    padding: 0 11px 0 4px;
+    gap: 6px;
   }
   .create-room-neu-icon {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
   }
   .create-room-neu-label {
-    font-size: 12px;
+    font-size: 11.25px;
   }
 }
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .create-room-neu {
-    height: 36px;
-    width: 36px;
+    height: 34px;
+    width: 34px;
     padding: 0;
     justify-content: center;
     gap: 0;
   }
   .create-room-neu-icon {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
   }
   .create-room-neu-label {
     display: none;
