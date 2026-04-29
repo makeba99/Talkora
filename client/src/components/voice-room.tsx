@@ -2607,6 +2607,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
   }, [remoteVideoUserId]);
 
+  // Sharer's own local screen preview. Same stability rule applies — the
+  // previous implementation used an inline arrow function as `ref`, which
+  // React recreates on every render. Each parent re-render (someone joins,
+  // someone speaks, mention popover toggles, etc.) caused the ref to be
+  // called with `null` then the element again, re-assigning `srcObject` and
+  // visibly flashing a black frame to the sharer. A stable callback fixes it.
+  const attachLocalScreen = useCallback((el: HTMLVideoElement | null) => {
+    screenVideoRef.current = el;
+    if (el && screenStream.current && el.srcObject !== screenStream.current) {
+      el.srcObject = screenStream.current;
+    }
+  }, []);
+
   // Track the YT slot's bounding rect so the persistent (fixed-position) player can
   // overlay it perfectly. Re-measures on resize, scroll, and layout-affecting state changes.
   useEffect(() => {
@@ -7734,12 +7747,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {isScreenSharing && !(activeYoutubeId && showYoutube) && !showEReader && (
             <div className="flex-1 min-h-0 bg-black relative" data-testid="media-main-screen">
               <video
-                ref={(el) => {
-                  screenVideoRef.current = el;
-                  if (el && screenStream.current) {
-                    el.srcObject = screenStream.current;
-                  }
-                }}
+                ref={attachLocalScreen}
                 autoPlay
                 muted
                 className="w-full h-full object-contain"
