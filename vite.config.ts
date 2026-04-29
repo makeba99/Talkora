@@ -38,30 +38,35 @@ export default defineConfig({
     // evergreen, so we don't need the es2020 baseline.
     target: "es2022",
     cssCodeSplit: true,
-    // Polyfill is unnecessary on every browser we ship to and adds ~1 KB of
-    // inline boot script + a forced reflow; turning it off shaves a small
-    // amount of TBT.
-    modulePreload: { polyfill: false },
     rollupOptions: {
       output: {
-        // Long-term-cacheable vendor chunks. Keeps the per-route chunk small,
-        // and means a deploy that only touches app code doesn't bust the
-        // ~500 KB of stable third-party JS.
+        // Long-term-cacheable vendor chunks. React must be in the same chunk
+        // as anything that calls React.forwardRef / React.createContext at
+        // module-evaluation time (Radix, framer-motion, react-query) to
+        // guarantee load order. Keeping them together avoids the race where
+        // a secondary chunk executes before react-vendor is evaluated.
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-          if (id.includes("react-dom") || id.includes("/react/") || id.includes("scheduler") || id.includes("wouter")) {
+          // React core + anything that reads React.* at module scope
+          if (
+            id.includes("react-dom") ||
+            id.includes("/react/") ||
+            id.includes("scheduler") ||
+            id.includes("wouter") ||
+            id.includes("@radix-ui") ||
+            id.includes("@floating-ui") ||
+            id.includes("@tanstack/react-query") ||
+            id.includes("framer-motion") ||
+            id.includes("motion-dom") ||
+            id.includes("motion-utils") ||
+            id.includes("react-hook-form") ||
+            id.includes("@hookform")
+          ) {
             return "react-vendor";
           }
-          if (id.includes("@tanstack/react-query")) return "query-vendor";
-          if (id.includes("@radix-ui") || id.includes("@floating-ui")) return "radix-vendor";
           if (id.includes("lucide-react") || id.includes("react-icons")) return "icons-vendor";
           if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "socket-vendor";
-          if (id.includes("framer-motion") || id.includes("motion-dom") || id.includes("motion-utils")) {
-            return "motion-vendor";
-          }
-          if (id.includes("date-fns") || id.includes("zod") || id.includes("react-hook-form") || id.includes("@hookform")) {
-            return "forms-vendor";
-          }
+          if (id.includes("date-fns") || id.includes("zod") || id.includes("zod-validation-error")) return "forms-vendor";
           if (id.includes("recharts") || id.includes("d3-")) return "charts-vendor";
           if (id.includes("emoji-picker-react")) return "emoji-vendor";
           if (id.includes("chess.js") || id.includes("react-chessboard")) return "chess-vendor";
