@@ -382,18 +382,25 @@ Badge applications table (shared/schema.ts):
   the room cards / chat tiles sitting underneath it.
 - A **PinnedSocialsButton**
   (`client/src/components/pinned-socials-button.tsx`) is rendered in
-  the lobby for signed-in users when they enable "Pin socials to side"
-  in their profile editor. It shows a round floating button on the
-  right edge that fans out the user's Instagram / LinkedIn / Facebook
-  links (free4talk-style). The button is **draggable vertically** by
-  a small grip handle on top — pointer events drive `top` updates and
-  the final value is persisted to `localStorage`
-  (`vextorn:pinned-socials:pos:v2`). The default position lands near
-  the lower-right corner so it's within thumb reach on phones. Drag
-  vs click is disambiguated by a 3 px movement threshold so a quick
-  tap still opens the fan. Backed by a `socials_pinned` boolean
-  column on the `users` table (`shared/models/auth.ts`), whitelisted
-  in `PATCH /api/users/:id`, and toggled in `profile-dropdown.tsx`.
+  **both the lobby and inside every voice room** for signed-in users
+  who have enabled "Pin socials to side" in their profile editor. It
+  shows a round floating button on the right edge that fans out the
+  user's Instagram / LinkedIn / Facebook links (free4talk-style). The
+  button is **draggable vertically** by a small grip handle on top —
+  pointer events drive `top` updates and the final value is persisted
+  to `localStorage` (`vextorn:pinned-socials:pos:v2`). The default
+  position lands near the lower-right corner so it's within thumb
+  reach on phones. Drag vs click is disambiguated by a 3 px movement
+  threshold so a quick tap still opens the fan. The first time the
+  button mounts for a user, a small "Drag me ↕" callout pulses next
+  to it for ~6 seconds (with a synchronized glow on the toggle) so
+  users actually discover the drag affordance — the hint is then
+  suppressed forever via `vextorn:pinned-socials:hint-seen:v1`.
+  Backed by a `socials_pinned` boolean column on the `users` table
+  (`shared/models/auth.ts`), whitelisted in `PATCH /api/users/:id`,
+  and toggled in `profile-dropdown.tsx`. The wrapper carries
+  `data-tour-target="pinned-socials"` so the in-room tour can
+  spotlight it.
 - The onboarding tour's bottom-left **Tour relauncher** capsule has a
   small dismiss `X` that hides it permanently. On touch / mobile the
   X stays visible by default (instead of only on hover) so mobile

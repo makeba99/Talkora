@@ -4,6 +4,7 @@ import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
 
 const POS_STORAGE_KEY = "vextorn:pinned-socials:pos:v2";
+const HINT_SEEN_KEY = "vextorn:pinned-socials:hint-seen:v1";
 const EDGE_MARGIN = 14;
 const MOBILE_EDGE_MARGIN = 10;
 
@@ -54,6 +55,7 @@ export function PinnedSocialsButton() {
   const dragRef = useRef<DragState | null>(null);
   const [top, setTop] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [hintVisible, setHintVisible] = useState(false);
 
   const u = user as any;
   const enabled = !!u?.socialsPinned;
@@ -87,6 +89,33 @@ export function PinnedSocialsButton() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // First-time discovery hint — show a small "Drag me ↕" callout the first
+  // time the button mounts, then never again. Persisted in localStorage so
+  // it doesn't keep nagging the user across sessions.
+  useEffect(() => {
+    if (!enabled || !hasAny || top === null) return;
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(HINT_SEEN_KEY) === "1") return;
+    const showT = setTimeout(() => setHintVisible(true), 800);
+    const hideT = setTimeout(() => {
+      setHintVisible(false);
+      try { window.localStorage.setItem(HINT_SEEN_KEY, "1"); } catch {}
+    }, 6500);
+    return () => {
+      clearTimeout(showT);
+      clearTimeout(hideT);
+    };
+  }, [enabled, hasAny, top]);
+
+  // Dismiss the hint as soon as the user actually interacts with the button.
+  useEffect(() => {
+    if (!hintVisible) return;
+    if (dragging || open) {
+      setHintVisible(false);
+      try { window.localStorage.setItem(HINT_SEEN_KEY, "1"); } catch {}
+    }
+  }, [hintVisible, dragging, open]);
 
   // Close on Escape for accessibility.
   useEffect(() => {
@@ -141,11 +170,22 @@ export function PinnedSocialsButton() {
   return (
     <div
       ref={wrapRef}
-      className={`pinned-socials ${dragging ? "is-dragging" : ""}`}
+      className={`pinned-socials ${dragging ? "is-dragging" : ""} ${hintVisible ? "is-hinting" : ""}`}
       data-open={open ? "true" : "false"}
+      data-tour-target="pinned-socials"
       data-testid="pinned-socials"
       style={top !== null ? { top, right: rightOffset, bottom: "auto" } : { visibility: "hidden" }}
     >
+      {hintVisible && (
+        <span
+          className="pinned-socials-hint"
+          role="status"
+          aria-live="polite"
+          data-testid="hint-pinned-socials-drag"
+        >
+          Drag me ↕
+        </span>
+      )}
       <span
         className="pinned-socials-handle"
         onPointerDown={handleHandlePointerDown}

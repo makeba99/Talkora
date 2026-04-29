@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
-import { ChevronRight, X, Sparkles, Mic, Video, MonitorPlay, MessageSquare, Youtube, BookOpen, Gamepad2, Share2, Users, Settings, LogOut, Bot, Compass } from "lucide-react";
+import { ChevronRight, X, Sparkles, Mic, Video, MonitorPlay, MessageSquare, Youtube, BookOpen, Gamepad2, Share2, Users, Settings, LogOut, Bot, Compass, Move } from "lucide-react";
 import type { User } from "@shared/schema";
 
 const STORAGE_KEY = "vextorn:room-onboarding:v1";
@@ -24,7 +24,7 @@ type RoomTourStep = {
   primary?: string;
   secondary?: string;
   /** Skip this step entirely if the predicate returns false (e.g. host-only steps). */
-  showIf?: (ctx: { isOwner: boolean }) => boolean;
+  showIf?: (ctx: { isOwner: boolean; hasPinnedSocials: boolean }) => boolean;
 };
 
 const STEPS: RoomTourStep[] = [
@@ -147,6 +147,16 @@ const STEPS: RoomTourStep[] = [
     showIf: ({ isOwner }) => !isOwner,
   },
   {
+    id: "pinned-socials",
+    target: '[data-tour-target="pinned-socials"]',
+    icon: Move,
+    title: "Pin your socials to the side.",
+    body: "If you've added Instagram, LinkedIn or Facebook in your profile, this little floating button shows on the right edge of every room and the lobby. **Drag it up or down** by the small grip on top to park it wherever you want — it stays put across reloads. Tap it to fan out your links so anyone can follow you in one tap.",
+    primary: "Cool",
+    secondary: "Skip tour",
+    showIf: ({ hasPinnedSocials }) => hasPinnedSocials,
+  },
+  {
     id: "leave",
     target: '[data-testid="button-leave-room"]',
     icon: LogOut,
@@ -205,8 +215,15 @@ type RoomOnboardingTourProps = {
 };
 
 export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
-  // Filter the steps once per render based on host vs guest context.
-  const visibleSteps = STEPS.filter((s) => !s.showIf || s.showIf({ isOwner }));
+  const u = user as any;
+  const hasPinnedSocials = !!(
+    u?.socialsPinned && (u?.instagramUrl || u?.linkedinUrl || u?.facebookUrl)
+  );
+  // Filter the steps once per render based on host vs guest context and
+  // whether the user has actually opted into the pinned-socials button.
+  const visibleSteps = STEPS.filter(
+    (s) => !s.showIf || s.showIf({ isOwner, hasPinnedSocials }),
+  );
 
   const [active, setActive] = useState(false);
   const [reopenVisible, setReopenVisible] = useState(false);

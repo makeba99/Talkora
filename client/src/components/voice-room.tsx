@@ -35,6 +35,7 @@ import { LANGUAGES, LEVELS } from "@shared/schema";
 import { DmDialog } from "@/components/dm-dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { RoomOnboardingTour } from "@/components/room-onboarding-tour";
+import { PinnedSocialsButton } from "@/components/pinned-socials-button";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, renderReplyPreview, uploadChatImage } from "@/components/chat-picker";
 import { ChessPanel } from "@/components/chess-panel";
 import { CenterChessOverlay, ChessPlayerBadge } from "@/components/center-chess-overlay";
@@ -9697,6 +9698,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       </Dialog>
 
       <RoomOnboardingTour user={user} isOwner={isHost} />
+      <PinnedSocialsButton />
     </div>
   );
 }

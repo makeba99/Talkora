@@ -9012,9 +9012,86 @@ html.boost-mode .header-pro {
 }
 .pinned-socials:hover .pinned-socials-handle,
 .pinned-socials[data-open="true"] .pinned-socials-handle,
-.pinned-socials.is-dragging .pinned-socials-handle {
+.pinned-socials.is-dragging .pinned-socials-handle,
+.pinned-socials.is-hinting .pinned-socials-handle {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+/* First-time discovery callout — small floating chip that points at the
+   button and says "Drag me ↕". Auto-fades after a few seconds and is
+   suppressed forever once the user interacts. */
+.pinned-socials-hint {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: hsl(var(--neu-orange-hi, 252 100% 92%));
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 22%) / 0.96) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 10%) / 0.98) 100%);
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 8px 22px rgba(0, 0, 0, 0.55),
+    0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+  animation: pinnedSocialsHintIn 220ms ease both,
+             pinnedSocialsHintBob 1.6s ease-in-out 380ms infinite;
+}
+.pinned-socials-hint::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  transform: translateY(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border-right: inherit;
+  border-top: inherit;
+  border-radius: 2px;
+}
+.pinned-socials.is-hinting .pinned-socials-toggle {
+  animation: pinnedSocialsTogglePulse 1.6s ease-in-out 380ms infinite;
+}
+@keyframes pinnedSocialsHintIn {
+  from { opacity: 0; transform: translate(8px, -50%); }
+  to   { opacity: 1; transform: translate(0, -50%); }
+}
+@keyframes pinnedSocialsHintBob {
+  0%, 100% { transform: translate(0, -50%); }
+  50%      { transform: translate(-3px, -50%); }
+}
+@keyframes pinnedSocialsTogglePulse {
+  0%, 100% {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.10) inset,
+      0 -2px 0 rgba(0, 0, 0, 0.55) inset,
+      0 6px 16px rgba(0, 0, 0, 0.5),
+      0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.25);
+  }
+  50% {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.12) inset,
+      0 -2px 0 rgba(0, 0, 0, 0.6) inset,
+      0 10px 22px rgba(0, 0, 0, 0.55),
+      0 0 30px hsl(var(--neu-orange, 252 90% 70%) / 0.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pinned-socials-hint,
+  .pinned-socials.is-hinting .pinned-socials-toggle {
+    animation: none !important;
+  }
 }
 
 /* Toggle and individual social link buttons share the same neumorphic core:
