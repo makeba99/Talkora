@@ -24,6 +24,33 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LANGUAGES, LEVELS } from "@shared/schema";
 import type { Room, User, Follow, UserBadge } from "@shared/schema";
 
+/**
+ * Avatars in this card render at 52–74 CSS px. randomuser.me serves portraits
+ * at 128 px by default — that's 2–3× larger than needed on a 1× display, and
+ * Lighthouse flagged 7+ KiB of waste per avatar. Their CDN exposes a `/med/`
+ * path variant (~72 px) which is the perfect base for 1× displays. We then
+ * upgrade to the 128 px file via `srcSet` for retina screens.
+ *
+ * For non-randomuser URLs (Replit object storage, Google profile pictures, etc.)
+ * the original src is returned untouched.
+ */
+function buildAvatarSources(url: string | null | undefined): {
+  src: string | undefined;
+  srcSet?: string;
+} {
+  if (!url) return { src: undefined };
+  const m = url.match(
+    /^(https?:\/\/randomuser\.me\/api\/portraits\/)(men|women)(\/\d+\.jpg)$/,
+  );
+  if (m) {
+    const [, base, gender, file] = m;
+    const med = `${base}med/${gender}${file}`;
+    const full = `${base}${gender}${file}`;
+    return { src: med, srcSet: `${med} 1x, ${full} 2x` };
+  }
+  return { src: url };
+}
+
 interface RoomCardProps {
   room: Room;
   participants: User[];
@@ -161,7 +188,10 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
   return (
     <div className="flex flex-col items-center gap-3 p-2" data-testid={`card-profile-popup-${participant.id}`}>
       <Avatar className="w-16 h-16 border-2 border-border">
-        <AvatarImage src={participant.profileImageUrl || undefined} alt="" />
+        {(() => {
+          const a = buildAvatarSources(participant.profileImageUrl);
+          return <AvatarImage src={a.src} srcSet={a.srcSet} alt="" />;
+        })()}
         <AvatarFallback className="text-xl font-bold">
           {getUserInitials(participant)}
         </AvatarFallback>
@@ -620,7 +650,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             </div>
             <div className="flex flex-col items-center gap-1.5 pb-3">
               <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
-                <AvatarImage src={ownerAvatar} alt="" />
+                {(() => {
+                  const a = buildAvatarSources(ownerAvatar);
+                  return <AvatarImage src={a.src} srcSet={a.srcSet} alt="" />;
+                })()}
                 <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
               </Avatar>
               <p className="text-sm font-medium text-white">{ownerName}</p>
@@ -807,7 +840,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       }}
                     >
                       <Avatar style={{ width: 22, height: 22 }} className="rounded-full">
-                        <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} className="rounded-full" />
+                        {(() => {
+                          const a = buildAvatarSources(p.profileImageUrl);
+                          return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(p)} className="rounded-full" />;
+                        })()}
                         <AvatarFallback className="rounded-full text-[8px] font-bold bg-[#1a1520] text-white/80">
                           {getUserInitials(p)}
                         </AvatarFallback>
@@ -890,7 +926,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       }}
                     >
                       <Avatar style={{ width: circleSize, height: circleSize }} className={`rounded-2xl border-2 ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
-                        <AvatarImage src={p.profileImageUrl || undefined} alt={getUserDisplayName(p)} className="rounded-2xl" />
+                        {(() => {
+                          const a = buildAvatarSources(p.profileImageUrl);
+                          return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(p)} className="rounded-2xl" />;
+                        })()}
                         <AvatarFallback className="rounded-2xl text-base font-bold bg-[#1a1520] text-white/70">
                           {getUserInitials(p)}
                         </AvatarFallback>
