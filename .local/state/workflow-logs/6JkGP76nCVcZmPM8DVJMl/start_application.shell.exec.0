@@ -1,0 +1,69 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0K[cleanup] 2026-04-29T11:54:11.623Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-04-29T11:54:11.623Z Retention: messages=7d, room_messages=7d, notifications=14d, reports=30d, orphan_files=7d
+[cleanup] 2026-04-29T11:54:11.624Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion (grace=120s)
+[cleanup] 2026-04-29T11:54:11.656Z Cleanup complete in 32ms — files=0 (0 bytes)
+11:54:12 AM [express] serving on port 5000
+11:54:12 AM [express] cache-warmed /api/rooms in 0ms
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+11:54:16 AM [express] GET /api/auth/user 401 in 2ms
+11:54:17 AM [express] GET /api/announcements 304 in 5ms
+11:54:17 AM [express] POST /api/users/badges/batch 200 in 13ms
+11:54:17 AM [express] POST /api/rooms/votes/batch 200 in 25ms
+11:54:18 AM [express] GET /api/rooms/participants 304 in 1ms
+11:54:18 AM [express] GET /api/rooms 304 in 3ms
+11:54:21 AM [express] GET /api/auth/user 401 in 3ms
+11:54:21 AM [express] GET /api/rooms 304 in 1ms
+11:54:21 AM [express] GET /api/rooms/participants 304 in 2ms
+11:54:21 AM [express] GET /api/announcements 304 in 6ms
+11:54:21 AM [express] POST /api/users/badges/batch 200 in 9ms
+11:54:21 AM [express] POST /api/rooms/votes/batch 200 in 9ms
+11:54:33 AM [express] GET /api/rooms 304 in 3ms
+11:54:48 AM [express] GET /api/announcements 304 in 4ms
+11:54:48 AM [express] POST /api/rooms/votes/batch 200 in 2ms
+11:54:48 AM [express] GET /api/rooms/participants 304 in 0ms
+11:54:48 AM [express] GET /api/rooms 304 in 2ms
+11:54:55 AM [express] POST /api/users/badges/batch 200 in 5ms
+11:55:03 AM [express] GET /api/rooms 304 in 2ms
+11:55:18 AM [express] POST /api/rooms/votes/batch 200 in 4ms
+11:55:18 AM [express] GET /api/announcements 304 in 3ms
+11:55:18 AM [express] GET /api/rooms/participants 304 in 1ms
+11:55:19 AM [express] GET /api/rooms 304 in 2ms
+11:55:34 AM [express] GET /api/rooms 304 in 2ms
+11:56:03 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:56:10 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:56:17 AM [express] POST /api/users/badges/batch 200 in 4ms
+11:56:18 AM [express] POST /api/rooms/votes/batch 200 in 2ms
+11:56:18 AM [express] GET /api/announcements 304 in 2ms
+11:56:18 AM [express] GET /api/rooms/participants 304 in 1ms
+11:56:19 AM [express] GET /api/rooms 304 in 3ms
+11:56:35 AM [express] GET /api/rooms 304 in 2ms
+11:56:48 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+11:56:48 AM [express] GET /api/announcements 304 in 2ms
+11:56:49 AM [express] GET /api/rooms/participants 304 in 0ms
+11:56:50 AM [express] GET /api/rooms 304 in 3ms
+11:57:02 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:57:05 AM [express] GET /api/rooms 304 in 3ms
+11:57:19 AM [express] POST /api/rooms/votes/batch 200 in 2ms
+11:57:19 AM [express] GET /api/announcements 304 in 2ms
+11:57:19 AM [express] GET /api/rooms/participants 304 in 2ms
+11:57:21 AM [express] GET /api/rooms 304 in 3ms
+11:57:36 AM [express] GET /api/rooms 304 in 2ms
+11:57:47 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:57:49 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+11:57:49 AM [express] GET /api/announcements 304 in 2ms
+11:57:49 AM [express] GET /api/rooms/participants 304 in 1ms
+11:57:51 AM [express] GET /api/rooms 304 in 3ms
+11:58:06 AM [express] GET /api/rooms 304 in 4ms
+11:58:19 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+11:58:19 AM [express] GET /api/rooms/participants 304 in 1ms
+11:58:19 AM [express] GET /api/announcements 304 in 2ms
+11:58:22 AM [express] GET /api/rooms 304 in 3ms

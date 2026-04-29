@@ -1,0 +1,51 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K[cleanup] 2026-04-29T11:51:28.315Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-04-29T11:51:28.316Z Retention: messages=7d, room_messages=7d, notifications=14d, reports=30d, orphan_files=7d
+[cleanup] 2026-04-29T11:51:28.316Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion (grace=120s)
+[cleanup] 2026-04-29T11:51:28.347Z Cleanup complete in 31ms — files=0 (0 bytes)
+11:51:28 AM [express] serving on port 5000
+11:51:28 AM [express] cache-warmed /api/rooms in 0ms
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+11:51:32 AM [express] GET /api/auth/user 401 in 3ms
+11:51:34 AM [express] GET /api/rooms 304 in 12ms
+11:51:34 AM [express] GET /api/announcements 304 in 3ms
+11:51:34 AM [express] POST /api/users/badges/batch 200 in 9ms
+11:51:34 AM [express] POST /api/rooms/votes/batch 200 in 4ms
+11:51:34 AM [express] GET /api/rooms/participants 304 in 1ms
+11:51:37 AM [express] GET /api/auth/user 401 in 3ms
+11:51:37 AM [express] GET /api/rooms 304 in 1ms
+11:51:37 AM [express] GET /api/rooms/participants 304 in 0ms
+11:51:37 AM [express] GET /api/announcements 304 in 5ms
+11:51:37 AM [express] POST /api/users/badges/batch 200 in 5ms
+11:51:37 AM [express] POST /api/rooms/votes/batch 200 in 4ms
+11:51:49 AM [express] GET /api/rooms 304 in 2ms
+11:52:04 AM [express] GET /api/announcements 304 in 3ms
+11:52:04 AM [express] GET /api/rooms/participants 304 in 1ms
+11:52:05 AM [express] GET /api/rooms 304 in 2ms
+11:52:05 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+11:52:20 AM [express] GET /api/rooms 304 in 2ms
+11:52:26 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:52:35 AM [express] GET /api/announcements 304 in 1ms
+11:52:35 AM [express] GET /api/rooms/participants 304 in 1ms
+11:52:35 AM [express] POST /api/rooms/votes/batch 200 in 2ms
+11:52:35 AM [express] GET /api/rooms 304 in 2ms
+11:52:51 AM [express] GET /api/rooms 304 in 2ms
+11:53:05 AM [express] GET /api/announcements 304 in 1ms
+11:53:05 AM [express] GET /api/rooms/participants 304 in 1ms
+11:53:05 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+11:53:06 AM [express] GET /api/rooms 304 in 2ms
+11:53:21 AM [express] GET /api/rooms 304 in 2ms
+11:53:23 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:53:45 AM [express] POST /api/users/badges/batch 200 in 2ms
+11:54:05 AM [express] GET /api/announcements 304 in 2ms
+11:54:05 AM [express] GET /api/rooms/participants 304 in 1ms
+11:54:06 AM [express] POST /api/rooms/votes/batch 200 in 2ms
+11:54:07 AM [express] GET /api/rooms 304 in 2ms
