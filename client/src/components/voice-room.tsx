@@ -941,6 +941,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [videoFlipped, setVideoFlipped] = useState(true);
   const [remoteVideoUserId, setRemoteVideoUserId] = useState<string | null>(null);
   const [remoteScreenShareUserId, setRemoteScreenShareUserId] = useState<string | null>(null);
+  // Tracks whether the remote screen <video> has actually started painting
+  // frames. We use this to fade in the screen smoothly and hide the brief
+  // moment of black between "stream attached" and "first keyframe arrived"
+  // that otherwise reads as a glitchy blink when a viewer first joins.
+  const [remoteScreenPlaying, setRemoteScreenPlaying] = useState(false);
   // Persisted per-viewer preference for how the remote screen-share fills the
   // viewer pane: "fit" letterboxes (object-contain) so nothing is cropped,
   // "fill" crops to edge-to-edge (object-cover). Useful when the sharer is on
@@ -2573,6 +2578,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         el.srcObject = stream;
       }
     }
+    // Whenever we switch who we're watching (or stop watching), reset the
+    // "playing" flag so the loading placeholder shows for the new viewer
+    // until the first frame actually arrives.
+    setRemoteScreenPlaying(false);
   }, [remoteScreenShareUserId]);
 
   // Stable ref callbacks for the remote-video and screen-share <video> elements.
@@ -7769,8 +7778,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 ref={attachRemoteScreen}
                 autoPlay
                 playsInline
-                className={`w-full h-full ${screenFitMode === "fill" ? "object-cover" : "object-contain"}`}
+                onPlaying={() => setRemoteScreenPlaying(true)}
+                onLoadedData={() => setRemoteScreenPlaying(true)}
+                onEmptied={() => setRemoteScreenPlaying(false)}
+                className={`w-full h-full transition-opacity duration-300 ${remoteScreenPlaying ? "opacity-100" : "opacity-0"} ${screenFitMode === "fill" ? "object-cover" : "object-contain"}`}
               />
+              {!remoteScreenPlaying && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black" data-testid="overlay-screen-loading">
+                  <div className="flex flex-col items-center gap-3 text-white/80">
+                    <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />
+                    <span className="text-xs font-medium tracking-wide">Loading screen…</span>
+                  </div>
+                </div>
+              )}
               <button
                 onClick={toggleScreenFitMode}
                 className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-black/70 hover:bg-black/85 backdrop-blur-sm border border-white/15 rounded-full px-2.5 py-1 shadow-lg text-white text-[11px] font-medium transition-colors"
