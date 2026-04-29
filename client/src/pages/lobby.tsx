@@ -1292,6 +1292,7 @@ export default function Lobby() {
                     className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
                     data-testid="button-book-teacher-nav"
                     title="Book a teacher"
+                    aria-label="Book a teacher"
                   >
                     <GraduationCap className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
                     <span className="hidden sm:inline">Book Teacher</span>
@@ -1315,6 +1316,7 @@ export default function Lobby() {
                     className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
                     data-testid="button-admin-panel"
                     title="Admin panel"
+                    aria-label="Admin panel"
                   >
                     {user.role === "superadmin" || user.email === "dj55jggg@gmail.com" ? (
                       <Crown className="w-4 h-4 sm:mr-1.5 text-neu-orange" />

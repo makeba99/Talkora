@@ -169,7 +169,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
             }}
           />
         ) : (
-          <Button size="icon" variant="ghost" className="relative" data-testid="button-notifications">
+          <Button size="icon" variant="ghost" className="relative" data-testid="button-notifications" aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}>
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
               <span

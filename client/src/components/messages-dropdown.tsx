@@ -131,7 +131,7 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
             }}
           />
         ) : (
-          <Button size="icon" variant="ghost" className="relative" data-testid="button-messages">
+          <Button size="icon" variant="ghost" className="relative" data-testid="button-messages" aria-label={unreadCount > 0 ? `Messages (${unreadCount} unread)` : "Messages"}>
             <MessageSquare className="w-4 h-4" />
             {unreadCount > 0 && (
               <span
