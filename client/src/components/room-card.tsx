@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Image as ImageIcon, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints, Hand, Sparkles, Upload } from "lucide-react";
 import { GifPickerButton } from "@/components/chat-picker";
 import { useToast } from "@/hooks/use-toast";
-import { getAvatarRingClass } from "@/components/profile-dropdown";
+import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ProfileDecoration, getRoomThemeBorderClass, ROOM_THEMES } from "@/components/profile-decorations";
 import { UserBadgePips } from "@/components/user-badge-pips";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";

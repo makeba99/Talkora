@@ -7,13 +7,27 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, ArrowRight, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
-import { CreateRoomDialog } from "@/components/create-room-dialog";
 import { showHintOnce } from "@/lib/hints";
-import { MessagesDropdown } from "@/components/messages-dropdown";
 import { SiteFooter } from "@/components/site-footer";
-import { ProfileDropdown } from "@/components/profile-dropdown";
-import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { ScrollJumpButton } from "@/components/scroll-jump-button";
+
+/* Heavy header chrome that only renders for signed-in users (and on user
+ * interaction for CreateRoomDialog). Lazy-loading these keeps the initial
+ * lobby chunk much smaller — CreateRoomDialog alone pulls in the entire
+ * react-hook-form + zod (~117 kB) bundle, and ProfileDropdown is ~1.2k
+ * lines of menu UI that the LCP doesn't depend on at all. */
+const CreateRoomDialog = lazy(() =>
+  import("@/components/create-room-dialog").then((m) => ({ default: m.CreateRoomDialog }))
+);
+const MessagesDropdown = lazy(() =>
+  import("@/components/messages-dropdown").then((m) => ({ default: m.MessagesDropdown }))
+);
+const NotificationsDropdown = lazy(() =>
+  import("@/components/notifications-dropdown").then((m) => ({ default: m.NotificationsDropdown }))
+);
+const ProfileDropdown = lazy(() =>
+  import("@/components/profile-dropdown").then((m) => ({ default: m.ProfileDropdown }))
+);
 
 // Heavy lobby surfaces that only mount on user interaction (clicks, hover,
 // or the once-per-session onboarding gate). Lazy-loading them keeps the
@@ -1179,13 +1193,21 @@ export default function Lobby() {
                     />
                   )}
                 </Suspense>
-                <MessagesDropdown
-                  onOpenDm={(userId) => setDmUserId(userId)}
-                  open={messagesOpen}
-                  onOpenChange={setMessagesOpen}
-                  hideTrigger
-                />
-                <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} hideTrigger />
+                <Suspense fallback={null}>
+                  {messagesOpen && (
+                    <MessagesDropdown
+                      onOpenDm={(userId) => setDmUserId(userId)}
+                      open={messagesOpen}
+                      onOpenChange={setMessagesOpen}
+                      hideTrigger
+                    />
+                  )}
+                </Suspense>
+                <Suspense fallback={null}>
+                  {notificationsOpen && (
+                    <NotificationsDropdown open={notificationsOpen} onOpenChange={setNotificationsOpen} hideTrigger />
+                  )}
+                </Suspense>
                 <Suspense fallback={null}>
                   {themePickerOpen && (
                     <ThemePicker open={themePickerOpen} onOpenChange={setThemePickerOpen} hideTrigger />
@@ -1297,6 +1319,7 @@ export default function Lobby() {
                     its own popover so the orbit lives separately from the
                     profile menu. The avatar pill keeps profile-only content. */}
                 {pinned.orbit && (
+                  <Suspense fallback={null}>
                   <ProfileDropdown
                     open={orbitOpen}
                     onOpenChange={setOrbitOpen}
@@ -1336,6 +1359,7 @@ export default function Lobby() {
                       </button>
                     }
                   />
+                  </Suspense>
                 )}
 
                 {/* Avatar pill profile menu.
@@ -1346,18 +1370,20 @@ export default function Lobby() {
                     own header chip, the avatar pill becomes a pure profile
                     dropdown — we drop the controlled state so it can open
                     independently of the orbit chip's popover. */}
-                <ProfileDropdown
-                  {...(pinned.orbit ? {} : { open: orbitOpen, onOpenChange: setOrbitOpen })}
-                  onOpenTheme={() => setThemePickerOpen(true)}
-                  onOpenNotifications={() => setNotificationsOpen(true)}
-                  onOpenMessages={() => setMessagesOpen(true)}
-                  onOpenCommunity={() => setSocialOpen(true)}
-                  unreadMessages={unreadMessages}
-                  unreadNotifications={unreadNotifications}
-                  pinned={pinned}
-                  onTogglePin={togglePin}
-                  mode={pinned.orbit ? "profile-only" : "full"}
-                />
+                <Suspense fallback={<Skeleton className="h-9 w-9 rounded-full" />}>
+                  <ProfileDropdown
+                    {...(pinned.orbit ? {} : { open: orbitOpen, onOpenChange: setOrbitOpen })}
+                    onOpenTheme={() => setThemePickerOpen(true)}
+                    onOpenNotifications={() => setNotificationsOpen(true)}
+                    onOpenMessages={() => setMessagesOpen(true)}
+                    onOpenCommunity={() => setSocialOpen(true)}
+                    unreadMessages={unreadMessages}
+                    unreadNotifications={unreadNotifications}
+                    pinned={pinned}
+                    onTogglePin={togglePin}
+                    mode={pinned.orbit ? "profile-only" : "full"}
+                  />
+                </Suspense>
               </>
             ) : (
               <>
@@ -1617,10 +1643,12 @@ export default function Lobby() {
             </div>
             {user && (
               <div className="w-full md:w-auto flex-shrink-0 [&_button]:w-full md:[&_button]:w-auto [&_button]:whitespace-nowrap" data-testid="container-create-room">
-                <CreateRoomDialog
-                  onCreateRoom={(data) => createRoomMutation.mutate(data)}
-                  isPending={createRoomMutation.isPending}
-                />
+                <Suspense fallback={<Skeleton className="h-10 w-full md:w-44 rounded-lg" />}>
+                  <CreateRoomDialog
+                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
+                    isPending={createRoomMutation.isPending}
+                  />
+                </Suspense>
               </div>
             )}
           </div>
@@ -1851,10 +1879,12 @@ export default function Lobby() {
                 </p>
               </div>
               {user ? (
-                <CreateRoomDialog
-                  onCreateRoom={(data) => createRoomMutation.mutate(data)}
-                  isPending={createRoomMutation.isPending}
-                />
+                <Suspense fallback={<Skeleton className="h-10 w-44 rounded-lg" />}>
+                  <CreateRoomDialog
+                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
+                    isPending={createRoomMutation.isPending}
+                  />
+                </Suspense>
               ) : (
                 <Button asChild data-testid="button-sign-in-empty">
                   <a href="/api/login">Sign in to create a room</a>
