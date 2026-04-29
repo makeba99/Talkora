@@ -423,11 +423,28 @@ export async function registerRoutes(
     }
   });
 
+  // Per-origin in-memory cache for the sitemap XML so back-to-back crawler
+  // hits don't re-query the rooms + teachers tables. TTL is short enough that
+  // newly-created rooms still appear within minutes, but long enough to
+  // absorb crawler bursts (Googlebot/Bingbot can re-fetch within seconds).
+  const SITEMAP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  const sitemapCache = new Map<string, { xml: string; expiresAt: number }>();
+
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
       const host = req.get("host") || "vextorn.com";
       const origin = `${proto}://${host}`;
+
+      const now = Date.now();
+      const cached = sitemapCache.get(origin);
+      if (cached && cached.expiresAt > now) {
+        res.setHeader("Content-Type", "application/xml; charset=utf-8");
+        res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+        res.setHeader("X-Cache", "HIT");
+        res.send(cached.xml);
+        return;
+      }
 
       const [allRooms, allTeachers] = await Promise.all([
         storage.getAllRooms(),
@@ -489,8 +506,18 @@ export async function registerRoutes(
         urls.join("\n") +
         `\n</urlset>`;
 
+      // Cache and prune any stale entries to keep the map small even if the
+      // app is hit from many different host headers (preview, deploy, custom).
+      sitemapCache.set(origin, { xml, expiresAt: now + SITEMAP_TTL_MS });
+      if (sitemapCache.size > 32) {
+        for (const [key, value] of sitemapCache) {
+          if (value.expiresAt <= now) sitemapCache.delete(key);
+        }
+      }
+
       res.setHeader("Content-Type", "application/xml; charset=utf-8");
-      res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+      res.setHeader("X-Cache", "MISS");
       res.send(xml);
     } catch (err: any) {
       res.status(500).type("text/plain").send(`sitemap error: ${err.message}`);
@@ -498,22 +525,45 @@ export async function registerRoutes(
   });
 
   // Robots.txt — generated dynamically so the sitemap URL always matches the
-  // host being served (preview, deploy, custom domain, etc.).
+  // host being served (preview, deploy, custom domain, etc.). Cached per-origin
+  // so we serve straight from memory after the first hit per host.
+  const ROBOTS_TTL_MS = 60 * 60 * 1000; // 1 hour — content rarely changes
+  const robotsCache = new Map<string, { body: string; expiresAt: number }>();
+
   app.get("/robots.txt", (req, res) => {
     const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
     const host = req.get("host") || "vextorn.com";
     const origin = `${proto}://${host}`;
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.setHeader("Cache-Control", "public, max-age=86400");
-    res.send(
-      `User-agent: *\n` +
+
+    const now = Date.now();
+    const cached = robotsCache.get(origin);
+    let body: string;
+    let cacheStatus: "HIT" | "MISS";
+    if (cached && cached.expiresAt > now) {
+      body = cached.body;
+      cacheStatus = "HIT";
+    } else {
+      body =
+        `User-agent: *\n` +
         `Allow: /\n` +
         `Disallow: /api/\n` +
         `Disallow: /uploads/\n` +
         `Disallow: /admin\n` +
         `Disallow: /messages/\n\n` +
-        `Sitemap: ${origin}/sitemap.xml\n`
-    );
+        `Sitemap: ${origin}/sitemap.xml\n`;
+      robotsCache.set(origin, { body, expiresAt: now + ROBOTS_TTL_MS });
+      cacheStatus = "MISS";
+      if (robotsCache.size > 32) {
+        for (const [key, value] of robotsCache) {
+          if (value.expiresAt <= now) robotsCache.delete(key);
+        }
+      }
+    }
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+    res.setHeader("X-Cache", cacheStatus);
+    res.send(body);
   });
 
   app.get("/api/rooms/participants", async (_req, res) => {
