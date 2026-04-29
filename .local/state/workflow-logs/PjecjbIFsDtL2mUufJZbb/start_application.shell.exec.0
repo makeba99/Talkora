@@ -48,3 +48,83 @@ A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cau
 10:50:58 AM [express] GET /api/rooms 304 in 3ms
 10:50:59 AM [express] POST /api/users/badges/batch 200 in 3ms
 10:51:13 AM [express] GET /api/rooms 304 in 3ms
+<<<<<<< HEAD
+=======
+10:51:28 AM [express] GET /api/announcements 304 in 3ms
+10:51:28 AM [express] GET /api/rooms/participants 304 in 2ms
+10:51:28 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+10:51:29 AM [express] GET /api/rooms 304 in 3ms
+10:51:36 AM [express] POST /api/users/badges/batch 200 in 4ms
+10:51:56 AM [express] POST /api/users/badges/batch 200 in 4ms
+10:52:12 AM [express] POST /api/users/badges/batch 200 in 3ms
+10:52:42 AM [express] POST /api/users/badges/batch 200 in 13ms
+10:56:02 AM [express] POST /api/users/badges/batch 200 in 17ms
+10:56:14 AM [express] POST /api/users/badges/batch 200 in 3ms
+10:56:14 AM [express] GET /api/rooms 304 in 2ms
+10:56:16 AM [express] POST /api/users/badges/batch 200 in 3ms
+10:56:22 AM [express] POST /api/users/badges/batch 200 in 3ms
+10:56:48 AM [express] POST /api/users/badges/batch 200 in 4ms
+10:57:29 AM [express] GET /api/announcements 304 in 12ms
+10:57:29 AM [express] POST /api/rooms/votes/batch 200 in 4ms
+10:57:29 AM [express] GET /api/rooms/participants 304 in 1ms
+10:57:29 AM [express] GET /api/rooms 304 in 2ms
+10:57:59 AM [express] POST /api/users/badges/batch 200 in 4ms
+10:58:05 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:00:02 AM [express] POST /api/users/badges/batch 200 in 16ms
+11:00:35 AM [express] GET /api/rooms 304 in 14ms
+11:01:05 AM [express] GET /api/rooms 304 in 14ms
+11:01:13 AM [express] POST /api/users/badges/batch 200 in 4ms
+11:01:21 AM [express] GET /api/rooms 304 in 3ms
+11:01:29 AM [express] GET /api/announcements 304 in 3ms
+11:01:29 AM [express] POST /api/rooms/votes/batch 200 in 4ms
+11:01:29 AM [express] GET /api/rooms/participants 304 in 1ms
+11:01:34 AM [express] POST /api/users/badges/batch 200 in 4ms
+11:01:51 AM [express] GET /api/rooms 304 in 2ms
+11:01:59 AM [express] GET /api/announcements 304 in 2ms
+11:01:59 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+11:02:00 AM [express] GET /api/rooms/participants 304 in 1ms
+11:02:04 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:02:06 AM [express] GET /api/rooms 304 in 2ms
+11:02:51 AM [express] POST /api/users/badges/batch 200 in 15ms
+11:03:11 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:03:22 AM [express] POST /api/users/badges/batch 200 in 3ms
+11:04:08 AM [express] POST /api/users/badges/batch 200 in 15ms
+11:04:49 AM [express] POST /api/users/badges/batch 200 in 16ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m11:05:29 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mindex.html[22m
+11:05:33 AM [express] GET /api/auth/user 401 in 1ms
+11:05:37 AM [express] GET /api/rooms 304 in 15ms
+11:05:37 AM [express] POST /api/users/badges/batch 200 in 4ms
+11:05:37 AM [express] GET /api/announcements 304 in 15ms
+11:05:37 AM [express] POST /api/rooms/votes/batch 200 in 3ms
+11:05:37 AM [express] GET /api/rooms/participants 304 in 1ms
+11:05:52 AM [express] GET /api/rooms 304 in 2ms
+11:06:07 AM [express] GET /api/rooms 304 in 2ms
+11:06:08 AM [express] POST /api/rooms/votes/batch 200 in 6ms
+11:06:08 AM [express] GET /api/announcements 304 in 16ms
+11:06:08 AM [express] GET /api/rooms/participants 304 in 1ms
+11:06:16 AM [express] POST /api/users/badges/batch 200 in 4ms
+11:06:23 AM [express] GET /api/rooms 304 in 2ms
+>>>>>>> bc3eb55 (update)
