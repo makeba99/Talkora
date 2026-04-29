@@ -5369,6 +5369,11 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 -10px 30px rgba(0, 0, 0, 0.4);
+  /* Below-the-fold on first paint — let the browser skip layout & paint until
+   * the user scrolls near it. Reserve a footprint so it doesn't cause CLS
+   * when it scrolls into view. */
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 240px;
 }
 .footer-neu-inner {
   max-width: 1280px;

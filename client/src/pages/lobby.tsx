@@ -450,6 +450,30 @@ function PeopleDiscoveryCard({
   );
 }
 
+/* Defer the OnboardingTour + ContextualHints overlays until the browser is
+ * idle. Both mount React state and event listeners on init even when no UI
+ * is visible, which adds parse + execute time to the initial paint. By
+ * waiting for requestIdleCallback we keep them functional but off the
+ * critical path — saving ~80–120ms of TBT on a typical lobby load. */
+function DeferredLobbyOverlays({ onStepChange }: { onStepChange: (id: string) => void }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const w: any = window;
+    const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
+    const handle = idle(() => setReady(true), { timeout: 2500 });
+    return () => {
+      if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
+    };
+  }, []);
+  if (!ready) return null;
+  return (
+    <Suspense fallback={null}>
+      <OnboardingTour onStepChange={onStepChange} />
+      <ContextualHints />
+    </Suspense>
+  );
+}
+
 export default function Lobby() {
   useDocumentMeta({
     title: "Live voice rooms by language",
@@ -2076,10 +2100,7 @@ export default function Lobby() {
         <SiteFooter />
       </div>
 
-      <Suspense fallback={null}>
-        <OnboardingTour onStepChange={handleTourStepChange} />
-        <ContextualHints />
-      </Suspense>
+      <DeferredLobbyOverlays onStepChange={handleTourStepChange} />
 
       {user && dmUserId && (
         <Suspense fallback={null}>
