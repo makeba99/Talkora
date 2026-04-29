@@ -405,6 +405,21 @@ Badge applications table (shared/schema.ts):
   small dismiss `X` that hides it permanently. On touch / mobile the
   X stays visible by default (instead of only on hover) so mobile
   users can actually close it.
+- **Pin to corner** (parallel to header pinning): any orbit
+  satellite (messages, notifications, themes, community, the
+  central orbit toggle) and the header **Book Teacher** button
+  can be anchored to a floating bottom-right FAB stack. The
+  badge uses an `Anchor` icon with a cool blue accent so it is
+  visually distinct from the existing purple `Pin` (header)
+  badge. State lives in `lobby.tsx` as `cornerPinned` and is
+  persisted under `vextorn:corner:pinned:v1`. Each FAB
+  (`CornerPinFab` in `lobby.tsx`) shows an unread dot when its
+  source has unread items, a persistent anchor badge to signal
+  the pinned state, and a hover-revealed unpin badge. The whole
+  stack hides when nothing is pinned. Styles live in
+  `client/src/index.css` under `.orbit-sat-pin-corner`,
+  `.header-pro-corner-pin`, and `.corner-pin-stack` /
+  `.corner-pin-fab` blocks.
 - The in-room **RoomOnboardingTour**
   (`client/src/components/room-onboarding-tour.tsx`) auto-launches
   only for users registered within the last 14 days who haven't seen

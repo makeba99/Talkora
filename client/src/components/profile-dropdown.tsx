@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid, Pin, Volume2, VolumeX, Zap, ZapOff } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff } from "lucide-react";
 import { isSoundEnabled, setSoundEnabled, onSoundEnabledChange, sfxToggle } from "@/lib/sound-fx";
 import { isBoostMode, setBoostMode, onBoostModeChange } from "@/lib/perf-bus";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
@@ -204,6 +204,14 @@ interface ProfileDropdownProps {
   pinned?: { messages?: boolean; notifications?: boolean; themes?: boolean; community?: boolean; orbit?: boolean };
   onTogglePin?: (key: "messages" | "notifications" | "themes" | "community" | "orbit") => void;
   /**
+   * Map of which orbit satellites are pinned to the bottom-right corner FAB
+   * stack. Orthogonal to `pinned` — an item can be pinned to header, corner,
+   * both, or neither. Pinning to corner does not remove the item from the
+   * orbit ring, so users can still discover/access it from the orbit.
+   */
+  cornerPinned?: { messages?: boolean; notifications?: boolean; themes?: boolean; community?: boolean; orbit?: boolean };
+  onToggleCornerPin?: (key: "messages" | "notifications" | "themes" | "community" | "orbit") => void;
+  /**
    * Rendering mode for the orbit popover content:
    *  - "full" (default): orbit ring + identity card + footer actions
    *  - "ring-only": just the orbit ring (used by the standalone orbit launcher chip)
@@ -230,6 +238,8 @@ export function ProfileDropdown({
   onOpenChange,
   pinned,
   onTogglePin,
+  cornerPinned,
+  onToggleCornerPin,
   mode = "full",
   customTrigger,
 }: ProfileDropdownProps = {}) {
@@ -496,6 +506,20 @@ export function ProfileDropdown({
                   <Pin className="w-2.5 h-2.5" />
                 </span>
               )}
+              {onToggleCornerPin && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className={`orbit-sat-pin orbit-sat-pin-corner orbit-center-pin-corner ${cornerPinned?.orbit ? "is-active" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); onToggleCornerPin?.("orbit"); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onToggleCornerPin?.("orbit"); } }}
+                  data-testid="button-corner-pin-orbit"
+                  aria-label={cornerPinned?.orbit ? "Unpin Orbit from corner" : "Pin Orbit to corner"}
+                  title={cornerPinned?.orbit ? "Unpin from corner" : "Pin to corner"}
+                >
+                  <Anchor className="w-2.5 h-2.5" />
+                </span>
+              )}
             </button>
 
             {!pinned?.messages && (
@@ -525,6 +549,20 @@ export function ProfileDropdown({
                 >
                   <Pin className="w-2.5 h-2.5" />
                 </span>
+                {onToggleCornerPin && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={`orbit-sat-pin orbit-sat-pin-corner ${cornerPinned?.messages ? "is-active" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); onToggleCornerPin?.("messages"); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onToggleCornerPin?.("messages"); } }}
+                    data-testid="button-corner-pin-messages"
+                    aria-label={cornerPinned?.messages ? "Unpin Messages from corner" : "Pin Messages to corner"}
+                    title={cornerPinned?.messages ? "Unpin from corner" : "Pin to corner"}
+                  >
+                    <Anchor className="w-2.5 h-2.5" />
+                  </span>
+                )}
               </button>
             )}
 
@@ -555,6 +593,20 @@ export function ProfileDropdown({
                 >
                   <Pin className="w-2.5 h-2.5" />
                 </span>
+                {onToggleCornerPin && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={`orbit-sat-pin orbit-sat-pin-corner ${cornerPinned?.notifications ? "is-active" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); onToggleCornerPin?.("notifications"); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onToggleCornerPin?.("notifications"); } }}
+                    data-testid="button-corner-pin-notifications"
+                    aria-label={cornerPinned?.notifications ? "Unpin Notifications from corner" : "Pin Notifications to corner"}
+                    title={cornerPinned?.notifications ? "Unpin from corner" : "Pin to corner"}
+                  >
+                    <Anchor className="w-2.5 h-2.5" />
+                  </span>
+                )}
               </button>
             )}
 
@@ -582,6 +634,20 @@ export function ProfileDropdown({
                 >
                   <Pin className="w-2.5 h-2.5" />
                 </span>
+                {onToggleCornerPin && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={`orbit-sat-pin orbit-sat-pin-corner ${cornerPinned?.themes ? "is-active" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); onToggleCornerPin?.("themes"); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onToggleCornerPin?.("themes"); } }}
+                    data-testid="button-corner-pin-themes"
+                    aria-label={cornerPinned?.themes ? "Unpin Themes from corner" : "Pin Themes to corner"}
+                    title={cornerPinned?.themes ? "Unpin from corner" : "Pin to corner"}
+                  >
+                    <Anchor className="w-2.5 h-2.5" />
+                  </span>
+                )}
               </button>
             )}
 
@@ -609,6 +675,20 @@ export function ProfileDropdown({
                 >
                   <Pin className="w-2.5 h-2.5" />
                 </span>
+                {onToggleCornerPin && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={`orbit-sat-pin orbit-sat-pin-corner ${cornerPinned?.community ? "is-active" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); onToggleCornerPin?.("community"); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onToggleCornerPin?.("community"); } }}
+                    data-testid="button-corner-pin-community"
+                    aria-label={cornerPinned?.community ? "Unpin Community from corner" : "Pin Community to corner"}
+                    title={cornerPinned?.community ? "Unpin from corner" : "Pin to corner"}
+                  >
+                    <Anchor className="w-2.5 h-2.5" />
+                  </span>
+                )}
               </button>
             )}
           </div>

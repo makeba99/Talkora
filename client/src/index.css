@@ -6457,6 +6457,261 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 }
 
 /* ============================================================================
+   CORNER PIN — orbit "Pin to corner" badge
+   ----------------------------------------------------------------------------
+   Sits next to the existing orbit-sat-pin (header pin). Uses an anchor
+   icon and a slightly cooler accent so users can distinguish "header" from
+   "corner" at a glance. When active (item is currently corner-pinned), the
+   badge is always visible and glows so the orbit shows the pinned state
+   even before hover.
+   ============================================================================ */
+.orbit-sat-pin-corner {
+  /* offset to sit alongside the existing top-right header pin */
+  top: -2px !important;
+  right: -16px !important;
+}
+.orbit-sat:hover .orbit-sat-pin-corner,
+.orbit-sat:focus-within .orbit-sat-pin-corner,
+.orbit-sat-pin-corner:hover,
+.orbit-sat-pin-corner:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.orbit-sat-pin-corner.is-active {
+  opacity: 1;
+  transform: scale(1);
+  color: #6cd6ff;
+  border-color: rgba(108, 214, 255, 0.7) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 4px 10px rgba(0, 0, 0, 0.55),
+    0 0 8px rgba(108, 214, 255, 0.55);
+}
+.orbit-sat-pin-corner:hover {
+  color: #9ee5ff;
+}
+.orbit-center-pin-corner {
+  bottom: -3px !important;
+  right: -16px !important;
+  top: auto !important;
+}
+.orbit-center:hover .orbit-center-pin-corner,
+.orbit-center:focus-within .orbit-center-pin-corner,
+.orbit-center-pin-corner:hover,
+.orbit-center-pin-corner:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ============================================================================
+   HEADER BUTTON CORNER-PIN — small anchor badge that sits in the top-right
+   corner of any header button (Book Teacher, etc) to let the user pin it to
+   the floating corner stack. Mirrors the orbit-sat-pin pattern but tuned
+   for buttons that live directly in the header.
+   ============================================================================ */
+.header-pro-btn-wrap { position: relative; }
+.header-pro-corner-pin {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 22%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 12%)) 100%
+  );
+  border: 1px solid rgba(108, 214, 255, 0.45);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 4px 10px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 160ms ease, transform 200ms ease, color 160ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+  z-index: 3;
+  pointer-events: auto;
+}
+.header-pro-btn-wrap:hover .header-pro-corner-pin,
+.header-pro-btn-wrap:focus-within .header-pro-corner-pin,
+.header-pro-corner-pin:hover,
+.header-pro-corner-pin:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.header-pro-corner-pin.is-active {
+  opacity: 1;
+  transform: scale(1);
+  color: #6cd6ff;
+  border-color: rgba(108, 214, 255, 0.75);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 4px 10px rgba(0, 0, 0, 0.55),
+    0 0 8px rgba(108, 214, 255, 0.5);
+}
+.header-pro-corner-pin:hover {
+  color: #9ee5ff;
+}
+
+/* ============================================================================
+   CORNER PIN STACK — the bottom-right floating dock of pinned shortcuts.
+   Vertically stacked circular FABs, neumorphic to match the rest of the
+   surface, with a persistent anchor badge that signals the "pinned" state
+   and a hover-revealed unpin badge for direct removal.
+   z-index sits below modals (z-100+) but above the lobby content so the
+   FABs stay reachable without ever covering critical chrome.
+   ============================================================================ */
+.corner-pin-stack {
+  position: fixed;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 60;
+  pointer-events: none; /* the FABs themselves re-enable pointer events */
+}
+.corner-pin-stack > * { pointer-events: auto; }
+
+.corner-pin-fab {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.94);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 22%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 11%)) 100%
+  );
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.4);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.55) inset,
+    0 10px 24px rgba(0, 0, 0, 0.55),
+    0 0 14px hsl(var(--neu-orange, 252 90% 70%) / 0.18);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 200ms ease, color 200ms ease, box-shadow 240ms ease;
+}
+.corner-pin-fab:hover {
+  transform: translateY(-2px);
+  color: hsl(var(--neu-orange-hi, 252 95% 84%));
+  border-color: hsl(var(--neu-orange-hi, 252 95% 84%));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.55) inset,
+    0 14px 30px rgba(0, 0, 0, 0.62),
+    0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+}
+.corner-pin-fab:active { transform: translateY(0); }
+.corner-pin-fab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* small unread dot in top-right */
+.corner-pin-fab-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #ff4d6d;
+  box-shadow: 0 0 0 2px hsl(var(--neu-bg-lo, 232 35% 11%)), 0 0 6px rgba(255, 77, 109, 0.7);
+}
+
+/* persistent anchor badge that signals "this FAB is pinned here" */
+.corner-pin-fab-badge {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6cd6ff;
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 22%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 12%)) 100%
+  );
+  border: 1px solid rgba(108, 214, 255, 0.7);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+    0 0 8px rgba(108, 214, 255, 0.45);
+  pointer-events: none;
+}
+
+/* hover-revealed unpin button (PinOff icon) */
+.corner-pin-fab-unpin {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(
+    180deg,
+    hsl(var(--neu-bg-hi, 232 35% 22%)) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 12%)) 100%
+  );
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.6);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 4px 10px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 160ms ease, transform 200ms ease, color 160ms ease;
+  cursor: pointer;
+  z-index: 2;
+}
+.corner-pin-fab:hover .corner-pin-fab-unpin,
+.corner-pin-fab:focus-within .corner-pin-fab-unpin,
+.corner-pin-fab-unpin:hover,
+.corner-pin-fab-unpin:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.corner-pin-fab-unpin:hover {
+  color: hsl(var(--neu-orange-hi, 252 95% 84%));
+}
+
+/* keep the stack from colliding with the existing scroll-to-top button or
+   the floating socials button on smaller viewports */
+@media (max-width: 640px) {
+  .corner-pin-stack {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 10px;
+  }
+  .corner-pin-fab {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* ============================================================================
    PROFESSIONAL HEADER POLISH
    ----------------------------------------------------------------------------
    Refines the lobby header: tighter buttons with subtle gradient borders,

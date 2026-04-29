@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, ArrowRight, LayoutGrid } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, Pin, PinOff, Anchor, ArrowRight, LayoutGrid, User as UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { showHintOnce } from "@/lib/hints";
@@ -198,6 +198,57 @@ const SAMPLE_PEOPLE = ALL_SAMPLE_USERS.slice(0, 20);
 
 function getUserName(person: User) {
   return person.displayName || [person.firstName, person.lastName].filter(Boolean).join(" ") || person.email || "Language learner";
+}
+
+/**
+ * Single floating circular button used in the bottom-right corner pin stack.
+ * Renders a neumorphic dark FAB with a centered icon, an optional unread dot,
+ * a small persistent "anchor" badge to make the pinned state visually obvious,
+ * and an unpin badge that appears on hover/focus to demote it back.
+ */
+function CornerPinFab({
+  label,
+  testId,
+  icon,
+  showDot,
+  onClick,
+  onUnpin,
+}: {
+  label: string;
+  testId: string;
+  icon: React.ReactNode;
+  showDot?: boolean;
+  onClick: () => void;
+  onUnpin: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="corner-pin-fab"
+      data-testid={testId}
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+    >
+      <span className="corner-pin-fab-icon">{icon}</span>
+      {showDot && <span className="corner-pin-fab-dot" aria-hidden="true" />}
+      <span className="corner-pin-fab-badge" aria-hidden="true">
+        <Anchor className="w-2.5 h-2.5" />
+      </span>
+      <span
+        role="button"
+        tabIndex={0}
+        className="corner-pin-fab-unpin"
+        onClick={(e) => { e.stopPropagation(); onUnpin(); }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onUnpin(); } }}
+        data-testid={`${testId}-unpin`}
+        aria-label={`Unpin ${label} from corner`}
+        title="Unpin from corner"
+      >
+        <PinOff className="w-2.5 h-2.5" />
+      </span>
+    </button>
+  );
 }
 
 function PeopleDiscoveryCard({
@@ -484,6 +535,52 @@ export default function Lobby() {
       return next;
     });
   }, []);
+
+  // -------------------------------------------------------------------------
+  // Corner pin state — orthogonal to header pinning. When an item is pinned
+  // to the corner it appears as a circular FAB in a vertical stack at the
+  // bottom-right of the screen, in addition to (not instead of) wherever it
+  // already lives. Items pinnable to the corner include the same orbit
+  // satellites plus the header-only buttons (Book Teacher, Profile pill).
+  // Persists to localStorage with a separate key so it can evolve
+  // independently of the legacy header-pin schema.
+  // -------------------------------------------------------------------------
+  type CornerKey = PinnedKey | "bookTeacher" | "profile";
+  const CORNER_STORAGE_KEY = "vextorn:corner:pinned:v1";
+  const [cornerPinned, setCornerPinned] = useState<Record<CornerKey, boolean>>(() => {
+    const fallback: Record<CornerKey, boolean> = {
+      messages: false,
+      notifications: false,
+      themes: false,
+      community: false,
+      orbit: false,
+      bookTeacher: false,
+      profile: false,
+    };
+    if (typeof window === "undefined") return fallback;
+    try {
+      const raw = window.localStorage.getItem(CORNER_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return { ...fallback, ...parsed };
+      }
+    } catch {}
+    return fallback;
+  });
+  const toggleCornerPin = useCallback((key: CornerKey) => {
+    setCornerPinned((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        window.localStorage.setItem(CORNER_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+  // Adapter so ProfileDropdown's narrower key type lines up with our wider one.
+  const toggleCornerPinOrbit = useCallback(
+    (key: PinnedKey) => toggleCornerPin(key as CornerKey),
+    [toggleCornerPin]
+  );
 
   // Live unread counters drive the auto-popup behavior of the orbital menu.
   const { data: unreadMsgData } = useQuery<{ count: number }>({
@@ -1165,15 +1262,29 @@ export default function Lobby() {
           <div className="flex items-center gap-1 flex-shrink-0">
             {user ? (
               <>
-                <button
-                  onClick={() => navigate("/teachers")}
-                  className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
-                  data-testid="button-book-teacher-nav"
-                  title="Book a teacher"
-                >
-                  <GraduationCap className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
-                  <span className="hidden sm:inline">Book Teacher</span>
-                </button>
+                <span className="header-pro-btn-wrap relative inline-flex">
+                  <button
+                    onClick={() => navigate("/teachers")}
+                    className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
+                    data-testid="button-book-teacher-nav"
+                    title="Book a teacher"
+                  >
+                    <GraduationCap className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
+                    <span className="hidden sm:inline">Book Teacher</span>
+                  </button>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={`header-pro-corner-pin ${cornerPinned.bookTeacher ? "is-active" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); toggleCornerPin("bookTeacher"); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); toggleCornerPin("bookTeacher"); } }}
+                    data-testid="button-corner-pin-bookteacher"
+                    aria-label={cornerPinned.bookTeacher ? "Unpin Book Teacher from corner" : "Pin Book Teacher to corner"}
+                    title={cornerPinned.bookTeacher ? "Unpin from corner" : "Pin to corner"}
+                  >
+                    <Anchor className="w-2.5 h-2.5" />
+                  </span>
+                </span>
                 {isAdminUser && (
                   <button
                     onClick={() => navigate("/admin")}
@@ -1340,6 +1451,8 @@ export default function Lobby() {
                     unreadNotifications={unreadNotifications}
                     pinned={pinned}
                     onTogglePin={togglePin}
+                    cornerPinned={cornerPinned}
+                    onToggleCornerPin={toggleCornerPinOrbit}
                     mode="ring-only"
                     customTrigger={
                       <button
@@ -1390,6 +1503,8 @@ export default function Lobby() {
                     unreadNotifications={unreadNotifications}
                     pinned={pinned}
                     onTogglePin={togglePin}
+                    cornerPinned={cornerPinned}
+                    onToggleCornerPin={toggleCornerPinOrbit}
                     mode={pinned.orbit ? "profile-only" : "full"}
                   />
                 </Suspense>
@@ -2034,6 +2149,81 @@ export default function Lobby() {
         <Suspense fallback={null}>
           <PinnedSocialsButton />
         </Suspense>
+      )}
+
+      {/* ----------------------------------------------------------------
+          Pinned-to-corner FAB stack. Renders one circular floating button
+          per item the user has anchored to the bottom-right. Each button
+          opens the same panel its header / orbit counterpart would, so
+          power users can keep a dock of their most-used tools always one
+          click away without crowding the header. The whole stack hides
+          when nothing is pinned, so it is invisible until invited.
+          ---------------------------------------------------------------- */}
+      {user && (cornerPinned.bookTeacher
+        || cornerPinned.messages
+        || cornerPinned.notifications
+        || cornerPinned.themes
+        || cornerPinned.community
+        || cornerPinned.orbit) && (
+        <div className="corner-pin-stack" aria-label="Pinned shortcuts" data-testid="corner-pin-stack">
+          {cornerPinned.bookTeacher && (
+            <CornerPinFab
+              label="Book Teacher"
+              testId="corner-fab-bookteacher"
+              icon={<GraduationCap className="w-5 h-5 text-neu-orange" />}
+              onClick={() => navigate("/teachers")}
+              onUnpin={() => toggleCornerPin("bookTeacher")}
+            />
+          )}
+          {cornerPinned.messages && (
+            <CornerPinFab
+              label="Messages"
+              testId="corner-fab-messages"
+              icon={<MessageCircle className="w-5 h-5" />}
+              showDot={unreadMessages > 0}
+              onClick={() => setMessagesOpen(true)}
+              onUnpin={() => toggleCornerPin("messages")}
+            />
+          )}
+          {cornerPinned.notifications && (
+            <CornerPinFab
+              label="Notifications"
+              testId="corner-fab-notifications"
+              icon={<Bell className="w-5 h-5" />}
+              showDot={unreadNotifications > 0}
+              onClick={() => setNotificationsOpen(true)}
+              onUnpin={() => toggleCornerPin("notifications")}
+            />
+          )}
+          {cornerPinned.community && (
+            <CornerPinFab
+              label="Community"
+              testId="corner-fab-community"
+              icon={<UsersIcon className="w-5 h-5" />}
+              onClick={() => setSocialOpen(true)}
+              onUnpin={() => toggleCornerPin("community")}
+            />
+          )}
+          {cornerPinned.themes && (
+            <CornerPinFab
+              label="Themes"
+              testId="corner-fab-themes"
+              icon={<Palette className="w-5 h-5" />}
+              onClick={() => setThemePickerOpen(true)}
+              onUnpin={() => toggleCornerPin("themes")}
+            />
+          )}
+          {cornerPinned.orbit && (
+            <CornerPinFab
+              label="Orbit"
+              testId="corner-fab-orbit"
+              icon={<LayoutGrid className="w-5 h-5" />}
+              showDot={(unreadMessages + unreadNotifications) > 0}
+              onClick={() => setOrbitOpen(true)}
+              onUnpin={() => toggleCornerPin("orbit")}
+            />
+          )}
+        </div>
       )}
     </div>
   );
