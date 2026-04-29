@@ -775,9 +775,15 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-                <h3 className="font-extrabold text-sm text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
+                {/* h2 (not h3) so the heading order on the lobby is
+                    sequentially descending: h1 (Vextorn header) → h2 (room
+                    titles, the lobby's primary content) → h2 (People Discovery
+                    section) → h3 (person card names) → h4 (footer sections).
+                    The previous h3 here skipped a level after the h1 and
+                    Lighthouse flagged it as a heading-order violation. */}
+                <h2 className="font-extrabold text-sm text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
                   {room.title}
-                </h3>
+                </h2>
                 {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />}
               </div>
               {/* Sub-row: flag, language, level, joining count */}
