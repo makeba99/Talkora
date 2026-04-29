@@ -104,6 +104,24 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   return { html, linkHeader };
 }
 
+// Minimal MIME table for the precompressed-asset handler. The runtime
+// compression middleware bypasses any response that already has a
+// Content-Encoding header set, so this handler can safely set the encoding
+// and let express.static (or our SPA fallback) handle the rest.
+const MIME_BY_EXT: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".mjs": "application/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".ico": "image/x-icon",
+};
+
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
   if (!fs.existsSync(distPath)) {
@@ -113,6 +131,52 @@ export function serveStatic(app: Express) {
   }
 
   const precomputed = precomputeIndexHtml(distPath);
+
+  // Pre-compressed asset handler. At build time we emit `<file>.br` (Brotli
+  // q11) and `<file>.gz` (gzip 9) next to every text asset in dist/public/.
+  // When the client supports `br` or `gzip`, we serve the pre-encoded copy
+  // directly — skipping runtime compression entirely AND using a higher
+  // compression ratio than any live encoder can afford. Free LCP win.
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") return next();
+    const accept = String(req.headers["accept-encoding"] || "");
+    let encoding: "br" | "gzip" | null = null;
+    if (/\bbr\b/i.test(accept)) encoding = "br";
+    else if (/\bgzip\b/i.test(accept)) encoding = "gzip";
+    if (!encoding) return next();
+
+    // Resolve the requested path safely (no `..` traversal).
+    const reqPath = decodeURIComponent(req.path);
+    if (reqPath.includes("\0")) return next();
+    const fullPath = path.join(distPath, reqPath);
+    if (!fullPath.startsWith(distPath + path.sep) && fullPath !== distPath) {
+      return next();
+    }
+    // index.html is served via the precomputed-HTML buffer below, not from
+    // disk — skip it here so we don't ship a stale pre-compressed copy.
+    if (reqPath === "/" || reqPath.endsWith("/index.html")) return next();
+
+    const ext = path.extname(reqPath).toLowerCase();
+    const mime = MIME_BY_EXT[ext];
+    if (!mime) return next();
+
+    const compressedPath = fullPath + (encoding === "br" ? ".br" : ".gz");
+    if (!fs.existsSync(compressedPath)) return next();
+
+    res.setHeader("Content-Type", mime);
+    res.setHeader("Content-Encoding", encoding);
+    res.setHeader("Vary", "Accept-Encoding");
+    // Cache headers mirror the live express.static handler so the precompressed
+    // path doesn't get a different TTL than the uncompressed path.
+    if (reqPath.startsWith("/assets/")) {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    } else if (reqPath.endsWith(".html") || reqPath.endsWith("sw.js")) {
+      res.setHeader("Cache-Control", "no-cache");
+    } else {
+      res.setHeader("Cache-Control", "public, max-age=31536000, must-revalidate");
+    }
+    res.sendFile(compressedPath);
+  });
 
   // Fast path for index.html: serve the in-memory transformed copy and emit
   // the precomputed Link header. We register this BEFORE express.static so
