@@ -42,9 +42,16 @@ export default defineConfig({
       output: {
         // Long-term-cacheable vendor chunks. React must be in the same chunk
         // as anything that calls React.forwardRef / React.createContext at
-        // module-evaluation time (Radix, framer-motion, react-query) to
-        // guarantee load order. Keeping them together avoids the race where
-        // a secondary chunk executes before react-vendor is evaluated.
+        // module-evaluation time (Radix, react-query) to guarantee load
+        // order. Keeping them together avoids the race where a secondary
+        // chunk executes before react-vendor is evaluated.
+        //
+        // framer-motion and react-hook-form/@hookform were previously
+        // bundled into react-vendor "to be safe", but they are only used
+        // by lazy-loaded routes/components (badge-announcement and lobby
+        // forms respectively). Splitting them into their own chunks pulls
+        // ~80–120 kB out of the critical first-paint download for users
+        // who never trigger those code paths.
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
           // React core + anything that reads React.* at module scope
@@ -55,14 +62,20 @@ export default defineConfig({
             id.includes("wouter") ||
             id.includes("@radix-ui") ||
             id.includes("@floating-ui") ||
-            id.includes("@tanstack/react-query") ||
-            id.includes("framer-motion") ||
-            id.includes("motion-dom") ||
-            id.includes("motion-utils") ||
-            id.includes("react-hook-form") ||
-            id.includes("@hookform")
+            id.includes("@tanstack/react-query")
           ) {
             return "react-vendor";
+          }
+          // Lazy-only deps: only load when the consumer chunk loads.
+          if (
+            id.includes("framer-motion") ||
+            id.includes("motion-dom") ||
+            id.includes("motion-utils")
+          ) {
+            return "motion-vendor";
+          }
+          if (id.includes("react-hook-form") || id.includes("@hookform")) {
+            return "form-vendor";
           }
           if (id.includes("lucide-react") || id.includes("react-icons")) return "icons-vendor";
           if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "socket-vendor";
