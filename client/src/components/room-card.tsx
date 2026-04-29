@@ -934,7 +934,13 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       <Avatar style={{ width: circleSize, height: circleSize }} className={`rounded-2xl border-2 ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
                         {(() => {
                           const a = buildAvatarSources(p.profileImageUrl);
-                          return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(p)} className="rounded-2xl" />;
+                          return <AvatarImage
+                            src={a.src}
+                            srcSet={a.srcSet}
+                            alt={getUserDisplayName(p)}
+                            className="rounded-2xl"
+                            {...(priority && i === 0 ? { fetchpriority: "high" } as any : {})}
+                          />;
                         })()}
                         <AvatarFallback className="rounded-2xl text-base font-bold bg-[#1a1520] text-white/70">
                           {getUserInitials(p)}

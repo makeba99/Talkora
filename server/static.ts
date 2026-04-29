@@ -1,6 +1,7 @@
 import express, { type Express, type Request, type Response } from "express";
 import fs from "fs";
 import path from "path";
+import zlib from "zlib";
 
 /**
  * Build a transformed copy of `index.html` plus a precomputed `Link` header
@@ -17,7 +18,7 @@ import path from "path";
  *
  * Done once at startup — every request just serves the cached buffer + header.
  */
-function precomputeIndexHtml(distPath: string): { html: string; linkHeader: string } | null {
+function precomputeIndexHtml(distPath: string): { html: string; linkHeader: string; htmlBr: Buffer | null; htmlGz: Buffer | null } | null {
   const indexPath = path.join(distPath, "index.html");
   const assetsDir = path.join(distPath, "assets");
   if (!fs.existsSync(indexPath) || !fs.existsSync(assetsDir)) return null;
@@ -42,11 +43,16 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // (admin, dm, room, teachers, payment-methods, charts/emoji/chess) is
   // intentionally excluded so we don't waste bandwidth pre-warming chunks
   // the user may never visit.
+  //
+  // NOTE: react-vendor now includes Radix, framer-motion, react-query, and
+  // react-hook-form (merged to prevent React.forwardRef race on cold boot).
+  // query-vendor and radix-vendor no longer exist as separate chunks.
+  // socket-vendor IS needed early — SocketProvider is statically imported
+  // by App.tsx so socket.io-client must be ready before React renders.
   const criticalScriptPatterns: RegExp[] = [
-    /^lobby-[\w-]+\.js$/,             // LCP route
-    /^react-vendor-[\w-]+\.js$/,      // react + react-dom + wouter
-    /^query-vendor-[\w-]+\.js$/,      // tanstack/react-query
-    /^radix-vendor-[\w-]+\.js$/,      // radix primitives used by lobby chrome
+    /^lobby-[\w-]+\.js$/,             // LCP route (lazy — modulepreload beats lazy discovery)
+    /^react-vendor-[\w-]+\.js$/,      // react + react-dom + radix + framer + react-query
+    /^socket-vendor-[\w-]+\.js$/,     // socket.io-client — needed by SocketProvider in App.tsx
     /^icons-vendor-[\w-]+\.js$/,      // lucide-react icons rendered on lobby
     /^room-card-[\w-]+\.js$/,         // lobby grid item — sometimes split out
   ];
@@ -114,7 +120,29 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   }
   const linkHeader = headerEntries.join(", ");
 
-  return { html, linkHeader };
+  // Pre-compress the HTML document at startup so sendIndex can serve the
+  // compressed bytes directly without any per-request CPU cost. Brotli q11
+  // (max quality, text mode) is the best ratio we can achieve — it runs
+  // once at boot so latency doesn't matter. Gzip z9 is the fallback for
+  // clients that don't advertise br. Together these eliminate the "Document
+  // request latency" Lighthouse audit by removing runtime compression from
+  // the hot path entirely.
+  const htmlBuf = Buffer.from(html, "utf8");
+  let htmlBr: Buffer | null = null;
+  let htmlGz: Buffer | null = null;
+  try {
+    htmlBr = zlib.brotliCompressSync(htmlBuf, {
+      params: {
+        [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+        [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
+      },
+    });
+  } catch { /* fall back to runtime compression */ }
+  try {
+    htmlGz = zlib.gzipSync(htmlBuf, { level: 9 });
+  } catch { /* fall back to runtime compression */ }
+
+  return { html, linkHeader, htmlBr, htmlGz };
 }
 
 // Minimal MIME table for the precompressed-asset handler. The runtime
@@ -194,11 +222,32 @@ export function serveStatic(app: Express) {
   // Fast path for index.html: serve the in-memory transformed copy and emit
   // the precomputed Link header. We register this BEFORE express.static so
   // it wins for the bare `/` request and the SPA catch-all below.
+  //
+  // When pre-compressed buffers are available we write them directly to the
+  // socket, bypassing the runtime `compression` middleware entirely. This
+  // removes the per-request Brotli/gzip CPU cost from the critical path and
+  // eliminates the "Document request latency" Lighthouse audit on mobile.
+  // Setting Content-Encoding before res.end() prevents the middleware from
+  // double-compressing the already-encoded bytes.
   const sendIndex = (req: Request, res: Response) => {
+    const accept = String(req.headers["accept-encoding"] || "");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     if (precomputed?.linkHeader) {
       res.setHeader("Link", precomputed.linkHeader);
+    }
+
+    if (precomputed?.htmlBr && /\bbr\b/i.test(accept)) {
+      res.setHeader("Content-Encoding", "br");
+      res.setHeader("Vary", "Accept-Encoding");
+      res.end(precomputed.htmlBr);
+      return;
+    }
+    if (precomputed?.htmlGz && /\bgzip\b/i.test(accept)) {
+      res.setHeader("Content-Encoding", "gzip");
+      res.setHeader("Vary", "Accept-Encoding");
+      res.end(precomputed.htmlGz);
+      return;
     }
     if (precomputed?.html) {
       res.send(precomputed.html);
