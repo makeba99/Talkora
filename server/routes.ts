@@ -14,8 +14,11 @@ import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "./elevenlabs";
-
-let cachedIndexHtml: string | null = null;
+import {
+  renderIndexHtml,
+  getOrigin,
+  type BreadcrumbItem,
+} from "./seo-meta";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -324,21 +327,7 @@ export async function registerRoutes(
         : await storage.getRoomByShortId(roomParam);
       if (!room) return next();
 
-      // Match the production layout used by `serveStatic` in server/static.ts
-      // (`__dirname/public/index.html`). Only accessed in prod where the CJS
-      // bundle has __dirname defined natively. We cache the template in
-      // memory because it only changes on deploy — every social-crawler hit
-      // would otherwise pay a disk read just to swap a few meta tags.
-      const indexPath = path.resolve(__dirname, "public", "index.html");
-      if (!cachedIndexHtml) {
-        if (!fs.existsSync(indexPath)) return next();
-        cachedIndexHtml = await fs.promises.readFile(indexPath, "utf-8");
-      }
-      let html = cachedIndexHtml;
-
-      const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
-      const host = req.get("host") || "vextorn.com";
-      const origin = `${proto}://${host}`;
+      const origin = getOrigin(req);
       const slug = room.shortId || room.id;
       const url = `${origin}/room/${slug}`;
 
@@ -348,8 +337,7 @@ export async function registerRoutes(
       // Pick the OG image. Prefer the room's hologram art when it's an image;
       // for YouTube hologram URLs use the high-res YouTube thumbnail; fall
       // back to the brand icon so the card never breaks.
-      const fallbackImage = `${origin}/vextorn-icon-512.png`;
-      let ogImage = fallbackImage;
+      let ogImage: string | undefined;
       const holo = room.hologramVideoUrl || "";
       if (holo) {
         if (/\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(holo)) {
@@ -362,65 +350,184 @@ export async function registerRoutes(
         }
       }
 
-      const escapeHtml = (s: string) =>
-        s
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      const eTitle = escapeHtml(title);
-      const eDesc = escapeHtml(description);
-      const eUrl = escapeHtml(url);
-      const eImage = escapeHtml(ogImage);
+      // Breadcrumb: Home > Rooms > {Room Title}. We point "Rooms" at /
+      // because the lobby IS the rooms index — keeping the trail honest.
+      const breadcrumbs: BreadcrumbItem[] = [
+        { name: "Home", url: "/" },
+        { name: "Voice Rooms", url: "/" },
+        { name: room.title, url: `/room/${slug}` },
+      ];
 
-      // Single-pass tag swap. Every regex below is anchored to the exact
-      // attribute layout in client/index.html — keep them in sync if you
-      // edit the template head.
-      html = html
-        .replace(/<title>[\s\S]*?<\/title>/, `<title>${eTitle}</title>`)
-        .replace(
-          /<meta name="description" content="[^"]*"\s*\/?>/,
-          `<meta name="description" content="${eDesc}" />`,
-        )
-        .replace(
-          /<link rel="canonical" href="[^"]*"\s*\/?>/,
-          `<link rel="canonical" href="${eUrl}" />`,
-        )
-        .replace(
-          /<meta property="og:title" content="[^"]*"\s*\/?>/,
-          `<meta property="og:title" content="${eTitle}" />`,
-        )
-        .replace(
-          /<meta property="og:description" content="[^"]*"\s*\/?>/,
-          `<meta property="og:description" content="${eDesc}" />`,
-        )
-        .replace(
-          /<meta property="og:url" content="[^"]*"\s*\/?>/,
-          `<meta property="og:url" content="${eUrl}" />`,
-        )
-        .replace(
-          /<meta property="og:image" content="[^"]*"\s*\/?>/,
-          `<meta property="og:image" content="${eImage}" />`,
-        )
-        .replace(
-          /<meta name="twitter:title" content="[^"]*"\s*\/?>/,
-          `<meta name="twitter:title" content="${eTitle}" />`,
-        )
-        .replace(
-          /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
-          `<meta name="twitter:description" content="${eDesc}" />`,
-        )
-        .replace(
-          /<meta name="twitter:image" content="[^"]*"\s*\/?>/,
-          `<meta name="twitter:image" content="${eImage}" />`,
-        );
+      const html = renderIndexHtml(origin, {
+        title,
+        description,
+        canonical: url,
+        ogImage,
+        breadcrumbs,
+      });
+      if (!html) return next();
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       // Short cache so updates to a room (rename, new hologram) propagate
       // quickly to social-card refreshes, but crawlers still get a cached
       // hit for repeat fetches in the same session.
       res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+      res.send(html);
+    } catch {
+      next();
+    }
+  });
+
+  /* ──────────────────────────────────────────────────────────────────
+   * /teachers — Find Teachers landing page.
+   * Per-route title + description + BreadcrumbList JSON-LD so this page
+   * gets its own rich-result entry instead of inheriting the lobby's.
+   * ────────────────────────────────────────────────────────────────── */
+  app.get("/teachers", (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+    const accept = req.headers.accept || "";
+    if (!accept.includes("text/html")) return next();
+    try {
+      const origin = getOrigin(req);
+      const url = `${origin}/teachers`;
+      const html = renderIndexHtml(origin, {
+        title: "Find Teachers — Book a 1-on-1 language tutor | Vextorn",
+        description:
+          "Browse verified language teachers on Vextorn and book a 1-on-1 conversation session. Find tutors for English, Spanish, French, Korean, Japanese and more.",
+        canonical: url,
+        breadcrumbs: [
+          { name: "Home", url: "/" },
+          { name: "Find Teachers", url: "/teachers" },
+        ],
+      });
+      if (!html) return next();
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      // Teachers list updates when admins add/remove tutors — 5 min is a
+      // good balance between freshness and crawler-burst protection.
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+      res.send(html);
+    } catch {
+      next();
+    }
+  });
+
+  /* /teachers/:teacherId — Individual teacher profile (deep-link). */
+  app.get("/teachers/:teacherId", async (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+    const accept = req.headers.accept || "";
+    if (!accept.includes("text/html")) return next();
+    try {
+      const teacherId = req.params.teacherId;
+      if (!teacherId) return next();
+      const teacher = await storage.getTeacher(teacherId);
+      if (!teacher) return next();
+
+      const origin = getOrigin(req);
+      const url = `${origin}/teachers/${teacherId}`;
+      const langs = Array.isArray(teacher.languages) ? teacher.languages.join(", ") : "";
+      const title = `${teacher.name} — ${langs || "Language"} Teacher | Vextorn`;
+      const desc =
+        (teacher.bio && teacher.bio.length > 0
+          ? teacher.bio.slice(0, 155).replace(/\s+/g, " ").trim()
+          : `Book a 1-on-1 ${langs || "language"} session with ${teacher.name} on Vextorn.`);
+
+      const html = renderIndexHtml(origin, {
+        title,
+        description: desc,
+        canonical: url,
+        ogImage: teacher.avatarUrl || undefined,
+        breadcrumbs: [
+          { name: "Home", url: "/" },
+          { name: "Find Teachers", url: "/teachers" },
+          { name: teacher.name, url: `/teachers/${teacherId}` },
+        ],
+      });
+      if (!html) return next();
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
+      res.send(html);
+    } catch {
+      next();
+    }
+  });
+
+  /* /admin — Admin dashboard. Noindex (gated), but breadcrumb still helps
+     screen-reader users orient themselves. */
+  app.get("/admin", (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+    const accept = req.headers.accept || "";
+    if (!accept.includes("text/html")) return next();
+    try {
+      const origin = getOrigin(req);
+      const html = renderIndexHtml(origin, {
+        title: "Admin Dashboard | Vextorn",
+        description: "Vextorn admin dashboard — moderation, analytics and configuration.",
+        canonical: `${origin}/admin`,
+        noindex: true,
+        breadcrumbs: [
+          { name: "Home", url: "/" },
+          { name: "Admin", url: "/admin" },
+        ],
+      });
+      if (!html) return next();
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      // Admin pages should never be CDN-cached — set private+no-store so
+      // shared caches never serve them to other users.
+      res.setHeader("Cache-Control", "private, no-store");
+      res.send(html);
+    } catch {
+      next();
+    }
+  });
+
+  /* /payment-methods — User payment methods management. */
+  app.get("/payment-methods", (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+    const accept = req.headers.accept || "";
+    if (!accept.includes("text/html")) return next();
+    try {
+      const origin = getOrigin(req);
+      const html = renderIndexHtml(origin, {
+        title: "Payment Methods | Vextorn",
+        description: "Manage your saved payment methods on Vextorn.",
+        canonical: `${origin}/payment-methods`,
+        noindex: true,
+        breadcrumbs: [
+          { name: "Home", url: "/" },
+          { name: "Payment Methods", url: "/payment-methods" },
+        ],
+      });
+      if (!html) return next();
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "private, no-store");
+      res.send(html);
+    } catch {
+      next();
+    }
+  });
+
+  /* /messages/:userId — Direct-message thread. Authenticated-only. */
+  app.get("/messages/:userId", (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+    const accept = req.headers.accept || "";
+    if (!accept.includes("text/html")) return next();
+    try {
+      const origin = getOrigin(req);
+      const otherId = req.params.userId;
+      if (!otherId) return next();
+      const html = renderIndexHtml(origin, {
+        title: "Direct Messages | Vextorn",
+        description: "Continue your conversation on Vextorn.",
+        canonical: `${origin}/messages/${otherId}`,
+        noindex: true,
+        breadcrumbs: [
+          { name: "Home", url: "/" },
+          { name: "Messages", url: `/messages/${otherId}` },
+        ],
+      });
+      if (!html) return next();
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "private, no-store");
       res.send(html);
     } catch {
       next();
