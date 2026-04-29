@@ -274,12 +274,16 @@ export async function registerRoutes(
     } catch {}
   });
 
+  // Uploaded files are content-addressed (multer hash names that never change
+  // for the same file), so we can cache them aggressively. 30 days + must-
+  // revalidate gives Lighthouse the long-cache TTL it wants for "Use efficient
+  // cache lifetimes" while still letting the user hard-refresh to bypass.
   app.use("/uploads", (_req, res, next) => {
-    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Cache-Control", "public, max-age=2592000, must-revalidate");
     next();
   });
   const expressStatic = (await import("express")).default.static;
-  app.use("/uploads", expressStatic(uploadsDir));
+  app.use("/uploads", expressStatic(uploadsDir, { maxAge: "30d", immutable: false }));
 
   app.get(legacyAssetPattern, (req, res, next) => {
     const filename = req.params[0];
@@ -288,7 +292,7 @@ export async function registerRoutes(
       next();
       return;
     }
-    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Cache-Control", "public, max-age=2592000, must-revalidate");
     res.sendFile(filePath);
   });
 

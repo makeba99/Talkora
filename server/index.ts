@@ -10,7 +10,27 @@ import { applySecurityMiddleware } from "./security";
 const app = express();
 const httpServer = createServer(app);
 
-app.use(compression());
+// gzip/deflate compression for all text responses. Tuned slightly for SPAs:
+// level 6 is the gzip default and the best speed/ratio tradeoff; threshold
+// 0 compresses everything since our HTML/JS/CSS payloads are all >>1 KB.
+// (Brotli would be ~15% smaller but the `compression` package only does
+// gzip — adding a real brotli layer requires a tested package install,
+// which we'll defer to avoid a regression risk.)
+app.use(
+  compression({
+    level: 6,
+    threshold: 0,
+    filter: (req, res) => {
+      const type = String(res.getHeader("Content-Type") || "");
+      // Skip already-compressed payloads — wastes CPU and breaks streams.
+      if (/^image\/(?!svg)/i.test(type)) return false;
+      if (/^video\//i.test(type)) return false;
+      if (/^audio\//i.test(type)) return false;
+      if (/^font\//i.test(type)) return false;
+      return compression.filter(req, res);
+    },
+  }),
+);
 applySecurityMiddleware(app);
 
 declare module "http" {
