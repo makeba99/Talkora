@@ -102,38 +102,29 @@
     }
     </script>
 
-    <!-- Performance: preconnect to CDNs used in the app -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- Font load: non-render-blocking. The link starts as a print-only
-         stylesheet (which the browser doesn't render-block on), and a tiny
-         inline script flips it to "all" media once the file is ready. We
-         use a real <script> tag (not an inline event handler attribute) so
-         it stays compatible with the strict script-src-attr 'none' CSP.
-         The <noscript> fallback keeps the site readable without JS. -->
+    <!-- Self-hosted Space Grotesk (latin subset, single 22 KB woff2 covers
+         all 4 weights). Removes 2 round-trips to fonts.googleapis.com +
+         fonts.gstatic.com (typically -300 ms on mobile / 3G) and removes
+         the "Network dependency tree" Lighthouse audit. The font is
+         preloaded so it's available before CSS parses, and font-display:
+         swap keeps text visible during the brief load. -->
     <link
-      id="font-space-grotesk"
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      media="print"
+      rel="preload"
+      href="/fonts/space-grotesk-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
     />
-    <script>
-      (function () {
-        var l = document.getElementById("font-space-grotesk");
-        if (!l) return;
-        function swap() { l.media = "all"; }
-        if (l.sheet) { swap(); return; }
-        l.addEventListener("load", swap);
-        l.addEventListener("error", swap);
-      })();
-    </script>
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      />
-    </noscript>
+    <style>
+      @font-face {
+        font-family: 'Space Grotesk';
+        font-style: normal;
+        font-weight: 400 700;
+        font-display: swap;
+        src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+    </style>
 
     <!-- Connect early to avatar/video CDNs the lobby reads from on first paint. -->
     <link rel="preconnect" href="https://randomuser.me" crossorigin />

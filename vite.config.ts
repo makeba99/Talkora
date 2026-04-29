@@ -30,8 +30,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    target: "es2020",
+    // Modern target = smaller bundles (no transpiled async/await, optional
+    // chaining, nullish coalescing, etc). Replit's served browsers are all
+    // evergreen, so we don't need the es2020 baseline.
+    target: "es2022",
     cssCodeSplit: true,
+    // Polyfill is unnecessary on every browser we ship to and adds ~1 KB of
+    // inline boot script + a forced reflow; turning it off shaves a small
+    // amount of TBT.
+    modulePreload: { polyfill: false },
     rollupOptions: {
       output: {
         // Long-term-cacheable vendor chunks. Keeps the per-route chunk small,

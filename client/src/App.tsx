@@ -9,8 +9,8 @@ import { useSocket } from "@/lib/socket";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import Lobby from "@/pages/lobby";
 
+const Lobby = lazy(() => import("@/pages/lobby"));
 const RoomPage = lazy(() => import("@/pages/room"));
 const DmPage = lazy(() => import("@/pages/dm"));
 const AdminPage = lazy(() => import("@/pages/admin"));

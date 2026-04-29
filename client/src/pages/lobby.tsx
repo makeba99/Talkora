@@ -9,8 +9,16 @@ import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, Graduat
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { showHintOnce } from "@/lib/hints";
-import { SiteFooter } from "@/components/site-footer";
-import { ScrollJumpButton } from "@/components/scroll-jump-button";
+
+/* SiteFooter (~425 lines) sits below the fold and is never the LCP.
+ * ScrollJumpButton only renders after the user has scrolled. Both are
+ * deferred so they never block the lobby's first paint. */
+const SiteFooter = lazy(() =>
+  import("@/components/site-footer").then((m) => ({ default: m.SiteFooter }))
+);
+const ScrollJumpButton = lazy(() =>
+  import("@/components/scroll-jump-button").then((m) => ({ default: m.ScrollJumpButton }))
+);
 
 /* Heavy header chrome that only renders for signed-in users (and on user
  * interaction for CreateRoomDialog). Lazy-loading these keeps the initial
@@ -2095,7 +2103,9 @@ export default function Lobby() {
             </div>
           )}
         </div>
-        <SiteFooter />
+        <Suspense fallback={null}>
+          <SiteFooter />
+        </Suspense>
       </div>
 
       <DeferredLobbyOverlays onStepChange={handleTourStepChange} />
@@ -2163,7 +2173,9 @@ export default function Lobby() {
         </div>
       )}
 
-      <ScrollJumpButton />
+      <Suspense fallback={null}>
+        <ScrollJumpButton />
+      </Suspense>
       {user && (
         <Suspense fallback={null}>
           <PinnedSocialsButton />
