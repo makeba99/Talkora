@@ -38,33 +38,44 @@ export function ScrollJumpButton({ targetSelector = ".app-scrollbar" }: ScrollJu
     return window;
   }, [targetSelector]);
 
+  // rAF-throttled layout reader. Scroll, resize, mutation observer, and the
+  // periodic interval all funnel through here so we only do *one* layout read
+  // per frame (instead of N reads per scroll tick + a read on every DOM
+  // mutation). This is what "forced reflow" was measuring before — the
+  // MutationObserver+scroll combination was reading clientHeight/scrollHeight
+  // synchronously after style invalidations from React renders.
+  const rafRef = useRef<number | null>(null);
   const recompute = useCallback(() => {
-    const target = resolveTarget();
-    let scrollTop = 0;
-    let viewport = 0;
-    let fullHeight = 0;
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const target = resolveTarget();
+      let scrollTop = 0;
+      let viewport = 0;
+      let fullHeight = 0;
 
-    if (target === window) {
-      const doc = document.documentElement;
-      scrollTop = window.scrollY || doc.scrollTop || 0;
-      viewport = window.innerHeight || doc.clientHeight || 0;
-      fullHeight = Math.max(
-        doc.scrollHeight,
-        doc.offsetHeight,
-        document.body?.scrollHeight ?? 0,
-        document.body?.offsetHeight ?? 0,
-      );
-    } else {
-      const el = target as HTMLElement;
-      scrollTop = el.scrollTop;
-      viewport = el.clientHeight;
-      fullHeight = el.scrollHeight;
-    }
+      if (target === window) {
+        const doc = document.documentElement;
+        scrollTop = window.scrollY || doc.scrollTop || 0;
+        viewport = window.innerHeight || doc.clientHeight || 0;
+        fullHeight = Math.max(
+          doc.scrollHeight,
+          doc.offsetHeight,
+          document.body?.scrollHeight ?? 0,
+          document.body?.offsetHeight ?? 0,
+        );
+      } else {
+        const el = target as HTMLElement;
+        scrollTop = el.scrollTop;
+        viewport = el.clientHeight;
+        fullHeight = el.scrollHeight;
+      }
 
-    const canScroll = fullHeight - viewport > 24;
-    setScrollable(canScroll);
-    setAtTop(scrollTop <= NEAR_TOP);
-    setAtBottom(scrollTop + viewport >= fullHeight - NEAR_BOTTOM);
+      const canScroll = fullHeight - viewport > 24;
+      setScrollable(canScroll);
+      setAtTop(scrollTop <= NEAR_TOP);
+      setAtBottom(scrollTop + viewport >= fullHeight - NEAR_BOTTOM);
+    });
   }, [resolveTarget]);
 
   useEffect(() => {
@@ -82,18 +93,22 @@ export function ScrollJumpButton({ targetSelector = ".app-scrollbar" }: ScrollJu
     const onResize = () => recompute();
 
     target.addEventListener("scroll", handleScrollActivity, { passive: true } as AddEventListenerOptions);
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", onResize, { passive: true });
 
-    const observer = new MutationObserver(() => recompute());
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    const interval = window.setInterval(recompute, 2000);
+    // Watch only the *direct* children of the scroll container for size-
+    // affecting changes. The previous version observed the entire body subtree
+    // (childList + subtree), which fired on every React re-render anywhere on
+    // the page and synchronously read layout in response — a major source of
+    // forced reflows. ResizeObserver is layout-aware and batches naturally.
+    const observed = (target === window ? document.documentElement : (target as HTMLElement));
+    const ro = new ResizeObserver(() => recompute());
+    ro.observe(observed);
 
     return () => {
       target.removeEventListener("scroll", handleScrollActivity);
       window.removeEventListener("resize", onResize);
-      observer.disconnect();
-      window.clearInterval(interval);
+      ro.disconnect();
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
   }, [recompute, resolveTarget]);
