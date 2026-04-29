@@ -62,35 +62,36 @@ async function precompressTree(dir: string): Promise<void> {
   );
 }
 
-// server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times
+// Packages to inline into the server bundle (reduces openat syscalls on cold
+// start). Only list packages that the server code actually imports — dead
+// entries bloat the allowlist without helping anything.
+//
+// Audit method: grep -rh "from ['\"]" server/ --include="*.ts" \
+//               | grep -v "^import type" | sed "s/.*from ['\"]//;s/['\"].*//" \
+//               | grep -v '^\.' | sort -u
+//
+// Removed (not imported anywhere in server/):
+//   @google/generative-ai, axios, cors, date-fns, drizzle-zod, jsonwebtoken,
+//   memorystore, openai (routes use fetch directly), passport-google-oauth20,
+//   passport-local, stripe, uuid, ws, xlsx, zod-validation-error
+//
+// Added (imported by server but were previously left as external requires):
+//   compression, helmet, memoizee (dynamic import in replit_integrations/auth)
 const allowlist = [
-  "@google/generative-ai",
-  "axios",
+  "compression",
   "connect-pg-simple",
-  "cors",
-  "date-fns",
   "drizzle-orm",
-  "drizzle-zod",
   "express",
   "express-rate-limit",
   "express-session",
-  "jsonwebtoken",
-  "memorystore",
+  "helmet",
+  "memoizee",
   "multer",
   "nanoid",
   "nodemailer",
-  "openai",
   "passport",
-  "passport-google-oauth20",
-  "passport-local",
   "pg",
-  "stripe",
-  "uuid",
-  "ws",
-  "xlsx",
   "zod",
-  "zod-validation-error",
 ];
 
 async function buildAll() {
