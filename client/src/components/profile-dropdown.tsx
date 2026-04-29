@@ -37,13 +37,14 @@ import { BADGE_TYPES } from "@shared/schema";
 // in @/lib/avatar-ring so the lobby's room cards can import the small lookup
 // table without dragging in the entire ~1.2k-line profile-dropdown bundle.
 // We re-export from the same module path so existing callers keep working.
-export {
+import {
   AVATAR_RINGS,
   FLAIR_BADGES,
   getAvatarRingClass,
   getFlairIcon,
+  getFlairEmoji,
 } from "@/lib/avatar-ring";
-import { getFlairEmoji } from "@/lib/avatar-ring";
+export { AVATAR_RINGS, FLAIR_BADGES, getAvatarRingClass, getFlairIcon };
 
 export function FlairBadgeDisplay({ badgeId, className }: { badgeId: string | null | undefined; className?: string }) {
   const emoji = getFlairEmoji(badgeId);
