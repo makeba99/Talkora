@@ -4,6 +4,14 @@ import type { User } from "@shared/schema";
 
 const STORAGE_KEY = "vextorn:room-onboarding:v1";
 const STORAGE_STEP_KEY = "vextorn:room-onboarding:v1:step";
+/**
+ * Hard "never show me anything tour-related again" flag. Set when the user
+ * explicitly closes the tour with the X button (or dismisses the relaunch
+ * capsule). When this is true we skip BOTH the auto-launch AND the small
+ * "Tour" relaunch chip so the user never sees the tour UI unless they
+ * explicitly trigger it from somewhere else.
+ */
+const PERMANENT_DISMISS_KEY = "vextorn:room-onboarding:v1:dismissed";
 /** Auto-launch only for accounts created within this many days. */
 const NEW_USER_WINDOW_DAYS = 14;
 
@@ -172,6 +180,17 @@ function readSavedStatus(): "completed" | "skipped" | null {
   return v === "completed" || v === "skipped" ? v : null;
 }
 
+function isPermanentlyDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(PERMANENT_DISMISS_KEY) === "1";
+}
+
+function setPermanentlyDismissed() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PERMANENT_DISMISS_KEY, "1");
+  window.localStorage.setItem(STORAGE_KEY, "skipped");
+}
+
 function isNewUser(user: User | null | undefined): boolean {
   if (!user?.createdAt) return false;
   const created = new Date(user.createdAt as any).getTime();
@@ -196,8 +215,10 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
   const [cardPos, setCardPos] = useState<{ top: number; left: number; placement: "top" | "bottom" } | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-launch only for newly registered users who have not seen the tour.
+  // Auto-launch only for newly registered users who have not seen the tour
+  // AND who haven't permanently dismissed it.
   useEffect(() => {
+    if (isPermanentlyDismissed()) return;
     const status = readSavedStatus();
     const fresh = isNewUser(user);
     if (status === null && fresh) {
@@ -231,6 +252,15 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
     }
     setActive(false);
     setTimeout(() => setReopenVisible(true), 400);
+  }, []);
+
+  // Hard close — closing the tour with the X (or the relaunch X) means the
+  // user never wants to see it again. Block both auto-launch and the small
+  // "Tour" relaunch capsule for good.
+  const dismissForever = useCallback(() => {
+    setPermanentlyDismissed();
+    setActive(false);
+    setReopenVisible(false);
   }, []);
 
   const complete = useCallback(() => {
@@ -349,19 +379,31 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
 
   if (!active) {
     return reopenVisible ? (
-      <button
-        type="button"
-        className="onboarding-relaunch onboarding-relaunch-room"
-        onClick={start}
-        data-testid="button-room-onboarding-relaunch"
-        aria-label="Restart room tour"
-        title="Restart room tour"
-      >
-        <span className="onboarding-relaunch-medallion">
-          <Compass className="w-3.5 h-3.5" />
-        </span>
-        <span className="onboarding-relaunch-label">Tour</span>
-      </button>
+      <div className="onboarding-relaunch-wrap" data-testid="onboarding-relaunch-wrap">
+        <button
+          type="button"
+          className="onboarding-relaunch onboarding-relaunch-room"
+          onClick={start}
+          data-testid="button-room-onboarding-relaunch"
+          aria-label="Restart room tour"
+          title="Restart room tour"
+        >
+          <span className="onboarding-relaunch-medallion">
+            <Compass className="w-3.5 h-3.5" />
+          </span>
+          <span className="onboarding-relaunch-label">Tour</span>
+        </button>
+        <button
+          type="button"
+          className="onboarding-relaunch-dismiss"
+          onClick={dismissForever}
+          aria-label="Don't show the tour again"
+          title="Don't show again"
+          data-testid="button-room-onboarding-relaunch-dismiss"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
     ) : null;
   }
 
@@ -427,8 +469,9 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
           <button
             type="button"
             className="onboarding-card-close"
-            onClick={skip}
-            aria-label="Skip tour"
+            onClick={dismissForever}
+            aria-label="Close tour and don't show again"
+            title="Close — don't show again"
             data-testid="button-room-onboarding-close"
           >
             <X className="w-3.5 h-3.5" />

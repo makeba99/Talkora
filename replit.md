@@ -372,26 +372,43 @@ Badge applications table (shared/schema.ts):
   pill is visible in the header.
 - A **ScrollJumpButton** (`client/src/components/scroll-jump-button.tsx`)
   is mounted in the lobby. It targets `.app-scrollbar` (lobby's
-  internal scroll surface), shows a fat neumorphic up/down pill on
-  the right edge, and auto-hides when the page is not scrollable.
-  On mobile (`<= 640px`) the buttons jump to 44×44 tap targets with a
-  stronger glow, and the pill keeps a faint baseline opacity so it's
-  always discoverable on touch devices that have no hover state.
+  internal scroll surface), shows a slim neumorphic up/down pill on
+  the right edge, and auto-hides when the page is not scrollable. The
+  refined design uses a 32×36 px convex pill (30×34 on mobile) with a
+  pure rounded shape, a soft top highlight via `::before`, deeper
+  inset trough on the bottom, and ambient orange glow for a
+  "next-level" 3D look. On mobile the pill drops to ~0.35 opacity
+  when the page isn't actively scrolling so it never visually covers
+  the room cards / chat tiles sitting underneath it.
 - A **PinnedSocialsButton**
   (`client/src/components/pinned-socials-button.tsx`) is rendered in
   the lobby for signed-in users when they enable "Pin socials to side"
   in their profile editor. It shows a round floating button on the
-  right edge (below the scroll-jump pill) that fans out the user's
-  Instagram / LinkedIn / Facebook links, free4talk-style. Backed by
-  a `socials_pinned` boolean column on the `users` table (added via
-  `shared/models/auth.ts` and synced with `npm run db:push --force`),
-  whitelisted in `PATCH /api/users/:id`, and toggled in
-  `profile-dropdown.tsx` next to the social URL inputs.
+  right edge that fans out the user's Instagram / LinkedIn / Facebook
+  links (free4talk-style). The button is **draggable vertically** by
+  a small grip handle on top — pointer events drive `top` updates and
+  the final value is persisted to `localStorage`
+  (`vextorn:pinned-socials:pos:v2`). The default position lands near
+  the lower-right corner so it's within thumb reach on phones. Drag
+  vs click is disambiguated by a 3 px movement threshold so a quick
+  tap still opens the fan. Backed by a `socials_pinned` boolean
+  column on the `users` table (`shared/models/auth.ts`), whitelisted
+  in `PATCH /api/users/:id`, and toggled in `profile-dropdown.tsx`.
 - The onboarding tour's bottom-left **Tour relauncher** capsule has a
-  small dismiss `X` that hides it permanently. On touch / mobile
-  (`@media (hover: none), (max-width: 640px)`) the X stays visible by
-  default (instead of only on hover) so mobile users can actually
-  close it.
+  small dismiss `X` that hides it permanently. On touch / mobile the
+  X stays visible by default (instead of only on hover) so mobile
+  users can actually close it.
+- The in-room **RoomOnboardingTour**
+  (`client/src/components/room-onboarding-tour.tsx`) auto-launches
+  only for users registered within the last 14 days who haven't seen
+  it yet. The card's top-right `X` (and the X on the small "Tour"
+  relaunch capsule) now sets a hard
+  `vextorn:room-onboarding:v1:dismissed` flag in localStorage that
+  blocks BOTH the auto-launch and the relaunch capsule for good — so
+  once a user closes the tour, they truly never see it again. The
+  relaunch capsule is wrapped in `.onboarding-relaunch-wrap` and
+  paired with an `.onboarding-relaunch-dismiss` X for individual
+  permanent dismissal.
 
 ## User Preferences
 - No landing page gate - lobby always shown

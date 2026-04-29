@@ -8767,69 +8767,109 @@ html.boost-mode .header-pro {
 }
 
 /* ============================================================================
-   Scroll-jump (up/down) — refined glassy pill with brighter accent ring
-   on hover and chunkier touch targets on mobile. Adds a subtle inner sheen.
+   Scroll-jump (up/down) — slim, "next-level" neumorphic pill. Narrower than
+   the buttons inside it so it reads as a tucked-in dock on the right edge
+   instead of a chunky floating block. Convex highlight on top + soft inset
+   trough on bottom give the buttons a real 3D feel without losing contrast.
+   On mobile we shrink the footprint further so the pill never covers room
+   cards or chat tiles next to it.
    ============================================================================ */
 .scroll-jump {
-  right: 16px;
-  padding: 7px;
-  border-radius: 26px;
-  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.42);
+  right: 10px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.32);
   background:
-    linear-gradient(180deg, hsl(var(--neu-bg-hi, 232 35% 20%) / 0.92) 0%, hsl(var(--neu-bg-lo, 232 35% 9%) / 0.96) 100%);
-  backdrop-filter: blur(10px) saturate(1.15);
-  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+    linear-gradient(180deg,
+      hsl(var(--neu-bg-hi, 232 35% 22%) / 0.88) 0%,
+      hsl(var(--neu-bg-lo, 232 35% 8%) / 0.92) 100%);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 -2px 0 rgba(0, 0, 0, 0.55) inset,
-    0 18px 38px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 0 28px hsl(var(--neu-orange, 252 90% 70%) / 0.30);
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.55) inset,
+    0 8px 24px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 0 18px hsl(var(--neu-orange, 252 90% 70%) / 0.18);
 }
 .scroll-jump-btn {
-  width: 46px;
-  height: 46px;
-  border-radius: 16px;
+  width: 32px;
+  height: 36px;
+  border-radius: 999px;
   position: relative;
   overflow: hidden;
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.22);
+  background:
+    radial-gradient(120% 120% at 50% 0%,
+      hsl(var(--neu-bg-hi, 232 35% 28%) / 0.95) 0%,
+      hsl(var(--neu-bg-lo, 232 35% 12%) / 0.98) 70%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.scroll-jump-btn svg {
+  width: 14px;
+  height: 14px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
 }
 .scroll-jump-btn::before {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(160deg, rgba(255,255,255,0.08), transparent 55%);
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  height: 45%;
+  border-radius: 999px 999px 50% 50% / 999px 999px 60% 60%;
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.02) 100%);
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 0.95;
 }
 .scroll-jump-btn:hover:not(:disabled) {
   color: hsl(var(--neu-orange-hi, 252 100% 88%));
-  border-color: hsl(var(--neu-orange, 252 90% 70%));
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.85);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.10) inset,
-    0 -2px 0 rgba(0, 0, 0, 0.6) inset,
-    0 10px 20px rgba(0, 0, 0, 0.55),
-    0 0 26px hsl(var(--neu-orange, 252 90% 70%) / 0.65),
-    0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.55) inset,
+    0 4px 10px rgba(0, 0, 0, 0.55),
+    0 0 14px hsl(var(--neu-orange, 252 90% 70%) / 0.55);
 }
 .scroll-jump-spacer {
-  width: 30px;
-  margin: 7px 0;
+  width: 16px;
+  height: 1px;
+  margin: 3px 0;
+  background: linear-gradient(90deg,
+    transparent,
+    hsl(var(--neu-orange, 252 90% 70%) / 0.35),
+    transparent);
 }
 @media (max-width: 640px) {
   .scroll-jump {
-    right: 10px;
-    padding: 5px;
-    border-radius: 22px;
+    right: 6px;
+    padding: 3px;
+    border-radius: 999px;
   }
   .scroll-jump-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
+    width: 30px;
+    height: 34px;
+    border-radius: 999px;
+  }
+  .scroll-jump-btn svg {
+    width: 13px;
+    height: 13px;
   }
   .scroll-jump-spacer {
-    margin: 5px 0;
-    width: 24px;
+    margin: 2px 0;
+    width: 14px;
+  }
+  /* On mobile keep the pill semi-transparent when idle so it never visually
+     covers the room cards / chat tiles sitting underneath it on the right. */
+  .scroll-jump:not([data-visible="true"]) {
+    opacity: 0.35;
   }
 }
 
@@ -8912,63 +8952,148 @@ html.boost-mode .header-pro {
 }
 
 /* ============================================================================
-   Pinned socials — round floating button on the right edge that fans out the
-   user's saved Instagram / LinkedIn / Facebook links, free4talk-style.
-   Sits below the scroll-jump pill so the two never collide.
+   Pinned socials — draggable round floating button on the right edge that
+   fans out the user's saved Instagram / LinkedIn / Facebook links. The
+   user can drag it vertically by the small grip handle on top, and the
+   position is persisted in localStorage. Default lands near the bottom
+   right corner so it's within thumb reach on phones (free4talk-style, but
+   parked rather than centered).
    ============================================================================ */
 .pinned-socials {
   position: fixed;
   right: 14px;
-  /* Below the vertically-centered scroll-jump pill. */
-  top: calc(50% + 110px);
   z-index: 41;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   pointer-events: none;
+  /* Snap into final position smoothly when releasing the drag. */
+  transition: top 160ms ease;
 }
-.pinned-socials-toggle,
-.pinned-socials-link {
+.pinned-socials.is-dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+/* Tiny drag handle that only appears on hover/touch, so the button still
+   looks clean when at rest. Big enough on touch to grab reliably without
+   being visually noisy. */
+.pinned-socials-handle {
   pointer-events: auto;
-  width: 44px;
-  height: 44px;
+  width: 28px;
+  height: 14px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+  color: hsl(var(--neu-orange-hi, 252 95% 80%) / 0.8);
   background: linear-gradient(
     180deg,
-    hsl(var(--neu-bg-hi, 232 35% 22%)) 0%,
-    hsl(var(--neu-bg-lo, 232 35% 11%)) 100%
-  );
+    hsl(var(--neu-bg-hi, 232 35% 24%) / 0.92) 0%,
+    hsl(var(--neu-bg-lo, 232 35% 10%) / 0.95) 100%);
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+    0 4px 10px rgba(0, 0, 0, 0.45);
+  cursor: grab;
+  opacity: 0;
+  transform: translateY(4px) scale(0.92);
+  transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease;
+  touch-action: none;
+}
+.pinned-socials-handle:hover {
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.7);
+  color: hsl(var(--neu-orange-hi, 252 100% 90%));
+}
+.pinned-socials-handle:active {
+  cursor: grabbing;
+}
+.pinned-socials:hover .pinned-socials-handle,
+.pinned-socials[data-open="true"] .pinned-socials-handle,
+.pinned-socials.is-dragging .pinned-socials-handle {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Toggle and individual social link buttons share the same neumorphic core:
+   convex top highlight + soft inset trough on the bottom for a real 3D feel,
+   plus an ambient orange glow that brightens on hover. Keeps the look in
+   sync with the scroll-jump pill above it. */
+.pinned-socials-toggle,
+.pinned-socials-link {
+  pointer-events: auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.42);
+  background:
+    radial-gradient(120% 120% at 50% 0%,
+      hsl(var(--neu-bg-hi, 232 35% 26%) / 0.95) 0%,
+      hsl(var(--neu-bg-lo, 232 35% 10%) / 0.98) 70%);
   color: hsl(var(--neu-orange-hi, 252 95% 80%));
   cursor: pointer;
   transition: transform 160ms ease, box-shadow 220ms ease, border-color 220ms ease, opacity 200ms ease;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
     0 -2px 0 rgba(0, 0, 0, 0.55) inset,
-    0 8px 18px rgba(0, 0, 0, 0.5),
-    0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.28);
+    0 6px 16px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.25);
   text-decoration: none;
+  overflow: hidden;
+}
+.pinned-socials-toggle::before,
+.pinned-socials-link::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  height: 45%;
+  border-radius: 999px;
+  background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.02) 100%);
+  pointer-events: none;
+}
+.pinned-socials-toggle > svg,
+.pinned-socials-link > svg {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
 }
 .pinned-socials-toggle:hover,
 .pinned-socials-link:hover {
   transform: translateY(-1px);
   border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.85);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
     0 -2px 0 rgba(0, 0, 0, 0.6) inset,
     0 10px 22px rgba(0, 0, 0, 0.55),
+    0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.35),
     0 0 26px hsl(var(--neu-orange, 252 90% 70%) / 0.5);
 }
 .pinned-socials-toggle:active,
 .pinned-socials-link:active {
   transform: translateY(0);
   box-shadow:
-    inset 0 3px 8px rgba(0, 0, 0, 0.5),
+    inset 0 3px 8px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
     0 0 18px hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+}
+.pinned-socials.is-dragging .pinned-socials-toggle {
+  transform: scale(1.06);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 -2px 0 rgba(0, 0, 0, 0.6) inset,
+    0 14px 28px rgba(0, 0, 0, 0.6),
+    0 0 28px hsl(var(--neu-orange, 252 90% 70%) / 0.6);
 }
 .pinned-socials-fan {
   display: flex;
@@ -8992,23 +9117,31 @@ html.boost-mode .header-pro {
 .pinned-socials-linkedin  { color: #2d8eff; }
 .pinned-socials-facebook  { color: #4f8bff; }
 
+html.neomorphic-light .pinned-socials-handle,
 html.neomorphic-light .pinned-socials-toggle,
 html.neomorphic-light .pinned-socials-link {
   background: linear-gradient(180deg, #ffffff 0%, #e7e8f0 100%);
   border-color: hsl(var(--neu-orange, 252 90% 50%) / 0.4);
+  color: hsl(var(--neu-orange, 252 90% 45%));
 }
 
 @media (max-width: 640px) {
   .pinned-socials {
     right: 10px;
-    /* Sit a touch lower on mobile to avoid the bigger scroll-jump pill. */
-    top: calc(50% + 130px);
-    gap: 8px;
+    gap: 6px;
   }
   .pinned-socials-toggle,
   .pinned-socials-link {
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
+  }
+  /* On touch devices, surface the drag handle so users discover they can
+     reposition it. Keep it subtle but visible. */
+  .pinned-socials-handle {
+    opacity: 0.6;
+    transform: translateY(0) scale(1);
+    width: 32px;
+    height: 16px;
   }
 }
 
