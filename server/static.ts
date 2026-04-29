@@ -211,6 +211,10 @@ export function serveStatic(app: Express) {
     // path doesn't get a different TTL than the uncompressed path.
     if (reqPath.startsWith("/assets/")) {
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      // Lighthouse Best Practices: same-origin CORP on hashed assets removes
+      // the "ensure CSP is effective" related cross-origin warnings and is
+      // safe because /assets/ is only ever loaded by our own pages.
+      res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     } else if (reqPath.endsWith(".html") || reqPath.endsWith("sw.js")) {
       res.setHeader("Cache-Control", "no-cache");
     } else {
@@ -270,6 +274,9 @@ export function serveStatic(app: Express) {
         // near-instant and dramatically improves LCP/FCP on returning users.
         if (filePath.includes(`${path.sep}assets${path.sep}`)) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          // CORP same-origin: hashed Vite output is only loaded by our own
+          // pages, so locking it down lifts Lighthouse Best Practices.
+          res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
           return;
         }
         // index.html, robots.txt, sitemap.xml and the SW must always

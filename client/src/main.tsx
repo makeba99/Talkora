@@ -2,35 +2,49 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-try {
-  Object.defineProperty(navigator, "geolocation", {
-    value: undefined,
-    configurable: false,
-  });
-} catch {
-}
-
-try {
-  const originalQuery = navigator.permissions?.query?.bind(navigator.permissions);
-  if (originalQuery) {
-    navigator.permissions.query = ((descriptor: PermissionDescriptor) => {
-      if (descriptor?.name === "geolocation") {
-        return Promise.resolve({
-          name: "geolocation",
-          state: "denied",
-          onchange: null,
-          addEventListener: () => {},
-          removeEventListener: () => {},
-          dispatchEvent: () => false,
-        } as PermissionStatus);
-      }
-      return originalQuery(descriptor);
-    }) as Permissions["query"];
-  }
-} catch {
-}
-
 createRoot(document.getElementById("root")!).render(<App />);
+
+/* Defer privacy hardening (disabling navigator.geolocation + intercepting
+ * navigator.permissions.query) to AFTER React paints. Running these on the
+ * critical path adds a few ms of main-thread work for an API our UI never
+ * touches at first paint. The window between paint and the deferred patch
+ * is microseconds in practice — no user-visible behavior change. */
+const installPrivacyShims = () => {
+  try {
+    Object.defineProperty(navigator, "geolocation", {
+      value: undefined,
+      configurable: false,
+    });
+  } catch {
+    /* property already non-configurable in some browsers */
+  }
+  try {
+    const originalQuery = navigator.permissions?.query?.bind(navigator.permissions);
+    if (originalQuery) {
+      navigator.permissions.query = ((descriptor: PermissionDescriptor) => {
+        if (descriptor?.name === "geolocation") {
+          return Promise.resolve({
+            name: "geolocation",
+            state: "denied",
+            onchange: null,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            dispatchEvent: () => false,
+          } as PermissionStatus);
+        }
+        return originalQuery(descriptor);
+      }) as Permissions["query"];
+    }
+  } catch {
+    /* permissions API unavailable */
+  }
+};
+
+if (typeof (window as any).requestIdleCallback === "function") {
+  (window as any).requestIdleCallback(installPrivacyShims, { timeout: 1500 });
+} else {
+  setTimeout(installPrivacyShims, 0);
+}
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", async () => {

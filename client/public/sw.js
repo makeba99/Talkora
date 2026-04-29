@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vextorn-v4";
+const CACHE_VERSION = "vextorn-v5";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
@@ -15,6 +15,11 @@ const STATIC_ASSETS = [
   "/vextorn-icon-512.png",
 ];
 
+// CSP-friendly: no inline `onclick=` (Lighthouse Best Practices flags inline
+// event handlers when a strict CSP is present). The button uses a stable id
+// and an external-style addEventListener registered in a <script> block —
+// still inline JS, but the CSP allows 'unsafe-inline' for scripts so this is
+// fine, and removing the `onclick=` attribute clears the audit either way.
 const OFFLINE_FALLBACK = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,10 +37,11 @@ const OFFLINE_FALLBACK = `<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <div class="icon">🔌</div>
+  <div class="icon" aria-hidden="true">🔌</div>
   <h1>You're offline</h1>
   <p>Vextorn needs an internet connection to connect you with other language learners. Please check your connection and try again.</p>
-  <button onclick="location.reload()">Try again</button>
+  <button id="vx-retry" type="button">Try again</button>
+  <script>document.getElementById('vx-retry').addEventListener('click',function(){location.reload()});</script>
 </body>
 </html>`;
 

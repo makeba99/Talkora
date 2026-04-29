@@ -1597,6 +1597,9 @@ export default function Lobby() {
                         alt={mediaTypes[i] === "gif" ? "Announcement GIF" : "Announcement image"}
                         loading="lazy"
                         decoding="async"
+                        width={480}
+                        height={208}
+                        referrerPolicy="no-referrer"
                         className="w-full rounded-lg object-cover max-h-52"
                         data-testid={`img-lobby-announcement-media-${announcement.id}-${i}`}
                       />
