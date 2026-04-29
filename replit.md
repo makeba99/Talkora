@@ -405,6 +405,18 @@ Badge applications table (shared/schema.ts):
   small dismiss `X` that hides it permanently. On touch / mobile the
   X stays visible by default (instead of only on hover) so mobile
   users can actually close it.
+- **Header polish (pro neumorphic)**: the lobby header trio
+  (`.search-neu-shell`, `.create-room-neu`, `.header-pro-btn`)
+  shares a refined neumorphic vocabulary — sculpted top sheen,
+  brighter inner-rim highlight, deeper outer drop, and a glassy
+  specular dot on each circular medallion. The Create Room CTA
+  is intentionally compact (40px tall / 32px medallion on
+  desktop, 38/30 on phones, 36px icon-only circle below 420px)
+  so it reads as a nested control instead of a hero button —
+  the brand violet lives only inside the icon medallion so the
+  eye is drawn to a single point of focus. Focus-visible rings
+  use the same brand violet glow across all three elements for
+  a consistent keyboard story.
 - **Pin to corner** (parallel to header pinning): any orbit
   satellite (messages, notifications, themes, community, the
   central orbit toggle) and the header **Book Teacher** button
