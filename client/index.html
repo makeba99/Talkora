@@ -176,6 +176,77 @@
     <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
     <link rel="dns-prefetch" href="https://i.ytimg.com" />
     <link rel="dns-prefetch" href="https://s.ytimg.com" />
+    <!-- Self-recovery for users on the old service worker. The previous SW
+         used stale-while-revalidate for HTML and pre-cached "/", so after a
+         deploy returning users got the OLD index.html that referenced new-
+         deploy /assets/<hash>.js files — those 404 → blank white screen.
+         The fixed SW (vextorn-v4+) ships with this build, but it can't help
+         the very first navigation that triggered the white screen. This
+         inline script (runs before React) detects two recovery signals,
+         force-clears all SW caches, unregisters every SW, and reloads.
+         A sessionStorage guard prevents an infinite reload loop. -->
+    <script>
+      (function () {
+        try {
+          var KEY = "vextorn_sw_recovered_v1";
+          function recover(reason) {
+            try { console.warn("[vextorn] self-heal:", reason); } catch (e) {}
+            if (sessionStorage.getItem(KEY)) return;
+            sessionStorage.setItem(KEY, String(Date.now()));
+            var done = function () {
+              try { window.location.reload(); } catch (e) { window.location.href = "/"; }
+            };
+            var clearCaches = (window.caches && caches.keys)
+              ? caches.keys().then(function (keys) {
+                  return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                }).catch(function () {})
+              : Promise.resolve();
+            var unregisterSWs = ("serviceWorker" in navigator && navigator.serviceWorker.getRegistrations)
+              ? navigator.serviceWorker.getRegistrations().then(function (regs) {
+                  return Promise.all(regs.map(function (r) { return r.unregister().catch(function () {}); }));
+                }).catch(function () {})
+              : Promise.resolve();
+            Promise.all([clearCaches, unregisterSWs]).then(done, done);
+            setTimeout(done, 1500);
+          }
+
+          // Signal A: a /assets/* script or stylesheet failed to load (the
+          // exact failure mode of stale-SW + new-deploy hash mismatch).
+          window.addEventListener("error", function (e) {
+            var t = e && e.target;
+            if (!t) return;
+            var src = t.src || t.href || "";
+            if (typeof src !== "string") return;
+            if (src.indexOf("/assets/") === -1) return;
+            if (t.tagName === "SCRIPT" || t.tagName === "LINK") {
+              recover("asset 404: " + src);
+            }
+          }, true);
+
+          // Signal B: nothing rendered into #root after 6 seconds — defensive
+          // catch for any other "blank screen" cause (CSP, network blip,
+          // partial cache corruption). 6 s is well past first paint on every
+          // network the app supports, so a healthy session never trips this.
+          setTimeout(function () {
+            var root = document.getElementById("root");
+            if (root && (root.children.length === 0)) {
+              recover("root empty after 6s");
+            }
+          }, 6000);
+
+          // Once React mounts successfully, clear the recovery flag so the
+          // user can self-heal again on a future broken deploy.
+          window.addEventListener("load", function () {
+            setTimeout(function () {
+              var root = document.getElementById("root");
+              if (root && root.children.length > 0) {
+                try { sessionStorage.removeItem(KEY); } catch (e) {}
+              }
+            }, 2000);
+          });
+        } catch (e) { /* never break boot */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
