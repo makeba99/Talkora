@@ -15,6 +15,8 @@ import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadR
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "./elevenlabs";
 
+let cachedIndexHtml: string | null = null;
+
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
 const roomVideoStatus = new Map<string, Set<string>>();
@@ -320,10 +322,15 @@ export async function registerRoutes(
 
       // Match the production layout used by `serveStatic` in server/static.ts
       // (`__dirname/public/index.html`). Only accessed in prod where the CJS
-      // bundle has __dirname defined natively.
+      // bundle has __dirname defined natively. We cache the template in
+      // memory because it only changes on deploy — every social-crawler hit
+      // would otherwise pay a disk read just to swap a few meta tags.
       const indexPath = path.resolve(__dirname, "public", "index.html");
-      if (!fs.existsSync(indexPath)) return next();
-      let html = await fs.promises.readFile(indexPath, "utf-8");
+      if (!cachedIndexHtml) {
+        if (!fs.existsSync(indexPath)) return next();
+        cachedIndexHtml = await fs.promises.readFile(indexPath, "utf-8");
+      }
+      let html = cachedIndexHtml;
 
       const proto = (req.headers["x-forwarded-proto"] as string) || req.protocol;
       const host = req.get("host") || "vextorn.com";
