@@ -1,11 +1,14 @@
-const CACHE_VERSION = "vextorn-v3";
+const CACHE_VERSION = "vextorn-v4";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 const HTML_CACHE = `${CACHE_VERSION}-html`;
 
+// Note: we intentionally DO NOT pre-cache "/" (the HTML shell). After a new
+// deploy ships, a stale cached "/" would still reference the OLD hashed
+// /assets/<hash>.js bundles, and those 404 → white screen. HTML is now always
+// fetched network-first (see fetch handler) so the asset hashes always match.
 const STATIC_ASSETS = [
-  "/",
   "/manifest.json",
   "/vextorn-mark.svg",
   "/vextorn-icon-192.png",
@@ -78,9 +81,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // HTML / navigations: stale-while-revalidate keeps repeat visits instant.
+  // HTML / navigations: NETWORK-FIRST. Critical correctness issue — using
+  // stale-while-revalidate here returns the OLD cached index.html on the very
+  // first hit after a deploy. That old HTML embeds <script src="/assets/
+  // main-OLDHASH.js"> references, but the new build only has new hashes, so
+  // every script tag 404s and the user sees a blank white page until the
+  // background revalidate finishes (which it can't, because the SW already
+  // resolved the navigation). Network-first guarantees fresh HTML always
+  // matches the assets it references; the cache is only used as an offline
+  // fallback. Repeat visits are still fast because hashed /assets/ are
+  // cache-first immutable and the navigation preload races the network.
   if (request.mode === "navigate" || request.destination === "document") {
-    event.respondWith(staleWhileRevalidateHtml(event));
+    event.respondWith(networkFirstHtml(event));
     return;
   }
 
@@ -127,38 +139,29 @@ async function cacheFirst(request) {
   }
 }
 
-async function staleWhileRevalidateHtml(event) {
+async function networkFirstHtml(event) {
   const { request } = event;
   const cache = await caches.open(HTML_CACHE);
-  const cached = await cache.match(request, { ignoreSearch: true });
 
-  const networkFetch = (async () => {
-    try {
-      const preload = await event.preloadResponse;
-      const response = preload || (await fetch(request));
-      if (response && response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    } catch {
-      return null;
+  try {
+    const preload = await event.preloadResponse;
+    const response = preload || (await fetch(request));
+    if (response && response.ok) {
+      // Background-cache the fresh HTML for offline fallback only.
+      cache.put(request, response.clone()).catch(() => {});
     }
-  })();
-
-  if (cached) {
-    event.waitUntil(networkFetch);
-    return cached;
+    return response;
+  } catch {
+    // Offline: serve the most recent cached HTML if we have one.
+    const cached = await cache.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+    const indexCached = await cache.match("/");
+    if (indexCached) return indexCached;
+    return new Response(OFFLINE_FALLBACK, {
+      status: 200,
+      headers: { "Content-Type": "text/html" },
+    });
   }
-
-  const fresh = await networkFetch;
-  if (fresh) return fresh;
-
-  const indexCached = await cache.match("/");
-  if (indexCached) return indexCached;
-  return new Response(OFFLINE_FALLBACK, {
-    status: 200,
-    headers: { "Content-Type": "text/html" },
-  });
 }
 
 async function networkFirst(request) {
