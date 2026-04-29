@@ -204,14 +204,26 @@ export function privilegeCheckMiddleware(
 }
 
 export function applySecurityMiddleware(app: Express): void {
+  // CSP — script-src 'unsafe-eval' is required by Vite's dev runtime (HMR
+  // uses eval), but production never needs it; dropping it in prod gets us
+  // the "Avoids deprecated APIs" + "CSP is effective against XSS" wins on
+  // Lighthouse Best Practices. 'unsafe-inline' for scripts is still needed
+  // for our inline self-recovery script and JSON-LD; replacing it would
+  // require a per-request nonce pipeline which adds non-trivial risk.
+  // styleSrc 'unsafe-inline' stays because Tailwind/inline style attributes
+  // need it; we drop fonts.googleapis.com since we self-host now.
+  const isProd = process.env.NODE_ENV === "production";
+  const scriptSrc = isProd
+    ? ["'self'", "'unsafe-inline'", "https://www.youtube.com", "https://s.ytimg.com"]
+    : ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.youtube.com", "https://s.ytimg.com"];
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.youtube.com", "https://s.ytimg.com"],
-          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-          fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+          scriptSrc,
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          fontSrc: ["'self'", "data:"],
           imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
           mediaSrc: ["'self'", "blob:", "https:", "http:"],
           connectSrc: ["'self'", "wss:", "ws:", "https:"],

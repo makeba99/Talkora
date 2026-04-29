@@ -1567,7 +1567,10 @@ export default function Lobby() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden app-scrollbar">
+      {/* Semantic <main> landmark for accessibility — Lighthouse and screen
+          readers both look for exactly one <main> per page so users can jump
+          straight to the primary content. Renders identically to a <div>. */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden app-scrollbar" id="main-content">
         <div className="max-w-[1600px] mx-auto p-3 sm:p-4 lg:px-6 xl:px-8 pb-0 space-y-5 animate-fade-in min-w-0">
           {announcements.length > 0 && (
             <div className="space-y-2" data-testid="container-lobby-announcements">
@@ -2113,7 +2116,7 @@ export default function Lobby() {
         <Suspense fallback={null}>
           <SiteFooter />
         </Suspense>
-      </div>
+      </main>
 
       <DeferredLobbyOverlays onStepChange={handleTourStepChange} />
 
