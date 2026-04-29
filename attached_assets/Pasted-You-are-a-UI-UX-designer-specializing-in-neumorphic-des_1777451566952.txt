@@ -1,0 +1,19 @@
+You are a UI/UX designer specializing in neumorphic design systems. Your task is to refine and elevate the header section shown in `image.png` to achieve a premium, next-level neumorphic aesthetic that feels polished and professional.
+
+**Current State:**
+The header contains the Vextorn logo with tagline, a "Book Teacher" button, user profile display, a large search bar with placeholder text "Search rooms, languages, people...", and a prominent "Create Room" button with a hammer icon. The design uses a dark neumorphic palette (deep purples, blues, blacks with vibrant purple gradients and teal accents) as shown in `image.png`, with rounded corners and soft shadows.
+
+**Your Objectives:**
+
+1. **Elevate the neumorphic treatment** — Enhance the depth, shadow quality, and visual hierarchy to feel more sophisticated. Refine the subtle raised/recessed states to feel premium and intentional, building on what already exists rather than recreating.
+
+2. **Optimize the "Create Room" button** — Reduce its physical footprint so it takes up less space while remaining clearly visible and accessible. Maintain its role as a primary call-to-action but achieve a more refined, compact presence that feels nested within the header rather than dominating it.
+
+3. **Enhance mobile responsiveness** — The button and overall header layout should scale elegantly on smaller screens, ensuring nothing feels cramped or loses visual hierarchy.
+
+4. **Maintain professional polish** — Every element should feel intentional and crafted. The overall header should convey premium quality and brand confidence.
+
+**Design Direction:**
+Work exclusively with the existing color palette and neumorphic language from `image.png`. Do not introduce new colors or drastically alter the aesthetic—enhance and refine what's already there. The goal is to elevate the current design to "next level pro," not to recreate it from scratch.
+
+Deliver the refined header as a visual mockup or high-fidelity design file that demonstrates these improvements applied to the full header section.
