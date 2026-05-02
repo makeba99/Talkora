@@ -742,7 +742,7 @@ function ParticipantCard({
         </div>
 
         {(showScreenIcon || showYoutubeIcon || showBookIcon || isWatcher || showMovieIcon || isMovieWatcherBadge) && (
-          <div className="absolute top-1 right-8 z-20 flex items-center gap-0.5 animate-pulse drop-shadow-md">
+          <div className="absolute top-1 right-8 z-20 flex items-center gap-0.5 animate-pulse drop-shadow-md" onClick={(e) => e.stopPropagation()}>
              {showScreenIcon && (
                 <div className="bg-orange-600/90 p-1 rounded-sm shadow pointer-events-none">
                    <Monitor className="w-3 h-3 text-white" />
@@ -4872,6 +4872,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // watching anyone yet, tap-to-join their watch party just like book/screen.
     if (isClickingOther && youtubeHosts.has(peerId) && !activeYoutubeId && !remoteScreenShareUserId) {
       handleJoinYoutubeParty(peerId);
+      return;
+    }
+
+    // If the clicked participant is hosting a movie and we're not already watching
+    // it, join the movie party — same one-tap pattern as YouTube / book / screen.
+    if (isClickingOther && movieHosts.has(peerId) && !showMovie) {
+      const info = movieHosts.get(peerId);
+      if (info) {
+        const _startedAt = movieHostStartedAt.get(peerId);
+        const _offset = _startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0;
+        setShowYoutube(false);
+        setMiniPlayerMode(false);
+        setActiveMovieId(info.movieId);
+        setActiveMovieTitle(info.movieTitle);
+        setActiveMoviePoster(info.posterPath);
+        setMovieStartedBy(peerId);
+        setMovieStartOffset(_offset);
+        setShowMovie(true);
+        socket?.emit("room:movie-watching", { roomId: room.id, hostId: peerId, watching: true });
+      }
       return;
     }
 
