@@ -242,10 +242,19 @@
          randomuser.me shows profile pictures on the lobby people-section —
          upgrading from dns-prefetch to preconnect does the TLS handshake early
          so the first profile image request is instant instead of paying the
-         ~200-400ms RTT cost at render time.  -->
-    <link rel="preconnect" href="https://flagcdn.com" crossorigin />
+         ~200-400ms RTT cost at render time.
+
+         IMPORTANT: these three preconnects intentionally omit the `crossorigin`
+         attribute. All three origins are fetched exclusively via plain <img>
+         tags (no crossorigin attribute on the element). Without crossorigin on
+         the img, the browser uses the *non-CORS* HTTP connection pool. A
+         preconnect with crossorigin warms the *CORS-anonymous* pool — a
+         completely separate socket — so the actual image fetch ignores the
+         pre-warmed connection and opens a second one. Removing crossorigin here
+         ensures the pre-warmed socket is reused, saving ~100 ms per origin. -->
+    <link rel="preconnect" href="https://flagcdn.com" />
     <link rel="dns-prefetch" href="https://flagcdn.com" />
-    <link rel="preconnect" href="https://randomuser.me" crossorigin />
+    <link rel="preconnect" href="https://randomuser.me" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
     <!-- YouTube embeds are deferred and only load on user interaction, so use
          dns-prefetch (cheap) instead of preconnect (opens TLS sockets that
@@ -255,7 +264,7 @@
     <!-- i.ytimg.com serves YouTube thumbnails used immediately in hologram room
          backgrounds — upgrading to preconnect completes the TLS handshake
          before the first thumbnail request, saving ~200ms on mobile. -->
-    <link rel="preconnect" href="https://i.ytimg.com" crossorigin />
+    <link rel="preconnect" href="https://i.ytimg.com" />
     <link rel="dns-prefetch" href="https://i.ytimg.com" />
     <link rel="dns-prefetch" href="https://s.ytimg.com" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
