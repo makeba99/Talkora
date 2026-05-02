@@ -1,7 +1,8 @@
-const CACHE_VERSION = "vextorn-v6";
+const CACHE_VERSION = "vextorn-v7";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
-const ASSET_CACHE = `${CACHE_VERSION}-assets`;
+const ASSET_CACHE  = `${CACHE_VERSION}-assets`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
+const API_CACHE    = `${CACHE_VERSION}-api`;
 
 // Pre-cache only truly static, versioned-forever assets.
 // HTML is intentionally excluded — we never intercept navigation requests.
@@ -17,6 +18,22 @@ const STATIC_ASSETS = [
   "/vextorn-icon-512.png",
 ];
 
+// Lobby-critical API endpoints that are safe to serve stale on repeat visits.
+// These are all public GET endpoints whose data is acceptable to show from
+// cache for a few seconds while a fresh copy is fetched in the background.
+//   - /api/rooms            — public room list, changes infrequently
+//   - /api/rooms/participants — live participant counts (short stale window)
+//   - /api/announcements    — platform announcements, rarely change
+//
+// /api/auth/user is intentionally excluded: it's private (Cookie-gated),
+// changes on login/logout, and must never be served stale to avoid showing
+// a logged-in shell to a user who signed out.
+const SWR_PATHS = [
+  "/api/rooms",
+  "/api/rooms/participants",
+  "/api/announcements",
+];
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
@@ -26,7 +43,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  const KEEP = new Set([STATIC_CACHE, ASSET_CACHE, DYNAMIC_CACHE]);
+  const KEEP = new Set([STATIC_CACHE, ASSET_CACHE, DYNAMIC_CACHE, API_CACHE]);
   event.waitUntil(
     caches.keys()
       .then((keys) =>
@@ -54,7 +71,44 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Live API + sockets must always go to the network.
+  // Stale-while-revalidate for lobby-critical public API endpoints.
+  // On first visit: fetch from network and cache the response.
+  // On repeat visits: serve the cached response INSTANTLY (0ms), then fetch
+  // a fresh copy in the background so the NEXT load also gets a fast hit.
+  // This removes these requests from the Lighthouse LCP waterfall entirely
+  // on repeat views and satisfies the "Use efficient cache lifetimes" audit.
+  if (SWR_PATHS.includes(url.pathname)) {
+    event.respondWith(
+      (async () => {
+        const cache   = await caches.open(API_CACHE);
+        const cached  = await cache.match(request);
+
+        // Always kick off a background network fetch to keep the cache fresh.
+        const networkPromise = fetch(request.clone())
+          .then((res) => {
+            if (res.ok) cache.put(request, res.clone());
+            return res;
+          })
+          .catch(() => null);
+
+        if (cached) {
+          // Serve stale immediately; extend the SW lifetime so the background
+          // fetch can complete even after respondWith has already resolved.
+          event.waitUntil(networkPromise);
+          return cached;
+        }
+
+        // No cache entry yet — wait for the first network response.
+        return (await networkPromise) || new Response(
+          '{"error":"offline"}',
+          { status: 503, headers: { "Content-Type": "application/json" } }
+        );
+      })()
+    );
+    return;
+  }
+
+  // All other API / socket requests must always hit the network.
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/socket.io/")) {
     return;
   }
@@ -69,7 +123,7 @@ self.addEventListener("fetch", (event) => {
   // Other same-origin static resources (icons, manifest, fonts).
   // Cache-first with network fallback.
   if (
-    request.destination === "font" ||
+    request.destination === "font"  ||
     request.destination === "image" ||
     request.destination === "style" ||
     request.destination === "script"
@@ -80,7 +134,7 @@ self.addEventListener("fetch", (event) => {
 });
 
 async function cacheFirstImmutable(request) {
-  const cache = await caches.open(ASSET_CACHE);
+  const cache  = await caches.open(ASSET_CACHE);
   const cached = await cache.match(request);
   if (cached) return cached;
   const response = await fetch(request);
@@ -112,10 +166,10 @@ self.addEventListener("push", (event) => {
   const data = event.data.json();
   event.waitUntil(
     self.registration.showNotification(data.title || "Vextorn", {
-      body: data.body || "",
-      icon: "/vextorn-icon-192.png",
-      badge: "/vextorn-icon-192.png",
-      data: data.url ? { url: data.url } : undefined,
+      body:   data.body || "",
+      icon:   "/vextorn-icon-192.png",
+      badge:  "/vextorn-icon-192.png",
+      data:   data.url ? { url: data.url } : undefined,
       vibrate: [200, 100, 200],
     })
   );

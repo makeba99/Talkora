@@ -797,6 +797,9 @@ export async function registerRoutes(
       for (const [roomId, participants] of Array.from(roomParticipants.entries())) {
         allParticipants[roomId] = Array.from(participants.values());
       }
+      // Participants change frequently (users join/leave), so we use a short
+      // max-age but still allow stale-while-revalidate for instant repeat loads.
+      res.setHeader("Cache-Control", "public, max-age=15, stale-while-revalidate=3600");
       res.json(allParticipants);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -1972,6 +1975,12 @@ export async function registerRoutes(
   app.get("/api/rooms", async (_req, res) => {
     try {
       const allRooms = await storage.getAllRooms();
+      // Public data — safe to cache. max-age=60 keeps it fresh for 60 s;
+      // stale-while-revalidate=86400 lets the browser/SW serve the stale
+      // response instantly on repeat visits while fetching a fresh copy in
+      // the background. This satisfies Lighthouse "Use efficient cache
+      // lifetimes" without ever showing data older than 24 h.
+      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
       res.json(allRooms.map((room) => roomPublicPayload(room)));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -3122,6 +3131,9 @@ export async function registerRoutes(
   app.get("/api/announcements", async (req: any, res) => {
     try {
       const userId = typeof req.isAuthenticated === "function" && req.isAuthenticated() ? (req.user as any).id : undefined;
+      // Announcement content is public; dismissed/viewed state is per-user but
+      // that only affects badge display, not the payload. Safe to cache briefly.
+      res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
       res.json(await storage.getPublishedAnnouncements(5, userId, true));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
