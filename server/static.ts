@@ -102,45 +102,12 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
     html = html.replace(/<\/head>/i, `${injection}\n  </head>`);
   }
 
-  // Eliminate render-blocking CSS using the media="print" technique.
-  //
-  // Why not the classic <link rel="preload" as="style" onload="..."> swap?
-  // Changing rel from "preload" to "stylesheet" creates a subtle cache-key
-  // mismatch: the preloaded entry is keyed on the credentials mode implied by
-  // the crossorigin attribute, but the subsequent stylesheet fetch may use a
-  // different mode depending on how Vite emitted the original tag and whether
-  // any other code path requests the same URL. Chrome surfaces this as:
-  //   "reload for '...' is found, but is not used because the request
-  //    credentials mode does not match."
-  // …and falls back to a fresh blocking download — the opposite of what we want.
-  //
-  // The media="print" trick avoids this entirely: the element is always
-  // rel="stylesheet", so there is no preload-cache lookup at all. Browsers do
-  // not block rendering on print stylesheets, so the file downloads in
-  // parallel with JS. The onload handler switches media to "all", making the
-  // styles apply. The inline <style> in index.html provides enough critical
-  // CSS (background, skeleton, font-face, focus ring) to prevent visible FOUC.
-  //
-  // The regex handles every attribute order Vite may emit:
-  //   <link rel="stylesheet" crossorigin href="...">
-  //   <link rel="stylesheet" href="..." crossorigin>
-  //   <link rel="stylesheet" href="..." />    (self-closing)
-  html = html.replace(
-    /<link\b([^>]*)\bhref="(\/assets\/index-[\w.-]+\.css)"([^>]*)>/g,
-    (_match, before, href, after) => {
-      if (!before.includes("stylesheet") && !after.includes("stylesheet")) {
-        return _match;
-      }
-      // Preserve crossorigin from the original tag so integrity checks work.
-      const hasCrossOrigin =
-        before.includes("crossorigin") || after.includes("crossorigin");
-      const crossAttr = hasCrossOrigin ? ' crossorigin=""' : "";
-      return (
-        `<link rel="stylesheet" media="print"${crossAttr} href="${href}" onload="this.media='all';this.onload=null">` +
-        `<noscript><link rel="stylesheet"${crossAttr} href="${href}"></noscript>`
-      );
-    },
-  );
+  // NOTE: The media="print" async-CSS technique was previously applied here
+  // but has been removed. The onload="..." inline event handler it requires is
+  // blocked by Helmet's automatic `script-src-attr 'none'` CSP directive,
+  // causing a hard crash on every page load. The critical CSS in the inline
+  // <style> block inside index.html (background, font-face, focus ring,
+  // skeleton) is sufficient to prevent FOUC while the main stylesheet loads.
 
   // Ensure the entry module script gets `fetchpriority="high"`. Vite *may*
   // preserve the attribute from our source index.html when it rewrites the
