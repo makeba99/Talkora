@@ -103,28 +103,42 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
     html = html.replace(/<\/head>/i, `${injection}\n  </head>`);
   }
 
-  // Eliminate render-blocking CSS: convert Vite's injected <link rel="stylesheet">
-  // for the main entry CSS bundle to an async preload + onload swap. The inline
-  // <style> in index.html (dark background, skeleton, font-face, skip-link)
-  // provides enough critical CSS to prevent any visible FOUC. The full stylesheet
-  // loads in parallel with JS and applies before React has finished hydrating.
-  // A <noscript> fallback ensures styling works when JS is disabled.
-  // The regex must be attribute-order-independent: Vite may emit
+  // Eliminate render-blocking CSS using the media="print" technique.
+  //
+  // Why not the classic <link rel="preload" as="style" onload="..."> swap?
+  // Changing rel from "preload" to "stylesheet" creates a subtle cache-key
+  // mismatch: the preloaded entry is keyed on the credentials mode implied by
+  // the crossorigin attribute, but the subsequent stylesheet fetch may use a
+  // different mode depending on how Vite emitted the original tag and whether
+  // any other code path requests the same URL. Chrome surfaces this as:
+  //   "reload for '...' is found, but is not used because the request
+  //    credentials mode does not match."
+  // …and falls back to a fresh blocking download — the opposite of what we want.
+  //
+  // The media="print" trick avoids this entirely: the element is always
+  // rel="stylesheet", so there is no preload-cache lookup at all. Browsers do
+  // not block rendering on print stylesheets, so the file downloads in
+  // parallel with JS. The onload handler switches media to "all", making the
+  // styles apply. The inline <style> in index.html provides enough critical
+  // CSS (background, skeleton, font-face, focus ring) to prevent visible FOUC.
+  //
+  // The regex handles every attribute order Vite may emit:
   //   <link rel="stylesheet" crossorigin href="...">
   //   <link rel="stylesheet" href="..." crossorigin>
-  //   <link rel="stylesheet" crossorigin href="..." />   (self-closing)
-  //   <link rel="stylesheet" crossorigin href="..." type="text/css">
-  // We capture everything before and after the href, confirm "stylesheet" is
-  // present anywhere in the tag, then rewrite to an async preload+onload swap.
+  //   <link rel="stylesheet" href="..." />    (self-closing)
   html = html.replace(
     /<link\b([^>]*)\bhref="(\/assets\/index-[\w.-]+\.css)"([^>]*)>/g,
     (_match, before, href, after) => {
       if (!before.includes("stylesheet") && !after.includes("stylesheet")) {
         return _match;
       }
+      // Preserve crossorigin from the original tag so integrity checks work.
+      const hasCrossOrigin =
+        before.includes("crossorigin") || after.includes("crossorigin");
+      const crossAttr = hasCrossOrigin ? ' crossorigin=""' : "";
       return (
-        `<link rel="preload" href="${href}" as="style" crossorigin onload="this.onload=null;this.rel='stylesheet'">` +
-        `<noscript><link rel="stylesheet" crossorigin href="${href}"></noscript>`
+        `<link rel="stylesheet" media="print"${crossAttr} href="${href}" onload="this.media='all';this.onload=null">` +
+        `<noscript><link rel="stylesheet"${crossAttr} href="${href}"></noscript>`
       );
     },
   );
