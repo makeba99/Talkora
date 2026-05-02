@@ -4176,11 +4176,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     // If the clicked participant is sharing their screen, open the screen
     // viewer for me — same one-tap flow as joining a YouTube watch party.
     // Tapping the same person again toggles the viewer back off.
-    // Special case: if THIS user is the YouTube starter and they click the
-    // screen-sharer's tile to watch it, minimize YouTube for them only —
-    // the video keeps running for everyone else in the room.
     if (isClickingOther && availableScreenUsers.has(peerId) && !isScreenSharing) {
-      if (activeYoutubeId && user?.id === youtubeStartedByRef.current) {
+      // If the local user has YouTube open and actively chooses to watch
+      // someone's screen, hide their YouTube panel so the screen is visible.
+      // YouTube keeps playing for everyone else — this is purely a local view switch.
+      if (activeYoutubeId && (showYoutube || miniPlayerMode)) {
         setShowYoutube(false);
         setMiniPlayerMode(false);
       }
