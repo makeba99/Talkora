@@ -166,7 +166,7 @@
   --secondary: 260 60% 55%;
   --secondary-foreground: 0 0% 100%;
   --muted: 220 15% 90%;
-  --muted-foreground: 220 10% 45%;
+  --muted-foreground: 220 10% 41%;
   --accent: 195 20% 90%;
   --accent-foreground: 220 20% 10%;
   --destructive: 0 84% 48%;
@@ -245,7 +245,7 @@ html.midnight-purple {
   --secondary: 24 100% 60%;
   --secondary-foreground: 0 0% 100%;
   --muted: 265 25% 14%;
-  --muted-foreground: 270 12% 55%;
+  --muted-foreground: 270 12% 62%;
   --accent: 14 88% 42%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 55%;
@@ -299,7 +299,7 @@ html.midnight-purple {
   --secondary: 20 55% 52%;
   --secondary-foreground: 0 0% 100%;
   --muted: 35 28% 85%;
-  --muted-foreground: 30 20% 45%;
+  --muted-foreground: 30 20% 36%;
   --accent: 38 30% 87%;
   --accent-foreground: 30 30% 18%;
   --destructive: 0 72% 48%;
@@ -389,7 +389,7 @@ html.neon-cyberpunk {
   --secondary: 190 80% 50%;
   --secondary-foreground: 0 0% 100%;
   --muted: 214 38% 88%;
-  --muted-foreground: 220 18% 48%;
+  --muted-foreground: 220 18% 40%;
   --accent: 214 45% 90%;
   --accent-foreground: 220 30% 16%;
   --destructive: 0 80% 50%;
@@ -479,7 +479,7 @@ html.forest-dark {
   --secondary: 90 60% 45%;
   --secondary-foreground: 0 0% 100%;
   --muted: 130 15% 13%;
-  --muted-foreground: 130 10% 50%;
+  --muted-foreground: 130 10% 53%;
   --accent: 130 15% 11%;
   --accent-foreground: 130 18% 90%;
   --destructive: 0 84% 55%;
@@ -524,7 +524,7 @@ html.forest-dark {
   --secondary: 25 80% 58%;
   --secondary-foreground: 0 0% 100%;
   --muted: 345 30% 87%;
-  --muted-foreground: 340 15% 48%;
+  --muted-foreground: 340 15% 39%;
   --accent: 345 32% 89%;
   --accent-foreground: 340 25% 18%;
   --destructive: 0 80% 50%;
@@ -729,7 +729,7 @@ html.neomorphic-light {
   --secondary: 252 38% 60%;
   --secondary-foreground: 0 0% 100%;
   --muted: 232 26% 86%;
-  --muted-foreground: 244 14% 42%;
+  --muted-foreground: 244 14% 40%;
   --accent: 232 26% 88%;
   --accent-foreground: 244 22% 20%;
   --destructive: 0 78% 52%;
@@ -1637,7 +1637,7 @@ html.starfield {
   --secondary: 260 70% 68%;
   --secondary-foreground: 0 0% 100%;
   --muted: 230 28% 11%;
-  --muted-foreground: 220 15% 50%;
+  --muted-foreground: 220 15% 54%;
   --accent: 230 28% 9%;
   --accent-foreground: 220 25% 90%;
   --destructive: 0 84% 55%;
@@ -1682,7 +1682,7 @@ html.galaxy {
   --secondary: 320 65% 62%;
   --secondary-foreground: 0 0% 100%;
   --muted: 250 28% 12%;
-  --muted-foreground: 260 12% 52%;
+  --muted-foreground: 260 12% 55%;
   --accent: 250 28% 10%;
   --accent-foreground: 260 20% 92%;
   --destructive: 0 84% 55%;
@@ -1727,7 +1727,7 @@ html.synthwave {
   --secondary: 185 100% 50%;
   --secondary-foreground: 270 30% 4%;
   --muted: 270 26% 12%;
-  --muted-foreground: 300 12% 52%;
+  --muted-foreground: 300 12% 54%;
   --accent: 270 26% 10%;
   --accent-foreground: 300 20% 92%;
   --destructive: 0 100% 55%;
@@ -1772,7 +1772,7 @@ html.blood-moon {
   --secondary: 20 80% 50%;
   --secondary-foreground: 0 0% 100%;
   --muted: 0 18% 12%;
-  --muted-foreground: 10 12% 50%;
+  --muted-foreground: 10 12% 54%;
   --accent: 0 18% 10%;
   --accent-foreground: 10 20% 90%;
   --destructive: 0 90% 60%;
@@ -1817,7 +1817,7 @@ html.slate-noir {
   --secondary: 200 40% 55%;
   --secondary-foreground: 0 0% 100%;
   --muted: 220 12% 12%;
-  --muted-foreground: 215 10% 50%;
+  --muted-foreground: 215 10% 54%;
   --accent: 220 12% 10%;
   --accent-foreground: 215 18% 88%;
   --destructive: 0 70% 55%;
@@ -3694,6 +3694,14 @@ html.synthwave .neon-text {
     radial-gradient(ellipse 60% 45% at 50% 92%, hsl(var(--neu-orange-lo) / 0.06) 0%, transparent 60%);
   animation: neu-aura-breathe 14s ease-in-out infinite;
   mix-blend-mode: screen;
+}
+
+/* On large viewports the percentage-based warm blooms span too many physical
+   pixels and read as an overpowering warm tint. Fade them at ≥1280px. */
+@media (min-width: 1280px) {
+  .neu-canvas::before {
+    opacity: 0.45;
+  }
 }
 
 /* Subtle film grain over the canvas for premium texture */
