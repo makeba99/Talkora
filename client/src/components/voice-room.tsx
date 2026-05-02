@@ -607,15 +607,31 @@ function ParticipantCard({
               alt="YouTube thumbnail"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            {/* Profile avatar pinned top-left so the person is always identifiable */}
-            <div className="absolute top-1.5 left-1.5 z-[25] w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
-              {p.profileImageUrl ? (
-                <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
-              ) : (
-                <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                  <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
+            {/* Gradient scrim so the profile strip is always legible */}
+            <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none z-[24]" />
+            {/* Profile strip pinned at bottom — avatar + name + role + mute always visible */}
+            <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-1.5 pt-1">
+              <div className="w-7 h-7 rounded-full overflow-hidden border-[1.5px] border-white/70 shadow-md flex-shrink-0">
+                {p.profileImageUrl ? (
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                    <span className="text-[8px] font-bold text-white">{getUserInitials(p)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <div className="flex items-center gap-1 min-w-0">
+                  {isRoomOwner && <Crown className="w-2.5 h-2.5 text-yellow-300 flex-shrink-0" />}
+                  <span className="text-[10px] font-semibold text-white leading-tight truncate drop-shadow-md" data-testid={`text-yt-card-name-${p.id}`}>
+                    {isMe ? "You" : getUserDisplayName(p)}
+                  </span>
                 </div>
-              )}
+                <span className="text-[8px] text-white/60 leading-none truncate">{room.level}</span>
+              </div>
+              <div className="flex-shrink-0 opacity-80">
+                {p.isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
+              </div>
             </div>
           </>
         ) : hasActiveMovie ? (
@@ -751,7 +767,7 @@ function ParticipantCard({
           <WaveformCanvas analyserNode={analyserNode} />
         )}
 
-        {isRoomOwner ? (
+        {!(hasActiveYoutube && youtubeVideoId) && (isRoomOwner ? (
           <div
             className="absolute bottom-0 left-0 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
             style={{
@@ -775,15 +791,17 @@ function ParticipantCard({
           <div className="absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20">
             You
           </div>
-        ) : null}
+        ) : null)}
 
-        <div className="absolute bottom-1 right-1 z-20 drop-shadow-md">
-          {p.isMuted ? (
-            <MicOff className="w-4 h-4 text-white opacity-80" />
-          ) : (
-             <Mic className="w-4 h-4 text-white opacity-100" />
-          )}
-        </div>
+        {!(hasActiveYoutube && youtubeVideoId) && (
+          <div className="absolute bottom-1 right-1 z-20 drop-shadow-md">
+            {p.isMuted ? (
+              <MicOff className="w-4 h-4 text-white opacity-80" />
+            ) : (
+               <Mic className="w-4 h-4 text-white opacity-100" />
+            )}
+          </div>
+        )}
 
         {/* Note: the old static "raise hand" badge here has been replaced by
             the floating mood emoji that animates above the card (see top of
