@@ -4329,7 +4329,26 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      // Request audio as optional — some Android/browser combinations throw
+      // NotSupportedError or NotAllowedError when audio:true is included.
+      // We try with audio first and silently fall back to video-only.
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      } catch (audioErr: any) {
+        // If the failure is specifically about audio (NotSupportedError / constraint
+        // error), retry without audio. Other errors (NotAllowedError = user denied)
+        // bubble up to the outer catch so the user sees a toast.
+        if (
+          audioErr?.name === "NotSupportedError" ||
+          audioErr?.name === "OverconstrainedError" ||
+          audioErr?.name === "TypeError"
+        ) {
+          stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        } else {
+          throw audioErr;
+        }
+      }
       screenStream.current = stream;
       setIsScreenSharing(true);
       socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: true });
@@ -4364,8 +4383,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         screenStream.current = null;
         socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
       };
-    } catch (err) {
+    } catch (err: any) {
       console.error("Screen share failed:", err);
+      // NotAllowedError = user dismissed or denied the picker — no toast needed.
+      // Everything else is unexpected and should be surfaced to the user.
+      if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
+        toast({
+          title: "Screen share failed",
+          description: "Your browser could not capture the screen. Try a different browser or check permissions.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -4454,9 +4482,41 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     setIsFlippingCamera(true);
     const newFacing = cameraFacing === "user" ? "environment" : "user";
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: { exact: newFacing } },
-      });
+      // Prefer switching by deviceId — the most reliable approach on mobile.
+      // facingMode: { exact } throws OverconstrainedError on many Android devices.
+      let newStream: MediaStream | null = null;
+
+      if (navigator.mediaDevices.enumerateDevices) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter((d) => d.kind === "videoinput");
+          if (videoDevices.length >= 2) {
+            const currentDeviceId = videoStream.current
+              ?.getVideoTracks()[0]
+              ?.getSettings().deviceId;
+            const otherDevice = videoDevices.find(
+              (d) => d.deviceId !== currentDeviceId && d.deviceId !== ""
+            );
+            if (otherDevice) {
+              newStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                  deviceId: { exact: otherDevice.deviceId },
+                  width: { ideal: 640 },
+                  height: { ideal: 480 },
+                },
+              });
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Fallback: soft facingMode constraint (no `exact` so it never throws)
+      if (!newStream) {
+        newStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: newFacing },
+        });
+      }
+
       const newTrack = newStream.getVideoTracks()[0];
       for (const sender of videoSenders.current.values()) {
         try { await sender.replaceTrack(newTrack); } catch (_) {}
