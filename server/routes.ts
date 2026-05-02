@@ -770,6 +770,32 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/youtube/suggestions", isAuthenticated, async (req: any, res) => {
+    try {
+      const q = (req.query.q as string || "").trim();
+      if (!q) return res.json([]);
+      const cacheKey = `yt:suggestions:${q.toLowerCase().slice(0, 100)}`;
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
+      const ytSearch = await import("youtube-search-api");
+      const results = await ytSearch.GetListByKeyword(q, false, 20);
+      const videos = (results.items || [])
+        .filter((item: any) => item.type === "video")
+        .slice(0, 15)
+        .map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          thumbnail: item.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`,
+          channelTitle: item.channelTitle || "",
+          duration: item.length?.simpleText || "",
+        }));
+      externalCache.set(cacheKey, videos);
+      res.json(videos);
+    } catch (err: any) {
+      res.status(500).json({ message: "Failed to load suggestions" });
+    }
+  });
+
   // ── AI Tutor model routing ─────────────────────────────────────────────────
   // Priority: NVIDIA Nemotron → gpt-4o → gpt-4o-mini → context-aware fallback
   const rawNvidiaApiKey = process.env.NVIDIA_API_KEY?.trim();
