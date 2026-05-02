@@ -366,6 +366,7 @@ function ParticipantCard({
   isMovieWatcher,
   onWatchMovie,
   roomLevel,
+  cardPx = 128,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -536,7 +537,7 @@ function ParticipantCard({
   if (isBlocked) {
     return (
       <div className="flex flex-col items-center gap-1">
-        <div className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-md overflow-hidden bg-muted/30 border-[3px] border-transparent select-none opacity-70">
+        <div className="relative rounded-md overflow-hidden bg-muted/30 border-[3px] border-transparent select-none opacity-70" style={{ width: cardPx, height: cardPx, flexShrink: 0 }}>
           <div className="w-full h-full flex flex-col items-center justify-center bg-muted/60 gap-2">
             <Ban className="w-8 h-8 text-muted-foreground/60" />
             <button
@@ -597,9 +598,10 @@ function ParticipantCard({
         </div>
       )}
       <div
-        className={`relative w-36 h-36 sm:w-40 sm:h-40 rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
+        className={`relative rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
           isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_14px_hsl(var(--neu-orange)/0.45)]" : "border-transparent hover:border-white/20"
         } transition-all duration-300`}
+        style={{ width: cardPx, height: cardPx, flexShrink: 0 }}
       >
         {hasActiveYoutube && youtubeVideoId ? (
           <>
@@ -843,7 +845,7 @@ function ParticipantCard({
   );
 
   return (
-    <ProfileDecoration decorationId={(p as any).profileDecoration} size={112}>
+    <ProfileDecoration decorationId={(p as any).profileDecoration} size={Math.max(48, cardPx - 16)}>
       <div 
          className="cursor-pointer" 
          onClick={onProfileClick} 
@@ -9098,8 +9100,20 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-10" : "flex-1"}`}>
-            <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-5">
+          {(() => {
+            const visibleCount = participants.filter(p => !foreverBlockedIds.has(p.id)).length;
+            const cardPx =
+              visibleCount <= 2 ? 128 :
+              visibleCount <= 4 ? 110 :
+              visibleCount <= 6 ? 94 :
+              visibleCount <= 8 ? 82 :
+              visibleCount <= 10 ? 72 :
+              visibleCount <= 14 ? 64 :
+              56;
+            const gapPx = cardPx <= 72 ? 6 : 8;
+          return (
+          <div className={`flex items-end justify-center p-2 pt-4 pb-4 overflow-y-auto ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-10" : "flex-1"}`}>
+            <div className="flex flex-wrap items-end justify-center" style={{ gap: gapPx }}>
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
                 const isBlockedUser = blockedIds.has(p.id) && p.id !== user?.id;
@@ -9345,6 +9359,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         setShowMovie(true);
                         socket?.emit("room:movie-watching", { roomId: room.id, hostId: p.id, watching: true });
                       } : undefined}
+                      cardPx={cardPx}
                     />
                   </div>
                 );
@@ -9528,6 +9543,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               )}
             </div>
           </div>
+          );})()}
 
           {/* ── Unified floating watch-party reactions overlay ──
                Rendered at the content-area level so emojis float freely
