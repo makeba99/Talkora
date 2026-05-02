@@ -4,6 +4,11 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export * from "./models/auth";
+// Re-export pure data constants from the zero-dependency constants module.
+// This lets server code import them from @shared/schema as before, while
+// client code can import from @shared/constants to avoid bundling drizzle/zod.
+export { TALK_PERMISSIONS, FEATURE_PERMISSIONS, BADGE_TYPES, BADGE_TYPES as BADGE_TYPE_MAP, LANGUAGES, LEVELS, SPECIALIZATIONS } from "./constants";
+export type { TalkPermission, FeaturePermission, BadgeType } from "./constants";
 
 export const rooms = pgTable("rooms", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -34,11 +39,8 @@ export const rooms = pgTable("rooms", {
   roomsCreatedAtIdx: index("rooms_created_at_idx").on(table.createdAt),
 }));
 
-export const TALK_PERMISSIONS = ["everyone", "co_owners", "owner_only", "muted"] as const;
-export type TalkPermission = typeof TALK_PERMISSIONS[number];
-
-export const FEATURE_PERMISSIONS = ["everyone", "co_owners", "owner_only"] as const;
-export type FeaturePermission = typeof FEATURE_PERMISSIONS[number];
+// TALK_PERMISSIONS, FEATURE_PERMISSIONS and their types are re-exported from
+// ./constants above — do not redefine them here.
 
 export const insertRoomSchema = createInsertSchema(rooms).pick({
   title: true,
@@ -303,66 +305,7 @@ export const insertUserCommentSchema = createInsertSchema(userComments).pick({
 export type InsertUserComment = z.infer<typeof insertUserCommentSchema>;
 export type UserComment = typeof userComments.$inferSelect;
 
-export const BADGE_TYPES = {
-  lovely_user: {
-    id: "lovely_user",
-    label: "Lovely User",
-    emoji: "💜",
-    color: "#a855f7",
-    quote: "Your warmth and kindness make this community a better place.",
-  },
-  trusted_user: {
-    id: "trusted_user",
-    label: "Trusted User",
-    emoji: "✅",
-    color: "#22c55e",
-    quote: "Your integrity and reliability have earned the trust of everyone here.",
-  },
-  platform_best_friend: {
-    id: "platform_best_friend",
-    label: "Platform Best Friend",
-    emoji: "🤝",
-    color: "#f59e0b",
-    quote: "You've become an irreplaceable part of our family.",
-  },
-  top_speaker: {
-    id: "top_speaker",
-    label: "Top Speaker",
-    emoji: "🎤",
-    color: "#3b82f6",
-    quote: "Your voice inspires learners everywhere. Keep speaking!",
-  },
-  language_champion: {
-    id: "language_champion",
-    label: "Language Champion",
-    emoji: "🏆",
-    color: "#f97316",
-    quote: "You've shown what true dedication to language learning looks like.",
-  },
-  community_star: {
-    id: "community_star",
-    label: "Community Star",
-    emoji: "⭐",
-    color: "#eab308",
-    quote: "You light up our community with your incredible presence.",
-  },
-  helping_hand: {
-    id: "helping_hand",
-    label: "Helping Hand",
-    emoji: "🙌",
-    color: "#06b6d4",
-    quote: "Your support and help mean the world to everyone here.",
-  },
-  rising_star: {
-    id: "rising_star",
-    label: "Rising Star",
-    emoji: "🌟",
-    color: "#ec4899",
-    quote: "Watch out world — a remarkable new star has risen!",
-  },
-} as const;
-
-export type BadgeType = keyof typeof BADGE_TYPES;
+// BADGE_TYPES and BadgeType are re-exported from ./constants above.
 
 export const userBadges = pgTable("user_badges", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -509,35 +452,4 @@ export const insertPaymentMethodSchema = createInsertSchema(paymentMethods).omit
 export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
 
-export const LANGUAGES = [
-  "All",
-  "English",
-  "Spanish",
-  "French",
-  "German",
-  "Hindi",
-  "Arabic",
-  "Armenian",
-  "Indonesian",
-  "Japanese",
-  "Korean",
-  "Portuguese",
-  "Chinese",
-] as const;
-
-export const LEVELS = ["Beginner", "Intermediate", "Advanced", "Native"] as const;
-
-export const SPECIALIZATIONS = [
-  "General Conversation",
-  "Business English",
-  "Grammar",
-  "Pronunciation",
-  "Exam Preparation",
-  "Writing",
-  "Reading",
-  "Listening",
-  "Travel",
-  "Academic",
-  "Children",
-  "Slang & Casual",
-] as const;
+// LANGUAGES, LEVELS, SPECIALIZATIONS are re-exported from ./constants above.

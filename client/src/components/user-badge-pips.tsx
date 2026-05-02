@@ -1,5 +1,5 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BADGE_TYPES } from "@shared/schema";
+import { BADGE_TYPES } from "@shared/constants";
 import type { UserBadge } from "@shared/schema";
 
 export function UserBadgePips({

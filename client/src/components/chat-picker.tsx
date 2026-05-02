@@ -523,7 +523,7 @@ export function renderReplyPreview(text: string): JSX.Element {
   const ytMatch = trimmedText.match(YT_REGEX);
   if (ytMatch) {
     const videoId = ytMatch[1];
-    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+    const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
     const cleanText = trimmedText.replace(ytMatch[0], "").trim();
     return (
       <div className="flex items-center gap-1.5">
@@ -585,7 +585,7 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
 
   if (ytMatch) {
     const videoId = ytMatch[1];
-    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
     const cleanText = text.replace(ytMatch[0], "").trim();
     return (
       <div

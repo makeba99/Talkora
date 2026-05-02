@@ -15,7 +15,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import type { User, Follow, UserBadge } from "@shared/schema";
-import { BADGE_TYPES } from "@shared/schema";
+import { BADGE_TYPES } from "@shared/constants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function UserBadgePips({ userId }: { userId: string }) {

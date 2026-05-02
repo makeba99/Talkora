@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { LANGUAGES, LEVELS, SPECIALIZATIONS } from "@shared/schema";
+import { LANGUAGES, LEVELS, SPECIALIZATIONS } from "@shared/constants";
 import type { Teacher, Booking, TeacherApplication } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

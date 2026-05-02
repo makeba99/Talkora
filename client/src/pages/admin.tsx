@@ -19,7 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName } from "@/lib/utils";
 import type { Announcement, Report, User, TeacherApplication, UserBadge } from "@shared/schema";
-import { BADGE_TYPES } from "@shared/schema";
+import { BADGE_TYPES } from "@shared/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { GifPickerButton } from "@/components/chat-picker";

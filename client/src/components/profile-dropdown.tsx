@@ -31,7 +31,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { PROFILE_DECORATIONS, ProfileDecoration } from "@/components/profile-decorations";
-import { BADGE_TYPES } from "@shared/schema";
+import { BADGE_TYPES } from "@shared/constants";
 
 // AVATAR_RINGS / FLAIR_BADGES / getAvatarRingClass / getFlairIcon now live
 // in @/lib/avatar-ring so the lobby's room cards can import the small lookup

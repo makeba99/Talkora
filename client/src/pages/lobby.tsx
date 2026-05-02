@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense, useDeferredValue, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket";
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LANGUAGES } from "@shared/schema";
+import { LANGUAGES } from "@shared/constants";
 import type { Announcement, Follow, Room, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 
@@ -1171,17 +1171,31 @@ export default function Lobby() {
     [user, toast]
   );
 
-  const filteredRooms = rooms
-    .filter((room) => {
-      const matchesLang = selectedLanguage === "All" || room.language === selectedLanguage;
-      const matchesSearch = room.title.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesLang && matchesSearch;
-    })
-    .sort((a, b) => {
-      const aVotes = voteData?.counts?.[a.id] || 0;
-      const bVotes = voteData?.counts?.[b.id] || 0;
-      return bVotes - aVotes;
-    });
+  // Memoize the filtered+sorted list so useDeferredValue can detect when the
+  // reference actually changes — prevents spurious deferred-render cycles on
+  // unrelated state updates. useDeferredValue then lets React yield to the
+  // browser between room-card reconciliation frames, cutting TBT and INP.
+  const filteredRooms = useMemo(
+    () =>
+      rooms
+        .filter((room) => {
+          const matchesLang = selectedLanguage === "All" || room.language === selectedLanguage;
+          const matchesSearch = room.title.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchesLang && matchesSearch;
+        })
+        .sort((a, b) => {
+          const aVotes = voteData?.counts?.[a.id] || 0;
+          const bVotes = voteData?.counts?.[b.id] || 0;
+          return bVotes - aVotes;
+        }),
+    [rooms, selectedLanguage, searchQuery, voteData]
+  );
+  // Deferred copy: React renders the room grid with this value. When
+  // filteredRooms changes (new data / filter) React first commits the cheap
+  // parts of the update, then resumes room-card reconciliation in background
+  // frames — yielding to the browser between them. This keeps input and
+  // scroll interactions smooth even while 15+ RoomCards are re-rendering.
+  const deferredRooms = useDeferredValue(filteredRooms);
 
   const followingIds = new Set(following.map((follow) => follow.followingId));
   const realUserIds = new Set(allUsers.map((u) => u.id));
@@ -2058,7 +2072,7 @@ export default function Lobby() {
                 </div>
               ))}
             </div>
-          ) : filteredRooms.length === 0 ? (
+          ) : deferredRooms.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-4">
               <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
                 <Mic className="w-8 h-8 text-muted-foreground" />
@@ -2102,7 +2116,7 @@ export default function Lobby() {
                  * Now we accept ~50ms of empty badges on initial load in
                  * exchange for eliminating 8 duplicate POSTs that were
                  * appearing in the Lighthouse critical-request chain. */
-                return filteredRooms.map((room, idx) => {
+                return deferredRooms.map((room, idx) => {
                 const isSample = room.id.startsWith("sample-");
                 const card = (
                   <RoomCard

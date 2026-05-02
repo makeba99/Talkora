@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/lib/theme";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LANGUAGES, LEVELS } from "@shared/schema";
+import { LANGUAGES, LEVELS } from "@shared/constants";
 import type { Room, User, Follow, UserBadge } from "@shared/schema";
 
 /**
@@ -344,16 +344,26 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
     if (skipMotion) {
       return (
         <>
-          <img
-            src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
-            alt=""
-            loading={priority ? "eager" : "lazy"}
-            decoding="async"
-            referrerPolicy="no-referrer"
-            {...(priority ? { fetchpriority: "high" } as any : {})}
-            className="absolute inset-0 w-full h-full object-cover z-0"
-            style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)" }}
-          />
+          {/* <picture> with WebP source: modern browsers pick the WebP variant
+              (~30% smaller than JPEG). i.ytimg.com/vi_webp/ is the standard
+              YouTube WebP thumbnail endpoint. The JPEG fallback uses the same
+              i.ytimg.com origin so our preconnect hint covers both requests. */}
+          <picture>
+            <source
+              type="image/webp"
+              srcSet={`https://i.ytimg.com/vi_webp/${ytId}/hqdefault.webp`}
+            />
+            <img
+              src={`https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`}
+              alt=""
+              loading={priority ? "eager" : "lazy"}
+              decoding="async"
+              referrerPolicy="no-referrer"
+              {...(priority ? { fetchpriority: "high" } as any : {})}
+              className="absolute inset-0 w-full h-full object-cover z-0"
+              style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)" }}
+            />
+          </picture>
           {overlay}
         </>
       );

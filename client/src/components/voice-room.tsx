@@ -31,7 +31,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { playMoodSound } from "@/lib/mood-sounds";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
-import { LANGUAGES, LEVELS } from "@shared/schema";
+import { LANGUAGES, LEVELS } from "@shared/constants";
 import { DmDialog } from "@/components/dm-dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { RoomOnboardingTour } from "@/components/room-onboarding-tour";
