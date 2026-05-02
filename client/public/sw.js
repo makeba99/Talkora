@@ -1,13 +1,15 @@
-const CACHE_VERSION = "vextorn-v5";
+const CACHE_VERSION = "vextorn-v6";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
-const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
-const HTML_CACHE = `${CACHE_VERSION}-html`;
+const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
-// Note: we intentionally DO NOT pre-cache "/" (the HTML shell). After a new
-// deploy ships, a stale cached "/" would still reference the OLD hashed
-// /assets/<hash>.js bundles, and those 404 → white screen. HTML is now always
-// fetched network-first (see fetch handler) so the asset hashes always match.
+// Pre-cache only truly static, versioned-forever assets.
+// HTML is intentionally excluded — we never intercept navigation requests.
+// Reason: intercepting HTML navigations causes crawlers (Googlebot, PageSpeed
+// Insights, Lighthouse) to receive the offline fallback page instead of the
+// real lobby when their simulated network throttling makes the fetch fail.
+// Letting the browser fetch HTML natively means crawlers and real users always
+// get the live page; static assets below are still cached for speed.
 const STATIC_ASSETS = [
   "/manifest.json",
   "/vextorn-mark.svg",
@@ -15,52 +17,22 @@ const STATIC_ASSETS = [
   "/vextorn-icon-512.png",
 ];
 
-// CSP-friendly: no inline `onclick=` (Lighthouse Best Practices flags inline
-// event handlers when a strict CSP is present). The button uses a stable id
-// and an external-style addEventListener registered in a <script> block —
-// still inline JS, but the CSP allows 'unsafe-inline' for scripts so this is
-// fine, and removing the `onclick=` attribute clears the audit either way.
-const OFFLINE_FALLBACK = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Vextorn — Offline</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d0b18;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}
-    .icon{font-size:64px;margin-bottom:24px}
-    h1{font-size:24px;font-weight:700;margin-bottom:12px;color:#a78bfa}
-    p{font-size:15px;color:#94a3b8;max-width:320px;line-height:1.6;margin-bottom:24px}
-    button{background:#7c3aed;color:#fff;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .2s}
-    button:hover{opacity:.85}
-  </style>
-</head>
-<body>
-  <div class="icon" aria-hidden="true">🔌</div>
-  <h1>You're offline</h1>
-  <p>Vextorn needs an internet connection to connect you with other language learners. Please check your connection and try again.</p>
-  <button id="vx-retry" type="button">Try again</button>
-  <script>document.getElementById('vx-retry').addEventListener('click',function(){location.reload()});</script>
-</body>
-</html>`;
-
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
+    caches.open(STATIC_CACHE)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (event) => {
-  const KEEP = new Set([STATIC_CACHE, DYNAMIC_CACHE, ASSET_CACHE, HTML_CACHE]);
+  const KEEP = new Set([STATIC_CACHE, ASSET_CACHE, DYNAMIC_CACHE]);
   event.waitUntil(
-    Promise.all([
-      // Enable navigation preload so the network response races the SW boot.
-      self.registration.navigationPreload?.enable().catch(() => {}),
-      caches.keys().then((keys) =>
-        Promise.all(keys.filter((key) => !KEEP.has(key)).map((key) => caches.delete(key)))
-      ),
-    ]).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => !KEEP.has(k)).map((k) => caches.delete(k)))
+      )
+      .then(() => self.clients.claim())
   );
 });
 
@@ -70,64 +42,50 @@ self.addEventListener("fetch", (event) => {
 
   if (request.method !== "GET") return;
 
-  // Same-origin only; never intercept the Replit workspace iframe shell.
+  // Same-origin only; never intercept Replit workspace shell.
   if (url.hostname !== self.location.hostname || url.pathname.startsWith("/__replco/")) {
     return;
   }
 
-  // Live data + sockets must always hit the network.
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/socket.io/")) {
-    event.respondWith(networkFirst(request));
+  // NAVIGATION REQUESTS (HTML pages): never intercept.
+  // Let the browser fetch these directly so crawlers, PageSpeed, and users
+  // always receive the real page from the server, never a cached offline page.
+  if (request.mode === "navigate" || request.destination === "document") {
     return;
   }
 
-  // Hashed Vite output in /assets/ is immutable — serve from cache forever.
+  // Live API + sockets must always go to the network.
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/socket.io/")) {
+    return;
+  }
+
+  // Hashed Vite bundles in /assets/ are content-addressed and immutable.
+  // Cache-first forever: if cached, instant; otherwise fetch + cache.
   if (url.pathname.startsWith("/assets/")) {
     event.respondWith(cacheFirstImmutable(request));
     return;
   }
 
-  // HTML / navigations: NETWORK-FIRST. Critical correctness issue — using
-  // stale-while-revalidate here returns the OLD cached index.html on the very
-  // first hit after a deploy. That old HTML embeds <script src="/assets/
-  // main-OLDHASH.js"> references, but the new build only has new hashes, so
-  // every script tag 404s and the user sees a blank white page until the
-  // background revalidate finishes (which it can't, because the SW already
-  // resolved the navigation). Network-first guarantees fresh HTML always
-  // matches the assets it references; the cache is only used as an offline
-  // fallback. Repeat visits are still fast because hashed /assets/ are
-  // cache-first immutable and the navigation preload races the network.
-  if (request.mode === "navigate" || request.destination === "document") {
-    event.respondWith(networkFirstHtml(event));
-    return;
-  }
-
-  // Other static-by-destination resources (icons, manifest, fonts loaded
-  // from same origin) — cache-first with background refresh.
+  // Other same-origin static resources (icons, manifest, fonts).
+  // Cache-first with network fallback.
   if (
-    request.destination === "script" ||
-    request.destination === "style" ||
     request.destination === "font" ||
-    request.destination === "image"
+    request.destination === "image" ||
+    request.destination === "style" ||
+    request.destination === "script"
   ) {
     event.respondWith(cacheFirst(request));
     return;
   }
-
-  event.respondWith(networkFirstWithOfflineFallback(request));
 });
 
 async function cacheFirstImmutable(request) {
   const cache = await caches.open(ASSET_CACHE);
   const cached = await cache.match(request);
   if (cached) return cached;
-  try {
-    const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
-    return response;
-  } catch {
-    return new Response("Asset unavailable offline", { status: 503 });
-  }
+  const response = await fetch(request);
+  if (response.ok) cache.put(request, response.clone());
+  return response;
 }
 
 async function cacheFirst(request) {
@@ -141,69 +99,7 @@ async function cacheFirst(request) {
     }
     return response;
   } catch {
-    return new Response("Asset unavailable offline", { status: 503 });
-  }
-}
-
-async function networkFirstHtml(event) {
-  const { request } = event;
-  const cache = await caches.open(HTML_CACHE);
-
-  try {
-    const preload = await event.preloadResponse;
-    const response = preload || (await fetch(request));
-    if (response && response.ok) {
-      // Background-cache the fresh HTML for offline fallback only.
-      cache.put(request, response.clone()).catch(() => {});
-    }
-    return response;
-  } catch {
-    // Offline: serve the most recent cached HTML if we have one.
-    const cached = await cache.match(request, { ignoreSearch: true });
-    if (cached) return cached;
-    const indexCached = await cache.match("/");
-    if (indexCached) return indexCached;
-    return new Response(OFFLINE_FALLBACK, {
-      status: 200,
-      headers: { "Content-Type": "text/html" },
-    });
-  }
-}
-
-async function networkFirst(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    const cached = await caches.match(request);
-    return cached || new Response(JSON.stringify({ error: "offline" }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-}
-
-async function networkFirstWithOfflineFallback(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    const indexCached = await caches.match("/");
-    if (indexCached) return indexCached;
-    return new Response(OFFLINE_FALLBACK, {
-      status: 200,
-      headers: { "Content-Type": "text/html" },
-    });
+    return new Response("Asset unavailable", { status: 503 });
   }
 }
 
@@ -229,11 +125,13 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/";
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url === url && "focus" in client) return client.focus();
-      }
-      return self.clients.openWindow(url);
-    })
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url === url && "focus" in client) return client.focus();
+        }
+        return self.clients.openWindow(url);
+      })
   );
 });
