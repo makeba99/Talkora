@@ -361,12 +361,18 @@ function ParticipantCard({
   analyserNode,
   mood,
   onClearMood,
+  hasActiveMovie,
+  moviePosterPath,
+  isMovieWatcher,
+  onWatchMovie,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
   const showScreenIcon = isSharing || hasRemoteScreen;
   const showBookIcon = !!hasActiveBook;
+  const showMovieIcon = !!hasActiveMovie;
   const isWatcher = isYoutubeWatcher && !hasActiveYoutube;
+  const isMovieWatcherBadge = !!isMovieWatcher && !hasActiveMovie;
 
   const ringClass = getAvatarRingClass(p.avatarRing);
   const hasCustomRing = !!ringClass;
@@ -600,6 +606,18 @@ function ParticipantCard({
             alt="YouTube thumbnail"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
+        ) : hasActiveMovie ? (
+          moviePosterPath ? (
+            <img
+              src={moviePosterPath}
+              alt="Movie poster"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-violet-900 to-indigo-900 flex items-center justify-center">
+              <Film className="w-10 h-10 text-violet-300/70" />
+            </div>
+          )
         ) : remoteVideoStream ? (
           <RemoteVideoPreview stream={remoteVideoStream} className={isMe && localVideoFlipped ? "scale-x-[-1]" : ""} />
         ) : p.profileImageUrl ? (
@@ -628,7 +646,7 @@ function ParticipantCard({
             </div>
         </div>
 
-        {(showScreenIcon || showYoutubeIcon || showBookIcon || isWatcher) && (
+        {(showScreenIcon || showYoutubeIcon || showBookIcon || isWatcher || showMovieIcon || isMovieWatcherBadge) && (
           <div className="absolute top-1 right-8 z-20 flex items-center gap-0.5 animate-pulse drop-shadow-md">
              {showScreenIcon && (
                 <div className="bg-orange-600/90 p-1 rounded-sm shadow pointer-events-none">
@@ -652,8 +670,30 @@ function ParticipantCard({
                   </div>
                 )
              )}
+             {showMovieIcon && !showScreenIcon && !showYoutubeIcon && (
+                onWatchMovie && !isMe ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onWatchMovie(); }}
+                    className="bg-violet-600 hover:bg-violet-500 p-1 rounded-sm shadow cursor-pointer pointer-events-auto transition-colors"
+                    title="Tap to watch this movie"
+                    data-testid={`button-watch-movie-${p.id}`}
+                  >
+                    <Film className="w-3 h-3 text-white" />
+                  </button>
+                ) : (
+                  <div className="bg-violet-600 p-1 rounded-sm shadow pointer-events-none">
+                    <Film className="w-3 h-3 text-white" />
+                  </div>
+                )
+             )}
              {isWatcher && !showScreenIcon && !showYoutubeIcon && (
                 <div className="bg-red-500/80 p-1 rounded-sm shadow flex items-center gap-0.5 pointer-events-none">
+                   <Eye className="w-3 h-3 text-white" />
+                </div>
+             )}
+             {isMovieWatcherBadge && !showScreenIcon && !showYoutubeIcon && !showMovieIcon && (
+                <div className="bg-violet-500/80 p-1 rounded-sm shadow flex items-center gap-0.5 pointer-events-none">
                    <Eye className="w-3 h-3 text-white" />
                 </div>
              )}
@@ -1062,6 +1102,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [participantVolumes, setParticipantVolumes] = useState<Record<string, number>>({});
   const [miniPlayerMode, setMiniPlayerMode] = useState(false);
   const [miniPlayerPos, setMiniPlayerPos] = useState({ x: 16, y: 80 });
+  const [moviePlayerHeight, setMoviePlayerHeight] = useState<number | null>(null);
+  const [ytPlayerHeight, setYtPlayerHeight] = useState<number | null>(null);
   const ytSlotRef = useRef<HTMLDivElement | null>(null);
   const [ytSlotRect, setYtSlotRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   // Per-host watch-party state. Each user can host their own YouTube video,
@@ -1084,6 +1126,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     });
     return all;
   }, [youtubeWatchersByHost]);
+
+  const movieWatchersFlat = useMemo(() => {
+    const all = new Set<string>();
+    movieWatchersByHost.forEach((set, hostId) => {
+      set.forEach(uid => { if (uid !== hostId) all.add(uid); });
+    });
+    return all;
+  }, [movieWatchersByHost]);
   type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
   const [ytQueue, setYtQueue] = useState<YtQueueItem[]>([]);
   const [screenWatchers, setScreenWatchers] = useState<Set<string>>(new Set());
@@ -8117,7 +8167,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           {/* ── Movie Player (Internet Archive embed) ── */}
           {activeMovieId && showMovie && (
             <div
-              className="flex-1 min-h-0 bg-black relative flex flex-col overflow-hidden"
+              className="bg-black relative flex flex-col overflow-hidden"
+              style={moviePlayerHeight ? { height: moviePlayerHeight, flexShrink: 0 } : { flex: 1, minHeight: 0 }}
               data-testid="media-main-movie"
             >
               {/* Title bar — revealed on hover */}
@@ -8163,6 +8214,28 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 className="w-full h-full border-0"
                 data-testid="iframe-movie-player"
               />
+              {/* Resize handle */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center z-30 cursor-ns-resize group/resize-movie hover:bg-white/10 transition-colors"
+                data-testid="movie-player-resize-handle"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const startY = e.clientY;
+                  const container = e.currentTarget.parentElement!;
+                  const startH = container.getBoundingClientRect().height;
+                  const onMove = (me: MouseEvent) => {
+                    setMoviePlayerHeight(Math.max(180, startH + (me.clientY - startY)));
+                  };
+                  const onUp = () => {
+                    window.removeEventListener("mousemove", onMove);
+                    window.removeEventListener("mouseup", onUp);
+                  };
+                  window.addEventListener("mousemove", onMove);
+                  window.addEventListener("mouseup", onUp);
+                }}
+              >
+                <div className="w-14 h-1 rounded-full bg-white/25 group-hover/resize-movie:bg-white/60 transition-colors" />
+              </div>
             </div>
           )}
 
@@ -8174,12 +8247,36 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             return (
               <div
                 ref={ytSlotRef}
-                className="flex-1 min-h-0 bg-black relative group/ytplayer"
+                className="bg-black relative group/ytplayer"
+                style={ytPlayerHeight ? { height: ytPlayerHeight, flexShrink: 0 } : { flex: 1, minHeight: 0 }}
                 data-testid="media-main-youtube"
                 data-yt-slot="true"
               >
                 {/* Persistent player is mounted at top-level (see ytPersistentWrapper).
                     This slot just reserves the visual area; overlays render with the player. */}
+
+                {/* Resize handle — drag bottom edge to resize the player */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center z-30 cursor-ns-resize group/resize-yt hover:bg-white/10 transition-colors"
+                  data-testid="youtube-player-resize-handle"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startY = e.clientY;
+                    const container = e.currentTarget.parentElement!;
+                    const startH = container.getBoundingClientRect().height;
+                    const onMove = (me: MouseEvent) => {
+                      setYtPlayerHeight(Math.max(180, startH + (me.clientY - startY)));
+                    };
+                    const onUp = () => {
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
+                >
+                  <div className="w-14 h-1 rounded-full bg-white/25 group-hover/resize-yt:bg-white/60 transition-colors" />
+                </div>
 
                 {/* Host control bar — only visible to the broadcaster, revealed on hover */}
                 {isYoutubeHost && (
@@ -8866,6 +8963,47 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       </div>
                     )}
 
+                    {/* Movie watchers stacked above the host's tile */}
+                    {movieHosts.has(p.id) && (() => {
+                      const watchers = movieWatchersByHost.get(p.id) || new Set<string>();
+                      const watcherIds = Array.from(watchers).filter(uid => uid !== p.id);
+                      if (watcherIds.length === 0) return null;
+                      return (
+                        <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`movie-watchers-card-${p.id}`}>
+                          <div className="flex items-center">
+                            {watcherIds.slice(0, 4).map((watcherId, wi) => {
+                              const watcher = participants.find(rp => rp.id === watcherId);
+                              const wIndex = participants.findIndex(rp => rp.id === watcherId);
+                              const wGrad = getAvatarGradient(wIndex >= 0 ? wIndex : wi);
+                              return (
+                                <div
+                                  key={watcherId}
+                                  className="w-5 h-5 rounded-full border border-background overflow-hidden flex items-center justify-center shadow-sm"
+                                  style={{ marginLeft: wi === 0 ? 0 : -6, zIndex: 4 - wi }}
+                                  title={watcher ? getUserDisplayName(watcher) : watcherId}
+                                  data-testid={`movie-watcher-avatar-${p.id}-${watcherId}`}
+                                >
+                                  {watcher?.profileImageUrl ? (
+                                    <img loading="lazy" decoding="async" src={watcher.profileImageUrl} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
+                                      <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            {watcherIds.length > 4 && (
+                              <div className="w-5 h-5 rounded-full border border-background bg-violet-700 flex items-center justify-center shadow-sm text-[7px] font-bold text-white" style={{ marginLeft: -6, zIndex: 0 }}>
+                                +{watcherIds.length - 4}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[8px] text-violet-300/85">{watcherIds.length} watching</span>
+                        </div>
+                      );
+                    })()}
+
                     {/* Watch-party watchers stacked above the host's tile.
                         Each user can host their own video, so this only renders
                         for participants who are currently broadcasting. */}
@@ -9001,6 +9139,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       analyserNode={analysersRef.current.get(p.id)}
                       mood={participantMoods[p.id]}
                       onClearMood={isMe ? clearMyMood : undefined}
+                      hasActiveMovie={movieHosts.has(p.id)}
+                      moviePosterPath={movieHosts.get(p.id)?.posterPath || null}
+                      isMovieWatcher={movieWatchersFlat.has(p.id) && !movieHosts.has(p.id)}
+                      onWatchMovie={!isMe && movieHosts.has(p.id) ? () => {
+                        const info = movieHosts.get(p.id);
+                        if (!info) return;
+                        setActiveMovieId(info.movieId);
+                        setActiveMovieTitle(info.movieTitle);
+                        setActiveMoviePoster(info.posterPath);
+                        setMovieStartedBy(p.id);
+                        setShowMovie(true);
+                        socket?.emit("room:movie-watching", { roomId: room.id, hostId: p.id, watching: true });
+                      } : undefined}
                     />
                   </div>
                 );
