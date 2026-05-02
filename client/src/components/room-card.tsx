@@ -585,20 +585,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
     return () => window.removeEventListener("resize", compute);
   }, [displayCount]);
 
-  /* circle size is based on how many people are actually visible — small rooms
-     with 1–2 people get big, friendly portraits; crowded rooms shrink so two
-     rows still fit comfortably inside the card body without ever clipping.
-     Sized down so the lobby fits 2 rows of cards on smaller screens like
-     Free4Talk does. */
-  const baseCircleSize =
-    displayCount <= 1 ? 88 :
-    displayCount === 2 ? 78 :
-    displayCount === 3 ? 66 :
-    displayCount === 4 ? 60 :
-    displayCount <= 6 ? 56 :
-    displayCount <= 8 ? 46 :
-    displayCount <= 10 ? 40 :
-    36;
+  /* Fixed circle size — avatars stay the same size regardless of how many
+     participants or slots there are. The scale factor still adjusts for
+     viewport width so they look right on all screen sizes. */
+  const baseCircleSize = 52;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
