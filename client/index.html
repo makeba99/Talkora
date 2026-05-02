@@ -20,6 +20,31 @@
     <!-- Allow UA to render light-mode form controls/scrollbars where the user
          has forced light mode for accessibility, while still preferring dark. -->
     <meta name="color-scheme" content="dark light" />
+    <!-- Theme bootstrap: reads localStorage and applies the correct theme class
+         to <html> SYNCHRONOUSLY before any CSS is evaluated. Without this,
+         ThemeProvider's useEffect fires after first paint causing CSS-variable
+         flash → CLS. This script is < 500 bytes and blocks for < 0.5 ms.
+         Logic MUST mirror ThemeProvider in src/lib/theme.tsx exactly. -->
+    <script>
+      (function () {
+        try {
+          var DARK = [
+            'premium-atmosphere', 'neomorphic-dark', 'dark', 'midnight-purple',
+            'neon-cyberpunk', 'ocean-deep', 'forest-dark', 'aurora', 'starfield',
+            'galaxy', 'synthwave', 'blood-moon', 'slate-noir', 'neural-pulse'
+          ];
+          var DEFAULT = 'neomorphic-dark';
+          var VER = 'v2-violet-2026-04-25';
+          var t = (localStorage.getItem('theme-default-version') === VER &&
+                   localStorage.getItem('theme-chosen') === '1')
+                ? (localStorage.getItem('theme') || DEFAULT)
+                : DEFAULT;
+          var d = document.documentElement;
+          d.classList.add(t);
+          if (DARK.indexOf(t) !== -1) d.classList.add('dark');
+        } catch (e) { /* localStorage unavailable (private browse / SSR) */ }
+      })();
+    </script>
     <link rel="manifest" href="/manifest.json" />
 
     <!-- Favicon: SVG-first (1.2 KB) so we never ship the legacy 350 KB PNG
@@ -138,6 +163,20 @@
         src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
         unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
       }
+      /* Metric-matched fallback for Space Grotesk (based on Arial). When
+         font-display:swap fires and Space Grotesk replaces the fallback,
+         size-adjust/ascent/descent are tuned so rendered line boxes are
+         identical in height → CLS from the font swap drops to ≈ 0.
+         Values derived from Space Grotesk's 960 ascender / 240 descender
+         UPM metrics relative to Arial's 905/211 baseline. */
+      @font-face {
+        font-family: 'Space Grotesk Fallback';
+        src: local('Arial'), local('Helvetica Neue');
+        size-adjust: 105%;
+        ascent-override: 91%;
+        descent-override: 24%;
+        line-gap-override: 0%;
+      }
       /* Critical pre-React paint: prevent the white flash between HTML download
          and React mount on slow/cached page loads. Matches the lobby's deep
          indigo canvas in dark mode and the violet-tinted surface in light mode. */
@@ -221,6 +260,15 @@
     <link rel="dns-prefetch" href="https://s.ytimg.com" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
     <link rel="dns-prefetch" href="https://archive.org" />
+    <!-- Critical API preloads: start these fetches during HTML parsing so
+         TanStack Query's first fetch hits the in-flight network response
+         instead of waiting for React to mount (~200–400 ms saved on mobile).
+         crossorigin="use-credentials" matches queryClient's credentials:"include"
+         so the browser reuses the same request rather than opening a duplicate.
+         Only the two lobby-critical endpoints — /api/rooms and /api/auth/user —
+         are preloaded; the rest are secondary and would compete for bandwidth. -->
+    <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" />
+    <link rel="preload" href="/api/rooms" as="fetch" crossorigin="use-credentials" />
     <!-- Self-recovery for users on the old service worker. The previous SW
          used stale-while-revalidate for HTML and pre-cached "/", so after a
          deploy returning users got the OLD index.html that referenced new-

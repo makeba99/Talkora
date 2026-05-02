@@ -211,13 +211,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    const allThemeIds = THEMES.map((t) => t.id);
-    root.classList.remove(...allThemeIds, "dark");
-
     const def = THEMES.find((t) => t.id === theme);
-    root.classList.add(theme);
-    if (def?.isDark) {
-      root.classList.add("dark");
+    const needsDark = !!def?.isDark;
+
+    // Fast path: the inline bootstrap script in index.html already applied the
+    // correct classes synchronously before first paint. If the classes match,
+    // skip the remove→add cycle entirely — that cycle causes a 1-frame paint
+    // flash (CLS) because classList.remove() clears all theme CSS variables
+    // before classList.add() restores them. Only mutate the DOM when the user
+    // actually changes the theme (theme state !== what's already on <html>).
+    const alreadyApplied =
+      root.classList.contains(theme) &&
+      root.classList.contains("dark") === needsDark;
+
+    if (!alreadyApplied) {
+      const allThemeIds = THEMES.map((t) => t.id);
+      root.classList.remove(...allThemeIds, "dark");
+      root.classList.add(theme);
+      if (needsDark) root.classList.add("dark");
     }
 
     localStorage.setItem("theme", theme);

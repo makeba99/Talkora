@@ -86,6 +86,8 @@ function LanguageFlag({ language }: { language: string }) {
       width={18}
       height={13}
       alt={language}
+      loading="lazy"
+      decoding="async"
       className="rounded-[2px] flex-shrink-0"
       style={{ objectFit: "cover" }}
     />

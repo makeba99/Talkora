@@ -93,6 +93,8 @@ function LanguageFlag({ language }: { language: string }) {
       width={20}
       height={15}
       alt={language}
+      loading="lazy"
+      decoding="async"
       className="rounded-[2px] flex-shrink-0"
       style={{ objectFit: "cover" }}
     />
@@ -957,6 +959,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             alt={getUserDisplayName(p)}
                             width={circleSize}
                             height={circleSize}
+                            loading={priority ? "eager" : "lazy"}
                             decoding="async"
                             className="rounded-2xl"
                             {...(priority && i === 0 ? { fetchpriority: "high" } as any : {})}
