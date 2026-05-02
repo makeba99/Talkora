@@ -1,0 +1,48 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0K[cleanup] 2026-05-02T12:07:33.903Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-05-02T12:07:33.904Z Retention: messages=7d, room_messages=7d, notifications=14d, reports=30d, orphan_files=7d
+[cleanup] 2026-05-02T12:07:33.904Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion (grace=120s)
+[cleanup] 2026-05-02T12:07:33.948Z Cleanup complete in 44ms — files=0 (0 bytes)
+12:07:34 PM [express] serving on port 5000
+12:07:34 PM [express] cache-warmed /api/rooms in 0ms
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+12:07:42 PM [express] GET /api/auth/user 200 in 4ms
+12:07:44 PM [express] GET /api/auth/user 200 in 1ms
+12:07:45 PM [express] GET /api/rooms 200 in 81ms
+12:07:45 PM [express] GET /api/announcements 200 in 79ms
+12:07:45 PM [express] POST /api/users/badges/batch 200 in 60ms
+12:07:45 PM [express] GET /api/rooms/participants 200 in 12ms
+12:07:45 PM [express] POST /api/rooms/votes/batch 200 in 227ms
+12:07:46 PM [express] POST /api/users/badges/batch 200 in 15ms
+12:07:46 PM [express] POST /api/rooms/votes/batch 200 in 11ms
+12:07:46 PM [express] GET /api/announcements 200 in 9ms
+12:07:46 PM [express] GET /api/rooms 200 in 3ms
+12:07:46 PM [express] GET /api/rooms/participants 200 in 2ms
+12:08:01 PM [express] GET /api/rooms 304 in 6ms
+12:08:05 PM [express] GET /api/auth/user 304 in 2ms
+12:08:06 PM [express] GET /api/rooms 304 in 1ms
+12:08:06 PM [express] GET /api/rooms/participants 304 in 3ms
+12:08:06 PM [express] GET /api/announcements 304 in 15ms
+12:08:06 PM [express] POST /api/users/badges/batch 200 in 21ms
+12:08:06 PM [express] POST /api/rooms/votes/batch 200 in 18ms
+12:08:10 PM [express] POST /api/users/badges/batch 200 in 32ms
+12:08:14 PM [express] POST /api/users/badges/batch 200 in 3ms
+12:08:16 PM [express] GET /api/announcements 304 in 5ms
+12:08:17 PM [express] GET /api/rooms 304 in 13ms
+12:08:17 PM [express] POST /api/rooms/votes/batch 200 in 4ms
+12:08:17 PM [express] GET /api/rooms/participants 304 in 1ms
+12:08:32 PM [express] GET /api/rooms 304 in 2ms
+12:08:47 PM [express] GET /api/announcements 304 in 3ms
+12:08:47 PM [express] GET /api/rooms 304 in 26ms
+12:08:47 PM [express] GET /api/rooms/participants 304 in 1ms
+12:08:47 PM [express] POST /api/rooms/votes/batch 200 in 79ms
+12:08:51 PM [express] GET /api/login 302 in 1407ms
+12:08:52 PM [express] POST /api/users/badges/batch 200 in 15ms
