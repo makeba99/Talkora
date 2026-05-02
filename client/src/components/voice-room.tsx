@@ -1156,6 +1156,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const ytLoadTimeoutRef = useRef<number | null>(null);
 
   const [ytFloatingReactions, setYtFloatingReactions] = useState<Array<{ id: string; emoji: string; left: number; userId: string }>>([]);
+  const [movieFloatingReactions, setMovieFloatingReactions] = useState<Array<{ id: string; emoji: string; left: number; userId: string }>>([]);
+  const [movieReactionsOpen, setMovieReactionsOpen] = useState(false);
   // Reactions panel is collapsed by default — users tap the smiley toggle on the
   // video to reveal the emoji picker + like/dislike/skip vote pills.
   const [ytReactionsOpen, setYtReactionsOpen] = useState(false);
@@ -2538,6 +2540,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setYtFloatingReactions(prev => [...prev, { id, emoji: data.emoji, left, userId: data.userId }]);
       window.setTimeout(() => {
         setYtFloatingReactions(prev => prev.filter(r => r.id !== id));
+      }, 2600);
+    });
+
+    socket.on("room:movie-reaction", (data: { userId: string; emoji: string; ts: number }) => {
+      const id = `${data.ts}-${data.userId}-${Math.random().toString(36).slice(2, 7)}`;
+      const left = 8 + Math.random() * 84;
+      setMovieFloatingReactions(prev => [...prev, { id, emoji: data.emoji, left, userId: data.userId }]);
+      window.setTimeout(() => {
+        setMovieFloatingReactions(prev => prev.filter(r => r.id !== id));
       }, 2600);
     });
 
@@ -8214,6 +8225,79 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 className="w-full h-full border-0"
                 data-testid="iframe-movie-player"
               />
+
+              {/* Floating watch-party reactions — emojis drift up from the bottom
+                  of the movie player with the sender's avatar, visible to all watchers. */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-10" data-testid="movie-floating-reactions">
+                {movieFloatingReactions.map(r => {
+                  const sender = participants.find(p => p.id === r.userId);
+                  const senderName = sender ? getUserDisplayName(sender) : "";
+                  return (
+                    <div
+                      key={r.id}
+                      className="absolute flex flex-col items-center gap-1 select-none"
+                      style={{
+                        left: `${r.left}%`,
+                        bottom: 0,
+                        animation: "ytReactionFloat 2.8s ease-out forwards",
+                      }}
+                    >
+                      <span className="text-3xl" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}>
+                        {r.emoji}
+                      </span>
+                      {sender && (
+                        <div className="flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full pl-0.5 pr-2 py-0.5 border border-white/15 shadow-md">
+                          <Avatar className="w-4 h-4">
+                            <AvatarImage src={sender.profileImageUrl || undefined} alt="" />
+                            <AvatarFallback className="text-[8px] bg-violet-500/40 text-white">
+                              {senderName.slice(0, 1).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-[9px] text-white/95 font-medium leading-none whitespace-nowrap">
+                            {senderName}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Reactions toggle + collapsible emoji picker — hidden by default, tap smiley to reveal */}
+              <div
+                className="absolute right-3 bottom-6 z-20 flex items-center gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {movieReactionsOpen && (
+                  <div
+                    className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm rounded-full border border-white/15 px-2 py-1.5 shadow-lg animate-in fade-in slide-in-from-right-2 duration-200"
+                    data-testid="movie-reactions-panel"
+                  >
+                    {["❤️", "🍿", "😂", "😮", "👏", "🔥", "🤯"].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => { if (socket) socket.emit("room:movie-reaction", { roomId: room.id, emoji }); }}
+                        className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-90"
+                        title={`Send ${emoji}`}
+                        data-testid={`button-movie-react-${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setMovieReactionsOpen((v) => !v)}
+                  className={`w-9 h-9 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-colors ${movieReactionsOpen ? "bg-violet-500/85 border-violet-300/50 text-white" : "bg-black/65 border-white/15 text-white hover:bg-white/20"}`}
+                  title={movieReactionsOpen ? "Hide reactions" : "Show reactions"}
+                  data-testid="button-movie-reactions-toggle"
+                >
+                  {movieReactionsOpen ? <X className="w-4 h-4" /> : <Smile className="w-4 h-4" />}
+                </button>
+              </div>
+
               {/* Resize handle */}
               <div
                 className="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center z-30 cursor-ns-resize group/resize-movie hover:bg-white/10 transition-colors"

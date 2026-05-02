@@ -4351,6 +4351,20 @@ export async function registerRoutes(
       });
     });
 
+    // Movie watch-party reactions: same pattern as YouTube reactions.
+    socket.on("room:movie-reaction", (data: { roomId: string; emoji: string }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const allowed = ["❤️", "🍿", "😂", "😮", "👏", "🔥", "🤯"];
+      if (!allowed.includes(data.emoji)) return;
+      io.to(data.roomId).emit("room:movie-reaction", {
+        userId: currentUserId,
+        emoji: data.emoji,
+        ts: Date.now(),
+      });
+    });
+
     // Screen-share watcher tracking — mirrors the YouTube watcher pattern so that the
     // sharer's avatar can show "X people watching" pills, just like with shared videos.
     socket.on("room:screen-watching", (data: { roomId: string; watching: boolean; sharerId: string }) => {
