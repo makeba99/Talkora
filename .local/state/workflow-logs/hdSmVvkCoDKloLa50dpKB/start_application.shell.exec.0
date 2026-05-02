@@ -1,0 +1,1170 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development npx tsx server/index.ts
+
+[1G[0K[1G[0K⠙[1G[0K⠹[1G[0K[cleanup] 2026-05-02T15:44:30.501Z Cleanup scheduler started — runs every 60 minute(s)
+[cleanup] 2026-05-02T15:44:30.501Z Retention: messages=7d, room_messages=7d, notifications=14d, reports=30d, orphan_files=7d
+[cleanup] 2026-05-02T15:44:30.502Z Starting scheduled data cleanup...
+Startup cleanup: scheduled 0 empty rooms for deletion (grace=120s)
+[cleanup] 2026-05-02T15:44:30.552Z Cleanup complete in 50ms — files=0 (0 bytes)
+[2m3:44:31 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
+3:44:31 PM [express] serving on port 5000
+3:44:31 PM [express] cache-warmed /api/rooms in 0ms
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+3:44:40 PM [express] GET /api/auth/user 200 in 3ms
+3:44:42 PM [express] GET /api/rooms 200 in 157ms
+3:44:42 PM [express] GET /api/announcements 200 in 109ms
+3:44:42 PM [express] POST /api/users/badges/batch 200 in 25ms
+3:44:42 PM [express] GET /api/rooms/participants 200 in 25ms
+3:44:42 PM [express] POST /api/rooms/votes/batch 200 in 276ms
+3:44:46 PM [express] GET /api/auth/user 200 in 7ms
+3:44:50 PM [express] GET /api/messages/unread/count 304 in 95ms
+3:44:50 PM [express] GET /api/notifications 304 in 6ms
+3:44:50 PM [express] GET /api/rooms 304 in 5ms
+3:44:50 PM [express] POST /api/users/badges/batch 200 in 7ms
+3:44:50 PM [express] GET /api/announcements 304 in 15ms
+3:44:50 PM [express] POST /api/rooms/votes/batch 200 in 5ms
+3:44:50 PM [express] GET /api/rooms/participants 304 in 5ms
+3:44:50 PM [express] GET /api/users/rooms 304 in 5ms
+3:44:50 PM [express] GET /api/users 304 in 5ms
+3:44:50 PM [express] GET /api/follows/following/58526942 304 in 5ms
+3:44:51 PM [express] POST /api/follows/counts 200 in 7ms
+3:44:59 PM [express] GET /api/gifs/trending 304 in 589ms
+3:45:05 PM [express] GET /api/rooms 304 in 158ms
+3:45:22 PM [express] GET /api/users/rooms 304 in 70ms
+3:45:22 PM [express] GET /api/rooms/participants 304 in 115ms
+3:45:22 PM [express] GET /api/rooms 304 in 73ms
+3:45:22 PM [express] POST /api/rooms/votes/batch 200 in 238ms
+3:45:22 PM [express] GET /api/announcements 304 in 115ms
+3:45:22 PM [express] POST /api/follows/counts 200 in 44ms
+3:45:22 PM [express] POST /api/users/badges/batch 200 in 7ms
+3:45:28 PM [express] POST /api/users/badges/batch 200 in 11ms
+3:45:41 PM [express] POST /api/users/badges/batch 200 in 47ms
+3:45:54 PM [express] POST /api/users/badges/batch 200 in 15ms
+3:46:01 PM [express] POST /api/users/badges/batch 200 in 7ms
+3:46:08 PM [express] POST /api/users/badges/batch 200 in 24ms
+3:46:14 PM [express] POST /api/users/badges/batch 200 in 6ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:46:22 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+3:46:26 PM [express] POST /api/users/badges/batch 200 in 10ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m3:47:18 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m [33m(x2)[39m
+3:47:35 PM [express] GET /api/rooms 304 in 17ms
+3:47:35 PM [express] POST /api/users/badges/batch 200 in 7ms
+3:47:37 PM [express] POST /api/users/badges/batch 200 in 6ms
+3:47:57 PM [express] POST /api/users/badges/batch 200 in 17ms
+3:48:12 PM [express] GET /api/auth/user 304 in 1ms
+3:48:13 PM [express] GET /api/rooms/participants 304 in 3ms
+3:48:13 PM [express] GET /api/rooms 304 in 11ms
+3:48:13 PM [express] GET /api/announcements 304 in 31ms
+3:48:13 PM [express] POST /api/rooms/votes/batch 200 in 31ms
+3:48:13 PM [express] POST /api/users/badges/batch 200 in 32ms
+3:48:29 PM [express] POST /api/users/badges/batch 200 in 56ms
+3:51:01 PM [express] POST /api/users/badges/batch 200 in 54ms
+3:52:51 PM [express] GET /api/rooms 304 in 15ms
+3:52:51 PM [express] GET /api/users 200 in 8ms
+3:52:51 PM [express] GET /api/users/rooms 304 in 5ms
+3:52:52 PM [express] POST /api/rooms/votes/batch 200 in 12ms
+3:52:52 PM [express] POST /api/follows/counts 200 in 17ms
+3:52:52 PM [express] GET /api/announcements 304 in 23ms
+3:52:52 PM [express] GET /api/rooms/participants 304 in 22ms
+3:52:52 PM [express] POST /api/follows/counts 200 in 6ms
+3:52:53 PM [express] POST /api/users/badges/batch 200 in 5ms
+3:53:06 PM [express] POST /api/users/badges/batch 200 in 17ms
+3:53:07 PM [express] GET /api/rooms 304 in 7ms
+3:53:12 PM [express] POST /api/users/badges/batch 200 in 8ms
+3:53:22 PM [express] GET /api/users/rooms 304 in 5ms
+3:53:22 PM [express] GET /api/rooms 304 in 5ms
+3:53:22 PM [express] POST /api/rooms/votes/batch 200 in 8ms
+3:53:22 PM [express] GET /api/announcements 304 in 6ms
+3:53:22 PM [express] GET /api/rooms/participants 304 in 17ms
+3:53:22 PM [express] POST /api/follows/counts 200 in 6ms
+3:53:37 PM [express] GET /api/users 304 in 17ms
+3:53:38 PM [express] GET /api/rooms 304 in 7ms
+3:53:53 PM [express] POST /api/follows/counts 200 in 19ms
+3:53:53 PM [express] GET /api/rooms 304 in 8ms
+3:54:04 PM [express] POST /api/users/badges/batch 200 in 17ms
+3:54:09 PM [express] GET /api/rooms 304 in 9ms
+3:54:22 PM [express] GET /api/users/rooms 304 in 23ms
+3:54:22 PM [express] GET /api/users 200 in 164ms
+3:54:22 PM [express] POST /api/rooms/votes/batch 200 in 9ms
+3:54:23 PM [express] GET /api/announcements 304 in 6ms
+3:54:23 PM [express] GET /api/rooms/participants 304 in 5ms
+3:54:24 PM [express] GET /api/rooms 304 in 7ms
+3:54:39 PM [express] GET /api/rooms 304 in 14ms
+3:54:53 PM [express] GET /api/users/rooms 304 in 22ms
+3:54:53 PM [express] POST /api/follows/counts 200 in 7ms
+3:54:53 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+3:54:53 PM [express] GET /api/rooms/participants 304 in 6ms
+3:54:53 PM [express] GET /api/announcements 304 in 19ms
+3:54:55 PM [express] GET /api/rooms 304 in 6ms
+3:55:08 PM [express] GET /api/users 304 in 15ms
+3:55:10 PM [express] GET /api/rooms 304 in 6ms
+3:55:23 PM [express] GET /api/users/rooms 304 in 15ms
+3:55:23 PM [express] POST /api/follows/counts 200 in 6ms
+3:55:23 PM [express] POST /api/rooms/votes/batch 200 in 9ms
+3:55:23 PM [express] GET /api/rooms/participants 304 in 5ms
+3:55:23 PM [express] GET /api/announcements 304 in 16ms
+3:55:25 PM [express] GET /api/rooms 304 in 6ms
+3:55:28 PM [express] POST /api/users/badges/batch 200 in 6ms
+3:55:41 PM [express] GET /api/rooms 304 in 14ms
+3:55:53 PM [express] GET /api/users 304 in 19ms
+3:55:53 PM [express] GET /api/users/rooms 304 in 6ms
+3:55:53 PM [express] POST /api/users/badges/batch 200 in 7ms
+3:55:53 PM [express] POST /api/follows/counts 200 in 6ms
+3:55:53 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+3:55:53 PM [express] GET /api/rooms/participants 304 in 5ms
+3:55:53 PM [express] GET /api/announcements 304 in 6ms
+3:55:56 PM [express] GET /api/rooms 304 in 6ms
+3:56:06 PM [express] POST /api/users/badges/batch 200 in 30ms
+3:56:11 PM [express] GET /api/rooms 304 in 6ms
+3:56:19 PM [express] POST /api/users/badges/batch 200 in 9ms
+3:56:23 PM [express] GET /api/users/rooms 304 in 8ms
+3:56:24 PM [express] POST /api/follows/counts 200 in 6ms
+3:56:24 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+3:56:24 PM [express] GET /api/rooms/participants 304 in 6ms
+3:56:24 PM [express] GET /api/announcements 304 in 7ms
+3:56:26 PM [express] GET /api/rooms 304 in 7ms
+3:56:38 PM [express] GET /api/users 304 in 18ms
+3:56:42 PM [express] GET /api/rooms 304 in 7ms
+3:56:54 PM [express] GET /api/users/rooms 304 in 14ms
+3:56:54 PM [express] POST /api/follows/counts 200 in 8ms
+3:56:54 PM [express] GET /api/rooms/participants 304 in 6ms
+3:56:54 PM [express] POST /api/rooms/votes/batch 200 in 15ms
+3:56:54 PM [express] GET /api/announcements 304 in 6ms
+3:56:57 PM [express] GET /api/rooms 304 in 6ms
+3:57:12 PM [express] GET /api/rooms 304 in 45ms
+3:57:24 PM [express] GET /api/users 304 in 18ms
+3:57:24 PM [express] GET /api/users/rooms 304 in 5ms
+3:57:24 PM [express] POST /api/follows/counts 200 in 6ms
+3:57:24 PM [express] GET /api/rooms/participants 304 in 3ms
+3:57:24 PM [express] POST /api/rooms/votes/batch 200 in 8ms
+3:57:24 PM [express] GET /api/announcements 304 in 7ms
+3:57:27 PM [express] GET /api/rooms 304 in 14ms
+3:57:30 PM [express] POST /api/users/badges/batch 200 in 8ms
+3:57:43 PM [express] GET /api/rooms 304 in 16ms
+3:57:43 PM [express] POST /api/users/badges/batch 200 in 5ms
+3:57:54 PM [express] GET /api/users/rooms 304 in 14ms
+3:57:55 PM [express] GET /api/rooms/participants 304 in 4ms
+3:57:55 PM [express] POST /api/follows/counts 200 in 15ms
+3:57:55 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+3:57:55 PM [express] GET /api/announcements 304 in 15ms
+3:57:58 PM [express] GET /api/rooms 304 in 7ms
+3:58:09 PM [express] GET /api/users 304 in 16ms
+3:58:13 PM [express] GET /api/rooms 304 in 6ms
+3:58:22 PM [express] POST /api/users/badges/batch 200 in 20ms
+3:58:25 PM [express] GET /api/users/rooms 304 in 6ms
+3:58:25 PM [express] GET /api/rooms/participants 304 in 7ms
+3:58:25 PM [express] POST /api/follows/counts 200 in 16ms
+3:58:25 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+3:58:25 PM [express] GET /api/announcements 304 in 6ms
+3:58:28 PM [express] POST /api/users/badges/batch 200 in 6ms
+3:58:28 PM [express] GET /api/rooms 304 in 5ms
+3:58:41 PM [express] POST /api/users/badges/batch 200 in 14ms
+3:58:44 PM [express] GET /api/rooms 304 in 6ms
+3:58:54 PM [express] GET /api/users 304 in 15ms
+3:58:55 PM [express] GET /api/users/rooms 304 in 4ms
+3:58:55 PM [express] GET /api/rooms/participants 304 in 7ms
+3:58:55 PM [express] POST /api/follows/counts 200 in 6ms
+3:58:55 PM [express] POST /api/rooms/votes/batch 200 in 5ms
+3:58:55 PM [express] GET /api/announcements 304 in 6ms
+3:58:59 PM [express] GET /api/rooms 304 in 6ms
+3:59:13 PM [express] POST /api/users/badges/batch 200 in 16ms
+3:59:14 PM [express] GET /api/rooms 304 in 7ms
+3:59:25 PM [express] GET /api/users/rooms 304 in 48ms
+3:59:25 PM [express] GET /api/rooms/participants 304 in 5ms
+3:59:25 PM [express] POST /api/follows/counts 200 in 14ms
+3:59:25 PM [express] GET /api/announcements 304 in 9ms
+3:59:25 PM [express] POST /api/rooms/votes/batch 200 in 17ms
+4:04:01 PM [express] POST /api/users/badges/batch 200 in 46ms
+4:05:15 PM [express] GET /api/rooms 304 in 22ms
+4:05:25 PM [express] GET /api/users/rooms 304 in 13ms
+4:05:26 PM [express] GET /api/rooms/participants 304 in 7ms
+4:05:26 PM [express] POST /api/follows/counts 200 in 7ms
+4:05:26 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:05:26 PM [express] GET /api/announcements 304 in 7ms
+4:05:30 PM [express] GET /api/rooms 304 in 7ms
+4:07:01 PM [express] POST /api/users/badges/batch 200 in 56ms
+4:08:01 PM [express] POST /api/users/badges/batch 200 in 38ms
+4:09:56 PM [express] GET /api/rooms 304 in 37ms
+4:09:56 PM [express] POST /api/follows/counts 200 in 21ms
+4:09:56 PM [express] GET /api/users 304 in 6ms
+4:09:56 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:09:57 PM [express] GET /api/users/rooms 304 in 5ms
+4:09:57 PM [express] GET /api/rooms/participants 304 in 5ms
+4:09:57 PM [express] GET /api/announcements 304 in 7ms
+4:10:10 PM [express] POST /api/users/badges/batch 200 in 16ms
+4:10:12 PM [express] GET /api/rooms 304 in 7ms
+4:10:17 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:10:27 PM [express] POST /api/follows/counts 200 in 8ms
+4:10:27 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:10:27 PM [express] GET /api/rooms 304 in 16ms
+4:10:27 PM [express] GET /api/users/rooms 304 in 5ms
+4:10:27 PM [express] GET /api/rooms/participants 304 in 6ms
+4:10:27 PM [express] GET /api/announcements 304 in 6ms
+4:10:42 PM [express] GET /api/users 304 in 15ms
+4:10:42 PM [express] GET /api/rooms 304 in 6ms
+4:10:57 PM [express] POST /api/follows/counts 200 in 15ms
+4:10:57 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:10:57 PM [express] GET /api/users/rooms 304 in 6ms
+4:10:57 PM [express] GET /api/rooms/participants 304 in 4ms
+4:10:57 PM [express] GET /api/announcements 304 in 43ms
+4:10:58 PM [express] GET /api/rooms 304 in 7ms
+4:11:13 PM [express] GET /api/rooms 304 in 24ms
+4:11:21 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:11:27 PM [express] POST /api/follows/counts 200 in 6ms
+4:11:27 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:11:27 PM [express] GET /api/rooms/participants 304 in 6ms
+4:11:27 PM [express] GET /api/users 304 in 16ms
+4:11:27 PM [express] GET /api/users/rooms 304 in 17ms
+4:11:28 PM [express] GET /api/announcements 304 in 7ms
+4:11:28 PM [express] GET /api/rooms 304 in 4ms
+4:11:43 PM [express] GET /api/rooms 304 in 17ms
+4:11:57 PM [express] POST /api/follows/counts 200 in 17ms
+4:11:57 PM [express] POST /api/rooms/votes/batch 200 in 8ms
+4:11:58 PM [express] GET /api/rooms/participants 304 in 6ms
+4:11:58 PM [express] GET /api/users/rooms 304 in 16ms
+4:11:58 PM [express] GET /api/announcements 304 in 8ms
+4:11:59 PM [express] GET /api/rooms 304 in 6ms
+4:12:13 PM [express] GET /api/users 304 in 15ms
+4:12:14 PM [express] GET /api/rooms 304 in 5ms
+4:12:28 PM [express] POST /api/follows/counts 200 in 16ms
+4:12:28 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:12:28 PM [express] GET /api/rooms/participants 304 in 7ms
+4:12:28 PM [express] GET /api/users/rooms 304 in 13ms
+4:12:28 PM [express] GET /api/announcements 304 in 8ms
+4:12:29 PM [express] GET /api/rooms 304 in 6ms
+4:12:39 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:12:44 PM [express] GET /api/rooms 304 in 14ms
+4:12:45 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:12:53 PM [express] POST /api/users/badges/batch 200 in 4ms
+4:15:01 PM [express] POST /api/users/badges/batch 200 in 47ms
+4:15:24 PM [express] GET /api/rooms 304 in 19ms
+4:15:28 PM [express] POST /api/follows/counts 200 in 7ms
+4:15:28 PM [express] POST /api/rooms/votes/batch 200 in 8ms
+4:15:28 PM [express] GET /api/rooms/participants 304 in 4ms
+4:15:29 PM [express] GET /api/announcements 304 in 8ms
+4:15:29 PM [express] GET /api/users/rooms 304 in 17ms
+4:15:31 PM [express] GET /api/gifs/trending 304 in 1711ms
+4:15:39 PM [express] GET /api/rooms 304 in 5ms
+4:15:55 PM [express] GET /api/rooms 304 in 15ms
+4:15:58 PM [express] GET /api/users 304 in 6ms
+4:15:58 PM [express] POST /api/follows/counts 200 in 5ms
+4:15:58 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:15:59 PM [express] GET /api/rooms/participants 304 in 5ms
+4:15:59 PM [express] GET /api/users/rooms 304 in 4ms
+4:15:59 PM [express] GET /api/announcements 304 in 18ms
+4:16:10 PM [express] GET /api/rooms 304 in 24ms
+4:16:25 PM [express] GET /api/rooms 304 in 17ms
+4:16:29 PM [express] POST /api/follows/counts 200 in 6ms
+4:16:29 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:16:29 PM [express] GET /api/rooms/participants 304 in 4ms
+4:16:29 PM [express] GET /api/users/rooms 304 in 6ms
+4:16:29 PM [express] GET /api/announcements 304 in 16ms
+4:16:31 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:17:03 PM [express] POST /api/users/badges/batch 200 in 27ms
+4:17:25 PM [express] GET /api/rooms 304 in 18ms
+4:17:28 PM [express] GET /api/users 304 in 49ms
+4:17:29 PM [express] POST /api/follows/counts 200 in 52ms
+4:17:29 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:17:29 PM [express] GET /api/rooms/participants 304 in 6ms
+4:17:30 PM [express] GET /api/users/rooms 304 in 6ms
+4:17:30 PM [express] GET /api/announcements 304 in 16ms
+4:17:59 PM [express] POST /api/follows/counts 200 in 15ms
+4:17:59 PM [express] POST /api/rooms/votes/batch 200 in 9ms
+4:18:00 PM [express] GET /api/rooms/participants 304 in 5ms
+4:18:00 PM [express] GET /api/users/rooms 304 in 5ms
+4:18:00 PM [express] GET /api/announcements 304 in 6ms
+4:18:11 PM [express] GET /api/rooms 304 in 49ms
+4:18:14 PM [express] GET /api/users 304 in 6ms
+4:18:26 PM [express] GET /api/rooms 304 in 19ms
+4:18:29 PM [express] POST /api/follows/counts 200 in 7ms
+4:18:30 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:18:30 PM [express] GET /api/rooms/participants 304 in 5ms
+4:18:30 PM [express] GET /api/users/rooms 304 in 5ms
+4:18:30 PM [express] GET /api/announcements 304 in 7ms
+4:18:41 PM [express] GET /api/rooms 304 in 18ms
+4:18:46 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:18:57 PM [express] GET /api/rooms 304 in 15ms
+4:20:27 PM [express] GET /api/rooms 304 in 16ms
+4:20:29 PM [express] GET /api/users 304 in 6ms
+4:20:30 PM [express] POST /api/follows/counts 200 in 7ms
+4:20:30 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:20:30 PM [express] GET /api/rooms/participants 304 in 5ms
+4:20:30 PM [express] GET /api/users/rooms 304 in 5ms
+4:20:30 PM [express] GET /api/announcements 304 in 8ms
+4:20:42 PM [express] GET /api/rooms 304 in 16ms
+4:22:01 PM [express] POST /api/users/badges/batch 200 in 26ms
+4:23:13 PM [express] GET /api/rooms 304 in 17ms
+4:23:28 PM [express] GET /api/rooms 304 in 45ms
+4:23:29 PM [express] GET /api/users 304 in 7ms
+4:23:30 PM [express] POST /api/follows/counts 200 in 15ms
+4:23:30 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:23:30 PM [express] GET /api/rooms/participants 304 in 6ms
+4:23:31 PM [express] GET /api/users/rooms 304 in 8ms
+4:23:31 PM [express] GET /api/announcements 304 in 6ms
+4:23:56 PM [express] POST /api/users/badges/batch 200 in 16ms
+4:25:16 PM [express] POST /api/users/badges/batch 200 in 55ms
+4:25:32 PM [express] POST /api/users/badges/batch 200 in 16ms
+4:25:43 PM [express] GET /api/rooms 304 in 17ms
+4:25:44 PM [express] GET /api/users 304 in 7ms
+4:25:58 PM [express] POST /api/users/badges/batch 200 in 27ms
+4:25:58 PM [express] GET /api/rooms 304 in 6ms
+4:26:00 PM [express] POST /api/follows/counts 200 in 8ms
+4:26:00 PM [express] POST /api/rooms/votes/batch 200 in 16ms
+4:26:01 PM [express] GET /api/rooms/participants 304 in 7ms
+4:26:01 PM [express] GET /api/users/rooms 304 in 4ms
+4:26:01 PM [express] GET /api/announcements 304 in 14ms
+4:26:11 PM [express] POST /api/users/badges/batch 200 in 8ms
+4:26:14 PM [express] GET /api/rooms 304 in 7ms
+4:26:37 PM [express] POST /api/users/badges/batch 200 in 15ms
+4:27:01 PM [express] POST /api/follows/counts 200 in 15ms
+4:27:01 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:27:02 PM [express] GET /api/rooms/participants 304 in 5ms
+4:27:02 PM [express] GET /api/users/rooms 304 in 5ms
+4:27:02 PM [express] GET /api/announcements 304 in 9ms
+4:27:02 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:27:15 PM [express] POST /api/users/badges/batch 200 in 18ms
+4:27:28 PM [express] POST /api/users/badges/batch 200 in 19ms
+4:27:29 PM [express] GET /api/rooms 304 in 5ms
+4:27:32 PM [express] POST /api/follows/counts 200 in 7ms
+4:27:32 PM [express] POST /api/rooms/votes/batch 200 in 21ms
+4:27:32 PM [express] GET /api/rooms/participants 304 in 5ms
+4:27:32 PM [express] GET /api/users/rooms 304 in 5ms
+4:27:32 PM [express] GET /api/announcements 304 in 5ms
+4:27:41 PM [express] POST /api/users/badges/batch 200 in 8ms
+4:27:44 PM [express] GET /api/rooms 304 in 6ms
+4:28:00 PM [express] GET /api/rooms 304 in 19ms
+4:28:00 PM [express] GET /api/users 304 in 6ms
+4:28:02 PM [express] POST /api/rooms/votes/batch 200 in 12ms
+4:28:02 PM [express] POST /api/follows/counts 200 in 33ms
+4:28:02 PM [express] GET /api/rooms/participants 304 in 4ms
+4:28:02 PM [express] GET /api/users/rooms 304 in 8ms
+4:28:02 PM [express] GET /api/announcements 304 in 7ms
+4:28:10 PM [express] POST /api/rooms/sample-room-1/knock 404 in 6ms
+4:28:15 PM [express] GET /api/rooms 304 in 6ms
+4:28:20 PM [express] POST /api/rooms 200 in 22ms
+4:28:20 PM [express] GET /api/rooms 200 in 6ms
+4:28:20 PM [express] GET /api/rooms 304 in 5ms
+4:28:20 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:28:20 PM [express] GET /api/auth/user 304 in 5ms
+4:28:23 PM [express] POST /api/rooms/71a7b372-244b-4cea-8c1f-90b40b86dc29/vote 200 in 58ms
+4:28:23 PM [express] POST /api/rooms/71a7b372-244b-4cea-8c1f-90b40b86dc29/vote 200 in 29ms
+4:28:23 PM [express] POST /api/rooms/votes/batch 200 in 50ms
+4:28:23 PM [express] POST /api/rooms/votes/batch 200 in 41ms
+4:28:24 PM [express] POST /api/rooms/71a7b372-244b-4cea-8c1f-90b40b86dc29/access-link 200 in 9ms
+4:28:24 PM [express] POST /api/rooms/71a7b372-244b-4cea-8c1f-90b40b86dc29/access-link 200 in 6ms
+4:28:27 PM [express] POST /api/rooms/71a7b372-244b-4cea-8c1f-90b40b86dc29/access-link 200 in 6ms
+4:28:30 PM [express] GET /api/auth/user 200 in 5ms
+[BABEL] Note: The code generator has deoptimised the styling of /home/runner/workspace/client/src/components/voice-room.tsx as it exceeds the max of 500KB.
+4:28:32 PM [express] POST /api/follows/counts 200 in 7ms
+4:28:32 PM [express] GET /api/rooms/participants 304 in 4ms
+4:28:32 PM [express] GET /api/users/rooms 304 in 4ms
+4:28:33 PM [express] GET /api/announcements 304 in 7ms
+4:28:35 PM [express] GET /api/rooms 304 in 6ms
+4:28:38 PM [express] GET /api/rooms/iw56126 200 in 8ms
+4:28:39 PM [express] GET /api/follows/following/58526942 304 in 155ms
+4:28:39 PM [express] GET /api/follows/followers/58526942 304 in 92ms
+4:28:39 PM [express] GET /api/users 200 in 158ms
+4:28:39 PM [express] GET /api/blocks 304 in 177ms
+4:28:39 PM [express] POST /api/users/badges/batch 200 in 5ms
+4:28:42 PM [express] GET /api/youtube/suggestions 200 in 1661ms
+4:28:42 PM [express] GET /api/youtube/featured 200 in 1680ms
+4:28:47 PM [express] GET /api/movies/popular 304 in 1160ms
+4:29:02 PM [express] POST /api/users/badges/batch 200 in 19ms
+4:29:02 PM [express] POST /api/follows/counts 200 in 6ms
+4:29:03 PM [express] GET /api/rooms/participants 200 in 5ms
+4:29:03 PM [express] GET /api/users/rooms 304 in 6ms
+4:29:03 PM [express] GET /api/announcements 304 in 6ms
+4:29:06 PM [express] GET /api/rooms 304 in 5ms
+4:29:11 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:29:21 PM [express] GET /api/rooms 304 in 5ms
+4:29:23 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:29:30 PM [express] GET /api/users 200 in 58ms
+4:29:30 PM [express] POST /api/follows/counts 200 in 8ms
+4:29:33 PM [express] GET /api/rooms/participants 304 in 5ms
+4:29:33 PM [express] GET /api/users/rooms 304 in 7ms
+4:29:33 PM [express] GET /api/announcements 304 in 8ms
+4:29:36 PM [express] GET /api/rooms 304 in 6ms
+4:29:50 PM [express] POST /api/users/badges/batch 200 in 17ms
+4:29:52 PM [express] GET /api/rooms 304 in 5ms
+4:29:53 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+[room-cleanup] Deleted empty room 71a7b372-244b-4cea-8c1f-90b40b86dc29 after 60s grace
+4:30:22 PM [express] GET /api/auth/user 200 in 7ms
+4:30:24 PM [express] GET /api/messages/unread/count 304 in 5ms
+4:30:24 PM [express] GET /api/notifications 304 in 5ms
+4:30:25 PM [express] GET /api/rooms 200 in 5ms
+4:30:25 PM [express] POST /api/users/badges/batch 200 in 11ms
+4:30:25 PM [express] GET /api/rooms/participants 200 in 6ms
+4:30:25 PM [express] GET /api/announcements 304 in 11ms
+4:30:25 PM [express] GET /api/users 200 in 18ms
+4:30:25 PM [express] POST /api/rooms/votes/batch 200 in 27ms
+4:30:25 PM [express] GET /api/users/rooms 304 in 4ms
+4:30:25 PM [express] GET /api/follows/following/58526942 304 in 6ms
+4:30:27 PM [express] POST /api/follows/counts 200 in 5ms
+4:30:40 PM [express] GET /api/rooms 304 in 14ms
+4:30:46 PM [express] POST /api/rooms 200 in 14ms
+4:30:46 PM [express] GET /api/rooms 200 in 9ms
+4:30:46 PM [express] GET /api/rooms 304 in 5ms
+4:30:47 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:30:57 PM [express] GET /api/users/rooms 304 in 15ms
+4:30:57 PM [express] GET /api/rooms/participants 304 in 35ms
+4:30:57 PM [express] GET /api/announcements 304 in 39ms
+4:30:57 PM [express] POST /api/rooms/fb6a12e2-3922-4f41-8527-33ed5c252848/access-link 200 in 6ms
+4:30:57 PM [express] POST /api/follows/counts 200 in 6ms
+4:31:02 PM [express] GET /api/rooms 304 in 9ms
+4:31:07 PM [express] GET /api/auth/user 304 in 6ms
+4:31:12 PM [express] GET /api/users 200 in 9ms
+4:31:12 PM [express] POST /api/follows/counts 200 in 5ms
+4:31:17 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:31:18 PM [express] GET /api/rooms 304 in 6ms
+4:31:19 PM [express] GET /api/rooms/iw0dcc6 200 in 9ms
+4:31:21 PM [express] GET /api/follows/followers/58526942 304 in 6ms
+4:31:21 PM [express] GET /api/follows/following/58526942 304 in 5ms
+4:31:21 PM [express] GET /api/blocks 304 in 6ms
+4:31:21 PM [express] GET /api/users 304 in 6ms
+4:31:23 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:31:23 PM [express] POST /api/users/badges/batch 200 in 6ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:31:25 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m
+4:31:27 PM [express] GET /api/rooms/participants 200 in 5ms
+4:31:27 PM [express] GET /api/users/rooms 200 in 5ms
+4:31:27 PM [express] GET /api/announcements 304 in 7ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:31:31 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/chat-picker.tsx[22m
+[2m4:31:32 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/chat-picker.tsx[22m Could not Fast Refresh ("renderMessageContent" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m4:31:32 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/room-card.tsx, /src/components/create-room-dialog.tsx, /src/components/voice-room.tsx, /src/components/dm-view.tsx[22m
+[BABEL] Note: The code generator has deoptimised the styling of /home/runner/workspace/client/src/components/voice-room.tsx as it exceeds the max of 500KB.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:31:34 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/pwa-install-banner.tsx, /src/index.css[22m
+4:31:34 PM [express] GET /api/rooms 200 in 7ms
+4:31:43 PM [express] POST /api/follows/counts 200 in 7ms
+4:31:48 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:31:49 PM [express] GET /api/rooms 304 in 5ms
+4:31:56 PM [express] POST /api/users/badges/batch 200 in 8ms
+4:31:57 PM [express] GET /api/users 304 in 10ms
+4:31:58 PM [express] GET /api/rooms/participants 304 in 5ms
+4:31:58 PM [express] GET /api/users/rooms 304 in 6ms
+4:31:58 PM [express] GET /api/announcements 304 in 33ms
+4:32:04 PM [express] GET /api/rooms 304 in 6ms
+4:32:13 PM [express] POST /api/follows/counts 200 in 6ms
+4:32:18 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:32:20 PM [express] GET /api/rooms 304 in 6ms
+4:32:28 PM [express] GET /api/rooms/participants 304 in 6ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:32:28 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m
+4:32:29 PM [express] GET /api/users/rooms 304 in 10ms
+4:32:29 PM [express] GET /api/announcements 304 in 441ms
+4:32:35 PM [express] GET /api/auth/user 200 in 3ms
+4:32:35 PM [express] GET /api/rooms 304 in 8ms
+4:32:35 PM [express] GET /api/rooms 200 in 9ms
+4:32:35 PM [express] GET /api/rooms/participants 200 in 8ms
+4:32:35 PM [express] GET /api/announcements 200 in 16ms
+4:32:35 PM [express] POST /api/users/badges/batch 200 in 24ms
+4:32:35 PM [express] POST /api/rooms/votes/batch 200 in 24ms
+4:32:36 PM [express] POST /api/rooms/votes/batch 200 in 5ms
+4:32:36 PM [express] POST /api/follows/counts 200 in 4ms
+4:32:36 PM [express] POST /api/users/badges/batch 200 in 4ms
+4:32:42 PM [express] GET /api/users 304 in 38ms
+4:32:43 PM [express] POST /api/follows/counts 200 in 6ms
+4:32:48 PM [express] POST /api/users/badges/batch 200 in 9ms
+4:32:48 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:32:50 PM [express] GET /api/rooms 304 in 6ms
+4:32:58 PM [express] GET /api/rooms/participants 304 in 5ms
+4:32:59 PM [express] GET /api/users/rooms 304 in 4ms
+4:33:00 PM [express] GET /api/announcements 304 in 6ms
+4:33:06 PM [express] GET /api/rooms 304 in 19ms
+4:33:13 PM [express] POST /api/follows/counts 200 in 7ms
+4:33:18 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:33:21 PM [express] GET /api/rooms 304 in 6ms
+4:33:28 PM [express] GET /api/users 304 in 6ms
+4:33:29 PM [express] GET /api/rooms/participants 304 in 5ms
+4:33:30 PM [express] GET /api/users/rooms 304 in 6ms
+4:33:30 PM [express] GET /api/announcements 304 in 7ms
+4:33:36 PM [express] GET /api/rooms 304 in 5ms
+4:33:44 PM [express] POST /api/follows/counts 200 in 6ms
+4:33:49 PM [express] POST /api/rooms/votes/batch 200 in 45ms
+4:33:51 PM [express] GET /api/rooms 304 in 6ms
+4:33:59 PM [express] GET /api/rooms/participants 304 in 5ms
+4:33:59 PM [express] POST /api/users/badges/batch 200 in 9ms
+4:34:00 PM [express] GET /api/users/rooms 304 in 4ms
+4:34:00 PM [express] GET /api/announcements 304 in 5ms
+4:34:07 PM [express] GET /api/rooms 304 in 7ms
+4:34:13 PM [express] GET /api/users 304 in 5ms
+4:34:14 PM [express] POST /api/follows/counts 200 in 7ms
+4:34:19 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:34:22 PM [express] GET /api/rooms 304 in 6ms
+4:34:29 PM [express] GET /api/rooms/participants 304 in 5ms
+4:34:30 PM [express] GET /api/users/rooms 304 in 7ms
+4:34:30 PM [express] GET /api/announcements 304 in 7ms
+4:34:37 PM [express] GET /api/rooms 304 in 6ms
+4:34:38 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:34:44 PM [express] POST /api/follows/counts 200 in 8ms
+4:34:49 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:34:52 PM [express] GET /api/rooms 304 in 53ms
+4:34:58 PM [express] GET /api/users 304 in 6ms
+4:34:59 PM [express] GET /api/rooms/participants 304 in 5ms
+4:35:00 PM [express] GET /api/users/rooms 304 in 6ms
+4:35:01 PM [express] GET /api/announcements 304 in 7ms
+4:35:08 PM [express] GET /api/rooms 304 in 5ms
+4:35:15 PM [express] POST /api/follows/counts 200 in 6ms
+4:35:19 PM [express] POST /api/rooms/votes/batch 200 in 8ms
+4:35:23 PM [express] GET /api/rooms 304 in 7ms
+4:35:30 PM [express] GET /api/rooms/participants 304 in 5ms
+4:35:31 PM [express] GET /api/users/rooms 304 in 6ms
+4:35:31 PM [express] GET /api/announcements 304 in 5ms
+4:35:37 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:35:38 PM [express] GET /api/rooms 304 in 5ms
+4:35:43 PM [express] GET /api/users 304 in 6ms
+4:35:45 PM [express] POST /api/follows/counts 200 in 6ms
+4:35:50 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:35:53 PM [express] GET /api/rooms 304 in 53ms
+4:36:00 PM [express] GET /api/rooms/participants 304 in 40ms
+4:36:01 PM [express] GET /api/users/rooms 304 in 4ms
+4:36:01 PM [express] GET /api/announcements 304 in 7ms
+4:36:09 PM [express] GET /api/rooms 304 in 6ms
+4:36:13 PM [express] GET /api/gifs/trending 304 in 146ms
+4:36:15 PM [express] POST /api/follows/counts 200 in 7ms
+4:36:16 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:36:18 PM [express] GET /api/gifs/search 200 in 164ms
+4:36:19 PM [express] GET /api/gifs/search 200 in 190ms
+4:36:19 PM [express] GET /api/gifs/search 200 in 159ms
+4:36:20 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:36:23 PM [express] POST /api/users/badges/batch 200 in 5ms
+4:36:24 PM [express] GET /api/rooms 304 in 6ms
+4:36:29 PM [express] GET /api/users 304 in 6ms
+4:36:29 PM [express] GET /api/gifs/search 200 in 175ms
+4:36:30 PM [express] GET /api/rooms/participants 304 in 5ms
+4:36:31 PM [express] GET /api/gifs/search 200 in 164ms
+4:36:31 PM [express] GET /api/users/rooms 304 in 5ms
+4:36:31 PM [express] GET /api/gifs/search 200 in 196ms
+4:36:32 PM [express] GET /api/announcements 304 in 7ms
+4:36:35 PM [express] GET /api/gifs/search 200 in 167ms
+4:36:39 PM [express] GET /api/rooms 304 in 6ms
+4:36:40 PM [express] GET /api/gifs/search 200 in 193ms
+4:36:45 PM [express] POST /api/follows/counts 200 in 5ms
+4:36:47 PM [express] GET /api/gifs/search 200 in 165ms
+4:36:48 PM [express] GET /api/gifs/search 200 in 168ms
+4:36:49 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:36:50 PM [express] GET /api/gifs/search 200 in 166ms
+4:36:50 PM [express] POST /api/rooms/votes/batch 200 in 5ms
+4:36:53 PM [express] GET /api/gifs/search 200 in 173ms
+4:36:54 PM [express] GET /api/rooms 304 in 6ms
+4:36:55 PM [express] GET /api/gifs/search 200 in 171ms
+4:36:55 PM [express] POST /api/users/badges/batch 200 in 5ms
+4:36:56 PM [express] GET /api/gifs/trending 304 in 4ms
+4:36:56 PM [express] GET /api/gifs/search 304 in 5ms
+4:36:58 PM [express] GET /api/gifs/search 304 in 5ms
+4:36:58 PM [express] GET /api/gifs/search 304 in 5ms
+4:37:01 PM [express] GET /api/rooms/participants 304 in 5ms
+4:37:02 PM [express] GET /api/users/rooms 304 in 13ms
+4:37:02 PM [express] GET /api/announcements 304 in 8ms
+4:37:10 PM [express] GET /api/rooms 304 in 5ms
+4:37:14 PM [express] GET /api/users 304 in 6ms
+4:37:16 PM [express] POST /api/follows/counts 200 in 7ms
+4:37:21 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:37:25 PM [express] GET /api/gifs/search 200 in 5ms
+4:37:25 PM [express] GET /api/rooms 304 in 5ms
+4:37:31 PM [express] GET /api/rooms/participants 304 in 6ms
+4:37:32 PM [express] GET /api/users/rooms 304 in 5ms
+4:37:32 PM [express] GET /api/announcements 304 in 5ms
+4:37:40 PM [express] GET /api/rooms 304 in 8ms
+4:37:46 PM [express] POST /api/follows/counts 200 in 43ms
+4:37:51 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:37:55 PM [express] GET /api/rooms 304 in 6ms
+4:37:59 PM [express] GET /api/users 304 in 5ms
+4:38:01 PM [express] GET /api/rooms/participants 304 in 6ms
+4:38:02 PM [express] GET /api/users/rooms 304 in 5ms
+4:38:03 PM [express] GET /api/announcements 304 in 9ms
+4:38:11 PM [express] GET /api/rooms 304 in 5ms
+4:38:16 PM [express] POST /api/follows/counts 200 in 16ms
+4:38:21 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:38:26 PM [express] GET /api/rooms 304 in 6ms
+4:38:31 PM [express] GET /api/rooms/participants 304 in 6ms
+4:38:32 PM [express] GET /api/users/rooms 304 in 5ms
+4:38:33 PM [express] GET /api/announcements 304 in 5ms
+4:38:41 PM [express] GET /api/rooms 304 in 6ms
+4:38:44 PM [express] GET /api/users 304 in 6ms
+4:38:46 PM [express] POST /api/follows/counts 200 in 39ms
+4:38:51 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:38:56 PM [express] GET /api/rooms 304 in 5ms
+4:39:02 PM [express] GET /api/rooms/participants 304 in 5ms
+4:39:03 PM [express] GET /api/users/rooms 304 in 5ms
+4:39:03 PM [express] GET /api/announcements 304 in 6ms
+4:39:12 PM [express] GET /api/rooms 304 in 6ms
+4:39:17 PM [express] POST /api/follows/counts 200 in 5ms
+4:39:22 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:39:27 PM [express] GET /api/rooms 304 in 6ms
+4:39:30 PM [express] GET /api/users 304 in 13ms
+4:39:32 PM [express] GET /api/rooms/participants 304 in 5ms
+4:39:33 PM [express] GET /api/users/rooms 304 in 5ms
+4:39:33 PM [express] GET /api/announcements 304 in 7ms
+4:39:43 PM [express] GET /api/rooms 304 in 5ms
+4:39:47 PM [express] POST /api/follows/counts 200 in 17ms
+4:39:50 PM [express] GET /api/gifs/search 200 in 213ms
+4:39:51 PM [express] GET /api/gifs/search 200 in 188ms
+4:39:52 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:39:57 PM [express] PATCH /api/rooms/fb6a12e2-3922-4f41-8527-33ed5c252848 200 in 12ms
+4:39:58 PM [express] GET /api/rooms 200 in 8ms
+4:39:58 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:40:03 PM [express] GET /api/rooms/participants 304 in 5ms
+4:40:03 PM [express] GET /api/users/rooms 304 in 6ms
+4:40:04 PM [express] GET /api/announcements 304 in 8ms
+4:40:11 PM [express] POST /api/users/badges/batch 200 in 5ms
+4:40:13 PM [express] GET /api/rooms 304 in 6ms
+4:40:15 PM [express] GET /api/users 304 in 5ms
+4:40:18 PM [express] POST /api/follows/counts 200 in 6ms
+4:40:22 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:40:28 PM [express] GET /api/rooms 304 in 6ms
+4:40:33 PM [express] GET /api/rooms/participants 304 in 4ms
+4:40:33 PM [express] GET /api/users/rooms 304 in 5ms
+4:40:34 PM [express] GET /api/announcements 304 in 7ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:40:42 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m
+4:40:43 PM [express] GET /api/rooms 304 in 5ms
+4:40:44 PM [express] GET /api/auth/user 200 in 11ms
+4:40:44 PM [express] GET /api/gifs/trending 304 in 6ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:40:44 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x2)[39m
+4:40:47 PM [express] GET /api/gifs/search 200 in 473ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:40:47 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x3)[39m
+4:40:48 PM [express] GET /api/gifs/search 200 in 215ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:40:50 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x4)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:40:53 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x5)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:40:56 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x6)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:40:57 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x7)[39m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:40:58 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/lobby.tsx, /src/index.css[22m [33m(x8)[39m
+4:41:05 PM [express] GET /api/gifs/search 200 in 6ms
+4:41:09 PM [express] GET /api/gifs/search 200 in 467ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:41:10 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/create-room-dialog.tsx[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:41:14 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/room-card.tsx[22m
+4:41:15 PM [express] GET /api/rooms 304 in 17ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:41:16 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/dm-view.tsx[22m
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[1;1H[0J[2m4:41:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/chat-picker.tsx[22m
+[2m4:41:19 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [33mhmr invalidate [39m[2m/src/components/chat-picker.tsx[22m Could not Fast Refresh ("renderMessageContent" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+[2m4:41:19 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/room-card.tsx, /src/components/create-room-dialog.tsx, /src/components/voice-room.tsx, /src/components/dm-view.tsx[22m
+[BABEL] Note: The code generator has deoptimised the styling of /home/runner/workspace/client/src/components/voice-room.tsx as it exceeds the max of 500KB.
+4:41:22 PM [express] GET /api/auth/user 304 in 6ms
+4:41:23 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:41:23 PM [express] POST /api/users/badges/batch 200 in 5ms
+4:41:25 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:41:30 PM [express] POST /api/follows/counts 200 in 8ms
+4:41:30 PM [express] GET /api/announcements 304 in 8ms
+4:41:30 PM [express] POST /api/rooms/votes/batch 200 in 23ms
+4:41:30 PM [express] GET /api/users/rooms 304 in 7ms
+4:41:30 PM [express] GET /api/rooms/participants 304 in 12ms
+4:41:30 PM [express] GET /api/rooms 304 in 22ms
+4:41:40 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:41:45 PM [express] GET /api/users 304 in 8ms
+4:41:46 PM [express] GET /api/rooms 304 in 6ms
+4:41:47 PM [express] GET /api/auth/user 304 in 1ms
+4:41:47 PM [express] GET /api/rooms/participants 304 in 1ms
+4:41:47 PM [express] GET /api/announcements 304 in 5ms
+4:41:47 PM [express] GET /api/rooms 200 in 8ms
+4:41:47 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:41:47 PM [express] POST /api/rooms/votes/batch 200 in 14ms
+4:41:47 PM [express] POST /api/rooms/votes/batch 200 in 6ms
+4:41:47 PM [express] POST /api/follows/counts 200 in 11ms
+4:41:47 PM [express] POST /api/users/badges/batch 200 in 15ms
+4:42:00 PM [express] GET /api/announcements 304 in 63ms
+4:42:00 PM [express] POST /api/follows/counts 200 in 65ms
+4:42:00 PM [express] POST /api/rooms/votes/batch 200 in 70ms
+4:42:01 PM [express] GET /api/rooms/participants 304 in 9ms
+4:42:01 PM [express] GET /api/users/rooms 304 in 10ms
+4:42:01 PM [express] GET /api/rooms 304 in 6ms
+4:42:16 PM [express] GET /api/rooms 304 in 6ms
+4:42:19 PM [express] POST /api/users/badges/batch 200 in 6ms
+4:42:30 PM [express] GET /api/users 304 in 17ms
+4:42:31 PM [express] GET /api/announcements 304 in 10ms
+4:42:31 PM [express] POST /api/follows/counts 200 in 17ms
+4:42:31 PM [express] POST /api/rooms/votes/batch 200 in 22ms
+4:42:31 PM [express] GET /api/users/rooms 304 in 7ms
+4:42:31 PM [express] GET /api/rooms/participants 304 in 5ms
+4:42:31 PM [express] GET /api/rooms 304 in 6ms
+4:42:47 PM [express] GET /api/rooms 304 in 52ms
+4:42:49 PM [express] POST /api/users/badges/batch 200 in 51ms
+4:43:01 PM [express] GET /api/announcements 304 in 19ms
+4:43:01 PM [express] POST /api/rooms/votes/batch 200 in 20ms
+4:43:01 PM [express] POST /api/follows/counts 200 in 19ms
+4:43:01 PM [express] GET /api/users/rooms 304 in 5ms
+4:43:01 PM [express] GET /api/rooms/participants 304 in 5ms
+4:43:02 PM [express] GET /api/rooms 304 in 5ms
+4:43:16 PM [express] GET /api/users 304 in 16ms
+4:43:17 PM [express] GET /api/rooms 304 in 6ms
+4:43:31 PM [express] POST /api/rooms/votes/batch 200 in 19ms
+4:43:31 PM [express] POST /api/follows/counts 200 in 23ms
+4:43:31 PM [express] GET /api/announcements 304 in 32ms
+4:43:31 PM [express] GET /api/rooms/participants 304 in 5ms
+4:43:31 PM [express] GET /api/users/rooms 304 in 6ms
+4:43:33 PM [express] GET /api/rooms 304 in 5ms
+4:43:48 PM [express] GET /api/rooms 304 in 16ms
+4:44:01 PM [express] GET /api/users 304 in 32ms
+4:44:02 PM [express] POST /api/rooms/votes/batch 200 in 9ms
+4:44:02 PM [express] POST /api/follows/counts 200 in 20ms
+4:44:02 PM [express] GET /api/announcements 304 in 7ms
+4:44:02 PM [express] GET /api/users/rooms 304 in 6ms
+4:44:02 PM [express] GET /api/rooms/participants 304 in 5ms
+4:44:03 PM [express] GET /api/rooms 304 in 6ms
+4:44:18 PM [express] GET /api/rooms 304 in 15ms
+[cleanup] 2026-05-02T16:44:30.502Z Starting scheduled data cleanup...
+[cleanup] 2026-05-02T16:44:30.516Z Cleanup complete in 14ms — files=0 (0 bytes)
+4:44:32 PM [express] POST /api/follows/counts 200 in 6ms
+4:44:32 PM [express] POST /api/rooms/votes/batch 200 in 29ms
+4:44:32 PM [express] GET /api/announcements 304 in 7ms
+4:44:32 PM [express] GET /api/users/rooms 304 in 5ms
+4:44:32 PM [express] GET /api/rooms/participants 304 in 7ms
+4:44:34 PM [express] GET /api/rooms 304 in 10ms
+4:44:46 PM [express] GET /api/users 304 in 15ms
+4:44:49 PM [express] GET /api/rooms 304 in 5ms
+4:45:02 PM [express] POST /api/users/badges/batch 200 in 49ms
+4:45:02 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:45:02 PM [express] POST /api/follows/counts 200 in 16ms
+4:45:02 PM [express] GET /api/announcements 304 in 4ms
+4:45:02 PM [express] GET /api/rooms/participants 304 in 5ms
+4:45:02 PM [express] GET /api/users/rooms 304 in 4ms
+4:45:04 PM [express] GET /api/rooms 304 in 6ms
+4:45:20 PM [express] GET /api/rooms 304 in 16ms
+4:45:21 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:45:32 PM [express] GET /api/users 304 in 15ms
+4:45:32 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:45:33 PM [express] POST /api/follows/counts 200 in 6ms
+4:45:33 PM [express] GET /api/announcements 304 in 7ms
+4:45:33 PM [express] GET /api/rooms/participants 304 in 7ms
+4:45:33 PM [express] GET /api/users/rooms 304 in 14ms
+4:45:35 PM [express] GET /api/rooms 304 in 6ms
+4:45:50 PM [express] GET /api/rooms 304 in 16ms
+4:45:51 PM [express] POST /api/users/badges/batch 200 in 17ms
+4:45:56 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:46:03 PM [express] POST /api/rooms/votes/batch 200 in 37ms
+4:46:03 PM [express] POST /api/follows/counts 200 in 20ms
+4:46:03 PM [express] GET /api/announcements 304 in 6ms
+4:46:03 PM [express] GET /api/rooms/participants 304 in 5ms
+4:46:03 PM [express] GET /api/users/rooms 304 in 14ms
+4:46:06 PM [express] GET /api/rooms 304 in 6ms
+4:46:17 PM [express] GET /api/users 304 in 16ms
+4:46:21 PM [express] GET /api/rooms 304 in 6ms
+4:46:33 PM [express] POST /api/rooms/votes/batch 200 in 17ms
+4:46:33 PM [express] POST /api/follows/counts 200 in 8ms
+4:46:33 PM [express] GET /api/announcements 304 in 6ms
+4:46:33 PM [express] GET /api/rooms/participants 304 in 5ms
+4:46:33 PM [express] GET /api/users/rooms 304 in 14ms
+4:46:35 PM [express] POST /api/users/badges/batch 200 in 7ms
+4:46:36 PM [express] GET /api/rooms 304 in 6ms
+4:46:52 PM [express] GET /api/rooms 304 in 19ms
+4:47:02 PM [express] GET /api/users 304 in 14ms
+4:47:03 PM [express] POST /api/rooms/votes/batch 200 in 7ms
+4:47:03 PM [express] POST /api/follows/counts 200 in 6ms
+4:47:03 PM [express] GET /api/announcements 304 in 6ms
+4:47:04 PM [express] GET /api/rooms/participants 304 in 5ms
+4:47:04 PM [express] GET /api/users/rooms 304 in 14ms
+4:47:07 PM [express] GET /api/rooms 304 in 44ms
