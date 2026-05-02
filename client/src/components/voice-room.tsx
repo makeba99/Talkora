@@ -940,7 +940,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [movieSearch, setMovieSearch] = useState("");
   const [movieResults, setMovieResults] = useState<any[]>([]);
   const [movieSearching, setMovieSearching] = useState(false);
+  const MOVIE_PROVIDERS = [
+    { key: "vidsrc.to",      label: "Source 1", url: (id: string) => `https://vidsrc.to/embed/movie/${id}` },
+    { key: "2embed.cc",      label: "Source 2", url: (id: string) => `https://2embed.cc/embed/${id}` },
+    { key: "autoembed.cc",   label: "Source 3", url: (id: string) => `https://autoembed.cc/movie/imdb/${id}` },
+    { key: "embed.su",       label: "Source 4", url: (id: string) => `https://embed.su/embed/movie/${id}` },
+  ] as const;
+  type MovieProviderKey = typeof MOVIE_PROVIDERS[number]["key"];
+
   const [activeMovieId, setActiveMovieId] = useState<string | null>(null);
+  const [movieProvider, setMovieProvider] = useState<MovieProviderKey>("vidsrc.to");
   const [activeMovieTitle, setActiveMovieTitle] = useState<string>("");
   const [activeMoviePoster, setActiveMoviePoster] = useState<string>("");
   const [movieStartedBy, setMovieStartedBy] = useState<string | null>(null);
@@ -8152,16 +8161,29 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </button>
                 )}
               </div>
+              {/* Source picker */}
+              <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-1.5 px-4 py-2 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)" }}>
+                <span className="text-white/50 text-xs mr-1">Source:</span>
+                {MOVIE_PROVIDERS.map(p => (
+                  <button
+                    key={p.key}
+                    onClick={() => setMovieProvider(p.key)}
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${movieProvider === p.key ? "bg-violet-500 text-white" : "bg-white/10 text-white/70 hover:bg-white/20"}`}
+                    data-testid={`button-movie-source-${p.key}`}
+                  >{p.label}</button>
+                ))}
+              </div>
               {/* Embed */}
               <iframe
-                key={activeMovieId}
-                src={activeMovieId?.startsWith("tt") ? `https://vidsrc.me/embed/movie?imdb=${activeMovieId}` : `https://vidsrc.me/embed/movie?tmdb=${activeMovieId}`}
+                key={`${activeMovieId}-${movieProvider}`}
+                src={activeMovieId ? MOVIE_PROVIDERS.find(p => p.key === movieProvider)!.url(activeMovieId) : ""}
                 title={activeMovieTitle}
-                allow="autoplay; fullscreen; picture-in-picture"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                 allowFullScreen
                 className="w-full h-full border-0"
                 data-testid="iframe-movie-player"
-                referrerPolicy="origin"
+                referrerPolicy="no-referrer"
               />
             </div>
           )}

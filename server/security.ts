@@ -227,7 +227,7 @@ export function applySecurityMiddleware(app: Express): void {
           imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
           mediaSrc: ["'self'", "blob:", "https:", "http:"],
           connectSrc: ["'self'", "wss:", "ws:", "https:"],
-          frameSrc: ["'self'", "https://www.youtube.com", "https://www.youtube-nocookie.com", "https://vidsrc.me", "https://vidsrc.to", "https://vidsrc.xyz", "https://vidsrc.cc", "https://embed.su"],
+          frameSrc: ["'self'", "https://www.youtube.com", "https://www.youtube-nocookie.com", "https://vidsrc.me", "https://vidsrc.to", "https://vidsrc.xyz", "https://vidsrc.cc", "https://embed.su", "https://2embed.cc", "https://autoembed.cc", "https://multiembed.mov", "https://moviesapi.club", "https://player.autoembed.cc"],
           objectSrc: ["'none'"],
           upgradeInsecureRequests: [],
         },
