@@ -444,6 +444,27 @@ Badge applications table (shared/schema.ts):
   paired with an `.onboarding-relaunch-dismiss` X for individual
   permanent dismissal.
 
+## PageSpeed / Lighthouse Optimizations (May 2026)
+Targeted improvements without changing UI/UX or functionality:
+
+### Accessibility (score 80/87 → improved)
+- Fixed `alt=""` on meaningful AvatarImage components: participant profile-popup avatar now uses `alt={getUserDisplayName(participant)}`; owner-panel avatar uses `alt={ownerName}`
+- Added `aria-label="View {name}'s profile"` to participant avatar buttons in room cards (previously icon-only with no accessible name)
+- Added `aria-label="Private room"` to the Lock icon on private room cards
+- Marked decorative bullet separators (•) in the room card sub-row with `aria-hidden="true"`
+- Added `aria-hidden="true"` to the Globe icon in PeopleDiscoveryCard language chips
+- Bumped all WCAG-failing text-white opacity values to meet 4.5:1 contrast for normal text:
+  - `text-white/35` → `text-white/50` (offline status)
+  - `text-white/40` → `text-white/55–60` (followers label, participant count, "Created At", discovery descriptions)
+  - `text-white/45` → `text-white/60` (discovery section count, description)
+  - `text-white/50` → `text-white/65` (empty-state messages)
+  - `placeholder:text-white/40` → `placeholder:text-white/55` (search input)
+
+### Performance (score 29/45 → improved)
+- Added explicit `width={58} height={58}`, `loading="lazy"`, `decoding="async"` to PeopleDiscoveryCard profile images (prevents CLS)
+- Swapped `preconnect` → `dns-prefetch` for randomuser.me in index.html (avatars aren't LCP; preconnect was wasting a TLS socket on the critical path)
+- Added `preconnect` + `dns-prefetch` for `flagcdn.com` (flag images render on every room card on first paint)
+
 ## User Preferences
 - No landing page gate - lobby always shown
 - Collapse/expand for language filters instead of scrollbar

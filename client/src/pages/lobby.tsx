@@ -330,6 +330,10 @@ function PeopleDiscoveryCard({
                 <img
                   src={person.profileImageUrl}
                   alt={name}
+                  width={58}
+                  height={58}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full rounded-full object-cover"
                   data-testid={`img-discovery-user-${person.id}`}
                 />
@@ -357,7 +361,7 @@ function PeopleDiscoveryCard({
             </h3>
             <p
               className={`flex items-center gap-1.5 text-[10.5px] font-semibold mt-1 ${
-                isOnline ? "text-emerald-300" : "text-white/35"
+                isOnline ? "text-emerald-300" : "text-white/50"
               }`}
             >
               <span
@@ -380,7 +384,7 @@ function PeopleDiscoveryCard({
         {/* Language chips */}
         {languages.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Globe className="w-3 h-3 text-white/30 flex-shrink-0" />
+            <Globe className="w-3 h-3 text-white/50 flex-shrink-0" aria-hidden="true" />
             {languages.map((lang) => (
               <span key={lang} className="neu-people-lang">
                 {lang}
@@ -394,7 +398,7 @@ function PeopleDiscoveryCard({
           <span className="neu-people-stat">
             <Heart className="w-3 h-3 text-rose-400 fill-rose-400" />
             <span className="font-bold text-white/85">{followerCount}</span>
-            <span className="text-white/40 text-[10px]">followers</span>
+            <span className="text-white/55 text-[10px]">followers</span>
           </span>
           {totalVotes > 0 && (
             <span className="neu-people-stat">
@@ -1691,7 +1695,7 @@ export default function Lobby() {
                     anchor: searchShellRef.current,
                   });
                 }}
-                className="search-neu-input border-0 bg-transparent text-white placeholder:text-white/40 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="search-neu-input border-0 bg-transparent text-white placeholder:text-white/55 focus-visible:ring-0 focus-visible:ring-offset-0"
                 data-testid="input-search-rooms"
               />
               {searchQuery && (
@@ -1944,16 +1948,16 @@ export default function Lobby() {
                   <h2 className="text-lg font-black text-white" data-testid="text-people-discovery-title">
                     {activeDiscovery === "top-speakers" ? "Top speakers to track" : "Famous users to follow"}
                   </h2>
-                  <p className="text-sm text-white/45">
+                  <p className="text-sm text-white/60">
                     Follow people to track them, then talk when they are online or inside a room.
                   </p>
                 </div>
-                <span className="text-xs text-white/45 flex items-center gap-1" data-testid="text-people-discovery-count">
+                <span className="text-xs text-white/60 flex items-center gap-1" data-testid="text-people-discovery-count">
                   {filteredPeople.length} people
                 </span>
               </div>
               {filteredPeople.length === 0 ? (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm text-white/50" data-testid="text-no-discovery-users">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm text-white/65" data-testid="text-no-discovery-users">
                   No people found. Try a different search.
                 </div>
               ) : (

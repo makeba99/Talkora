@@ -198,8 +198,11 @@
       }
     </style>
 
-    <!-- Connect early to avatar/video CDNs the lobby reads from on first paint. -->
-    <link rel="preconnect" href="https://randomuser.me" crossorigin />
+    <!-- Connect early to flag CDN (visible on every room card immediately).
+         randomuser.me avatars are small, below-fold images — dns-prefetch is
+         sufficient and avoids burning a TLS connection slot on the critical path. -->
+    <link rel="preconnect" href="https://flagcdn.com" crossorigin />
+    <link rel="dns-prefetch" href="https://flagcdn.com" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
 
     <!-- YouTube embeds are deferred and only load on user interaction, so use

@@ -190,7 +190,7 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
       <Avatar className="w-16 h-16 border-2 border-border">
         {(() => {
           const a = buildAvatarSources(participant.profileImageUrl);
-          return <AvatarImage src={a.src} srcSet={a.srcSet} alt="" />;
+          return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(participant)} />;
         })()}
         <AvatarFallback className="text-xl font-bold">
           {getUserInitials(participant)}
@@ -644,7 +644,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
                 {(() => {
                   const a = buildAvatarSources(ownerAvatar);
-                  return <AvatarImage src={a.src} srcSet={a.srcSet} alt="" />;
+                  return <AvatarImage src={a.src} srcSet={a.srcSet} alt={ownerName} />;
                 })()}
                 <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
               </Avatar>
@@ -676,7 +676,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             </button>
             <div className="border-t border-white/10" />
             <div className="px-4 py-3 text-center">
-              <p className="text-xs text-white/40 mb-0.5">Created At</p>
+              <p className="text-xs text-white/55 mb-0.5">Created At</p>
               <p className="text-sm font-medium text-white">{createdAtStr}</p>
             </div>
           </div>
@@ -776,17 +776,17 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 <h2 className="font-extrabold text-sm text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
                   {room.title}
                 </h2>
-                {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />}
+                {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/55 flex-shrink-0" aria-label="Private room" />}
               </div>
               {/* Sub-row: flag, language, level, mic status, LIVE */}
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                 <LanguageFlag language={room.language} />
                 <span className="text-[11px] text-white/70 font-medium">{room.language}</span>
-                <span className="text-white/30 text-[10px]">•</span>
+                <span className="text-white/30 text-[10px]" aria-hidden="true">•</span>
                 <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-orange-400"}`}>
                   {room.level}
                 </span>
-                <span className="text-white/30 text-[10px]">•</span>
+                <span className="text-white/30 text-[10px]" aria-hidden="true">•</span>
                 {(() => {
                   const tp = ((room as any).talkPermission as string) || "everyone";
                   const isOpen    = tp === "everyone";
@@ -998,6 +998,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                         <button
                           className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
                           data-testid={`button-card-participant-${p.id}`}
+                          aria-label={`View ${getUserDisplayName(p)}'s profile`}
                         >
                           {decorated}
                           {heartRow}
@@ -1063,7 +1064,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             <div className="flex items-center gap-2">
               {/* Participant count chip */}
               <div
-                className="flex items-center gap-0.5 text-white/40"
+                className="flex items-center gap-0.5 text-white/60"
                 data-testid={`badge-participants-${room.id}`}
                 title={`${participants.length} of ${isUnlimited ? "∞" : room.maxUsers} participants`}
               >
@@ -1076,7 +1077,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               {isLoggedIn && onVote && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onVote(); }}
-                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/35 hover:text-orange-400"}`}
+                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/55 hover:text-orange-400"}`}
                   data-testid={`button-vote-room-${room.id}`}
                   title={hasVoted ? "Remove vote" : "Vote"}
                 >
