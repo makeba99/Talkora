@@ -535,7 +535,7 @@ function ParticipantCard({
   if (isBlocked) {
     return (
       <div className="flex flex-col items-center gap-1">
-        <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-md overflow-hidden bg-muted/30 border-[3px] border-transparent select-none opacity-70">
+        <div className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-md overflow-hidden bg-muted/30 border-[3px] border-transparent select-none opacity-70">
           <div className="w-full h-full flex flex-col items-center justify-center bg-muted/60 gap-2">
             <Ban className="w-8 h-8 text-muted-foreground/60" />
             <button
@@ -596,16 +596,28 @@ function ParticipantCard({
         </div>
       )}
       <div
-        className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
+        className={`relative w-36 h-36 sm:w-40 sm:h-40 rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
           isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_14px_hsl(var(--neu-orange)/0.45)]" : "border-transparent hover:border-white/20"
         } transition-all duration-300`}
       >
         {hasActiveYoutube && youtubeVideoId ? (
-          <img
-            src={`https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`}
-            alt="YouTube thumbnail"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          <>
+            <img
+              src={`https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`}
+              alt="YouTube thumbnail"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            {/* Profile avatar pinned top-left so the person is always identifiable */}
+            <div className="absolute top-1.5 left-1.5 z-[25] w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
+              {p.profileImageUrl ? (
+                <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+              ) : (
+                <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                  <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
+                </div>
+              )}
+            </div>
+          </>
         ) : hasActiveMovie ? (
           moviePosterPath ? (
             <img
