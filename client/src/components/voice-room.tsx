@@ -8155,7 +8155,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               {/* Embed */}
               <iframe
                 key={activeMovieId}
-                src={`https://vidsrc.me/embed/movie?tmdb=${activeMovieId}`}
+                src={activeMovieId?.startsWith("tt") ? `https://vidsrc.me/embed/movie?imdb=${activeMovieId}` : `https://vidsrc.me/embed/movie?tmdb=${activeMovieId}`}
                 title={activeMovieTitle}
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen

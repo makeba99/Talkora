@@ -92,28 +92,85 @@ function listMovieHosts(roomId: string): Array<{ hostId: string; state: MovieHos
   if (!m) return [];
   return Array.from(m.entries()).map(([hostId, state]) => ({ hostId, state }));
 }
-const POPULAR_MOVIES = [
-  { id: 278, title: "The Shawshank Redemption", poster: "https://image.tmdb.org/t/p/w300/lyQBXzOQSuE59IsHyhrp0qIiPAz.jpg", year: "1994", rating: "8.7", overview: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency." },
-  { id: 238, title: "The Godfather", poster: "https://image.tmdb.org/t/p/w300/3bhkrj58Vtu7enYsLegHzslqLxT.jpg", year: "1972", rating: "8.7", overview: "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son." },
-  { id: 272, title: "The Dark Knight", poster: "https://image.tmdb.org/t/p/w300/qJ2tW6WMUDux911r6m7haRef0WH.jpg", year: "2008", rating: "9.0", overview: "Batman raises the stakes in his war on crime with the help of Lt. Jim Gordon and DA Harvey Dent." },
-  { id: 27205, title: "Inception", poster: "https://image.tmdb.org/t/p/w300/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg", year: "2010", rating: "8.4", overview: "A thief who steals corporate secrets through dream-sharing technology is given the task of planting an idea." },
-  { id: 157336, title: "Interstellar", poster: "https://image.tmdb.org/t/p/w300/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", year: "2014", rating: "8.4", overview: "A team of explorers travel through a wormhole in space to ensure humanity's survival." },
-  { id: 603, title: "The Matrix", poster: "https://image.tmdb.org/t/p/w300/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", year: "1999", rating: "8.1", overview: "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers." },
-  { id: 680, title: "Pulp Fiction", poster: "https://image.tmdb.org/t/p/w300/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg", year: "1994", rating: "8.5", overview: "The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine." },
-  { id: 13, title: "Forrest Gump", poster: "https://image.tmdb.org/t/p/w300/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg", year: "1994", rating: "8.5", overview: "The presidencies of Kennedy and Johnson, the events of Vietnam through the perspective of an Alabama man." },
-  { id: 550, title: "Fight Club", poster: "https://image.tmdb.org/t/p/w300/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg", year: "1999", rating: "8.4", overview: "An insomniac office worker and a devil-may-care soapmaker form an underground fight club." },
-  { id: 597, title: "Titanic", poster: "https://image.tmdb.org/t/p/w300/rzdPqYx7Um4FMl1LRRT43IQCDTV.jpg", year: "1997", rating: "7.9", overview: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious Titanic." },
-  { id: 120, title: "The Lord of the Rings", poster: "https://image.tmdb.org/t/p/w300/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg", year: "2001", rating: "8.8", overview: "A meek Hobbit and eight companions set out on a journey to destroy the powerful One Ring." },
-  { id: 299534, title: "Avengers: Endgame", poster: "https://image.tmdb.org/t/p/w300/or06FN3Dka5tukK1e9sl16pB3iy.jpg", year: "2019", rating: "8.4", overview: "After Infinity War, the Avengers assemble once more to undo Thanos's actions and restore balance." },
-  { id: 361743, title: "Top Gun: Maverick", poster: "https://image.tmdb.org/t/p/w300/62HCnUTHjWKSSAVdSsnpsuKjT7R.jpg", year: "2022", rating: "8.3", overview: "After thirty years, Maverick is still pushing the envelope as a top naval aviator." },
-  { id: 634649, title: "Spider-Man: No Way Home", poster: "https://image.tmdb.org/t/p/w300/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg", year: "2021", rating: "8.2", overview: "Peter Parker asks Doctor Strange to help make the world forget he is Spider-Man." },
-  { id: 475557, title: "Joker", poster: "https://image.tmdb.org/t/p/w300/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg", year: "2019", rating: "8.4", overview: "In Gotham City, mentally troubled comedian Arthur Fleck is disregarded and mistreated by society." },
-  { id: 19995, title: "Avatar", poster: "https://image.tmdb.org/t/p/w300/jRXYjXNq0Cs2TcJjLkki24MLp7u.jpg", year: "2009", rating: "7.5", overview: "A paraplegic Marine dispatched to the moon Pandora on a unique mission becomes torn between following orders and protecting the world he feels is his home." },
-  { id: 862, title: "Toy Story", poster: "https://image.tmdb.org/t/p/w300/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg", year: "1995", rating: "8.0", overview: "A cowboy doll is profoundly threatened and jealous when a new spaceman toy supplants him as top toy." },
-  { id: 8587, title: "The Lion King", poster: "https://image.tmdb.org/t/p/w300/sKCr78MXSuHeGwsoneMAfskADiA.jpg", year: "1994", rating: "8.3", overview: "Lion cub prince Simba and his father are central characters in this African adventure." },
-  { id: 22970, title: "Shutter Island", poster: "https://image.tmdb.org/t/p/w300/nXoB9FQKBC5bJEqTJuN2j9LvWEG.jpg", year: "2010", rating: "8.2", overview: "A U.S. Marshal investigates the disappearance of a murderer who escaped from a hospital for the criminally insane." },
-  { id: 11216, title: "Cinema Paradiso", poster: "https://image.tmdb.org/t/p/w300/8SRUfRUi6x4O68n0VCbDNRa6iGL.jpg", year: "1988", rating: "8.5", overview: "A filmmaker recalls his childhood when falling in love with the pictures at the cinema of his home village." },
-];
+// IMDb IDs (tt...) are used directly by vidsrc.me — no TMDB key needed.
+// keywords: extra search tokens that aren't in the title/overview, for fuzzy matching.
+const POPULAR_MOVIES: Array<{ id: string; title: string; poster: string | null; year: string; rating: string; overview: string; keywords?: string }> = [
+  { id: "tt0111161", title: "The Shawshank Redemption", poster: "https://image.tmdb.org/t/p/w300/lyQBXzOQSuE59IsHyhrp0qIiPAz.jpg", year: "1994", rating: "9.3", overview: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.", keywords: "prison hope freedom redemption stephen king" },
+  { id: "tt0068646", title: "The Godfather", poster: "https://image.tmdb.org/t/p/w300/3bhkrj58Vtu7enYsLegHzslqLxT.jpg", year: "1972", rating: "9.2", overview: "The aging patriarch of an organized crime dynasty transfers control of his empire to his reluctant son.", keywords: "mafia crime family corleone brando pacino" },
+  { id: "tt0468569", title: "The Dark Knight", poster: "https://image.tmdb.org/t/p/w300/qJ2tW6WMUDux911r6m7haRef0WH.jpg", year: "2008", rating: "9.0", overview: "Batman raises the stakes in his war on crime when the Joker begins to terrorize Gotham City.", keywords: "batman joker superhero dc nolan bale ledger gotham" },
+  { id: "tt1375666", title: "Inception", poster: "https://image.tmdb.org/t/p/w300/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg", year: "2010", rating: "8.8", overview: "A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea.", keywords: "dreams nolan dicaprio sci-fi mind" },
+  { id: "tt0816692", title: "Interstellar", poster: "https://image.tmdb.org/t/p/w300/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", year: "2014", rating: "8.6", overview: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.", keywords: "space wormhole nasa nolan mcconaughey future" },
+  { id: "tt0133093", title: "The Matrix", poster: "https://image.tmdb.org/t/p/w300/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", year: "1999", rating: "8.7", overview: "A computer hacker learns the true nature of his reality and his role in the war against its controllers.", keywords: "neo keanu reeves simulation cyberpunk wachowski sci-fi" },
+  { id: "tt0110912", title: "Pulp Fiction", poster: "https://image.tmdb.org/t/p/w300/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg", year: "1994", rating: "8.9", overview: "The lives of two mob hitmen, a boxer, a gangster and his wife intertwine in four tales of violence.", keywords: "tarantino crime violence nonlinear travolta jackson" },
+  { id: "tt0109830", title: "Forrest Gump", poster: "https://image.tmdb.org/t/p/w300/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg", year: "1994", rating: "8.8", overview: "The presidencies of Kennedy and Johnson through the eyes of an Alabama man with an extraordinary life.", keywords: "tom hanks life vietnam jenny ping pong run" },
+  { id: "tt0137523", title: "Fight Club", poster: "https://image.tmdb.org/t/p/w300/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg", year: "1999", rating: "8.8", overview: "An insomniac office worker and a devil-may-care soapmaker form an underground fight club.", keywords: "brad pitt norton fincher soap anarchy twist" },
+  { id: "tt0120338", title: "Titanic", poster: "https://image.tmdb.org/t/p/w300/rzdPqYx7Um4FMl1LRRT43IQCDTV.jpg", year: "1997", rating: "7.9", overview: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious Titanic.", keywords: "ship ocean love dicaprio winslet cameron romance" },
+  { id: "tt0120737", title: "The Lord of the Rings: The Fellowship", poster: "https://image.tmdb.org/t/p/w300/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg", year: "2001", rating: "8.8", overview: "A meek Hobbit and eight companions set out on a journey to destroy the powerful One Ring.", keywords: "tolkien hobbit fellowship ring frodo gandalf elf dwarf fantasy" },
+  { id: "tt4154796", title: "Avengers: Endgame", poster: "https://image.tmdb.org/t/p/w300/or06FN3Dka5tukK1e9sl16pB3iy.jpg", year: "2019", rating: "8.4", overview: "After Thanos wiped out half of life, the Avengers assemble once more to reverse his actions.", keywords: "marvel superhero infinity iron man captain america thor endgame" },
+  { id: "tt1745960", title: "Top Gun: Maverick", poster: "https://image.tmdb.org/t/p/w300/62HCnUTHjWKSSAVdSsnpsuKjT7R.jpg", year: "2022", rating: "8.3", overview: "After thirty years, Maverick is still pushing the envelope as a top naval aviator.", keywords: "tom cruise fighter jet pilot navy sequel action" },
+  { id: "tt10872600", title: "Spider-Man: No Way Home", poster: "https://image.tmdb.org/t/p/w300/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg", year: "2021", rating: "8.2", overview: "Peter Parker asks Doctor Strange to make the world forget he is Spider-Man, unleashing the multiverse.", keywords: "spiderman marvel peter parker multiverse doctor strange" },
+  { id: "tt7286456", title: "Joker", poster: "https://image.tmdb.org/t/p/w300/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg", year: "2019", rating: "8.4", overview: "Arthur Fleck, a failed comedian, leads a revolution against the wealthy in Gotham City.", keywords: "batman villain dc gotham phoenix clown mental health" },
+  { id: "tt0499549", title: "Avatar", poster: "https://image.tmdb.org/t/p/w300/jRXYjXNq0Cs2TcJjLkki24MLp7u.jpg", year: "2009", rating: "7.9", overview: "A paraplegic Marine is dispatched to the moon Pandora where he falls in love with the native Na'vi.", keywords: "pandora aliens james cameron sci-fi nature blue" },
+  { id: "tt0114709", title: "Toy Story", poster: "https://image.tmdb.org/t/p/w300/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg", year: "1995", rating: "8.3", overview: "A cowboy doll is threatened when a new spaceman toy arrives and wins the other toys' admiration.", keywords: "pixar animation woody buzz lightyear toys children" },
+  { id: "tt0110357", title: "The Lion King", poster: "https://image.tmdb.org/t/p/w300/sKCr78MXSuHeGwsoneMAfskADiA.jpg", year: "1994", rating: "8.5", overview: "Lion cub prince Simba flees his kingdom after his father Mufasa is murdered by his uncle Scar.", keywords: "simba mufasa scar disney animation africa lion" },
+  { id: "tt1130884", title: "Shutter Island", poster: "https://image.tmdb.org/t/p/w300/nXoB9FQKBC5bJEqTJuN2j9LvWEG.jpg", year: "2010", rating: "8.2", overview: "A U.S. Marshal investigates the disappearance of a murderer who escaped from a hospital for the criminally insane.", keywords: "scorsese dicaprio mystery psychological thriller twist island" },
+  { id: "tt0095765", title: "Cinema Paradiso", poster: "https://image.tmdb.org/t/p/w300/8SRUfRUi6x4O68n0VCbDNRa6iGL.jpg", year: "1988", rating: "8.5", overview: "A filmmaker recalls his childhood and friendship with a projectionist in his home village.", keywords: "italy cinema childhood nostalgia foreign film friendship" },
+  { id: "tt6751668", title: "Parasite", poster: "https://image.tmdb.org/t/p/w300/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg", year: "2019", rating: "8.5", overview: "A poor family schemes to become employed by a wealthy family and infiltrate their household.", keywords: "korean bong joon-ho class inequality oscar foreign film" },
+  { id: "tt0102926", title: "The Silence of the Lambs", poster: "https://image.tmdb.org/t/p/w300/rplLJ2hPcOQmkFhTqUte0MkEaO2.jpg", year: "1991", rating: "8.6", overview: "A young FBI cadet must receive the help of an incarcerated cannibalistic killer to catch another serial killer.", keywords: "hannibal lecter foster thriller serial killer fbi horror" },
+  { id: "tt0108052", title: "Schindler's List", poster: "https://image.tmdb.org/t/p/w300/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg", year: "1993", rating: "9.0", overview: "In German-occupied Poland during WWII, industrialist Oskar Schindler saves the lives of over a thousand Jewish refugees.", keywords: "holocaust wwii spielberg nazi history drama black white" },
+  { id: "tt0120689", title: "The Green Mile", poster: "https://image.tmdb.org/t/p/w300/velWPhVMQeQKcxggNEU8YmU1L1P.jpg", year: "1999", rating: "8.6", overview: "A head guard on death row discovers one of his new prisoners possesses a miraculous healing power.", keywords: "prison death row miracle tom hanks stephen king" },
+  { id: "tt0099685", title: "Goodfellas", poster: "https://image.tmdb.org/t/p/w300/aKuFiU82s5ISJpGZp7YkIr3kCUd.jpg", year: "1990", rating: "8.7", overview: "The story of Henry Hill and his life in the mob, covering his relationship with his wife and his career in crime.", keywords: "mafia scorsese de niro pesci gangster crime mob" },
+  { id: "tt0050083", title: "12 Angry Men", poster: "https://image.tmdb.org/t/p/w300/ow3wq89wM8qd5X7hWKxiRfsFf9C.jpg", year: "1957", rating: "9.0", overview: "A jury holdout attempts to prevent a miscarriage of justice by forcing his colleagues to reconsider the evidence.", keywords: "jury courtroom justice drama classic black white" },
+  { id: "tt0245429", title: "Spirited Away", poster: "https://image.tmdb.org/t/p/w300/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg", year: "2001", rating: "8.6", overview: "A young girl stumbles into a world of gods, witches and spirits, and her parents are transformed into pigs.", keywords: "miyazaki studio ghibli anime japanese animation fantasy" },
+  { id: "tt0172495", title: "Gladiator", poster: "https://image.tmdb.org/t/p/w300/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg", year: "2000", rating: "8.5", overview: "A former Roman General turned slave-gladiator seeks revenge against the corrupt emperor who murdered his family.", keywords: "rome russell crowe ridley scott action ancient arena" },
+  { id: "tt0407887", title: "The Departed", poster: "https://image.tmdb.org/t/p/w300/nT97ifVT2J1yMQmeq20Qblg61T.jpg", year: "2006", rating: "8.5", overview: "An undercover cop and a mole in the police attempt to identify each other while infiltrating an Irish gang.", keywords: "scorsese crime thriller boston mob police dicaprio damon nicholson" },
+  { id: "tt2582802", title: "Whiplash", poster: "https://image.tmdb.org/t/p/w300/7fn624j5lj3xTme2SgiLCeuedmO.jpg", year: "2014", rating: "8.5", overview: "A promising young drummer enrolls at a music conservatory where he is pushed to the brink by a ruthless instructor.", keywords: "music jazz drumming ambition perfectionism" },
+  { id: "tt0482571", title: "The Prestige", poster: "https://image.tmdb.org/t/p/w300/bdN3gXuIZYaJP7ftKkFUQsWX8ar.jpg", year: "2006", rating: "8.5", overview: "Two stage magicians engage in competitive one-upmanship, each trying to create the perfect magic trick.", keywords: "magic magician nolan bale jackman rivalry twist mystery" },
+  { id: "tt0209144", title: "Memento", poster: "https://image.tmdb.org/t/p/w300/yuNs09hvpHVU1cXnO8o7nku7jNx.jpg", year: "2000", rating: "8.4", overview: "A man with short-term memory loss attempts to track down his wife's murderer using notes and tattoos.", keywords: "nolan memory mystery thriller twist nonlinear" },
+  { id: "tt1853728", title: "Django Unchained", poster: "https://image.tmdb.org/t/p/w300/7oWY8VDWW7thTzWh3OKYRkWAKdN.jpg", year: "2012", rating: "8.4", overview: "A freed slave teams with a German bounty hunter to rescue his wife from a brutal Mississippi plantation owner.", keywords: "tarantino slavery western foxx waltz dicaprio revenge" },
+  { id: "tt0993846", title: "The Wolf of Wall Street", poster: "https://image.tmdb.org/t/p/w300/34m2tygAYBGqA9MXKhRDtzYd4MR.jpg", year: "2013", rating: "8.2", overview: "Based on the true story of Jordan Belfort, a stockbroker who ran a scheme of corruption and fraud.", keywords: "scorsese finance stocks wall street greed dicaprio party" },
+  { id: "tt1392190", title: "Mad Max: Fury Road", poster: "https://image.tmdb.org/t/p/w300/8tZYtuWezp8JbcsvHYO0pDPMd8G.jpg", year: "2015", rating: "8.1", overview: "In a post-apocalyptic wasteland, Max teams up with a rebel warrior Furiosa to flee from a tyrannical warlord.", keywords: "apocalypse desert action cars george miller theron hardy" },
+  { id: "tt3783958", title: "La La Land", poster: "https://image.tmdb.org/t/p/w300/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg", year: "2016", rating: "8.0", overview: "A jazz musician and an aspiring actress fall in love while pursuing their dreams in Los Angeles.", keywords: "musical romance jazz chazelle gosling stone la los angeles" },
+  { id: "tt5052448", title: "Get Out", poster: "https://image.tmdb.org/t/p/w300/tFXcEccSQMf3lfhfXKSU9iRBpa3.jpg", year: "2017", rating: "7.7", overview: "A young Black man visits his white girlfriend's family estate, where he uncovers a disturbing secret.", keywords: "horror thriller race peele mystery suspense" },
+  { id: "tt1825683", title: "Black Panther", poster: "https://image.tmdb.org/t/p/w300/uxzzxijgPIY7slzFvMotPv8wjKA.jpg", year: "2018", rating: "7.3", overview: "T'Challa returns home to the African nation of Wakanda to take his rightful place as king.", keywords: "marvel superhero wakanda africa king chadwick boseman" },
+  { id: "tt1160419", title: "Dune", poster: "https://image.tmdb.org/t/p/w300/d5NXSklXo0qyIYkgV97VH5cqYaM.jpg", year: "2021", rating: "8.0", overview: "Feature adaptation of Frank Herbert's science fiction novel about the son of a noble family entrusted with protecting the most valuable asset in the galaxy.", keywords: "sci-fi desert spice planet villeneuve timothee chalamet epic" },
+  { id: "tt6710474", title: "Everything Everywhere All at Once", poster: "https://image.tmdb.org/t/p/w300/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg", year: "2022", rating: "7.8", overview: "A middle-aged Chinese-American woman is thrust into an epic adventure and must explore other universes to save her world.", keywords: "multiverse michelle yeoh oscar indie absurd funny action" },
+  { id: "tt8579674", title: "1917", poster: "https://image.tmdb.org/t/p/w300/iZf0KyrE25z1sage4SYFLCCrMi9.jpg", year: "2019", rating: "8.3", overview: "Two British soldiers must race against time to deliver a message that will prevent a massacre during WWI.", keywords: "world war one wwi mendes continuous shot war trench" },
+  { id: "tt8946378", title: "Knives Out", poster: "https://image.tmdb.org/t/p/w300/pThyQovXQrws2hmUT087tzeIa35.jpg", year: "2019", rating: "7.9", overview: "A detective investigates the death of a patriarch of an eccentric, combative family.", keywords: "mystery whodunit detective murder thriller family funny" },
+  { id: "tt6723592", title: "Tenet", poster: "https://image.tmdb.org/t/p/w300/k68nPLbIST6NP96JmTxmZijZchr.jpg", year: "2020", rating: "7.4", overview: "Armed with only one word, Tenet, and fighting for the survival of the entire world, a Protagonist journeys through a twilight world of international espionage.", keywords: "nolan time reverse spy action washington" },
+  { id: "tt7131622", title: "Once Upon a Time in Hollywood", poster: "https://image.tmdb.org/t/p/w300/8j58iEBw9pOXFD2L0nt0ZXeHviB.jpg", year: "2019", rating: "7.6", overview: "A faded TV actor and his stunt double strive to achieve fame in the final years of Hollywood's Golden Age.", keywords: "tarantino 1960s los angeles pitt dicaprio manson" },
+  { id: "tt7215216", title: "A Quiet Place", poster: "https://image.tmdb.org/t/p/w300/nAU74GmpUk7t5iklEp3bufwDq4n.jpg", year: "2018", rating: "7.5", overview: "In a post-apocalyptic world, a family is forced to live in near silence while hiding from monsters with an acute sense of hearing.", keywords: "silence monsters horror aliens blunt krasinski family" },
+  { id: "tt0172495", title: "Gladiator", poster: "https://image.tmdb.org/t/p/w300/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg", year: "2000", rating: "8.5", overview: "A Roman general becomes a slave and gladiator who rises up to challenge the corrupt emperor.", keywords: "rome ancient arena warrior russell crowe maximus" },
+  { id: "tt2015381", title: "Guardians of the Galaxy", poster: "https://image.tmdb.org/t/p/w300/r7vmZjiyZw9rpJMQJdXpjgiCOk9.jpg", year: "2014", rating: "8.0", overview: "A group of intergalactic criminals must pull together to stop a fanatical warrior with plans to purge the universe.", keywords: "marvel funny space rocket groot star-lord comic" },
+  { id: "tt0317248", title: "City of God", poster: "https://image.tmdb.org/t/p/w300/k7eYdWvhYQyRQoU2TB2A2Xu2grZ.jpg", year: "2002", rating: "8.6", overview: "The story of two boys growing up in a dangerous neighbourhood of Rio de Janeiro.", keywords: "brazil crime poverty youth gang rio de janeiro portuguese" },
+  { id: "tt0816692", title: "Interstellar", poster: "https://image.tmdb.org/t/p/w300/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", year: "2014", rating: "8.6", overview: "A team of explorers travel through a wormhole in space to ensure humanity's survival.", keywords: "space wormhole nasa science future nolan" },
+  { id: "tt0253474", title: "The Pianist", poster: "https://image.tmdb.org/t/p/w300/2hFvxCCWrTmCYwfy7yum0GKRi3Y.jpg", year: "2002", rating: "8.5", overview: "A Polish Jewish musician struggles to survive the destruction of the Warsaw ghetto of World War II.", keywords: "wwii holocaust poland pianist roman polanski adrien brody" },
+  { id: "tt0903747", title: "Breaking Bad (Movie)", poster: "https://image.tmdb.org/t/p/w300/eSzpy96DwBujGFj0xMbXBcGcfxX.jpg", year: "2019", rating: "7.3", overview: "El Camino follows Jesse Pinkman's escape after the events of Breaking Bad.", keywords: "el camino jesse pinkman aaron paul sequel" },
+  { id: "tt0120815", title: "Saving Private Ryan", poster: "https://image.tmdb.org/t/p/w300/uqx37cS8cpHg8U35f9U5IBlrCV3.jpg", year: "1998", rating: "8.6", overview: "Following the Normandy Landings, a group of US soldiers go behind enemy lines to retrieve a paratrooper whose brothers have been killed.", keywords: "wwii war spielberg tom hanks d-day battle military" },
+  { id: "tt1853728", title: "Django Unchained", poster: "https://image.tmdb.org/t/p/w300/7oWY8VDWW7thTzWh3OKYRkWAKdN.jpg", year: "2012", rating: "8.4", overview: "With the help of a German bounty hunter, a freed slave sets out to rescue his wife from a brutal plantation owner.", keywords: "tarantino western slavery south foxx waltz revenge" },
+  { id: "tt0110413", title: "Léon: The Professional", poster: "https://image.tmdb.org/t/p/w300/yI6X2cCM5YPJtxMhUd3dPGqDAhw.jpg", year: "1994", rating: "8.5", overview: "A professional assassin rescues a 12-year-old girl after her family is murdered by a corrupt DEA agent.", keywords: "hitman french action portman reno luc besson" },
+  { id: "tt0088763", title: "Back to the Future", poster: "https://image.tmdb.org/t/p/w300/fNOH9f1aA7XRTzl1sAOx9iF553Q.jpg", year: "1985", rating: "8.5", overview: "A teenager is accidentally sent 30 years into the past in a time-traveling DeLorean invented by his friend.", keywords: "time travel delorean mcfly doc fox 1980s classic" },
+  { id: "tt0077651", title: "Halloween", poster: "https://image.tmdb.org/t/p/w300/qVYgjDty9ewkHQfNXMCNMHfCepF.jpg", year: "1978", rating: "7.7", overview: "Fifteen years after murdering his sister on Halloween night, Michael Myers escapes from a mental hospital and returns to his home town.", keywords: "horror slasher michael myers john carpenter classic" },
+  { id: "tt0114814", title: "The Usual Suspects", poster: "https://image.tmdb.org/t/p/w300/3aQHMfBQm2TDNG8LGo65N6PEZR.jpg", year: "1995", rating: "8.5", overview: "A sole survivor tells of the twisty events leading up to a horrific gun battle on a boat, which begin when five criminals meet in a seemingly chance police lineup.", keywords: "crime mystery thriller twist keyser soze spacey" },
+  { id: "tt0167260", title: "The Lord of the Rings: Return of the King", poster: "https://image.tmdb.org/t/p/w300/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg", year: "2003", rating: "9.0", overview: "Gandalf and Aragorn lead the World of Men against Sauron's army to draw his gaze from Frodo and Sam.", keywords: "tolkien frodo gandalf aragorn mordor sauron ring peter jackson" },
+  { id: "tt0080684", title: "Star Wars: The Empire Strikes Back", poster: "https://image.tmdb.org/t/p/w300/2l05cFWJacyIsTpsqSgH0wQXe4V.jpg", year: "1980", rating: "8.7", overview: "After the Rebels are overpowered by the Empire, Luke Skywalker begins Jedi training with Yoda, while his friends are pursued across the galaxy.", keywords: "star wars lucas darth vader luke yoda jedi force empire" },
+  { id: "tt0073486", title: "One Flew Over the Cuckoo's Nest", poster: "https://image.tmdb.org/t/p/w300/3jcbDmRFiQ83drXNOvRDeKHxS0C.jpg", year: "1975", rating: "8.7", overview: "A criminal pleads insanity and is admitted to a mental institution, where he rebels against the oppressive nurse.", keywords: "nicholson mental institution nurse ratched classic rebellion" },
+  { id: "tt0047478", title: "Seven Samurai", poster: "https://image.tmdb.org/t/p/w300/8OKmBV5BUFzmozIC3pPWKHy17kx.jpg", year: "1954", rating: "8.6", overview: "A poor village under attack by bandits recruits seven samurai to help them defend themselves.", keywords: "kurosawa japanese samurai classic black white masterpiece" },
+  { id: "tt0364569", title: "Oldboy", poster: "https://image.tmdb.org/t/p/w300/pWDtjs568ZfOTMbURQBYuT4Qxka.jpg", year: "2003", rating: "8.4", overview: "After being imprisoned in a cell for 15 years without explanation, a man is released and seeks to find his jailer.", keywords: "korean chan-wook park thriller mystery revenge twist" },
+  { id: "tt3315342", title: "Logan", poster: "https://image.tmdb.org/t/p/w300/fnbjcRDYn6YviCcePDnGdyAkYsB.jpg", year: "2017", rating: "8.1", overview: "In 2029, a weary Logan cares for an ailing Professor X in a hide-out on the Mexican border.", keywords: "wolverine xmen superhero jackman mangold western dark" },
+  { id: "tt0381681", title: "Before Sunset", poster: "https://image.tmdb.org/t/p/w300/f2uyGPnqtM9KYZnRahxABb3x6ir.jpg", year: "2004", rating: "8.1", overview: "Nine years after meeting on a train, Jesse and Celine reunite in Paris and walk through the city talking.", keywords: "romance paris ethan hawke julie delpy linklater talk conversation" },
+  { id: "tt0266543", title: "Finding Nemo", poster: "https://image.tmdb.org/t/p/w300/eHuGQ10FUzK1mdOY69wF5pGgEf5.jpg", year: "2003", rating: "8.2", overview: "After his son is captured in the Great Barrier Reef and taken to Sydney, a timid clownfish sets out on a journey to bring him home.", keywords: "pixar animated ocean fish clownfish dory family" },
+  { id: "tt1049413", title: "Up", poster: "https://image.tmdb.org/t/p/w300/vpvtgGa3UbAcm0gMJN8qiTnvJ5S.jpg", year: "2009", rating: "8.3", overview: "A 78-year-old balloon salesman ties thousands of balloons to his house and flies away to South America with a young stowaway.", keywords: "pixar balloon adventure elderly friendship animated childhood" },
+  { id: "tt0268978", title: "A Beautiful Mind", poster: "https://image.tmdb.org/t/p/w300/zwzWCmH72OSC9NA0ipoqynQTyfs.jpg", year: "2001", rating: "8.2", overview: "After John Nash, a brilliant mathematician, discovers an astonishing theory he begins to experience a world of secret conspiracies.", keywords: "math genius schizophrenia russell crowe princeton oscar" },
+  { id: "tt0338013", title: "Eternal Sunshine of the Spotless Mind", poster: "https://image.tmdb.org/t/p/w300/5MwkWH9tYHv3mV9OqYdjuoBrWmD.jpg", year: "2004", rating: "8.3", overview: "When their relationship turns sour, a couple undergoes a medical procedure to have each other erased from their memories.", keywords: "sci-fi romance memory carrey winslet gondry kaufman" },
+  { id: "tt0910970", title: "WALL-E", poster: "https://image.tmdb.org/t/p/w300/hbhFnRzzg6ZDmm8YAmxBnQpQIPh.jpg", year: "2008", rating: "8.4", overview: "A robot who is responsible for cleaning up a polluted Earth starts a journey to save the planet.", keywords: "pixar animated robot space environmental future love" },
+  { id: "tt1291584", title: "Warrior", poster: "https://image.tmdb.org/t/p/w300/lMSiRKmPXKx9CK0o3o6V2MBaD4A.jpg", year: "2011", rating: "8.2", overview: "A former Marine asks his estranged alcoholic father to train him to compete in a mixed martial arts tournament.", keywords: "mma fighting brothers drama tom hardy joel edgerton sport" },
+  { id: "tt1130884", title: "Shutter Island", poster: "https://image.tmdb.org/t/p/w300/nXoB9FQKBC5bJEqTJuN2j9LvWEG.jpg", year: "2010", rating: "8.2", overview: "A U.S. Marshal investigates the disappearance of a murderer from a hospital for the criminally insane.", keywords: "scorsese mystery thriller asylum twist dicaprio" },
+  { id: "tt0103064", title: "Terminator 2: Judgment Day", poster: "https://image.tmdb.org/t/p/w300/5M0j0B18abtBI5gi3RkgFtJ3deH.jpg", year: "1991", rating: "8.5", overview: "A cyborg, identical to the one who failed to kill Sarah Connor, must now protect her teenage son from an even more advanced and powerful cyborg.", keywords: "cameron schwarzenegger robot future sci-fi action sequel" },
+  { id: "tt0361748", title: "Inglourious Basterds", poster: "https://image.tmdb.org/t/p/w300/7sfbEnaARXDDhKm0CZ7D7uc2sbo.jpg", year: "2009", rating: "8.3", overview: "In Nazi-occupied France during WWII, a plan to assassinate Nazi leaders by a group of Jewish U.S. soldiers coincides with a theater owner's own brutal plan.", keywords: "tarantino wwii nazi pitt waltz war revenge thriller" },
+  { id: "tt0372784", title: "Batman Begins", poster: "https://image.tmdb.org/t/p/w300/dr6C9B9Shq2gfBKSPGxONfbRSGm.jpg", year: "2005", rating: "8.2", overview: "After training with his mentor, Batman begins his fight to free crime-ridden Gotham City from corruption.", keywords: "batman nolan bale origin superhero dc gotham" },
+  { id: "tt0266697", title: "Kill Bill: Volume 1", poster: "https://image.tmdb.org/t/p/w300/v7TaX8kXMXs5yFFGR41guUDNcnB.jpg", year: "2003", rating: "8.2", overview: "After awakening from a coma, a former assassin seeks revenge against the people who tried to kill her.", keywords: "tarantino action revenge martial arts uma thurman" },
+].filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i); // deduplicate by id
 const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
 const roomRoles = new Map<string, Map<string, string>>();
 const roomMuteStatus = new Map<string, Map<string, boolean>>();
@@ -840,32 +897,72 @@ export async function registerRoutes(
   });
 
   // ── Movie search / popular (TMDB + curated fallback) ──────────────────────
+  // Helper: normalise a raw YTS movie object into our common shape.
+  // YTS provides imdb_code (e.g. "tt0137523") which vidsrc.me accepts directly.
+  function ytsToMovie(m: any) {
+    return {
+      id: m.imdb_code || String(m.id),   // prefer IMDb id so vidsrc can use it
+      title: m.title || m.title_english || "",
+      poster: m.large_cover_image || m.medium_cover_image || null,
+      year: String(m.year || ""),
+      rating: m.rating ? m.rating.toFixed(1) : "N/A",
+      overview: m.summary || m.description_full || "",
+    };
+  }
+
+  // Fuzzy keyword search over the curated movie list.
+  // Scores matches by: title (3 pts) > keywords (2 pts) > overview (1 pt).
+  function searchMovies(q: string, limit = 20) {
+    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return POPULAR_MOVIES.slice(0, limit);
+    return POPULAR_MOVIES
+      .map(m => {
+        const titleL = m.title.toLowerCase();
+        const kwL = (m.keywords || "").toLowerCase();
+        const ovL = m.overview.toLowerCase();
+        let score = 0;
+        for (const t of tokens) {
+          if (titleL.includes(t)) score += 3;
+          if (kwL.includes(t)) score += 2;
+          if (ovL.includes(t)) score += 1;
+        }
+        return { m, score };
+      })
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(x => x.m);
+  }
+
   app.get("/api/movies/popular", async (_req: any, res) => {
     try {
-      const cacheKey = "movies:popular";
-      const cached = externalCache.get(cacheKey);
-      if (cached) return res.json(cached);
+      // Try TMDB if API key is configured
       const apiKey = process.env.TMDB_API_KEY?.trim();
       if (apiKey) {
-        const resp = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=en-US&page=1`);
-        if (resp.ok) {
-          const data = await resp.json();
-          const movies = (data.results || []).slice(0, 20).map((m: any) => ({
-            id: m.id,
-            title: m.title,
-            poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : null,
-            year: m.release_date?.slice(0, 4) || "",
-            rating: m.vote_average?.toFixed(1) || "N/A",
-            overview: m.overview || "",
-          }));
-          externalCache.set(cacheKey, movies);
-          return res.json(movies);
-        }
+        try {
+          const cacheKey = "movies:popular:tmdb";
+          const cached = externalCache.get(cacheKey);
+          if (cached) return res.json(cached);
+          const resp = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=en-US&page=1`, { signal: AbortSignal.timeout(5000) });
+          if (resp.ok) {
+            const data = await resp.json();
+            const movies = (data.results || []).slice(0, 24).map((m: any) => ({
+              id: String(m.id),
+              title: m.title,
+              poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : null,
+              year: m.release_date?.slice(0, 4) || "",
+              rating: m.vote_average?.toFixed(1) || "N/A",
+              overview: m.overview || "",
+            }));
+            externalCache.set(cacheKey, movies);
+            return res.json(movies);
+          }
+        } catch (_) {}
       }
-      externalCache.set(cacheKey, POPULAR_MOVIES);
-      res.json(POPULAR_MOVIES);
+      // Serve curated list (no external API needed)
+      res.json(POPULAR_MOVIES.slice(0, 24));
     } catch (err: any) {
-      res.json(POPULAR_MOVIES);
+      res.json(POPULAR_MOVIES.slice(0, 24));
     }
   });
 
@@ -873,32 +970,35 @@ export async function registerRoutes(
     try {
       const q = ((req.query.q as string) || "").trim();
       if (!q) return res.json([]);
-      const cacheKey = `movies:search:${q.toLowerCase().slice(0, 100)}`;
-      const cached = externalCache.get(cacheKey);
-      if (cached) return res.json(cached);
+
+      // Try TMDB if API key is configured
       const apiKey = process.env.TMDB_API_KEY?.trim();
       if (apiKey) {
-        const resp = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(q)}&include_adult=false&language=en-US`);
-        if (resp.ok) {
-          const data = await resp.json();
-          const movies = (data.results || []).slice(0, 20).map((m: any) => ({
-            id: m.id,
-            title: m.title,
-            poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : null,
-            year: m.release_date?.slice(0, 4) || "",
-            rating: m.vote_average?.toFixed(1) || "N/A",
-            overview: m.overview || "",
-          }));
-          externalCache.set(cacheKey, movies);
-          return res.json(movies);
-        }
+        try {
+          const cacheKey = `movies:search:tmdb:${q.toLowerCase().slice(0, 80)}`;
+          const cached = externalCache.get(cacheKey);
+          if (cached) return res.json(cached);
+          const resp = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(q)}&include_adult=false&language=en-US`, { signal: AbortSignal.timeout(5000) });
+          if (resp.ok) {
+            const data = await resp.json();
+            const movies = (data.results || []).slice(0, 20).map((m: any) => ({
+              id: String(m.id),
+              title: m.title,
+              poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : null,
+              year: m.release_date?.slice(0, 4) || "",
+              rating: m.vote_average?.toFixed(1) || "N/A",
+              overview: m.overview || "",
+            }));
+            externalCache.set(cacheKey, movies);
+            return res.json(movies);
+          }
+        } catch (_) {}
       }
-      // Fallback: filter curated list
-      const results = POPULAR_MOVIES.filter(m => m.title.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
-      res.json(results);
+
+      // Keyword-scored search over curated list
+      res.json(searchMovies(q));
     } catch (err: any) {
-      const q2 = ((req.query.q as string) || "").trim().toLowerCase();
-      res.json(POPULAR_MOVIES.filter(m => m.title.toLowerCase().includes(q2)).slice(0, 10));
+      res.json(searchMovies(((req.query.q as string) || "").trim()));
     }
   });
 
