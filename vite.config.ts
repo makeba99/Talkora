@@ -98,6 +98,14 @@ export default defineConfig({
         // who never trigger those code paths — safe because they never call
         // React APIs at module-evaluation time.
         manualChunks(id) {
+          // Force the zero-dep shared constants into a predictable named chunk
+          // so server/static.ts can inject <link rel="modulepreload"> for it.
+          // shared/constants.ts is imported by 9+ lazy route chunks; without a
+          // stable name Rollup generates a hash-only filename we can't match.
+          // Placing this BEFORE the node_modules guard is intentional — the
+          // guard would short-circuit and return undefined for app code.
+          if (id.includes("/shared/constants")) return "app-constants";
+
           if (!id.includes("node_modules")) return undefined;
           if (
             id.includes("react-dom") ||
