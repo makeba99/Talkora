@@ -102,6 +102,19 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
     html = html.replace(/<\/head>/i, `${injection}\n  </head>`);
   }
 
+  // Eliminate render-blocking CSS: convert Vite's injected <link rel="stylesheet">
+  // for the main entry CSS bundle to an async preload + onload swap. The inline
+  // <style> in index.html (dark background, skeleton, font-face, skip-link)
+  // provides enough critical CSS to prevent any visible FOUC. The full stylesheet
+  // loads in parallel with JS and applies before React has finished hydrating.
+  // A <noscript> fallback ensures styling works when JS is disabled.
+  html = html.replace(
+    /<link rel="stylesheet" crossorigin href="(\/assets\/index-[\w-]+\.css)">/g,
+    (_match, href) =>
+      `<link rel="preload" href="${href}" as="style" crossorigin onload="this.onload=null;this.rel='stylesheet'">` +
+      `<noscript><link rel="stylesheet" crossorigin href="${href}"></noscript>`,
+  );
+
   // Ensure the entry module script gets `fetchpriority="high"`. Vite *may*
   // preserve the attribute from our source index.html when it rewrites the
   // script's src to the hashed bundle path, but if any plugin in the chain

@@ -504,10 +504,11 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
               <button
                 key={s.id}
                 type="button"
+                role="tab"
                 className={`onboarding-dot ${i === step ? "is-active" : ""} ${i < step ? "is-done" : ""}`}
                 onClick={() => goTo(i)}
                 aria-label={`Go to step ${i + 1}`}
-                aria-current={i === step}
+                aria-selected={i === step}
                 data-testid={`room-onboarding-dot-${i}`}
               />
             ))}
