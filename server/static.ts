@@ -109,11 +109,24 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // provides enough critical CSS to prevent any visible FOUC. The full stylesheet
   // loads in parallel with JS and applies before React has finished hydrating.
   // A <noscript> fallback ensures styling works when JS is disabled.
+  // The regex must be attribute-order-independent: Vite may emit
+  //   <link rel="stylesheet" crossorigin href="...">
+  //   <link rel="stylesheet" href="..." crossorigin>
+  //   <link rel="stylesheet" crossorigin href="..." />   (self-closing)
+  //   <link rel="stylesheet" crossorigin href="..." type="text/css">
+  // We capture everything before and after the href, confirm "stylesheet" is
+  // present anywhere in the tag, then rewrite to an async preload+onload swap.
   html = html.replace(
-    /<link rel="stylesheet" crossorigin href="(\/assets\/index-[\w-]+\.css)">/g,
-    (_match, href) =>
-      `<link rel="preload" href="${href}" as="style" crossorigin onload="this.onload=null;this.rel='stylesheet'">` +
-      `<noscript><link rel="stylesheet" crossorigin href="${href}"></noscript>`,
+    /<link\b([^>]*)\bhref="(\/assets\/index-[\w.-]+\.css)"([^>]*)>/g,
+    (_match, before, href, after) => {
+      if (!before.includes("stylesheet") && !after.includes("stylesheet")) {
+        return _match;
+      }
+      return (
+        `<link rel="preload" href="${href}" as="style" crossorigin onload="this.onload=null;this.rel='stylesheet'">` +
+        `<noscript><link rel="stylesheet" crossorigin href="${href}"></noscript>`
+      );
+    },
   );
 
   // Ensure the entry module script gets `fetchpriority="high"`. Vite *may*

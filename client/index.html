@@ -208,12 +208,6 @@
     <link rel="dns-prefetch" href="https://flagcdn.com" />
     <link rel="preconnect" href="https://randomuser.me" crossorigin />
     <link rel="dns-prefetch" href="https://randomuser.me" />
-    <!-- Preload the auth check so the browser starts the fetch during HTML
-         parsing — before any JS executes. By the time React mounts and
-         useAuth() fires, the response is already in-flight or cached in the
-         browser's preload buffer, saving one full RTT (~150-300ms on mobile). -->
-    <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" />
-
     <!-- YouTube embeds are deferred and only load on user interaction, so use
          dns-prefetch (cheap) instead of preconnect (opens TLS sockets that
          fight the LCP candidate for bandwidth on slow mobile networks). -->
