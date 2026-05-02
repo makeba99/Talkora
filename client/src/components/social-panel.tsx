@@ -80,6 +80,7 @@ export function UserNotePopover({ userId }: { userId: string }) {
             size="icon"
             variant="ghost"
             data-testid={`button-note-${userId}`}
+            aria-label="Private note"
             className={`h-8 w-8 ${data?.note ? "text-amber-400" : "text-muted-foreground hover:text-foreground"}`}
             onClick={(e) => { e.stopPropagation(); setOpen(true); }}
           >
@@ -468,6 +469,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                   variant="ghost"
                   onClick={() => handleJoinRoom(inRoomId)}
                   data-testid={`button-join-room-${u.id}`}
+                  aria-label="Join their room"
                   className="text-emerald-400 hover:text-emerald-300 w-8 h-8"
                 >
                   <Phone className="w-4 h-4" />
@@ -482,6 +484,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                 size="icon"
                 variant="ghost"
                 className="w-8 h-8"
+                aria-label="Send message"
                 onClick={() => {
                   if (onOpenDm) {
                     onOpenDm(u.id);
@@ -504,6 +507,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                 size="icon"
                 variant={isFollowing ? "default" : "ghost"}
                 className={`w-8 h-8 ${isFollowing ? "bg-primary/20 text-primary hover:bg-primary/30" : ""}`}
+                aria-label={isFollowing ? `Unfollow ${u.username}` : `Follow ${u.username}`}
                 onClick={() =>
                   isFollowing
                     ? unfollowMutation.mutate(u.id)
@@ -562,8 +566,8 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
       <Sheet open={open} onOpenChange={setOpen}>
         {!hideTrigger && (
           <SheetTrigger asChild>
-            <Button size="icon" variant="ghost" data-testid="button-social-panel">
-              <Users className="w-4 h-4" />
+            <Button size="icon" variant="ghost" data-testid="button-social-panel" aria-label="Open social panel">
+              <Users className="w-4 h-4" aria-hidden="true" />
             </Button>
           </SheetTrigger>
         )}

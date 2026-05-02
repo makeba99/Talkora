@@ -6677,8 +6677,13 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   cursor: pointer;
   z-index: 2;
 }
-.corner-pin-fab:hover .corner-pin-fab-unpin,
-.corner-pin-fab:focus-within .corner-pin-fab-unpin,
+.corner-pin-fab-group {
+  position: relative;
+  display: inline-flex;
+}
+
+.corner-pin-fab-group:hover .corner-pin-fab-unpin,
+.corner-pin-fab-group:focus-within .corner-pin-fab-unpin,
 .corner-pin-fab-unpin:hover,
 .corner-pin-fab-unpin:focus-visible {
   opacity: 1;

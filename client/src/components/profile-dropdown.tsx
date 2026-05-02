@@ -831,9 +831,10 @@ export function ProfileDropdown({
                     size="icon"
                     variant="secondary"
                     className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full"
+                    aria-label="Upload profile photo"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <Camera className="w-3 h-3" />
+                    <Camera className="w-3 h-3" aria-hidden="true" />
                   </Button>
                 </div>
               </div>

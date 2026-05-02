@@ -230,32 +230,32 @@ function CornerPinFab({
   onUnpin: () => void;
 }) {
   return (
-    <button
-      type="button"
-      className="corner-pin-fab"
-      data-testid={testId}
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-    >
-      <span className="corner-pin-fab-icon">{icon}</span>
-      {showDot && <span className="corner-pin-fab-dot" aria-hidden="true" />}
-      <span className="corner-pin-fab-badge" aria-hidden="true">
-        <Anchor className="w-2.5 h-2.5" />
-      </span>
-      <span
-        role="button"
-        tabIndex={0}
+    <div className="corner-pin-fab-group">
+      <button
+        type="button"
+        className="corner-pin-fab"
+        data-testid={testId}
+        aria-label={label}
+        title={label}
+        onClick={onClick}
+      >
+        <span className="corner-pin-fab-icon">{icon}</span>
+        {showDot && <span className="corner-pin-fab-dot" aria-hidden="true" />}
+        <span className="corner-pin-fab-badge" aria-hidden="true">
+          <Anchor className="w-2.5 h-2.5" />
+        </span>
+      </button>
+      <button
+        type="button"
         className="corner-pin-fab-unpin"
-        onClick={(e) => { e.stopPropagation(); onUnpin(); }}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onUnpin(); } }}
         data-testid={`${testId}-unpin`}
         aria-label={`Unpin ${label} from corner`}
         title="Unpin from corner"
+        onClick={(e) => { e.stopPropagation(); onUnpin(); }}
       >
         <PinOff className="w-2.5 h-2.5" />
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 

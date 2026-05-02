@@ -49,7 +49,7 @@ export function ThemePicker({ open: controlledOpen, onOpenChange, hideTrigger }:
             variant="ghost"
             data-testid="button-theme-picker"
             className="relative"
-            title="Choose theme"
+            aria-label="Choose theme"
           >
             <Palette className="w-4 h-4" />
             <span

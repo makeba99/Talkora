@@ -146,8 +146,9 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
           variant="ghost"
           onClick={onBack}
           data-testid="button-dm-back"
+          aria-label="Go back"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
         </Button>
         <Avatar className="w-8 h-8">
           <AvatarImage src={otherUser?.profileImageUrl || undefined} alt={getUserDisplayName(otherUser)} />
@@ -248,8 +249,9 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
           size="icon"
           disabled={!text.trim() || sendMutation.isPending}
           data-testid="button-send-dm"
+          aria-label="Send message"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-4 h-4" aria-hidden="true" />
         </Button>
       </form>
 

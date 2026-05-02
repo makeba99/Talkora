@@ -49,8 +49,9 @@ export function EmojiPickerButton({ onEmojiSelect }: EmojiPickerButtonProps) {
           size="icon"
           variant="ghost"
           data-testid="button-emoji-picker"
+          aria-label="Open emoji picker"
         >
-          <Smile className="w-4 h-4" />
+          <Smile className="w-4 h-4" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -183,12 +184,13 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
                 variant="ghost"
                 size="icon"
                 className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                aria-label="Clear GIF search"
                 onClick={() => {
                   setGifSearch("");
                   loadTrending();
                 }}
               >
-                <X className="w-3 h-3" />
+                <X className="w-3 h-3" aria-hidden="true" />
               </Button>
             )}
           </div>
@@ -307,6 +309,7 @@ export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
         data-testid="button-chat-image-upload"
+        aria-label="Upload image"
       >
         {uploading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
