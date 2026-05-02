@@ -365,6 +365,7 @@ function ParticipantCard({
   moviePosterPath,
   isMovieWatcher,
   onWatchMovie,
+  roomLevel,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -627,7 +628,7 @@ function ParticipantCard({
                     {isMe ? "You" : getUserDisplayName(p)}
                   </span>
                 </div>
-                <span className="text-[8px] text-white/60 leading-none truncate">{room.level}</span>
+                <span className="text-[8px] text-white/60 leading-none truncate">{roomLevel}</span>
               </div>
               <div className="flex-shrink-0 opacity-80">
                 {p.isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
@@ -9333,6 +9334,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       onNavigateDm={(userId: string) => setDmUserId(userId)}
                       user={user}
                       hasActiveYoutube={youtubeHosts.has(p.id)}
+                      roomLevel={room.level}
                       hasActiveBook={bookReaders.has(p.id)}
                       participantRole={participantRoles[p.id] || "guest"}
                       onProfileClick={() => handleParticipantClick(p.id)}
