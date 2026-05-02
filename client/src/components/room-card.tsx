@@ -788,7 +788,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 </h2>
                 {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />}
               </div>
-              {/* Sub-row: flag, language, level, joining count */}
+              {/* Sub-row: flag, language, level, mic status, LIVE */}
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                 <LanguageFlag language={room.language} />
                 <span className="text-[11px] text-white/70 font-medium">{room.language}</span>
@@ -796,14 +796,34 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-orange-400"}`}>
                   {room.level}
                 </span>
-                {voteCount > 0 && (
-                  <>
-                    <span className="text-white/30 text-[10px]">•</span>
-                    <div className="flex items-center gap-0.5">
-                      <Users className="w-3 h-3 text-orange-400/80" />
-                      <span className="text-[11px] font-semibold text-orange-400">{voteCount} joining</span>
+                <span className="text-white/30 text-[10px]">•</span>
+                {(() => {
+                  const tp = ((room as any).talkPermission as string) || "everyone";
+                  const isOpen    = tp === "everyone";
+                  const isPartial = tp === "co_owners";
+                  const iconColor = isOpen ? "text-green-400" : isPartial ? "text-yellow-400" : "text-rose-400";
+                  const bg        = isOpen ? "rgba(74,222,128,0.12)"  : isPartial ? "rgba(251,191,36,0.12)"  : "rgba(248,113,113,0.12)";
+                  const border    = isOpen ? "rgba(74,222,128,0.25)"  : isPartial ? "rgba(251,191,36,0.25)"  : "rgba(248,113,113,0.25)";
+                  const label     = isOpen ? "Open mic"               : isPartial ? "Hosts only"             : "Muted";
+                  return (
+                    <div
+                      className={`flex items-center justify-center w-[18px] h-[18px] rounded-full ${iconColor}`}
+                      style={{ background: bg, border: `1px solid ${border}` }}
+                      title={label}
+                      data-testid={`icon-mic-status-${room.id}`}
+                    >
+                      <Mic className="w-2.5 h-2.5" />
                     </div>
-                  </>
+                  );
+                })()}
+                {hologramVideoUrl && (extractYoutubeId(hologramVideoUrl) || /twitch\.tv/i.test(hologramVideoUrl)) && (
+                  <div className="flex items-center gap-0.5" data-testid={`badge-live-${room.id}`}>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
+                    </span>
+                    <span className="text-[9px] font-bold text-red-400 tracking-wider uppercase">Live</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -1051,38 +1071,6 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           {/* ── Footer ── */}
           <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
             <div className="flex items-center gap-2">
-              {/* Mic permission indicator — icon color reflects room talk policy */}
-              {(() => {
-                const tp = ((room as any).talkPermission as string) || "everyone";
-                const isOpen    = tp === "everyone";
-                const isPartial = tp === "co_owners";
-                const iconColor = isOpen ? "text-green-400" : isPartial ? "text-yellow-400" : "text-rose-400";
-                const bg        = isOpen ? "rgba(74,222,128,0.12)"  : isPartial ? "rgba(251,191,36,0.12)"  : "rgba(248,113,113,0.12)";
-                const border    = isOpen ? "rgba(74,222,128,0.25)"  : isPartial ? "rgba(251,191,36,0.25)"  : "rgba(248,113,113,0.25)";
-                const label     = isOpen ? "Open mic"               : isPartial ? "Hosts only"             : "Muted";
-                return (
-                  <div
-                    className={`flex items-center justify-center w-6 h-6 rounded-full ${iconColor}`}
-                    style={{ background: bg, border: `1px solid ${border}` }}
-                    title={label}
-                    data-testid={`icon-mic-status-${room.id}`}
-                  >
-                    <Mic className="w-3 h-3" />
-                  </div>
-                );
-              })()}
-
-              {/* LIVE badge — only when a YouTube or Twitch stream is set */}
-              {hologramVideoUrl && (extractYoutubeId(hologramVideoUrl) || /twitch\.tv/i.test(hologramVideoUrl)) && (
-                <div className="flex items-center gap-1" data-testid={`badge-live-${room.id}`}>
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500" />
-                  </span>
-                  <span className="text-[9px] font-bold text-red-400 tracking-wider uppercase">Live</span>
-                </div>
-              )}
-
               {isLoggedIn && onVote && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onVote(); }}
