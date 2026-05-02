@@ -8485,7 +8485,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   const container = e.currentTarget.parentElement!;
                   const startH = container.getBoundingClientRect().height;
                   const onMove = (me: MouseEvent) => {
-                    setMoviePlayerHeight(Math.max(180, startH + (me.clientY - startY)));
+                    const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                    setMoviePlayerHeight(Math.max(180, Math.min(outerH - 210, startH + (me.clientY - startY))));
                   };
                   const onUp = () => {
                     window.removeEventListener("mousemove", onMove);
