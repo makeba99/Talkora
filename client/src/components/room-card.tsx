@@ -920,7 +920,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             const tightSpacing = displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
             const colGapPx = tightSpacing ? 2 : 6;       // 2px ↔ tailwind gap-1.5 (6px)
             const rowGapPx = 6;                            // vertical rhythm unchanged
-            const gridRightPad = tightSpacing ? 18 : 0;   // pull bottom-right spot away from the door
+            // Door is now absolutely positioned at bottom-right; protect the
+            // bottom-right slot for any multi-column grid (≥2 cols).
+            const gridRightPad = gridCols >= 2 ? 42 : 0;
             return (
           <div className="flex-1 flex flex-col justify-center px-3 pt-5 pb-2 min-h-0 overflow-visible">
             <div
@@ -1075,152 +1077,115 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           })()}
 
           {/* ── Footer ── */}
-          <div className="flex items-center justify-between gap-2 px-3 pb-1.5 pt-0">
-            <div className="flex items-center gap-2">
-              {/* Participant count chip */}
-              <div
-                className="flex items-center gap-0.5 text-white/60"
-                data-testid={`badge-participants-${room.id}`}
-                title={`${participants.length} of ${isUnlimited ? "∞" : room.maxUsers} participants`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-semibold tabular-nums">
-                  {participants.length}{!isUnlimited && `/${room.maxUsers}`}
-                </span>
-              </div>
-
-              {isLoggedIn && onVote && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onVote(); }}
-                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/55 hover:text-orange-400"}`}
-                  data-testid={`button-vote-room-${room.id}`}
-                  aria-label={hasVoted ? `Remove vote from ${room.title}` : `Vote for ${room.title}`}
-                  aria-pressed={hasVoted}
-                >
-                  <Flame className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span className="text-[11px] font-semibold">{voteCount}</span>
-                </button>
-              )}
+          <div className="flex items-center gap-2 px-3 pb-2 pt-0">
+            {/* Participant count chip */}
+            <div
+              className="flex items-center gap-0.5 text-white/60"
+              data-testid={`badge-participants-${room.id}`}
+              title={`${participants.length} of ${isUnlimited ? "∞" : room.maxUsers} participants`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-semibold tabular-nums">
+                {participants.length}{!isUnlimited && `/${room.maxUsers}`}
+              </span>
             </div>
 
-            {/* Step In — 3D animated swinging door.
-                Just two states now:
-                  • ENTER → ajar door with green ▸ chevron, click to walk in
-                  • FULL  → red NO-ENTRY ⊘ sign, click to knock (host gets an
-                            in-room prompt with your name + Allow / Deny)
-                Private rooms are treated as FULL — the only way in is to knock.
-            */}
-            {(() => {
-              const isPrivate = !room.isPublic;
-              // If the viewer is the owner OR is already listed as a participant
-              // (e.g. they joined from another tab) they should ALWAYS see the
-              // open door — never asked to knock on a room they're already in.
-              const alreadyIn = !!isOwner || (!!user && participants.some(p => p.id === user.id));
-              // Anything not freely enterable is rendered as the FULL/knock door,
-              // but only if the viewer isn't already a member of the room.
-              const isClosed = !alreadyIn && (isFull || isPrivate);
-              // Both "full" and "private" rooms now share the LOCKED visual
-              // (amber/brass keyhole + warm glow + amber LED caption). The old
-              // red sealed-shut FULL look is gone — every closed room reads as
-              // "locked", you knock to ask for entry the same way regardless of
-              // why the door isn't open.
-              const stateClass = isClosed ? "door-3d-locked" : "";
+            {isLoggedIn && onVote && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onVote(); }}
+                className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/55 hover:text-orange-400"}`}
+                data-testid={`button-vote-room-${room.id}`}
+                aria-label={hasVoted ? `Remove vote from ${room.title}` : `Vote for ${room.title}`}
+                aria-pressed={hasVoted}
+              >
+                <Flame className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="text-[11px] font-semibold">{voteCount}</span>
+              </button>
+            )}
+          </div>
 
-              const maxP = (room as any).maxParticipants as number | undefined;
-              const doorBody = (
-                <>
-                  {/* Capacity chip above the door */}
-                  {maxP != null && (
-                    <div
-                      className="flex items-center gap-0.5 mb-0.5"
-                      data-testid={`badge-capacity-${room.id}`}
-                    >
-                      <span className="text-[8px] font-semibold tabular-nums"
-                        style={{
-                          color: participants.length >= maxP
-                            ? "hsl(355 70% 65%)"
-                            : "hsl(252 50% 65%)",
-                          textShadow: participants.length >= maxP
-                            ? "0 0 6px hsl(355 65% 40% / 0.6)"
-                            : "0 0 6px hsl(252 65% 40% / 0.5)",
-                        }}>
-                        {participants.length}/{maxP}
-                      </span>
-                    </div>
-                  )}
-                  <div className="door-frame">
-                    <div className="door-interior">
-                      {/* ENTER: bobbing indigo chevron peeks through the ajar gap */}
-                      {!isClosed && (
-                        <span className="door-welcome-arrow" aria-hidden="true" />
+          {/* ── Door: absolutely pinned to bottom-right of the card so it
+              never participates in the flex layout and cannot push the
+              participant grid upward or overlap the slots. ── */}
+          {(() => {
+            const isClosed = cardIsClosed;
+            const stateClass = isClosed ? "door-3d-locked" : "";
+            const maxP = (room as any).maxParticipants as number | undefined;
+            const doorBody = (
+              <>
+                {maxP != null && (
+                  <div
+                    className="flex items-center gap-0.5 mb-0.5"
+                    data-testid={`badge-capacity-${room.id}`}
+                  >
+                    <span className="text-[8px] font-semibold tabular-nums"
+                      style={{
+                        color: participants.length >= maxP ? "hsl(355 70% 65%)" : "hsl(252 50% 65%)",
+                        textShadow: participants.length >= maxP ? "0 0 6px hsl(355 65% 40% / 0.6)" : "0 0 6px hsl(252 65% 40% / 0.5)",
+                      }}>
+                      {participants.length}/{maxP}
+                    </span>
+                  </div>
+                )}
+                <div className="door-frame">
+                  <div className="door-interior">
+                    {!isClosed && <span className="door-welcome-arrow" aria-hidden="true" />}
+                  </div>
+                  <div className="door-panel">
+                    <div className="door-panel-inset door-panel-inset-top">
+                      {isClosed && (
+                        <span className="door-knock-indicator" aria-hidden="true">
+                          <Lock className="door-knock-lock w-[10px] h-[10px]" strokeWidth={2.5} />
+                          <Hand className="door-knock-hand w-[10px] h-[10px]" strokeWidth={2.5} />
+                        </span>
                       )}
                     </div>
-                    <div className="door-panel">
-                      <div className="door-panel-inset door-panel-inset-top">
-                        {/* FULL/PRIVATE: solid lock that morphs into a knocking
-                            hand on hover, signalling the click action. */}
-                        {isClosed && (
-                          <span className="door-knock-indicator" aria-hidden="true">
-                            <Lock className="door-knock-lock w-[10px] h-[10px]" strokeWidth={2.5} />
-                            <Hand className="door-knock-hand w-[10px] h-[10px]" strokeWidth={2.5} />
-                          </span>
-                        )}
-                      </div>
-                      <div className="door-panel-inset door-panel-inset-bot" />
-                      <div className="door-knob" />
-                    </div>
+                    <div className="door-panel-inset door-panel-inset-bot" />
+                    <div className="door-knob" />
                   </div>
-                  {/* Tiny state caption under the door */}
-                  <span className={`door-caption door-caption-${isClosed ? "locked" : "open"}`}>
-                    {isClosed ? "Locked" : "Enter"}
-                  </span>
-                </>
-              );
+                </div>
+                <span className={`door-caption door-caption-${isClosed ? "locked" : "open"}`}>
+                  {isClosed ? "Locked" : "Enter"}
+                </span>
+              </>
+            );
 
-              if (!isLoggedIn) {
-                return (
-                  <a
-                    href="/api/login"
-                    className={`door-3d-wrap ${stateClass}`}
-                    aria-label={isClosed ? `Sign in to knock on ${room.title}` : `Sign in to enter ${room.title}`}
-                    data-testid={`button-signin-room-${room.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {doorBody}
-                  </a>
-                );
-              }
-              if (isClosed) {
-                return (
-                  <div
-                    className={`door-3d-wrap ${stateClass}`}
-                    role="button"
-                    tabIndex={0}
-                    aria-disabled={knockMutation.isPending || undefined}
-                    aria-label={knockMutation.isPending ? `Knocking on ${room.title}…` : `Knock to request entry to ${room.title}`}
-                    onClick={(e) => { e.stopPropagation(); safeKnock(); }}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); safeKnock(); } }}
-                    data-testid={`button-knock-room-${room.id}`}
-                  >
-                    {doorBody}
-                  </div>
-                );
-              }
+            const wrapStyle: React.CSSProperties = { position: "absolute", bottom: 8, right: 10, zIndex: 10 };
+
+            if (!isLoggedIn) {
               return (
-                <div
-                  className={`door-3d-wrap ${stateClass}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={alreadyIn ? `Re-enter ${room.title}` : `Enter ${room.title}`}
-                  onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
-                  onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
-                  data-testid={`button-join-room-${room.id}`}
-                >
+                <a href="/api/login" className={`door-3d-wrap ${stateClass}`} style={wrapStyle}
+                  aria-label={isClosed ? `Sign in to knock on ${room.title}` : `Sign in to enter ${room.title}`}
+                  data-testid={`button-signin-room-${room.id}`}
+                  onClick={(e) => e.stopPropagation()}>
+                  {doorBody}
+                </a>
+              );
+            }
+            if (isClosed) {
+              return (
+                <div className={`door-3d-wrap ${stateClass}`} style={wrapStyle}
+                  role="button" tabIndex={0}
+                  aria-disabled={knockMutation.isPending || undefined}
+                  aria-label={knockMutation.isPending ? `Knocking on ${room.title}…` : `Knock to request entry to ${room.title}`}
+                  onClick={(e) => { e.stopPropagation(); safeKnock(); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); safeKnock(); } }}
+                  data-testid={`button-knock-room-${room.id}`}>
                   {doorBody}
                 </div>
               );
-            })()}
-          </div>
+            }
+            return (
+              <div className={`door-3d-wrap ${stateClass}`} style={wrapStyle}
+                role="button" tabIndex={0}
+                aria-label={cardAlreadyIn ? `Re-enter ${room.title}` : `Enter ${room.title}`}
+                onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
+                onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
+                data-testid={`button-join-room-${room.id}`}>
+                {doorBody}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
