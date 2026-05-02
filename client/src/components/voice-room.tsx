@@ -969,6 +969,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const aiInputRef = useRef<HTMLInputElement>(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
+  const [isFlippingCamera, setIsFlippingCamera] = useState(false);
   const [localVideoStreamObj, setLocalVideoStreamObj] = useState<MediaStream | null>(null);
   const [miniCameraMode, setMiniCameraMode] = useState(false);
   const [youtubeSearch, setYoutubeSearch] = useState("");
@@ -3669,6 +3671,25 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           </span>
         </div>
 
+        {/* Flip camera — shown when camera is on (most useful on mobile) */}
+        {isVideoOn && (
+          <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
+            <button
+              onClick={handleFlipCamera}
+              disabled={isFlippingCamera}
+              data-testid="button-flip-camera"
+              title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
+              className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
+              style={ghostStyle}
+            >
+              <RotateCcw className={`w-[15px] h-[15px] sm:w-[18px] sm:h-[18px] ${isFlippingCamera ? "animate-spin" : ""}`} />
+            </button>
+            <span className={labelBase} style={{ color: "rgba(255,255,255,0.32)" }}>
+              Flip
+            </span>
+          </div>
+        )}
+
         {/* Share */}
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
@@ -4188,6 +4209,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       toast({ title: "Screen-share locked", description: screenLockReason || "Sharing is disabled in this room.", variant: "destructive" });
       return;
     }
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS) {
+      toast({ title: "Screen sharing on iOS", description: "Use your device's built-in screen recording (Control Centre → Screen Record) then share the recorded video.", variant: "destructive" });
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       screenStream.current = stream;
@@ -4260,6 +4286,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       setIsVideoOn(false);
       setLocalVideoStreamObj(null);
       setMiniCameraMode(false);
+      setCameraFacing("user");
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
       }
@@ -4268,7 +4295,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: cameraFacing },
       });
       videoStream.current = stream;
       if (activeYoutubeId) {
@@ -4305,6 +4332,30 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     } catch (err) {
       console.error("Camera access failed:", err);
       toast({ title: "Camera access denied", variant: "destructive" });
+    }
+  };
+
+  const handleFlipCamera = async () => {
+    if (!isVideoOn || isFlippingCamera) return;
+    setIsFlippingCamera(true);
+    const newFacing = cameraFacing === "user" ? "environment" : "user";
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: { exact: newFacing } },
+      });
+      const newTrack = newStream.getVideoTracks()[0];
+      for (const sender of videoSenders.current.values()) {
+        try { await sender.replaceTrack(newTrack); } catch (_) {}
+      }
+      videoStream.current?.getTracks().forEach((t) => t.stop());
+      videoStream.current = newStream;
+      setLocalVideoStreamObj(newStream);
+      if (localVideoRef.current) localVideoRef.current.srcObject = newStream;
+      setCameraFacing(newFacing);
+    } catch {
+      toast({ title: "Camera flip failed", description: "Could not switch to the other camera.", variant: "destructive" });
+    } finally {
+      setIsFlippingCamera(false);
     }
   };
 
