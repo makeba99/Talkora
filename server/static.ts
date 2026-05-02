@@ -59,7 +59,8 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // (Lighthouse, crawlers, first-visit) never download socket.io-client.
   const criticalScriptPatterns: RegExp[] = [
     /^lobby-[\w-]+\.js$/,             // LCP route (lazy — modulepreload beats lazy discovery)
-    /^react-vendor-[\w-]+\.js$/,      // react + react-dom + radix + framer + react-query
+    /^react-vendor-[\w-]+\.js$/,      // react + react-dom + react-query + wouter
+    /^radix-vendor-[\w-]+\.js$/,      // @radix-ui + @floating-ui (split out of react-vendor)
     /^icons-vendor-[\w-]+\.js$/,      // lucide-react icons rendered on lobby
     /^room-card-[\w-]+\.js$/,         // lobby grid item — sometimes split out
   ];

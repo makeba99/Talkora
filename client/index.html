@@ -127,6 +127,7 @@
       as="font"
       type="font/woff2"
       crossorigin="anonymous"
+      fetchpriority="high"
     />
     <style>
       @font-face {
@@ -199,11 +200,19 @@
     </style>
 
     <!-- Connect early to flag CDN (visible on every room card immediately).
-         randomuser.me avatars are small, below-fold images — dns-prefetch is
-         sufficient and avoids burning a TLS connection slot on the critical path. -->
+         randomuser.me shows profile pictures on the lobby people-section —
+         upgrading from dns-prefetch to preconnect does the TLS handshake early
+         so the first profile image request is instant instead of paying the
+         ~200-400ms RTT cost at render time.  -->
     <link rel="preconnect" href="https://flagcdn.com" crossorigin />
     <link rel="dns-prefetch" href="https://flagcdn.com" />
+    <link rel="preconnect" href="https://randomuser.me" crossorigin />
     <link rel="dns-prefetch" href="https://randomuser.me" />
+    <!-- Preload the auth check so the browser starts the fetch during HTML
+         parsing — before any JS executes. By the time React mounts and
+         useAuth() fires, the response is already in-flight or cached in the
+         browser's preload buffer, saving one full RTT (~150-300ms on mobile). -->
+    <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" />
 
     <!-- YouTube embeds are deferred and only load on user interaction, so use
          dns-prefetch (cheap) instead of preconnect (opens TLS sockets that

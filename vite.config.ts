@@ -87,17 +87,30 @@ export default defineConfig({
         // who never trigger those code paths.
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-          // React core + anything that reads React.* at module scope
+          // React core + anything that calls React APIs at module-evaluation
+          // time (createContext, forwardRef, etc.). @radix-ui and @floating-ui
+          // were previously merged here to avoid an execution-order race, but
+          // that race doesn't exist in Rollup's ES-module output — static
+          // imports guarantee topological execution order, so React always
+          // evaluates before any consumer chunk that imports it. Splitting them
+          // into radix-vendor lets the browser parse react-vendor AND
+          // radix-vendor in parallel on separate threads, cutting the serial
+          // main-thread evaluation time (TBT) on mobile.
           if (
             id.includes("react-dom") ||
             id.includes("/react/") ||
             id.includes("scheduler") ||
             id.includes("wouter") ||
-            id.includes("@radix-ui") ||
-            id.includes("@floating-ui") ||
             id.includes("@tanstack/react-query")
           ) {
             return "react-vendor";
+          }
+          // Radix UI primitives + Floating UI positioning engine. Both are
+          // UI-layer deps that are only needed after React mounts, so bundling
+          // them separately lets them download and parse in parallel with the
+          // React core chunk instead of serially inside it.
+          if (id.includes("@radix-ui") || id.includes("@floating-ui")) {
+            return "radix-vendor";
           }
           // Lazy-only deps: only load when the consumer chunk loads.
           if (

@@ -246,6 +246,10 @@ export function applySecurityMiddleware(app: Express): void {
 
   app.use((_req: Request, res: Response, next: NextFunction) => {
     res.removeHeader("Accept-CH");
+    // Re-enable DNS prefetch for HTTPS. Browsers disable automatic DNS
+    // prefetching on HTTPS pages by default; this header opts back in so
+    // explicit <link rel="dns-prefetch"> hints in index.html are honoured.
+    res.setHeader("X-DNS-Prefetch-Control", "on");
     res.setHeader(
       "Permissions-Policy",
       [
