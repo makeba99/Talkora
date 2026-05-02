@@ -258,7 +258,7 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                 <span className="ml-2 text-sm font-medium opacity-90">by {winnerBanner.reason}</span>
               </div>
             </div>
-            <button onClick={() => setWinnerBanner(null)} className="ml-3 rounded-full p-1 text-white/90 hover:bg-white/20" data-testid="button-close-winner-banner">
+            <button onClick={() => setWinnerBanner(null)} className="ml-3 rounded-full p-1 text-white/90 hover:bg-white/20" data-testid="button-close-winner-banner" aria-label="Close winner banner">
               <X className="w-4 h-4" />
             </button>
           </div>

@@ -526,7 +526,7 @@ function ParticipantCard({
           {!isMe && (
             <div className="flex items-center gap-3 mt-1 bg-muted/50 p-2 rounded-md border border-border">
               <Button variant="outline" size="sm" className="h-8 border-orange-500/40 text-orange-400/80 bg-transparent px-2 pointer-events-none">Volume <Volume2 className="w-3.5 h-3.5 ml-1"/></Button>
-              <input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(e) => onVolumeChange && onVolumeChange(p.id, parseFloat(e.target.value))} className="flex-1 accent-orange-500 h-1 cursor-pointer" />
+              <input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(e) => onVolumeChange && onVolumeChange(p.id, parseFloat(e.target.value))} className="flex-1 accent-orange-500 h-1 cursor-pointer" aria-label="Adjust participant volume" />
             </div>
           )}
         </div>
@@ -6996,7 +6996,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
                         className="w-full px-2.5 py-1.5 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/50"
                       />
-                      <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                      <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60" aria-label={glShowYoutubeKey ? "Hide YouTube stream key" : "Show YouTube stream key"}>
                         {glShowYoutubeKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
@@ -7016,7 +7016,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         placeholder="live_xxxxxxxxxxxxxxxxxxxx"
                         className="w-full px-2.5 py-1.5 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/50"
                       />
-                      <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                      <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60" aria-label={glShowTwitchKey ? "Hide Twitch stream key" : "Show Twitch stream key"}>
                         {glShowTwitchKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
@@ -7388,7 +7388,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
                       className="w-full px-3 py-2 pr-9 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-red-500/50 placeholder:text-muted-foreground/40"
                     />
-                    <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={glShowYoutubeKey ? "Hide YouTube stream key" : "Show YouTube stream key"}>
                       {glShowYoutubeKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -7410,7 +7410,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       placeholder="live_xxxxxxxxxxxxxxxxxxxx"
                       className="w-full px-3 py-2 pr-9 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder:text-muted-foreground/40"
                     />
-                    <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={glShowTwitchKey ? "Hide Twitch stream key" : "Show Twitch stream key"}>
                       {glShowTwitchKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -8524,6 +8524,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       className="w-full h-1.5 cursor-pointer rounded-full appearance-none"
                       style={{ accentColor: "#ef4444" }}
                       data-testid="input-yt-seek"
+                      aria-label="Video seek"
                     />
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
@@ -8532,6 +8533,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           onClick={handleYtPlayPause}
                           className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/28 border border-white/20 flex items-center justify-center transition-colors shadow-lg"
                           data-testid="button-yt-playpause"
+                          aria-label={ytIsPlaying ? "Pause" : "Play"}
                         >
                           {ytIsPlaying
                             ? <Pause className="w-4 h-4 text-white" />
@@ -8604,6 +8606,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                           className="w-20 h-1.5 cursor-pointer rounded-full appearance-none"
                           style={{ accentColor: "#ffffff" }}
                           data-testid="input-yt-volume"
+                          aria-label="YouTube volume"
                         />
                       </div>
                     </div>
@@ -8895,7 +8898,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         <Volume1 className="w-4 h-4" />
                       </button>
                     )}
-                    <button onClick={() => setWordInfo(null)} className="p-1 rounded hover:opacity-70 transition-opacity">
+                    <button onClick={() => setWordInfo(null)} className="p-1 rounded hover:opacity-70 transition-opacity" aria-label="Close word info">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -9184,7 +9187,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                                   data-testid={`movie-watcher-avatar-${p.id}-${watcherId}`}
                                 >
                                   {watcher?.profileImageUrl ? (
-                                    <img loading="lazy" decoding="async" src={watcher.profileImageUrl} className="w-full h-full object-cover" />
+                                    <img loading="lazy" decoding="async" src={watcher.profileImageUrl} alt={watcher ? getUserDisplayName(watcher) : ""} className="w-full h-full object-cover" />
                                   ) : (
                                     <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
                                       <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
@@ -9227,7 +9230,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                                   data-testid={`yt-watcher-avatar-${p.id}-${watcherId}`}
                                 >
                                   {watcher?.profileImageUrl ? (
-                                    <img loading="lazy" decoding="async" src={watcher.profileImageUrl} className="w-full h-full object-cover" />
+                                    <img loading="lazy" decoding="async" src={watcher.profileImageUrl} alt={watcher ? getUserDisplayName(watcher) : ""} className="w-full h-full object-cover" />
                                   ) : (
                                     <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
                                       <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
@@ -10722,6 +10725,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <button
                 className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-background/80 flex items-center justify-center hover:bg-background text-foreground z-10 border border-border shadow"
                 onClick={() => setLightboxMedia(null)}
+                aria-label="Close image viewer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -10783,6 +10787,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-10"
               onClick={(e) => { e.stopPropagation(); setMiniCameraMode(false); setFocusedUserId(null); }}
               data-testid="button-mini-camera-close"
+              aria-label="Close mini camera"
             >
               <X className="w-3 h-3 text-white" />
             </button>
@@ -10875,6 +10880,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   </div>
                   <button
                     className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+                    aria-label="Close mini player"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (user?.id === youtubeStartedBy) {
