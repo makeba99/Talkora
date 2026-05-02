@@ -713,9 +713,18 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
     displayCount === 11 ? 4 :      // 4+4+3
     4;                              // 12 → 4×3 ✓ exact
 
+  /* Hoist door-state so the whole card can be wired as a button */
+  const cardAlreadyIn = !!isOwner || (!!user && participants.some(p => p.id === user.id));
+  const cardIsClosed = !cardAlreadyIn && (isFull || !room.isPublic);
+  const handleCardClick = () => {
+    if (!isLoggedIn) { window.location.href = "/api/login"; return; }
+    if (cardIsClosed) { safeKnock(); return; }
+    onJoin(room.id);
+  };
+
   return (
     <div
-      className={glow.animated ?? ""}
+      className={`${glow.animated ?? ""} cursor-pointer`}
       style={{
         width: "100%",
         padding: "1px",
@@ -725,6 +734,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         position: "relative",
       }}
       data-testid={`card-room-${room.id}`}
+      onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
+      aria-label={cardIsClosed ? `Knock to enter ${room.title}` : `Enter ${room.title}`}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleCardClick(); } }}
     >
       <div
         className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
@@ -999,6 +1013,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                           className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
                           data-testid={`button-card-participant-${p.id}`}
                           aria-label={`View ${getUserDisplayName(p)}'s profile`}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {decorated}
                           {heartRow}
@@ -1060,7 +1075,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           })()}
 
           {/* ── Footer ── */}
-          <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
+          <div className="flex items-center justify-between gap-2 px-3 pb-1.5 pt-0">
             <div className="flex items-center gap-2">
               {/* Participant count chip */}
               <div
