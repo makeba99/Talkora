@@ -977,7 +977,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [ytHistory, setYtHistory] = useState<YtHistoryItem[]>([]);
   const [ytSuggested, setYtSuggested] = useState<any[]>([]);
   const [ytSuggestedLoading, setYtSuggestedLoading] = useState(false);
-  const [ytPanelSection, setYtPanelSection] = useState<"foryou" | "history" | "browse">("foryou");
+  const [ytPanelSection, setYtPanelSection] = useState<"foryou" | "history" | "browse">("browse");
   const [welcomeText, setWelcomeText] = useState((roomProp as any).welcomeMessage || "");
   const [welcomeMediaUrlsState, setWelcomeMediaUrlsState] = useState<string[]>((roomProp as any).welcomeMediaUrls || []);
   const [welcomeMediaTypesState, setWelcomeMediaTypesState] = useState<string[]>((roomProp as any).welcomeMediaTypes || []);
