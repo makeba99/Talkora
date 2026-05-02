@@ -1205,6 +1205,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [miniPlayerPos, setMiniPlayerPos] = useState({ x: 16, y: 80 });
   const [moviePlayerHeight, setMoviePlayerHeight] = useState<number | null>(null);
   const [ytPlayerHeight, setYtPlayerHeight] = useState<number | null>(null);
+  // Reset to full-height (flex-1) whenever a new video/movie starts so the
+  // player always opens at maximum size rather than a previously-dragged size.
+  useEffect(() => { if (activeYoutubeId) setYtPlayerHeight(null); }, [activeYoutubeId]);
+  useEffect(() => { if (activeMovieId) setMoviePlayerHeight(null); }, [activeMovieId]);
   const ytSlotRef = useRef<HTMLDivElement | null>(null);
   const [ytSlotRect, setYtSlotRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   // Per-host watch-party state. Each user can host their own YouTube video,
@@ -8543,7 +8547,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   const startH = container.getBoundingClientRect().height;
                   const onMove = (me: MouseEvent) => {
                     const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
-                    setMoviePlayerHeight(Math.max(180, Math.min(outerH - 210, startH + (me.clientY - startY))));
+                    setMoviePlayerHeight(Math.max(180, Math.min(outerH - 80, startH + (me.clientY - startY))));
                   };
                   const onUp = () => {
                     window.removeEventListener("mousemove", onMove);
@@ -8585,7 +8589,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     const startH = container.getBoundingClientRect().height;
                     const onMove = (me: MouseEvent) => {
                       const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
-                      setYtPlayerHeight(Math.max(180, Math.min(outerH - 210, startH + (me.clientY - startY))));
+                      setYtPlayerHeight(Math.max(180, Math.min(outerH - 80, startH + (me.clientY - startY))));
                     };
                     const onUp = () => {
                       window.removeEventListener("mousemove", onMove);
@@ -9208,7 +9212,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               56;
             const gapPx = cardPx <= 72 ? 6 : 8;
           return (
-          <div className={`flex items-end justify-center p-2 pt-4 pb-4 overflow-y-auto ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-10" : "flex-1"}`}>
+          <div className={`flex items-end justify-center p-2 pb-4 ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 overflow-y-auto pt-4"}`}>
             <div className="flex flex-wrap items-end justify-center" style={{ gap: gapPx }}>
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
