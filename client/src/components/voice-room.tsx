@@ -8114,107 +8114,55 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             );
           })()}
 
-          {/* ── Movie Watch Panel ── */}
+          {/* ── Movie Player (Internet Archive embed) ── */}
           {activeMovieId && showMovie && (
             <div
-              className="flex-1 min-h-0 flex flex-col items-center justify-center bg-black/90 p-6 gap-5"
+              className="flex-1 min-h-0 bg-black relative flex flex-col overflow-hidden"
               data-testid="media-main-movie"
             >
-              {/* Movie info */}
-              <div className="flex items-start gap-4 w-full max-w-md">
-                {activeMoviePoster && (
-                  <img src={activeMoviePoster} alt={activeMovieTitle} className="w-20 rounded-lg shadow-lg flex-shrink-0 object-cover" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Film className="w-4 h-4 text-violet-400 flex-shrink-0" />
-                    <span className="text-violet-400 text-xs font-semibold uppercase tracking-widest">Movie Selected</span>
-                  </div>
-                  <h3 className="text-white text-base font-bold leading-snug">{activeMovieTitle}</h3>
+              {/* Title bar — revealed on hover */}
+              <div
+                className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2.5 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)" }}
+              >
+                <div className="flex items-center gap-2">
+                  <Film className="w-4 h-4 text-violet-400" />
+                  <span className="text-white text-sm font-semibold truncate max-w-xs">{activeMovieTitle}</span>
                   {movieStartedBy && movieStartedBy !== user?.id && (() => {
                     const host = participants.find(p => p.id === movieStartedBy);
-                    return host ? <p className="text-white/50 text-xs mt-0.5">started by {getUserDisplayName(host)}</p> : null;
+                    return host ? (
+                      <span className="text-white/50 text-xs">shared by {getUserDisplayName(host)}</span>
+                    ) : null;
                   })()}
                 </div>
-                <button
-                  onClick={handleStopMovie}
-                  className="flex-shrink-0 p-1.5 rounded-full bg-white/10 hover:bg-red-500/40 text-white/60 hover:text-white transition-colors"
-                  data-testid="button-stop-movie-main"
-                  title="Cancel"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {user?.id === movieStartedBy ? (
-                /* Host: find & share the YouTube link */
-                <div className="w-full max-w-md space-y-3">
-                  <p className="text-white/60 text-xs text-center leading-relaxed">
-                    Many movies are free on YouTube. Find it there and paste the link below — everyone in the room will watch together.
-                  </p>
-                  <a
-                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(activeMovieTitle + " full movie free")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#FF0000]/20 border border-[#FF0000]/30 text-[#FF0000] text-sm font-medium hover:bg-[#FF0000]/30 transition-colors"
-                    data-testid="link-search-youtube"
+                {user?.id === movieStartedBy ? (
+                  <button
+                    onClick={handleStopMovie}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/80 hover:bg-red-500 text-white text-xs font-medium transition-colors"
+                    data-testid="button-stop-movie-main"
                   >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.6-.8-2-.9C16.6 5 12 5 12 5s-4.6 0-7 .1c-.4.1-1.2.1-2 .9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.8C6.8 19 12 19 12 19s4.6 0 7-.1c.4-.1 1.2-.1 2-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.5v-5.5l5.5 2.8-5.5 2.7z"/></svg>
-                    Search YouTube for "{activeMovieTitle}"
-                  </a>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={movieYoutubeUrl}
-                      onChange={e => setMovieYoutubeUrl(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter") {
-                          const vid = extractYoutubeVideoId(movieYoutubeUrl.trim());
-                          if (vid) {
-                            handleSelectYoutubeVideo(vid);
-                            setMovieYoutubeUrl("");
-                            setShowMovie(false);
-                          } else {
-                            toast({ title: "Invalid URL", description: "Paste a YouTube video link.", variant: "destructive" });
-                          }
-                        }
-                      }}
-                      placeholder="Paste YouTube link here…"
-                      className="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-violet-400"
-                      data-testid="input-movie-youtube-url"
-                    />
-                    <button
-                      onClick={() => {
-                        const vid = extractYoutubeVideoId(movieYoutubeUrl.trim());
-                        if (vid) {
-                          handleSelectYoutubeVideo(vid);
-                          setMovieYoutubeUrl("");
-                          setShowMovie(false);
-                        } else {
-                          toast({ title: "Invalid URL", description: "Paste a YouTube video link.", variant: "destructive" });
-                        }
-                      }}
-                      className="px-4 py-2 rounded-xl bg-violet-500 hover:bg-violet-600 text-white text-sm font-medium transition-colors disabled:opacity-40"
-                      data-testid="button-start-movie-youtube"
-                      disabled={!movieYoutubeUrl.trim()}
-                    >
-                      Watch
-                    </button>
-                  </div>
-                  <p className="text-white/30 text-[10px] text-center">Works with any YouTube link — press Enter or click Watch</p>
-                </div>
-              ) : (
-                /* Viewer: waiting for host */
-                <div className="w-full max-w-sm text-center space-y-2">
-                  <div className="flex items-center justify-center gap-2 text-violet-400">
-                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </div>
-                  <p className="text-white/60 text-sm">Waiting for the host to share the video link…</p>
-                  <p className="text-white/30 text-xs">The player will start automatically once the host shares it.</p>
-                </div>
-              )}
+                    <StopCircle className="w-3 h-3" /> Stop
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); }}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-medium transition-colors"
+                    data-testid="button-hide-movie-main"
+                  >
+                    <X className="w-3 h-3" /> Hide
+                  </button>
+                )}
+              </div>
+              {/* Internet Archive embed — confirmed embeddable, no Cloudflare blocking */}
+              <iframe
+                key={activeMovieId}
+                src={`https://archive.org/embed/${encodeURIComponent(activeMovieId)}`}
+                title={activeMovieTitle}
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+                data-testid="iframe-movie-player"
+              />
             </div>
           )}
 
