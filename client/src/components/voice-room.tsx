@@ -6134,7 +6134,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           {/* ── EVERYONE: search results + trending ── */}
           {true && (
             <ScrollArea className="flex-1 min-h-0">
-              <div className="p-3 space-y-3">
+              <div className="p-3 space-y-3 overflow-x-hidden">
                 {youtubeResults.length > 0 && (
                   <div className="space-y-2" data-testid="youtube-search-results">
                     <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest px-0.5">Results</p>
@@ -6282,7 +6282,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                               </button>
                             </div>
                             {ytHistory.map((video) => (
-                              <div key={video.id} className="flex items-center gap-2 p-2 rounded-xl border border-border/25 bg-muted/8 hover:bg-muted/20 transition-colors group">
+                              <div key={video.id} className="flex items-center gap-2 p-2 rounded-xl border border-border/25 bg-muted/8 hover:bg-muted/20 transition-colors group min-w-0">
                                 <div className="relative w-16 h-10 rounded-md overflow-hidden flex-shrink-0 bg-muted cursor-pointer" onClick={() => handleSelectYoutubeVideo(video.id)}>
                                   {video.thumbnail ? (
                                     <img loading="lazy" decoding="async" src={video.thumbnail} alt="" className="w-full h-full object-cover" />
