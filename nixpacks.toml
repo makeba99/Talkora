@@ -5,4 +5,7 @@ nixPkgs = ["nodejs"]
 cmds = ["npm install"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["npm run build", "npx drizzle-kit push"]
+
+[start]
+cmd = "npm run start"

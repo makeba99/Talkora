@@ -13,8 +13,12 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    console.warn("[auth] SESSION_SECRET is not set — sessions will not persist across restarts. Set this env var in Railway.");
+  }
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: secret || "fallback-dev-secret-change-in-production",
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
