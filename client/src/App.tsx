@@ -33,34 +33,48 @@ const UpdateAvailableToast = lazy(() =>
   import("@/components/update-available-toast").then((m) => ({ default: m.UpdateAvailableToast }))
 );
 
-function AppContent() {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="space-y-4 w-64">
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-10 w-full" />
+function LobbyShell() {
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      <div className="h-[57px] flex-shrink-0 border-b border-white/[0.06]" />
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="max-w-[1600px] mx-auto p-3 sm:p-4 lg:px-6 xl:px-8 space-y-4 pt-4">
+          <Skeleton className="h-10 w-full rounded-2xl" />
+          <div className="flex gap-2">
+            {[80, 96, 72, 88].map((w, i) => (
+              <Skeleton key={i} className="h-8 rounded-full flex-shrink-0" style={{ width: w }} />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 xl:gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="space-y-3 p-5 rounded-2xl border border-white/10 bg-muted/5" style={{ minHeight: 220 }}>
+                <Skeleton className="h-6 w-3/4" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4].map((j) => <Skeleton key={j} className="w-10 h-10 rounded-full" />)}
+                </div>
+                <div className="flex justify-between gap-2">
+                  <Skeleton className="h-5 w-12" />
+                  <Skeleton className="h-9 w-28" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  const routeFallback = (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="space-y-4 w-64">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-10 w-full" />
       </div>
     </div>
   );
+}
+
+function AppContent() {
+  const { user } = useAuth();
 
   const content = (
     <div className="h-screen flex flex-col overflow-hidden">
-      <Suspense fallback={routeFallback}>
+      <Suspense fallback={<LobbyShell />}>
         <Switch>
           <Route path="/" component={Lobby} />
           <Route path="/admin" component={AdminPage} />
@@ -95,7 +109,7 @@ function DeferredOverlays() {
   useEffect(() => {
     const w: any = window;
     const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
-    const handle = idle(() => setReady(true), { timeout: 2000 });
+    const handle = idle(() => setReady(true), { timeout: 4500 });
     return () => {
       if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
     };
