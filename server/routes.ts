@@ -356,6 +356,59 @@ export async function registerRoutes(
     res.sendFile(filePath);
   });
 
+  /* ──────────────────────────────────────────────────────────────────
+   * Lobby (root "/") — dynamic title with live room count.
+   * Googlebot lands here first; a title like "42 live rooms · Vextorn"
+   * signals freshness and boosts click-through from search results.
+   * We count only public rooms, cache the rendered HTML for 60 seconds
+   * so the DB is hit at most once per minute even under crawler bursts,
+   * and set matching Cache-Control so CDN edges do the same.
+   * Only runs in production where dist/public/index.html exists; dev
+   * traffic falls through to Vite's HMR catch-all unchanged.
+   * ────────────────────────────────────────────────────────────────── */
+  const lobbyHtmlCache = new Map<string, { html: string; expiresAt: number }>();
+  const LOBBY_TTL_MS = 60_000; // 60 seconds
+
+  app.get("/", async (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") return next();
+    const accept = req.headers.accept || "";
+    if (!accept.includes("text/html")) return next();
+    try {
+      const origin = getOrigin(req);
+      const now = Date.now();
+      const cached = lobbyHtmlCache.get(origin);
+      if (cached && cached.expiresAt > now) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
+        res.setHeader("X-Cache", "HIT");
+        res.send(cached.html);
+        return;
+      }
+
+      const rooms = await storage.getAllRooms();
+      const publicCount = rooms.filter((r) => r.isPublic).length;
+      const countPrefix = publicCount > 0
+        ? `${publicCount} live room${publicCount === 1 ? "" : "s"} · `
+        : "";
+
+      const html = renderIndexHtml(origin, {
+        title: `${countPrefix}Vextorn — Talk. Share. Belong.`,
+        description:
+          "Join live voice rooms to practice languages with speakers worldwide. Beginner to advanced levels in English, Spanish, French, Japanese and more.",
+        canonical: `${origin}/`,
+        breadcrumbs: [{ name: "Home", url: "/" }],
+      });
+      if (!html) return next();
+
+      lobbyHtmlCache.set(origin, { html, expiresAt: now + LOBBY_TTL_MS });
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60");
+      res.send(html);
+    } catch {
+      next();
+    }
+  });
+
   // Dynamic sitemap — listed in robots.txt and pinged from Google Search
   // Console. Lists every public room (using its short ID URL) and every
   // teacher (deep-linked into /teachers) so each one can be discovered and
