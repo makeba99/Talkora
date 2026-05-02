@@ -8288,7 +8288,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           )}
         </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden relative">
+        <div className="flex-1 flex flex-col overflow-hidden relative" style={{ paddingBottom: ((activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode)) ? 210 : 0 }}>
 
           {focusedUserId && !(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && (!isVideoOn || miniCameraMode) && !remoteVideoUserId && (
             <div className="flex-1 min-h-0 relative flex items-center justify-center p-4 cursor-pointer" onClick={() => { setFocusedUserId(null); setMiniCameraMode(false); setMiniPlayerMode(false); }}>
@@ -8526,7 +8526,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                     const container = e.currentTarget.parentElement!;
                     const startH = container.getBoundingClientRect().height;
                     const onMove = (me: MouseEvent) => {
-                      setYtPlayerHeight(Math.max(180, startH + (me.clientY - startY)));
+                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                      setYtPlayerHeight(Math.max(180, Math.min(outerH - 210, startH + (me.clientY - startY))));
                     };
                     const onUp = () => {
                       window.removeEventListener("mousemove", onMove);
@@ -9173,7 +9174,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !(activeMovieId && showMovie) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
+          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-10" : "flex-1"}`}>
             <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-5">
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
