@@ -2110,9 +2110,9 @@ html.synthwave .neon-text {
 /* Outer frame — arched door frame */
 .door-frame {
   position: relative;
-  width: 36px;
-  height: 56px;
-  perspective: 140px;
+  width: 28px;
+  height: 44px;
+  perspective: 110px;
   perspective-origin: 82% 50%;
   background: linear-gradient(160deg, hsl(228 22% 13%) 0%, hsl(228 18% 10%) 100%);
   border-radius: 8px 8px 2px 2px;
@@ -2132,8 +2132,8 @@ html.synthwave .neon-text {
   top: -5px;
   left: 50%;
   transform: translateX(-50%);
-  width: 22px;
-  height: 9px;
+  width: 17px;
+  height: 7px;
   border-radius: 50% 50% 0 0;
   background: linear-gradient(160deg, hsl(228 22% 13%) 0%, hsl(228 18% 10%) 100%);
   border: 1px solid rgba(255,255,255,0.07);
@@ -2292,7 +2292,7 @@ html.synthwave .neon-text {
 /* Door panel insets — upper panel taller (like a real door), lower shorter. */
 .door-panel-inset {
   position: absolute;
-  left: 4px; right: 4px;
+  left: 3px; right: 3px;
   border-radius: 3px;
   background: hsl(228 30% 9%);
   border: 1px solid rgba(255,255,255,0.05);
@@ -2304,13 +2304,13 @@ html.synthwave .neon-text {
 }
 /* Upper panel — tall (like a real door's raised panel area) */
 .door-panel-inset-top {
-  top: 5px;
-  height: 24px;
+  top: 4px;
+  height: 18px;
 }
 /* Lower panel — short decorative kick panel */
 .door-panel-inset-bot {
-  top: 34px;
-  bottom: 4px;
+  top: 26px;
+  bottom: 3px;
 }
 /* FULL insets — rose-tinted border */
 .door-3d-full .door-panel-inset {
@@ -2333,10 +2333,10 @@ html.synthwave .neon-text {
 /* Door knob — right side center of the lower half */
 .door-knob {
   position: absolute;
-  right: 4px;
+  right: 3px;
   top: 60%;
   transform: translateY(-50%);
-  width: 6px; height: 6px;
+  width: 5px; height: 5px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 35% 30%,

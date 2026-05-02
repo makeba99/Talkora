@@ -1142,8 +1142,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             hand on hover, signalling the click action. */}
                         {isClosed && (
                           <span className="door-knock-indicator" aria-hidden="true">
-                            <Lock className="door-knock-lock w-[13px] h-[13px]" strokeWidth={2.5} />
-                            <Hand className="door-knock-hand w-[13px] h-[13px]" strokeWidth={2.5} />
+                            <Lock className="door-knock-lock w-[10px] h-[10px]" strokeWidth={2.5} />
+                            <Hand className="door-knock-hand w-[10px] h-[10px]" strokeWidth={2.5} />
                           </span>
                         )}
                       </div>
