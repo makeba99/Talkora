@@ -609,15 +609,15 @@ function ParticipantCard({
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             {/* Gradient scrim so the profile strip is always legible */}
-            <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none z-[24]" />
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none z-[24]" />
             {/* Profile strip pinned at bottom — avatar + name + role + mute always visible */}
-            <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-1.5 pt-1">
-              <div className="w-7 h-7 rounded-full overflow-hidden border-[1.5px] border-white/70 shadow-md flex-shrink-0">
+            <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
+              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
                 {p.profileImageUrl ? (
                   <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                    <span className="text-[8px] font-bold text-white">{getUserInitials(p)}</span>
+                    <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
                   </div>
                 )}
               </div>
@@ -631,7 +631,7 @@ function ParticipantCard({
                 <span className="text-[8px] text-white/60 leading-none truncate">{roomLevel}</span>
               </div>
               <div className="flex-shrink-0 opacity-80">
-                {p.isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
+                {p.isMuted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
               </div>
             </div>
           </>
@@ -648,14 +648,31 @@ function ParticipantCard({
                 <Film className="w-10 h-10 text-violet-300/70" />
               </div>
             )}
-            <div className="absolute top-1.5 left-1.5 z-[25] w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
-              {p.profileImageUrl ? (
-                <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
-              ) : (
-                <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                  <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
+            {/* Gradient scrim */}
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none z-[24]" />
+            {/* Profile strip — always visible at bottom */}
+            <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
+              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
+                {p.profileImageUrl ? (
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                    <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <div className="flex items-center gap-1 min-w-0">
+                  {isRoomOwner && <Crown className="w-2.5 h-2.5 text-yellow-300 flex-shrink-0" />}
+                  <span className="text-[10px] font-semibold text-white leading-tight truncate drop-shadow-md">
+                    {isMe ? "You" : getUserDisplayName(p)}
+                  </span>
                 </div>
-              )}
+                <span className="text-[8px] text-white/60 leading-none truncate">{roomLevel}</span>
+              </div>
+              <div className="flex-shrink-0 opacity-80">
+                {p.isMuted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
+              </div>
             </div>
           </>
         ) : isMovieWatcherBadge && watchingMoviePoster ? (
@@ -665,14 +682,28 @@ function ParticipantCard({
               alt="Movie poster"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="absolute top-1.5 left-1.5 z-[25] w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
-              {p.profileImageUrl ? (
-                <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
-              ) : (
-                <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                  <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
-                </div>
-              )}
+            {/* Gradient scrim */}
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none z-[24]" />
+            {/* Profile strip — always visible at bottom */}
+            <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
+              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
+                {p.profileImageUrl ? (
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                    <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-[10px] font-semibold text-white leading-tight truncate drop-shadow-md">
+                  {isMe ? "You" : getUserDisplayName(p)}
+                </span>
+                <span className="text-[8px] text-white/60 leading-none truncate">{roomLevel}</span>
+              </div>
+              <div className="flex-shrink-0 opacity-80">
+                {p.isMuted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
+              </div>
             </div>
           </>
         ) : remoteVideoStream ? (
@@ -768,7 +799,7 @@ function ParticipantCard({
           <WaveformCanvas analyserNode={analyserNode} />
         )}
 
-        {!(hasActiveYoutube && youtubeVideoId) && (isRoomOwner ? (
+        {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && (isRoomOwner ? (
           <div
             className="absolute bottom-0 left-0 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
             style={{
@@ -794,7 +825,7 @@ function ParticipantCard({
           </div>
         ) : null)}
 
-        {!(hasActiveYoutube && youtubeVideoId) && (
+        {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && (
           <div className="absolute bottom-1 right-1 z-20 drop-shadow-md">
             {p.isMuted ? (
               <MicOff className="w-4 h-4 text-white opacity-80" />
