@@ -54,12 +54,12 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // lobby/teacher forms respectively) — preloading them on the LCP path
   // would burn ~100 kB of bandwidth for users who never trigger those
   // code paths, so they are NOT listed below.
-  // socket-vendor IS needed early — SocketProvider is statically imported
-  // by App.tsx so socket.io-client must be ready before React renders.
+  // socket-vendor is intentionally excluded: SocketLayer is now lazy-loaded
+  // and only fetched when a user authenticates. Unauthenticated page loads
+  // (Lighthouse, crawlers, first-visit) never download socket.io-client.
   const criticalScriptPatterns: RegExp[] = [
     /^lobby-[\w-]+\.js$/,             // LCP route (lazy — modulepreload beats lazy discovery)
     /^react-vendor-[\w-]+\.js$/,      // react + react-dom + radix + framer + react-query
-    /^socket-vendor-[\w-]+\.js$/,     // socket.io-client — needed by SocketProvider in App.tsx
     /^icons-vendor-[\w-]+\.js$/,      // lucide-react icons rendered on lobby
     /^room-card-[\w-]+\.js$/,         // lobby grid item — sometimes split out
   ];

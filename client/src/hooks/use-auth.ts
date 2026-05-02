@@ -6,11 +6,10 @@ async function fetchUser(): Promise<User | null> {
     credentials: "include",
   });
 
-  if (response.status === 401) {
-    return null;
-  }
-
   if (!response.ok) {
+    // 401 kept for safety but server now returns 200+null for unauthenticated
+    // requests so this branch is only hit on real server errors.
+    if (response.status === 401) return null;
     throw new Error(`${response.status}: ${response.statusText}`);
   }
 

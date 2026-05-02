@@ -216,9 +216,9 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="text-muted-foreground hover:text-pink-400 transition-colors"
-              title="Instagram"
+              aria-label={`${getUserDisplayName(participant)} on Instagram`}
             >
-              <Instagram className="w-4 h-4" />
+              <Instagram className="w-4 h-4" aria-hidden="true" />
             </a>
           )}
           {participant.linkedinUrl && (
@@ -228,9 +228,9 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="text-muted-foreground hover:text-orange-400 transition-colors"
-              title="LinkedIn"
+              aria-label={`${getUserDisplayName(participant)} on LinkedIn`}
             >
-              <Linkedin className="w-4 h-4" />
+              <Linkedin className="w-4 h-4" aria-hidden="true" />
             </a>
           )}
           {participant.facebookUrl && (
@@ -240,9 +240,9 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="text-muted-foreground hover:text-orange-500 transition-colors"
-              title="Facebook"
+              aria-label={`${getUserDisplayName(participant)} on Facebook`}
             >
-              <Facebook className="w-4 h-4" />
+              <Facebook className="w-4 h-4" aria-hidden="true" />
             </a>
           )}
         </div>
@@ -273,7 +273,7 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
               data-testid={`button-card-dm-${participant.id}`}
               aria-label={`Send a direct message to ${getUserDisplayName(participant)}`}
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4" aria-hidden="true" />
             </Button>
           )}
         </div>
@@ -607,7 +607,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       data-testid={`button-room-settings-${room.id}`}
       aria-label={`Edit settings for room ${room.title}`}
     >
-      <Settings className="w-3.5 h-3.5" />
+      <Settings className="w-3.5 h-3.5" aria-hidden="true" />
     </Button>
   ) : (() => {
     const ownerUser = participants.find(p => p.id === room.ownerId);
@@ -628,7 +628,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             data-testid={`button-room-info-${room.id}`}
             aria-label={`Show details for room ${room.title}`}
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-3.5 h-3.5" aria-hidden="true" />
           </Button>
         </PopoverTrigger>
         <PopoverContent
@@ -1079,9 +1079,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   onClick={(e) => { e.stopPropagation(); onVote(); }}
                   className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/55 hover:text-orange-400"}`}
                   data-testid={`button-vote-room-${room.id}`}
-                  title={hasVoted ? "Remove vote" : "Vote"}
+                  aria-label={hasVoted ? `Remove vote from ${room.title}` : `Vote for ${room.title}`}
+                  aria-pressed={hasVoted}
                 >
-                  <Flame className="w-3.5 h-3.5" />
+                  <Flame className="w-3.5 h-3.5" aria-hidden="true" />
                   <span className="text-[11px] font-semibold">{voteCount}</span>
                 </button>
               )}
@@ -1166,7 +1167,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   <a
                     href="/api/login"
                     className={`door-3d-wrap ${stateClass}`}
-                    title={isClosed ? "Sign in to knock" : "Enter room"}
+                    aria-label={isClosed ? `Sign in to knock on ${room.title}` : `Sign in to enter ${room.title}`}
                     data-testid={`button-signin-room-${room.id}`}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -1181,7 +1182,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     role="button"
                     tabIndex={0}
                     aria-disabled={knockMutation.isPending || undefined}
-                    title={knockMutation.isPending ? "Knocking…" : "🚪 Knock — ask the host to let you in"}
+                    aria-label={knockMutation.isPending ? `Knocking on ${room.title}…` : `Knock to request entry to ${room.title}`}
                     onClick={(e) => { e.stopPropagation(); safeKnock(); }}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); safeKnock(); } }}
                     data-testid={`button-knock-room-${room.id}`}
@@ -1195,7 +1196,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   className={`door-3d-wrap ${stateClass}`}
                   role="button"
                   tabIndex={0}
-                  title={alreadyIn ? "Re-enter room" : "Enter room"}
+                  aria-label={alreadyIn ? `Re-enter ${room.title}` : `Enter ${room.title}`}
                   onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
                   onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
                   data-testid={`button-join-room-${room.id}`}
