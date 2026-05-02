@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, Pin, PinOff, Anchor, ArrowRight, LayoutGrid, User as UserIcon } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { showHintOnce } from "@/lib/hints";
@@ -1250,6 +1250,7 @@ export default function Lobby() {
   return (
     <div className="flex flex-col h-full neu-canvas">
       <header
+        aria-label="Site header"
         className="header-pro sticky top-0 z-50 backdrop-blur-xl transition-all duration-300"
         style={{
           background: "linear-gradient(180deg, hsl(220 9% 8% / 0.94) 0%, hsl(220 9% 10% / 0.82) 100%)",

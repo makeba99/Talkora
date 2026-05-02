@@ -8182,7 +8182,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                      const fP = participants.find(p => p.id === focusedUserId);
                      if (!fP) return null;
                      return fP.profileImageUrl ? (
-                       <img loading="lazy" decoding="async" src={fP.profileImageUrl} className="w-full h-full object-cover pointer-events-auto" />
+                       <img loading="lazy" decoding="async" src={fP.profileImageUrl} alt={getUserDisplayName(fP)} className="w-full h-full object-cover pointer-events-auto" />
                      ) : (
                        <div className="w-full h-full bg-slate-800 flex items-center justify-center pointer-events-auto">
                           <span className="text-7xl font-bold bg-transparent text-primary">{getUserInitials(fP as Participant)}</span>
@@ -8799,7 +8799,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                               title={reader ? getUserDisplayName(reader) : readerId}
                             >
                               {reader?.profileImageUrl ? (
-                                <img loading="lazy" decoding="async" src={reader.profileImageUrl} className="w-full h-full object-cover" />
+                                <img loading="lazy" decoding="async" src={reader.profileImageUrl} alt={reader ? getUserDisplayName(reader) : ""} className="w-full h-full object-cover" />
                               ) : (
                                 <div className={`w-full h-full bg-gradient-to-br ${rGrad} flex items-center justify-center`}>
                                   <span className="text-[6px] font-bold text-white">{reader ? getUserInitials(reader) : "?"}</span>
@@ -8923,7 +8923,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
                 <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-green-500/70 bg-green-700 flex items-center justify-center">
                   {user?.profileImageUrl ? (
-                    <img loading="lazy" decoding="async" src={user.profileImageUrl} className="w-full h-full object-cover rounded-full" />
+                    <img loading="lazy" decoding="async" src={user.profileImageUrl} alt={getUserDisplayName(user as any)} className="w-full h-full object-cover rounded-full" />
                   ) : (
                     <span className="text-[10px] font-bold text-white">{getUserInitials(user as any)}</span>
                   )}
@@ -9001,7 +9001,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
                     <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-orange-500/60 bg-orange-900/60 flex items-center justify-center">
                       {(sharer as any).profileImageUrl ? (
-                        <img loading="lazy" decoding="async" src={(sharer as any).profileImageUrl} className="w-full h-full object-cover rounded-full" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        <img loading="lazy" decoding="async" src={(sharer as any).profileImageUrl} alt={getUserDisplayName(sharer as any)} className="w-full h-full object-cover rounded-full" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                       ) : (
                         <span className="text-[10px] font-bold text-white">{getUserInitials(sharer as any)}</span>
                       )}
@@ -9042,7 +9042,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
                 <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-orange-500/60 bg-orange-900/60 flex items-center justify-center">
                   {user?.profileImageUrl ? (
-                    <img loading="lazy" decoding="async" src={user.profileImageUrl} className="w-full h-full object-cover rounded-full" />
+                    <img loading="lazy" decoding="async" src={user.profileImageUrl} alt={getUserDisplayName(user as any)} className="w-full h-full object-cover rounded-full" />
                   ) : (
                     <span className="text-[10px] font-bold text-white">{getUserInitials(user as any)}</span>
                   )}
@@ -9090,7 +9090,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                                 title={watcher ? getUserDisplayName(watcher) : watcherId}
                               >
                                 {watcher?.profileImageUrl ? (
-                                  <img loading="lazy" decoding="async" src={watcher.profileImageUrl} className="w-full h-full object-cover" />
+                                  <img loading="lazy" decoding="async" src={watcher.profileImageUrl} alt={watcher ? getUserDisplayName(watcher) : ""} className="w-full h-full object-cover" />
                                 ) : (
                                   <div className={`w-full h-full bg-gradient-to-br ${wGrad} flex items-center justify-center`}>
                                     <span className="text-[7px] font-bold text-white">{watcher ? getUserInitials(watcher) : "?"}</span>
@@ -9210,7 +9210,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                                     title={reader ? getUserDisplayName(reader) : readerId}
                                   >
                                     {reader?.profileImageUrl ? (
-                                      <img loading="lazy" decoding="async" src={reader.profileImageUrl} className="w-full h-full object-cover" />
+                                      <img loading="lazy" decoding="async" src={reader.profileImageUrl} alt={reader ? getUserDisplayName(reader) : ""} className="w-full h-full object-cover" />
                                     ) : (
                                       <div className={`w-full h-full bg-gradient-to-br ${rGrad} flex items-center justify-center`}>
                                         <span className="text-[7px] font-bold text-white">{reader ? getUserInitials(reader) : "?"}</span>
