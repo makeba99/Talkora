@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, viewport-fit=cover" />
+
+    <!-- Primary meta -->
+    <title>Vextorn — Talk. Share. Belong.</title>
+    <meta name="description" content="Vextorn is a real-time, voice-first community where you join live audio rooms by language and level to talk, share, and belong." />
+    <meta name="keywords" content="vextorn, voice chat, language practice, speaking practice, language learning, conversation, community" />
+    <meta name="author" content="Vextorn" />
+
+    <!-- PWA / Theme — adaptive: matches the system color scheme so the
+         browser chrome (URL bar on iOS Safari, status bar on Android Chrome,
+         PWA splash) stays in sync with the user's preference. The dark value
+         matches the lobby's deep-indigo canvas; the light value matches the
+         lighter card surface so both modes look intentional. -->
+    <meta name="theme-color" content="#0d0b18" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f5f3ff" media="(prefers-color-scheme: light)" />
+    <!-- Allow UA to render light-mode form controls/scrollbars where the user
+         has forced light mode for accessibility, while still preferring dark. -->
+    <meta name="color-scheme" content="dark light" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Favicon: SVG-first (1.2 KB) so we never ship the legacy 350 KB PNG
+         on first paint. The 192 PNG is kept only for OS-level tile/install
+         contexts where SVG isn't honored. -->
+    <link rel="icon" type="image/svg+xml" href="/vextorn-mark.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/vextorn-icon-192.png" />
+    <link rel="apple-touch-icon" href="/vextorn-icon-192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/vextorn-icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/vextorn-icon-192.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/vextorn-icon-192.png" />
+
+    <!-- iOS PWA meta -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Vextorn" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Vextorn — Talk. Share. Belong." />
+    <meta property="og:description" content="Join live audio rooms to practice any language with real people around the world." />
+    <meta property="og:image" content="https://vextorn.com/vextorn-icon-512.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Vextorn — live voice rooms for language practice" />
+    <meta property="og:site_name" content="Vextorn" />
+    <meta property="og:url" content="https://vextorn.com/" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card: large image gives us the big preview, not the small thumbnail -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vextorn — Talk. Share. Belong." />
+    <meta name="twitter:description" content="Real-time voice rooms for language practice and community." />
+    <meta name="twitter:image" content="https://vextorn.com/vextorn-icon-512.png" />
+    <meta name="twitter:image:alt" content="Vextorn — live voice rooms for language practice" />
+
+    <!-- SEO: canonical + robots + structured data -->
+    <link rel="canonical" href="https://vextorn.com/" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <!-- max-image-preview:large lets Google show our OG card as a large
+         preview in search/Discover; max-snippet:-1 removes the snippet
+         length cap. Safe for all crawlers, lifts SEO snippet quality. -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="format-detection" content="telephone=no" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://vextorn.com/#organization",
+          "name": "Vextorn",
+          "url": "https://vextorn.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://vextorn.com/vextorn-icon-512.png",
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://vextorn.com/#website",
+          "url": "https://vextorn.com/",
+          "name": "Vextorn",
+          "description": "Real-time voice rooms for language practice and community.",
+          "publisher": { "@id": "https://vextorn.com/#organization" },
+          "inLanguage": "en",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://vextorn.com/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "name": "Vextorn",
+          "alternateName": "Vextorn — Talk. Share. Belong.",
+          "url": "https://vextorn.com/",
+          "description": "Vextorn is a real-time, voice-first community where you join live audio rooms by language and level to talk, share, and belong.",
+          "applicationCategory": "CommunicationApplication",
+          "operatingSystem": "Web, iOS, Android",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "publisher": { "@id": "https://vextorn.com/#organization" }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Self-hosted Space Grotesk (latin subset, single 22 KB woff2 covers
+         all 4 weights). Removes 2 round-trips to fonts.googleapis.com +
+         fonts.gstatic.com (typically -300 ms on mobile / 3G) and removes
+         the "Network dependency tree" Lighthouse audit. The font is
+         preloaded so it's available before CSS parses, and font-display:
+         swap keeps text visible during the brief load. -->
+    <link
+      rel="preload"
+      href="/fonts/space-grotesk-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+    <style>
+      @font-face {
+        font-family: 'Space Grotesk';
+        font-style: normal;
+        font-weight: 400 700;
+        font-display: swap;
+        src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      /* Critical pre-React paint: prevent the white flash between HTML download
+         and React mount on slow/cached page loads. Matches the lobby's deep
+         indigo canvas in dark mode and the violet-tinted surface in light mode. */
+      html, body {
+        margin: 0;
+        background-color: #0d0b18;
+        color: #e9e7ff;
+        min-height: 100%;
+      }
+      @media (prefers-color-scheme: light) {
+        html, body { background-color: #f5f3ff; color: #1a1530; }
+      }
+      #root { min-height: 100vh; min-height: 100dvh; }
+      /* Lightweight skeleton shown until React hydrates — kills the "white
+         screen" perception on first load and matches Lighthouse's expectation
+         of meaningful first paint. */
+      #root:empty::before {
+        content: "";
+        display: block;
+        width: 100%;
+        min-height: 100vh;
+        background:
+          radial-gradient(60% 50% at 50% 0%, rgba(120, 90, 220, 0.18), transparent 70%),
+          radial-gradient(50% 40% at 80% 100%, rgba(90, 70, 200, 0.14), transparent 70%),
+          #0d0b18;
+      }
+      @media (prefers-color-scheme: light) {
+        #root:empty::before {
+          background:
+            radial-gradient(60% 50% at 50% 0%, rgba(180, 160, 255, 0.30), transparent 70%),
+            #f5f3ff;
+        }
+      }
+      /* Skip-to-content link: invisible to sighted/mouse users (positioned
+         off-screen) but jumps into view when a keyboard user presses Tab on
+         page load. Lets screen-reader and keyboard-only users bypass the
+         header and land directly on <main id="main-content">. Pure a11y win
+         with zero impact on visual design. */
+      .skip-to-content {
+        position: absolute;
+        top: -100px;
+        left: 8px;
+        z-index: 9999;
+        padding: 10px 16px;
+        background: #5b3ce0;
+        color: #fff;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        border-radius: 8px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+        transition: top 120ms ease-out;
+      }
+      .skip-to-content:focus,
+      .skip-to-content:focus-visible {
+        top: 8px;
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
+    </style>
+
+    <!-- Connect early to avatar/video CDNs the lobby reads from on first paint. -->
+    <link rel="preconnect" href="https://randomuser.me" crossorigin />
+    <link rel="dns-prefetch" href="https://randomuser.me" />
+
+    <!-- YouTube embeds are deferred and only load on user interaction, so use
+         dns-prefetch (cheap) instead of preconnect (opens TLS sockets that
+         fight the LCP candidate for bandwidth on slow mobile networks). -->
+    <link rel="dns-prefetch" href="https://www.youtube.com" />
+    <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
+    <link rel="dns-prefetch" href="https://i.ytimg.com" />
+    <link rel="dns-prefetch" href="https://s.ytimg.com" />
+    <!-- Self-recovery for users on the old service worker. The previous SW
+         used stale-while-revalidate for HTML and pre-cached "/", so after a
+         deploy returning users got the OLD index.html that referenced new-
+         deploy /assets/<hash>.js files — those 404 → blank white screen.
+         The fixed SW (vextorn-v4+) ships with this build, but it can't help
+         the very first navigation that triggered the white screen. This
+         inline script (runs before React) detects two recovery signals,
+         force-clears all SW caches, unregisters every SW, and reloads.
+         A sessionStorage guard prevents an infinite reload loop. -->
+    <script>
+      (function () {
+        try {
+          var KEY = "vextorn_sw_recovered_v1";
+          function recover(reason) {
+            try { console.warn("[vextorn] self-heal:", reason); } catch (e) {}
+            if (sessionStorage.getItem(KEY)) return;
+            sessionStorage.setItem(KEY, String(Date.now()));
+            var done = function () {
+              try { window.location.reload(); } catch (e) { window.location.href = "/"; }
+            };
+            var clearCaches = (window.caches && caches.keys)
+              ? caches.keys().then(function (keys) {
+                  return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                }).catch(function () {})
+              : Promise.resolve();
+            var unregisterSWs = ("serviceWorker" in navigator && navigator.serviceWorker.getRegistrations)
+              ? navigator.serviceWorker.getRegistrations().then(function (regs) {
+                  return Promise.all(regs.map(function (r) { return r.unregister().catch(function () {}); }));
+                }).catch(function () {})
+              : Promise.resolve();
+            Promise.all([clearCaches, unregisterSWs]).then(done, done);
+            setTimeout(done, 1500);
+          }
+
+          // Signal A: a /assets/* script or stylesheet failed to load (the
+          // exact failure mode of stale-SW + new-deploy hash mismatch).
+          window.addEventListener("error", function (e) {
+            var t = e && e.target;
+            if (!t) return;
+            var src = t.src || t.href || "";
+            if (typeof src !== "string") return;
+            if (src.indexOf("/assets/") === -1) return;
+            if (t.tagName === "SCRIPT" || t.tagName === "LINK") {
+              recover("asset 404: " + src);
+            }
+          }, true);
+
+          // Signal B: nothing rendered into #root after 6 seconds — defensive
+          // catch for any other "blank screen" cause (CSP, network blip,
+          // partial cache corruption). 6 s is well past first paint on every
+          // network the app supports, so a healthy session never trips this.
+          setTimeout(function () {
+            var root = document.getElementById("root");
+            if (root && (root.children.length === 0)) {
+              recover("root empty after 6s");
+            }
+          }, 6000);
+
+          // Once React mounts successfully, clear the recovery flag so the
+          // user can self-heal again on a future broken deploy.
+          window.addEventListener("load", function () {
+            setTimeout(function () {
+              var root = document.getElementById("root");
+              if (root && root.children.length > 0) {
+                try { sessionStorage.removeItem(KEY); } catch (e) {}
+              }
+            }, 2000);
+          });
+        } catch (e) { /* never break boot */ }
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx" fetchpriority="high"></script>
+  </body>
+</html>
