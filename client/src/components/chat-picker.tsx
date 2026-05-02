@@ -175,6 +175,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
               onChange={(e) => handleGifSearchChange(e.target.value)}
               placeholder="Search GIFs..."
               className="pl-8 text-sm"
+              aria-label="Search GIFs"
               data-testid="input-gif-search"
             />
             {gifSearch && (

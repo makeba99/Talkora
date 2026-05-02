@@ -1217,9 +1217,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Language</Label>
+                <Label htmlFor="edit-room-language">Language</Label>
                 <Select value={editLanguage} onValueChange={setEditLanguage}>
-                  <SelectTrigger data-testid="select-edit-language">
+                  <SelectTrigger id="edit-room-language" data-testid="select-edit-language">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1230,9 +1230,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Level</Label>
+                <Label htmlFor="edit-room-level">Level</Label>
                 <Select value={editLevel} onValueChange={setEditLevel}>
-                  <SelectTrigger data-testid="select-edit-level">
+                  <SelectTrigger id="edit-room-level" data-testid="select-edit-level">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

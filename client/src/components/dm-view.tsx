@@ -221,6 +221,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
+          aria-label="Type a message"
           onPaste={async (e) => {
             const items = Array.from(e.clipboardData.items);
             const imageItem = items.find(item => item.type.startsWith("image/"));

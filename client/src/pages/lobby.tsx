@@ -422,6 +422,7 @@ function PeopleDiscoveryCard({
               disabled={isCurrentUser || isPending}
               className={`neu-people-btn ${isFollowing ? "is-active" : ""} disabled:opacity-45 disabled:cursor-not-allowed`}
               data-testid={`button-follow-discovery-${person.id}`}
+              aria-label={isCurrentUser ? undefined : isFollowing ? `Unfollow ${name}` : `Follow ${name}`}
             >
               {isCurrentUser ? "You" : isFollowing ? "Following" : "Follow"}
             </button>
@@ -430,8 +431,9 @@ function PeopleDiscoveryCard({
               disabled={isCurrentUser || (!isOnline && !currentRoomId)}
               className="neu-people-btn-primary disabled:opacity-45 disabled:cursor-not-allowed"
               data-testid={`button-talk-discovery-${person.id}`}
+              aria-label={isCurrentUser ? undefined : currentRoomId ? `Join ${name}'s room` : `Message ${name}`}
             >
-              <MessageCircle className="w-3.5 h-3.5" />
+              <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {isCurrentUser ? "You" : currentRoomId ? "Talk" : "Message"}
             </button>
           </div>
@@ -441,19 +443,22 @@ function PeopleDiscoveryCard({
               disabled={isCurrentUser}
               className={`neu-people-btn-soft ${hasVoted ? "is-voted" : ""} disabled:opacity-45 disabled:cursor-not-allowed`}
               data-testid={`button-vote-discovery-${person.id}`}
+              aria-label={isCurrentUser ? undefined : hasVoted ? `Remove vote from ${name}` : `Vote for ${name}`}
+              aria-pressed={!isCurrentUser ? hasVoted : undefined}
             >
-              <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-orange-400 text-orange-400" : "text-orange-300/70"}`} />
+              <Flame className={`w-3.5 h-3.5 ${hasVoted ? "fill-orange-400 text-orange-400" : "text-orange-300/70"}`} aria-hidden="true" />
               {hasVoted ? "Voted" : "Vote"}
-              {totalVotes > 0 && <span className="ml-0.5 opacity-70">{totalVotes}</span>}
+              {totalVotes > 0 && <span className="ml-0.5 opacity-70" aria-hidden="true">{totalVotes}</span>}
             </button>
             <button
               onClick={onComment}
               className="neu-people-btn-soft"
               data-testid={`button-comment-discovery-${person.id}`}
+              aria-label={`View comments on ${name}'s profile`}
             >
-              <MessageSquare className="w-3.5 h-3.5 text-white/50" />
+              <MessageSquare className="w-3.5 h-3.5 text-white/50" aria-hidden="true" />
               Comments
-              {commentCount > 0 && <span className="ml-0.5 opacity-70">{commentCount}</span>}
+              {commentCount > 0 && <span className="ml-0.5 opacity-70" aria-hidden="true">{commentCount}</span>}
             </button>
           </div>
         </div>
@@ -1727,6 +1732,7 @@ export default function Lobby() {
                           className="search-suggest-item"
                           onClick={() => { setSearchSuggestOpen(false); handleJoinRoom(r.id); }}
                           data-testid={`suggest-room-${r.id}`}
+                          aria-label={`Enter room: ${r.title} — ${r.language}`}
                         >
                           <span className="search-suggest-item-icon search-suggest-item-icon-room">
                             <Mic className="w-3.5 h-3.5" />
@@ -1758,6 +1764,7 @@ export default function Lobby() {
                             setSearchSuggestOpen(false);
                           }}
                           data-testid={`suggest-language-${lang.toLowerCase()}`}
+                          aria-label={`Filter by language: ${lang}`}
                         >
                           <span className="search-suggest-item-icon search-suggest-item-icon-lang">
                             <Globe className="w-3.5 h-3.5" />
@@ -1787,6 +1794,7 @@ export default function Lobby() {
                             key={p.id}
                             type="button"
                             className="search-suggest-item"
+                            aria-label={`View profile: ${getUserName(p)}`}
                             onClick={() => {
                               setActiveDiscovery("famous-users");
                               setSearchSuggestOpen(false);
@@ -1797,6 +1805,8 @@ export default function Lobby() {
                               <img
                                 src={p.profileImageUrl}
                                 alt={name}
+                                width={28}
+                                height={28}
                                 className="search-suggest-item-avatar"
                               />
                             ) : (
@@ -1866,6 +1876,7 @@ export default function Lobby() {
                   className={`filter-chip filter-chip-teal filter-chip-lang ${showLanguageFilters ? "is-active" : ""}`}
                   aria-expanded={showLanguageFilters}
                   aria-pressed={showLanguageFilters}
+                  aria-label={showLanguageFilters ? "Hide language filters" : "Show language filters"}
                   title={showLanguageFilters ? "Hide language filters" : "Show language filters"}
                   data-tour-target="languages"
                   data-testid="button-toggle-language-filters"
@@ -1900,6 +1911,8 @@ export default function Lobby() {
                   key={lang}
                   onClick={() => setSelectedLanguage(lang)}
                   className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
+                  aria-pressed={isActive}
+                  aria-label={lang === "All" ? "Show all languages" : `Filter by ${lang}`}
                   style={isActive ? {
                     background: "linear-gradient(145deg, hsl(var(--neu-orange-hi)) 0%, hsl(var(--neu-orange-lo)) 100%)",
                     color: "#fff",
@@ -1924,6 +1937,8 @@ export default function Lobby() {
                 onClick={() => setLanguagesExpanded(!languagesExpanded)}
                 className="neu-pill flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium"
                 data-testid="button-toggle-languages"
+                aria-expanded={languagesExpanded}
+                aria-label={languagesExpanded ? "Show fewer languages" : "Show more languages"}
               >
                 {languagesExpanded ? (
                   <>

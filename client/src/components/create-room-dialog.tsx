@@ -128,9 +128,9 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Language</Label>
+              <Label htmlFor="create-room-language">Language</Label>
               <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger data-testid="select-language">
+                <SelectTrigger id="create-room-language" data-testid="select-language">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -144,9 +144,9 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
             </div>
 
             <div className="space-y-2">
-              <Label>Level</Label>
+              <Label htmlFor="create-room-level">Level</Label>
               <Select value={level} onValueChange={setLevel}>
-                <SelectTrigger data-testid="select-level">
+                <SelectTrigger id="create-room-level" data-testid="select-level">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
