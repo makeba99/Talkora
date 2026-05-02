@@ -616,7 +616,7 @@ function ParticipantCard({
             <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
                 {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} decoding="async" className="w-full h-full object-cover" />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                     <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
@@ -656,7 +656,7 @@ function ParticipantCard({
             <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
                 {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} decoding="async" className="w-full h-full object-cover" />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                     <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
@@ -690,7 +690,7 @@ function ParticipantCard({
             <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
                 {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} decoding="async" className="w-full h-full object-cover" />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                     <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>

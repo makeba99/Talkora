@@ -333,14 +333,14 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
     const retry2 = window.setTimeout(update, 220);
     const retry3 = window.setTimeout(update, 480);
     window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
+    window.addEventListener("scroll", update, { capture: true, passive: true });
     const interval = window.setInterval(update, 600);
     return () => {
       window.clearTimeout(retry1);
       window.clearTimeout(retry2);
       window.clearTimeout(retry3);
       window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("scroll", update, { capture: true });
       window.clearInterval(interval);
     };
   }, [active, current]);

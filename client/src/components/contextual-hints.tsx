@@ -72,10 +72,10 @@ export function ContextualHints() {
       setHint((h) => (h ? compute({ ...h }) : h));
     };
     window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
+    window.addEventListener("scroll", update, { capture: true, passive: true });
     return () => {
       window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("scroll", update, { capture: true });
     };
   }, [hint?.uid, compute]);
 

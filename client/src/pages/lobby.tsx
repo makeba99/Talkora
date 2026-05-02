@@ -2170,7 +2170,7 @@ export default function Lobby() {
             >
               <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-white/15 bg-muted flex items-center justify-center">
                 {knock.fromUserAvatar ? (
-                  <img loading="lazy" decoding="async" src={knock.fromUserAvatar} alt={knock.fromUserName} className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={knock.fromUserAvatar} alt={knock.fromUserName} width={40} height={40} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-sm font-bold text-foreground/70">{knock.fromUserName.slice(0, 2).toUpperCase()}</span>
                 )}
