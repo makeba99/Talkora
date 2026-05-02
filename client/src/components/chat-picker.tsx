@@ -195,7 +195,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
             )}
           </div>
         </div>
-        <ScrollArea className="h-[300px]">
+        <div className="h-[300px] overflow-y-auto overscroll-contain">
           <div className="p-2">
             {gifLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -232,7 +232,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
         <div className="px-2 pb-1.5 pt-0.5 border-t">
           <p className="text-[10px] text-muted-foreground text-right">Powered by GIPHY</p>
         </div>

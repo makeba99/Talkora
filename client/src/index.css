@@ -2441,11 +2441,23 @@ html.synthwave .neon-text {
   box-shadow:
     inset 0 0 20px hsl(252 70% 50% / 0.32),
     inset 0 -6px 14px rgba(0,0,0,0.45);
+}
+/* Glow pulse composited as opacity on a ::after layer — box-shadow is static,
+   only opacity animates so the browser can skip paint on every frame. */
+.door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-interior::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 6px 6px 0 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 30px hsl(252 72% 58% / 0.52);
+  opacity: 0;
   animation: door-open-glow 3.4s ease-in-out infinite;
+  will-change: opacity;
 }
 @keyframes door-open-glow {
-  0%, 100% { box-shadow: inset 0 0 20px hsl(252 70% 50% / 0.32), inset 0 -6px 14px rgba(0,0,0,0.45); }
-  50%      { box-shadow: inset 0 0 30px hsl(252 72% 58% / 0.52), inset 0 -6px 14px rgba(0,0,0,0.38); }
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 1; }
 }
 
 /* The OPEN door frame gets a soft indigo/violet outline */
@@ -2473,8 +2485,8 @@ html.synthwave .neon-text {
 .door-welcome-arrow {
   position: absolute;
   top: 50%;
-  left: 18%;
-  transform: translate(-50%, -50%);
+  left: 22%;
+  transform: translate(-50%, -50%) translateX(-3px);
   width: 0;
   height: 0;
   border-top: 5px solid transparent;
@@ -2484,10 +2496,12 @@ html.synthwave .neon-text {
   pointer-events: none;
   z-index: 3;
   animation: door-arrow-bob 1.6s ease-in-out infinite;
+  will-change: transform, opacity;
 }
+/* Use transform instead of `left` so the browser composites this on the GPU. */
 @keyframes door-arrow-bob {
-  0%, 100% { left: 18%; opacity: 0.85; }
-  50%      { left: 26%; opacity: 1;    }
+  0%, 100% { transform: translate(-50%, -50%) translateX(-3px); opacity: 0.85; }
+  50%      { transform: translate(-50%, -50%) translateX(3px);  opacity: 1;    }
 }
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full):hover .door-welcome-arrow {
   border-left-color: hsl(252 80% 82%);
@@ -2702,9 +2716,10 @@ html.synthwave .neon-text {
 .door-caption-open::before {
   background: radial-gradient(circle at 30% 30%, hsl(252 75% 70%), hsl(258 70% 42%) 70%);
   box-shadow:
-    0 0 5px hsl(252 70% 55% / 1),
-    0 0 10px hsl(252 70% 50% / 0.55);
+    0 0 9px hsl(252 70% 55% / 1),
+    0 0 18px hsl(252 70% 50% / 0.65);
   animation: door-led-pulse 2.2s ease-in-out infinite;
+  will-change: opacity;
 }
 .door-3d-wrap:hover .door-caption-open {
   transform: translateY(-1px);
@@ -2730,9 +2745,10 @@ html.synthwave .neon-text {
 .door-caption-locked::before {
   background: radial-gradient(circle at 30% 30%, hsl(48 100% 82%), hsl(40 95% 50%) 70%);
   box-shadow:
-    0 0 5px hsl(40 95% 55% / 1),
-    0 0 10px hsl(40 95% 55% / 0.6);
+    0 0 9px hsl(40 95% 55% / 1),
+    0 0 18px hsl(40 95% 55% / 0.7);
   animation: door-led-pulse-amber 2.6s ease-in-out infinite;
+  will-change: opacity;
 }
 .door-3d-locked:hover .door-caption-locked {
   transform: translateY(-1px);
@@ -2814,10 +2830,11 @@ html.synthwave .neon-text {
 .door-status-open::before {
   background: radial-gradient(circle at 30% 30%, hsl(150 65% 36%), hsl(150 70% 20%) 70%);
   box-shadow:
-    0 0 6px hsl(150 65% 28% / 0.95),
-    0 0 12px hsl(150 65% 28% / 0.50),
-    inset 0 0 1px rgba(255, 255, 255, 0.4);
+    0 0 9px hsl(150 70% 34% / 1),
+    0 0 18px hsl(150 70% 34% / 0.65),
+    inset 0 0 1px rgba(255, 255, 255, 0.5);
   animation: door-led-pulse 2.2s ease-in-out infinite;
+  will-change: opacity;
 }
 .door-3d-wrap:hover .door-status-open {
   transform: translateY(-1px);
@@ -2847,10 +2864,11 @@ html.synthwave .neon-text {
 .door-status-locked::before {
   background: radial-gradient(circle at 30% 30%, hsl(48 100% 80%), hsl(40 95% 50%) 70%);
   box-shadow:
-    0 0 6px hsl(40 95% 55% / 0.95),
-    0 0 12px hsl(40 95% 55% / 0.55),
+    0 0 9px hsl(40 95% 55% / 1),
+    0 0 18px hsl(40 95% 55% / 0.7),
     inset 0 0 1px rgba(255, 255, 255, 0.6);
   animation: door-led-pulse-amber 2.6s ease-in-out infinite;
+  will-change: opacity;
 }
 .door-3d-locked:hover .door-status-locked {
   transform: translateY(-1px);
@@ -2863,19 +2881,11 @@ html.synthwave .neon-text {
     0 0 0 1px hsl(40 90% 55% / 0.50),
     0 0 18px hsl(40 90% 55% / 0.50);
 }
+/* Opacity-only pulse — box-shadow stays static so the compositor handles
+   this on the GPU without triggering paint on every frame. */
 @keyframes door-led-pulse-amber {
-  0%, 100% {
-    box-shadow:
-      0 0 6px hsl(40 95% 55% / 0.95),
-      0 0 12px hsl(40 95% 55% / 0.55),
-      inset 0 0 1px rgba(255, 255, 255, 0.6);
-  }
-  50% {
-    box-shadow:
-      0 0 9px hsl(48 100% 65% / 1),
-      0 0 18px hsl(40 95% 55% / 0.7),
-      inset 0 0 1px rgba(255, 255, 255, 0.7);
-  }
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .door-status-locked::before { animation: none; }
@@ -2901,19 +2911,11 @@ html.synthwave .neon-text {
     inset 0 0 1px rgba(255, 255, 255, 0.5);
 }
 
+/* Opacity-only pulse — box-shadow stays static so the compositor handles
+   this on the GPU without triggering paint on every frame. */
 @keyframes door-led-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 6px hsl(150 65% 28% / 0.95),
-      0 0 12px hsl(150 65% 28% / 0.50),
-      inset 0 0 1px rgba(255, 255, 255, 0.4);
-  }
-  50% {
-    box-shadow:
-      0 0 9px hsl(150 70% 34% / 1),
-      0 0 18px hsl(150 70% 34% / 0.65),
-      inset 0 0 1px rgba(255, 255, 255, 0.5);
-  }
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .door-status-open::before { animation: none; }
