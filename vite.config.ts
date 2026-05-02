@@ -73,44 +73,35 @@ export default defineConfig({
     cssMinify: "esbuild",
     rollupOptions: {
       output: {
-        // Long-term-cacheable vendor chunks. React must be in the same chunk
-        // as anything that calls React.forwardRef / React.createContext at
-        // module-evaluation time (Radix, react-query) to guarantee load
-        // order. Keeping them together avoids the race where a secondary
-        // chunk executes before react-vendor is evaluated.
+        // Long-term-cacheable vendor chunks.
         //
-        // framer-motion and react-hook-form/@hookform were previously
-        // bundled into react-vendor "to be safe", but they are only used
-        // by lazy-loaded routes/components (badge-announcement and lobby
-        // forms respectively). Splitting them into their own chunks pulls
-        // ~80–120 kB out of the critical first-paint download for users
-        // who never trigger those code paths.
+        // CRITICAL: React must live in the SAME chunk as anything that calls
+        // React.forwardRef / React.createContext at module-evaluation time
+        // (@radix-ui, @floating-ui, react-query). Splitting them causes a
+        // runtime race — the secondary chunk can execute before react-vendor
+        // has finished, leaving React undefined. This was previously attempted
+        // as a "radix-vendor" split to gain parallel parse time, but the
+        // `Cannot read properties of undefined (reading 'forwardRef')` error
+        // proves the race is real. Keep everything that touches React APIs at
+        // eval time in one chunk.
+        //
+        // framer-motion and react-hook-form/@hookform are only used by
+        // lazy-loaded routes (badge-announcement, lobby forms). Splitting them
+        // pulls ~80–120 kB out of the critical first-paint download for users
+        // who never trigger those code paths — safe because they never call
+        // React APIs at module-evaluation time.
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-          // React core + anything that calls React APIs at module-evaluation
-          // time (createContext, forwardRef, etc.). @radix-ui and @floating-ui
-          // were previously merged here to avoid an execution-order race, but
-          // that race doesn't exist in Rollup's ES-module output — static
-          // imports guarantee topological execution order, so React always
-          // evaluates before any consumer chunk that imports it. Splitting them
-          // into radix-vendor lets the browser parse react-vendor AND
-          // radix-vendor in parallel on separate threads, cutting the serial
-          // main-thread evaluation time (TBT) on mobile.
           if (
             id.includes("react-dom") ||
             id.includes("/react/") ||
             id.includes("scheduler") ||
             id.includes("wouter") ||
-            id.includes("@tanstack/react-query")
+            id.includes("@tanstack/react-query") ||
+            id.includes("@radix-ui") ||
+            id.includes("@floating-ui")
           ) {
             return "react-vendor";
-          }
-          // Radix UI primitives + Floating UI positioning engine. Both are
-          // UI-layer deps that are only needed after React mounts, so bundling
-          // them separately lets them download and parse in parallel with the
-          // React core chunk instead of serially inside it.
-          if (id.includes("@radix-ui") || id.includes("@floating-ui")) {
-            return "radix-vendor";
           }
           // Lazy-only deps: only load when the consumer chunk loads.
           if (
