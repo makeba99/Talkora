@@ -71,6 +71,49 @@ function deleteYtVotes(roomId: string, hostId: string) {
 }
 type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
 const roomYoutubeQueue = new Map<string, YtQueueItem[]>();
+// Per-host movie watch-party state: roomId → Map<hostId, MovieHostState>
+type MovieHostState = { movieId: string; movieTitle: string; posterPath: string; startedBy: string };
+const roomMovieState = new Map<string, Map<string, MovieHostState>>();
+function getMovieHost(roomId: string, hostId: string) { return roomMovieState.get(roomId)?.get(hostId); }
+function setMovieHost(roomId: string, hostId: string, state: MovieHostState) {
+  let m = roomMovieState.get(roomId);
+  if (!m) { m = new Map(); roomMovieState.set(roomId, m); }
+  m.set(hostId, state);
+}
+function deleteMovieHost(roomId: string, hostId: string): boolean {
+  const m = roomMovieState.get(roomId);
+  if (!m) return false;
+  const had = m.delete(hostId);
+  if (m.size === 0) roomMovieState.delete(roomId);
+  return had;
+}
+function listMovieHosts(roomId: string): Array<{ hostId: string; state: MovieHostState }> {
+  const m = roomMovieState.get(roomId);
+  if (!m) return [];
+  return Array.from(m.entries()).map(([hostId, state]) => ({ hostId, state }));
+}
+const POPULAR_MOVIES = [
+  { id: 278, title: "The Shawshank Redemption", poster: "https://image.tmdb.org/t/p/w300/lyQBXzOQSuE59IsHyhrp0qIiPAz.jpg", year: "1994", rating: "8.7", overview: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency." },
+  { id: 238, title: "The Godfather", poster: "https://image.tmdb.org/t/p/w300/3bhkrj58Vtu7enYsLegHzslqLxT.jpg", year: "1972", rating: "8.7", overview: "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son." },
+  { id: 272, title: "The Dark Knight", poster: "https://image.tmdb.org/t/p/w300/qJ2tW6WMUDux911r6m7haRef0WH.jpg", year: "2008", rating: "9.0", overview: "Batman raises the stakes in his war on crime with the help of Lt. Jim Gordon and DA Harvey Dent." },
+  { id: 27205, title: "Inception", poster: "https://image.tmdb.org/t/p/w300/edv5CZvWj09upOsy2Y6IwDhK8bt.jpg", year: "2010", rating: "8.4", overview: "A thief who steals corporate secrets through dream-sharing technology is given the task of planting an idea." },
+  { id: 157336, title: "Interstellar", poster: "https://image.tmdb.org/t/p/w300/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg", year: "2014", rating: "8.4", overview: "A team of explorers travel through a wormhole in space to ensure humanity's survival." },
+  { id: 603, title: "The Matrix", poster: "https://image.tmdb.org/t/p/w300/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", year: "1999", rating: "8.1", overview: "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers." },
+  { id: 680, title: "Pulp Fiction", poster: "https://image.tmdb.org/t/p/w300/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg", year: "1994", rating: "8.5", overview: "The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine." },
+  { id: 13, title: "Forrest Gump", poster: "https://image.tmdb.org/t/p/w300/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg", year: "1994", rating: "8.5", overview: "The presidencies of Kennedy and Johnson, the events of Vietnam through the perspective of an Alabama man." },
+  { id: 550, title: "Fight Club", poster: "https://image.tmdb.org/t/p/w300/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg", year: "1999", rating: "8.4", overview: "An insomniac office worker and a devil-may-care soapmaker form an underground fight club." },
+  { id: 597, title: "Titanic", poster: "https://image.tmdb.org/t/p/w300/rzdPqYx7Um4FMl1LRRT43IQCDTV.jpg", year: "1997", rating: "7.9", overview: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious Titanic." },
+  { id: 120, title: "The Lord of the Rings", poster: "https://image.tmdb.org/t/p/w300/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg", year: "2001", rating: "8.8", overview: "A meek Hobbit and eight companions set out on a journey to destroy the powerful One Ring." },
+  { id: 299534, title: "Avengers: Endgame", poster: "https://image.tmdb.org/t/p/w300/or06FN3Dka5tukK1e9sl16pB3iy.jpg", year: "2019", rating: "8.4", overview: "After Infinity War, the Avengers assemble once more to undo Thanos's actions and restore balance." },
+  { id: 361743, title: "Top Gun: Maverick", poster: "https://image.tmdb.org/t/p/w300/62HCnUTHjWKSSAVdSsnpsuKjT7R.jpg", year: "2022", rating: "8.3", overview: "After thirty years, Maverick is still pushing the envelope as a top naval aviator." },
+  { id: 634649, title: "Spider-Man: No Way Home", poster: "https://image.tmdb.org/t/p/w300/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg", year: "2021", rating: "8.2", overview: "Peter Parker asks Doctor Strange to help make the world forget he is Spider-Man." },
+  { id: 475557, title: "Joker", poster: "https://image.tmdb.org/t/p/w300/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg", year: "2019", rating: "8.4", overview: "In Gotham City, mentally troubled comedian Arthur Fleck is disregarded and mistreated by society." },
+  { id: 19995, title: "Avatar", poster: "https://image.tmdb.org/t/p/w300/jRXYjXNq0Cs2TcJjLkki24MLp7u.jpg", year: "2009", rating: "7.5", overview: "A paraplegic Marine dispatched to the moon Pandora on a unique mission becomes torn between following orders and protecting the world he feels is his home." },
+  { id: 862, title: "Toy Story", poster: "https://image.tmdb.org/t/p/w300/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg", year: "1995", rating: "8.0", overview: "A cowboy doll is profoundly threatened and jealous when a new spaceman toy supplants him as top toy." },
+  { id: 8587, title: "The Lion King", poster: "https://image.tmdb.org/t/p/w300/sKCr78MXSuHeGwsoneMAfskADiA.jpg", year: "1994", rating: "8.3", overview: "Lion cub prince Simba and his father are central characters in this African adventure." },
+  { id: 22970, title: "Shutter Island", poster: "https://image.tmdb.org/t/p/w300/nXoB9FQKBC5bJEqTJuN2j9LvWEG.jpg", year: "2010", rating: "8.2", overview: "A U.S. Marshal investigates the disappearance of a murderer who escaped from a hospital for the criminally insane." },
+  { id: 11216, title: "Cinema Paradiso", poster: "https://image.tmdb.org/t/p/w300/8SRUfRUi6x4O68n0VCbDNRa6iGL.jpg", year: "1988", rating: "8.5", overview: "A filmmaker recalls his childhood when falling in love with the pictures at the cinema of his home village." },
+];
 const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
 const roomRoles = new Map<string, Map<string, string>>();
 const roomMuteStatus = new Map<string, Map<string, boolean>>();
@@ -793,6 +836,69 @@ export async function registerRoutes(
       res.json(videos);
     } catch (err: any) {
       res.status(500).json({ message: "Failed to load suggestions" });
+    }
+  });
+
+  // ── Movie search / popular (TMDB + curated fallback) ──────────────────────
+  app.get("/api/movies/popular", isAuthenticated, async (_req: any, res) => {
+    try {
+      const cacheKey = "movies:popular";
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
+      const apiKey = process.env.TMDB_API_KEY?.trim();
+      if (apiKey) {
+        const resp = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=en-US&page=1`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const movies = (data.results || []).slice(0, 20).map((m: any) => ({
+            id: m.id,
+            title: m.title,
+            poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : null,
+            year: m.release_date?.slice(0, 4) || "",
+            rating: m.vote_average?.toFixed(1) || "N/A",
+            overview: m.overview || "",
+          }));
+          externalCache.set(cacheKey, movies);
+          return res.json(movies);
+        }
+      }
+      externalCache.set(cacheKey, POPULAR_MOVIES);
+      res.json(POPULAR_MOVIES);
+    } catch (err: any) {
+      res.json(POPULAR_MOVIES);
+    }
+  });
+
+  app.get("/api/movies/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const q = ((req.query.q as string) || "").trim();
+      if (!q) return res.json([]);
+      const cacheKey = `movies:search:${q.toLowerCase().slice(0, 100)}`;
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
+      const apiKey = process.env.TMDB_API_KEY?.trim();
+      if (apiKey) {
+        const resp = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(q)}&include_adult=false&language=en-US`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const movies = (data.results || []).slice(0, 20).map((m: any) => ({
+            id: m.id,
+            title: m.title,
+            poster: m.poster_path ? `https://image.tmdb.org/t/p/w300${m.poster_path}` : null,
+            year: m.release_date?.slice(0, 4) || "",
+            rating: m.vote_average?.toFixed(1) || "N/A",
+            overview: m.overview || "",
+          }));
+          externalCache.set(cacheKey, movies);
+          return res.json(movies);
+        }
+      }
+      // Fallback: filter curated list
+      const results = POPULAR_MOVIES.filter(m => m.title.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
+      res.json(results);
+    } catch (err: any) {
+      const q2 = ((req.query.q as string) || "").trim().toLowerCase();
+      res.json(POPULAR_MOVIES.filter(m => m.title.toLowerCase().includes(q2)).slice(0, 10));
     }
   });
 
@@ -1862,6 +1968,7 @@ export async function registerRoutes(
       roomScreenShareStatus.delete(roomId);
       roomYoutubeState.delete(roomId);
       roomYoutubeQueue.delete(roomId);
+      roomMovieState.delete(roomId);
       roomRoles.delete(roomId);
       roomMuteStatus.delete(roomId);
       roomKnockGrants.delete(roomId);
@@ -3776,6 +3883,11 @@ export async function registerRoutes(
         socket.emit("room:youtube-queue-update", { queue });
       }
 
+      // Per-host movie snapshot: tell the newcomer about every active movie host
+      for (const { hostId, state: mState } of listMovieHosts(roomId)) {
+        socket.emit("room:movie", { hostId, movieId: mState.movieId, movieTitle: mState.movieTitle, posterPath: mState.posterPath, startedBy: mState.startedBy });
+      }
+
       const bookState = roomBookState.get(roomId);
       if (bookState) {
         socket.emit("room:book", { book: bookState.book, hostId: bookState.hostId, scrollPct: bookState.scrollPct, watchers: Array.from(bookState.watchers) });
@@ -4272,6 +4384,41 @@ export async function registerRoutes(
       });
       io.to(data.roomId).emit("room:youtube", { hostId: currentUserId, videoId: next.videoId, startedBy: currentUserId });
       io.to(data.roomId).emit("room:youtube-queue-update", { queue });
+    });
+
+    // ---------- Movie watch-party ----------
+    socket.on("room:movie", (data: { roomId: string; movieId: string | null; movieTitle?: string; posterPath?: string }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      if (data.movieId) {
+        setMovieHost(data.roomId, currentUserId, {
+          movieId: data.movieId,
+          movieTitle: data.movieTitle || "",
+          posterPath: data.posterPath || "",
+          startedBy: currentUserId,
+        });
+        io.to(data.roomId).emit("room:movie", {
+          hostId: currentUserId,
+          movieId: data.movieId,
+          movieTitle: data.movieTitle || "",
+          posterPath: data.posterPath || "",
+          startedBy: currentUserId,
+        });
+      } else {
+        if (deleteMovieHost(data.roomId, currentUserId)) {
+          io.to(data.roomId).emit("room:movie", { hostId: currentUserId, movieId: null, startedBy: currentUserId });
+        }
+      }
+    });
+
+    socket.on("room:movie-watching", (data: { roomId: string; hostId: string; watching: boolean }) => {
+      if (!currentUserId) return;
+      io.to(data.roomId).emit("room:movie-watchers-update", {
+        userId: currentUserId,
+        hostId: data.hostId,
+        watching: data.watching,
+      });
     });
 
     // ---------- Chess (built-in board, two seats per room, others spectate) ----------

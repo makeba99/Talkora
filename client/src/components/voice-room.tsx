@@ -21,7 +21,7 @@ import {
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
-  Sparkles, Upload, MonitorPlay, Megaphone
+  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket";
@@ -937,6 +937,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [activeYoutubeId, setActiveYoutubeId] = useState<string | null>(null);
   const [youtubeStartedBy, setYoutubeStartedBy] = useState<string | null>(null);
   const [showYoutube, setShowYoutube] = useState(false);
+  const [movieSearch, setMovieSearch] = useState("");
+  const [movieResults, setMovieResults] = useState<any[]>([]);
+  const [movieSearching, setMovieSearching] = useState(false);
+  const [activeMovieId, setActiveMovieId] = useState<string | null>(null);
+  const [activeMovieTitle, setActiveMovieTitle] = useState<string>("");
+  const [activeMoviePoster, setActiveMoviePoster] = useState<string>("");
+  const [movieStartedBy, setMovieStartedBy] = useState<string | null>(null);
+  const [showMovie, setShowMovie] = useState(false);
+  const [movieHosts, setMovieHosts] = useState<Map<string, { movieId: string; movieTitle: string; posterPath: string }>>(new Map());
+  const [movieWatchersByHost, setMovieWatchersByHost] = useState<Map<string, Set<string>>>(new Map());
+  const [popularMovies, setPopularMovies] = useState<any[]>([]);
+  const [popularMoviesLoading, setPopularMoviesLoading] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteRoomOpen, setDeleteRoomOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(roomProp.title);
@@ -1018,6 +1030,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [availableVideoUsers, setAvailableVideoUsers] = useState<Set<string>>(new Set());
   const [availableScreenUsers, setAvailableScreenUsers] = useState<Set<string>>(new Set());
   const youtubeSearchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const movieStartedByRef = useRef<string | null>(null);
+  const movieSearchTimeout = useRef<NodeJS.Timeout | null>(null);
   const localStream = useRef<MediaStream | null>(null);
   const selectedAudioDeviceIdRef = useRef(selectedAudioDeviceId);
   const videoStream = useRef<MediaStream | null>(null);
@@ -1343,6 +1357,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   useEffect(() => {
     youtubeStartedByRef.current = youtubeStartedBy;
   }, [youtubeStartedBy]);
+
+  useEffect(() => {
+    movieStartedByRef.current = movieStartedBy;
+  }, [movieStartedBy]);
 
   useEffect(() => {
     ytQueueRef.current = ytQueue;
@@ -2199,6 +2217,53 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       );
     });
 
+    socket.on("room:movie", (data: { hostId?: string; movieId: string | null; movieTitle?: string; posterPath?: string; startedBy?: string }) => {
+      const hostId = data.hostId || data.startedBy || "";
+      if (!hostId) return;
+      if (data.movieId) {
+        setMovieHosts(prev => {
+          const next = new Map(prev);
+          next.set(hostId, { movieId: data.movieId!, movieTitle: data.movieTitle || "", posterPath: data.posterPath || "" });
+          return next;
+        });
+        if (hostId === user.id) {
+          setActiveMovieId(data.movieId);
+          setActiveMovieTitle(data.movieTitle || "");
+          setActiveMoviePoster(data.posterPath || "");
+          setMovieStartedBy(hostId);
+          setShowMovie(true);
+        } else if (movieStartedByRef.current === hostId) {
+          setActiveMovieId(data.movieId);
+          setActiveMovieTitle(data.movieTitle || "");
+          setActiveMoviePoster(data.posterPath || "");
+        }
+      } else {
+        setMovieHosts(prev => { const next = new Map(prev); next.delete(hostId); return next; });
+        setMovieWatchersByHost(prev => { const next = new Map(prev); next.delete(hostId); return next; });
+        if (hostId === user.id || movieStartedByRef.current === hostId) {
+          setActiveMovieId(null);
+          setActiveMovieTitle("");
+          setActiveMoviePoster("");
+          setMovieStartedBy(null);
+          setShowMovie(false);
+        }
+      }
+    });
+
+    socket.on("room:movie-watchers-update", (data: { hostId?: string; userId: string; watching: boolean }) => {
+      const hostId = data.hostId || "";
+      if (!hostId) return;
+      setMovieWatchersByHost(prev => {
+        const next = new Map(prev);
+        const set = new Set(next.get(hostId) || []);
+        if (data.watching) set.add(data.userId);
+        else set.delete(data.userId);
+        if (set.size > 0) next.set(hostId, set);
+        else next.delete(hostId);
+        return next;
+      });
+    });
+
     socket.on("room:youtube", (data: { hostId?: string; videoId: string | null; startedBy?: string }) => {
       // Per-host watch parties: each host owns their own slot. We must NOT
       // change MY active video just because someone else started/stopped a
@@ -2506,6 +2571,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       socket.off("room:chat-message");
       socket.off("room:chat-delete");
       socket.off("room:reaction-update");
+      socket.off("room:movie");
+      socket.off("room:movie-watchers-update");
       socket.off("room:youtube");
       socket.off("room:youtube-watchers-update");
       socket.off("room:youtube-queue-update");
@@ -4358,6 +4425,68 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:youtube-queue-remove", { roomId: room.id, id: itemId });
   };
 
+  // ── Movie handlers ─────────────────────────────────────────────────────────
+  const handleMovieSearch = useCallback(async (query: string) => {
+    if (!query.trim()) { setMovieResults([]); return; }
+    setMovieSearching(true);
+    try {
+      const res = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`, { credentials: "include" });
+      if (res.ok) setMovieResults(await res.json());
+    } catch (_) {}
+    finally { setMovieSearching(false); }
+  }, []);
+
+  const handleMovieSearchInput = (value: string) => {
+    setMovieSearch(value);
+    if (movieSearchTimeout.current) clearTimeout(movieSearchTimeout.current);
+    movieSearchTimeout.current = setTimeout(() => handleMovieSearch(value), 400);
+  };
+
+  const handleSelectMovie = (movie: { id: number | string; title: string; poster?: string | null }) => {
+    const movieId = String(movie.id);
+    setActiveMovieId(movieId);
+    setActiveMovieTitle(movie.title);
+    setActiveMoviePoster(movie.poster || "");
+    setMovieStartedBy(user?.id || null);
+    setShowMovie(true);
+    setMovieHosts(prev => {
+      const next = new Map(prev);
+      if (user?.id) next.set(user.id, { movieId, movieTitle: movie.title, posterPath: movie.poster || "" });
+      return next;
+    });
+    socket?.emit("room:movie", { roomId: room.id, movieId, movieTitle: movie.title, posterPath: movie.poster || "" });
+    setMovieSearch("");
+    setMovieResults([]);
+    toast({ title: "🎬 Now Watching", description: movie.title });
+  };
+
+  const handleStopMovie = () => {
+    const wasMyOwnHost = !!user?.id && movieStartedByRef.current === user.id;
+    setActiveMovieId(null);
+    setActiveMovieTitle("");
+    setActiveMoviePoster("");
+    setMovieStartedBy(null);
+    setShowMovie(false);
+    if (wasMyOwnHost) {
+      setMovieHosts(prev => {
+        const next = new Map(prev);
+        next.delete(user!.id);
+        return next;
+      });
+      socket?.emit("room:movie", { roomId: room.id, movieId: null });
+    }
+  };
+
+  const loadPopularMovies = useCallback(async () => {
+    if (popularMovies.length > 0) return;
+    setPopularMoviesLoading(true);
+    try {
+      const res = await fetch("/api/movies/popular", { credentials: "include" });
+      if (res.ok) setPopularMovies(await res.json());
+    } catch (_) {}
+    finally { setPopularMoviesLoading(false); }
+  }, [popularMovies.length]);
+
   // Independent playback: play / pause / seek operate only on this user's local
   // YouTube player. Nothing is broadcast to other participants, so each user has
   // full local control without affecting anyone else.
@@ -4966,6 +5095,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </div>
         <button onClick={() => setSidePanelTab("youtube")} data-testid="tab-youtube" title="YouTube" className="room-tab-btn" data-accent="youtube" data-active={sidePanelTab === "youtube"}>
           <Youtube className="w-[15px] h-[15px]" />
+        </button>
+        <button onClick={() => { setSidePanelTab("movies"); loadPopularMovies(); }} data-testid="tab-movies" title="Movies" className="room-tab-btn" data-accent="movies" data-active={sidePanelTab === "movies"}>
+          <Film className="w-[15px] h-[15px]" />
         </button>
         <button onClick={() => setSidePanelTab("read")} data-testid="tab-read" title="Read" className="room-tab-btn" data-accent="read" data-active={sidePanelTab === "read"}>
           <BookOpen className="w-[15px] h-[15px]" />
@@ -5935,6 +6067,232 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </ScrollArea>
           )}
 
+        </div>
+      </div>
+
+      {/* ── Movies Panel ── */}
+      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "movies" ? "flex" : "none" }}>
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          {/* Search bar */}
+          <div className="p-3 pb-2.5 border-b border-border/40 bg-muted/5 flex-shrink-0 space-y-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+              <Input
+                value={movieSearch}
+                onChange={(e) => handleMovieSearchInput(e.target.value)}
+                placeholder="Search movies…"
+                className="pl-9 text-[13px] rounded-xl bg-muted/30 border-border/50 placeholder:text-muted-foreground/40 focus-visible:ring-violet-400/30 focus-visible:border-violet-400/40 h-9"
+                data-testid="input-movie-search"
+              />
+              {movieSearching && (
+                <Loader2 className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 animate-spin" />
+              )}
+            </div>
+            {activeMovieId && user?.id === movieStartedBy && (
+              <button
+                onClick={handleStopMovie}
+                data-testid="button-stop-movie-panel"
+                className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium hover:bg-red-500/20 transition-colors"
+              >
+                <StopCircle className="w-3.5 h-3.5" />
+                Close movie for everyone
+              </button>
+            )}
+            {activeMovieId && user?.id !== movieStartedBy && showMovie && (
+              <button
+                onClick={() => { setShowMovie(false); setMovieStartedBy(null); setActiveMovieId(null); }}
+                data-testid="button-hide-movie-panel"
+                className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-muted/30 border border-border/40 text-muted-foreground text-[11px] font-medium hover:bg-muted/50 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Hide movie (just for me)
+              </button>
+            )}
+            {activeMovieId && user?.id !== movieStartedBy && !showMovie && (() => {
+              const broadcaster = participants.find(p => p.id === movieStartedBy);
+              return (
+                <button
+                  onClick={() => {
+                    setShowMovie(true);
+                    socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: true });
+                  }}
+                  data-testid="button-join-movie"
+                  className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-400 text-[11px] font-semibold hover:bg-violet-500/25 transition-colors"
+                >
+                  <Play className="w-3.5 h-3.5 fill-violet-400" />
+                  {broadcaster ? `Watch ${getUserDisplayName(broadcaster)}'s movie` : "Watch the movie"}
+                </button>
+              );
+            })()}
+          </div>
+
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-3 space-y-3">
+              {/* Search results */}
+              {movieResults.length > 0 && (
+                <div className="space-y-2" data-testid="movie-search-results">
+                  <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest px-0.5">Results</p>
+                  {movieResults.map((movie: any) => (
+                    <div
+                      key={movie.id}
+                      className="rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:border-border/50 transition-all duration-150 group"
+                      data-testid={`button-movie-result-${movie.id}`}
+                    >
+                      <div className="flex gap-3 p-2.5">
+                        {movie.poster ? (
+                          <img
+                            loading="lazy"
+                            decoding="async"
+                            src={movie.poster}
+                            alt={movie.title}
+                            className="w-14 h-[84px] rounded-lg object-cover flex-shrink-0 bg-muted group-hover:scale-[1.02] transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-14 h-[84px] rounded-lg bg-muted flex-shrink-0 flex items-center justify-center">
+                            <Film className="w-5 h-5 text-muted-foreground/30" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <p className="text-[12px] font-semibold line-clamp-2 leading-snug">{movie.title}</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              {movie.year && <span className="text-[10px] text-muted-foreground/60">{movie.year}</span>}
+                              {movie.rating && movie.rating !== "0.0" && (
+                                <span className="flex items-center gap-0.5 text-[10px] text-amber-400/80">
+                                  <Star className="w-2.5 h-2.5 fill-amber-400/80" />{movie.rating}
+                                </span>
+                              )}
+                            </div>
+                            {movie.overview && (
+                              <p className="text-[10px] text-muted-foreground/50 mt-1 line-clamp-2 leading-relaxed">{movie.overview}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleSelectMovie(movie)}
+                            className="mt-2 flex items-center justify-center gap-1 py-1 rounded-md bg-violet-500/15 border border-violet-500/25 text-violet-400 text-[10px] font-medium hover:bg-violet-500/25 transition-colors"
+                            data-testid={`button-watch-movie-${movie.id}`}
+                          >
+                            <Play className="w-2.5 h-2.5 fill-violet-400" /> Watch Now
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {movieSearch.trim() && !movieSearching && movieResults.length === 0 && (
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <Film className="w-8 h-8 text-muted-foreground/20" />
+                  <p className="text-[11px] text-muted-foreground/50">No movies found</p>
+                </div>
+              )}
+
+              {/* Popular movies */}
+              {!movieSearch.trim() && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 px-0.5">
+                    <TrendingUp className="w-3 h-3 text-violet-400/70" />
+                    <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">Popular Movies</p>
+                  </div>
+                  {popularMoviesLoading && (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/30" />
+                    </div>
+                  )}
+                  {!popularMoviesLoading && popularMovies.length === 0 && (
+                    <div className="flex flex-col items-center gap-2 py-10">
+                      <Film className="w-8 h-8 text-muted-foreground/20" />
+                      <p className="text-[11px] text-muted-foreground/50">Search for a movie to get started</p>
+                    </div>
+                  )}
+                  {popularMovies.map((movie: any) => (
+                    <div
+                      key={movie.id}
+                      className="rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:border-violet-500/30 hover:bg-muted/20 transition-all duration-150 group"
+                      data-testid={`button-popular-movie-${movie.id}`}
+                    >
+                      <div className="flex gap-3 p-2.5">
+                        {movie.poster ? (
+                          <img
+                            loading="lazy"
+                            decoding="async"
+                            src={movie.poster}
+                            alt={movie.title}
+                            className="w-12 h-[72px] rounded-lg object-cover flex-shrink-0 bg-muted group-hover:scale-[1.02] transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-12 h-[72px] rounded-lg bg-muted flex-shrink-0 flex items-center justify-center">
+                            <Film className="w-4 h-4 text-muted-foreground/30" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <p className="text-[11px] font-semibold line-clamp-2 leading-snug">{movie.title}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {movie.year && <span className="text-[10px] text-muted-foreground/60">{movie.year}</span>}
+                              {movie.rating && movie.rating !== "0.0" && (
+                                <span className="flex items-center gap-0.5 text-[10px] text-amber-400/80">
+                                  <Star className="w-2.5 h-2.5 fill-amber-400/80" />{movie.rating}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleSelectMovie(movie)}
+                            className="mt-1.5 flex items-center justify-center gap-1 py-1 rounded-md bg-violet-500/15 border border-violet-500/25 text-violet-400 text-[10px] font-medium hover:bg-violet-500/25 transition-colors"
+                            data-testid={`button-watch-popular-${movie.id}`}
+                          >
+                            <Play className="w-2.5 h-2.5 fill-violet-400" /> Watch
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Active movie hosts in room */}
+              {movieHosts.size > 0 && !activeMovieId && (
+                <div className="space-y-1.5 mt-2">
+                  <div className="flex items-center gap-1.5 px-0.5">
+                    <Film className="w-3 h-3 text-violet-400/70" />
+                    <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-widest">Watching Now in Room</p>
+                  </div>
+                  {Array.from(movieHosts.entries()).map(([hostId, info]) => {
+                    const host = participants.find(p => p.id === hostId);
+                    if (!host) return null;
+                    return (
+                      <div key={hostId} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-violet-500/20 bg-violet-500/5">
+                        <Avatar className="w-7 h-7 flex-shrink-0">
+                          <AvatarImage src={host.profileImageUrl || undefined} />
+                          <AvatarFallback className="text-[10px] bg-violet-500/20">{getUserInitials(host)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium truncate">{getUserDisplayName(host)}</p>
+                          <p className="text-[10px] text-muted-foreground/60 truncate">watching: {info.movieTitle}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setActiveMovieId(info.movieId);
+                            setActiveMovieTitle(info.movieTitle);
+                            setActiveMoviePoster(info.posterPath);
+                            setMovieStartedBy(hostId);
+                            setShowMovie(true);
+                            socket?.emit("room:movie-watching", { roomId: room.id, hostId, watching: true });
+                          }}
+                          className="flex-shrink-0 px-2 py-1 rounded-md bg-violet-500/15 border border-violet-500/25 text-violet-400 text-[10px] font-medium hover:bg-violet-500/25 transition-colors"
+                          data-testid={`button-join-movie-${hostId}`}
+                        >
+                          Join
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </div>
       </div>
 
@@ -7742,6 +8100,59 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </div>
             );
           })()}
+
+          {/* ── Movie Player ── */}
+          {activeMovieId && showMovie && (
+            <div
+              className="flex-1 min-h-0 bg-black relative flex flex-col overflow-hidden"
+              data-testid="media-main-movie"
+            >
+              {/* Title bar */}
+              <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2.5 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)" }}>
+                <div className="flex items-center gap-2">
+                  <Film className="w-4 h-4 text-violet-400" />
+                  <span className="text-white text-sm font-semibold truncate max-w-xs">{activeMovieTitle}</span>
+                  {movieStartedBy && movieStartedBy !== user?.id && (() => {
+                    const host = participants.find(p => p.id === movieStartedBy);
+                    return host ? (
+                      <span className="text-white/50 text-xs">
+                        shared by {getUserDisplayName(host)}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
+                {user?.id === movieStartedBy ? (
+                  <button
+                    onClick={handleStopMovie}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/80 hover:bg-red-500 text-white text-xs font-medium transition-colors"
+                    data-testid="button-stop-movie-main"
+                  >
+                    <StopCircle className="w-3 h-3" /> Stop
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); }}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-medium transition-colors"
+                    data-testid="button-hide-movie-main"
+                  >
+                    <X className="w-3 h-3" /> Hide
+                  </button>
+                )}
+              </div>
+              {/* Embed */}
+              <iframe
+                key={activeMovieId}
+                src={`https://vidsrc.me/embed/movie?tmdb=${activeMovieId}`}
+                title={activeMovieTitle}
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+                data-testid="iframe-movie-player"
+                referrerPolicy="origin"
+              />
+            </div>
+          )}
 
           {activeYoutubeId && showYoutube && (() => {
             const isYoutubeHost = true;

@@ -8748,6 +8748,7 @@ html.neomorphic-light .scroll-jump-btn {
 /* Per-tab accent overrides — keep colors expressive but unified system */
 .room-tab-btn[data-accent="primary"]   { --tab-accent-h: var(--neu-orange-h, 256); --tab-accent-s: 90%; --tab-accent-l: 72%; }
 .room-tab-btn[data-accent="youtube"]   { --tab-accent-h: 0;   --tab-accent-s: 84%; --tab-accent-l: 64%; }
+.room-tab-btn[data-accent="movies"]    { --tab-accent-h: 270; --tab-accent-s: 70%; --tab-accent-l: 60%; }
 .room-tab-btn[data-accent="read"]      { --tab-accent-h: 158; --tab-accent-s: 70%; --tab-accent-l: 58%; }
 .room-tab-btn[data-accent="chess"]     { --tab-accent-h: 45;  --tab-accent-s: 92%; --tab-accent-l: 62%; }
 .room-tab-btn[data-accent="golive"]    { --tab-accent-h: 4;   --tab-accent-s: 88%; --tab-accent-l: 62%; }
