@@ -1,0 +1,24 @@
+[1G[0K⠙[1G[0K
+> rest-express@1.0.0 dev
+> NODE_ENV=development node --import tsx/esm server/index.ts
+
+[1G[0K⠙[1G[0Knode:internal/modules/esm/resolve:873
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'tsx' imported from /home/runner/workspace/
+[90m    at packageResolve (node:internal/modules/esm/resolve:873:9)[39m
+[90m    at moduleResolve (node:internal/modules/esm/resolve:946:18)[39m
+[90m    at defaultResolve (node:internal/modules/esm/resolve:1188:11)[39m
+[90m    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:708:12)[39m
+[90m    at #cachedDefaultResolve (node:internal/modules/esm/loader:657:25)[39m
+[90m    at ModuleLoader.resolve (node:internal/modules/esm/loader:640:38)[39m
+[90m    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:264:38)[39m
+[90m    at ModuleLoader.import (node:internal/modules/esm/loader:605:34)[39m
+[90m    at asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:112:36)[39m
+[90m    at runEntryPointWithESMLoader (node:internal/modules/run_main:141:19)[39m {
+  code: [32m'ERR_MODULE_NOT_FOUND'[39m
+}
+
+Node.js v20.20.0
+[1G[0K⠙[1G[0K
