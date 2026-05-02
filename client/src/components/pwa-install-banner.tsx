@@ -140,6 +140,8 @@ export function PwaInstallBanner() {
         <img
           src="/vextorn-icon-192.png"
           alt="Vextorn"
+          width="48"
+          height="48"
           className="w-12 h-12 rounded-2xl shadow-lg flex-shrink-0 object-cover"
         />
         <div className="flex-1 min-w-0">

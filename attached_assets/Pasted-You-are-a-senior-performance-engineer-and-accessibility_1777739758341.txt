@@ -1,0 +1,102 @@
+You are a senior performance engineer and accessibility expert.
+
+Your mission: Optimize this web application to achieve **100/100 Performance and 100/100 Accessibility on Google PageSpeed Insights (Desktop)**.
+
+🚨 HARD CONSTRAINT (CRITICAL):
+
+* You MUST NOT change UI design, layout, spacing, colors, typography, or animations
+* You MUST NOT remove or alter any functionality or user flows
+* You MUST NOT degrade UX in any way
+* All changes must be **invisible to users**
+* The app must look and behave EXACTLY the same before and after optimization
+
+If a change risks visual or functional impact → DO NOT apply it.
+
+---
+
+## ⚡ PERFORMANCE (SAFE OPTIMIZATIONS ONLY)
+
+Apply ONLY non-breaking optimizations:
+
+1. LOADING STRATEGY
+
+* Add lazy loading (images, components) ONLY for below-the-fold content
+* Keep above-the-fold content untouched
+* Use dynamic imports WITHOUT affecting initial UI rendering
+
+2. IMAGES (NO VISUAL CHANGE)
+
+* Convert images to WebP/AVIF ONLY if visually identical
+* Preserve exact dimensions and aspect ratios
+* Add width/height attributes to prevent CLS
+* Do NOT compress to the point of visible quality loss
+
+3. JAVASCRIPT
+
+* Remove unused code ONLY (no logic changes)
+* Enable tree-shaking
+* Split bundles safely (no hydration or SSR issues)
+* Defer non-critical scripts
+
+4. CSS
+
+* Remove unused CSS carefully (no style breakage)
+* Inline ONLY critical CSS required for first paint
+* Do NOT modify existing class behavior
+
+5. FONTS
+
+* Add font-display: swap (ensure no layout shift)
+* Preload only currently used fonts
+* Do NOT change font appearance
+
+6. NETWORK
+
+* Enable compression (Brotli/Gzip)
+* Add preconnect/dns-prefetch safely
+* Reduce request size, NOT functionality
+
+7. STABILITY (CLS MUST BE 0)
+
+* Add placeholders/skeletons ONLY if they match existing layout exactly
+* Reserve space for all dynamic elements
+
+8. MAIN THREAD
+
+* Break long tasks WITHOUT affecting behavior
+* Optimize event listeners safely
+
+---
+
+## ♿ ACCESSIBILITY (NO UI CHANGE)
+
+1. Add missing alt attributes (no visible impact)
+2. Add ARIA labels where needed (no UI change)
+3. Ensure proper semantic structure WITHOUT changing layout
+4. Fix label-input associations
+5. Improve keyboard navigation WITHOUT altering visuals
+6. Keep focus styles consistent with existing design
+
+---
+
+## 🧪 VALIDATION RULES
+
+Before finalizing:
+
+* Compare BEFORE vs AFTER UI → must be pixel-identical
+* Ensure all features still work
+* No console errors
+* No layout shifts introduced
+
+---
+
+## 📦 OUTPUT FORMAT
+
+1. List ONLY safe optimizations applied
+2. Provide code diffs (before/after)
+3. Explain why each change is invisible to users
+4. Estimate PageSpeed improvement
+
+FINAL GOAL:
+Reach 100 Performance & 100 Accessibility (Desktop)
+WITH ZERO visual or functional differences.

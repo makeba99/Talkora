@@ -3,7 +3,6 @@ import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Smile, ImagePlus, Search, Loader2, X } from "lucide-react";
 import {
   Popover,
