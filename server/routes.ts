@@ -14,6 +14,7 @@ import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "./elevenlabs";
+import { startStream, writeChunk, stopStream, getStreamInfo, stopAllStreamsForUser } from "./streaming";
 import {
   renderIndexHtml,
   getOrigin,
@@ -1642,6 +1643,61 @@ export async function registerRoutes(
       res.status(500).json({ message: err.message });
     }
   });
+
+  // ── Direct Streaming (RTMP relay via FFmpeg) ─────────────────────────────
+  app.post("/api/stream/start", isAuthenticated, apiRateLimiter, async (req: any, res) => {
+    try {
+      const { twitchKey, youtubeKey, roomId } = req.body;
+      const userId = req.user?.id?.toString();
+      if (!userId) return res.status(401).json({ message: "Not authenticated" });
+      if (!twitchKey && !youtubeKey) return res.status(400).json({ message: "Provide at least one stream key" });
+      const streamId = `${userId}-${Date.now()}`;
+      const result = startStream({ streamId, userId, roomId: roomId || "", twitchKey, youtubeKey });
+      if (!result.ok) return res.status(500).json({ message: result.error });
+      res.json({ streamId });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/stream/:streamId/chunk", isAuthenticated, async (req: any, res) => {
+    try {
+      const { streamId } = req.params;
+      const userId = req.user?.id?.toString();
+      const info = getStreamInfo(streamId);
+      if (!info) return res.status(404).json({ message: "Stream not found" });
+      if (info.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+      const chunks: Buffer[] = [];
+      req.on("data", (d: Buffer) => chunks.push(d));
+      req.on("end", () => {
+        const buf = Buffer.concat(chunks);
+        writeChunk(streamId, buf);
+        res.json({ ok: true, bytes: buf.length });
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/stream/:streamId/stop", isAuthenticated, async (req: any, res) => {
+    try {
+      const { streamId } = req.params;
+      const userId = req.user?.id?.toString();
+      const info = getStreamInfo(streamId);
+      if (info && info.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+      stopStream(streamId);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/stream/:streamId/status", isAuthenticated, async (req: any, res) => {
+    const info = getStreamInfo(req.params.streamId);
+    if (!info) return res.json({ active: false });
+    res.json({ active: true, ...info });
+  });
+  // ─────────────────────────────────────────────────────────────────────────
 
   app.get("/api/rooms", async (_req, res) => {
     try {

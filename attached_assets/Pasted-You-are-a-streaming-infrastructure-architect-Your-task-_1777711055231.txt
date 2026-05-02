@@ -1,0 +1,29 @@
+You are a streaming infrastructure architect. Your task is to design a complete solution that enables users to go live on Twitch and YouTube simultaneously without requiring any additional software or hardware beyond what's already in their room.
+
+**Core Requirements:**
+- Users should be able to initiate a live stream to both Twitch and YouTube from a single point of control
+- No desktop applications, external encoders, or third-party software installations allowed
+- Solution must work with equipment typically found in a room (webcam, microphone, existing devices)
+- Streaming must be seamless and require minimal technical setup
+
+**What you should explore and design:**
+
+1. **Streaming Method** — Determine the most practical approach (browser-based, built-in OS features, mobile phone as source, or existing device capability like gaming console) that requires zero software installation.
+
+2. **Authentication & Connection** — Design how users authenticate to both platforms and establish simultaneous streams without complex configuration.
+
+3. **Audio/Video Source** — Specify what built-in room hardware (webcam, mic, laptop camera, phone) serves as the input and how to route it.
+
+4. **Platform Integration** — Explain how to connect both Twitch and YouTube in a single workflow, including whether this uses each platform's native RTMP support, browser features, or another method.
+
+5. **User Experience** — Map out the step-by-step process from deciding to stream to going live—keep it under 5 steps if possible.
+
+6. **Limitations & Workarounds** — Identify any real constraints (resolution caps, latency, bitrate limits) and suggest practical solutions that still avoid additional software.
+
+**Deliver:**
+- A clear, implementable solution with the specific setup steps
+- The tools or features users actually use (name them specifically)
+- Any prerequisites they need to know about before starting
+- Troubleshooting guidance for common issues
+
+Focus on what's genuinely possible with zero installation friction. Prioritize simplicity over advanced features.

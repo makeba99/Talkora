@@ -1052,7 +1052,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const [bookReaders, setBookReaders] = useState<Set<string>>(new Set());
   const [goLiveOpen, setGoLiveOpen] = useState(false);
-  const [goLivePlatform, setGoLivePlatform] = useState<"youtube" | "twitch" | "tiktok">("youtube");
+  const [goLivePlatform, setGoLivePlatform] = useState<"youtube" | "twitch" | "both">("youtube");
+  const [glTwitchKey, setGlTwitchKey] = useState("");
+  const [glYoutubeKey, setGlYoutubeKey] = useState("");
+  const [glShowTwitchKey, setGlShowTwitchKey] = useState(false);
+  const [glShowYoutubeKey, setGlShowYoutubeKey] = useState(false);
+  const [glStatus, setGlStatus] = useState<"idle" | "connecting" | "live" | "error">("idle");
+  const [glStreamId, setGlStreamId] = useState<string | null>(null);
+  const [glError, setGlError] = useState<string | null>(null);
+  const [glDuration, setGlDuration] = useState(0);
+  const glMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const glDurationRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -3841,6 +3851,116 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
   };
 
+  // ── Go Live: direct browser-to-RTMP streaming ──────────────────────────
+  const formatGlDuration = (secs: number) => {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return h > 0
+      ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+      : `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+
+  const startGoLive = useCallback(async () => {
+    const twitchKey = goLivePlatform === "youtube" ? "" : glTwitchKey.trim();
+    const youtubeKey = goLivePlatform === "twitch" ? "" : glYoutubeKey.trim();
+    if (goLivePlatform === "youtube" && !youtubeKey) { toast({ title: "Enter your YouTube stream key", variant: "destructive" }); return; }
+    if (goLivePlatform === "twitch" && !twitchKey) { toast({ title: "Enter your Twitch stream key", variant: "destructive" }); return; }
+    if (goLivePlatform === "both" && !twitchKey && !youtubeKey) { toast({ title: "Enter at least one stream key", variant: "destructive" }); return; }
+
+    setGlStatus("connecting");
+    setGlError(null);
+
+    let displayStream: MediaStream;
+    let micStream: MediaStream | null = null;
+    try {
+      displayStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+    } catch {
+      setGlStatus("error");
+      setGlError("Screen capture was denied. Please allow screen sharing to go live.");
+      return;
+    }
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch { /* mic optional */ }
+
+    const audioCtx = new AudioContext();
+    const dest = audioCtx.createMediaStreamDestination();
+    displayStream.getAudioTracks().forEach(t => audioCtx.createMediaStreamSource(new MediaStream([t])).connect(dest));
+    if (micStream) micStream.getAudioTracks().forEach(t => audioCtx.createMediaStreamSource(new MediaStream([t])).connect(dest));
+    const combined = new MediaStream([...displayStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+
+    let startRes: Response;
+    try {
+      startRes = await fetch("/api/stream/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ twitchKey: twitchKey || undefined, youtubeKey: youtubeKey || undefined, roomId: room.id }),
+      });
+    } catch {
+      setGlStatus("error");
+      setGlError("Could not connect to streaming server. Try again.");
+      displayStream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    if (!startRes.ok) {
+      const err = await startRes.json().catch(() => ({}));
+      setGlStatus("error");
+      setGlError((err as any).message || "Failed to start stream.");
+      displayStream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    const { streamId } = await startRes.json();
+    setGlStreamId(streamId);
+
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+      ? "video/webm;codecs=vp8,opus"
+      : "video/webm";
+    const mr = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 2_500_000 });
+    glMediaRecorderRef.current = mr;
+
+    mr.ondataavailable = async (e) => {
+      if (e.data.size === 0) return;
+      const buf = await e.data.arrayBuffer();
+      fetch(`/api/stream/${streamId}/chunk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream" },
+        credentials: "include",
+        body: buf,
+      }).catch(() => {});
+    };
+
+    mr.onstop = () => {
+      displayStream.getTracks().forEach(t => t.stop());
+      micStream?.getTracks().forEach(t => t.stop());
+      audioCtx.close();
+    };
+
+    displayStream.getVideoTracks()[0].onended = () => stopGoLive(streamId);
+
+    mr.start(2000);
+    setGlStatus("live");
+    setGlDuration(0);
+    glDurationRef.current = setInterval(() => setGlDuration(d => d + 1), 1000);
+  }, [goLivePlatform, glTwitchKey, glYoutubeKey, room.id]);
+
+  const stopGoLive = useCallback(async (sid?: string) => {
+    const id = sid ?? glStreamId;
+    if (glMediaRecorderRef.current && glMediaRecorderRef.current.state !== "inactive") {
+      glMediaRecorderRef.current.stop();
+    }
+    glMediaRecorderRef.current = null;
+    if (glDurationRef.current) { clearInterval(glDurationRef.current); glDurationRef.current = null; }
+    setGlStatus("idle");
+    setGlDuration(0);
+    if (id) {
+      setGlStreamId(null);
+      fetch(`/api/stream/${id}/stop`, { method: "POST", credentials: "include" }).catch(() => {});
+    }
+  }, [glStreamId]);
+  // ─────────────────────────────────────────────────────────────────────────
+
   const handleScreenShare = async () => {
     if (isScreenSharing) {
       await stopMyScreenShare();
@@ -5952,114 +6072,147 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
       {/* ── Go Live Panel ── */}
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "golive" ? "flex" : "none" }}>
+        {/* Header */}
         <div className="p-3 pb-2 border-b border-white/[0.07] flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
-              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${glStatus === "live" ? "bg-red-600" : "bg-white/10"}`}>
+                <div className={`w-2 h-2 rounded-full bg-white ${glStatus === "live" ? "animate-pulse" : "opacity-40"}`} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Go Live</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {glStatus === "live" ? `🔴 LIVE · ${formatGlDuration(glDuration)}` : "Stream direct — no software needed"}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold">Go Live</p>
-              <p className="text-[10px] text-muted-foreground">Stream this room to your audience</p>
-            </div>
+            {glStatus === "live" && (
+              <button onClick={() => stopGoLive()} className="text-[10px] font-semibold px-2 py-1 rounded-md bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600/30 transition-colors">End</button>
+            )}
           </div>
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
-          {/* Platform selector */}
-          <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
-            {(["youtube", "twitch", "tiktok"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setGoLivePlatform(p)}
-                className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150"
-                style={goLivePlatform === p
-                  ? { background: p === "youtube" ? "rgba(239,68,68,0.20)" : p === "twitch" ? "rgba(145,70,255,0.20)" : "rgba(0,0,0,0.30)", color: p === "youtube" ? "#fc6464" : p === "twitch" ? "#bf94ff" : "#ffffff", border: "1px solid " + (p === "youtube" ? "rgba(239,68,68,0.30)" : p === "twitch" ? "rgba(145,70,255,0.30)" : "rgba(255,255,255,0.15)") }
-                  : { color: "rgba(255,255,255,0.40)", border: "1px solid transparent" }
-                }
-              >
-                {p === "youtube" ? "YouTube" : p === "twitch" ? "Twitch" : "TikTok"}
-              </button>
-            ))}
-          </div>
 
-          {/* Steps */}
-          {goLivePlatform === "youtube" && (
-            <div className="space-y-3">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+          {/* Live status bar */}
+          {glStatus === "live" && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-600/10 border border-red-600/25">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-red-400">You are LIVE</p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  Streaming to {goLivePlatform === "both" ? "YouTube + Twitch" : goLivePlatform === "youtube" ? "YouTube" : "Twitch"} · {formatGlDuration(glDuration)}
+                </p>
+              </div>
+            </div>
+          )}
+          {glStatus === "error" && glError && (
+            <div className="p-2.5 rounded-lg bg-red-900/20 border border-red-600/25">
+              <p className="text-xs text-red-400">{glError}</p>
+            </div>
+          )}
+
+          {/* Platform tabs */}
+          {glStatus === "idle" || glStatus === "error" ? (
+            <>
+              <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+                {(["youtube", "twitch", "both"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setGoLivePlatform(p)}
+                    className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150"
+                    style={goLivePlatform === p
+                      ? { background: p === "youtube" ? "rgba(239,68,68,0.22)" : p === "twitch" ? "rgba(145,70,255,0.22)" : "rgba(80,160,80,0.22)", color: p === "youtube" ? "#fc6464" : p === "twitch" ? "#bf94ff" : "#6ee86e", border: "1px solid " + (p === "youtube" ? "rgba(239,68,68,0.30)" : p === "twitch" ? "rgba(145,70,255,0.30)" : "rgba(80,200,80,0.30)") }
+                      : { color: "rgba(255,255,255,0.38)", border: "1px solid transparent" }
+                    }
+                  >
+                    {p === "both" ? "Both 🔗" : p === "youtube" ? "YouTube" : "Twitch"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Stream key inputs */}
               <div className="space-y-2">
-                {[
-                  { step: "1", text: "Go to YouTube Studio → Go Live → Stream" },
-                  { step: "2", text: "Copy your Stream URL and Stream Key from YouTube" },
-                  { step: "3", text: "In OBS: Settings → Stream → Service: YouTube → paste key" },
-                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this tab" },
-                  { step: "5", text: "Click Start Streaming in OBS" },
-                ].map(({ step, text }) => (
-                  <div key={step} className="flex items-start gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                    <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-[9px] font-bold text-white">{step}</span>
+                {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">YouTube Stream Key</label>
+                      <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5">Get key <ExternalLink className="w-2.5 h-2.5" /></a>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-snug">{text}</p>
+                    <div className="relative">
+                      <input
+                        type={glShowYoutubeKey ? "text" : "password"}
+                        value={glYoutubeKey}
+                        onChange={e => setGlYoutubeKey(e.target.value)}
+                        placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
+                        className="w-full px-2.5 py-1.5 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/50"
+                      />
+                      <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                        {glShowYoutubeKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide">Twitch Stream Key</label>
+                      <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5">Get key <ExternalLink className="w-2.5 h-2.5" /></a>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={glShowTwitchKey ? "text" : "password"}
+                        value={glTwitchKey}
+                        onChange={e => setGlTwitchKey(e.target.value)}
+                        placeholder="live_xxxxxxxxxxxxxxxxxxxx"
+                        className="w-full px-2.5 py-1.5 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/50"
+                      />
+                      <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                        {glShowTwitchKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* How it works */}
+              <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-1.5">
+                <p className="text-[10px] font-semibold text-white/60 uppercase tracking-wide">How it works</p>
+                {[
+                  "Paste your stream key(s) above",
+                  "Click Go Live — browser captures this tab",
+                  "Your room streams directly to the platform(s)",
+                  "Click End when you're done",
+                ].map((t, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-[9px] font-bold text-white/50">{i + 1}</span>
+                    <p className="text-[11px] text-muted-foreground leading-snug">{t}</p>
                   </div>
                 ))}
               </div>
-              <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" className="block">
-                <button className="w-full py-2 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1.5" style={{ background: "rgba(239,68,68,0.80)", border: "1px solid rgba(239,68,68,0.40)" }}>
-                  <ExternalLink className="w-3.5 h-3.5" /> Open YouTube Studio
-                </button>
-              </a>
+
+              {/* Go Live button */}
+              <button
+                onClick={startGoLive}
+                className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all"
+                style={{
+                  background: goLivePlatform === "twitch"
+                    ? "linear-gradient(135deg,rgba(145,70,255,0.85),rgba(100,40,200,0.85))"
+                    : goLivePlatform === "youtube"
+                      ? "linear-gradient(135deg,rgba(239,68,68,0.85),rgba(180,30,30,0.85))"
+                      : "linear-gradient(135deg,rgba(239,68,68,0.75),rgba(145,70,255,0.75))",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+                }}
+              >
+                <Radio className="w-4 h-4" /> Go Live
+              </button>
+            </>
+          ) : glStatus === "connecting" ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-red-400" />
+              <p className="text-sm text-muted-foreground">Connecting to stream server…</p>
             </div>
-          )}
-          {goLivePlatform === "twitch" && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                {[
-                  { step: "1", text: "Go to Twitch Dashboard → Settings → Stream" },
-                  { step: "2", text: "Copy your Primary Stream Key" },
-                  { step: "3", text: "In OBS: Settings → Stream → Service: Twitch → paste key" },
-                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this tab" },
-                  { step: "5", text: "Click Start Streaming in OBS" },
-                ].map(({ step, text }) => (
-                  <div key={step} className="flex items-start gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                    <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-[9px] font-bold text-white">{step}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-snug">{text}</p>
-                  </div>
-                ))}
-              </div>
-              <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="block">
-                <button className="w-full py-2 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1.5" style={{ background: "rgba(145,70,255,0.70)", border: "1px solid rgba(145,70,255,0.40)" }}>
-                  <ExternalLink className="w-3.5 h-3.5" /> Open Twitch Dashboard
-                </button>
-              </a>
-            </div>
-          )}
-          {goLivePlatform === "tiktok" && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                {[
-                  { step: "1", text: "Open TikTok app → tap + → Go Live → PC Stream" },
-                  { step: "2", text: "Copy the Stream URL and Stream Key from TikTok" },
-                  { step: "3", text: "In OBS: Settings → Stream → Custom RTMP → paste URL & key" },
-                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this tab" },
-                  { step: "5", text: "Click Start Streaming in OBS" },
-                ].map(({ step, text }) => (
-                  <div key={step} className="flex items-start gap-2 p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                    <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-[9px] font-bold text-white">{step}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-snug">{text}</p>
-                  </div>
-                ))}
-              </div>
-              <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" className="block">
-                <button className="w-full py-2 rounded-lg text-xs font-semibold text-white flex items-center justify-center gap-1.5" style={{ background: "rgba(0,0,0,0.60)", border: "1px solid rgba(255,255,255,0.12)" }}>
-                  <ExternalLink className="w-3.5 h-3.5" /> Open TikTok
-                </button>
-              </a>
-            </div>
-          )}
-          <div className="text-center">
-            <p className="text-[10px] text-muted-foreground/60">Need OBS? Download free at <a href="https://obsproject.com" target="_blank" rel="noopener noreferrer" className="text-primary/80 hover:text-primary">obsproject.com</a></p>
-          </div>
+          ) : null}
         </div>
       </div>
 
@@ -6268,106 +6421,130 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         }}
       />
 
-      <Dialog open={goLiveOpen} onOpenChange={setGoLiveOpen}>
-        <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
+      <Dialog open={goLiveOpen} onOpenChange={(o) => { if (!o && glStatus === "live") stopGoLive(); setGoLiveOpen(o); }}>
+        <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
-                <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${glStatus === "live" ? "bg-red-600" : "bg-white/10"}`}>
+                <div className={`w-2.5 h-2.5 rounded-full bg-white ${glStatus === "live" ? "animate-pulse" : "opacity-50"}`} />
               </div>
               Go Live
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">Stream your room to YouTube, Twitch, or TikTok using broadcasting software (OBS, Streamlabs, etc.)</p>
-          <div className="flex gap-1 border-b pb-3">
-            {(["youtube", "twitch", "tiktok"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setGoLivePlatform(p)}
-                className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors ${goLivePlatform === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
-              >
-                {p === "youtube" ? "YouTube" : p === "twitch" ? "Twitch" : "TikTok"}
-              </button>
-            ))}
-          </div>
-          {goLivePlatform === "youtube" && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                {[
-                  { step: "1", text: "Go to YouTube Studio → Go Live → Stream" },
-                  { step: "2", text: "Copy your Stream URL and Stream Key from YouTube" },
-                  { step: "3", text: "In OBS: Settings → Stream → Service: YouTube → paste key" },
-                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this browser tab" },
-                  { step: "5", text: "Click Start Streaming in OBS" },
-                ].map(({ step, text }) => (
-                  <div key={step} className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-[10px] font-bold text-white">{step}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{text}</p>
-                  </div>
-                ))}
+
+          {/* Live status */}
+          {glStatus === "live" && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-red-600/10 border border-red-600/25">
+              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-red-400">You are LIVE · {formatGlDuration(glDuration)}</p>
+                <p className="text-xs text-muted-foreground">
+                  Streaming to {goLivePlatform === "both" ? "YouTube + Twitch" : goLivePlatform === "youtube" ? "YouTube" : "Twitch"}
+                </p>
               </div>
-              <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" className="block">
-                <Button className="w-full bg-red-600 hover:bg-red-500 text-white">
-                  <ExternalLink className="w-4 h-4 mr-2" /> Open YouTube Studio
-                </Button>
-              </a>
+              <Button variant="destructive" size="sm" onClick={() => stopGoLive()}>End Stream</Button>
             </div>
           )}
-          {goLivePlatform === "twitch" && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                {[
-                  { step: "1", text: "Go to Twitch Dashboard → Settings → Stream" },
-                  { step: "2", text: "Copy your Primary Stream Key" },
-                  { step: "3", text: "In OBS: Settings → Stream → Service: Twitch → paste key" },
-                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this browser tab" },
-                  { step: "5", text: "Click Start Streaming in OBS" },
-                ].map(({ step, text }) => (
-                  <div key={step} className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-[10px] font-bold text-white">{step}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{text}</p>
-                  </div>
-                ))}
-              </div>
-              <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="block">
-                <Button className="w-full bg-purple-600 hover:bg-purple-500 text-white">
-                  <ExternalLink className="w-4 h-4 mr-2" /> Open Twitch Dashboard
-                </Button>
-              </a>
+          {glStatus === "error" && glError && (
+            <div className="p-3 rounded-xl bg-red-900/20 border border-red-600/25">
+              <p className="text-sm text-red-400">{glError}</p>
             </div>
           )}
-          {goLivePlatform === "tiktok" && (
+
+          {(glStatus === "idle" || glStatus === "error") && (<>
+            {/* Platform selector */}
+            <div className="flex gap-1 p-1 rounded-xl bg-muted/40 border">
+              {(["youtube", "twitch", "both"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setGoLivePlatform(p)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${goLivePlatform === p ? (p === "youtube" ? "bg-red-600/20 text-red-400 border border-red-600/30" : p === "twitch" ? "bg-purple-600/20 text-purple-400 border border-purple-600/30" : "bg-green-600/15 text-green-400 border border-green-600/25") : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {p === "both" ? "Both 🔗" : p === "youtube" ? "YouTube" : "Twitch"}
+                </button>
+              ))}
+            </div>
+
+            {/* Stream key fields */}
             <div className="space-y-3">
-              <div className="space-y-2">
-                {[
-                  { step: "1", text: "Open TikTok app → tap + → Go Live → PC Stream" },
-                  { step: "2", text: "Copy the Stream URL and Stream Key shown in TikTok" },
-                  { step: "3", text: "In OBS: Settings → Stream → Custom RTMP → paste URL & key" },
-                  { step: "4", text: "In OBS: Add \"Screen Capture\" source pointing to this browser tab" },
-                  { step: "5", text: "Click Start Streaming in OBS" },
-                ].map(({ step, text }) => (
-                  <div key={step} className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-[10px] font-bold text-white">{step}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{text}</p>
+              {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-red-400">YouTube Stream Key</label>
+                    <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-0.5">
+                      Get key <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
-                ))}
-              </div>
-              <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" className="block">
-                <Button className="w-full bg-black hover:bg-zinc-800 text-white">
-                  <ExternalLink className="w-4 h-4 mr-2" /> Open TikTok
-                </Button>
-              </a>
+                  <div className="relative">
+                    <input
+                      type={glShowYoutubeKey ? "text" : "password"}
+                      value={glYoutubeKey}
+                      onChange={e => setGlYoutubeKey(e.target.value)}
+                      placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
+                      className="w-full px-3 py-2 pr-9 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-red-500/50 placeholder:text-muted-foreground/40"
+                    />
+                    <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {glShowYoutubeKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-purple-400">Twitch Stream Key</label>
+                    <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-0.5">
+                      Get key <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={glShowTwitchKey ? "text" : "password"}
+                      value={glTwitchKey}
+                      onChange={e => setGlTwitchKey(e.target.value)}
+                      placeholder="live_xxxxxxxxxxxxxxxxxxxx"
+                      className="w-full px-3 py-2 pr-9 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder:text-muted-foreground/40"
+                    />
+                    <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {glShowTwitchKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* How it works */}
+            <div className="p-3 rounded-xl bg-muted/30 border space-y-2">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">How it works — no software needed</p>
+              {["Paste your stream key(s) above", "Click Go Live — your browser captures this tab", "Your room streams directly to the platform(s)", "Click End Stream when you're done"].map((t, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-primary">{i + 1}</span>
+                  <p className="text-xs text-muted-foreground">{t}</p>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              className="w-full font-bold text-white"
+              style={{
+                background: goLivePlatform === "twitch"
+                  ? "linear-gradient(135deg,#9146ff,#6523b0)"
+                  : goLivePlatform === "youtube"
+                    ? "linear-gradient(135deg,#ef4444,#b91c1c)"
+                    : "linear-gradient(135deg,#ef4444 0%,#9146ff 100%)",
+              }}
+              onClick={startGoLive}
+            >
+              <Radio className="w-4 h-4 mr-2" /> Go Live
+            </Button>
+          </>)}
+
+          {glStatus === "connecting" && (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Connecting to stream server…</p>
             </div>
           )}
-          <div className="pt-2 border-t">
-            <p className="text-[10px] text-muted-foreground text-center">Need OBS? Download free at <a href="https://obsproject.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">obsproject.com</a></p>
-          </div>
         </DialogContent>
       </Dialog>
 
