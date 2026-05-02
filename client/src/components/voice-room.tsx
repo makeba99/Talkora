@@ -3790,24 +3790,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </span>
         </div>
 
-        {/* Flip camera — shown when camera is on (most useful on mobile) */}
-        {isVideoOn && (
-          <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
-            <button
-              onClick={handleFlipCamera}
-              disabled={isFlippingCamera}
-              data-testid="button-flip-camera"
-              title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
-              className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
-              style={ghostStyle}
-            >
-              <RotateCcw className={`w-[15px] h-[15px] sm:w-[18px] sm:h-[18px] ${isFlippingCamera ? "animate-spin" : ""}`} />
-            </button>
-            <span className={labelBase} style={{ color: "rgba(255,255,255,0.32)" }}>
-              Flip
-            </span>
-          </div>
-        )}
 
         {/* Share */}
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
@@ -4328,9 +4310,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Screen-share locked", description: screenLockReason || "Sharing is disabled in this room.", variant: "destructive" });
       return;
     }
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    if (isIOS) {
-      toast({ title: "Screen sharing on iOS", description: "Use your device's built-in screen recording (Control Centre → Screen Record) then share the recorded video.", variant: "destructive" });
+    // Check API availability first — very old browsers or restricted contexts lack it
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      toast({ title: "Screen sharing not supported", description: "Your browser doesn't support screen sharing. Try Chrome on Android or Safari 16.4+ on iOS.", variant: "destructive" });
       return;
     }
     try {
@@ -9181,6 +9163,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 playsInline
                 className={`w-full h-full object-cover ${videoFlipped ? "scale-x-[-1]" : ""}`}
               />
+              {/* Flip camera button — overlaid on the camera preview for easy mobile access */}
+              <button
+                onClick={handleFlipCamera}
+                disabled={isFlippingCamera}
+                data-testid="button-flip-camera"
+                title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
+                aria-label="Flip camera"
+                className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className={`w-4 h-4 text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
+              </button>
               <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
                 <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-orange-500/60 bg-orange-900/60 flex items-center justify-center">
                   {user?.profileImageUrl ? (
@@ -10881,6 +10874,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full pointer-events-none">
               You
             </div>
+            {/* Flip camera — in mini mode, shown top-left opposite the close button */}
+            <button
+              className="absolute top-1.5 left-1.5 w-6 h-6 bg-black/60 hover:bg-black/85 rounded-full flex items-center justify-center shadow-lg transition-colors z-10 disabled:opacity-40"
+              onClick={(e) => { e.stopPropagation(); handleFlipCamera(); }}
+              disabled={isFlippingCamera}
+              data-testid="button-flip-camera-mini"
+              aria-label="Flip camera"
+              title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
+            >
+              <RotateCcw className={`w-3 h-3 text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
+            </button>
             <button
               className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-10"
               onClick={(e) => { e.stopPropagation(); setMiniCameraMode(false); setFocusedUserId(null); }}
