@@ -966,6 +966,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             src={a.src}
                             srcSet={a.srcSet}
                             alt={getUserDisplayName(p)}
+                            decoding="async"
                             className="rounded-2xl"
                             {...(priority && i === 0 ? { fetchpriority: "high" } as any : {})}
                           />;

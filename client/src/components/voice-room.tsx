@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AiTutorFace } from "@/components/ai-tutor-face";
 import { VextornMark } from "@/components/vextorn-logo";
@@ -37,8 +37,12 @@ import { ReportDialog } from "@/components/report-dialog";
 import { RoomOnboardingTour } from "@/components/room-onboarding-tour";
 import { PinnedSocialsButton } from "@/components/pinned-socials-button";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, renderReplyPreview, uploadChatImage } from "@/components/chat-picker";
-import { ChessPanel } from "@/components/chess-panel";
-import { CenterChessOverlay, ChessPlayerBadge } from "@/components/center-chess-overlay";
+const ChessPanel = lazy(() =>
+  import("@/components/chess-panel").then((m) => ({ default: m.ChessPanel }))
+);
+const CenterChessOverlay = lazy(() =>
+  import("@/components/center-chess-overlay").then((m) => ({ default: m.CenterChessOverlay }))
+);
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
@@ -6824,7 +6828,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chess" ? "flex" : "none" }}>
         {user?.id && socket && (
-          <ChessPanel socket={socket} roomId={room.id} userId={user.id} participants={participants} />
+          <Suspense fallback={null}>
+            <ChessPanel socket={socket} roomId={room.id} userId={user.id} participants={participants} />
+          </Suspense>
         )}
       </div>
       {false && (<div className="hidden">
@@ -7290,20 +7296,22 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         </div>
       )}
 
-      <CenterChessOverlay
-        socket={socket}
-        roomId={room.id}
-        userId={user?.id ?? ""}
-        forceOpen={chessSpectatorOpen}
-        onClose={() => setChessSpectatorOpen(false)}
-        onGameEnded={({ winner, whiteName, blackName, reason }) => {
-          const text = winner === "draw"
-            ? `♟️ Chess game ended in a draw between ${whiteName} and ${blackName} (${reason}).`
-            : `♟️ ${winner === "white" ? whiteName : blackName} defeated ${winner === "white" ? blackName : whiteName} at chess by ${reason}!`;
-          addSystemMessage(text);
-          setChessSpectatorOpen(false);
-        }}
-      />
+      <Suspense fallback={null}>
+        <CenterChessOverlay
+          socket={socket}
+          roomId={room.id}
+          userId={user?.id ?? ""}
+          forceOpen={chessSpectatorOpen}
+          onClose={() => setChessSpectatorOpen(false)}
+          onGameEnded={({ winner, whiteName, blackName, reason }) => {
+            const text = winner === "draw"
+              ? `♟️ Chess game ended in a draw between ${whiteName} and ${blackName} (${reason}).`
+              : `♟️ ${winner === "white" ? whiteName : blackName} defeated ${winner === "white" ? blackName : whiteName} at chess by ${reason}!`;
+            addSystemMessage(text);
+            setChessSpectatorOpen(false);
+          }}
+        />
+      </Suspense>
 
       <Dialog open={goLiveOpen} onOpenChange={(o) => { if (!o && glStatus === "live") stopGoLive(); setGoLiveOpen(o); }}>
         <DialogContent className="sm:max-w-md" aria-describedby={undefined}>

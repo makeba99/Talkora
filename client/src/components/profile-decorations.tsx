@@ -1,5 +1,3 @@
-import React from "react";
-
 // Profile decorations come in three tiers:
 //   • "professional" — restrained, premium-feeling animations suitable for
 //     work-like contexts (verified accounts, teachers, executives). Subtle
@@ -46,48 +44,6 @@ export const PROFILE_DECORATIONS = [
 export type DecorationId = typeof PROFILE_DECORATIONS[number]["id"];
 export type DecorationCategory = typeof PROFILE_DECORATIONS[number]["category"];
 
-const DECO_STYLES = `
-  @keyframes dec-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  @keyframes dec-spin-rev { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
-  @keyframes dec-pulse { 0%,100% { opacity:0.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.08); } }
-  @keyframes dec-flicker { 0%,100%{opacity:1;} 30%{opacity:0.3;} 60%{opacity:0.8;} 80%{opacity:0.1;} }
-  @keyframes dec-float-up { 0%{transform:translateY(0) scale(1);opacity:1;} 100%{transform:translateY(-60px) scale(0.3);opacity:0;} }
-  @keyframes dec-float-up2 { 0%{transform:translateY(0) translateX(0) scale(1);opacity:1;} 100%{transform:translateY(-55px) translateX(8px) scale(0.2);opacity:0;} }
-  @keyframes dec-snow-fall { 0%{transform:translateY(-10px) rotate(0deg);opacity:0;} 15%{opacity:1;} 85%{opacity:0.6;} 100%{transform:translateY(80px) rotate(360deg);opacity:0;} }
-  @keyframes dec-orbit { from{transform:rotate(var(--a)) translateX(var(--r));} to{transform:rotate(calc(var(--a) + 360deg)) translateX(var(--r));} }
-  @keyframes dec-twinkle { 0%,100%{opacity:0;transform:scale(0) rotate(0deg);} 40%{opacity:1;transform:scale(1.4) rotate(60deg);} 70%{opacity:0.8;transform:scale(1) rotate(120deg);} }
-  @keyframes dec-heart-float { 0%{opacity:0;transform:translate(0,0) scale(0.5) rotate(-10deg);} 20%{opacity:1;} 80%{opacity:0.6;} 100%{opacity:0;transform:translate(var(--hx),var(--hy)) scale(0.9) rotate(10deg);} }
-  @keyframes dec-bubble-rise { 0%{opacity:0;transform:translateY(0) scale(0.4);} 20%{opacity:0.9;} 80%{opacity:0.5;} 100%{opacity:0;transform:translateY(-70px) scale(1.1);} }
-  @keyframes dec-petal { 0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(0.5);} 20%{opacity:1;} 80%{opacity:0.7;} 100%{opacity:0;transform:translate(var(--px),var(--py)) rotate(var(--pr)) scale(1);} }
-  @keyframes dec-rainbow-spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
-  @keyframes dec-glow-pulse { 0%,100%{filter:brightness(1) blur(2px);} 50%{filter:brightness(1.5) blur(3px);} }
-  @keyframes dec-arc-flash { 0%{opacity:0;stroke-dashoffset:200;} 20%{opacity:1;stroke-dashoffset:100;} 50%{opacity:0.8;stroke-dashoffset:0;} 80%{opacity:0.4;} 100%{opacity:0;stroke-dashoffset:-100;} }
-  @keyframes dec-particle-orbit { from{transform:rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a)));} to{transform:rotate(calc(var(--a) + 360deg)) translateX(var(--r)) rotate(calc(-1 * (var(--a) + 360deg)));} }
-
-  /* Professional decoration keyframes — restrained motion only.
-     All use transform/opacity so the GPU can composite them cheaply. */
-  @keyframes dec-breath { 0%,100% { opacity:0.55; } 50% { opacity:1; } }
-  @keyframes dec-sentinel-expand {
-    0% { transform: scale(1); opacity: 0.9; }
-    100% { transform: scale(1.32); opacity: 0; }
-  }
-  @keyframes dec-aurora-shimmer {
-    0%,100% { opacity: 0.85; }
-    50% { opacity: 1; }
-  }
-
-  /* Accessibility — disable decoration animations entirely for users who
-     have requested reduced motion. The static ring/shape is still drawn,
-     just without movement. */
-  @media (prefers-reduced-motion: reduce) {
-    .deco-wrap *,
-    .deco-wrap *::before,
-    .deco-wrap *::after {
-      animation: none !important;
-      transition: none !important;
-    }
-  }
-`;
 
 function uid(prefix: string, i: number) { return `${prefix}-${i}`; }
 
@@ -1186,7 +1142,6 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
     // The "deco-wrap" class is what the prefers-reduced-motion media query
     // hooks into to disable all animations inside this subtree.
     <div style={wrapStyle} className="deco-wrap">
-      <style>{DECO_STYLES}</style>
       {/* Professional set */}
       {decorationId === "aurora" && <AuroraRing size={size} />}
       {decorationId === "executive" && <ExecutiveRing size={size} />}

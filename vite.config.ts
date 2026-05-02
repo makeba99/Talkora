@@ -55,6 +55,9 @@ export default defineConfig({
         }
       : undefined,
   build: {
+    // Modern browsers (ES2022 target) natively support modulepreload — the
+    // Vite polyfill is dead weight for our audience. Removing it saves ~1 kB.
+    modulePreload: { polyfill: false },
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     // Modern target = smaller bundles (no transpiled async/await, optional
