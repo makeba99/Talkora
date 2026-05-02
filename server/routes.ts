@@ -14,7 +14,7 @@ import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "./elevenlabs";
-import { startStream, writeChunk, stopStream, getStreamInfo, stopAllStreamsForUser } from "./streaming";
+import { startStream, writeChunk, stopStream, getStreamInfo, stopAllStreamsForUser, getViewerCounts } from "./streaming";
 import {
   renderIndexHtml,
   getOrigin,
@@ -1647,12 +1647,12 @@ export async function registerRoutes(
   // ── Direct Streaming (RTMP relay via FFmpeg) ─────────────────────────────
   app.post("/api/stream/start", isAuthenticated, apiRateLimiter, async (req: any, res) => {
     try {
-      const { twitchKey, youtubeKey, roomId } = req.body;
+      const { twitchKey, youtubeKey, roomId, twitchUsername, youtubeChannelId } = req.body;
       const userId = req.user?.id?.toString();
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
       if (!twitchKey && !youtubeKey) return res.status(400).json({ message: "Provide at least one stream key" });
       const streamId = `${userId}-${Date.now()}`;
-      const result = startStream({ streamId, userId, roomId: roomId || "", twitchKey, youtubeKey });
+      const result = startStream({ streamId, userId, roomId: roomId || "", twitchKey, youtubeKey, twitchUsername, youtubeChannelId });
       if (!result.ok) return res.status(500).json({ message: result.error });
       res.json({ streamId });
     } catch (err: any) {
@@ -1696,6 +1696,18 @@ export async function registerRoutes(
     const info = getStreamInfo(req.params.streamId);
     if (!info) return res.json({ active: false });
     res.json({ active: true, ...info });
+  });
+
+  app.get("/api/stream/:streamId/viewers", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id?.toString();
+      const info = getStreamInfo(req.params.streamId);
+      if (info && info.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+      const counts = await getViewerCounts(req.params.streamId);
+      res.json(counts);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
   // ─────────────────────────────────────────────────────────────────────────
 

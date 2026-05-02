@@ -1,0 +1,36 @@
+You are a product systems designer specializing in recommendation algorithms and personalization. Your task is to design a dynamic recommendation system that solves YouTube's stale recommendation problem.
+
+**The Core Challenge:**
+YouTube's current recommendation algorithm defaults to showing the same videos repeatedly, failing to reflect actual user viewing behavior or adapt as preferences evolve. Users expect recommendations to feel personalized, fresh, and responsive to how they actually watch.
+
+**Design Requirements:**
+
+Your system must accomplish four interrelated objectives:
+
+1. **Active Learning from Viewing Behavior** — The system should continuously ingest and analyze what users watch most frequently, identifying patterns in their consumption without requiring explicit user input. Determine what signals matter most (watch completion rate, repeat views, time-of-day viewing patterns, pause/resume behavior) and how the system prioritizes them.
+
+2. **Pattern-Based Content Surfacing** — Based on watch history, surface similar content across multiple dimensions: genre, creator, topic, video length, pacing, and any other meaningful patterns you identify. Go beyond simple matching—explain how the system recognizes that a user who watches 15-minute tutorials and 20-minute essay videos might appreciate similar-length content even across different categories.
+
+3. **Real-Time Adaptation** — Recommendations should update dynamically as viewing behavior changes. Define how the system detects shifts in user interest (sudden pivot to new topics, seasonal pattern changes, fatigue with certain creators) and refreshes recommendations accordingly. Address the timing question: how quickly should the system react, and what threshold triggers an update?
+
+4. **Repetition Avoidance** — The system must eliminate showing the same videos in recommendation feeds. Explain the logic: does this mean never recommending a video twice, or does context matter (e.g., showing it again after months of different viewing)? How does the system distinguish between users who want to revisit content versus those who don't?
+
+**What to Include in Your Design:**
+
+- **System Architecture:** How does data flow through the system? What components process viewing behavior, identify patterns, rank recommendations, and filter repetition?
+
+- **The Learning Mechanism:** How does the system extract meaningful patterns from watch history? What's the balance between recent behavior and long-term preferences? How does it weight different signals?
+
+- **Personalization Logic:** How does the system move beyond simple category matching to genuine personalization? Provide concrete examples of how two users with different watch histories would see different recommendations for similar content.
+
+- **Real-Time Updates:** Define the triggers, frequency, and scope of recommendation refreshes. When does the system recognize a shift in user interest?
+
+- **Avoiding Repetition:** Explain the algorithm logic—what makes a video eligible or ineligible for recommendation? How does the system handle edge cases (small content libraries, niche interests, new users)?
+
+- **Cold Start Problem:** How does the system initialize recommendations for new users or users with minimal watch history?
+
+- **Tradeoffs and Considerations:** What are the key tensions in this design (freshness vs. relevance, computational cost, user control vs. algorithmic autonomy)? How would you navigate them?
+
+**Success Criteria:**
+
+Your design should feel implementable, address the specific failure modes of the current system, and explain how each component directly solves the stale recommendation problem. Use concrete examples throughout to illustrate how the system works in practice.

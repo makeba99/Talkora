@@ -1057,12 +1057,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [glYoutubeKey, setGlYoutubeKey] = useState("");
   const [glShowTwitchKey, setGlShowTwitchKey] = useState(false);
   const [glShowYoutubeKey, setGlShowYoutubeKey] = useState(false);
+  const [glTwitchUsername, setGlTwitchUsername] = useState("");
+  const [glYoutubeChannelId, setGlYoutubeChannelId] = useState("");
   const [glStatus, setGlStatus] = useState<"idle" | "connecting" | "live" | "error">("idle");
   const [glStreamId, setGlStreamId] = useState<string | null>(null);
   const [glError, setGlError] = useState<string | null>(null);
   const [glDuration, setGlDuration] = useState(0);
+  const [glViewers, setGlViewers] = useState<{ twitch: number | null; youtube: number | null; twitchAvailable: boolean; youtubeAvailable: boolean } | null>(null);
   const glMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const glDurationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const glViewerPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -3896,7 +3900,13 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ twitchKey: twitchKey || undefined, youtubeKey: youtubeKey || undefined, roomId: room.id }),
+        body: JSON.stringify({
+          twitchKey: twitchKey || undefined,
+          youtubeKey: youtubeKey || undefined,
+          roomId: room.id,
+          twitchUsername: glTwitchUsername.trim() || undefined,
+          youtubeChannelId: glYoutubeChannelId.trim() || undefined,
+        }),
       });
     } catch {
       setGlStatus("error");
@@ -3942,8 +3952,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     mr.start(2000);
     setGlStatus("live");
     setGlDuration(0);
+    setGlViewers(null);
     glDurationRef.current = setInterval(() => setGlDuration(d => d + 1), 1000);
-  }, [goLivePlatform, glTwitchKey, glYoutubeKey, room.id]);
+
+    const pollViewers = async () => {
+      try {
+        const r = await fetch(`/api/stream/${streamId}/viewers`, { credentials: "include" });
+        if (r.ok) setGlViewers(await r.json());
+      } catch {}
+    };
+    pollViewers();
+    glViewerPollRef.current = setInterval(pollViewers, 30_000);
+  }, [goLivePlatform, glTwitchKey, glYoutubeKey, glTwitchUsername, glYoutubeChannelId, room.id]);
 
   const stopGoLive = useCallback(async (sid?: string) => {
     const id = sid ?? glStreamId;
@@ -3952,8 +3972,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     }
     glMediaRecorderRef.current = null;
     if (glDurationRef.current) { clearInterval(glDurationRef.current); glDurationRef.current = null; }
+    if (glViewerPollRef.current) { clearInterval(glViewerPollRef.current); glViewerPollRef.current = null; }
     setGlStatus("idle");
     setGlDuration(0);
+    setGlViewers(null);
     if (id) {
       setGlStreamId(null);
       fetch(`/api/stream/${id}/stop`, { method: "POST", credentials: "include" }).catch(() => {});
@@ -6095,14 +6117,37 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
           {/* Live status bar */}
           {glStatus === "live" && (
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-600/10 border border-red-600/25">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-red-400">You are LIVE</p>
-                <p className="text-[10px] text-muted-foreground truncate">
-                  Streaming to {goLivePlatform === "both" ? "YouTube + Twitch" : goLivePlatform === "youtube" ? "YouTube" : "Twitch"} · {formatGlDuration(glDuration)}
-                </p>
+            <div className="p-2.5 rounded-lg bg-red-600/10 border border-red-600/25 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-red-400">You are LIVE · {formatGlDuration(glDuration)}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {goLivePlatform === "both" ? "YouTube + Twitch" : goLivePlatform === "youtube" ? "YouTube" : "Twitch"}
+                  </p>
+                </div>
               </div>
+              {glViewers && (
+                <div className="flex items-center gap-2 pt-0.5 border-t border-red-600/15">
+                  {glViewers.twitch !== null && (
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                      <span className="text-[10px] text-purple-300 font-semibold">{glViewers.twitch.toLocaleString()}</span>
+                      <span className="text-[9px] text-muted-foreground">viewers</span>
+                    </div>
+                  )}
+                  {glViewers.youtube !== null && (
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                      <span className="text-[10px] text-red-300 font-semibold">{glViewers.youtube.toLocaleString()}</span>
+                      <span className="text-[9px] text-muted-foreground">viewers</span>
+                    </div>
+                  )}
+                  {glViewers.twitch === null && glViewers.youtube === null && (
+                    <span className="text-[9px] text-muted-foreground/50">Viewer counts unavailable — add username below to enable</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {glStatus === "error" && glError && (
@@ -6170,6 +6215,34 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         {glShowTwitchKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Optional viewer count usernames */}
+              <div className="space-y-1.5">
+                {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
+                  <div>
+                    <label className="text-[9px] font-semibold text-white/40 uppercase tracking-wide">YouTube Channel ID <span className="normal-case font-normal">(optional · for live viewer count)</span></label>
+                    <input
+                      type="text"
+                      value={glYoutubeChannelId}
+                      onChange={e => setGlYoutubeChannelId(e.target.value)}
+                      placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
+                      className="mt-0.5 w-full px-2.5 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/40"
+                    />
+                  </div>
+                )}
+                {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
+                  <div>
+                    <label className="text-[9px] font-semibold text-white/40 uppercase tracking-wide">Twitch Username <span className="normal-case font-normal">(optional · for live viewer count)</span></label>
+                    <input
+                      type="text"
+                      value={glTwitchUsername}
+                      onChange={e => setGlTwitchUsername(e.target.value)}
+                      placeholder="yourchannelname"
+                      className="mt-0.5 w-full px-2.5 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/40"
+                    />
                   </div>
                 )}
               </div>
@@ -6434,15 +6507,42 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
           {/* Live status */}
           {glStatus === "live" && (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-red-600/10 border border-red-600/25">
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-red-400">You are LIVE · {formatGlDuration(glDuration)}</p>
-                <p className="text-xs text-muted-foreground">
-                  Streaming to {goLivePlatform === "both" ? "YouTube + Twitch" : goLivePlatform === "youtube" ? "YouTube" : "Twitch"}
-                </p>
+            <div className="p-3 rounded-xl bg-red-600/10 border border-red-600/25 space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-400">You are LIVE · {formatGlDuration(glDuration)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {goLivePlatform === "both" ? "YouTube + Twitch" : goLivePlatform === "youtube" ? "YouTube" : "Twitch"}
+                  </p>
+                </div>
+                <Button variant="destructive" size="sm" onClick={() => stopGoLive()}>End Stream</Button>
               </div>
-              <Button variant="destructive" size="sm" onClick={() => stopGoLive()}>End Stream</Button>
+              {glViewers && (
+                <div className="flex items-center gap-3 pt-2 border-t border-red-600/20">
+                  {glViewers.twitch !== null ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                      <span className="text-sm font-bold text-purple-300">{glViewers.twitch.toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">on Twitch</span>
+                    </div>
+                  ) : glViewers.twitchAvailable && goLivePlatform !== "youtube" ? (
+                    <span className="text-xs text-muted-foreground/50">Add Twitch username for live count</span>
+                  ) : null}
+                  {glViewers.youtube !== null ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-sm font-bold text-red-300">{glViewers.youtube.toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground">on YouTube</span>
+                    </div>
+                  ) : glViewers.youtubeAvailable && goLivePlatform !== "twitch" ? (
+                    <span className="text-xs text-muted-foreground/50">Add Channel ID for live count</span>
+                  ) : null}
+                  {!glViewers.twitchAvailable && !glViewers.youtubeAvailable && (
+                    <span className="text-xs text-muted-foreground/50 italic">Viewer counts require API credentials — see docs</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {glStatus === "error" && glError && (
@@ -6509,6 +6609,34 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       {glShowTwitchKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Optional viewer count fields */}
+            <div className="space-y-2">
+              {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">YouTube Channel ID <span className="normal-case font-normal">(optional — enables live viewer count)</span></label>
+                  <input
+                    type="text"
+                    value={glYoutubeChannelId}
+                    onChange={e => setGlYoutubeChannelId(e.target.value)}
+                    placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
+                    className="w-full px-3 py-2 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-red-500/40 placeholder:text-muted-foreground/40"
+                  />
+                </div>
+              )}
+              {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Twitch Username <span className="normal-case font-normal">(optional — enables live viewer count)</span></label>
+                  <input
+                    type="text"
+                    value={glTwitchUsername}
+                    onChange={e => setGlTwitchUsername(e.target.value)}
+                    placeholder="yourchannelname"
+                    className="w-full px-3 py-2 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-purple-500/40 placeholder:text-muted-foreground/40"
+                  />
                 </div>
               )}
             </div>
