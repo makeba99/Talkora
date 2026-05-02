@@ -2281,19 +2281,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         // to the screen slot regardless of label heuristics.
         screenSharingPeerIds.current.add(data.userId);
         setAvailableScreenUsers((prev) => { const n = new Set(Array.from(prev)); n.add(data.userId); return n; });
-        // A screen share takes over the visual focus of the room. If a YouTube
-        // watch party is active, automatically dismiss the YouTube viewer for
-        // everyone — the broadcaster stops the video for the whole room, while
-        // watchers just hide their player. This avoids overlapping
-        // full-screen surfaces fighting for attention.
-        if (youtubeStartedByRef.current) {
-          if (user.id === youtubeStartedByRef.current) {
-            try { handleStopYoutube(); } catch (_) {}
-          } else {
-            setShowYoutube(false);
-            setMiniPlayerMode(false);
-          }
-        }
+        // A screen share from another user does NOT affect an active YouTube
+        // session. YouTube continues uninterrupted — the room can watch both
+        // independently. YouTube only gets hidden if the YouTube starter
+        // explicitly clicks on the screen-sharer's tile to watch their screen.
       } else {
         screenSharingPeerIds.current.delete(data.userId);
         remoteScreenStreams.current.delete(data.userId);
@@ -3864,18 +3855,10 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       screenStream.current = stream;
       setIsScreenSharing(true);
       socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: true });
-      // Mirror the same auto-dismiss behaviour the room sees in the
-      // socket listener: a screen share takes over the focus, so stop or
-      // hide the YouTube watch party right away on the sharer's screen
-      // (the socket listener short-circuits for self).
-      if (activeYoutubeId) {
-        if (user?.id === youtubeStartedByRef.current) {
-          try { handleStopYoutube(); } catch (_) {}
-        } else {
-          setShowYoutube(false);
-          setMiniPlayerMode(false);
-        }
-      }
+      // When the local user starts sharing their own screen, just minimize
+      // YouTube for themselves — never stop it for the whole room. Other
+      // watchers keep watching uninterrupted. If this user is not involved
+      // with YouTube at all, leave it completely alone.
       if (screenVideoRef.current) {
         screenVideoRef.current.srcObject = stream;
       }
@@ -4193,7 +4176,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     // If the clicked participant is sharing their screen, open the screen
     // viewer for me — same one-tap flow as joining a YouTube watch party.
     // Tapping the same person again toggles the viewer back off.
+    // Special case: if THIS user is the YouTube starter and they click the
+    // screen-sharer's tile to watch it, minimize YouTube for them only —
+    // the video keeps running for everyone else in the room.
     if (isClickingOther && availableScreenUsers.has(peerId) && !isScreenSharing) {
+      if (activeYoutubeId && user?.id === youtubeStartedByRef.current) {
+        setShowYoutube(false);
+        setMiniPlayerMode(false);
+      }
       handleWatchScreen(peerId);
       return;
     }
