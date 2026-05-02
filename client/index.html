@@ -276,8 +276,8 @@
          so the browser reuses the same request rather than opening a duplicate.
          Only the two lobby-critical endpoints — /api/rooms and /api/auth/user —
          are preloaded; the rest are secondary and would compete for bandwidth. -->
-    <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" />
-    <link rel="preload" href="/api/rooms" as="fetch" crossorigin="use-credentials" />
+    <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
+    <link rel="preload" href="/api/rooms" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
     <!-- Self-recovery for users on the old service worker. The previous SW
          used stale-while-revalidate for HTML and pre-cached "/", so after a
          deploy returning users got the OLD index.html that referenced new-
