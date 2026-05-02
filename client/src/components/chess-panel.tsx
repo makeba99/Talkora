@@ -745,7 +745,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
           ) : (
             <>
               <div className="rounded-xl overflow-hidden border border-border/60 bg-black aspect-square">
-                <iframe src={lichessEmbedUrl(lichess.url)} className="w-full h-full border-0" loading="lazy" allow="fullscreen" data-testid="iframe-lichess" />
+                <iframe src={lichessEmbedUrl(lichess.url)} title="Lichess chess game" className="w-full h-full border-0" loading="lazy" allow="fullscreen" data-testid="iframe-lichess" />
               </div>
               <div className="flex gap-2">
                 <a href={lichess.url} target="_blank" rel="noopener noreferrer" className="flex-1">

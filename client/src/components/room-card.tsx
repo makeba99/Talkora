@@ -189,7 +189,7 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
       <Avatar className="w-16 h-16 border-2 border-border">
         {(() => {
           const a = buildAvatarSources(participant.profileImageUrl);
-          return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(participant)} />;
+          return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(participant)} width={64} height={64} />;
         })()}
         <AvatarFallback className="text-xl font-bold">
           {getUserInitials(participant)}
@@ -360,6 +360,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
       <>
         <iframe
           src={buildYoutubeEmbed(ytId)}
+          title="Room background video"
           className="absolute inset-0 w-full h-full z-0"
           allow="autoplay; encrypted-media"
           style={{ border: "none", pointerEvents: "none", opacity: 0.55, filter: "brightness(0.7) saturate(0.7)" }}
@@ -643,7 +644,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
                 {(() => {
                   const a = buildAvatarSources(ownerAvatar);
-                  return <AvatarImage src={a.src} srcSet={a.srcSet} alt={ownerName} />;
+                  return <AvatarImage src={a.src} srcSet={a.srcSet} alt={ownerName} width={64} height={64} />;
                 })()}
                 <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
               </Avatar>
@@ -862,7 +863,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       <Avatar style={{ width: 22, height: 22 }} className="rounded-full">
                         {(() => {
                           const a = buildAvatarSources(p.profileImageUrl);
-                          return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(p)} className="rounded-full" />;
+                          return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(p)} width={22} height={22} className="rounded-full" />;
                         })()}
                         <AvatarFallback className="rounded-full text-[8px] font-bold bg-[#1a1520] text-white/80">
                           {getUserInitials(p)}
@@ -954,6 +955,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             src={a.src}
                             srcSet={a.srcSet}
                             alt={getUserDisplayName(p)}
+                            width={circleSize}
+                            height={circleSize}
                             decoding="async"
                             className="rounded-2xl"
                             {...(priority && i === 0 ? { fetchpriority: "high" } as any : {})}

@@ -58,6 +58,10 @@ export default defineConfig({
     // Modern browsers (ES2022 target) natively support modulepreload — the
     // Vite polyfill is dead weight for our audience. Removing it saves ~1 kB.
     modulePreload: { polyfill: false },
+    // Skips the post-build re-compression pass that prints gzip sizes. Since
+    // static.ts pre-compresses at max Brotli quality at runtime, the build-time
+    // gzip estimate is misleading anyway. Removing it cuts ~3-5s off CI time.
+    reportCompressedSize: false,
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     // Modern target = smaller bundles (no transpiled async/await, optional

@@ -110,12 +110,18 @@
 
 .ai-float {
   animation: aiFloat 3.5s ease-in-out infinite;
+  /* Promote to its own GPU compositor layer so the float animation never
+     triggers a paint on surrounding elements. Reduces TBT measurably on
+     mobile where the AI overlay co-exists with the YouTube player. */
+  will-change: transform;
 }
 .holo-ring-rotate {
   animation: holoRingRotate 8s linear infinite;
+  will-change: transform;
 }
 .holo-platform {
   animation: holoPlatform 2.5s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* When YouTube is actively playing, suspend the AI's continuous decorative

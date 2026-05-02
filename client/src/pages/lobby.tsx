@@ -1957,7 +1957,7 @@ export default function Lobby() {
           )}
 
           {activeDiscovery !== "rooms" ? (
-            <section className="space-y-3" data-testid="section-people-discovery">
+            <section className="space-y-3" aria-label="People discovery" data-testid="section-people-discovery">
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-black text-white" data-testid="text-people-discovery-title">

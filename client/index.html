@@ -213,6 +213,10 @@
          fight the LCP candidate for bandwidth on slow mobile networks). -->
     <link rel="dns-prefetch" href="https://www.youtube.com" />
     <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
+    <!-- i.ytimg.com serves YouTube thumbnails used immediately in hologram room
+         backgrounds — upgrading to preconnect completes the TLS handshake
+         before the first thumbnail request, saving ~200ms on mobile. -->
+    <link rel="preconnect" href="https://i.ytimg.com" crossorigin />
     <link rel="dns-prefetch" href="https://i.ytimg.com" />
     <link rel="dns-prefetch" href="https://s.ytimg.com" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
