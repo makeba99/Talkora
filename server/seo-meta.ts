@@ -115,12 +115,18 @@ export interface InjectOptions {
  * Render the built index.html with the given route-specific metadata
  * applied. Every regex is anchored to the exact attribute layout in
  * `client/index.html` — keep them in sync if you edit the template head.
+ *
+ * @param baseHtml - Optional pre-transformed HTML to use instead of reading
+ *   the raw on-disk template. Pass the fully-transformed string from
+ *   `getPrecomputedHtml()` (server/static.ts) so that CSS-async and
+ *   modulepreload injections are preserved when doing meta substitutions.
  */
 export function renderIndexHtml(
   origin: string,
   opts: InjectOptions,
+  baseHtml?: string | null,
 ): string | null {
-  const template = loadTemplate();
+  const template = baseHtml ?? loadTemplate();
   if (!template) return null;
 
   const fallbackImage = `${origin}/vextorn-icon-512.png`;

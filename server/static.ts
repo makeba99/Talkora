@@ -211,6 +211,17 @@ const MIME_BY_EXT: Record<string, string> = {
   ".ico": "image/x-icon",
 };
 
+// Cached reference to the precomputed index.html so that route handlers
+// registered before serveStatic() can still base their meta-injection on the
+// fully-transformed HTML (CSS async, modulepreload injections, etc.) rather
+// than the raw on-disk template. Set during serveStatic() initialisation.
+let _precomputedHtml: string | null = null;
+
+/** Returns the fully-transformed index.html built at startup, or null in dev. */
+export function getPrecomputedHtml(): string | null {
+  return _precomputedHtml;
+}
+
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
   if (!fs.existsSync(distPath)) {
@@ -220,6 +231,7 @@ export function serveStatic(app: Express) {
   }
 
   const precomputed = precomputeIndexHtml(distPath);
+  _precomputedHtml = precomputed?.html ?? null;
 
   // Pre-compressed asset handler. At build time we emit `<file>.br` (Brotli
   // q11) and `<file>.gz` (gzip 9) next to every text asset in dist/public/.

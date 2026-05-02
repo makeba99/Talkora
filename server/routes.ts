@@ -20,6 +20,7 @@ import {
   getOrigin,
   type BreadcrumbItem,
 } from "./seo-meta";
+import { getPrecomputedHtml } from "./static";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -391,13 +392,16 @@ export async function registerRoutes(
         ? `${publicCount} live room${publicCount === 1 ? "" : "s"} · `
         : "";
 
+      // Use the fully-transformed precomputed HTML (CSS-async, modulepreload
+      // injections) as the base so the lobby loads correctly in production.
+      // Falls back to the raw on-disk template if precomputed isn't ready yet.
       const html = renderIndexHtml(origin, {
         title: `${countPrefix}Vextorn — Talk. Share. Belong.`,
         description:
           "Join live voice rooms to practice languages with speakers worldwide. Beginner to advanced levels in English, Spanish, French, Japanese and more.",
         canonical: `${origin}/`,
         breadcrumbs: [{ name: "Home", url: "/" }],
-      });
+      }, getPrecomputedHtml());
       if (!html) return next();
 
       lobbyHtmlCache.set(origin, { html, expiresAt: now + LOBBY_TTL_MS });
