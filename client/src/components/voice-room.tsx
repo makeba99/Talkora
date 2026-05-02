@@ -8403,43 +8403,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 data-testid="iframe-movie-player"
               />
 
-              {/* Floating watch-party reactions — emojis drift up from the bottom
-                  of the movie player with the sender's avatar, visible to all watchers. */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden z-10" data-testid="movie-floating-reactions">
-                {movieFloatingReactions.map(r => {
-                  const sender = participants.find(p => p.id === r.userId);
-                  const senderName = sender ? getUserDisplayName(sender) : "";
-                  return (
-                    <div
-                      key={r.id}
-                      className="absolute flex flex-col items-center gap-1 select-none"
-                      style={{
-                        left: `${r.left}%`,
-                        bottom: 0,
-                        animation: "ytReactionFloat 2.8s ease-out forwards",
-                      }}
-                    >
-                      <span className="text-3xl" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}>
-                        {r.emoji}
-                      </span>
-                      {sender && (
-                        <div className="flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full pl-0.5 pr-2 py-0.5 border border-white/15 shadow-md">
-                          <Avatar className="w-4 h-4">
-                            <AvatarImage src={sender.profileImageUrl || undefined} alt="" />
-                            <AvatarFallback className="text-[8px] bg-violet-500/40 text-white">
-                              {senderName.slice(0, 1).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-[9px] text-white/95 font-medium leading-none whitespace-nowrap">
-                            {senderName}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
               {/* Reactions toggle + collapsible emoji picker — hidden by default, tap smiley to reveal */}
               <div
                 className="absolute right-3 bottom-6 z-20 flex items-center gap-2"
@@ -8685,46 +8648,6 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
-                </div>
-
-                {/* Floating watch-party reactions — emojis drift up from the bottom
-                    of the video with the sender's avatar attached, so everyone can
-                    see WHO reacted. Visible to the starter and to every joined
-                    watcher (it lives inside the player container, which renders
-                    only when showYoutube is true). */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden z-10" data-testid="yt-floating-reactions">
-                  {ytFloatingReactions.map(r => {
-                    const sender = participants.find(p => p.id === r.userId);
-                    const senderName = sender ? getUserDisplayName(sender) : "";
-                    return (
-                      <div
-                        key={r.id}
-                        className="absolute flex flex-col items-center gap-1 select-none"
-                        style={{
-                          left: `${r.left}%`,
-                          bottom: 0,
-                          animation: "ytReactionFloat 2.8s ease-out forwards",
-                        }}
-                      >
-                        <span className="text-3xl" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}>
-                          {r.emoji}
-                        </span>
-                        {sender && (
-                          <div className="flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full pl-0.5 pr-2 py-0.5 border border-white/15 shadow-md">
-                            <Avatar className="w-4 h-4">
-                              <AvatarImage src={sender.profileImageUrl || undefined} alt="" />
-                              <AvatarFallback className="text-[8px] bg-purple-500/40 text-white">
-                                {senderName.slice(0, 1).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-[9px] text-white/95 font-medium leading-none whitespace-nowrap">
-                              {senderName}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
                 </div>
 
                 {/* Reactions toggle (smiley) + collapsible reactions/voting panel.
@@ -9605,6 +9528,47 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               )}
             </div>
           </div>
+
+          {/* ── Unified floating watch-party reactions overlay ──
+               Rendered at the content-area level so emojis float freely
+               OVER the player AND the participant strip without being clipped.
+               z-[60] ensures it sits above the strip (z-10) and host controls (z-20). */}
+          {(ytFloatingReactions.length > 0 || movieFloatingReactions.length > 0) && (
+            <div className="absolute inset-0 pointer-events-none z-[60]" aria-hidden="true" data-testid="watch-party-reactions-overlay">
+              {[...ytFloatingReactions, ...movieFloatingReactions].map(r => {
+                const sender = participants.find(p => p.id === r.userId);
+                const senderName = sender ? getUserDisplayName(sender) : "";
+                return (
+                  <div
+                    key={r.id}
+                    className="absolute flex flex-col items-center gap-1 select-none"
+                    style={{
+                      left: `${r.left}%`,
+                      bottom: 210,
+                      animation: "ytReactionFloat 2.8s ease-out forwards",
+                    }}
+                  >
+                    <span className="text-3xl" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}>
+                      {r.emoji}
+                    </span>
+                    {sender && (
+                      <div className="flex items-center gap-1 bg-black/65 backdrop-blur-sm rounded-full pl-0.5 pr-2 py-0.5 border border-white/15 shadow-md">
+                        <Avatar className="w-4 h-4">
+                          <AvatarImage src={sender.profileImageUrl || undefined} alt="" />
+                          <AvatarFallback className="text-[8px] bg-violet-500/40 text-white">
+                            {senderName.slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-[9px] text-white/95 font-medium leading-none whitespace-nowrap">
+                          {senderName}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* ── AI Tutor "in use" indicator for other participants ── */}
           {!aiTutorActive && roomAiTutorSession?.active && roomAiTutorSession.userId !== user?.id && (
