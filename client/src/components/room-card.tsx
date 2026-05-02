@@ -1071,6 +1071,18 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           {/* ── Footer ── */}
           <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
             <div className="flex items-center gap-2">
+              {/* Participant count chip */}
+              <div
+                className="flex items-center gap-0.5 text-white/40"
+                data-testid={`badge-participants-${room.id}`}
+                title={`${participants.length} of ${isUnlimited ? "∞" : room.maxUsers} participants`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-semibold tabular-nums">
+                  {participants.length}{!isUnlimited && `/${room.maxUsers}`}
+                </span>
+              </div>
+
               {isLoggedIn && onVote && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onVote(); }}
