@@ -185,6 +185,10 @@
         background-color: #0d0b18;
         color: #e9e7ff;
         min-height: 100%;
+        /* Reserve space for the scrollbar gutter so that when enough room
+           cards load to require a vertical scrollbar, its 15 px appearance
+           does not shift all page content left → CLS delta eliminated. */
+        scrollbar-gutter: stable;
       }
       @media (prefers-color-scheme: light) {
         html, body { background-color: #f5f3ff; color: #1a1530; }
