@@ -840,7 +840,7 @@ export async function registerRoutes(
   });
 
   // ── Movie search / popular (TMDB + curated fallback) ──────────────────────
-  app.get("/api/movies/popular", isAuthenticated, async (_req: any, res) => {
+  app.get("/api/movies/popular", async (_req: any, res) => {
     try {
       const cacheKey = "movies:popular";
       const cached = externalCache.get(cacheKey);
@@ -869,7 +869,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/movies/search", isAuthenticated, async (req: any, res) => {
+  app.get("/api/movies/search", async (req: any, res) => {
     try {
       const q = ((req.query.q as string) || "").trim();
       if (!q) return res.json([]);

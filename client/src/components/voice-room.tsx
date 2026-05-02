@@ -1363,6 +1363,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   }, [movieStartedBy]);
 
   useEffect(() => {
+    if (sidePanelTab === "movies" && popularMovies.length === 0 && !popularMoviesLoading) {
+      setPopularMoviesLoading(true);
+      fetch("/api/movies/popular")
+        .then(r => r.ok ? r.json() : [])
+        .then(data => { if (Array.isArray(data) && data.length > 0) setPopularMovies(data); })
+        .catch(() => {})
+        .finally(() => setPopularMoviesLoading(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sidePanelTab]);
+
+  useEffect(() => {
     ytQueueRef.current = ytQueue;
   }, [ytQueue]);
 
@@ -5096,7 +5108,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
         <button onClick={() => setSidePanelTab("youtube")} data-testid="tab-youtube" title="YouTube" className="room-tab-btn" data-accent="youtube" data-active={sidePanelTab === "youtube"}>
           <Youtube className="w-[15px] h-[15px]" />
         </button>
-        <button onClick={() => { setSidePanelTab("movies"); loadPopularMovies(); }} data-testid="tab-movies" title="Movies" className="room-tab-btn" data-accent="movies" data-active={sidePanelTab === "movies"}>
+        <button onClick={() => setSidePanelTab("movies")} data-testid="tab-movies" title="Movies" className="room-tab-btn" data-accent="movies" data-active={sidePanelTab === "movies"}>
           <Film className="w-[15px] h-[15px]" />
         </button>
         <button onClick={() => setSidePanelTab("read")} data-testid="tab-read" title="Read" className="room-tab-btn" data-accent="read" data-active={sidePanelTab === "read"}>
