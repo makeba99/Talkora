@@ -2292,6 +2292,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           return next;
         });
         if (hostId === user.id) {
+          setShowYoutube(false);
+          setMiniPlayerMode(false);
           setActiveMovieId(data.movieId);
           setActiveMovieTitle(data.movieTitle || "");
           setActiveMoviePoster(data.posterPath || "");
@@ -4414,6 +4416,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (showEReader || selectedBook) {
       handleCloseBook();
     }
+    setShowMovie(false);
     // I become the host of my own video. Other people in the room can choose
     // to watch it from my participant tile, but my selection no longer
     // hijacks anyone else's player.
@@ -4518,6 +4521,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
   const handleSelectMovie = (movie: { id: number | string; title: string; poster?: string | null }) => {
     const movieId = String(movie.id);
+    setShowYoutube(false);
+    setMiniPlayerMode(false);
     setActiveMovieId(movieId);
     setActiveMovieTitle(movie.title);
     setActiveMoviePoster(movie.poster || "");
@@ -4759,6 +4764,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     // If already watching this host, just show the panel.
     if (youtubeStartedByRef.current === hostPeerId) {
       setShowYoutube(true);
+      setShowMovie(false);
       return;
     }
     // Leave any previous watch party.
@@ -4766,6 +4772,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     if (prevHost && prevHost !== user.id) {
       socket.emit("room:youtube-watching", { roomId: room.id, hostId: prevHost, watching: false });
     }
+    setShowMovie(false);
     setYoutubeStartedBy(hostPeerId);
     setActiveYoutubeId(videoId);
     setShowYoutube(true);
@@ -6187,6 +6194,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               return (
                 <button
                   onClick={() => {
+                    setShowYoutube(false);
+                    setMiniPlayerMode(false);
                     setShowMovie(true);
                     socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: true });
                   }}
@@ -6348,6 +6357,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         </div>
                         <button
                           onClick={() => {
+                            setShowYoutube(false);
+                            setMiniPlayerMode(false);
                             setActiveMovieId(info.movieId);
                             setActiveMovieTitle(info.movieTitle);
                             setActiveMoviePoster(info.posterPath);
@@ -8996,7 +9007,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             </div>
           )}
 
-          <div className={`flex items-end justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
+          <div className={`flex items-center justify-center p-3 pt-5 pb-5 overflow-hidden flex-shrink-0 ${!(activeYoutubeId && showYoutube) && !(activeMovieId && showMovie) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && !remoteVideoUserId && !(isVideoOn && !miniCameraMode) ? "flex-1" : ""}`}>
             <div className="flex flex-wrap items-end justify-center gap-3 sm:gap-5">
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
@@ -9229,6 +9240,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       onWatchMovie={!isMe && movieHosts.has(p.id) ? () => {
                         const info = movieHosts.get(p.id);
                         if (!info) return;
+                        setShowYoutube(false);
+                        setMiniPlayerMode(false);
                         setActiveMovieId(info.movieId);
                         setActiveMovieTitle(info.movieTitle);
                         setActiveMoviePoster(info.posterPath);
