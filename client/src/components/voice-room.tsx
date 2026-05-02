@@ -619,17 +619,45 @@ function ParticipantCard({
             </div>
           </>
         ) : hasActiveMovie ? (
-          moviePosterPath ? (
+          <>
+            {moviePosterPath ? (
+              <img
+                src={moviePosterPath}
+                alt="Movie poster"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-violet-900 to-indigo-900 flex items-center justify-center">
+                <Film className="w-10 h-10 text-violet-300/70" />
+              </div>
+            )}
+            <div className="absolute top-1.5 left-1.5 z-[25] w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
+              {p.profileImageUrl ? (
+                <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+              ) : (
+                <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                  <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
+                </div>
+              )}
+            </div>
+          </>
+        ) : isMovieWatcherBadge && watchingMoviePoster ? (
+          <>
             <img
-              src={moviePosterPath}
+              src={watchingMoviePoster}
               alt="Movie poster"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-violet-900 to-indigo-900 flex items-center justify-center">
-              <Film className="w-10 h-10 text-violet-300/70" />
+            <div className="absolute top-1.5 left-1.5 z-[25] w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
+              {p.profileImageUrl ? (
+                <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" />
+              ) : (
+                <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                  <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
+                </div>
+              )}
             </div>
-          )
+          </>
         ) : remoteVideoStream ? (
           <RemoteVideoPreview stream={remoteVideoStream} className={isMe && localVideoFlipped ? "scale-x-[-1]" : ""} />
         ) : p.profileImageUrl ? (
@@ -1002,6 +1030,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const [showMovie, setShowMovie] = useState(false);
   const [movieHosts, setMovieHosts] = useState<Map<string, { movieId: string; movieTitle: string; posterPath: string }>>(new Map());
   const [movieWatchersByHost, setMovieWatchersByHost] = useState<Map<string, Set<string>>>(new Map());
+  const [movieHostStartedAt, setMovieHostStartedAt] = useState<Map<string, number>>(new Map());
+  const [movieStartOffset, setMovieStartOffset] = useState<number>(0);
   const [popularMovies, setPopularMovies] = useState<any[]>([]);
   const [popularMoviesLoading, setPopularMoviesLoading] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -1148,6 +1178,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     });
     return all;
   }, [movieWatchersByHost]);
+
+  const watcherMoviePosterMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const [hostId, watcherSet] of movieWatchersByHost.entries()) {
+      const info = movieHosts.get(hostId);
+      if (!info) continue;
+      for (const watcherId of watcherSet) {
+        map.set(watcherId, info.posterPath || "");
+      }
+    }
+    return map;
+  }, [movieWatchersByHost, movieHosts]);
   type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
   const [ytQueue, setYtQueue] = useState<YtQueueItem[]>([]);
   const [screenWatchers, setScreenWatchers] = useState<Set<string>>(new Set());
@@ -2296,7 +2338,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       );
     });
 
-    socket.on("room:movie", (data: { hostId?: string; movieId: string | null; movieTitle?: string; posterPath?: string; startedBy?: string }) => {
+    socket.on("room:movie", (data: { hostId?: string; movieId: string | null; movieTitle?: string; posterPath?: string; startedBy?: string; startedAt?: number }) => {
       const hostId = data.hostId || data.startedBy || "";
       if (!hostId) return;
       if (data.movieId) {
@@ -2305,6 +2347,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           next.set(hostId, { movieId: data.movieId!, movieTitle: data.movieTitle || "", posterPath: data.posterPath || "" });
           return next;
         });
+        if (data.startedAt) {
+          setMovieHostStartedAt(prev => { const next = new Map(prev); next.set(hostId, data.startedAt as number); return next; });
+        }
         if (hostId === user.id) {
           setShowYoutube(false);
           setMiniPlayerMode(false);
@@ -2321,6 +2366,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
       } else {
         setMovieHosts(prev => { const next = new Map(prev); next.delete(hostId); return next; });
         setMovieWatchersByHost(prev => { const next = new Map(prev); next.delete(hostId); return next; });
+        setMovieHostStartedAt(prev => { const next = new Map(prev); next.delete(hostId); return next; });
         if (hostId === user.id || movieStartedByRef.current === hostId) {
           setActiveMovieId(null);
           setActiveMovieTitle("");
@@ -4590,6 +4636,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     setActiveMovieTitle(movie.title);
     setActiveMoviePoster(movie.poster || "");
     setMovieStartedBy(user?.id || null);
+    setMovieStartOffset(0);
     setShowMovie(true);
     setMovieHosts(prev => {
       const next = new Map(prev);
@@ -6257,8 +6304,11 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               return (
                 <button
                   onClick={() => {
+                    const _startedAt = movieStartedBy ? movieHostStartedAt.get(movieStartedBy) : undefined;
+                    const _offset = _startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0;
                     setShowYoutube(false);
                     setMiniPlayerMode(false);
+                    setMovieStartOffset(_offset);
                     setShowMovie(true);
                     socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: true });
                   }}
@@ -6420,12 +6470,15 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                         </div>
                         <button
                           onClick={() => {
+                            const _startedAt = movieHostStartedAt.get(hostId);
+                            const _offset = _startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0;
                             setShowYoutube(false);
                             setMiniPlayerMode(false);
                             setActiveMovieId(info.movieId);
                             setActiveMovieTitle(info.movieTitle);
                             setActiveMoviePoster(info.posterPath);
                             setMovieStartedBy(hostId);
+                            setMovieStartOffset(_offset);
                             setShowMovie(true);
                             socket?.emit("room:movie-watching", { roomId: room.id, hostId, watching: true });
                           }}
@@ -8291,8 +8344,8 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               </div>
               {/* Internet Archive embed — confirmed embeddable, no Cloudflare blocking */}
               <iframe
-                key={activeMovieId}
-                src={`https://archive.org/embed/${encodeURIComponent(activeMovieId)}`}
+                key={`${activeMovieId}_${movieStartOffset}`}
+                src={`https://archive.org/embed/${encodeURIComponent(activeMovieId)}${movieStartOffset > 0 ? `?start=${movieStartOffset}` : ""}`}
                 title={activeMovieTitle}
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
@@ -9300,15 +9353,19 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       hasActiveMovie={movieHosts.has(p.id)}
                       moviePosterPath={movieHosts.get(p.id)?.posterPath || null}
                       isMovieWatcher={movieWatchersFlat.has(p.id) && !movieHosts.has(p.id)}
+                      watchingMoviePoster={watcherMoviePosterMap.get(p.id) || null}
                       onWatchMovie={!isMe && movieHosts.has(p.id) ? () => {
                         const info = movieHosts.get(p.id);
                         if (!info) return;
+                        const _startedAt = movieHostStartedAt.get(p.id);
+                        const _offset = _startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0;
                         setShowYoutube(false);
                         setMiniPlayerMode(false);
                         setActiveMovieId(info.movieId);
                         setActiveMovieTitle(info.movieTitle);
                         setActiveMoviePoster(info.posterPath);
                         setMovieStartedBy(p.id);
+                        setMovieStartOffset(_offset);
                         setShowMovie(true);
                         socket?.emit("room:movie-watching", { roomId: room.id, hostId: p.id, watching: true });
                       } : undefined}

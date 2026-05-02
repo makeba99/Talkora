@@ -72,7 +72,7 @@ function deleteYtVotes(roomId: string, hostId: string) {
 type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
 const roomYoutubeQueue = new Map<string, YtQueueItem[]>();
 // Per-host movie watch-party state: roomId → Map<hostId, MovieHostState>
-type MovieHostState = { movieId: string; movieTitle: string; posterPath: string; startedBy: string };
+type MovieHostState = { movieId: string; movieTitle: string; posterPath: string; startedBy: string; startedAt: number };
 const roomMovieState = new Map<string, Map<string, MovieHostState>>();
 function getMovieHost(roomId: string, hostId: string) { return roomMovieState.get(roomId)?.get(hostId); }
 function setMovieHost(roomId: string, hostId: string, state: MovieHostState) {
@@ -3938,7 +3938,7 @@ export async function registerRoutes(
 
       // Per-host movie snapshot: tell the newcomer about every active movie host
       for (const { hostId, state: mState } of listMovieHosts(roomId)) {
-        socket.emit("room:movie", { hostId, movieId: mState.movieId, movieTitle: mState.movieTitle, posterPath: mState.posterPath, startedBy: mState.startedBy });
+        socket.emit("room:movie", { hostId, movieId: mState.movieId, movieTitle: mState.movieTitle, posterPath: mState.posterPath, startedBy: mState.startedBy, startedAt: mState.startedAt });
       }
 
       const bookState = roomBookState.get(roomId);
@@ -4459,11 +4459,13 @@ export async function registerRoutes(
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
       if (data.movieId) {
+        const nowTs = Date.now();
         setMovieHost(data.roomId, currentUserId, {
           movieId: data.movieId,
           movieTitle: data.movieTitle || "",
           posterPath: data.posterPath || "",
           startedBy: currentUserId,
+          startedAt: nowTs,
         });
         io.to(data.roomId).emit("room:movie", {
           hostId: currentUserId,
@@ -4471,6 +4473,7 @@ export async function registerRoutes(
           movieTitle: data.movieTitle || "",
           posterPath: data.posterPath || "",
           startedBy: currentUserId,
+          startedAt: nowTs,
         });
       } else {
         if (deleteMovieHost(data.roomId, currentUserId)) {
