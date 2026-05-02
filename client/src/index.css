@@ -2110,19 +2110,17 @@ html.synthwave .neon-text {
 /* Outer frame — arched door frame */
 .door-frame {
   position: relative;
-  width: 32px;
-  height: 50px;
-  perspective: 120px;
+  width: 36px;
+  height: 56px;
+  perspective: 140px;
   perspective-origin: 82% 50%;
-  background: hsl(244 30% 12%);
-  /* arched top — classic door silhouette */
-  border-radius: 6px 6px 1px 1px;
-  border: 2px solid hsl(var(--neu-orange-hi) / 0.30);
-  border-bottom: 3px solid hsl(244 30% 8%);
+  background: linear-gradient(160deg, hsl(228 22% 13%) 0%, hsl(228 18% 10%) 100%);
+  border-radius: 8px 8px 2px 2px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 2px solid hsl(228 20% 7%);
   box-shadow:
-    -3px -3px 7px rgba(255,255,255,0.045),
-    4px 6px 16px rgba(0,0,0,0.90),
-    1px 1px 3px rgba(0,0,0,0.55),
+    -2px -2px 6px rgba(255,255,255,0.03),
+    4px 6px 20px rgba(0,0,0,0.90),
     inset 0 1px 0 rgba(255,255,255,0.06),
     inset 0 -1px 0 rgba(0,0,0,0.40);
   overflow: visible;
@@ -2131,94 +2129,97 @@ html.synthwave .neon-text {
 .door-frame::before {
   content: "";
   position: absolute;
-  top: -4px;
+  top: -5px;
   left: 50%;
   transform: translateX(-50%);
-  width: 20px;
-  height: 8px;
+  width: 22px;
+  height: 9px;
   border-radius: 50% 50% 0 0;
-  background: hsl(244 30% 12%);
-  border: 2px solid hsl(var(--neu-orange-hi) / 0.30);
+  background: linear-gradient(160deg, hsl(228 22% 13%) 0%, hsl(228 18% 10%) 100%);
+  border: 1px solid rgba(255,255,255,0.07);
   border-bottom: none;
   pointer-events: none;
 }
 .door-3d-wrap:hover .door-frame {
-  border-color: hsl(var(--neu-orange-hi) / 0.50);
+  border-color: rgba(255,255,255,0.12);
   box-shadow:
-    -4px -4px 10px rgba(255,255,255,0.06),
-    5px 7px 20px rgba(0,0,0,0.92),
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    0 0 16px hsl(var(--neu-orange) / 0.22);
+    -3px -3px 8px rgba(255,255,255,0.05),
+    5px 8px 24px rgba(0,0,0,0.92),
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    0 0 18px rgba(120,100,255,0.18);
   transition: box-shadow 0.52s ease, border-color 0.52s ease;
 }
-/* FULL door — red-tinted frame, no swing */
+/* FULL door — rose-tinted frame, no swing */
 .door-3d-full .door-frame {
-  border-color: hsl(358 55% 38% / 0.45);
-  background: hsl(244 28% 11%);
+  border-color: hsl(355 50% 35% / 0.40);
+  background: linear-gradient(160deg, hsl(228 20% 12%) 0%, hsl(350 16% 10%) 100%);
   box-shadow:
-    -3px -3px 7px rgba(255,255,255,0.03),
-    4px 6px 16px rgba(0,0,0,0.90),
+    -2px -2px 6px rgba(255,255,255,0.02),
+    4px 6px 20px rgba(0,0,0,0.90),
     inset 0 1px 0 rgba(255,255,255,0.04),
-    0 0 10px hsl(358 70% 30% / 0.18);
+    0 0 12px hsl(355 65% 28% / 0.20);
 }
 .door-3d-full .door-frame::before {
-  border-color: hsl(358 55% 38% / 0.45);
-  background: hsl(244 28% 11%);
+  border-color: hsl(355 50% 35% / 0.40);
+  background: linear-gradient(160deg, hsl(228 20% 12%) 0%, hsl(350 16% 10%) 100%);
 }
 
-/* LOCKED door (private but still clickable) — amber-brass tinted frame */
+/* LOCKED door — amber-brass tinted frame */
 .door-3d-locked .door-frame {
-  border-color: hsl(38 75% 52% / 0.42);
-  background: hsl(244 28% 11%);
+  border-color: hsl(38 70% 50% / 0.36);
+  background: linear-gradient(160deg, hsl(228 20% 12%) 0%, hsl(30 16% 10%) 100%);
   box-shadow:
-    -3px -3px 7px rgba(255,255,255,0.045),
-    4px 6px 16px rgba(0,0,0,0.90),
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    0 0 12px hsl(38 80% 45% / 0.22);
+    -2px -2px 6px rgba(255,255,255,0.03),
+    4px 6px 20px rgba(0,0,0,0.90),
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    0 0 14px hsl(38 80% 42% / 0.24);
 }
 .door-3d-locked .door-frame::before {
-  border-color: hsl(38 75% 52% / 0.42);
-  background: hsl(244 28% 11%);
+  border-color: hsl(38 70% 50% / 0.36);
+  background: linear-gradient(160deg, hsl(228 20% 12%) 0%, hsl(30 16% 10%) 100%);
 }
 .door-3d-locked:hover .door-frame {
-  border-color: hsl(38 80% 60% / 0.65);
+  border-color: hsl(38 80% 58% / 0.58);
   box-shadow:
-    -4px -4px 10px rgba(255,255,255,0.06),
-    5px 7px 20px rgba(0,0,0,0.92),
+    -3px -3px 8px rgba(255,255,255,0.05),
+    5px 8px 24px rgba(0,0,0,0.92),
     inset 0 1px 0 rgba(255,255,255,0.08),
-    0 0 18px hsl(38 85% 50% / 0.40);
+    0 0 20px hsl(38 85% 48% / 0.42);
 }
 
 /* Dark interior room — revealed when panel swings open */
 .door-interior {
   position: absolute;
   inset: 0;
-  border-radius: 4px 4px 0 0;
-  background: linear-gradient(170deg, hsl(244 40% 5%) 0%, hsl(252 35% 7%) 60%, hsl(258 30% 9%) 100%);
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(170deg, hsl(228 35% 5%) 0%, hsl(240 32% 7%) 60%, hsl(252 28% 9%) 100%);
   box-shadow:
-    inset 0 0 18px hsl(var(--neo-accent-from, 260 64% 46%) / 0.20),
+    inset 0 0 18px hsl(252 70% 48% / 0.22),
     inset 0 -6px 14px rgba(0,0,0,0.55);
 }
 .door-3d-wrap:hover .door-interior {
   box-shadow:
-    inset 0 0 28px hsl(var(--neo-accent-from, 260 64% 46%) / 0.42),
+    inset 0 0 28px hsl(252 70% 52% / 0.45),
     inset 0 -6px 14px rgba(0,0,0,0.35);
   transition: box-shadow 0.52s ease;
 }
-/* FULL interior — reddish dark */
+/* FULL interior — rose-dark */
 .door-3d-full .door-interior {
-  background: linear-gradient(170deg, hsl(355 30% 5%) 0%, hsl(350 25% 7%) 60%, hsl(244 30% 8%) 100%);
+  background: linear-gradient(170deg, hsl(355 28% 5%) 0%, hsl(348 22% 7%) 60%, hsl(228 25% 8%) 100%);
+  box-shadow:
+    inset 0 0 18px hsl(355 60% 35% / 0.22),
+    inset 0 -6px 14px rgba(0,0,0,0.55);
 }
 /* LOCKED interior — warm amber glow as if a lamp is on inside */
 .door-3d-locked .door-interior {
-  background: linear-gradient(170deg, hsl(34 35% 6%) 0%, hsl(30 30% 8%) 60%, hsl(28 25% 10%) 100%);
+  background: linear-gradient(170deg, hsl(34 30% 6%) 0%, hsl(30 26% 8%) 60%, hsl(28 22% 10%) 100%);
   box-shadow:
-    inset 0 0 18px hsl(38 90% 50% / 0.28),
+    inset 0 0 18px hsl(38 85% 50% / 0.28),
     inset 0 -6px 14px rgba(0,0,0,0.55);
 }
 .door-3d-locked:hover .door-interior {
   box-shadow:
-    inset 0 0 28px hsl(38 95% 55% / 0.50),
+    inset 0 0 28px hsl(38 90% 55% / 0.50),
     inset 0 -6px 14px rgba(0,0,0,0.35);
 }
 
@@ -2226,51 +2227,51 @@ html.synthwave .neon-text {
 .door-panel {
   position: absolute;
   inset: 0;
-  border-radius: 4px 4px 0 0;
+  border-radius: 6px 6px 0 0;
   background: linear-gradient(
     160deg,
-    hsl(244 26% 20%) 0%,
-    hsl(248 24% 17%) 45%,
-    hsl(252 22% 14%) 100%
+    hsl(228 24% 19%) 0%,
+    hsl(232 22% 16%) 45%,
+    hsl(236 20% 13%) 100%
   );
   transform-origin: left center;
   transform: rotateY(0deg);
   transition: transform 0.55s cubic-bezier(0.28, 0, 0.12, 1);
   box-shadow:
-    inset 0 2px 0 rgba(255,255,255,0.10),
-    inset -1px 0 0 rgba(255,255,255,0.05),
+    inset 0 2px 0 rgba(255,255,255,0.09),
+    inset -1px 0 0 rgba(255,255,255,0.04),
     inset 0 -1px 0 rgba(0,0,0,0.30),
-    3px 0 10px rgba(0,0,0,0.75);
+    3px 0 12px rgba(0,0,0,0.80);
   overflow: hidden;
 }
 /* Swing open on hover */
 .door-3d-wrap:hover .door-panel {
   transform: rotateY(-75deg);
 }
-/* FULL panel — warm dark tint, no swing */
+/* FULL panel — rose-tinted dark */
 .door-3d-full .door-panel {
   background: linear-gradient(
     160deg,
-    hsl(244 22% 17%) 0%,
-    hsl(355 14% 14%) 55%,
-    hsl(350 12% 12%) 100%
+    hsl(228 20% 16%) 0%,
+    hsl(352 14% 13%) 55%,
+    hsl(348 12% 11%) 100%
   );
 }
 .door-3d-full:hover .door-panel { transform: rotateY(0deg); }
 
-/* LOCKED panel — same wood tone but with a brass-tinted highlight */
+/* LOCKED panel — warm wood-bronze with brass-tinted highlight */
 .door-3d-locked .door-panel {
   background: linear-gradient(
     160deg,
-    hsl(36 22% 22%) 0%,
-    hsl(34 20% 17%) 50%,
-    hsl(30 18% 13%) 100%
+    hsl(34 20% 21%) 0%,
+    hsl(32 18% 16%) 50%,
+    hsl(28 16% 12%) 100%
   );
   box-shadow:
-    inset 0 2px 0 rgba(255,220,170,0.14),
-    inset -1px 0 0 rgba(255,210,160,0.06),
+    inset 0 2px 0 rgba(255,220,170,0.12),
+    inset -1px 0 0 rgba(255,210,160,0.05),
     inset 0 -1px 0 rgba(0,0,0,0.35),
-    3px 0 10px rgba(0,0,0,0.75);
+    3px 0 12px rgba(0,0,0,0.80);
 }
 /* Locked door swings open the same way — to invite a knock/access request */
 .door-3d-locked:hover .door-panel { transform: rotateY(-72deg); }
@@ -2288,48 +2289,45 @@ html.synthwave .neon-text {
 }
 .door-3d-wrap:hover .door-panel::before { left: 150%; }
 
-/* Door panel insets — upper panel taller (like a real door), lower shorter.
-   `position: absolute` is preserved for placement inside the panel, but it
-   also acts as containing block for engraved text / keyhole children
-   thanks to its non-static position. */
+/* Door panel insets — upper panel taller (like a real door), lower shorter. */
 .door-panel-inset {
   position: absolute;
   left: 4px; right: 4px;
-  border-radius: 2px;
-  background: hsl(244 34% 10%);
-  border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 3px;
+  background: hsl(228 30% 9%);
+  border: 1px solid rgba(255,255,255,0.05);
   box-shadow:
-    inset 2px 2px 5px rgba(0,0,0,0.80),
-    inset -1px -1px 2px rgba(255,255,255,0.025),
-    0 1px 0 rgba(255,255,255,0.045);
+    inset 2px 2px 5px rgba(0,0,0,0.75),
+    inset -1px -1px 2px rgba(255,255,255,0.02),
+    0 1px 0 rgba(255,255,255,0.04);
   overflow: hidden;
 }
 /* Upper panel — tall (like a real door's raised panel area) */
 .door-panel-inset-top {
-  top: 4px;
-  height: 22px;
+  top: 5px;
+  height: 24px;
 }
 /* Lower panel — short decorative kick panel */
 .door-panel-inset-bot {
-  top: 30px;
-  bottom: 3px;
+  top: 34px;
+  bottom: 4px;
 }
-/* FULL insets — red-tinted border */
+/* FULL insets — rose-tinted border */
 .door-3d-full .door-panel-inset {
-  background: hsl(350 28% 9%);
-  border-color: hsl(358 40% 22% / 0.35);
+  background: hsl(350 24% 8%);
+  border-color: hsl(355 38% 20% / 0.32);
   box-shadow:
     inset 2px 2px 5px rgba(0,0,0,0.80),
     inset -1px -1px 2px rgba(120,40,40,0.04);
 }
-/* LOCKED insets — warm wood-tone border */
+/* LOCKED insets — warm amber-tinted border */
 .door-3d-locked .door-panel-inset {
-  background: hsl(30 22% 11%);
-  border-color: hsl(38 50% 35% / 0.30);
+  background: hsl(30 18% 10%);
+  border-color: hsl(38 45% 32% / 0.28);
   box-shadow:
     inset 2px 2px 5px rgba(0,0,0,0.80),
-    inset -1px -1px 2px rgba(255,200,120,0.06),
-    0 1px 0 rgba(255,200,150,0.07);
+    inset -1px -1px 2px rgba(255,200,120,0.05),
+    0 1px 0 rgba(255,200,150,0.06);
 }
 
 /* Door knob — right side center of the lower half */
@@ -2338,29 +2336,30 @@ html.synthwave .neon-text {
   right: 4px;
   top: 60%;
   transform: translateY(-50%);
-  width: 5px; height: 5px;
+  width: 6px; height: 6px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 35% 30%,
-    hsl(var(--neu-orange-hi)),
-    hsl(var(--neu-orange-lo))
+    hsl(252 70% 75%),
+    hsl(258 65% 52%) 60%,
+    hsl(262 60% 34%) 100%
   );
   box-shadow:
-    0 0 5px hsl(var(--neu-orange-hi) / 0.70),
+    0 0 5px hsl(252 70% 55% / 0.70),
     0 1px 2px rgba(0,0,0,0.65),
     inset 0 -1px 1px rgba(0,0,0,0.35);
   z-index: 3;
 }
 .door-3d-wrap:hover .door-knob {
   box-shadow:
-    0 0 9px hsl(var(--neu-orange-hi) / 0.95),
-    0 0 16px hsl(var(--neu-orange) / 0.50),
+    0 0 9px hsl(252 75% 65% / 0.95),
+    0 0 18px hsl(252 70% 55% / 0.52),
     0 1px 2px rgba(0,0,0,0.60);
   transition: box-shadow 0.52s ease;
 }
-/* FULL knob — dull, no glow */
+/* FULL knob — dull grey, no glow */
 .door-3d-full .door-knob {
-  background: radial-gradient(circle at 35% 30%, hsl(0 0% 32%), hsl(0 0% 16%));
+  background: radial-gradient(circle at 35% 30%, hsl(355 30% 38%), hsl(355 20% 20%));
   box-shadow: 0 1px 2px rgba(0,0,0,0.60), inset 0 -1px 1px rgba(0,0,0,0.30);
 }
 /* LOCKED knob — polished brass */
@@ -2433,8 +2432,7 @@ html.synthwave .neon-text {
   transition: color 0.35s ease, text-shadow 0.35s ease, letter-spacing 0.35s ease;
 }
 
-/* Default (OPEN) doors get a soft ajar tilt at rest so they feel inviting.
-   The frame renders the cool chevron through the slim opening. */
+/* Default (OPEN) doors get a soft ajar tilt at rest so they feel inviting. */
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-panel {
   transform: rotateY(-15deg);
 }
@@ -2442,44 +2440,41 @@ html.synthwave .neon-text {
   transform: rotateY(-78deg);
 }
 
-/* Welcoming cool glow inside the OPEN door's interior (visible through the ajar gap).
-   Refined teal-indigo blend reads as "soft entrance light" rather than candy green. */
+/* Welcoming indigo/violet glow inside the OPEN door's interior. */
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-interior {
-  background: linear-gradient(170deg, hsl(220 35% 6%) 0%, hsl(208 32% 8%) 60%, hsl(192 30% 10%) 100%);
+  background: linear-gradient(170deg, hsl(228 35% 6%) 0%, hsl(240 32% 8%) 60%, hsl(252 28% 10%) 100%);
   box-shadow:
-    inset 0 0 20px hsl(184 70% 42% / 0.30),
+    inset 0 0 20px hsl(252 70% 50% / 0.32),
     inset 0 -6px 14px rgba(0,0,0,0.45);
   animation: door-open-glow 3.4s ease-in-out infinite;
 }
 @keyframes door-open-glow {
-  0%, 100% { box-shadow: inset 0 0 20px hsl(184 70% 42% / 0.30), inset 0 -6px 14px rgba(0,0,0,0.45); }
-  50%      { box-shadow: inset 0 0 28px hsl(180 75% 48% / 0.48), inset 0 -6px 14px rgba(0,0,0,0.40); }
+  0%, 100% { box-shadow: inset 0 0 20px hsl(252 70% 50% / 0.32), inset 0 -6px 14px rgba(0,0,0,0.45); }
+  50%      { box-shadow: inset 0 0 30px hsl(252 72% 58% / 0.52), inset 0 -6px 14px rgba(0,0,0,0.38); }
 }
 
-/* The OPEN door frame gets a soft cool-cyan outline */
+/* The OPEN door frame gets a soft indigo/violet outline */
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-frame {
-  border-color: hsl(184 50% 45% / 0.38);
+  border-color: hsl(252 55% 52% / 0.36);
   box-shadow:
-    -3px -3px 7px rgba(255,255,255,0.045),
-    4px 6px 16px rgba(0,0,0,0.90),
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    0 0 14px hsl(184 70% 40% / 0.24);
+    -2px -2px 6px rgba(255,255,255,0.04),
+    4px 6px 20px rgba(0,0,0,0.90),
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    0 0 16px hsl(252 65% 48% / 0.26);
 }
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full) .door-frame::before {
-  border-color: hsl(184 50% 45% / 0.38);
+  border-color: hsl(252 55% 52% / 0.36);
 }
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full):hover .door-frame {
-  border-color: hsl(180 65% 55% / 0.65);
+  border-color: hsl(252 65% 62% / 0.62);
   box-shadow:
-    -4px -4px 10px rgba(255,255,255,0.06),
-    5px 7px 22px rgba(0,0,0,0.92),
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    0 0 22px hsl(180 70% 48% / 0.45);
+    -3px -3px 8px rgba(255,255,255,0.05),
+    5px 8px 24px rgba(0,0,0,0.92),
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    0 0 24px hsl(252 68% 54% / 0.48);
 }
 
-/* The actual welcome chevron — ▸ rendered as CSS (no extra DOM needed).
-   Sits inside the door interior, peeking out through the ajar gap.
-   Cool muted cyan instead of bright lime — feels professional. */
+/* The actual welcome chevron — ▸ rendered as CSS, indigo/violet to match theme. */
 .door-welcome-arrow {
   position: absolute;
   top: 50%;
@@ -2489,8 +2484,8 @@ html.synthwave .neon-text {
   height: 0;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
-  border-left: 7px solid hsl(180 65% 62%);
-  filter: drop-shadow(0 0 3px hsl(180 75% 48% / 0.80));
+  border-left: 7px solid hsl(252 68% 72%);
+  filter: drop-shadow(0 0 3px hsl(252 72% 58% / 0.85));
   pointer-events: none;
   z-index: 3;
   animation: door-arrow-bob 1.6s ease-in-out infinite;
@@ -2500,8 +2495,8 @@ html.synthwave .neon-text {
   50%      { left: 26%; opacity: 1;    }
 }
 .door-3d-wrap:not(.door-3d-locked):not(.door-3d-full):hover .door-welcome-arrow {
-  border-left-color: hsl(178 80% 75%);
-  filter: drop-shadow(0 0 6px hsl(180 80% 55% / 1));
+  border-left-color: hsl(252 80% 82%);
+  filter: drop-shadow(0 0 6px hsl(252 75% 62% / 1));
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2702,33 +2697,33 @@ html.synthwave .neon-text {
   flex-shrink: 0;
   display: block;
 }
-/* OPEN — refined cool teal-cyan LED, subdued inviting halo */
+/* OPEN — indigo/violet LED, matching app accent palette */
 .door-caption-open {
-  color: hsl(184 50% 62%);
-  text-shadow: 0 0 3px hsl(184 60% 32% / 0.55);
+  color: hsl(252 65% 72%);
+  text-shadow: 0 0 3px hsl(252 65% 40% / 0.55);
   box-shadow:
     inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
-    inset -1px -1px 1.5px rgba(255,235,215,0.045),
+    inset -1px -1px 1.5px rgba(200,190,255,0.04),
     1px 1px 2px rgba(0,0,0,0.5),
-    0 0 0 1px hsl(184 55% 32% / 0.30),
-    0 0 8px hsl(184 55% 32% / 0.28);
+    0 0 0 1px hsl(252 55% 38% / 0.30),
+    0 0 8px hsl(252 60% 40% / 0.26);
 }
 .door-caption-open::before {
-  background: radial-gradient(circle at 30% 30%, hsl(184 65% 45%), hsl(190 70% 26%) 70%);
+  background: radial-gradient(circle at 30% 30%, hsl(252 75% 70%), hsl(258 70% 42%) 70%);
   box-shadow:
-    0 0 5px hsl(184 65% 36% / 1),
-    0 0 10px hsl(184 65% 36% / 0.55);
+    0 0 5px hsl(252 70% 55% / 1),
+    0 0 10px hsl(252 70% 50% / 0.55);
   animation: door-led-pulse 2.2s ease-in-out infinite;
 }
 .door-3d-wrap:hover .door-caption-open {
   transform: translateY(-1px);
-  color: hsl(180 60% 70%);
+  color: hsl(252 72% 80%);
   box-shadow:
     inset 1.5px 1.5px 3px rgba(0,0,0,0.65),
-    inset -1px -1px 1.5px rgba(255,235,215,0.045),
+    inset -1px -1px 1.5px rgba(200,190,255,0.04),
     1px 1px 2px rgba(0,0,0,0.5),
-    0 0 0 1px hsl(180 60% 38% / 0.55),
-    0 0 14px hsl(180 60% 38% / 0.50);
+    0 0 0 1px hsl(252 65% 45% / 0.55),
+    0 0 14px hsl(252 65% 48% / 0.50);
 }
 /* LOCKED — amber/brass LED, subtle "knock" feel */
 .door-caption-locked {

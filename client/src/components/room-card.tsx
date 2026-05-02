@@ -1107,11 +1107,31 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               // why the door isn't open.
               const stateClass = isClosed ? "door-3d-locked" : "";
 
+              const maxP = (room as any).maxParticipants as number | undefined;
               const doorBody = (
                 <>
+                  {/* Capacity chip above the door */}
+                  {maxP != null && (
+                    <div
+                      className="flex items-center gap-0.5 mb-0.5"
+                      data-testid={`badge-capacity-${room.id}`}
+                    >
+                      <span className="text-[8px] font-semibold tabular-nums"
+                        style={{
+                          color: participants.length >= maxP
+                            ? "hsl(355 70% 65%)"
+                            : "hsl(252 50% 65%)",
+                          textShadow: participants.length >= maxP
+                            ? "0 0 6px hsl(355 65% 40% / 0.6)"
+                            : "0 0 6px hsl(252 65% 40% / 0.5)",
+                        }}>
+                        {participants.length}/{maxP}
+                      </span>
+                    </div>
+                  )}
                   <div className="door-frame">
                     <div className="door-interior">
-                      {/* ENTER: bobbing green chevron peeks through the ajar gap */}
+                      {/* ENTER: bobbing indigo chevron peeks through the ajar gap */}
                       {!isClosed && (
                         <span className="door-welcome-arrow" aria-hidden="true" />
                       )}
@@ -1132,7 +1152,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     </div>
                   </div>
                   {/* Tiny state caption under the door */}
-                  <span className={`door-caption door-caption-${isClosed ? "full" : "open"}`}>
+                  <span className={`door-caption door-caption-${isClosed ? "locked" : "open"}`}>
                     {isClosed ? "Locked" : "Enter"}
                   </span>
                 </>
