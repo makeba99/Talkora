@@ -180,6 +180,7 @@ export function ReportDialog({
               Additional details <span style={{ color: "rgba(255,255,255,0.18)" }}>(optional)</span>
             </p>
             <textarea
+              aria-label="Additional details (optional)"
               className="w-full rounded-lg px-3 py-2 text-xs resize-none outline-none transition-all"
               style={{
                 background: "rgba(255,255,255,0.04)",

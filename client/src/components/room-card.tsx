@@ -787,9 +787,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     section) → h3 (person card names) → h4 (footer sections).
                     The previous h3 here skipped a level after the h1 and
                     Lighthouse flagged it as a heading-order violation. */}
-                <h2 className="font-extrabold text-sm text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
+                <h3 className="font-extrabold text-sm text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
                   {room.title}
-                </h2>
+                </h3>
                 {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/55 flex-shrink-0" role="img" aria-label="Private room" />}
               </div>
               {/* Sub-row: flag, language, level, mic status, LIVE */}

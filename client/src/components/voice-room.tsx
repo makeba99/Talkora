@@ -5760,6 +5760,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             )}
             <textarea
               ref={chatInputRef}
+              aria-label="Type a message"
               value={chatText}
               onChange={handleChatInputChange}
               onKeyDown={(e) => {
@@ -6985,11 +6986,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">YouTube Stream Key</label>
+                      <label htmlFor="vr-go-live-yt-key-a" className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">YouTube Stream Key</label>
                       <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5">Get key <ExternalLink className="w-2.5 h-2.5" /></a>
                     </div>
                     <div className="relative">
                       <input
+                        id="vr-go-live-yt-key-a"
                         type={glShowYoutubeKey ? "text" : "password"}
                         value={glYoutubeKey}
                         onChange={e => setGlYoutubeKey(e.target.value)}
@@ -7005,11 +7007,12 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide">Twitch Stream Key</label>
+                      <label htmlFor="vr-go-live-tw-key-a" className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide">Twitch Stream Key</label>
                       <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5">Get key <ExternalLink className="w-2.5 h-2.5" /></a>
                     </div>
                     <div className="relative">
                       <input
+                        id="vr-go-live-tw-key-a"
                         type={glShowTwitchKey ? "text" : "password"}
                         value={glTwitchKey}
                         onChange={e => setGlTwitchKey(e.target.value)}
@@ -7028,8 +7031,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               <div className="space-y-1.5">
                 {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
                   <div>
-                    <label className="text-[9px] font-semibold text-white/40 uppercase tracking-wide">YouTube Channel ID <span className="normal-case font-normal">(optional · for live viewer count)</span></label>
+                    <label htmlFor="vr-go-live-yt-channel-a" className="text-[9px] font-semibold text-white/40 uppercase tracking-wide">YouTube Channel ID <span className="normal-case font-normal">(optional · for live viewer count)</span></label>
                     <input
+                      id="vr-go-live-yt-channel-a"
                       type="text"
                       value={glYoutubeChannelId}
                       onChange={e => setGlYoutubeChannelId(e.target.value)}
@@ -7040,8 +7044,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 )}
                 {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
                   <div>
-                    <label className="text-[9px] font-semibold text-white/40 uppercase tracking-wide">Twitch Username <span className="normal-case font-normal">(optional · for live viewer count)</span></label>
+                    <label htmlFor="vr-go-live-tw-user-a" className="text-[9px] font-semibold text-white/40 uppercase tracking-wide">Twitch Username <span className="normal-case font-normal">(optional · for live viewer count)</span></label>
                     <input
+                      id="vr-go-live-tw-user-a"
                       type="text"
                       value={glTwitchUsername}
                       onChange={e => setGlTwitchUsername(e.target.value)}
@@ -7102,6 +7107,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
             <input
               type="text"
+              aria-label="Search participants"
               placeholder="Search users..."
               value={peopleSearch}
               onChange={(e) => setPeopleSearch(e.target.value)}
@@ -7375,13 +7381,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-red-400">YouTube Stream Key</label>
+                    <label htmlFor="vr-go-live-yt-key-b" className="text-xs font-semibold text-red-400">YouTube Stream Key</label>
                     <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-0.5">
                       Get key <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                   <div className="relative">
                     <input
+                      id="vr-go-live-yt-key-b"
                       type={glShowYoutubeKey ? "text" : "password"}
                       value={glYoutubeKey}
                       onChange={e => setGlYoutubeKey(e.target.value)}
@@ -7397,13 +7404,14 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-purple-400">Twitch Stream Key</label>
+                    <label htmlFor="vr-go-live-tw-key-b" className="text-xs font-semibold text-purple-400">Twitch Stream Key</label>
                     <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-0.5">
                       Get key <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                   <div className="relative">
                     <input
+                      id="vr-go-live-tw-key-b"
                       type={glShowTwitchKey ? "text" : "password"}
                       value={glTwitchKey}
                       onChange={e => setGlTwitchKey(e.target.value)}
@@ -7422,8 +7430,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
             <div className="space-y-2">
               {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">YouTube Channel ID <span className="normal-case font-normal">(optional — enables live viewer count)</span></label>
+                  <label htmlFor="vr-go-live-yt-channel-b" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">YouTube Channel ID <span className="normal-case font-normal">(optional — enables live viewer count)</span></label>
                   <input
+                    id="vr-go-live-yt-channel-b"
                     type="text"
                     value={glYoutubeChannelId}
                     onChange={e => setGlYoutubeChannelId(e.target.value)}
@@ -7434,8 +7443,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
               )}
               {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Twitch Username <span className="normal-case font-normal">(optional — enables live viewer count)</span></label>
+                  <label htmlFor="vr-go-live-tw-user-b" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Twitch Username <span className="normal-case font-normal">(optional — enables live viewer count)</span></label>
                   <input
+                    id="vr-go-live-tw-user-b"
                     type="text"
                     value={glTwitchUsername}
                     onChange={e => setGlTwitchUsername(e.target.value)}
@@ -7901,8 +7911,9 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
           <div className="space-y-4">
             <p className="text-[12px] text-muted-foreground">Write a message shown to users when they join your room. Saving will immediately send it to all users currently in the room.</p>
             <div className="space-y-2">
-              <Label>Message</Label>
+              <Label htmlFor="vr-welcome-msg">Message</Label>
               <textarea
+                id="vr-welcome-msg"
                 value={welcomeText}
                 onChange={(e) => setWelcomeText(e.target.value)}
                 placeholder="Write a greeting for your room…"
@@ -8804,6 +8815,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                       color: eReaderTheme === "dark" ? "#d4c9b0" : "#333",
                       borderColor: eReaderTheme === "dark" ? "#555" : "#c4b48a",
                     }}
+                    aria-label="Translation language"
                     title="Translation language"
                   >
                     <option value="hy">→ Armenian</option>
@@ -10061,6 +10073,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 >
                   <input
                     ref={aiInputRef}
+                    aria-label="Reply to AI Tutor"
                     data-testid="input-ai-tutor-reply"
                     className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-white/25 rounded-xl px-3 py-2"
                     style={{
@@ -10941,7 +10954,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
       {/* Block Type Dialog */}
       <Dialog open={!!blockDialogUserId && blockDialogStep === "choose"} onOpenChange={(open) => { if (!open) setBlockDialogUserId(null); }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Ban className="w-5 h-5" />
@@ -10978,7 +10991,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
 
       {/* Forever Block Confirmation Dialog */}
       <Dialog open={!!blockDialogUserId && blockDialogStep === "forever-confirm"} onOpenChange={(open) => { if (!open) setBlockDialogUserId(null); }}>
-        <DialogContent className="max-w-sm border-red-500 bg-red-950/10 dark:bg-red-950/30">
+        <DialogContent className="max-w-sm border-red-500 bg-red-950/10 dark:bg-red-950/30" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-500">
               <AlertTriangle className="w-5 h-5 shrink-0" />

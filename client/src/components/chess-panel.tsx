@@ -548,8 +548,8 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
           {pendingTo && (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-300 flex items-center justify-between" data-testid="text-pending-challenge">
               <span>Waiting for {pendingTo.username}…</span>
-              <button onClick={() => setPendingTo(null)} className="text-amber-300/70 hover:text-amber-200" data-testid="button-cancel-pending">
-                <X className="w-3 h-3" />
+              <button onClick={() => setPendingTo(null)} className="text-amber-300/70 hover:text-amber-200" data-testid="button-cancel-pending" aria-label="Cancel challenge request">
+                <X className="w-3 h-3" aria-hidden="true" />
               </button>
             </div>
           )}
@@ -612,7 +612,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
               {pendingTttTo && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-300 flex items-center justify-between">
                   <span>Waiting for {pendingTttTo.username}…</span>
-                  <button onClick={() => setPendingTttTo(null)}><X className="w-3 h-3" /></button>
+                  <button onClick={() => setPendingTttTo(null)} aria-label="Cancel Tic-Tac-Toe request" data-testid="button-cancel-ttt-pending"><X className="w-3 h-3" aria-hidden="true" /></button>
                 </div>
               )}
 
@@ -688,11 +688,12 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
                       onClick={() => tttPlayCell(idx)}
                       disabled={!playable}
                       data-testid={`ttt-cell-${idx}`}
+                      aria-label={cell ? `Cell ${idx + 1}, ${cell}` : `Cell ${idx + 1}, empty`}
                       className={`aspect-square rounded-md flex items-center justify-center text-3xl font-bold select-none transition-colors ${
                         isWinCell ? "bg-emerald-500/30 border-2 border-emerald-400/70 text-emerald-300" : "bg-muted/40 border border-border/60 hover:bg-muted/60"
                       } ${!playable ? "cursor-default" : "cursor-pointer"}`}
                     >
-                      <span className={cell === "X" ? "text-sky-300" : cell === "O" ? "text-amber-300" : "opacity-0"}>
+                      <span aria-hidden="true" className={cell === "X" ? "text-sky-300" : cell === "O" ? "text-amber-300" : "opacity-0"}>
                         {cell || "·"}
                       </span>
                     </button>

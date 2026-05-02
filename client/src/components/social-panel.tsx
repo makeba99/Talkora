@@ -172,7 +172,11 @@ function UserProfileDialog({
       <DialogContent
         className="sm:max-w-sm w-full p-0 overflow-hidden"
         data-testid={`dialog-profile-${u.id}`}
+        aria-describedby={undefined}
       >
+        <DialogHeader className="sr-only">
+          <DialogTitle>{getUserDisplayName(u)}'s profile</DialogTitle>
+        </DialogHeader>
         <div className="relative">
           <div className="h-16 bg-gradient-to-br from-primary/30 via-primary/10 to-transparent" />
           <div className="absolute top-8 left-4">

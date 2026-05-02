@@ -737,9 +737,10 @@ function BookingDialog({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45">Notes <span className="opacity-60 normal-case font-medium">(optional)</span></Label>
+                <Label htmlFor="teacher-booking-notes" className="text-[10px] font-bold tracking-widest uppercase text-white/45">Notes <span className="opacity-60 normal-case font-medium">(optional)</span></Label>
                 <div className="neu-input-well" style={{ height: "auto", padding: "10px 12px", alignItems: "flex-start" }}>
                   <textarea
+                    id="teacher-booking-notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Topics to cover, your level, specific goals…"
@@ -1595,6 +1596,7 @@ export default function TeachersPage() {
               <div className="neu-input-well flex-1">
                 <Search className="w-4 h-4 text-white/35 flex-shrink-0" />
                 <input
+                  aria-label="Search teachers by name, language, or specialization"
                   placeholder="Search by name, language, specialization or keywords…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
