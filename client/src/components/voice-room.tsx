@@ -56,6 +56,7 @@ import evaAvatarUrl from "@/assets/eva-avatar.webp";
 interface VoiceRoomProps {
   room: Room;
   onLeave: (reason?: "joined-another-room") => void;
+  watchUserId?: string;
 }
 
 // ── Dark Neumorphic persona card (AI tutor "Choose Your Tutor" picker) ──
@@ -968,7 +969,7 @@ function YtVideoCard({ video, canPlay, onPlay, onQueue }: {
   );
 }
 
-export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
+export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomProps) {
   const { socket } = useSocket();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -4982,6 +4983,18 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
   const handleWatchYoutube = () => {
     setShowYoutube((prev) => !prev);
   };
+
+  // Auto-watch: if the room was opened with ?watch=<userId>, automatically
+  // join that user's YouTube party once their host slot becomes visible.
+  const autoWatchedRef = useRef(false);
+  useEffect(() => {
+    if (!watchUserId || autoWatchedRef.current || !user || watchUserId === user.id) return;
+    const videoId = youtubeHosts.get(watchUserId);
+    if (!videoId) return;
+    autoWatchedRef.current = true;
+    handleJoinYoutubeParty(watchUserId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchUserId, youtubeHosts, user]);
 
   // Join a specific host's YouTube watch party from their participant card.
   const handleJoinYoutubeParty = useCallback((hostPeerId: string) => {

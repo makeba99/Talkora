@@ -815,6 +815,22 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/users/watching", isAuthenticated, async (req: any, res) => {
+    try {
+      const watching: Record<string, { roomId: string; videoId: string }> = {};
+      for (const [roomId, hostsMap] of Array.from(roomYoutubeState.entries())) {
+        for (const [hostId, state] of Array.from(hostsMap.entries())) {
+          if (state.videoId) {
+            watching[hostId] = { roomId, videoId: state.videoId };
+          }
+        }
+      }
+      res.json(watching);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/youtube/featured", isAuthenticated, async (req: any, res) => {
     try {
       const categoryQueries: Record<string, string> = {

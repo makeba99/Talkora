@@ -13,6 +13,7 @@ export default function RoomPage() {
   const [, navigate] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
   const accessKey = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("key") : null;
+  const watchUserId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("watch") || undefined : undefined;
 
   const { data: room, isLoading, isError } = useQuery<Room>({
     queryKey: ["/api/rooms", params.id, accessKey],
@@ -85,6 +86,7 @@ export default function RoomPage() {
   return (
     <VoiceRoom
       room={room}
+      watchUserId={watchUserId}
       onLeave={(reason) => {
         if (reason === "joined-another-room") {
           window.close();
