@@ -873,6 +873,7 @@ export function ProfileDropdown({
                     <SelectItem value="brb">BRB</SelectItem>
                     <SelectItem value="afk">AFK</SelectItem>
                     <SelectItem value="busy">Busy</SelectItem>
+                    <SelectItem value="zz">ZZ (Sleeping)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

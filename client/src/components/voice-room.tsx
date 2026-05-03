@@ -424,13 +424,13 @@ function ParticipantCard({
                 </div>
                 <div className="text-sm font-semibold truncate leading-none">Name: {getUserDisplayName(p)}</div>
                 <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit" data-testid={`role-room-${p.id}`}>
-                  <span className={participantRole === "owner" ? "text-amber-300" : participantRole === "co-owner" ? "text-sky-300" : "text-zinc-300"}>
-                    {participantRole === "owner" ? "OWNER" : participantRole === "co-owner" ? "CO-OWNER" : "GUEST"}
+                  <span className={participantRole === "owner" ? "text-amber-300" : participantRole === "co-owner" ? "text-sky-300" : participantRole === "guest" ? "text-emerald-300" : "text-zinc-400"}>
+                    {participantRole === "owner" ? "OWNER" : participantRole === "co-owner" ? "CO-OWNER" : participantRole === "guest" ? "GUEST" : "MEMBER"}
                   </span>
                 </div>
                 <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit" data-testid={`status-room-presence-${p.id}`}>
-                  <span className={roomPresenceStatus === "busy" ? "text-rose-300" : roomPresenceStatus === "afk" ? "text-sky-300" : roomPresenceStatus === "brb" ? "text-amber-300" : "text-zinc-300"}>
-                    {roomPresenceStatus === "busy" ? "BUSY" : roomPresenceStatus === "afk" ? "AFK" : roomPresenceStatus === "brb" ? "BRB" : "ONLINE"}
+                  <span className={roomPresenceStatus === "busy" ? "text-rose-300" : roomPresenceStatus === "afk" ? "text-sky-300" : roomPresenceStatus === "brb" ? "text-amber-300" : roomPresenceStatus === "zz" ? "text-indigo-300" : "text-zinc-300"}>
+                    {roomPresenceStatus === "busy" ? "BUSY" : roomPresenceStatus === "afk" ? "AFK" : roomPresenceStatus === "brb" ? "BRB" : roomPresenceStatus === "zz" ? "ZZ" : "ONLINE"}
                   </span>
                 </div>
                 {isMe && (
@@ -453,6 +453,7 @@ function ParticipantCard({
                         <SelectItem value="brb">BRB</SelectItem>
                         <SelectItem value="afk">AFK</SelectItem>
                         <SelectItem value="busy">Busy</SelectItem>
+                        <SelectItem value="zz">ZZ (Sleeping)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -525,7 +526,7 @@ function ParticipantCard({
 
           {(isCurrentUserHost || isCurrentUserCoOwner) && !isMe && !isRoomOwner && (
             <div className="grid grid-cols-2 gap-2">
-               <Button variant={participantRole === "guest" || !participantRole ? "default" : "outline"} size="sm" onClick={() => onAssignRole && onAssignRole("guest")} className={`h-8 text-xs ${participantRole === "guest" || !participantRole ? 'bg-muted text-foreground border-border' : 'bg-transparent border-border text-muted-foreground hover:bg-muted'}`}>
+               <Button variant={participantRole === "guest" ? "default" : "outline"} size="sm" onClick={() => onAssignRole && onAssignRole("guest")} className={`h-8 text-xs ${participantRole === "guest" ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-transparent border-border text-muted-foreground hover:bg-muted'}`}>
                  <ChevronUp className="w-3.5 h-3.5 mr-1" /> Set Guest
                </Button>
                <Button variant={participantRole === "co-owner" ? "default" : "outline"} size="sm" onClick={() => onAssignRole && onAssignRole("co-owner")} className={`h-8 text-xs ${participantRole === "co-owner" ? 'bg-orange-600 text-white border-orange-600' : 'bg-transparent border-border text-muted-foreground hover:bg-muted'}`}>
@@ -793,6 +794,22 @@ function ParticipantCard({
             </div>
         </div>
 
+        {roomPresenceStatus && roomPresenceStatus !== "online" && (
+          <div className="absolute top-1 left-1 z-20 pointer-events-none">
+            <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm shadow-md ${
+              roomPresenceStatus === "busy" ? "bg-rose-500/90 text-white" :
+              roomPresenceStatus === "afk" ? "bg-sky-500/90 text-white" :
+              roomPresenceStatus === "brb" ? "bg-amber-500/90 text-white" :
+              roomPresenceStatus === "zz" ? "bg-indigo-500/90 text-white" : ""
+            }`}>
+              {roomPresenceStatus === "busy" ? "BUSY" :
+               roomPresenceStatus === "afk" ? "AFK" :
+               roomPresenceStatus === "brb" ? "BRB" :
+               roomPresenceStatus === "zz" ? "ZZ" : ""}
+            </div>
+          </div>
+        )}
+
         {(showScreenIcon || showYoutubeIcon || showBookIcon || isWatcher || showMovieIcon || isMovieWatcherBadge) && (
           <div className="absolute top-1 right-8 z-20 flex items-center gap-0.5 animate-pulse drop-shadow-md" onClick={(e) => e.stopPropagation()}>
              {showScreenIcon && (
@@ -877,6 +894,16 @@ function ParticipantCard({
             }}
           >
             Co-Owner
+          </div>
+        ) : participantRole === "guest" ? (
+          <div
+            className="absolute bottom-0 left-0 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            style={{
+              background: "linear-gradient(145deg, rgba(16,185,129,0.85) 0%, rgba(5,150,105,0.82) 100%)",
+              boxShadow: "0 0 8px rgba(16,185,129,0.35), inset 0 1px 0 rgba(220,255,240,0.25)",
+            }}
+          >
+            Guest
           </div>
         ) : isMe ? (
           <div className="absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20">
@@ -2393,6 +2420,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         avatarRing?: string | null;
         flairBadge?: string | null;
         profileDecoration?: string | null;
+        status?: string | null;
       }) => {
         if (!data?.userId) return;
         setParticipants((prev) =>
@@ -4247,7 +4275,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   };
 
   const handleClearChat = (global: boolean) => {
-    const myRole = participantRoles[user?.id || ""] || "guest";
+    const myRole = participantRoles[user?.id || ""] || "";
     if (global && (isHost || myRole === "co-owner")) {
       socket?.emit("room:clear-chat-global", { roomId: room.id, clearedBy: user?.id });
     } else {
@@ -4281,7 +4309,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
   };
 
-  const myRole = participantRoles[user?.id || ""] || "guest";
+  const myRole = participantRoles[user?.id || ""] || "";
   const canAssignRoles = isHost || myRole === "co-owner";
 
   // ----- Talk-permission gating -----
@@ -9743,7 +9771,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       hasActiveYoutube={youtubeHosts.has(p.id)}
                       roomLevel={room.level}
                       hasActiveBook={bookReaders.has(p.id)}
-                      participantRole={participantRoles[p.id] || "guest"}
+                      participantRole={participantRoles[p.id] || ""}
                       onProfileClick={() => handleParticipantClick(p.id)}
                       isYoutubeWatcher={youtubeWatchersFlat.has(p.id) && !youtubeHosts.has(p.id)}
                       isSharing={isMe && isScreenSharing}
