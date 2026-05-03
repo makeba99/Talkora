@@ -88,6 +88,7 @@ export function PwaInstallBanner() {
               onClick={dismiss}
               className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-colors"
               data-testid="button-pwa-dismiss-ios"
+              aria-label="Dismiss install guide"
             >
               <X className="w-4 h-4" />
             </button>
@@ -157,6 +158,7 @@ export function PwaInstallBanner() {
             onClick={dismiss}
             className="w-8 h-8 rounded-full bg-white/8 flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/15 transition-colors"
             data-testid="button-pwa-dismiss"
+            aria-label="Dismiss install banner"
           >
             <X className="w-4 h-4" />
           </button>
