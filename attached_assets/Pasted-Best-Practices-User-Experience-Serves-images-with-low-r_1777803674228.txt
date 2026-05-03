@@ -1,0 +1,65 @@
+Best Practices
+User Experience
+Serves images with low resolution
+Image natural dimensions should be proportional to the display size and the pixel ratio to maximize image clarity. Learn how to provide responsive images.
+URL
+Displayed size
+Actual size
+Expected size
+randomuser.me
+Ivan Petrov
+<img class="aspect-square h-full w-full rounded-2xl" alt="Ivan Petrov" width="61" height="61" loading="lazy" decoding="async" src="https://randomuser.me/api/portraits/thumb/men/19.jpg">
+…men/19.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Liam Chen
+<img class="aspect-square h-full w-full rounded-2xl" alt="Liam Chen" width="61" height="61" loading="eager" decoding="async" src="https://randomuser.me/api/portraits/thumb/men/46.jpg">
+…men/46.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Pierre Dupont
+<img class="aspect-square h-full w-full rounded-2xl" alt="Pierre Dupont" width="61" height="61" loading="lazy" decoding="async" src="https://randomuser.me/api/portraits/thumb/men/55.jpg">
+…men/55.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Bjorn Andersen
+<img class="aspect-square h-full w-full rounded-2xl" alt="Bjorn Andersen" width="61" height="61" loading="lazy" decoding="async" src="https://randomuser.me/api/portraits/thumb/men/71.jpg">
+…men/71.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Min Ji-hoon
+<img class="aspect-square h-full w-full rounded-2xl" alt="Min Ji-hoon" width="61" height="61" loading="lazy" decoding="async" src="https://randomuser.me/api/portraits/thumb/men/72.jpg">
+…men/72.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Hassan Al-Amin
+<img class="aspect-square h-full w-full rounded-2xl" alt="Hassan Al-Amin" width="61" height="61" loading="lazy" decoding="async" src="https://randomuser.me/api/portraits/thumb/men/78.jpg">
+…men/78.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Claire Bernard
+<img class="aspect-square h-full w-full rounded-2xl" alt="Claire Bernard" width="61" height="61" loading="lazy" decoding="async" src="https://randomuser.me/api/portraits/thumb/women/17.jpg">
+…women/17.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Emma Davis
+<img class="aspect-square h-full w-full rounded-2xl" alt="Emma Davis" width="61" height="61" loading="eager" decoding="async" src="https://randomuser.me/api/portraits/thumb/women/28.jpg">
+…women/28.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Sofia Martinez
+<img class="aspect-square h-full w-full rounded-2xl" alt="Sofia Martinez" width="61" height="61" loading="eager" decoding="async" fetchpriority="high" src="https://randomuser.me/api/portraits/thumb/women/32.jpg">
+…women/32.jpg(randomuser.me)
+57 x 57
+48 x 48
+57 x 57
+Seo Yeon
+<img class="aspect-square h-full w-full rounded-2xl" alt="Seo Yeon" width="61" height="61" loading="lazy" decoding="async

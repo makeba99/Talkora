@@ -86,7 +86,7 @@ function makeSampleUser(
     firstName,
     lastName,
     displayName: `${firstName} ${lastName}`,
-    profileImageUrl: `https://randomuser.me/api/portraits/thumb/${portrait}.jpg`,
+    profileImageUrl: `https://randomuser.me/api/portraits/${portrait}.jpg`,
     bio: opts?.bio || null,
     avatarRing: opts?.ring || null,
     flairBadge: opts?.flair || null,
