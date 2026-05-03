@@ -13,7 +13,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Notification, User } from "@shared/schema";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
-import { useSocket } from "@/lib/socket";
+import { useSocket } from "@/lib/socket-context";
 import { useToast } from "@/hooks/use-toast";
 
 interface NotificationsDropdownProps {

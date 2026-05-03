@@ -25,7 +25,7 @@ import {
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
-import { useSocket } from "@/lib/socket";
+import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";

@@ -25,7 +25,7 @@ import { isSoundEnabled, setSoundEnabled, onSoundEnabledChange, sfxToggle } from
 import { isBoostMode, setBoostMode, onBoostModeChange } from "@/lib/perf-bus";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
-import { useSocket } from "@/lib/socket";
+import { useSocket } from "@/lib/socket-context";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";

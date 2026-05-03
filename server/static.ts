@@ -63,6 +63,7 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
     /^icons-vendor-[\w-]+\.js$/,      // lucide-react icons rendered on lobby
     /^room-card-[\w-]+\.js$/,         // lobby grid item — sometimes split out
     /^app-constants-[\w-]+\.js$/,     // zero-dep shared constants (9+ route chunks import it)
+    /^ui-components-[\w-]+\.js$/,     // consolidated shadcn UI wrappers (button, popover, etc.)
   ];
   const criticalStylePatterns: RegExp[] = [
     /^index-[\w-]+\.css$/,            // entry CSS

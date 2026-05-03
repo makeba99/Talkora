@@ -1,6 +1,6 @@
 import { useEffect, useState, Suspense, lazy } from "react";
 import { SocketProvider } from "@/lib/socket";
-import { useSocket } from "@/lib/socket";
+import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";

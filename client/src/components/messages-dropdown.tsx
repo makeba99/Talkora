@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useSocket } from "@/lib/socket";
+import { useSocket } from "@/lib/socket-context";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";

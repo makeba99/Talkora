@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Send, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
-import { useSocket } from "@/lib/socket";
+import { useSocket } from "@/lib/socket-context";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, uploadChatImage } from "@/components/chat-picker";

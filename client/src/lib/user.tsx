@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@shared/schema";
 import { apiRequest } from "./queryClient";
-import { useSocket } from "./socket";
+import { useSocket } from "./socket-context";
 
 interface UserContextType {
   user: User | null;

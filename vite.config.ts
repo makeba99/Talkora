@@ -112,6 +112,14 @@ export default defineConfig({
           // profile-dropdown.tsx without touching the critical paint path.
           if (id.includes("profile-decorations")) return "decorations-vendor";
 
+          // Consolidate all shadcn/ui wrapper components (button, popover,
+          // avatar, select, label, toast, etc.) into one preloadable chunk.
+          // Without this, Rollup splits every ~2–3 KB component into its own
+          // file → 8+ extra HTTP round-trips on the LCP critical path.
+          // These are app-level files (not node_modules), so this rule must
+          // appear BEFORE the node_modules guard below.
+          if (id.includes("/components/ui/") && !id.includes("node_modules")) return "ui-components";
+
           if (!id.includes("node_modules")) return undefined;
           if (
             id.includes("react-dom") ||

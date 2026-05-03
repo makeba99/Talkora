@@ -66,7 +66,7 @@ const ThemePicker = lazy(() =>
 import { useLowBandwidthHint } from "@/hooks/use-low-bandwidth-hint";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useAuth } from "@/hooks/use-auth";
-import { useSocket } from "@/lib/socket";
+import { useSocket } from "@/lib/socket-context";
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LANGUAGES } from "@shared/constants";

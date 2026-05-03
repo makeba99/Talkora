@@ -1,21 +1,8 @@
-import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import { SocketContext } from "./socket-context";
 
 const APPEAR_OFFLINE_KEY = "connect2talk:appearOffline";
-
-interface SocketContextType {
-  socket: Socket | null;
-  connected: boolean;
-  appearOffline: boolean;
-  setAppearOffline: (v: boolean) => void;
-}
-
-const SocketContext = createContext<SocketContextType>({
-  socket: null,
-  connected: false,
-  appearOffline: false,
-  setAppearOffline: () => {},
-});
 
 export function SocketProvider({ children, userId }: { children: React.ReactNode; userId: string }) {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -127,8 +114,4 @@ export function SocketProvider({ children, userId }: { children: React.ReactNode
       {children}
     </SocketContext.Provider>
   );
-}
-
-export function useSocket() {
-  return useContext(SocketContext);
 }
