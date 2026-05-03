@@ -2279,16 +2279,16 @@ export async function registerRoutes(
       if (welcomeMediaTypes !== undefined) updateData.welcomeMediaTypes = Array.isArray(welcomeMediaTypes) ? welcomeMediaTypes : [];
       if (welcomeMediaPosition !== undefined) updateData.welcomeMediaPosition = welcomeMediaPosition;
       if (welcomeAccentColor !== undefined) updateData.welcomeAccentColor = welcomeAccentColor;
-      if (talkPermission !== undefined && ["everyone", "co_owners", "owner_only", "muted"].includes(talkPermission)) {
+      if (talkPermission !== undefined && ["everyone", "members", "co_owners", "owner_only", "muted"].includes(talkPermission)) {
         updateData.talkPermission = talkPermission;
       }
-      if (cameraPermission !== undefined && ["everyone", "co_owners", "owner_only"].includes(cameraPermission)) {
+      if (cameraPermission !== undefined && ["everyone", "members", "co_owners", "owner_only"].includes(cameraPermission)) {
         updateData.cameraPermission = cameraPermission;
       }
-      if (screenPermission !== undefined && ["everyone", "co_owners", "owner_only"].includes(screenPermission)) {
+      if (screenPermission !== undefined && ["everyone", "members", "co_owners", "owner_only"].includes(screenPermission)) {
         updateData.screenPermission = screenPermission;
       }
-      if (youtubePermission !== undefined && ["everyone", "co_owners", "owner_only"].includes(youtubePermission)) {
+      if (youtubePermission !== undefined && ["everyone", "members", "co_owners", "owner_only"].includes(youtubePermission)) {
         updateData.youtubePermission = youtubePermission;
       }
 
@@ -2312,11 +2312,13 @@ export async function registerRoutes(
       const hostName = host ? getDisplayName(host) : "The host";
       const labelTalk = (v: string) =>
         v === "everyone" ? "everyone" :
+        v === "members" ? "members only (guests & trolls muted)" :
         v === "co_owners" ? "hosts & co-hosts only" :
         v === "owner_only" ? "host only" :
         v === "muted" ? "silent room (text only)" : v;
       const labelFeat = (v: string) =>
         v === "everyone" ? "everyone" :
+        v === "members" ? "members only (no guests or trolls)" :
         v === "co_owners" ? "hosts & co-hosts only" :
         v === "owner_only" ? "host only" : v;
       if (updateData.talkPermission && updateData.talkPermission !== room.talkPermission) {

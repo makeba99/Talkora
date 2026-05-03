@@ -1011,7 +1011,7 @@ function ParticipantCard({
 // Single neumorphic permission tile shared by mic / camera / screen / youtube.
 // One tap cycles through the allowed scopes — far faster than 4 stacked
 // dropdowns when the host wants to lock things down quickly.
-type PermValue = "everyone" | "co_owners" | "owner_only" | "muted";
+type PermValue = "everyone" | "members" | "co_owners" | "owner_only" | "muted";
 type PermTileProps = {
   label: string;
   Icon: React.ComponentType<{ className?: string }>;
@@ -1022,8 +1022,8 @@ type PermTileProps = {
 };
 function PermTile({ label, Icon, value, onChange, withMuted, testId }: PermTileProps) {
   const order: PermValue[] = withMuted
-    ? ["everyone", "co_owners", "owner_only", "muted"]
-    : ["everyone", "co_owners", "owner_only"];
+    ? ["everyone", "members", "co_owners", "owner_only", "muted"]
+    : ["everyone", "members", "co_owners", "owner_only"];
   const i = Math.max(0, order.indexOf(value));
   const next = order[(i + 1) % order.length];
   // Per-scope visual + copy tokens. Long labels make the pill self-explanatory
@@ -1036,10 +1036,11 @@ function PermTile({ label, Icon, value, onChange, withMuted, testId }: PermTileP
     ringFrom: string;
     ringTo: string;
   }> = {
-    everyone:   { short: "All",    long: "Everyone",      accent: "emerald", ringFrom: "rgba(16,185,129,0.55)", ringTo: "rgba(16,185,129,0.10)" },
-    co_owners:  { short: "Hosts",  long: "Co-hosts only", accent: "sky",     ringFrom: "rgba(56,189,248,0.55)", ringTo: "rgba(56,189,248,0.10)" },
-    owner_only: { short: "Host",   long: "Host only",     accent: "amber",   ringFrom: "rgba(251,191,36,0.55)", ringTo: "rgba(251,191,36,0.10)" },
-    muted:      { short: "Muted",  long: "All muted",     accent: "rose",    ringFrom: "rgba(244,63,94,0.55)",  ringTo: "rgba(244,63,94,0.10)" },
+    everyone:   { short: "All",     long: "Everyone",         accent: "emerald", ringFrom: "rgba(16,185,129,0.55)", ringTo: "rgba(16,185,129,0.10)" },
+    members:    { short: "Members", long: "Members only",     accent: "violet",  ringFrom: "rgba(139,92,246,0.55)",  ringTo: "rgba(139,92,246,0.10)" },
+    co_owners:  { short: "Hosts",   long: "Co-hosts only",   accent: "sky",     ringFrom: "rgba(56,189,248,0.55)",  ringTo: "rgba(56,189,248,0.10)" },
+    owner_only: { short: "Host",    long: "Host only",        accent: "amber",   ringFrom: "rgba(251,191,36,0.55)",  ringTo: "rgba(251,191,36,0.10)" },
+    muted:      { short: "Muted",   long: "All muted",        accent: "rose",    ringFrom: "rgba(244,63,94,0.55)",   ringTo: "rgba(244,63,94,0.10)" },
   };
   const m = meta[value];
   const nextMeta = meta[next];
@@ -1264,16 +1265,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [themeDialogOffset, setThemeDialogOffset] = useState(0);
   const [editRoomTheme, setEditRoomTheme] = useState((roomProp as any).roomTheme || "none");
   const [editThemeOffset, setEditThemeOffset] = useState(0);
-  const [editTalkPermission, setEditTalkPermission] = useState<"everyone" | "co_owners" | "owner_only" | "muted">(
+  const [editTalkPermission, setEditTalkPermission] = useState<"everyone" | "members" | "co_owners" | "owner_only" | "muted">(
     ((roomProp as any).talkPermission as any) || "everyone"
   );
-  const [editCameraPermission, setEditCameraPermission] = useState<"everyone" | "co_owners" | "owner_only">(
+  const [editCameraPermission, setEditCameraPermission] = useState<"everyone" | "members" | "co_owners" | "owner_only">(
     ((roomProp as any).cameraPermission as any) || "everyone"
   );
-  const [editScreenPermission, setEditScreenPermission] = useState<"everyone" | "co_owners" | "owner_only">(
+  const [editScreenPermission, setEditScreenPermission] = useState<"everyone" | "members" | "co_owners" | "owner_only">(
     ((roomProp as any).screenPermission as any) || "everyone"
   );
-  const [editYoutubePermission, setEditYoutubePermission] = useState<"everyone" | "co_owners" | "owner_only">(
+  const [editYoutubePermission, setEditYoutubePermission] = useState<"everyone" | "members" | "co_owners" | "owner_only">(
     ((roomProp as any).youtubePermission as any) || "everyone"
   );
   const [editIsPublic, setEditIsPublic] = useState<boolean>(((roomProp as any).isPublic ?? true) as boolean);
@@ -4485,10 +4486,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   //   muted       — silent room (text only); host stays unrestricted so they
   //                 can broadcast announcements without unlocking the room.
   const talkPermission = ((room as any).talkPermission as
-    | "everyone" | "co_owners" | "owner_only" | "muted" | undefined) || "everyone";
+    | "everyone" | "members" | "co_owners" | "owner_only" | "muted" | undefined) || "everyone";
+  const isGuestOrTroll = myRole === "guest" || myRole === "troll";
   const canUseTalkControls = (() => {
     if (isHost) return true;
     if (talkPermission === "everyone") return true;
+    if (talkPermission === "members") return !isGuestOrTroll;
     if (talkPermission === "co_owners") return myRole === "co-owner";
     return false;
   })();
@@ -4497,6 +4500,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (talkPermission === "muted") return "Silent room — only text chat is allowed.";
     if (talkPermission === "owner_only") return "Only the host can use mic, camera or screen-share.";
     if (talkPermission === "co_owners") return "Only the host and co-hosts can use mic, camera or screen-share.";
+    if (talkPermission === "members") return "Guests and trolls cannot use mic, camera or screen-share in this room.";
     return "Talk is disabled for your role.";
   })();
   const talkBadge = (() => {
@@ -4504,20 +4508,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (talkPermission === "muted") return { label: "Silent Room", tone: "tone-mute" as const, icon: VolumeX };
     if (talkPermission === "owner_only") return { label: "Host Only", tone: "tone-warn" as const, icon: Crown };
     if (talkPermission === "co_owners") return { label: "Hosts & Co-hosts", tone: "" as const, icon: Shield };
+    if (talkPermission === "members") return { label: "Members Only", tone: "" as const, icon: Shield };
     return null;
   })();
   // Per-feature host permissions. The host configures who can share screen and
   // who can play YouTube from Edit Room Settings. Each save is announced in
   // the chat as a system message (server-side).
   const cameraPermission = ((room as any).cameraPermission as
-    | "everyone" | "co_owners" | "owner_only" | undefined) || "everyone";
+    | "everyone" | "members" | "co_owners" | "owner_only" | undefined) || "everyone";
   const screenPermission = ((room as any).screenPermission as
-    | "everyone" | "co_owners" | "owner_only" | undefined) || "everyone";
+    | "everyone" | "members" | "co_owners" | "owner_only" | undefined) || "everyone";
   const youtubePermission = ((room as any).youtubePermission as
-    | "everyone" | "co_owners" | "owner_only" | undefined) || "everyone";
-  const checkPerm = (perm: "everyone" | "co_owners" | "owner_only") => {
+    | "everyone" | "members" | "co_owners" | "owner_only" | undefined) || "everyone";
+  const checkPerm = (perm: "everyone" | "members" | "co_owners" | "owner_only") => {
     if (isHost) return true;
     if (perm === "everyone") return true;
+    if (perm === "members") return !isGuestOrTroll;
     if (perm === "co_owners") return myRole === "co-owner";
     return false;
   };
@@ -4529,6 +4535,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (canOpenCameraByPerm) return "";
     if (cameraPermission === "owner_only") return "Only the host can open the camera.";
     if (cameraPermission === "co_owners") return "Only the host and co-hosts can open the camera.";
+    if (cameraPermission === "members") return "Guests and trolls cannot open the camera in this room.";
     return "Camera is locked.";
   })();
   const canShareScreenByPerm = checkPerm(screenPermission);
@@ -4536,6 +4543,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (canShareScreenByPerm) return "";
     if (screenPermission === "owner_only") return "Only the host can share screen.";
     if (screenPermission === "co_owners") return "Only the host and co-hosts can share screen.";
+    if (screenPermission === "members") return "Guests and trolls cannot share screen in this room.";
     return "Screen-share is locked.";
   })();
   const canPlayYoutube = checkPerm(youtubePermission);
@@ -4543,6 +4551,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (canPlayYoutube) return "";
     if (youtubePermission === "owner_only") return "Only the host can play YouTube videos.";
     if (youtubePermission === "co_owners") return "Only the host and co-hosts can play YouTube videos.";
+    if (youtubePermission === "members") return "Guests and trolls cannot play YouTube in this room.";
     return "YouTube is locked.";
   })();
 
