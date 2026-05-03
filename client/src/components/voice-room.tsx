@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
@@ -5857,17 +5858,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       </div>
                       {hasReactions && (
                         <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`reactions-${msg.id}`}>
-                          {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => (
-                            <button
-                              key={emoji}
-                              onClick={() => handleReact(msg.id, emoji)}
-                              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] border transition-colors ${uids.includes(user?.id || "") ? "bg-primary/20 border-primary/40 text-primary" : "bg-muted border-border hover:bg-muted/80"}`}
-                              data-testid={`reaction-${msg.id}-${emoji}`}
-                            >
-                              <span>{emoji}</span>
-                              <span className="font-medium">{uids.length}</span>
-                            </button>
-                          ))}
+                          {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
+                            const reactorNames = uids.map((uid) => {
+                              if (uid === user?.id) return "You";
+                              const p = participants.find((p) => p.id === uid);
+                              return p ? getUserDisplayName(p) : "Unknown";
+                            });
+                            const tooltipText = reactorNames.length <= 3
+                              ? reactorNames.join(", ")
+                              : `${reactorNames.slice(0, 3).join(", ")} +${reactorNames.length - 3} more`;
+                            return (
+                              <Tooltip key={emoji}>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => handleReact(msg.id, emoji)}
+                                    className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] border transition-colors ${uids.includes(user?.id || "") ? "bg-primary/20 border-primary/40 text-primary" : "bg-muted border-border hover:bg-muted/80"}`}
+                                    data-testid={`reaction-${msg.id}-${emoji}`}
+                                  >
+                                    <span>{emoji}</span>
+                                    <span className="font-medium">{uids.length}</span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs max-w-[200px] text-center">
+                                  <p className="font-medium mb-0.5">{emoji} {uids.length === 1 ? "1 reaction" : `${uids.length} reactions`}</p>
+                                  <p className="text-muted-foreground">{tooltipText}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
