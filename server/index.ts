@@ -138,6 +138,17 @@ app.use((req, res, next) => {
           log(`cache-warm skipped: ${(err as Error)?.message || String(err)}`);
         }
       })();
+      setTimeout(() => {
+        void (async () => {
+          try {
+            const t0 = Date.now();
+            await storage.getPublishedAnnouncements(5, undefined, true);
+            log(`cache-warmed /api/announcements in ${Date.now() - t0}ms`);
+          } catch (err) {
+            log(`announcement cache-warm skipped: ${(err as Error)?.message || String(err)}`);
+          }
+        })();
+      }, 2000);
     },
   );
 })();
