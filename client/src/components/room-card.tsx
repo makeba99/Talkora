@@ -364,10 +364,9 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
           <img
             src={src}
             alt=""
-            loading={priority ? "eager" : "lazy"}
+            loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"
-            {...(priority ? { fetchpriority: "high" } as any : {})}
             className="absolute inset-0 w-full h-full object-cover z-0"
             style={{ opacity: 0.65, filter: "brightness(0.7) saturate(0.85)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
           />
@@ -392,10 +391,9 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             <img
               src={`https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`}
               alt=""
-              loading={priority ? "eager" : "lazy"}
+              loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
-              {...(priority ? { fetchpriority: "high" } as any : {})}
               className="absolute inset-0 w-full h-full object-cover z-0"
               style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
             />
@@ -429,7 +427,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
         loop
         muted
         playsInline
-        preload={priority ? "auto" : "metadata"}
+        preload="metadata"
         className="absolute inset-0 w-full h-full object-cover z-0"
           style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
       />
@@ -1003,10 +1001,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             alt={getUserDisplayName(p)}
                             width={circleSize}
                             height={circleSize}
-                            loading={priority ? "eager" : "lazy"}
+                            loading="lazy"
                             decoding="async"
                             className="rounded-2xl"
-                            {...(priority && i === 0 ? { fetchpriority: "high" } as any : {})}
                           />;
                         })()}
                         <AvatarFallback className="rounded-2xl text-base font-bold bg-[#1a1520] text-white/70">
