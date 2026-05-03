@@ -370,6 +370,7 @@ function ParticipantCard({
   onClearMood,
   hasActiveMovie,
   moviePosterPath,
+  watchingMoviePoster,
   isMovieWatcher,
   onWatchMovie,
   roomLevel,
@@ -777,10 +778,10 @@ function ParticipantCard({
               </div>
             </div>
           </>
-        ) : isMovieWatcherBadge && moviePosterPath ? (
+        ) : isMovieWatcherBadge && watchingMoviePoster ? (
           <>
             <img
-              src={moviePosterPath}
+              src={watchingMoviePoster}
               alt="Movie poster"
               loading="lazy"
               decoding="async"
