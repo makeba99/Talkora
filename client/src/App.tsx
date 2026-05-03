@@ -142,11 +142,22 @@ function DeferredToasts() {
   );
 }
 
+function PreRenderDismiss() {
+  useEffect(() => {
+    // Hide the static pre-render overlay after React's first commit so the real
+    // UI is shown. position:fixed means display:none causes zero layout shift.
+    const el = document.getElementById("vx-pr");
+    if (el) el.style.display = "none";
+  }, []);
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ThemeProvider>
+          <PreRenderDismiss />
           <DeferredOverlays />
           <AppContent />
           <DeferredToasts />

@@ -1347,6 +1347,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     <img
                       src={editHologramUrl}
                       alt="Selected media"
+                      width={56}
+                      height={56}
                       className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
                       data-testid="img-edit-card-media-preview"
                     />

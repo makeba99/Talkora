@@ -10710,7 +10710,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
                     style={{ border: "1.5px solid rgba(0,225,255,0.50)", boxShadow: "0 0 8px rgba(0,225,255,0.30)" }}>
-                    <img loading="lazy" decoding="async" src="/ai-face.png" alt="AI" className="w-full h-full object-cover object-top" />
+                    <img loading="lazy" decoding="async" src="/ai-face.webp" alt="AI" className="w-full h-full object-cover object-top" width={32} height={32} />
                   </div>
                   <div>
                     <span className="text-[12px] font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>AI Tutor Chat</span>
