@@ -8354,30 +8354,50 @@ html.neomorphic-light .scroll-jump-btn {
 .onboarding-dots {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 1px; /* tight gap; touch areas are 24 px so centres are 25 px apart */
 }
 
+/* WCAG 2.5.8 — min touch target 24 × 24 px.
+   The button is a transparent 24 × 24 container; the visible dot is drawn
+   via ::before so the visual stays at 7 px while the hit area is accessible. */
 .onboarding-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+
+.onboarding-dot::before {
+  content: '';
   width: 7px;
   height: 7px;
   border-radius: 999px;
   background: hsl(0 0% 100% / 0.16);
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: background 200ms ease, width 220ms ease, transform 200ms ease;
+  flex-shrink: 0;
+  transition: background 200ms ease, width 220ms ease;
+}
+
+.onboarding-dot:hover::before {
+  background: hsl(0 0% 100% / 0.32);
 }
 
 .onboarding-dot:hover {
-  background: hsl(0 0% 100% / 0.32);
   transform: scale(1.15);
 }
 
-.onboarding-dot.is-done {
+.onboarding-dot.is-done::before {
   background: hsl(var(--neu-orange) / 0.55);
 }
 
-.onboarding-dot.is-active {
+.onboarding-dot.is-active::before {
   width: 18px;
   background: hsl(var(--neu-orange));
   box-shadow: 0 0 10px hsl(var(--neu-orange) / 0.55);
@@ -9626,7 +9646,7 @@ html.neomorphic-light .pinned-socials-link {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  color: hsl(46 100% 16%);
+  color: hsl(46 100% 7%); /* darkened from 16% → 7% for WCAG AA contrast ≥ 4.5:1 on amber gradient */
   background: linear-gradient(180deg, hsl(46 100% 70%), hsl(38 100% 56%));
   border: 1px solid hsl(38 100% 50%);
   box-shadow:

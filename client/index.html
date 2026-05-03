@@ -256,19 +256,21 @@
          completely separate socket — so the actual image fetch ignores the
          pre-warmed connection and opens a second one. Removing crossorigin here
          ensures the pre-warmed socket is reused, saving ~100 ms per origin. -->
+    <!-- Only ONE preconnect — Lighthouse flags >4 as wasteful (they compete
+         for bandwidth on slow connections). flagcdn.com is the most critical:
+         flag images appear on every visible room card immediately on first paint.
+         randomuser.me serves the People-section avatars which are below-the-fold
+         and only visible on the non-default tab, so dns-prefetch is sufficient.
+         i.ytimg.com serves YouTube thumbnails only in hologram-theme rooms
+         (rare); keep dns-prefetch only. -->
     <link rel="preconnect" href="https://flagcdn.com" />
     <link rel="dns-prefetch" href="https://flagcdn.com" />
-    <link rel="preconnect" href="https://randomuser.me" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
     <!-- YouTube embeds are deferred and only load on user interaction, so use
          dns-prefetch (cheap) instead of preconnect (opens TLS sockets that
          fight the LCP candidate for bandwidth on slow mobile networks). -->
     <link rel="dns-prefetch" href="https://www.youtube.com" />
     <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
-    <!-- i.ytimg.com serves YouTube thumbnails used immediately in hologram room
-         backgrounds — upgrading to preconnect completes the TLS handshake
-         before the first thumbnail request, saving ~200ms on mobile. -->
-    <link rel="preconnect" href="https://i.ytimg.com" />
     <link rel="dns-prefetch" href="https://i.ytimg.com" />
     <link rel="dns-prefetch" href="https://s.ytimg.com" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
