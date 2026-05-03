@@ -4675,14 +4675,39 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
   };
 
-  // Camera-as-share fallback: opens the camera (back-facing preferred) and
-  // broadcasts it through the screen-share channel. Works on ALL mobile
-  // browsers regardless of getDisplayMedia support.
+  // Camera-as-share fallback: broadcasts the camera through the screen-share
+  // channel. Works on ALL mobile browsers regardless of getDisplayMedia support.
+  // If the camera is already on (isVideoOn), we clone that stream instead of
+  // requesting a new one — iOS only allows one camera stream at a time so
+  // calling getUserMedia again while video is live silently fails.
   const _startCameraShareFallback = async () => {
+    // Reuse the live camera stream when video is already on.
+    if (isVideoOn && videoStream.current) {
+      try {
+        // Clone so the share track lifecycle is independent of the video track.
+        const cloned = videoStream.current.clone();
+        await _activateShareStream(cloned, true);
+        toast({
+          title: "Camera sharing started",
+          description: "Your camera feed is now shared with everyone in the room.",
+        });
+        return;
+      } catch (_) {
+        // Fall through to fresh getUserMedia attempt below.
+      }
+    }
+
     toast({
       title: "Screen share not available",
       description: "Your browser doesn't support screen capture. Opening your camera to share instead.",
     });
+
+    // iOS: stop the existing video track first so the camera is free to use.
+    const hadVideo = isVideoOn && !!videoStream.current;
+    if (hadVideo) {
+      videoStream.current?.getVideoTracks().forEach((t) => t.stop());
+    }
+
     const attempts: MediaTrackConstraints[] = [
       { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
       { facingMode: { ideal: "environment" } },
@@ -4909,33 +4934,56 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (!isVideoOn || isFlippingCamera) return;
     setIsFlippingCamera(true);
     const newFacing = cameraFacing === "user" ? "environment" : "user";
+    const isMobileDev = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // Snapshot the current state before we change anything so we can restore.
+    const oldStream = videoStream.current;
+    const oldFacing = cameraFacing;
+
     try {
       let newStream: MediaStream | null = null;
+      const currentDeviceId = oldStream?.getVideoTracks()[0]?.getSettings().deviceId;
 
-      // Strategy 1 — deviceId switch (most reliable on Android Chrome).
-      // Since the camera is already on we have permission, so enumerateDevices
-      // returns real labels we can use to identify front vs back camera.
-      if (navigator.mediaDevices.enumerateDevices) {
+      // ── iOS Safari MUST release the current camera before opening the other ──
+      // iOS only allows one camera open at a time. Trying to getUserMedia while
+      // the old track is still live → NotReadableError: "Could not start video
+      // source". Stopping first is safe because we replaceTrack() into the peer
+      // connections after we have the new stream.
+      if (isMobileDev) {
+        oldStream?.getVideoTracks().forEach((t) => t.stop());
+        videoStream.current = null;
+      }
+
+      // Strategy 1 — facingMode: { exact } (forces the OS camera switcher).
+      // Preferred on mobile because it's unambiguous about which lens to open.
+      try {
+        newStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: newFacing } },
+        });
+      } catch (_) {}
+
+      // Strategy 2 — deviceId switch (most reliable on multi-camera Android).
+      // On desktop Chrome enumerateDevices returns labelled devices so we can
+      // pick the exact physical camera. Skip on mobile — labels are often blank
+      // and we already tried exact facingMode above.
+      if (!newStream && !isMobileDev && navigator.mediaDevices.enumerateDevices) {
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
           const videoDevices = devices.filter((d) => d.kind === "videoinput" && d.deviceId !== "");
           if (videoDevices.length >= 2) {
-            const currentDeviceId = videoStream.current?.getVideoTracks()[0]?.getSettings().deviceId;
             const frontHints = /front|face|selfie/i;
             const backHints = /back|rear|environment|main|wide|ultra/i;
-            // Prefer a device whose label matches the desired facing, then fall
-            // back to any device that isn't the current one.
-            let target = videoDevices.find((d) => {
-              if (d.deviceId === currentDeviceId) return false;
-              return newFacing === "user" ? frontHints.test(d.label) : backHints.test(d.label);
-            }) ?? videoDevices.find((d) => d.deviceId !== currentDeviceId);
+            const target =
+              videoDevices.find((d) => {
+                if (d.deviceId === currentDeviceId) return false;
+                return newFacing === "user" ? frontHints.test(d.label) : backHints.test(d.label);
+              }) ?? videoDevices.find((d) => d.deviceId !== currentDeviceId);
 
             if (target) {
               try {
                 const s = await navigator.mediaDevices.getUserMedia({
                   video: { deviceId: { exact: target.deviceId }, width: { ideal: 640 }, height: { ideal: 480 } },
                 });
-                // Guard: make sure we actually got a different camera
                 if (s.getVideoTracks()[0]?.getSettings().deviceId !== currentDeviceId) {
                   newStream = s;
                 } else {
@@ -4947,9 +4995,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         } catch (_) {}
       }
 
-      // Strategy 2 — facingMode: { ideal } with size hints.
-      // `ideal` never throws OverconstrainedError — the browser picks the best
-      // matching camera without hard-failing when the facing isn't recognised.
+      // Strategy 3 — facingMode: { ideal } + size hints (never throws OverconstrainedError).
       if (!newStream) {
         try {
           newStream = await navigator.mediaDevices.getUserMedia({
@@ -4958,8 +5004,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         } catch (_) {}
       }
 
-      // Strategy 3 — facingMode: { ideal } only, no size constraints.
-      // Some older iOS builds reject width/height when combined with facingMode.
+      // Strategy 4 — facingMode: { ideal } only (old iOS rejects width/height with facingMode).
       if (!newStream) {
         try {
           newStream = await navigator.mediaDevices.getUserMedia({
@@ -4968,32 +5013,36 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         } catch (_) {}
       }
 
-      // Strategy 4 — any video, zero constraints (absolute last resort).
+      // Strategy 5 — any video (absolute last resort).
       if (!newStream) {
         newStream = await navigator.mediaDevices.getUserMedia({ video: true });
       }
 
       const newTrack = newStream.getVideoTracks()[0];
 
-      // Swap the track in every peer connection without renegotiation.
+      // Swap the track in every active peer connection (no renegotiation needed).
       for (const sender of videoSenders.current.values()) {
         try { await sender.replaceTrack(newTrack); } catch (_) {}
       }
 
-      videoStream.current?.getTracks().forEach((t) => t.stop());
+      // Stop non-mobile old tracks here (mobile already stopped them above).
+      if (!isMobileDev) {
+        oldStream?.getTracks().forEach((t) => t.stop());
+      }
+
       videoStream.current = newStream;
       setLocalVideoStreamObj(newStream);
       if (localVideoRef.current) localVideoRef.current.srcObject = newStream;
 
-      // Detect the actual facing from track settings when available.
-      // iOS Safari and many Android browsers return "" on a deviceId-based
-      // switch — fall back to what we requested so the mirror CSS stays correct.
+      // Use track settings when available; fall back to what we requested so
+      // the CSS mirror stays correct even when the browser returns "" for facing.
       const actualFacing = newTrack.getSettings().facingMode;
       setCameraFacing(
         actualFacing === "environment" ? "environment"
         : actualFacing === "user" ? "user"
         : newFacing
       );
+
     } catch (err: any) {
       const isPermission = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
       toast({
@@ -5003,6 +5052,28 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           : "Could not switch camera. Your device may only have one camera.",
         variant: "destructive",
       });
+
+      // On mobile we already stopped the old stream. Try to restore it so the
+      // user doesn't end up with a black camera after a failed flip.
+      if (isMobileDev && !videoStream.current) {
+        try {
+          const restored = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: oldFacing } },
+          });
+          videoStream.current = restored;
+          setLocalVideoStreamObj(restored);
+          if (localVideoRef.current) localVideoRef.current.srcObject = restored;
+          for (const sender of videoSenders.current.values()) {
+            try { await sender.replaceTrack(restored.getVideoTracks()[0]); } catch (_) {}
+          }
+          setCameraFacing(oldFacing);
+        } catch (_) {
+          // Couldn't restore either — give up and turn video off cleanly.
+          setIsVideoOn(false);
+          setLocalVideoStreamObj(null);
+          socket?.emit("room:video-status", { roomId: room.id, active: false });
+        }
+      }
     } finally {
       setIsFlippingCamera(false);
     }
