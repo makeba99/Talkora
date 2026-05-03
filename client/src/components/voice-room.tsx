@@ -4134,6 +4134,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
               }}
             >
+              <span className="absolute -top-1.5 -right-2 text-[9px] uppercase tracking-[0.24em] font-bold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-200 pointer-events-none">
+                Demo
+              </span>
               <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 6px hsl(var(--neu-orange-hi) / 0.85))" } : undefined} />
             </button>
           </div>
@@ -4141,9 +4144,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
         </div>
-        <span className="absolute -top-1.5 -right-2 text-[9px] uppercase tracking-[0.24em] font-bold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-200 pointer-events-none">
-          Demo
-        </span>
 
         <div className="mx-0.5 h-7 sm:h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
 
