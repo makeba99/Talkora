@@ -263,8 +263,21 @@
          and only visible on the non-default tab, so dns-prefetch is sufficient.
          i.ytimg.com serves YouTube thumbnails only in hologram-theme rooms
          (rare); keep dns-prefetch only. -->
+    <!-- flagcdn.com: flag images appear on every visible room card at first paint. -->
     <link rel="preconnect" href="https://flagcdn.com" />
     <link rel="dns-prefetch" href="https://flagcdn.com" />
+    <!-- media.tenor.com: GIF backgrounds on room cards are the LCP element.
+         Preconnecting here saves the full DNS+TCP+TLS round-trip (~150–400 ms
+         on mobile) so the browser can start fetching the image the moment React
+         renders the first card. crossorigin is omitted intentionally — <img>
+         fetches are non-CORS; a crossorigin preconnect would warm the wrong
+         connection pool and the image fetch would open a second one. -->
+    <link rel="preconnect" href="https://media.tenor.com" />
+    <link rel="dns-prefetch" href="https://media.tenor.com" />
+    <!-- i.ytimg.com: YouTube thumbnails for room card backgrounds (static
+         fallback used on mobile/reduced-motion). dns-prefetch (not preconnect)
+         because thumbnails are always below-the-fold or mobile-only. -->
+    <link rel="dns-prefetch" href="https://i.ytimg.com" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
     <!-- YouTube embeds are deferred and only load on user interaction; a
          single dns-prefetch covers all yt sub-domains to stay under Lighthouse's

@@ -1,0 +1,48 @@
+Insights
+Render blocking requests Est savings of 300 ms
+Requests are blocking the page's initial render, which may delay LCP. Deferring or inlining can move these network requests out of the critical path.LCPFCPUnscored
+URL
+Transfer Size
+Duration
+afikgang.online 1st party
+46.6 KiB	1,200 ms
+/assets/index-CQjyAxTs.css(www.afikgang.online)
+46.6 KiB
+1,200 ms
+Forced reflow
+A forced reflow occurs when JavaScript queries geometric properties (such as offsetWidth) after styles have been invalidated by a change to the DOM state. This can result in poor performance. Learn more about forced reflows and possible mitigations.Unscored
+Source
+Total reflow time
+[unattributed]
+34 ms
+LCP breakdown
+Each subpart has specific improvement strategies. Ideally, most of the LCP time should be spent on loading the resources, not within delays.LCPUnscored
+Subpart
+Duration
+Time to first byte
+10 ms
+Resource load delay
+2,100 ms
+Resource load duration
+60 ms
+Element render delay
+530 ms
+div > div > div.flex > img.absolute
+<img src="https://media.tenor.com/f0PS9RlKsP8AAAAC/yes-oh.gif" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="absolute inset-0 w-full h-full object-cover z-0" style="opacity: 0.65; filter: brightness(0.7) saturate(0.85);">
+LCP request discovery
+Optimize LCP by making the LCP image discoverable from the HTML immediately, and avoiding lazy-loadingLCPUnscored
+lazy load not applied
+fetchpriority=high should be applied
+Request is discoverable in initial document
+div > div > div.flex > img.absolute
+<img src="https://media.tenor.com/f0PS9RlKsP8AAAAC/yes-oh.gif" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="absolute inset-0 w-full h-full object-cover z-0" style="opacity: 0.65; filter: brightness(0.7) saturate(0.85);">
+Network dependency tree
+Avoid chaining critical requests by reducing the length of chains, reducing the download size of resources, or deferring the download of unnecessary resources to improve page load.LCPUnscored
+Maximum critical path latency: 813 ms
+Initial Navigation
+https://www.afikgang.online - 250 ms, 7.90 KiB
+…follows/counts(www.afikgang.online) - 223 ms, 0.00 KiB
+…votes/batch(www.afikgang.online) - 223 ms, 0.00 KiB
+/assets/index-D5stB_lC.js(www.afikgang.online) - 455 ms, 12.25 KiB
+/assets/index-CQjyAxTs.css(www.afikgang.online) - 813 ms, 46.55 KiB
+Preconnected origins
