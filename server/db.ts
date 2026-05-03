@@ -1,9 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
 import path from "path";
 import fs from "fs";
-import crypto from "crypto";
 import * as schema from "@shared/schema";
 
 const pool = new pg.Pool({
@@ -22,90 +20,118 @@ export const db = drizzle(pool, { schema });
 export { pool };
 
 /**
- * Run pending Drizzle migrations at startup.
- * Safe to call on every boot — already-applied migrations are skipped.
- * In production the migrations folder is copied to dist/migrations by the
- * build script so __dirname resolves correctly from dist/index.cjs.
+ * Run pending migrations at startup in an idempotent way.
+ *
+ * Instead of relying on Drizzle's migrate() (which fails when tables already
+ * exist because it doesn't use IF NOT EXISTS), we read the SQL files directly
+ * and patch each CREATE TABLE / CREATE INDEX / CREATE TYPE / CREATE SEQUENCE
+ * statement to include IF NOT EXISTS before executing. This is safe to run on
+ * both a fresh database and a database that was bootstrapped via drizzle-kit push.
+ *
+ * In production the migrations folder is copied to dist/migrations/ by the
+ * build script, so the path resolution tries the bundle-adjacent folder first.
  */
 export async function runMigrations(): Promise<void> {
-  // import.meta.dirname is available in Node 20.11+ and works for both the
-  // dev ESM entry (server/db.ts) and the production CJS bundle (dist/index.cjs
-  // where __dirname IS defined). esbuild replaces import.meta.dirname with
-  // __dirname in the CJS output so the resolved path is always correct.
-  const baseDir = (import.meta as any).dirname ?? __dirname;
-  const migrationsFolder = path.resolve(baseDir, "../migrations");
+  // Resolve migrations folder for both environments:
+  //   Dev  (ESM):  server/db.ts   → baseDir = <root>/server/ → ../migrations
+  //   Prod (CJS):  dist/index.cjs → __dirname = <root>/dist/ → ./migrations
+  const baseDir: string = (() => {
+    try { return (import.meta as any).dirname as string; } catch { /* CJS */ }
+    return typeof __dirname !== "undefined" ? __dirname : process.cwd();
+  })();
 
-  // ── Seed migration journal for pre-existing databases ─────────────────────
-  // If the app tables already exist (e.g. the DB was set up via drizzle-kit
-  // push before migrations were introduced), Drizzle's migrate() would fail
-  // with "relation already exists". We detect this and pre-populate the
-  // __drizzle_migrations journal so migrate() sees everything as applied and
-  // skips re-running the SQL.
-  try {
-    const journalPath = path.join(migrationsFolder, "meta/_journal.json");
-    if (!fs.existsSync(journalPath)) {
-      console.log("[db] No migration journal found — skipping migrations");
-      return;
+  const candidates = [
+    path.resolve(baseDir, "migrations"),     // production: dist/migrations/
+    path.resolve(baseDir, "../migrations"),  // development: <root>/migrations/
+    path.resolve(process.cwd(), "migrations"),
+  ];
+
+  const migrationsFolder = candidates.find((p) =>
+    fs.existsSync(path.join(p, "meta/_journal.json"))
+  );
+
+  if (!migrationsFolder) {
+    console.warn("[db] No migrations folder found — skipping migrations");
+    return;
+  }
+
+  console.log(`[db] migrations folder: ${migrationsFolder}`);
+
+  // Read the Drizzle journal to get the ordered list of migration files.
+  const journalPath = path.join(migrationsFolder, "meta/_journal.json");
+  const journal: { entries: Array<{ tag: string; when: number }> } =
+    JSON.parse(fs.readFileSync(journalPath, "utf8"));
+
+  // Ensure our own simple tracking table exists (public schema, no conflicts
+  // with Drizzle's drizzle.__drizzle_migrations which uses a different check).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.__vxt_migrations (
+      tag        text PRIMARY KEY,
+      applied_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  // Fetch already-applied tags.
+  const { rows } = await pool.query<{ tag: string }>(
+    `SELECT tag FROM public.__vxt_migrations`
+  );
+  const applied = new Set(rows.map((r) => r.tag));
+
+  let ran = 0;
+  let skipped = 0;
+
+  for (const entry of journal.entries) {
+    if (applied.has(entry.tag)) {
+      skipped++;
+      continue;
     }
 
-    // Check whether the Drizzle journal table already exists.
-    const { rows: journalRows } = await pool.query<{ exists: boolean }>(
-      `SELECT EXISTS (
-         SELECT FROM information_schema.tables
-         WHERE table_schema = 'public' AND table_name = '__drizzle_migrations'
-       ) AS exists`
-    );
-    const hasJournal = journalRows[0].exists;
+    const sqlPath = path.join(migrationsFolder, `${entry.tag}.sql`);
+    if (!fs.existsSync(sqlPath)) {
+      console.warn(`[db] Migration file not found: ${sqlPath}`);
+      continue;
+    }
 
-    if (!hasJournal) {
-      // Check if our app tables exist (existing database with no migration history).
-      const { rows: tableRows } = await pool.query<{ exists: boolean }>(
-        `SELECT EXISTS (
-           SELECT FROM information_schema.tables
-           WHERE table_schema = 'public' AND table_name = 'rooms'
-         ) AS exists`
-      );
-      const hasAppTables = tableRows[0].exists;
+    const raw = fs.readFileSync(sqlPath, "utf8");
 
-      if (hasAppTables) {
-        // Database already has the schema applied via drizzle-kit push.
-        // Create the journal table and mark all existing migrations as done
-        // so migrate() skips re-running their CREATE TABLE statements.
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
-            id        SERIAL PRIMARY KEY,
-            hash      text   NOT NULL,
-            created_at bigint
-          )
-        `);
+    // Make every DDL statement idempotent so re-running on an existing schema
+    // is harmless. We patch the raw SQL before splitting on breakpoints.
+    const safe = raw
+      .replace(/\bCREATE TABLE\s+(?!IF NOT EXISTS)/gi,   "CREATE TABLE IF NOT EXISTS ")
+      .replace(/\bCREATE INDEX\s+(?!IF NOT EXISTS)/gi,   "CREATE INDEX IF NOT EXISTS ")
+      .replace(/\bCREATE UNIQUE INDEX\s+(?!IF NOT EXISTS)/gi, "CREATE UNIQUE INDEX IF NOT EXISTS ")
+      .replace(/\bCREATE SEQUENCE\s+(?!IF NOT EXISTS)/gi,"CREATE SEQUENCE IF NOT EXISTS ")
+      .replace(/\bCREATE TYPE\s+(?!IF NOT EXISTS)/gi,    "CREATE TYPE IF NOT EXISTS ");
 
-        const journal = JSON.parse(fs.readFileSync(journalPath, "utf8"));
-        for (const entry of journal.entries) {
-          const sqlPath = path.join(migrationsFolder, `${entry.tag}.sql`);
-          if (!fs.existsSync(sqlPath)) continue;
-          const sql = fs.readFileSync(sqlPath, "utf8");
-          const hash = crypto.createHash("sha256").update(sql).digest("hex");
-          await pool.query(
-            `INSERT INTO "__drizzle_migrations" (hash, created_at)
-             VALUES ($1, $2)
-             ON CONFLICT DO NOTHING`,
-            [hash, entry.when]
-          );
+    const statements = safe
+      .split("--> statement-breakpoint")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    // Run each statement individually so a single failure doesn't roll back
+    // the whole migration, and log which ones we skip (already-exist errors).
+    for (const stmt of statements) {
+      try {
+        await pool.query(stmt);
+      } catch (err: any) {
+        // 42P07 = duplicate_table, 42710 = duplicate_object (type/index/sequence)
+        if (err.code === "42P07" || err.code === "42710" || err.code === "42701") {
+          // Object already exists — safe to ignore after our IF NOT EXISTS patch.
+          console.warn(`[db] Skipping already-existing object in ${entry.tag}: ${err.message.split("\n")[0]}`);
+        } else {
+          console.error(`[db] Statement failed in ${entry.tag}:`, err.message);
+          throw err;
         }
-        console.log("[db] Seeded migration journal for existing database — no SQL changes needed");
-        return;
       }
     }
-  } catch (seedErr) {
-    console.warn("[db] Migration journal seeding failed:", (seedErr as Error).message);
+
+    await pool.query(
+      `INSERT INTO public.__vxt_migrations (tag) VALUES ($1) ON CONFLICT DO NOTHING`,
+      [entry.tag]
+    );
+    ran++;
+    console.log(`[db] Applied migration: ${entry.tag}`);
   }
 
-  // ── Normal path: run any pending migrations ────────────────────────────────
-  try {
-    await migrate(db, { migrationsFolder });
-    console.log("[db] Migrations applied successfully");
-  } catch (err) {
-    console.error("[db] Migration failed:", (err as Error).message);
-    throw err;
-  }
+  console.log(`[db] Migrations complete — ${ran} applied, ${skipped} already up-to-date`);
 }
