@@ -266,12 +266,12 @@
     <!-- flagcdn.com: flag images appear on every visible room card at first paint. -->
     <link rel="preconnect" href="https://flagcdn.com" />
     <link rel="dns-prefetch" href="https://flagcdn.com" />
-    <!-- media.tenor.com: GIF backgrounds on room cards are the LCP element.
-         Preconnecting here saves the full DNS+TCP+TLS round-trip (~150–400 ms
-         on mobile) so the browser can start fetching the image the moment React
-         renders the first card. crossorigin is omitted intentionally — <img>
-         fetches are non-CORS; a crossorigin preconnect would warm the wrong
-         connection pool and the image fetch would open a second one. -->
+    <!-- media.tenor.com: GIF backgrounds on room cards load lazily (they are
+         decorative; LCP is now served by same-origin content). Preconnecting
+         still helps because the first few lazy images load shortly after React
+         mounts — warming DNS+TCP+TLS saves ~150–400 ms on mobile for those.
+         crossorigin is omitted intentionally — <img> fetches are non-CORS;
+         a crossorigin preconnect would warm the wrong pool. -->
     <link rel="preconnect" href="https://media.tenor.com" />
     <link rel="dns-prefetch" href="https://media.tenor.com" />
     <!-- i.ytimg.com: YouTube thumbnails for room card backgrounds (static

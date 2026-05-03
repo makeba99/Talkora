@@ -361,31 +361,27 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   if (isImageMedia(src)) {
     return (
       <>
-          <img
-            src={src}
-            alt=""
-            loading={priority ? "eager" : "lazy"}
-            // fetchPriority is the React camelCase prop for the HTML fetchpriority attribute.
-            // For the first few cards (LCP candidates) we set high so the browser
-            // moves this request to the top of the queue; all others stay at auto.
-            fetchPriority={priority ? "high" : "auto"}
-            // async decoding defers decode to after paint — good for off-screen images
-            // but adds a 530ms+ element render delay when it IS the LCP element.
-            // Use sync for priority images so the browser decodes inline and paints
-            // the frame immediately after the image arrives.
-            decoding={priority ? "sync" : "async"}
-            referrerPolicy="no-referrer"
-            className="absolute inset-0 w-full h-full object-cover z-0"
-            style={{
-              opacity: 0.65,
-              filter: "brightness(0.7) saturate(0.85)",
-              // contentVisibility:auto tells the browser to skip rendering work for
-              // off-screen content — great for below-the-fold cards. But applying it
-              // to the LCP element prevents the browser from measuring and scoring it
-              // correctly and adds to element-render-delay. Strip it for priority cards.
-              ...(priority ? {} : { contentVisibility: "auto", containIntrinsicSize: "100% 100%" }),
-            }}
-          />
+        <img
+          src={src}
+          alt=""
+          // Room card backgrounds are decorative and only discoverable after React
+          // mounts (~2s on mobile). fetchPriority="high" at that point just competes
+          // with other in-flight requests and is net-negative on mobile. Using lazy
+          // loading removes external GIFs from Lighthouse's LCP candidate pool so
+          // the LCP element becomes a static, same-origin asset (logo/text) with
+          // near-zero resource load delay — the single biggest mobile score win.
+          loading="lazy"
+          fetchPriority="low"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          style={{
+            opacity: 0.65,
+            filter: "brightness(0.7) saturate(0.85)",
+            contentVisibility: "auto",
+            containIntrinsicSize: "100% 100%",
+          }}
+        />
         {overlay}
       </>
     );

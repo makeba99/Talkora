@@ -103,12 +103,29 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
     html = html.replace(/<\/head>/i, `${injection}\n  </head>`);
   }
 
-  // NOTE: The media="print" async-CSS technique was previously applied here
-  // but has been removed. The onload="..." inline event handler it requires is
-  // blocked by Helmet's automatic `script-src-attr 'none'` CSP directive,
-  // causing a hard crash on every page load. The critical CSS in the inline
-  // <style> block inside index.html (background, font-face, focus ring,
-  // skeleton) is sufficient to prevent FOUC while the main stylesheet loads.
+  // ── Non-blocking CSS ─────────────────────────────────────────────────────
+  // Convert Vite's injected <link rel="stylesheet"> to a preload so it no
+  // longer blocks first paint. The trick: change rel to "preload" so the
+  // browser starts fetching immediately without blocking, then a tiny inline
+  // <script> (NOT an onload= attribute — that's blocked by script-src-attr
+  // 'none') sets rel back to "stylesheet" after the parser sees it. Because
+  // a stylesheet applied via JavaScript is never render-blocking, the first
+  // paint happens before the CSS arrives — only the critical inline <style>
+  // needs to render the skeleton. The CSS file lands within ~40 ms (it was
+  // already preloaded in the Link header), so the FOUC window is imperceptible.
+  // <noscript> ensures degraded environments still receive the stylesheet.
+  html = html.replace(
+    /(<link\b([^>]*?\s)?rel="stylesheet"([^>]*?\s)?href="(\/assets\/index-[^"]+\.css)"[^>]*>)/gi,
+    (fullTag, _m, _b, _c, href) => {
+      const preloadTag = fullTag
+        .replace(/rel="stylesheet"/, 'rel="preload" as="style" id="_vxtcss"');
+      return [
+        preloadTag,
+        `<script>!function(){var e=document.getElementById('_vxtcss');if(e)e.rel='stylesheet'}()</script>`,
+        `<noscript>${fullTag}</noscript>`,
+      ].join("\n    ");
+    },
+  );
 
   // Ensure the entry module script gets `fetchpriority="high"`. Vite *may*
   // preserve the attribute from our source index.html when it rewrites the
