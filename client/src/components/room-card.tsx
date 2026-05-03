@@ -701,9 +701,18 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   const borderGradient = isPremiumAtmosphere
     ? `linear-gradient(135deg, rgba(0,220,255,0.60) 0%, rgba(80,60,255,0.50) 28%, rgba(160,40,255,0.44) 52%, rgba(80,160,255,0.50) 76%, rgba(0,220,255,0.60) 100%)`
     : `linear-gradient(135deg, ${glow.from} 0%, rgba(80,100,200,0.08) 50%, ${glow.to} 100%)`;
+  // Layered ambient elevation shadow: tight contact shadow + mid float + deep halo.
+  // Centered below the card (no X offset) so there are zero directional "shadow edges" —
+  // the card simply lifts off the surface like a physical object.
+  const ambientDepth = [
+    "0 1px 3px rgba(0,0,0,0.45)",
+    "0 6px 16px rgba(0,0,0,0.38)",
+    "0 20px 44px rgba(0,0,0,0.24)",
+    "0 40px 80px rgba(0,0,0,0.12)",
+  ].join(", ");
   const outerGlow = isPremiumAtmosphere
-    ? "0 0 10px rgba(0,210,255,0.28), 0 0 22px rgba(110,50,255,0.18), 0 0 42px rgba(0,100,255,0.08)"
-    : `0 0 10px ${glow.from.replace(/[\d.]+\)$/, "0.25)")}`;
+    ? `${ambientDepth}, 0 0 18px rgba(0,210,255,0.22), 0 0 36px rgba(110,50,255,0.12), 0 0 60px rgba(0,100,255,0.06)`
+    : `${ambientDepth}, 0 0 14px ${glow.from.replace(/[\d.]+\)$/, "0.18)")}`;
 
   /* ── grid columns: every capacity must fill its grid EXACTLY (no dangling
      bottom-row cells). Otherwise the missing cell sits right where the ENTER
@@ -733,8 +742,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       className={glow.animated ?? ""}
       style={{
         width: "100%",
-        padding: "1px",
-        borderRadius: "18px",
+        padding: "1.5px",
+        borderRadius: "26px",
         background: borderGradient,
         boxShadow: outerGlow,
         position: "relative",
@@ -744,24 +753,20 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       <div
         className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
         style={{
-          borderRadius: "16px",
-          // Bumped both gradients to fully opaque (was 0.80–0.92 alpha) so we
-          // can drop the heavy `backdrop-filter: blur(22px) saturate(1.3)`
-          // that used to sit here. The blur caused two real problems:
-          //   1. On hover the card lifts via translateY(-3px); the backdrop
-          //      sampler then re-composites mid-transition against the
-          //      neighbouring card's pixels, producing a "blurry / mixing
-          //      colours" smear on the right edge of adjacent cards.
-          //   2. Every card paid for a 22px GPU blur on every scroll/hover
-          //      tick even though the original alpha was already 88–92%
-          //      opaque, so the visual contribution was negligible.
-          // Going opaque preserves the depth look (gradient still reads as
-          // glass thanks to the outer 1px gradient border + box-shadow ring)
-          // while eliminating the artifact and cutting paint cost.
+          borderRadius: "24px",
+          // Opaque background keeps paint cost low (no backdrop-filter needed).
+          // The subtle inset shadows add physical depth: a bright top-edge rim
+          // (light catching the raised surface) + dark bottom-edge undercut.
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
             : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
           height: isPremiumAtmosphere ? 268 : 252,
+          boxShadow: [
+            "inset 0 1px 0 rgba(255,255,255,0.09)",
+            "inset 0 -1px 0 rgba(0,0,0,0.50)",
+            "inset 1px 0 0 rgba(255,255,255,0.03)",
+            "inset -1px 0 0 rgba(0,0,0,0.20)",
+          ].join(", "),
         }}
       >
         {isPremiumAtmosphere && (

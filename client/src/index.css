@@ -1025,28 +1025,31 @@ html.neomorphic-light [data-testid^="card-room"] {
       hsl(var(--neo-bg)) 0%,
       hsl(var(--neo-bg)) 55%,
       hsl(228 22% 7%) 100%) !important;
+  /* Centered ambient elevation — no diagonal edges, card floats off the surface */
   box-shadow:
-    -10px -10px 22px hsl(var(--neo-shadow-light) / 0.55),
-    12px 12px 26px hsl(var(--neo-shadow-dark) / 0.72),
-    inset 0 1px 0 rgba(255, 235, 215, 0.075),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
-    inset 0 0 0 1px rgba(255, 200, 140, 0.025) !important;
+    0 1px 3px hsl(var(--neo-shadow-dark) / 0.50),
+    0 6px 16px hsl(var(--neo-shadow-dark) / 0.42),
+    0 20px 44px hsl(var(--neo-shadow-dark) / 0.28),
+    0 40px 80px hsl(var(--neo-shadow-dark) / 0.14),
+    inset 0 1px 0 rgba(255, 235, 215, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.48) !important;
   border: 1px solid transparent !important;
-  border-radius: 1.25rem !important;
+  border-radius: 1.75rem !important;
   transition: transform 320ms cubic-bezier(.2,.8,.25,1), box-shadow 320ms ease-out !important;
 }
 html.neomorphic-dark .room-card-shell:hover,
 html.neomorphic-light .room-card-shell:hover,
 html.neomorphic-dark [data-testid^="card-room"]:hover,
 html.neomorphic-light [data-testid^="card-room"]:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   box-shadow:
-    -12px -12px 26px hsl(var(--neo-shadow-light) / 0.62),
-    14px 14px 32px hsl(var(--neo-shadow-dark) / 0.80),
-    0 0 32px hsl(var(--neu-orange) / 0.10),
-    inset 0 1px 0 rgba(255, 235, 215, 0.10),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.50),
-    inset 0 0 0 1px rgba(255, 200, 140, 0.045) !important;
+    0 2px 6px hsl(var(--neo-shadow-dark) / 0.50),
+    0 10px 24px hsl(var(--neo-shadow-dark) / 0.48),
+    0 32px 64px hsl(var(--neo-shadow-dark) / 0.34),
+    0 56px 100px hsl(var(--neo-shadow-dark) / 0.16),
+    0 0 28px hsl(var(--neu-orange) / 0.08),
+    inset 0 1px 0 rgba(255, 235, 215, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55) !important;
 }
 
 /* Inner gradient overlays on room cards become flat in neo theme */
@@ -1112,9 +1115,12 @@ html.neomorphic-light .bg-card,
 html.neomorphic-dark [data-testid^="card-room"],
 html.neomorphic-light [data-testid^="card-room"] {
   box-shadow:
-    -10px -10px 24px hsl(var(--neo-shadow-light) / 0.55),
-    10px 10px 24px hsl(var(--neo-shadow-dark) / 0.7) !important;
-  border-radius: 1.5rem !important;
+    0 1px 3px hsl(var(--neo-shadow-dark) / 0.50),
+    0 6px 16px hsl(var(--neo-shadow-dark) / 0.42),
+    0 20px 44px hsl(var(--neo-shadow-dark) / 0.28),
+    inset 0 1px 0 rgba(255, 235, 215, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.48) !important;
+  border-radius: 1.75rem !important;
 }
 
 html.neomorphic-dark .bg-popover,
