@@ -11,10 +11,11 @@ const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
 >(({ className, ...props }, ref) => (
+  // Radix renders <ToastPrimitives.Viewport> as <ol>. The ARIA spec does NOT
+  // allow role="region" on <ol> (axe-core aria-allowed-role rule). The landmark
+  // region is applied via a wrapping <div> in toaster.tsx instead.
   <ToastPrimitives.Viewport
     ref={ref}
-    role="region"
-    aria-label="Notifications"
     className={cn(
       "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
       className

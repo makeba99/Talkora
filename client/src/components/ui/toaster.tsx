@@ -27,7 +27,13 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport />
+      {/* role="region" belongs on a <div>, not on the <ol> that Radix renders
+          for ToastViewport (axe-core aria-allowed-role: region is not in the
+          allowed role list for <ol>). Wrapping with a <div> keeps the landmark
+          while satisfying the ARIA in HTML spec. */}
+      <div role="region" aria-label="Notifications">
+        <ToastViewport />
+      </div>
     </ToastProvider>
   )
 }
