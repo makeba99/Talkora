@@ -4365,8 +4365,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const youtubePermission = ((room as any).youtubePermission as
     | "everyone" | "co_owners" | "owner_only" | undefined) || "everyone";
   const checkPerm = (perm: "everyone" | "co_owners" | "owner_only") => {
-    if (perm === "everyone") return true;
     if (isHost) return true;
+    if (perm === "everyone") return true;
     if (perm === "co_owners") return myRole === "co-owner";
     return false;
   };
