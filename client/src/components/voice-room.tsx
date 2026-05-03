@@ -394,6 +394,9 @@ function ParticipantCard({
 
   const isFollowing = followingIds.has(p.id);
   const [roomPresenceStatus, setRoomPresenceStatus] = useState((p as any).status || "online");
+  useEffect(() => {
+    setRoomPresenceStatus((p as any).status || "online");
+  }, [p.id, (p as any).status]);
   const savePresenceMutation = useMutation({
     mutationFn: async (status: string) => {
       await apiRequest("PATCH", `/api/users/${p.id}`, { status });
@@ -420,7 +423,7 @@ function ParticipantCard({
                    <button className="text-white/50 font-medium hover:underline px-1" onClick={handleCopyId}>Copy ID</button>
                 </div>
                 <div className="text-sm font-semibold truncate leading-none">Name: {getUserDisplayName(p)}</div>
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit">
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit" data-testid={`role-room-${p.id}`}>
                   <span className={participantRole === "owner" ? "text-amber-300" : participantRole === "co-owner" ? "text-sky-300" : "text-zinc-300"}>
                     {participantRole === "owner" ? "OWNER" : participantRole === "co-owner" ? "CO-OWNER" : "GUEST"}
                   </span>
