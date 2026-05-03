@@ -340,3 +340,23 @@ export function sfxDelete() {
     tone({ freq: 220, endFreq: 110, duration: 0.18, gain: 0.20, type: "sawtooth", filterFreq: 1200 });
   });
 }
+
+/** Construction sequence — hammer thuds, rising build-up, triumphant chime. */
+export function sfxBuildRoom() {
+  safe(() => {
+    // Three hammer thuds
+    noiseBurst({ duration: 0.06, gain: 0.55, filterFreq: 220, filterQ: 5, startAt: 0.00 });
+    tone({ freq: 175, endFreq: 88,  duration: 0.10, gain: 0.48, type: "sine", startAt: 0.00 });
+    noiseBurst({ duration: 0.06, gain: 0.50, filterFreq: 210, filterQ: 5, startAt: 0.18 });
+    tone({ freq: 165, endFreq: 82,  duration: 0.10, gain: 0.44, type: "sine", startAt: 0.18 });
+    noiseBurst({ duration: 0.06, gain: 0.46, filterFreq: 200, filterQ: 5, startAt: 0.34 });
+    tone({ freq: 185, endFreq: 92,  duration: 0.10, gain: 0.40, type: "sine", startAt: 0.34 });
+    // Rising whoosh — the building going up
+    tone({ freq: 240, endFreq: 1400, duration: 0.60, gain: 0.28, type: "sawtooth", filterFreq: 2800, startAt: 0.44 });
+    noiseBurst({ duration: 0.35, gain: 0.10, filterFreq: 3200, filterQ: 1.0, startAt: 0.48 });
+    // Triumphant finish chime
+    tone({ freq: 880,  duration: 0.14, gain: 0.40, type: "triangle", filterFreq: 5000, startAt: 0.96 });
+    tone({ freq: 1318, duration: 0.18, gain: 0.44, type: "triangle", filterFreq: 5500, startAt: 1.06 });
+    tone({ freq: 1760, duration: 0.24, gain: 0.38, type: "triangle", filterFreq: 6000, startAt: 1.18 });
+  });
+}

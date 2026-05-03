@@ -3648,15 +3648,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // AI tutor logic is now fully handled by the useAiTutor hook above.
 
   // "Say Bye" — broadcasts a farewell to the room (everyone hears the sound
-  // + sees a toast), then leaves after a short theatrical pause.
+  // + sees a toast), then leaves after a short pause. This is also wired to
+  // the Leave button so pressing Leave always plays the bye sound first.
   const handleSayBye = () => {
-    if (sayingBye || !socket || !user) return;
+    if (sayingBye) return;
     setSayingBye(true);
-    const userName = getUserDisplayName(user as any) || user.username || "Someone";
-    socket.emit("room:say-bye", { roomId: room.id, userId: user.id, userName });
+    import("@/lib/mood-sounds").then((m) => m.playSayByeSound()).catch(() => {});
+    if (socket && user) {
+      const userName = getUserDisplayName(user as any) || (user as any).username || "Someone";
+      socket.emit("room:say-bye", { roomId: room.id, userId: user.id, userName });
+    }
     setTimeout(() => {
       handleLeave();
-    }, 1800);
+    }, 1600);
   };
 
   const handleLeave = (reason?: "joined-another-room") => {
@@ -4110,38 +4114,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
         <div className="mx-0.5 h-7 sm:h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
 
-        {/* Say Bye */}
+        {/* Leave (with embedded Say Bye) */}
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={handleSayBye}
             disabled={sayingBye}
-            data-testid="button-say-bye"
-            title="Wave goodbye to the room before leaving"
-            className={btnBase}
-            style={sayingBye ? { ...leaveStyle, opacity: 0.55, cursor: "not-allowed" } : ghostStyle}
-          >
-            <span className="text-[15px] sm:text-[18px] leading-none" style={sayingBye ? { filter: "drop-shadow(0 0 5px rgba(251,191,36,0.7))" } : undefined}>
-              👋
-            </span>
-          </button>
-          <span className={labelBase} style={{ color: sayingBye ? "rgba(251,191,36,0.86)" : "rgba(255,255,255,0.32)" }}>
-            {sayingBye ? "Bye…" : "Say Bye"}
-          </span>
-        </div>
-
-        {/* Leave */}
-        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
-          <button
-            onClick={handleLeave}
             data-testid="button-leave-room"
-            title="Leave Room"
+            title={sayingBye ? "Saying bye…" : "Say bye and leave"}
             className={btnBase}
-            style={leaveStyle}
+            style={sayingBye ? { ...leaveStyle, opacity: 0.65, cursor: "not-allowed" } : leaveStyle}
           >
-            <PhoneOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+            {sayingBye
+              ? <span className="text-[15px] sm:text-[18px] leading-none" style={{ filter: "drop-shadow(0 0 5px rgba(251,191,36,0.7))" }}>👋</span>
+              : <PhoneOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+            }
           </button>
-          <span className={labelBase} style={{ color: "rgba(252,165,165,0.72)" }}>
-            Leave
+          <span className={labelBase} style={{ color: sayingBye ? "rgba(251,191,36,0.86)" : "rgba(252,165,165,0.72)" }}>
+            {sayingBye ? "Bye…" : "Leave"}
           </span>
         </div>
       </div>

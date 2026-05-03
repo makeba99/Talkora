@@ -79,7 +79,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
       import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
       return;
     }
-    import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
+    import("@/lib/sound-fx").then((s) => s.sfxBuildRoom()).catch(() => {});
     onCreateRoom({
       title: title.trim(),
       language,
