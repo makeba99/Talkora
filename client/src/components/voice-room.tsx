@@ -423,10 +423,15 @@ function ParticipantCard({
                    <button className="text-white/50 font-medium hover:underline px-1" onClick={handleCopyId}>Copy ID</button>
                 </div>
                 <div className="text-sm font-semibold truncate leading-none">Name: {getUserDisplayName(p)}</div>
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit" data-testid={`role-room-${p.id}`}>
-                  <span className={participantRole === "owner" ? "text-amber-300" : participantRole === "co-owner" ? "text-sky-300" : participantRole === "guest" ? "text-emerald-300" : "text-zinc-400"}>
-                    {participantRole === "owner" ? "OWNER" : participantRole === "co-owner" ? "CO-OWNER" : participantRole === "guest" ? "GUEST" : "MEMBER"}
-                  </span>
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border w-fit"
+                  style={
+                    participantRole === "owner" ? { background: "linear-gradient(135deg,hsl(var(--neu-orange-hi)/0.18),hsl(var(--neu-orange-lo)/0.12))", borderColor: "hsl(var(--neu-orange)/0.5)", color: "hsl(var(--neu-orange-hi))" } :
+                    participantRole === "co-owner" ? { background: "rgba(56,189,248,0.12)", borderColor: "rgba(56,189,248,0.45)", color: "rgb(125,211,252)" } :
+                    participantRole === "guest" ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.40)", color: "rgb(252,165,165)" } :
+                    { background: "rgba(148,163,184,0.08)", borderColor: "rgba(148,163,184,0.25)", color: "rgb(148,163,184)" }
+                  }
+                  data-testid={`role-room-${p.id}`}>
+                  {participantRole === "owner" ? "👑 OWNER" : participantRole === "co-owner" ? "⚡ CO-OWNER" : participantRole === "guest" ? "🔒 GUEST" : "MEMBER"}
                 </div>
                 <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit" data-testid={`status-room-presence-${p.id}`}>
                   <span className={roomPresenceStatus === "busy" ? "text-rose-300" : roomPresenceStatus === "afk" ? "text-sky-300" : roomPresenceStatus === "brb" ? "text-amber-300" : roomPresenceStatus === "zz" ? "text-indigo-300" : "text-zinc-300"}>
@@ -525,13 +530,19 @@ function ParticipantCard({
           )}
 
           {(isCurrentUserHost || isCurrentUserCoOwner) && !isMe && !isRoomOwner && (
-            <div className="grid grid-cols-2 gap-2">
-               <Button variant={participantRole === "guest" ? "default" : "outline"} size="sm" onClick={() => onAssignRole && onAssignRole("guest")} className={`h-8 text-xs ${participantRole === "guest" ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-transparent border-border text-muted-foreground hover:bg-muted'}`}>
-                 <ChevronUp className="w-3.5 h-3.5 mr-1" /> Set Guest
-               </Button>
-               <Button variant={participantRole === "co-owner" ? "default" : "outline"} size="sm" onClick={() => onAssignRole && onAssignRole("co-owner")} className={`h-8 text-xs ${participantRole === "co-owner" ? 'bg-orange-600 text-white border-orange-600' : 'bg-transparent border-border text-muted-foreground hover:bg-muted'}`}>
-                 <ChevronUp className="w-3.5 h-3.5 mr-1" /> Set Co-Owner
-               </Button>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Set Role</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                <Button variant="outline" size="sm" onClick={() => onAssignRole && onAssignRole("guest")} className={`h-8 text-[11px] font-semibold ${participantRole === "guest" ? 'bg-red-950/60 text-red-300 border-red-700/60' : 'bg-transparent border-border text-muted-foreground hover:bg-red-950/30 hover:text-red-300 hover:border-red-800/50'}`}>
+                  🔒 Guest
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => onAssignRole && onAssignRole("member")} className={`h-8 text-[11px] font-semibold ${participantRole === "member" ? 'bg-slate-700/60 text-slate-200 border-slate-500/60' : 'bg-transparent border-border text-muted-foreground hover:bg-slate-800/40 hover:text-slate-200'}`}>
+                  Member
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => onAssignRole && onAssignRole("co-owner")} className={`h-8 text-[11px] font-semibold ${participantRole === "co-owner" ? 'bg-sky-900/60 text-sky-200 border-sky-600/60' : 'bg-transparent border-border text-muted-foreground hover:bg-sky-900/30 hover:text-sky-300 hover:border-sky-700/50'}`}>
+                  ⚡ Co-Owner
+                </Button>
+              </div>
             </div>
           )}
           
@@ -877,33 +888,36 @@ function ParticipantCard({
 
         {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && (isRoomOwner ? (
           <div
-            className="absolute bottom-0 left-0 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
             style={{
               background: "linear-gradient(145deg, hsl(var(--neu-orange-hi) / 0.95) 0%, hsl(var(--neu-orange-lo) / 0.92) 100%)",
               boxShadow: "0 0 10px hsl(var(--neu-orange) / 0.45), inset 0 1px 0 rgba(220,210,255,0.30)",
+              color: "#fff",
             }}
           >
-            Owner <Crown className="w-2.5 h-2.5 text-yellow-200" />
+            👑 Owner
           </div>
         ) : participantRole === "co-owner" ? (
           <div
-            className="absolute bottom-0 left-0 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
             style={{
-              background: "linear-gradient(145deg, hsl(var(--neu-orange-hi) / 0.75) 0%, hsl(var(--neu-orange-lo) / 0.72) 100%)",
-              boxShadow: "0 0 8px hsl(var(--neu-orange) / 0.35), inset 0 1px 0 rgba(220,210,255,0.25)",
+              background: "linear-gradient(145deg, rgba(56,189,248,0.85) 0%, rgba(14,165,233,0.82) 100%)",
+              boxShadow: "0 0 8px rgba(56,189,248,0.35), inset 0 1px 0 rgba(186,230,253,0.25)",
+              color: "#fff",
             }}
           >
-            Co-Owner
+            ⚡ Co-Owner
           </div>
         ) : participantRole === "guest" ? (
           <div
-            className="absolute bottom-0 left-0 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
             style={{
-              background: "linear-gradient(145deg, rgba(16,185,129,0.85) 0%, rgba(5,150,105,0.82) 100%)",
-              boxShadow: "0 0 8px rgba(16,185,129,0.35), inset 0 1px 0 rgba(220,255,240,0.25)",
+              background: "linear-gradient(145deg, rgba(239,68,68,0.82) 0%, rgba(185,28,28,0.80) 100%)",
+              boxShadow: "0 0 8px rgba(239,68,68,0.35), inset 0 1px 0 rgba(254,202,202,0.20)",
+              color: "#fff",
             }}
           >
-            Guest
+            🔒 Guest
           </div>
         ) : isMe ? (
           <div className="absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20">

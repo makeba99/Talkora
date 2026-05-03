@@ -4165,7 +4165,7 @@ export async function registerRoutes(
       if (room.ownerId === userId) {
         roles.set(userId, "host");
       } else if (!roles.has(userId)) {
-        roles.set(userId, "guest");
+        roles.set(userId, "member");
       }
 
       const participants = Array.from(currentParticipants.values());
@@ -4176,7 +4176,7 @@ export async function registerRoutes(
       const participantsWithStatus = participants.map(p => ({
         ...p,
         hasVideo: videoUsers?.has(p.id) || false,
-        role: roles.get(p.id) || "guest",
+        role: roles.get(p.id) || "member",
         isMuted: muteStatusMap?.get(p.id) ?? true,
       }));
 
@@ -4337,7 +4337,7 @@ export async function registerRoutes(
       const assignerRole = roles.get(data.assignedBy);
       if (data.assignedBy !== room.ownerId && assignerRole !== "co-owner") return;
       if (data.targetUserId === room.ownerId) return;
-      if (!["co-owner", "guest"].includes(data.role)) return;
+      if (!["co-owner", "member", "guest"].includes(data.role)) return;
 
       roles.set(data.targetUserId, data.role);
       io.to(data.roomId).emit("room:roles-update", {
@@ -4351,7 +4351,7 @@ export async function registerRoutes(
         storage.getUser(data.assignedBy),
       ]);
       if (targetUser && assignerUser) {
-        const roleName = data.role === "co-owner" ? "Co-Owner" : "Guest";
+        const roleName = data.role === "co-owner" ? "Co-Owner" : data.role === "member" ? "Member" : "Guest";
         emitSystemChatMsg(data.roomId, `${getDisplayName(assignerUser)} set ${getDisplayName(targetUser)} as ${roleName}`);
       }
     });
