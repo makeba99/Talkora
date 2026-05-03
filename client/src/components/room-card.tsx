@@ -954,7 +954,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           {(() => {
             const tightSpacing = displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
             const colGapPx = tightSpacing ? 2 : 6;       // 2px ↔ tailwind gap-1.5 (6px)
-            const rowGapPx = 6;                            // vertical rhythm unchanged
+            const rowGapPx = tightSpacing ? 2 : 6;
             // Door is now absolutely positioned at bottom-right; protect the
             // bottom-right slot for any multi-column grid (≥2 cols).
             const gridRightPad = gridCols >= 2 ? 42 : 0;
