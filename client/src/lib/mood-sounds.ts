@@ -95,7 +95,6 @@ function speak(text: string, opts?: { rate?: number; pitch?: number; volume?: nu
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const run = () => {
     try {
-      window.speechSynthesis.cancel();
       const utt = new SpeechSynthesisUtterance(text);
       utt.rate   = opts?.rate   ?? 1.0;
       utt.pitch  = opts?.pitch  ?? 1.0;
@@ -136,7 +135,7 @@ export function playMoodSound(emoji: string) {
 
     // ── Hearts & affection ──
     case "❤️":
-      speak("Aww!", { rate: 0.9, pitch: 1.3, volume: 0.85 });
+      speak("Aww.", { rate: 0.88, pitch: 1.25, volume: 0.74 });
       tone({ freq: 880, type: "sine", dur: 0.18, gain: 0.12, delay: 0.2 });
       break;
     case "🙏":
@@ -158,11 +157,9 @@ export function playMoodSound(emoji: string) {
 
     // ── Applause / celebration ──
     case "👏":
-      noiseBurst({ dur: 0.06, gain: 0.32, filterFreq: 2400 });
-      noiseBurst({ dur: 0.06, gain: 0.30, filterFreq: 2200, delay: 0.10 });
-      noiseBurst({ dur: 0.06, gain: 0.28, filterFreq: 2600, delay: 0.20 });
-      noiseBurst({ dur: 0.06, gain: 0.26, filterFreq: 2300, delay: 0.30 });
-      tone({ freq: 880, type: "triangle", dur: 0.08, gain: 0.08, delay: 0.25 });
+      noiseBurst({ dur: 0.05, gain: 0.28, filterFreq: 2400 });
+      noiseBurst({ dur: 0.05, gain: 0.26, filterFreq: 2200, delay: 0.10 });
+      tone({ freq: 880, type: "triangle", dur: 0.08, gain: 0.08, delay: 0.18 });
       break;
     case "🎉":
       noiseBurst({ dur: 0.10, gain: 0.28, filterFreq: 3200, delay: 0.3 });
@@ -183,63 +180,58 @@ export function playMoodSound(emoji: string) {
 
     // ── Laughter — real human ha-ha-ha ──
     case "😂":
-      noiseBurst({ dur: 0.04, gain: 0.12, filterFreq: 1600 });
-      tone({ freq: 880, type: "triangle", dur: 0.08, gain: 0.06, delay: 0.08 });
-      tone({ freq: 1046, type: "triangle", dur: 0.08, gain: 0.06, delay: 0.16 });
+      speak("Ha ha ha.", { rate: 1.08, pitch: 1.22, volume: 0.72 });
+      noiseBurst({ dur: 0.04, gain: 0.12, filterFreq: 1600, delay: 0.12 });
       break;
     case "🤣":
-      noiseBurst({ dur: 0.05, gain: 0.14, filterFreq: 1700 });
-      arp([660, 880, 1100], 0.05, { type: "square", gain: 0.05, release: 0.06 });
+      speak("Oh, that's too funny.", { rate: 1.0, pitch: 1.15, volume: 0.7 });
+      noiseBurst({ dur: 0.05, gain: 0.14, filterFreq: 1700, delay: 0.12 });
       break;
     case "😆":
-      tone({ freq: 930, type: "triangle", dur: 0.06, gain: 0.06 });
-      tone({ freq: 1175, type: "triangle", dur: 0.06, gain: 0.05, delay: 0.08 });
+      speak("Heh heh.", { rate: 1.06, pitch: 1.18, volume: 0.68 });
       break;
     case "😁":
-      tone({ freq: 784, type: "sine", dur: 0.08, gain: 0.07 });
-      tone({ freq: 988, type: "sine", dur: 0.08, gain: 0.06, delay: 0.08 });
+      speak("Nice.", { rate: 1.0, pitch: 1.08, volume: 0.66 });
       break;
     case "😹":
-      tone({ freq: 523, type: "triangle", dur: 0.08, gain: 0.06 });
-      tone({ freq: 784, type: "triangle", dur: 0.08, gain: 0.05, delay: 0.08 });
+      speak("Meow.", { rate: 0.98, pitch: 1.28, volume: 0.68 });
       break;
     case "🙂":
-      tone({ freq: 660, type: "sine", dur: 0.09, gain: 0.05 });
+      speak("Yep.", { rate: 0.94, pitch: 1.0, volume: 0.62 });
       break;
     case "😬":
-      tone({ freq: 220, type: "sine", dur: 0.14, gain: 0.06 });
+      speak("Oof.", { rate: 0.86, pitch: 0.9, volume: 0.62 });
       break;
 
     // ── Surprise ──
     case "😮":
-      tone({ freq: 784, type: "triangle", dur: 0.08, gain: 0.08 });
-      tone({ freq: 1175, type: "triangle", dur: 0.10, gain: 0.06, delay: 0.12 });
+      speak("Oh!", { rate: 0.9, pitch: 1.25, volume: 0.78 });
+      tone({ freq: 1175, type: "triangle", dur: 0.08, gain: 0.05, delay: 0.12 });
       break;
     case "😱":
-      tone({ freq: 988, type: "square", dur: 0.08, gain: 0.07 });
+      speak("Whoa!", { rate: 0.94, pitch: 1.3, volume: 0.78 });
       noiseBurst({ dur: 0.14, gain: 0.10, filterFreq: 1400, delay: 0.06 });
       break;
     case "🤯":
-      noiseBurst({ dur: 0.20, gain: 0.14, filterFreq: 800, delay: 0.5 });
-      tone({ freq: 1320, type: "triangle", dur: 0.10, gain: 0.06, delay: 0.08 });
+      speak("Mind blown.", { rate: 0.95, pitch: 1.15, volume: 0.72 });
+      noiseBurst({ dur: 0.14, gain: 0.12, filterFreq: 800, delay: 0.18 });
       break;
 
     // ── Thoughtful / annoyed ──
     case "🤔":
-      tone({ freq: 440, type: "sine", dur: 0.12, gain: 0.05 });
-      tone({ freq: 523, type: "sine", dur: 0.12, gain: 0.04, delay: 0.12 });
+      speak("Hmm.", { rate: 0.72, pitch: 0.92, volume: 0.68 });
+      tone({ freq: 440, type: "sine", dur: 0.1, gain: 0.04, delay: 0.14 });
       break;
     case "🙄":
-      tone({ freq: 180, type: "sine", dur: 0.12, gain: 0.05 });
+      speak("Really?", { rate: 0.8, pitch: 0.88, volume: 0.66 });
       break;
 
     // ── Sleepy — real snore / yawn ──
     case "😴":
-      tone({ freq: 140, type: "sine", dur: 0.16, gain: 0.04 });
+      speak("Zzz.", { rate: 0.55, pitch: 0.72, volume: 0.56 });
       break;
     case "🥱":
-      tone({ freq: 260, type: "sine", dur: 0.12, gain: 0.05 });
-      tone({ freq: 220, type: "sine", dur: 0.14, gain: 0.04, delay: 0.1 });
+      speak("Yawn.", { rate: 0.6, pitch: 0.78, volume: 0.58 });
       break;
     case "💤":
       tone({ freq: 120, type: "sine", dur: 0.18, gain: 0.04 });
@@ -247,44 +239,40 @@ export function playMoodSound(emoji: string) {
 
     // ── Anger — real human growl voice ──
     case "😡":
-      tone({ freq: 160, type: "sawtooth", dur: 0.14, gain: 0.06 });
+      speak("Hey!", { rate: 0.92, pitch: 0.82, volume: 0.72 });
       break;
     case "🤬":
-      noiseBurst({ dur: 0.18, gain: 0.12, filterFreq: 300, filterType: "lowpass", delay: 0.5 });
-      tone({ freq: 110, type: "sawtooth", dur: 0.16, gain: 0.06 });
+      speak("No!", { rate: 0.9, pitch: 0.78, volume: 0.72 });
+      noiseBurst({ dur: 0.12, gain: 0.08, filterFreq: 500, filterType: "highpass", delay: 0.1 });
       break;
 
     // ── Funny / silly ──
     case "🤡":
-      arp([523, 784, 1046], 0.05, { type: "triangle", gain: 0.06, release: 0.05 });
+      speak("Boing!", { rate: 1.1, pitch: 1.5, volume: 0.68 });
       break;
     case "💩":
-      tone({ freq: 180, type: "square", dur: 0.12, gain: 0.05 });
+      speak("Ew.", { rate: 0.86, pitch: 0.84, volume: 0.66 });
       break;
     case "👻":
-      tone({ freq: 660, type: "sine", dur: 0.12, gain: 0.05 });
-      tone({ freq: 880, type: "sine", dur: 0.14, gain: 0.04, delay: 0.1 });
+      speak("Boo.", { rate: 0.66, pitch: 0.78, volume: 0.64 });
       break;
     case "🤖":
-      tone({ freq: 300, type: "square", dur: 0.08, gain: 0.05 });
-      tone({ freq: 600, type: "square", dur: 0.08, gain: 0.05, delay: 0.08 });
-      tone({ freq: 900, type: "square", dur: 0.08, gain: 0.04, delay: 0.16 });
+      speak("Beep boop.", { rate: 0.92, pitch: 0.7, volume: 0.6 });
       break;
     case "🐸":
-      tone({ freq: 392, type: "square", dur: 0.08, gain: 0.05 });
-      tone({ freq: 523, type: "square", dur: 0.08, gain: 0.04, delay: 0.1 });
+      speak("Ribbit.", { rate: 0.86, pitch: 0.86, volume: 0.64 });
       break;
     case "🦄":
+      speak("Yay.", { rate: 1.0, pitch: 1.3, volume: 0.7 });
       arp([784, 988, 1175, 1568, 1976], 0.05, { type: "triangle", gain: 0.09, release: 0.18 });
       break;
 
     // ── Greeting / hand ──
     case "✋":
-      tone({ freq: 220, type: "sine", dur: 0.1, gain: 0.05 });
+      speak("Hold on.", { rate: 0.92, pitch: 0.98, volume: 0.64 });
       break;
     case "👋":
-      tone({ freq: 660, type: "triangle", dur: 0.08, gain: 0.05 });
-      tone({ freq: 880, type: "triangle", dur: 0.08, gain: 0.04, delay: 0.08 });
+      speak("Hey.", { rate: 0.96, pitch: 1.02, volume: 0.62 });
       break;
 
     default:

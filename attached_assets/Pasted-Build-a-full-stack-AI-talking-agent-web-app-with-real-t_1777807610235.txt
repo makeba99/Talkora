@@ -1,0 +1,127 @@
+Build a full-stack AI talking agent web app with real-time streaming text responses and expressive voice output using ElevenLabs.
+
+GOAL:
+Create an AI assistant that:
+
+1. Streams text responses live (like ChatGPT typing)
+2. Converts responses into natural speech
+3. Interprets emojis and reaction cues into expressive voice (e.g., 😂 → laughter, 😴 → sleepy/snore, 🤔 → thinking)
+
+TECH STACK:
+
+* Frontend: React (Vite)
+* Backend: Node.js (Express)
+* Streaming: Server-Sent Events (SSE)
+* Voice: ElevenLabs API
+* AI: OpenAI-compatible streaming (or Replit AI)
+
+ENV VARIABLES:
+
+* ELEVENLABS_API_KEY
+* OPENAI_API_KEY (or Replit AI key)
+
+FEATURES:
+
+1. STREAMING TEXT RESPONSE
+
+* Backend endpoint `/chat`
+* Streams AI response token-by-token using SSE
+* Frontend renders text as it arrives (typing effect)
+
+2. EMOJI → VOICE EXPRESSION ENGINE
+   Create a parser function that transforms text before sending to ElevenLabs:
+
+Rules:
+
+* 😂 😄 😆 → prepend "[laughs]"
+* 😴 💤 → append "[snoring softly]"
+* 🤔 → prepend "[thinking]"
+* 😡 → prepend "[angry tone]"
+* 😎 → prepend "[confident]"
+* 😢 → prepend "[sad]"
+* 😮 → prepend "[surprised]"
+* 🔥 → prepend "[excited]"
+* 😐 → prepend "[neutral tone]"
+
+Also detect words:
+
+* "haha", "lol" → "[laughs]"
+* "zzz", "sleep" → "[yawns] ... [snoring]"
+
+3. VOICE GENERATION ENDPOINT
+   Create `/voice` POST endpoint:
+
+* Input: processed text
+* Call ElevenLabs text-to-speech API
+* Return audio stream (MP3)
+* Use a default high-quality voice
+
+4. FRONTEND UI
+
+* Chat interface (messages list)
+* Input box + send button
+* Streaming text display
+* Play audio automatically after response completes
+* Toggle: "Voice ON/OFF"
+
+5. AUDIO PLAYBACK
+
+* After full text stream completes:
+  → send processed text to `/voice`
+  → receive audio blob
+  → auto-play
+
+6. PERFORMANCE
+
+* Debounce voice generation (only after full response)
+* Keep latency low
+* Handle errors gracefully
+
+7. CLEAN UX
+
+* Minimal modern UI (dark mode)
+* Smooth typing animation
+* Show “AI is speaking…” indicator
+
+8. CODE QUALITY
+
+* Modular structure:
+  /server
+
+  * index.js
+  * routes/chat.js
+  * routes/voice.js
+  * utils/emojiParser.js
+    /client
+  * App.jsx
+  * components/Chat.jsx
+
+9. BONUS (IMPORTANT)
+
+* Make voice sound natural:
+
+  * Add pauses: "..." where needed
+  * Keep sentences short
+  * Avoid robotic phrasing
+
+OUTPUT:
+
+* Fully working Replit project
+* Ready to run with `npm install && npm run dev`
+
+FOCUS:
+
+* Fast
+* Clean
+* Production-ready feel
+* Natural expressive voice
+
+DO NOT:
+
+* Overcomplicate UI
+* Add unnecessary libraries
+* Break streaming flow
+
+SUCCESS =
+
+* User types → AI streams reply → voice plays with emotion (laughs, sleepy, etc.)
