@@ -420,6 +420,14 @@ function ParticipantCard({
                    <button className="text-white/50 font-medium hover:underline px-1" onClick={handleCopyId}>Copy ID</button>
                 </div>
                 <div className="text-sm font-semibold truncate leading-none">Name: {getUserDisplayName(p)}</div>
+                {roomPresenceStatus !== "online" && (
+                  <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit">
+                    <span className={roomPresenceStatus === "busy" ? "text-rose-300" : roomPresenceStatus === "afk" ? "text-sky-300" : "text-amber-300"}>
+                      {roomPresenceStatus.toUpperCase()}
+                    </span>
+                    <span>visible to others</span>
+                  </div>
+                )}
                 {isMe && (
                   <div className="space-y-2 mt-2">
                     <Label htmlFor={`room-presence-status-${p.id}`} className="text-xs text-muted-foreground">
