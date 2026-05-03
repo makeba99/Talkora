@@ -142,6 +142,9 @@ const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
 // AI Tutor room state: one active session per room
 const roomAiTutorState = new Map<string, { userId: string; username: string; speaking: boolean; avatarId?: string | null; voice?: "Female" | "Male" | null; voiceId?: string | null } | null>();
+// SSE clients subscribed to real-time room list updates.
+// Each entry holds the Express Response and its keepalive heartbeat timer.
+const sseRoomClients = new Set<{ res: any; timer: ReturnType<typeof setInterval> }>();
 const roomAiTutorEnabled = new Map<string, boolean>(); // host can disable
 // Chess: one active built-in match per room
 type ChessSeat = { userId: string; username: string; avatar?: string | null } | null;
@@ -206,6 +209,19 @@ function isUuid(value: string): boolean {
 function roomPublicPayload(room: any, includeAccessKey = false) {
   if (!room) return room;
   return includeAccessKey ? room : { ...room, accessKey: null };
+}
+
+// Push the current full room list to every SSE subscriber.
+// Full snapshots avoid diff-sync edge-cases and compress well (≈ 2 KB Brotli).
+async function broadcastRooms() {
+  if (sseRoomClients.size === 0) return;
+  try {
+    const rooms = (await storage.getAllRooms()).map((r) => roomPublicPayload(r));
+    const payload = `event: rooms\ndata: ${JSON.stringify(rooms)}\n\n`;
+    for (const client of sseRoomClients) {
+      try { client.res.write(payload); } catch {}
+    }
+  } catch {}
 }
 
 function canManageRoomLink(user: User | undefined | null, room: any) {
@@ -1987,6 +2003,39 @@ export async function registerRoutes(
     }
   });
 
+  // ── Room SSE stream ────────────────────────────────────────────────────────
+  // Clients subscribe once and receive the full room list whenever any room is
+  // created, updated, or deleted — replacing the 15 s polling interval.
+  // EventSource reconnects automatically on drop; a 25 s heartbeat comment
+  // prevents proxies from closing idle connections.
+  app.get("/api/rooms/stream", async (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    // Send the current room list immediately so the client hydrates without
+    // waiting for the next mutation event.
+    try {
+      const rooms = (await storage.getAllRooms()).map((r) => roomPublicPayload(r));
+      res.write(`event: rooms\ndata: ${JSON.stringify(rooms)}\n\n`);
+    } catch {}
+
+    // Keepalive: comment lines don't trigger message handlers on the client.
+    const timer = setInterval(() => {
+      try { res.write(": heartbeat\n\n"); } catch {}
+    }, 25_000);
+
+    const client = { res, timer };
+    sseRoomClients.add(client);
+
+    req.on("close", () => {
+      clearInterval(timer);
+      sseRoomClients.delete(client);
+    });
+  });
+
   app.post("/api/rooms/:id/access-link", isAuthenticated, async (req: any, res) => {
     try {
       const roomParam = req.params.id;
@@ -2147,6 +2196,7 @@ export async function registerRoutes(
       });
 
       io.emit("room:created", room);
+      broadcastRooms().catch(() => {});
       res.json(room);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -2190,6 +2240,7 @@ export async function registerRoutes(
 
       const updated = await storage.updateRoom(roomId, updateData);
       io.emit("room:updated", updated);
+      broadcastRooms().catch(() => {});
 
       if (updateData.welcomeMessage !== undefined && updateData.welcomeMessage) {
         io.to(roomId).emit("room:welcome-message", {
@@ -2278,6 +2329,9 @@ export async function registerRoutes(
 
       // Delete all persistent data (messages, votes, room record)
       await storage.deleteRoom(roomId);
+      // Notify ALL lobby clients (not just room participants) that the room is gone.
+      io.emit("room:deleted", { roomId });
+      broadcastRooms().catch(() => {});
 
       res.json({ ok: true });
     } catch (err: any) {
@@ -3498,6 +3552,7 @@ export async function registerRoutes(
           roomParticipants.delete(roomId);
           roomDeleteTimers.delete(roomId);
           io.emit("room:deleted", { roomId });
+          broadcastRooms().catch(() => {});
           console.log(`[room-cleanup] Deleted empty room ${roomId} after ${Math.round(graceMs / 1000)}s grace`);
         }
       } catch (err) {

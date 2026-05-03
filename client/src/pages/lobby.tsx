@@ -710,13 +710,29 @@ export default function Lobby() {
     return () => clearInterval(interval);
   }, []);
 
+  // SSE: subscribe to the room-list push stream so the 15 s polling interval
+  // can be eliminated. The server sends a full room snapshot on connect and
+  // on every create/update/delete mutation. EventSource reconnects automatically
+  // on drop, so no manual retry logic is needed. We write directly into the
+  // React Query cache so there is no extra HTTP round-trip.
+  useEffect(() => {
+    const es = new EventSource("/api/rooms/stream");
+
+    es.addEventListener("rooms", (e: MessageEvent) => {
+      try {
+        queryClient.setQueryData(["/api/rooms"], JSON.parse(e.data));
+      } catch {}
+    });
+
+    return () => { es.close(); };
+  }, []);
+
   const { data: fetchedRooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
-    /* Bumped from 5s to 15s. Live participant updates flow through the socket,
-     * so the lobby only needs the slower poll for newly-created/deleted rooms.
-     * 5s polling combined with 7+ other intervals was tripping the API rate
-     * limiter (180 req/min) within ~30s of activity. */
-    refetchInterval: 15000,
+    // SSE keeps this cache up-to-date in real time. Keep a long safety-net
+    // refetch interval in case EventSource fails to reconnect after a drop.
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 60_000,
   });
 
   const { data: announcements = [] } = useQuery<LobbyAnnouncement[]>({

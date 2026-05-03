@@ -35,7 +35,8 @@ The design is "dark-first" with a futuristic cyan/purple theme, evolving into an
 - **AI Integration:** AI Tutor with multiple voice personas (browser `speechSynthesis` and ElevenLabs API for "Eva"), viseme-driven lip-sync, and contextual responses.
 - **Teacher System:** Dedicated `/teachers` page for discovery, booking, reviews, and a teacher application workflow managed by admins.
 - **Monetization:** Payment methods UI for saving cards and a two-step booking dialog.
-- **Performance & Accessibility:** Optimizations for Lighthouse scores including image lazy loading, `dns-prefetch`, `preconnect`, and WCAG compliance for contrast and accessible naming.
+- **Performance & Accessibility:** Optimizations for Lighthouse scores including image lazy loading, `dns-prefetch`, `preconnect`, WCAG compliance, `useMemo` on all hot-path lobby computations (followingIds, mergedPeople, filteredPeople, languageCounts, languageTags, mergedRoomParticipants, allVisibleParticipantIds), and SSE-based room list push (`GET /api/rooms/stream`) replacing 15s polling.
+- **Room SSE Stream:** `GET /api/rooms/stream` sends a full room-list snapshot on connect and after every create/update/delete mutation. The lobby subscribes via `EventSource` and writes directly into the React Query cache — eliminating the 15 s polling interval. The server broadcasts from `broadcastRooms()` hooked into the POST/PATCH/DELETE room routes and the auto-delete grace timer. A 25 s heartbeat prevents proxy timeouts. Safety-net `refetchInterval: 5 * 60 * 1000` remains on the `useQuery` in case EventSource fails to reconnect.
 - **Privacy:** Disabled geolocation, no IP/user-agent logging in security events, and reduced browser fingerprinting.
 
 ## External Dependencies
