@@ -170,8 +170,6 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
   // Auto-launch on first visit (after letting the lobby settle for 1.2s)
   useEffect(() => {
     const status = readSavedStatus();
-    // eslint-disable-next-line no-console
-    console.log("[onboarding] mount status=", status);
     if (status === null) {
       const t = setTimeout(() => setActive(true), 200);
       return () => clearTimeout(t);

@@ -3407,8 +3407,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // Poll current playback time every second — but ONLY for the broadcaster (the only one who
   // sees the seek bar). Watchers don't need state updates that re-render the whole room.
   useEffect(() => {
-    if (!ytIsPlaying || !showYoutube) return;
-    // Free4talk-style: anyone watching the player should see their own seek bar update
+    if (!ytIsPlaying || (!showYoutube && !miniPlayerMode)) return;
     const id = setInterval(() => {
       try {
         const t = youtubePlayerRef.current?.getCurrentTime?.() || 0;
@@ -3418,7 +3417,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       } catch (_) {}
     }, 1000);
     return () => clearInterval(id);
-  }, [ytIsPlaying, showYoutube, user?.id, youtubeStartedBy]);
+  }, [ytIsPlaying, showYoutube, miniPlayerMode, user?.id, youtubeStartedBy]);
 
   // Tracks the last (hostId, watching) pair we told the server about, so we
   // can always clean up properly — even when the user fully closes YouTube

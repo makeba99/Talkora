@@ -249,7 +249,7 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
       const t = setTimeout(() => setReopenVisible(true), 800);
       return () => clearTimeout(t);
     }
-  }, [user]);
+  }, [user?.id, user?.createdAt]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
