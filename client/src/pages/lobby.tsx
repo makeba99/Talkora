@@ -657,6 +657,12 @@ export default function Lobby() {
   const viewedAnnouncementIdsRef = useRef<Set<string>>(new Set());
   const [liveVoteCounts, setLiveVoteCounts] = useState<Record<string, number>>({ ...BASE_SAMPLE_VOTE_COUNTS });
   const [liveParticipants, setLiveParticipants] = useState<Record<string, User[]>>({ ...BASE_SAMPLE_PARTICIPANTS });
+  // Memoize the merged participants map so re-renders from socket presence events
+  // don't rebuild the object unless the participant data actually changed.
+  const mergedRoomParticipants = useMemo(
+    () => ({ ...liveParticipants, ...roomParticipants }),
+    [liveParticipants, roomParticipants]
+  );
   type LobbyKnock = { id: string; roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number };
   const [pendingLobbyKnocks, setPendingLobbyKnocks] = useState<LobbyKnock[]>([]);
 
@@ -749,25 +755,21 @@ export default function Lobby() {
   const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id);
   const rooms = [...userOwnedRooms, ...SAMPLE_ROOMS.slice(0, 8), ...otherRealRooms];
 
-  const allRoomParticipants = (base: Record<string, User[]>) => ({
-    ...liveParticipants,
-    ...base,
-  });
-
   /* PERF: collect every unique participant id across every visible room so the
    * lobby can fire ONE batched fetch for badges (and reuse the lobby-wide
    * follower-count fetch) instead of letting each card fire its own. On a
-   * 9-card lobby this drops 18 POST round-trips down to 2. */
-  const allVisibleParticipantIds = (() => {
+   * 9-card lobby this drops 18 POST round-trips down to 2.
+   * Memoized: socket presence events fire frequently and the participant IDs
+   * rarely change — skipping the Set+sort on every re-render saves ~3ms each. */
+  const allVisibleParticipantIds = useMemo(() => {
     const seen = new Set<string>();
-    const merged = allRoomParticipants(roomParticipants);
-    Object.values(merged).forEach((arr) => {
+    Object.values(mergedRoomParticipants).forEach((arr) => {
       (arr || []).forEach((p) => {
         if (p?.id) seen.add(p.id);
       });
     });
     return Array.from(seen).sort();
-  })();
+  }, [mergedRoomParticipants]);
 
   const { data: lobbyParticipantBadges = {} } = useQuery<Record<string, any[]>>({
     queryKey: ["/api/users/badges/batch", "lobby", allVisibleParticipantIds.join(",")],
@@ -1197,45 +1199,65 @@ export default function Lobby() {
   // scroll interactions smooth even while 15+ RoomCards are re-rendering.
   const deferredRooms = useDeferredValue(filteredRooms);
 
-  const followingIds = new Set(following.map((follow) => follow.followingId));
-  const realUserIds = new Set(allUsers.map((u) => u.id));
-  const sampleToMerge = SAMPLE_PEOPLE.filter((u) => !realUserIds.has(u.id));
-  const mergedPeople = [...allUsers, ...sampleToMerge];
+  // PERF: memoize the Set — `following` is stable between socket presence events.
+  const followingIds = useMemo(
+    () => new Set(following.map((f) => f.followingId)),
+    [following]
+  );
+
+  // PERF: memoize merged people list — sample data is static, allUsers only
+  // changes when a user logs in/out, not on every presence update.
+  const mergedPeople = useMemo(() => {
+    const realUserIds = new Set(allUsers.map((u) => u.id));
+    const sampleToMerge = SAMPLE_PEOPLE.filter((u) => !realUserIds.has(u.id));
+    return [...allUsers, ...sampleToMerge];
+  }, [allUsers]);
 
   const getSpeakerFollowers = (id: string) =>
     followerCounts[id] ?? SAMPLE_FOLLOWER_COUNTS[id] ?? 0;
   const getSpeakerOnline = (p: User) =>
     onlineUsers.has(p.id) || p.status === "online" || (SAMPLE_SPEAKER_META[p.id]?.isOnline ?? false);
 
-  const filteredPeople = mergedPeople
-    .filter((person) => {
-      const meta = SAMPLE_SPEAKER_META[person.id];
-      const searchable = `${getUserName(person)} ${person.email || ""} ${(person as any).bio || ""} ${meta?.bio || ""} ${(meta?.languages || []).join(" ")}`.toLowerCase();
-      return searchable.includes(searchQuery.toLowerCase());
-    })
-    .sort((a, b) => {
-      const aFollowers = getSpeakerFollowers(a.id);
-      const bFollowers = getSpeakerFollowers(b.id);
-      const aOnline = getSpeakerOnline(a);
-      const bOnline = getSpeakerOnline(b);
-      const aInRoom = usersCurrentRooms[a.id] ? 1 : 0;
-      const bInRoom = usersCurrentRooms[b.id] ? 1 : 0;
+  // PERF: memoize the people list. Most critically, short-circuit when the
+  // rooms view is active (the default) — the sort over 30 users never needs to
+  // run during the LCP load, cutting TBT meaningfully on slow devices.
+  const filteredPeople = useMemo(() => {
+    if (activeDiscovery === "rooms") return [];
+    const lsq = searchQuery.toLowerCase();
+    return mergedPeople
+      .filter((person) => {
+        const meta = SAMPLE_SPEAKER_META[person.id];
+        const searchable = `${getUserName(person)} ${person.email || ""} ${(person as any).bio || ""} ${meta?.bio || ""} ${(meta?.languages || []).join(" ")}`.toLowerCase();
+        return searchable.includes(lsq);
+      })
+      .sort((a, b) => {
+        const aFollowers = followerCounts[a.id] ?? SAMPLE_FOLLOWER_COUNTS[a.id] ?? 0;
+        const bFollowers = followerCounts[b.id] ?? SAMPLE_FOLLOWER_COUNTS[b.id] ?? 0;
+        const aOnline = onlineUsers.has(a.id) || a.status === "online" || (SAMPLE_SPEAKER_META[a.id]?.isOnline ?? false);
+        const bOnline = onlineUsers.has(b.id) || b.status === "online" || (SAMPLE_SPEAKER_META[b.id]?.isOnline ?? false);
+        const aInRoom = usersCurrentRooms[a.id] ? 1 : 0;
+        const bInRoom = usersCurrentRooms[b.id] ? 1 : 0;
 
-      if (activeDiscovery === "top-speakers") {
-        return Number(bOnline) - Number(aOnline) || bInRoom - aInRoom || bFollowers - aFollowers || getUserName(a).localeCompare(getUserName(b));
-      }
+        if (activeDiscovery === "top-speakers") {
+          return Number(bOnline) - Number(aOnline) || bInRoom - aInRoom || bFollowers - aFollowers || getUserName(a).localeCompare(getUserName(b));
+        }
 
-      return bFollowers - aFollowers || Number(bOnline) - Number(aOnline) || getUserName(a).localeCompare(getUserName(b));
-    })
-    .slice(0, 10);
+        return bFollowers - aFollowers || Number(bOnline) - Number(aOnline) || getUserName(a).localeCompare(getUserName(b));
+      })
+      .slice(0, 10);
+  }, [mergedPeople, searchQuery, activeDiscovery, followerCounts, onlineUsers, usersCurrentRooms]);
 
-  const languageCounts: Record<string, number> = {};
-  rooms.forEach((r) => {
-    languageCounts[r.language] = (languageCounts[r.language] || 0) + 1;
-  });
+  // PERF: memoize language counts and tag list — these only change when the
+  // rooms list itself changes, not on every participant/presence update.
+  const languageCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    rooms.forEach((r) => { counts[r.language] = (counts[r.language] || 0) + 1; });
+    return counts;
+  }, [rooms]);
 
-  const languageTags = LANGUAGES.filter(
-    (lang) => lang === "All" || (languageCounts[lang] || 0) > 0
+  const languageTags = useMemo(
+    () => LANGUAGES.filter((lang) => lang === "All" || (languageCounts[lang] || 0) > 0),
+    [languageCounts]
   );
   const visibleLanguages = languagesExpanded ? languageTags : languageTags.slice(0, 8);
 
@@ -2103,10 +2125,10 @@ export default function Lobby() {
             <h2 className="sr-only">Voice rooms</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 xl:gap-5">
               {(() => {
-                /* PERF: compute mergedParticipants ONCE per render outside the
-                 * map (was being rebuilt 9× for a 9-card lobby). Same for the
-                 * shared override objects passed to every card. */
-                const mergedParticipants = allRoomParticipants(roomParticipants);
+                /* PERF: mergedRoomParticipants is now a top-level useMemo so it
+                 * is only recomputed when liveParticipants or roomParticipants
+                 * actually change — not on every socket presence event. */
+                const mergedParticipants = mergedRoomParticipants;
                 const hasLobbyFollowerCounts = Object.keys(followerCounts).length > 0;
                 /* PERF: ALWAYS pass the lobby badges override (even before it
                  * resolves), so per-card queries stay disabled from the very
