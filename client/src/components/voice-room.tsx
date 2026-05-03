@@ -1146,7 +1146,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [participantRoles, setParticipantRoles] = useState<Record<string, string>>({});
-  const [videoFlipped, setVideoFlipped] = useState(true);
   const [remoteVideoUserId, setRemoteVideoUserId] = useState<string | null>(null);
   const [remoteScreenShareUserId, setRemoteScreenShareUserId] = useState<string | null>(null);
   // Tracks whether the remote screen <video> has actually started painting
@@ -4310,9 +4309,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Screen-share locked", description: screenLockReason || "Sharing is disabled in this room.", variant: "destructive" });
       return;
     }
-    // Check API availability first — very old browsers or restricted contexts lack it
+    // Check API availability. getDisplayMedia requires a secure context (HTTPS
+    // or localhost). On insecure origins navigator.mediaDevices may exist but
+    // getDisplayMedia will be undefined — give a precise reason rather than a
+    // generic "not supported" message.
     if (!navigator.mediaDevices?.getDisplayMedia) {
-      toast({ title: "Screen sharing not supported", description: "Your browser doesn't support screen sharing. Try Chrome on Android or Safari 16.4+ on iOS.", variant: "destructive" });
+      const reason = !window.isSecureContext
+        ? "Screen sharing requires a secure connection (HTTPS). Please access this page over HTTPS."
+        : "Your browser doesn't support screen sharing. Try the latest Chrome or Edge on desktop, or Safari 16.4+ on iOS.";
+      toast({ title: "Screen sharing not supported", description: reason, variant: "destructive" });
       return;
     }
     try {
@@ -4512,7 +4517,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       videoStream.current = newStream;
       setLocalVideoStreamObj(newStream);
       if (localVideoRef.current) localVideoRef.current.srcObject = newStream;
-      setCameraFacing(newFacing);
+      // Detect actual facing mode from track settings — more reliable than
+      // assuming the "other" device is the opposite of the current one,
+      // especially on devices with multiple front or multiple back cameras.
+      const actualFacing = newTrack.getSettings().facingMode;
+      setCameraFacing(actualFacing === "environment" ? "environment" : "user");
     } catch {
       toast({ title: "Camera flip failed", description: "Could not switch to the other camera.", variant: "destructive" });
     } finally {
@@ -9181,7 +9190,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 autoPlay
                 muted
                 playsInline
-                className={`w-full h-full object-cover ${videoFlipped ? "scale-x-[-1]" : ""}`}
+                className={`w-full h-full object-cover ${cameraFacing === "user" ? "scale-x-[-1]" : ""}`}
               />
               {/* Flip camera button — overlaid on the camera preview for easy mobile access */}
               <button
@@ -9447,7 +9456,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onVolumeChange={handleVolumeChange}
                       youtubeVideoId={youtubeHosts.get(p.id) || null}
                       remoteVideoStream={isMe && isVideoOn && miniCameraMode ? localVideoStreamObj : (!isMe && availableVideoUsers.has(p.id) ? remoteVideoStreams.current.get(p.id) : undefined)}
-                      localVideoFlipped={isMe ? videoFlipped : false}
+                      localVideoFlipped={isMe ? cameraFacing === "user" : false}
                       isBlocked={isBlockedUser}
                       onUnblock={handleUnblock}
                       analyserNode={analysersRef.current.get(p.id)}
@@ -10888,7 +10897,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           data-testid="mini-camera-player"
         >
           <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black">
-            <div className={`w-full h-full ${videoFlipped ? "scale-x-[-1]" : ""}`}>
+            <div className={`w-full h-full ${cameraFacing === "user" ? "scale-x-[-1]" : ""}`}>
               <RemoteVideoPreview stream={localVideoStreamObj} />
             </div>
             <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full pointer-events-none">
