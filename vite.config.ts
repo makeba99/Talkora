@@ -106,6 +106,12 @@ export default defineConfig({
           // guard would short-circuit and return undefined for app code.
           if (id.includes("/shared/constants")) return "app-constants";
 
+          // profile-decorations is 1,900 lines of inline SVG data — it must
+          // never land in the initial JS bundle. This named chunk makes it
+          // lazy-loadable by room-card.tsx (ProfileDecoration) and
+          // profile-dropdown.tsx without touching the critical paint path.
+          if (id.includes("profile-decorations")) return "decorations-vendor";
+
           if (!id.includes("node_modules")) return undefined;
           if (
             id.includes("react-dom") ||

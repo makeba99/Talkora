@@ -1,0 +1,39 @@
+You are a performance optimization specialist tasked with improving a website from a mobile performance score of 65 to a perfect 100 on both mobile and desktop, while maintaining high scores in Accessibility, Best Practices, and SEO.
+
+Analyze the performance audit data provided in image.png and create a prioritized, actionable optimization roadmap that addresses the specific bottlenecks identified.
+
+## Critical Issues to Address
+
+- LCP Element render delay of 4,910 ms (primary blocker)
+- JavaScript execution time of 1.5s total, with 1,336 ms spent on Script Evaluation
+- Main-thread work consuming 3.1s, including 420 ms in Style & Layout operations
+- Forced reflows from `/assets/scroll-jump-button-BCDYB-IM.js` (68 ms total)
+- Unused JavaScript consuming 93 KiB (92.8 KiB from 1st party `afikgang.online`)
+- Image delivery inefficiencies (32 KiB potential savings)
+- Third-party scripts causing layout shifts
+
+## Optimization Plan Requirements
+
+Create a step-by-step optimization plan that includes:
+
+1. **Immediate fixes** – Address forced reflows and LCP render delays first, ensuring no impact to existing design or functionality
+2. **JavaScript optimization strategy** – Code splitting, lazy loading, defer/async patterns specific to the React bundles identified; include removal of unused file imports and dependencies
+3. **Image optimization** – Format, sizing, lazy loading recommendations
+4. **Main-thread work reduction** – Specific techniques for Script Evaluation and Style & Layout bottlenecks
+5. **Third-party script management** – How to identify and mitigate layout shift culprits
+6. **Implementation priority order** – Which fixes deliver the fastest performance gains
+
+## Specification for Each Recommendation
+
+For each recommendation, specify:
+- The exact performance gain expected (reference the estimated savings where provided)
+- Implementation difficulty (low/medium/high)
+- Estimated time to implement
+- Specific code patterns or tools to use
+- Confirmation that the change preserves existing design, functionality, and removes only unused code and imports
+
+## Core Constraint
+
+All optimizations must maintain the current design and functionality. Only remove unused files, imports, and code that provides no visible or functional value. Do not modify or refactor working features.
+
+Focus on solutions that are technically achievable and directly tied to the metrics shown in the audit data. Avoid generic performance advice—your recommendations should be calibrated to these specific bottlenecks and file paths.

@@ -1,20 +1,33 @@
-import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { useState, useRef, useEffect, useCallback, memo, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ReportDialog } from "@/components/report-dialog";
-import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Image as ImageIcon, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints, Hand, Sparkles, Upload } from "lucide-react";
-import { GifPickerButton } from "@/components/chat-picker";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/lib/avatar-ring";
-import { ProfileDecoration, getRoomThemeBorderClass, ROOM_THEMES } from "@/components/profile-decorations";
+import { getRoomThemeBorderClass, ROOM_THEMES } from "@/lib/room-theme-utils";
 import { UserBadgePips } from "@/components/user-badge-pips";
+
+// Heavy components — only loaded on user interaction, never on initial paint.
+// profile-decorations.tsx is 1,900 lines of SVG data; keeping it out of the
+// critical path saves ~400 ms of script evaluation on the lobby load.
+const ProfileDecoration = lazy(() =>
+  import("@/components/profile-decorations").then((m) => ({ default: m.ProfileDecoration }))
+);
+const ReportDialog = lazy(() =>
+  import("@/components/report-dialog").then((m) => ({ default: m.ReportDialog }))
+);
+const NeuParticipantSlider = lazy(() =>
+  import("@/components/neu-participant-slider").then((m) => ({ default: m.NeuParticipantSlider }))
+);
+const GifPickerButton = lazy(() =>
+  import("@/components/chat-picker").then((m) => ({ default: m.GifPickerButton }))
+);
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/lib/theme";
@@ -1027,11 +1040,18 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     </div>
                   );
 
-                  const decorated = (
-                    <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize}>
-                      {avatarEl}
-                    </ProfileDecoration>
-                  );
+                  // ProfileDecoration is a lazy chunk (~1,900-line SVG file).
+                  // Most participants have no decoration — skip the Suspense
+                  // overhead entirely in that case and render avatarEl directly.
+                  const decorated = (p as any).profileDecoration
+                    ? (
+                      <Suspense fallback={avatarEl}>
+                        <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize}>
+                          {avatarEl}
+                        </ProfileDecoration>
+                      </Suspense>
+                    )
+                    : avatarEl;
 
                   /* Heart/follower count is only useful in small, uncluttered
                      rooms — in crowded rooms (5+ slots) it eats vertical space
@@ -1236,24 +1256,26 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         </div>
       </div>
 
-      {/* Report Dialog */}
-      {(() => {
+      {/* Report Dialog — lazy: only fetched after the user clicks "Report" */}
+      {reportOpen && (() => {
         const ownerUser = participants.find(p => p.id === room.ownerId);
         const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
         return (
-          <ReportDialog
-            open={reportOpen}
-            onOpenChange={setReportOpen}
-            reportedUser={{
-              id: room.ownerId,
-              displayName: ownerName,
-              profileImageUrl: ownerUser?.profileImageUrl || null,
-              initials: ownerUser ? getUserInitials(ownerUser) : "?",
-            }}
-            context="room"
-            contextLabel={`Room: ${room.title}`}
-            testIdSuffix={room.id}
-          />
+          <Suspense fallback={null}>
+            <ReportDialog
+              open={reportOpen}
+              onOpenChange={setReportOpen}
+              reportedUser={{
+                id: room.ownerId,
+                displayName: ownerName,
+                profileImageUrl: ownerUser?.profileImageUrl || null,
+                initials: ownerUser ? getUserInitials(ownerUser) : "?",
+              }}
+              context="room"
+              contextLabel={`Room: ${room.title}`}
+              testIdSuffix={room.id}
+            />
+          </Suspense>
         );
       })()}
 
@@ -1303,11 +1325,13 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             </div>
             <div className="space-y-2">
               <Label>Max Participants</Label>
-              <NeuParticipantSlider
-                value={editMaxUsers}
-                onChange={setEditMaxUsers}
-                testId="slider-edit-max-users"
-              />
+              <Suspense fallback={<div className="h-10 rounded-md bg-muted/30 animate-pulse" />}>
+                <NeuParticipantSlider
+                  value={editMaxUsers}
+                  onChange={setEditMaxUsers}
+                  testId="slider-edit-max-users"
+                />
+              </Suspense>
             </div>
 
             {/* Card Media — only editable from outside the room. Inside-room
@@ -1358,9 +1382,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   </div>
                 )}
                 <div className="flex-1 grid grid-cols-2 gap-2">
-                  <GifPickerButton
-                    onGifSelect={(url) => { setEditHologramUrl(url); setEditHologramKind("gif"); }}
-                  />
+                  <Suspense fallback={<div className="h-9 rounded-md bg-muted/30 animate-pulse" />}>
+                    <GifPickerButton
+                      onGifSelect={(url) => { setEditHologramUrl(url); setEditHologramKind("gif"); }}
+                    />
+                  </Suspense>
                   <button
                     type="button"
                     onClick={() => editHologramFileRef.current?.click()}
