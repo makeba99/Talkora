@@ -141,6 +141,8 @@ const POPULAR_MOVIES: Array<{ id: string; title: string; poster: string | null; 
 ].filter((m, i, arr) => arr.findIndex(x => x.id === m.id) === i);
 const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
 const roomRoles = new Map<string, Map<string, string>>();
+const trollVoteState = new Map<string, { targetUserId: string; votes: Set<string> }>();
+const trollCooldown = new Map<string, number>();
 const roomMuteStatus = new Map<string, Map<string, boolean>>();
 const userSockets = new Map<string, string>();
 const userCurrentRoom = new Map<string, string>();
@@ -4337,7 +4339,7 @@ export async function registerRoutes(
       const assignerRole = roles.get(data.assignedBy);
       if (data.assignedBy !== room.ownerId && assignerRole !== "co-owner") return;
       if (data.targetUserId === room.ownerId) return;
-      if (!["co-owner", "member", "guest"].includes(data.role)) return;
+      if (!["co-owner", "member", "guest", "troll"].includes(data.role)) return;
 
       roles.set(data.targetUserId, data.role);
       io.to(data.roomId).emit("room:roles-update", {
@@ -4351,8 +4353,79 @@ export async function registerRoutes(
         storage.getUser(data.assignedBy),
       ]);
       if (targetUser && assignerUser) {
-        const roleName = data.role === "co-owner" ? "Co-Owner" : data.role === "member" ? "Member" : "Guest";
+        const roleName = data.role === "co-owner" ? "Co-Owner" : data.role === "member" ? "Member" : data.role === "guest" ? "Guest" : "Troll";
         emitSystemChatMsg(data.roomId, `${getDisplayName(assignerUser)} set ${getDisplayName(targetUser)} as ${roleName}`);
+      }
+
+      // When someone is tagged as Troll, open a vote-to-kick poll for room members
+      if (data.role === "troll") {
+        const participants = roomParticipants.get(data.roomId);
+        const totalMembers = participants ? participants.size : 1;
+        trollVoteState.set(data.roomId, { targetUserId: data.targetUserId, votes: new Set() });
+        io.to(data.roomId).emit("room:troll-vote-start", {
+          targetUserId: data.targetUserId,
+          targetName: targetUser ? getDisplayName(targetUser) : "Unknown",
+          assignedBy: data.assignedBy,
+          assignedByName: assignerUser ? getDisplayName(assignerUser) : "Host",
+          totalMembers,
+        });
+        // Auto-expire the vote after 60 seconds
+        setTimeout(() => {
+          const state = trollVoteState.get(data.roomId);
+          if (state && state.targetUserId === data.targetUserId) {
+            trollVoteState.delete(data.roomId);
+            io.to(data.roomId).emit("room:troll-vote-end", { targetUserId: data.targetUserId, kicked: false, reason: "expired" });
+          }
+        }, 60_000);
+      }
+    });
+
+    socket.on("room:troll-vote", async (data: { roomId: string; voterId: string; kick: boolean }) => {
+      const state = trollVoteState.get(data.roomId);
+      if (!state) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants?.has(data.voterId)) return;
+      // Don't let the troll vote on their own fate
+      if (data.voterId === state.targetUserId) return;
+
+      if (data.kick) {
+        state.votes.add(data.voterId);
+      } else {
+        state.votes.delete(data.voterId);
+      }
+
+      const totalVoters = Math.max(1, (participants?.size ?? 1) - 1);
+      const kickVotes = state.votes.size;
+      io.to(data.roomId).emit("room:troll-vote-progress", {
+        targetUserId: state.targetUserId,
+        kickVotes,
+        totalVoters,
+      });
+
+      // Majority vote: more than half of eligible voters kicked
+      if (kickVotes > totalVoters / 2) {
+        trollVoteState.delete(data.roomId);
+        io.to(data.roomId).emit("room:troll-vote-end", { targetUserId: state.targetUserId, kicked: true, reason: "majority" });
+
+        // Auto-kick the troll
+        userCurrentRoom.delete(state.targetUserId);
+        const targetSocketId = userSockets.get(state.targetUserId);
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("room:kicked", { roomId: data.roomId });
+          const targetSocket = io.sockets.sockets.get(targetSocketId);
+          if (targetSocket) targetSocket.leave(data.roomId);
+        }
+        if (roomParticipants.has(data.roomId)) {
+          roomParticipants.get(data.roomId)!.delete(state.targetUserId);
+          const updatedParts = Array.from(roomParticipants.get(data.roomId)!.values());
+          await storage.updateRoomActiveUsers(data.roomId, updatedParts.length);
+          io.to(data.roomId).emit("room:user-left", { userId: state.targetUserId, participants: updatedParts });
+          io.emit("room:participants-update", { roomId: data.roomId, participants: updatedParts });
+        }
+        const targetUser = await storage.getUser(state.targetUserId);
+        if (targetUser) {
+          emitSystemChatMsg(data.roomId, `🗳️ ${getDisplayName(targetUser)} was voted out by the room.`);
+        }
       }
     });
 
@@ -4393,6 +4466,22 @@ export async function registerRoutes(
             reason: user.restrictedReason || "Your account is temporarily restricted from room chat.",
           });
           return;
+        }
+
+        // Troll restriction: max 50 chars, 10-second cooldown
+        const userRole = roomRoles.get(data.roomId)?.get(data.userId);
+        if (userRole === "troll") {
+          if (data.text.length > 50) {
+            socket.emit("room:troll-restricted", { reason: "Your messages are limited to 50 characters as a Troll." });
+            return;
+          }
+          const now = Date.now();
+          const lastSent = trollCooldown.get(data.userId) ?? 0;
+          if (now - lastSent < 10_000) {
+            socket.emit("room:troll-restricted", { reason: `Trolls must wait ${Math.ceil((10_000 - (now - lastSent)) / 1000)}s before sending again.` });
+            return;
+          }
+          trollCooldown.set(data.userId, now);
         }
 
         if (data.privateToId && data.privateToId !== data.userId) {

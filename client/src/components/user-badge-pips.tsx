@@ -22,19 +22,20 @@ export function UserBadgePips({
           <Tooltip key={badge.id}>
             <TooltipTrigger asChild>
               <span
-                className={`${compact ? "text-[10px] w-4 h-4" : "text-[12px] w-5 h-5"} inline-flex items-center justify-center rounded-full border shadow-sm cursor-default`}
+                className={`${compact ? "text-[10px] w-[18px] h-[18px]" : "text-[12px] w-6 h-6"} inline-flex items-center justify-center rounded-full cursor-default transition-transform duration-150 hover:scale-110`}
                 style={{
-                  background: `${def.color}22`,
-                  borderColor: `${def.color}66`,
-                  boxShadow: `0 0 10px ${def.color}24`,
+                  background: `radial-gradient(ellipse at 35% 30%, ${def.color}38 0%, ${def.color}14 60%, ${def.color}08 100%)`,
+                  border: `1px solid ${def.color}50`,
+                  boxShadow: `0 2px 8px ${def.color}30, inset 0 1px 0 ${def.color}40, inset 0 -1px 0 ${def.color}18, 0 0 0 1px ${def.color}18`,
+                  filter: `drop-shadow(0 0 4px ${def.color}40)`,
                 }}
                 data-testid={`badge-pip-${badge.id}`}
               >
                 {def.emoji}
               </span>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              {def.label}
+            <TooltipContent side="top" className="text-xs font-semibold">
+              {def.emoji} {def.label}
             </TooltipContent>
           </Tooltip>
         );

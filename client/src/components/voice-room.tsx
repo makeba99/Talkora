@@ -428,10 +428,11 @@ function ParticipantCard({
                     participantRole === "owner" ? { background: "linear-gradient(135deg,hsl(var(--neu-orange-hi)/0.18),hsl(var(--neu-orange-lo)/0.12))", borderColor: "hsl(var(--neu-orange)/0.5)", color: "hsl(var(--neu-orange-hi))" } :
                     participantRole === "co-owner" ? { background: "rgba(56,189,248,0.12)", borderColor: "rgba(56,189,248,0.45)", color: "rgb(125,211,252)" } :
                     participantRole === "guest" ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.40)", color: "rgb(252,165,165)" } :
-                    { background: "rgba(148,163,184,0.08)", borderColor: "rgba(148,163,184,0.25)", color: "rgb(148,163,184)" }
+                    participantRole === "troll" ? { background: "rgba(234,179,8,0.12)", borderColor: "rgba(234,179,8,0.45)", color: "rgb(253,224,71)" } :
+                    { background: "rgba(148,163,184,0.06)", borderColor: "rgba(148,163,184,0.18)", color: "rgb(148,163,184)" }
                   }
                   data-testid={`role-room-${p.id}`}>
-                  {participantRole === "owner" ? "👑 OWNER" : participantRole === "co-owner" ? "⚡ CO-OWNER" : participantRole === "guest" ? "🔒 GUEST" : "MEMBER"}
+                  {participantRole === "owner" ? "👑 OWNER" : participantRole === "co-owner" ? "⚡ CO-OWNER" : participantRole === "guest" ? "🔒 GUEST" : participantRole === "troll" ? "🧌 TROLL" : <span className="flex items-center gap-0.5"><svg className="w-3 h-3 opacity-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>GUEST</span>}
                 </div>
                 {(() => {
                   const statusMap: Record<string, { label: string; icon: string; bg: string; border: string; color: string; glow: string }> = {
@@ -546,16 +547,31 @@ function ParticipantCard({
 
           {(isCurrentUserHost || isCurrentUserCoOwner) && !isMe && !isRoomOwner && (
             <div className="flex flex-col gap-1.5">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Set Role</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                <Button variant="outline" size="sm" onClick={() => onAssignRole && onAssignRole("guest")} className={`h-8 text-[11px] font-semibold ${participantRole === "guest" ? 'bg-red-950/60 text-red-300 border-red-700/60' : 'bg-transparent border-border text-muted-foreground hover:bg-red-950/30 hover:text-red-300 hover:border-red-800/50'}`}>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Set Role <span className="normal-case text-muted-foreground/40 font-normal">(tap active to unset)</span></p>
+              <div className="grid grid-cols-2 gap-1.5">
+                <Button variant="outline" size="sm"
+                  onClick={() => onAssignRole && onAssignRole(participantRole === "guest" ? "member" : "guest")}
+                  className={`h-8 text-[11px] font-semibold transition-all ${participantRole === "guest" ? 'bg-red-950/60 text-red-300 border-red-700/60 shadow-[inset_0_1px_0_rgba(248,113,113,0.15),0_0_10px_rgba(239,68,68,0.2)]' : 'bg-transparent border-border text-muted-foreground hover:bg-red-950/30 hover:text-red-300 hover:border-red-800/50'}`}
+                  data-testid={`button-role-guest-${p.id}`}>
                   🔒 Guest
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => onAssignRole && onAssignRole("member")} className={`h-8 text-[11px] font-semibold ${participantRole === "member" ? 'bg-slate-700/60 text-slate-200 border-slate-500/60' : 'bg-transparent border-border text-muted-foreground hover:bg-slate-800/40 hover:text-slate-200'}`}>
-                  Member
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => onAssignRole && onAssignRole("co-owner")} className={`h-8 text-[11px] font-semibold ${participantRole === "co-owner" ? 'bg-sky-900/60 text-sky-200 border-sky-600/60' : 'bg-transparent border-border text-muted-foreground hover:bg-sky-900/30 hover:text-sky-300 hover:border-sky-700/50'}`}>
+                <Button variant="outline" size="sm"
+                  onClick={() => onAssignRole && onAssignRole(participantRole === "co-owner" ? "member" : "co-owner")}
+                  className={`h-8 text-[11px] font-semibold transition-all ${participantRole === "co-owner" ? 'bg-sky-900/60 text-sky-200 border-sky-600/60 shadow-[inset_0_1px_0_rgba(125,211,252,0.15),0_0_10px_rgba(56,189,248,0.2)]' : 'bg-transparent border-border text-muted-foreground hover:bg-sky-900/30 hover:text-sky-300 hover:border-sky-700/50'}`}
+                  data-testid={`button-role-coowner-${p.id}`}>
                   ⚡ Co-Owner
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => onAssignRole && onAssignRole(participantRole === "troll" ? "member" : "troll")}
+                  className={`h-8 text-[11px] font-semibold transition-all ${participantRole === "troll" ? 'bg-yellow-950/60 text-yellow-300 border-yellow-700/60 shadow-[inset_0_1px_0_rgba(253,224,71,0.12),0_0_10px_rgba(234,179,8,0.2)]' : 'bg-transparent border-border text-muted-foreground hover:bg-yellow-950/30 hover:text-yellow-300 hover:border-yellow-800/50'}`}
+                  data-testid={`button-role-troll-${p.id}`}>
+                  🧌 Troll
+                </Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => onAssignRole && onAssignRole("member")}
+                  className={`h-8 text-[11px] font-semibold transition-all ${participantRole === "member" ? 'bg-slate-700/60 text-slate-200 border-slate-500/60 shadow-[inset_0_1px_0_rgba(148,163,184,0.15)]' : 'bg-transparent border-border text-muted-foreground hover:bg-slate-800/40 hover:text-slate-200'}`}
+                  data-testid={`button-role-member-${p.id}`}>
+                  👤 Member
                 </Button>
               </div>
             </div>
@@ -940,6 +956,17 @@ function ParticipantCard({
           >
             🔒 Guest
           </div>
+        ) : participantRole === "troll" ? (
+          <div
+            className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            style={{
+              background: "linear-gradient(145deg, rgba(161,124,0,0.88) 0%, rgba(120,90,0,0.85) 100%)",
+              boxShadow: "0 0 8px rgba(234,179,8,0.40), inset 0 1px 0 rgba(253,224,71,0.22)",
+              color: "#fde047",
+            }}
+          >
+            🧌 Troll
+          </div>
         ) : isMe ? (
           <div className="absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20">
             You
@@ -1273,6 +1300,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [participantRoles, setParticipantRoles] = useState<Record<string, string>>({});
+  const [trollVoteModal, setTrollVoteModal] = useState<{ targetUserId: string; targetName: string; assignedByName: string; totalMembers: number } | null>(null);
+  const [trollVoteProgress, setTrollVoteProgress] = useState<{ kickVotes: number; totalVoters: number } | null>(null);
+  const [myTrollVote, setMyTrollVote] = useState<boolean | null>(null);
   const [remoteVideoUserId, setRemoteVideoUserId] = useState<string | null>(null);
   const [remoteScreenShareUserId, setRemoteScreenShareUserId] = useState<string | null>(null);
   // Tracks whether the remote screen <video> has actually started painting
@@ -2914,6 +2944,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setParticipantRoles(data.roles);
     });
 
+    socket.on("room:troll-vote-start", (data: { targetUserId: string; targetName: string; assignedByName: string; totalMembers: number }) => {
+      setTrollVoteModal(data);
+      setTrollVoteProgress({ kickVotes: 0, totalVoters: Math.max(1, data.totalMembers - 1) });
+      setMyTrollVote(null);
+    });
+
+    socket.on("room:troll-vote-progress", (data: { targetUserId: string; kickVotes: number; totalVoters: number }) => {
+      setTrollVoteProgress({ kickVotes: data.kickVotes, totalVoters: data.totalVoters });
+    });
+
+    socket.on("room:troll-vote-end", (data: { targetUserId: string; kicked: boolean; reason: string }) => {
+      setTrollVoteModal(null);
+      setTrollVoteProgress(null);
+      setMyTrollVote(null);
+    });
+
+    socket.on("room:troll-restricted", (data: { reason: string }) => {
+      toast({ variant: "destructive", title: "🧌 Troll Restriction", description: data.reason, duration: 3000 });
+    });
+
     socket.on("room:updated", (updatedRoom: any) => {
       if (updatedRoom && updatedRoom.id === room.id) {
         setRoomData((prev: any) => ({ ...prev, ...updatedRoom }));
@@ -3018,6 +3068,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:youtube-state");
       socket.off("room:roles");
       socket.off("room:roles-update");
+      socket.off("room:troll-vote-start");
+      socket.off("room:troll-vote-progress");
+      socket.off("room:troll-vote-end");
+      socket.off("room:troll-restricted");
       socket.off("room:updated");
       socket.off("room:host-transferred");
       socket.off("user:blocked");
@@ -4350,6 +4404,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   };
 
   const myRole = participantRoles[user?.id || ""] || "";
+  const isTroll = myRole === "troll";
+  const TROLL_MAX_CHARS = 50;
   const canAssignRoles = isHost || myRole === "co-owner";
 
   // ----- Talk-permission gating -----
@@ -5631,6 +5687,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return;
     }
     if (!chatText.trim() || !socket || !user) return;
+    if (isTroll && chatText.trim().length > TROLL_MAX_CHARS) {
+      toast({ variant: "destructive", title: "🧌 Troll Restriction", description: `Messages limited to ${TROLL_MAX_CHARS} characters.`, duration: 2500 });
+      return;
+    }
     // Stop typing indicator immediately when the message is sent
     if (typingEmitTimerRef.current) {
       clearTimeout(typingEmitTimerRef.current);
@@ -6399,13 +6459,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   }
                 }
               }}
-              placeholder={pasteUploading ? "Uploading image..." : privateChatToId === "public" ? "Message the room…" : "Private message…"}
+              placeholder={pasteUploading ? "Uploading image..." : isTroll ? "🧌 Troll mode — 50 chars max, 10s cooldown…" : privateChatToId === "public" ? "Message the room…" : "Private message…"}
               disabled={pasteUploading}
               className="room-composer"
               data-whisper={privateChatToId !== "public"}
               rows={2}
               data-testid="input-room-chat"
+              maxLength={isTroll ? TROLL_MAX_CHARS : undefined}
             />
+            {isTroll && (
+              <div
+                className="absolute bottom-1.5 right-10 text-[9px] font-bold tabular-nums pointer-events-none"
+                style={{ color: chatText.length >= TROLL_MAX_CHARS ? "rgb(248,113,113)" : chatText.length >= TROLL_MAX_CHARS * 0.8 ? "rgb(253,224,71)" : "rgba(255,255,255,0.25)" }}
+              >
+                {chatText.length}/{TROLL_MAX_CHARS}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between gap-2">
@@ -11661,6 +11730,93 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
       <RoomOnboardingTour user={user} isOwner={isHost} />
       <PinnedSocialsButton />
+
+      {/* Troll Vote Modal */}
+      {trollVoteModal && user && trollVoteModal.targetUserId !== user.id && (
+        <div className="fixed inset-0 z-[900] flex items-center justify-center pointer-events-none">
+          <div
+            className="pointer-events-auto relative w-80 rounded-2xl border overflow-hidden animate-in fade-in zoom-in-95 duration-300"
+            style={{
+              background: "linear-gradient(145deg, rgba(26,22,10,0.97) 0%, rgba(20,18,8,0.98) 100%)",
+              border: "1px solid rgba(234,179,8,0.35)",
+              boxShadow: "0 0 0 1px rgba(234,179,8,0.10), 0 20px 60px rgba(0,0,0,0.70), 0 0 40px rgba(234,179,8,0.12), inset 0 1px 0 rgba(253,224,71,0.10)",
+            }}
+          >
+            {/* Header glow strip */}
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(234,179,8,0.6), transparent)" }} />
+            <div className="p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
+                  style={{ background: "radial-gradient(circle, rgba(234,179,8,0.20) 0%, rgba(234,179,8,0.06) 100%)", border: "1px solid rgba(234,179,8,0.40)", boxShadow: "0 0 12px rgba(234,179,8,0.30), inset 0 1px 0 rgba(253,224,71,0.15)" }}
+                >
+                  🧌
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-yellow-400/70 mb-0.5">Troll Detected</p>
+                  <p className="text-sm font-bold text-white leading-snug">
+                    <span className="text-yellow-300">{trollVoteModal.targetName}</span> was marked as Troll
+                  </p>
+                  <p className="text-[10px] text-white/40 mt-0.5">by {trollVoteModal.assignedByName} · Vote to kick them?</p>
+                </div>
+              </div>
+
+              {trollVoteProgress && (
+                <div className="mb-4">
+                  <div className="flex justify-between text-[10px] text-white/50 mb-1.5 font-medium">
+                    <span>Kick votes</span>
+                    <span className="text-yellow-400 font-bold">{trollVoteProgress.kickVotes} / {Math.ceil(trollVoteProgress.totalVoters / 2 + 0.5)} needed</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)", boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)" }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, (trollVoteProgress.kickVotes / Math.max(1, trollVoteProgress.totalVoters)) * 100)}%`,
+                        background: "linear-gradient(90deg, rgba(234,179,8,0.8), rgba(253,224,71,0.9))",
+                        boxShadow: "0 0 8px rgba(234,179,8,0.5)",
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-white/30 mt-1">{trollVoteProgress.totalVoters} eligible voter{trollVoteProgress.totalVoters !== 1 ? "s" : ""} · majority required</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    const newVote = myTrollVote === true ? null : true;
+                    setMyTrollVote(newVote);
+                    socket?.emit("room:troll-vote", { roomId: room.id, voterId: user.id, kick: newVote === true });
+                  }}
+                  className="h-10 rounded-xl text-[12px] font-bold transition-all active:scale-95"
+                  style={myTrollVote === true
+                    ? { background: "linear-gradient(145deg, rgba(234,179,8,0.30), rgba(161,124,0,0.25))", border: "1px solid rgba(234,179,8,0.60)", color: "#fde047", boxShadow: "inset 0 1px 0 rgba(253,224,71,0.15), 0 0 12px rgba(234,179,8,0.25)" }
+                    : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }
+                  }
+                  data-testid="button-troll-vote-kick"
+                >
+                  👢 Kick {myTrollVote === true ? "✓" : ""}
+                </button>
+                <button
+                  onClick={() => {
+                    setMyTrollVote(false);
+                    socket?.emit("room:troll-vote", { roomId: room.id, voterId: user.id, kick: false });
+                  }}
+                  className="h-10 rounded-xl text-[12px] font-bold transition-all active:scale-95"
+                  style={myTrollVote === false
+                    ? { background: "rgba(148,163,184,0.14)", border: "1px solid rgba(148,163,184,0.40)", color: "rgb(203,213,225)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)" }
+                    : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.40)" }
+                  }
+                  data-testid="button-troll-vote-stay"
+                >
+                  🛡️ Stay
+                </button>
+              </div>
+              <p className="text-[9px] text-white/20 text-center mt-3">Poll expires in 60 seconds</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
