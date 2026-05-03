@@ -345,7 +345,7 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
     const retry3 = window.setTimeout(update, 520);
     window.addEventListener("resize", update, { passive: true });
     window.addEventListener("scroll", update, { capture: true, passive: true });
-    const interval = window.setInterval(update, 700);
+    const interval = window.setInterval(() => requestAnimationFrame(update), 700);
     return () => {
       window.clearTimeout(retry1);
       window.clearTimeout(retry2);

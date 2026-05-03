@@ -135,7 +135,8 @@ export default defineConfig({
           if (id.includes("react-hook-form") || id.includes("@hookform")) {
             return "form-vendor";
           }
-          if (id.includes("lucide-react") || id.includes("react-icons")) return "icons-vendor";
+          if (id.includes("lucide-react")) return "icons-vendor";
+          if (id.includes("react-icons")) return "social-icons-vendor";
           if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "socket-vendor";
           if (id.includes("date-fns") || id.includes("zod") || id.includes("zod-validation-error")) return "forms-vendor";
           if (id.includes("recharts") || id.includes("d3-")) return "charts-vendor";

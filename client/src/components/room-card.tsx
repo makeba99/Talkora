@@ -792,6 +792,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         background: borderGradient,
         boxShadow: outerGlow,
         position: "relative",
+        contain: "layout style",
       }}
       data-testid={`card-room-${room.id}`}
     >
@@ -1027,6 +1028,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             height={circleSize}
                             loading={isLcpCandidate ? "eager" : "lazy"}
                             decoding={isLcpCandidate ? "sync" : "async"}
+                            fetchpriority={isLcpCandidate ? "high" : undefined}
                             className="rounded-2xl"
                           />;
                         })()}

@@ -341,7 +341,7 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
     const retry3 = window.setTimeout(update, 480);
     window.addEventListener("resize", update, { passive: true });
     window.addEventListener("scroll", update, { capture: true, passive: true });
-    const interval = window.setInterval(update, 600);
+    const interval = window.setInterval(() => requestAnimationFrame(update), 600);
     return () => {
       window.clearTimeout(retry1);
       window.clearTimeout(retry2);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense, useDeferredValue, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense, useDeferredValue, useMemo, startTransition } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { Input } from "@/components/ui/input";
@@ -683,35 +683,51 @@ export default function Lobby() {
       if (isMobile || reduceMotion) return;
     }
     const sampleRoomIds = SAMPLE_ROOMS.map((r) => r.id);
-    const interval = setInterval(() => {
-      const roll = Math.random();
-      const roomId = sampleRoomIds[Math.floor(Math.random() * sampleRoomIds.length)];
-      const room = SAMPLE_ROOMS.find((r) => r.id === roomId);
-      if (!room) return;
-
-      if (roll < 0.45) {
-        setLiveVoteCounts((prev) => {
-          const curr = prev[roomId] ?? BASE_SAMPLE_VOTE_COUNTS[roomId] ?? 0;
-          const delta = Math.floor(Math.random() * 3) + 1;
-          const direction = Math.random() > 0.35 ? 1 : -1;
-          return { ...prev, [roomId]: Math.max(1, curr + direction * delta) };
-        });
-      } else if (roll < 0.82) {
-        setLiveParticipants((prev) => {
-          const currParts = prev[roomId] ?? BASE_SAMPLE_PARTICIPANTS[roomId] ?? [];
-          const allPool = ALL_SAMPLE_USERS.filter((u) => !currParts.some((p) => p.id === u.id));
-          if (currParts.length < room.maxUsers && allPool.length > 0 && Math.random() > 0.4) {
-            const newUser = allPool[Math.floor(Math.random() * allPool.length)];
-            return { ...prev, [roomId]: [...currParts, newUser] };
-          } else if (currParts.length > 1) {
-            const removeIdx = Math.floor(Math.random() * (currParts.length - 1)) + 1;
-            return { ...prev, [roomId]: currParts.filter((_, i) => i !== removeIdx) };
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const w = window as any;
+    // Defer the interval start until the browser is idle (up to 4s).
+    // This keeps the orbit animation off the critical LCP path entirely —
+    // Lighthouse's mobile simulation measures LCP during the first ~3s, so
+    // any state updates from this interval would contribute to long tasks.
+    const idle = w.requestIdleCallback ?? ((cb: () => void, opts: any) => setTimeout(cb, opts?.timeout ?? 1));
+    const idleHandle = idle(() => {
+      interval = setInterval(() => {
+        const roll = Math.random();
+        const roomId = sampleRoomIds[Math.floor(Math.random() * sampleRoomIds.length)];
+        const room = SAMPLE_ROOMS.find((r) => r.id === roomId);
+        if (!room) return;
+        // Wrap in startTransition so React treats these as low-priority
+        // re-renders — the browser can yield to higher-priority work (input,
+        // paint) mid-reconcile instead of blocking for the full tree update.
+        startTransition(() => {
+          if (roll < 0.45) {
+            setLiveVoteCounts((prev) => {
+              const curr = prev[roomId] ?? BASE_SAMPLE_VOTE_COUNTS[roomId] ?? 0;
+              const delta = Math.floor(Math.random() * 3) + 1;
+              const direction = Math.random() > 0.35 ? 1 : -1;
+              return { ...prev, [roomId]: Math.max(1, curr + direction * delta) };
+            });
+          } else if (roll < 0.82) {
+            setLiveParticipants((prev) => {
+              const currParts = prev[roomId] ?? BASE_SAMPLE_PARTICIPANTS[roomId] ?? [];
+              const allPool = ALL_SAMPLE_USERS.filter((u) => !currParts.some((p) => p.id === u.id));
+              if (currParts.length < room.maxUsers && allPool.length > 0 && Math.random() > 0.4) {
+                const newUser = allPool[Math.floor(Math.random() * allPool.length)];
+                return { ...prev, [roomId]: [...currParts, newUser] };
+              } else if (currParts.length > 1) {
+                const removeIdx = Math.floor(Math.random() * (currParts.length - 1)) + 1;
+                return { ...prev, [roomId]: currParts.filter((_, i) => i !== removeIdx) };
+              }
+              return prev;
+            });
           }
-          return prev;
         });
-      }
-    }, 4500 + Math.random() * 3000);
-    return () => clearInterval(interval);
+      }, 4500 + Math.random() * 3000);
+    }, { timeout: 4000 });
+    return () => {
+      if (w.cancelIdleCallback) w.cancelIdleCallback(idleHandle);
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   // SSE: subscribe to the room-list push stream so the 15 s polling interval

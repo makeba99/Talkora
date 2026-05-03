@@ -21,10 +21,14 @@ const Avatar = React.forwardRef<
 ))
 Avatar.displayName = AvatarPrimitive.Root.displayName
 
+type AvatarImageProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> & {
+  fetchpriority?: "high" | "low" | "auto";
+};
+
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, src, onError, ...props }, ref) => {
+  AvatarImageProps
+>(({ className, src, onError, fetchpriority, ...props }, ref) => {
   const [hasError, setHasError] = React.useState(false)
 
   React.useEffect(() => {
@@ -42,6 +46,7 @@ const AvatarImage = React.forwardRef<
         setHasError(true)
         onError?.(event)
       }}
+      {...(fetchpriority ? { fetchpriority } : {})}
       {...props}
     />
   )
