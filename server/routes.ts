@@ -76,7 +76,7 @@ function deleteYtVotes(roomId: string, hostId: string) {
 type YtQueueItem = { id: string; videoId: string; title?: string; thumbnail?: string; addedBy: string };
 const roomYoutubeQueue = new Map<string, YtQueueItem[]>();
 // Per-host movie watch-party state: roomId → Map<hostId, MovieHostState>
-type MovieHostState = { movieId: string; movieTitle: string; posterPath: string; startedBy: string; startedAt: number };
+type MovieHostState = { movieId: string; movieTitle: string; posterPath: string; startedBy: string; startedAt: number; playing: boolean; lastTime: number; lastTs: number };
 const roomMovieState = new Map<string, Map<string, MovieHostState>>();
 function getMovieHost(roomId: string, hostId: string) { return roomMovieState.get(roomId)?.get(hostId); }
 function setMovieHost(roomId: string, hostId: string, state: MovieHostState) {
@@ -4218,8 +4218,19 @@ export async function registerRoutes(
       }
 
       // Per-host movie snapshot: tell the newcomer about every active movie host
+      // Include computed currentTime so the newcomer starts from where the host actually is
       for (const { hostId, state: mState } of listMovieHosts(roomId)) {
-        socket.emit("room:movie", { hostId, movieId: mState.movieId, movieTitle: mState.movieTitle, posterPath: mState.posterPath, startedBy: mState.startedBy, startedAt: mState.startedAt });
+        const elapsed = mState.playing ? Math.max(0, (Date.now() - mState.lastTs) / 1000) : 0;
+        socket.emit("room:movie", {
+          hostId,
+          movieId: mState.movieId,
+          movieTitle: mState.movieTitle,
+          posterPath: mState.posterPath,
+          startedBy: mState.startedBy,
+          startedAt: mState.startedAt,
+          currentTime: mState.lastTime + elapsed,
+          playing: mState.playing,
+        });
       }
 
       const bookState = roomBookState.get(roomId);
@@ -4860,6 +4871,9 @@ export async function registerRoutes(
           posterPath: data.posterPath || "",
           startedBy: currentUserId,
           startedAt: nowTs,
+          playing: true,
+          lastTime: 0,
+          lastTs: nowTs,
         });
         io.to(data.roomId).emit("room:movie", {
           hostId: currentUserId,
@@ -4882,6 +4896,28 @@ export async function registerRoutes(
         userId: currentUserId,
         hostId: data.hostId,
         watching: data.watching,
+      });
+    });
+
+    // Real-time movie playback sync — mirrors room:youtube-state pattern.
+    // Only the host emits this; watchers receive and resync their iframe.
+    socket.on("room:movie-state", (data: { roomId: string; action: string; time?: number; ts?: number }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const mState = getMovieHost(data.roomId, currentUserId);
+      if (!mState) return;
+      const t = typeof data.time === "number" ? data.time : mState.lastTime;
+      mState.lastTime = t;
+      mState.lastTs = Date.now();
+      if (data.action === "play") mState.playing = true;
+      else if (data.action === "pause") mState.playing = false;
+      socket.to(data.roomId).emit("room:movie-state", {
+        hostId: currentUserId,
+        action: data.action,
+        time: t,
+        ts: data.ts ?? Date.now(),
+        from: currentUserId,
       });
     });
 

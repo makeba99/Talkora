@@ -1242,6 +1242,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [movieWatchersByHost, setMovieWatchersByHost] = useState<Map<string, Set<string>>>(new Map());
   const [movieHostStartedAt, setMovieHostStartedAt] = useState<Map<string, number>>(new Map());
   const [movieStartOffset, setMovieStartOffset] = useState<number>(0);
+  const [movieCurrentTimeByHost, setMovieCurrentTimeByHost] = useState<Map<string, number>>(new Map());
+  const [moviePlayingByHost, setMoviePlayingByHost] = useState<Map<string, boolean>>(new Map());
+  const [movieHostPlaying, setMovieHostPlaying] = useState(true);
+  const [movieSyncKey, setMovieSyncKey] = useState(0);
   const [popularMovies, setPopularMovies] = useState<any[]>([]);
   const [popularMoviesLoading, setPopularMoviesLoading] = useState(false);
   const dailyModernMovieRef = useRef<{ dayKey: string; movieId: string | null }>({ dayKey: "", movieId: null });
@@ -1330,6 +1334,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const youtubeSearchTimeout = useRef<NodeJS.Timeout | null>(null);
   const movieStartedByRef = useRef<string | null>(null);
   const movieSearchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const movieHostTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const movieHostElapsedRef = useRef<number>(0);
+  const movieHostPlayingRef2 = useRef<boolean>(true);
   const localStream = useRef<MediaStream | null>(null);
   const selectedAudioDeviceIdRef = useRef(selectedAudioDeviceId);
   const videoStream = useRef<MediaStream | null>(null);
@@ -2675,7 +2682,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       );
     });
 
-    socket.on("room:movie", (data: { hostId?: string; movieId: string | null; movieTitle?: string; posterPath?: string; startedBy?: string; startedAt?: number }) => {
+    socket.on("room:movie", (data: { hostId?: string; movieId: string | null; movieTitle?: string; posterPath?: string; startedBy?: string; startedAt?: number; currentTime?: number; playing?: boolean }) => {
       const hostId = data.hostId || data.startedBy || "";
       if (!hostId) return;
       if (data.movieId) {
@@ -2686,6 +2693,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         });
         if (data.startedAt) {
           setMovieHostStartedAt(prev => { const next = new Map(prev); next.set(hostId, data.startedAt as number); return next; });
+        }
+        if (typeof data.currentTime === "number") {
+          setMovieCurrentTimeByHost(prev => { const next = new Map(prev); next.set(hostId, data.currentTime!); return next; });
+        }
+        if (typeof data.playing === "boolean") {
+          setMoviePlayingByHost(prev => { const next = new Map(prev); next.set(hostId, data.playing!); return next; });
         }
         if (hostId === user.id) {
           setShowYoutube(false);
@@ -2711,6 +2724,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           setMovieStartedBy(null);
           setShowMovie(false);
         }
+      }
+    });
+
+    // Real-time movie sync — mirrors room:youtube-state. Host emits, watchers resync.
+    socket.on("room:movie-state", (data: { hostId: string; action: string; time?: number; from: string }) => {
+      if (data.from === user.id) return;
+      // Update stored state for this host
+      if (typeof data.time === "number") {
+        setMovieCurrentTimeByHost(prev => { const n = new Map(prev); n.set(data.hostId, data.time!); return n; });
+      }
+      setMoviePlayingByHost(prev => { const n = new Map(prev); n.set(data.hostId, data.action === "play"); return n; });
+      // If we're actively watching this host, resync our iframe
+      if (movieStartedByRef.current === data.hostId && typeof data.time === "number") {
+        const newOffset = Math.floor(data.time);
+        setMovieStartOffset(newOffset);
+        setMovieSyncKey(k => k + 1);
       }
     });
 
@@ -3071,6 +3100,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       typingExpireTimers.current = {};
       socket.off("room:reaction-update");
       socket.off("room:movie");
+      socket.off("room:movie-state");
       socket.off("room:movie-watchers-update");
       socket.off("room:youtube");
       socket.off("room:youtube-watchers-update");
@@ -5317,6 +5347,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setActiveMoviePoster(movie.poster || "");
     setMovieStartedBy(user?.id || null);
     setMovieStartOffset(0);
+    setMovieHostPlaying(true);
     setShowMovie(true);
     setMovieHosts(prev => {
       const next = new Map(prev);
@@ -5324,6 +5355,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return next;
     });
     socket?.emit("room:movie", { roomId: room.id, movieId, movieTitle: movie.title, posterPath: movie.poster || "" });
+    // Start host-side elapsed timer for sync
+    movieHostElapsedRef.current = 0;
+    movieHostPlayingRef2.current = true;
+    if (movieHostTimerRef.current) clearInterval(movieHostTimerRef.current);
+    movieHostTimerRef.current = setInterval(() => {
+      if (movieHostPlayingRef2.current) movieHostElapsedRef.current += 1;
+    }, 1000);
     setMovieSearch("");
     setMovieResults([]);
     toast({ title: "🎬 Now Watching", description: movie.title });
@@ -5336,6 +5374,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setActiveMoviePoster("");
     setMovieStartedBy(null);
     setShowMovie(false);
+    if (movieHostTimerRef.current) { clearInterval(movieHostTimerRef.current); movieHostTimerRef.current = null; }
+    movieHostElapsedRef.current = 0;
+    movieHostPlayingRef2.current = false;
     if (wasMyOwnHost) {
       setMovieHosts(prev => {
         const next = new Map(prev);
@@ -5343,6 +5384,31 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         return next;
       });
       socket?.emit("room:movie", { roomId: room.id, movieId: null });
+    }
+  };
+
+  const handleMoviePause = () => {
+    movieHostPlayingRef2.current = false;
+    setMovieHostPlaying(false);
+    socket?.emit("room:movie-state", { roomId: room.id, action: "pause", time: movieHostElapsedRef.current, ts: Date.now() });
+  };
+
+  const handleMoviePlay = () => {
+    movieHostPlayingRef2.current = true;
+    setMovieHostPlaying(true);
+    const t = movieHostElapsedRef.current;
+    socket?.emit("room:movie-state", { roomId: room.id, action: "play", time: t, ts: Date.now() });
+    // Reload iframe from current position so host also starts fresh at this timestamp
+    setMovieStartOffset(t);
+    setMovieSyncKey(k => k + 1);
+  };
+
+  const handleMovieResync = () => {
+    if (!movieStartedBy) return;
+    const currentTime = movieCurrentTimeByHost.get(movieStartedBy);
+    if (typeof currentTime === "number") {
+      setMovieStartOffset(Math.floor(currentTime));
+      setMovieSyncKey(k => k + 1);
     }
   };
 
@@ -5481,8 +5547,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (isClickingOther && movieHosts.has(peerId) && !showMovie) {
       const info = movieHosts.get(peerId);
       if (info) {
+        // Prefer server-computed currentTime; fall back to elapsed since startedAt
+        const _serverTime = movieCurrentTimeByHost.get(peerId);
         const _startedAt = movieHostStartedAt.get(peerId);
-        const _offset = _startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0;
+        const _offset = typeof _serverTime === "number"
+          ? Math.floor(_serverTime)
+          : (_startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0);
         setShowYoutube(false);
         setMiniPlayerMode(false);
         setActiveMovieId(info.movieId);
@@ -5490,6 +5560,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setActiveMoviePoster(info.posterPath);
         setMovieStartedBy(peerId);
         setMovieStartOffset(_offset);
+        setMovieSyncKey(k => k + 1);
         setShowMovie(true);
         socket?.emit("room:movie-watching", { roomId: room.id, hostId: peerId, watching: true });
       }
@@ -7118,11 +7189,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               return (
                 <button
                   onClick={() => {
+                    const _serverTime = movieStartedBy ? movieCurrentTimeByHost.get(movieStartedBy) : undefined;
                     const _startedAt = movieStartedBy ? movieHostStartedAt.get(movieStartedBy) : undefined;
-                    const _offset = _startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0;
+                    const _offset = typeof _serverTime === "number"
+                      ? Math.floor(_serverTime)
+                      : (_startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0);
                     setShowYoutube(false);
                     setMiniPlayerMode(false);
                     setMovieStartOffset(_offset);
+                    setMovieSyncKey(k => k + 1);
                     setShowMovie(true);
                     socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: true });
                   }}
@@ -7284,8 +7359,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         </div>
                         <button
                           onClick={() => {
+                            const _serverTime = movieCurrentTimeByHost.get(hostId);
                             const _startedAt = movieHostStartedAt.get(hostId);
-                            const _offset = _startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0;
+                            const _offset = typeof _serverTime === "number"
+                              ? Math.floor(_serverTime)
+                              : (_startedAt ? Math.floor((Date.now() - _startedAt) / 1000) : 0);
                             setShowYoutube(false);
                             setMiniPlayerMode(false);
                             setActiveMovieId(info.movieId);
@@ -7293,6 +7371,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             setActiveMoviePoster(info.posterPath);
                             setMovieStartedBy(hostId);
                             setMovieStartOffset(_offset);
+                            setMovieSyncKey(k => k + 1);
                             setShowMovie(true);
                             socket?.emit("room:movie-watching", { roomId: room.id, hostId, watching: true });
                           }}
@@ -9172,14 +9251,55 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </div>
               {/* Internet Archive embed — confirmed embeddable, no Cloudflare blocking */}
               <iframe
-                key={`${activeMovieId}_${movieStartOffset}`}
-                src={`https://archive.org/embed/${encodeURIComponent(activeMovieId)}${movieStartOffset > 0 ? `?start=${movieStartOffset}` : ""}`}
+                key={`${activeMovieId}_${movieStartOffset}_${movieSyncKey}`}
+                src={`https://archive.org/embed/${encodeURIComponent(activeMovieId)}${movieStartOffset > 0 ? `?start=${movieStartOffset}&autoplay=1` : "?autoplay=1"}`}
                 title={activeMovieTitle}
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
                 className="w-full h-full border-0"
                 data-testid="iframe-movie-player"
               />
+
+              {/* Host sync controls — play/pause so watchers stay in sync */}
+              {user?.id === movieStartedBy && (
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-25 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full border border-white/15 px-3 py-1.5 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-auto" data-testid="movie-host-sync-controls">
+                  <span className="text-white/50 text-[10px] font-medium select-none">Sync controls</span>
+                  {movieHostPlaying ? (
+                    <button
+                      type="button"
+                      onClick={handleMoviePause}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-medium transition-colors"
+                      data-testid="button-movie-host-pause"
+                      title="Pause for all watchers"
+                    >
+                      <span className="w-3 h-3 flex items-center justify-center">⏸</span> Pause All
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleMoviePlay}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/80 hover:bg-violet-500 text-white text-xs font-medium transition-colors"
+                      data-testid="button-movie-host-play"
+                      title="Resume for all watchers"
+                    >
+                      <span className="w-3 h-3 flex items-center justify-center">▶</span> Resume All
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Watcher resync button */}
+              {user?.id !== movieStartedBy && (
+                <button
+                  type="button"
+                  onClick={handleMovieResync}
+                  className="absolute bottom-8 left-3 z-25 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 hover:bg-black/90 border border-white/15 text-white text-xs font-medium transition-colors opacity-0 hover:opacity-100 backdrop-blur-sm"
+                  data-testid="button-movie-resync"
+                  title="Jump to where the host currently is"
+                >
+                  ↺ Resync
+                </button>
+              )}
 
               {/* Reactions toggle + collapsible emoji picker — hidden by default, tap smiley to reveal */}
               <div
