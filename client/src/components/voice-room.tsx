@@ -433,11 +433,26 @@ function ParticipantCard({
                   data-testid={`role-room-${p.id}`}>
                   {participantRole === "owner" ? "👑 OWNER" : participantRole === "co-owner" ? "⚡ CO-OWNER" : participantRole === "guest" ? "🔒 GUEST" : "MEMBER"}
                 </div>
-                <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit" data-testid={`status-room-presence-${p.id}`}>
-                  <span className={roomPresenceStatus === "busy" ? "text-rose-300" : roomPresenceStatus === "afk" ? "text-sky-300" : roomPresenceStatus === "brb" ? "text-amber-300" : roomPresenceStatus === "zz" ? "text-indigo-300" : "text-zinc-300"}>
-                    {roomPresenceStatus === "busy" ? "BUSY" : roomPresenceStatus === "afk" ? "AFK" : roomPresenceStatus === "brb" ? "BRB" : roomPresenceStatus === "zz" ? "ZZ" : "ONLINE"}
-                  </span>
-                </div>
+                {(() => {
+                  const statusMap: Record<string, { label: string; icon: string; bg: string; border: string; color: string; glow: string }> = {
+                    online: { label: "Online",   icon: "●", bg: "rgba(16,185,129,0.12)",  border: "rgba(16,185,129,0.45)",  color: "rgb(110,231,183)", glow: "0 0 8px rgba(16,185,129,0.35)" },
+                    busy:   { label: "Busy",     icon: "⛔", bg: "rgba(239,68,68,0.12)",   border: "rgba(239,68,68,0.45)",   color: "rgb(252,165,165)", glow: "0 0 8px rgba(239,68,68,0.35)" },
+                    brb:    { label: "BRB",      icon: "⏱", bg: "rgba(245,158,11,0.12)",  border: "rgba(245,158,11,0.45)",  color: "rgb(252,211,77)",  glow: "0 0 8px rgba(245,158,11,0.35)" },
+                    afk:    { label: "Away",     icon: "👤", bg: "rgba(56,189,248,0.12)",  border: "rgba(56,189,248,0.45)",  color: "rgb(125,211,252)", glow: "0 0 8px rgba(56,189,248,0.35)" },
+                    zz:     { label: "Sleeping", icon: "💤", bg: "rgba(99,102,241,0.12)",  border: "rgba(99,102,241,0.45)",  color: "rgb(165,180,252)", glow: "0 0 8px rgba(99,102,241,0.35)" },
+                  };
+                  const s = statusMap[roomPresenceStatus] ?? statusMap.online;
+                  return (
+                    <div
+                      className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full w-fit select-none"
+                      style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color, boxShadow: s.glow }}
+                      data-testid={`status-room-presence-${p.id}`}
+                    >
+                      <span className={roomPresenceStatus === "online" ? "animate-pulse" : ""}>{s.icon}</span>
+                      {s.label}
+                    </div>
+                  );
+                })()}
                 {isMe && (
                   <div className="space-y-2 mt-2">
                     <Label htmlFor={`room-presence-status-${p.id}`} className="text-xs text-muted-foreground">
@@ -454,11 +469,11 @@ function ParticipantCard({
                         <SelectValue placeholder="Set your status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="brb">BRB</SelectItem>
-                        <SelectItem value="afk">AFK</SelectItem>
-                        <SelectItem value="busy">Busy</SelectItem>
-                        <SelectItem value="zz">ZZ (Sleeping)</SelectItem>
+                        <SelectItem value="online"><span className="flex items-center gap-2"><span className="text-emerald-400 animate-pulse">●</span> Online</span></SelectItem>
+                        <SelectItem value="brb"><span className="flex items-center gap-2"><span>⏱</span> BRB — Be Right Back</span></SelectItem>
+                        <SelectItem value="afk"><span className="flex items-center gap-2"><span>👤</span> Away</span></SelectItem>
+                        <SelectItem value="busy"><span className="flex items-center gap-2"><span>⛔</span> Busy — Do Not Disturb</span></SelectItem>
+                        <SelectItem value="zz"><span className="flex items-center gap-2"><span>💤</span> Sleeping</span></SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -805,21 +820,27 @@ function ParticipantCard({
             </div>
         </div>
 
-        {roomPresenceStatus && roomPresenceStatus !== "online" && (
-          <div className="absolute top-1 left-1 z-20 pointer-events-none">
-            <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm shadow-md ${
-              roomPresenceStatus === "busy" ? "bg-rose-500/90 text-white" :
-              roomPresenceStatus === "afk" ? "bg-sky-500/90 text-white" :
-              roomPresenceStatus === "brb" ? "bg-amber-500/90 text-white" :
-              roomPresenceStatus === "zz" ? "bg-indigo-500/90 text-white" : ""
-            }`}>
-              {roomPresenceStatus === "busy" ? "BUSY" :
-               roomPresenceStatus === "afk" ? "AFK" :
-               roomPresenceStatus === "brb" ? "BRB" :
-               roomPresenceStatus === "zz" ? "ZZ" : ""}
+        {(() => {
+          const overlayMap: Record<string, { icon: string; label: string; bg: string; border: string; color: string; shadow: string }> = {
+            busy:   { icon: "⛔", label: "BUSY",     bg: "rgba(20,0,0,0.72)",    border: "rgba(239,68,68,0.55)",   color: "rgb(252,165,165)", shadow: "0 2px 10px rgba(239,68,68,0.4)" },
+            afk:    { icon: "👤", label: "AWAY",     bg: "rgba(0,10,20,0.72)",   border: "rgba(56,189,248,0.55)",  color: "rgb(125,211,252)", shadow: "0 2px 10px rgba(56,189,248,0.4)" },
+            brb:    { icon: "⏱", label: "BRB",      bg: "rgba(20,12,0,0.72)",   border: "rgba(245,158,11,0.55)",  color: "rgb(252,211,77)",  shadow: "0 2px 10px rgba(245,158,11,0.4)" },
+            zz:     { icon: "💤", label: "ZZ",       bg: "rgba(8,4,24,0.72)",    border: "rgba(99,102,241,0.55)",  color: "rgb(165,180,252)", shadow: "0 2px 10px rgba(99,102,241,0.4)" },
+          };
+          const o = overlayMap[roomPresenceStatus];
+          if (!o) return null;
+          return (
+            <div className="absolute top-1 left-1 z-20 pointer-events-none">
+              <div
+                className="inline-flex items-center gap-0.5 text-[8px] font-extrabold tracking-widest px-1.5 py-0.5 rounded-full backdrop-blur-sm"
+                style={{ background: o.bg, border: `1px solid ${o.border}`, color: o.color, boxShadow: o.shadow }}
+              >
+                <span>{o.icon}</span>
+                <span>{o.label}</span>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {(showScreenIcon || showYoutubeIcon || showBookIcon || isWatcher || showMovieIcon || isMovieWatcherBadge) && (
           <div className="absolute top-1 right-8 z-20 flex items-center gap-0.5 animate-pulse drop-shadow-md" onClick={(e) => e.stopPropagation()}>
