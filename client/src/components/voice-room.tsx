@@ -4692,9 +4692,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: cameraFacing },
-      });
+      // Mobile-safe camera open: use a fallback chain because combining
+      // facingMode + width/height as hard constraints throws OverconstrainedError
+      // on iOS Safari and many Android browsers (especially for the front camera).
+      // 1. Full constraints with facingMode as ideal (never hard-fails)
+      // 2. facingMode only, no size
+      // 3. Any video (last resort)
+      let stream: MediaStream | null = null;
+      const attempts: MediaTrackConstraints[] = [
+        { facingMode: { ideal: cameraFacing }, width: { ideal: 640 }, height: { ideal: 480 } },
+        { facingMode: { ideal: cameraFacing } },
+        {},
+      ];
+      let lastErr: unknown;
+      for (const videoConstraints of attempts) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+          break;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (!stream) throw lastErr;
+
       videoStream.current = stream;
       if (activeYoutubeId) {
         handleStopYoutube();
@@ -4727,9 +4747,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           }
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Camera access failed:", err);
-      toast({ title: "Camera access denied", variant: "destructive" });
+      const isPermission = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
+      const isNotFound = err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError";
+      toast({
+        title: "Camera unavailable",
+        description: isPermission
+          ? "Allow camera access in your browser settings and try again."
+          : isNotFound
+          ? "No camera found on this device."
+          : "Could not open camera. Try reloading or check your browser permissions.",
+        variant: "destructive",
+      });
     }
   };
 
