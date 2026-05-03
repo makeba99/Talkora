@@ -2185,7 +2185,7 @@ export default function Lobby() {
           ) : (
             <section aria-label="Voice rooms">
             <h2 className="sr-only">Voice rooms</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 xl:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-1 gap-x-2 lg:gap-y-1.5 xl:gap-y-2">
               {(() => {
                 /* PERF: mergedRoomParticipants is now a top-level useMemo so it
                  * is only recomputed when liveParticipants or roomParticipants
