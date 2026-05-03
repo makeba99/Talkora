@@ -9639,6 +9639,25 @@ html.neomorphic-light .pinned-socials-link {
     width: 32px;
     height: 16px;
   }
+  .hero-orb,
+  .orbit-ring-outer,
+  .orbit-ring-inner,
+  .onboarding-card,
+  .orbit-popover-content,
+  .ai-float,
+  .holo-ring-rotate,
+  .holo-platform {
+    animation: none !important;
+  }
+  .hero-orb {
+    filter: none;
+  }
+  .onboarding-card,
+  .orbit-popover-content,
+  .talk-mode-badge {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 /* ============================================================================
