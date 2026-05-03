@@ -1789,8 +1789,24 @@ export async function registerRoutes(
       const gutendex = await fetchJson(gutendexUrl);
       const books = (gutendex?.results || []).slice(0, 24);
 
-      // If we have plenty of free books or no query, just return them.
-      if (!query || books.length >= 5 || !wantSuggestions) {
+      // If no query — also fetch Open Library trending so users see modern books
+      if (!query) {
+        const trending = await fetchJson(`https://openlibrary.org/trending/weekly.json?limit=16`);
+        const trendingBooks = (trending?.works || []).slice(0, 16).map((w: any) => ({
+          key: w.key,
+          title: w.title,
+          author: Array.isArray(w.author_name) ? w.author_name.join(", ") : null,
+          year: w.first_publish_year || null,
+          coverUrl: w.cover_i ? `https://covers.openlibrary.org/b/id/${w.cover_i}-M.jpg` : null,
+          openLibraryUrl: `https://openlibrary.org${w.key}`,
+          ratingsAvg: w.ratings_average || null,
+          ratingsCount: w.ratings_count || null,
+        }));
+        return res.json({ query, books, openLibrary: trendingBooks, audiobooks: [], videos: [] });
+      }
+
+      // If we have plenty of free books just return them.
+      if (books.length >= 5 || !wantSuggestions) {
         return res.json({ query, books, openLibrary: [], audiobooks: [], videos: [] });
       }
 
@@ -2265,7 +2281,7 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
-      const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission } = req.body;
+      const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission, chatPermission } = req.body;
       const updateData: any = {};
       if (title) updateData.title = title;
       if (language) updateData.language = language;
@@ -2290,6 +2306,9 @@ export async function registerRoutes(
       }
       if (youtubePermission !== undefined && ["everyone", "members", "co_owners", "owner_only"].includes(youtubePermission)) {
         updateData.youtubePermission = youtubePermission;
+      }
+      if (chatPermission !== undefined && ["everyone", "members", "co_owners", "owner_only"].includes(chatPermission)) {
+        updateData.chatPermission = chatPermission;
       }
 
       const updated = await storage.updateRoom(roomId, updateData);
@@ -2321,6 +2340,9 @@ export async function registerRoutes(
         v === "members" ? "members only (no guests or trolls)" :
         v === "co_owners" ? "hosts & co-hosts only" :
         v === "owner_only" ? "host only" : v;
+      if (updateData.chatPermission && updateData.chatPermission !== (room as any).chatPermission) {
+        emitSystemChatMsg(data.roomId, `💬 ${hostName} set who can send messages to ${labelFeat(updateData.chatPermission)}.`);
+      }
       if (updateData.talkPermission && updateData.talkPermission !== room.talkPermission) {
         emitSystemChatMsg(roomId, `🎙️ ${hostName} set who can use the mic to ${labelTalk(updateData.talkPermission)}.`);
       }
@@ -4502,8 +4524,30 @@ export async function registerRoutes(
           return;
         }
 
-        // Troll restriction: max 50 chars, 10-second cooldown
+        // Chat permission check
         const userRole = roomRoles.get(data.roomId)?.get(data.userId);
+        const room = await storage.getRoom(data.roomId);
+        if (room) {
+          const chatPerm = (room as any).chatPermission || "everyone";
+          const isRoomOwner = room.ownerId === data.userId;
+          if (!isRoomOwner && chatPerm !== "everyone") {
+            const isCoOwner = userRole === "co-owner";
+            if (chatPerm === "owner_only") {
+              socket.emit("room:chat-blocked", { reason: "Only the host can send messages in this room." });
+              return;
+            }
+            if (chatPerm === "co_owners" && !isCoOwner) {
+              socket.emit("room:chat-blocked", { reason: "Only the host and co-hosts can send messages in this room." });
+              return;
+            }
+            if (chatPerm === "members" && (userRole === "guest" || userRole === "troll")) {
+              socket.emit("room:chat-blocked", { reason: "Guests and trolls cannot send messages in this room." });
+              return;
+            }
+          }
+        }
+
+        // Troll restriction: max 50 chars, 10-second cooldown
         if (userRole === "troll") {
           if (data.text.length > 50) {
             socket.emit("room:troll-restricted", { reason: "Your messages are limited to 50 characters as a Troll." });

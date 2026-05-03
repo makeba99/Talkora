@@ -32,6 +32,7 @@ export const rooms = pgTable("rooms", {
   cameraPermission: varchar("camera_permission", { length: 20 }).notNull().default("everyone"),
   screenPermission: varchar("screen_permission", { length: 20 }).notNull().default("everyone"),
   youtubePermission: varchar("youtube_permission", { length: 20 }).notNull().default("everyone"),
+  chatPermission: varchar("chat_permission", { length: 20 }).notNull().default("everyone"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   roomsShortIdIdx: uniqueIndex("rooms_short_id_idx").on(table.shortId),
@@ -54,6 +55,7 @@ export const insertRoomSchema = createInsertSchema(rooms).pick({
   cameraPermission: true,
   screenPermission: true,
   youtubePermission: true,
+  chatPermission: true,
 });
 
 export type InsertRoom = z.infer<typeof insertRoomSchema>;

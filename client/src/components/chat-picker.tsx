@@ -206,7 +206,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
             )}
           </div>
         </div>
-        <div className="h-[300px] overflow-y-auto overscroll-contain">
+        <div className="h-[300px] overflow-y-auto overscroll-contain" onWheel={(e) => e.stopPropagation()}>
           <div className="p-2">
             {gifLoading ? (
               <div className="flex items-center justify-center py-12">

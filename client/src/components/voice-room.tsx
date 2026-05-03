@@ -1277,6 +1277,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [editYoutubePermission, setEditYoutubePermission] = useState<"everyone" | "members" | "co_owners" | "owner_only">(
     ((roomProp as any).youtubePermission as any) || "everyone"
   );
+  const [editChatPermission, setEditChatPermission] = useState<"everyone" | "members" | "co_owners" | "owner_only">(
+    ((roomProp as any).chatPermission as any) || "everyone"
+  );
   const [editIsPublic, setEditIsPublic] = useState<boolean>(((roomProp as any).isPublic ?? true) as boolean);
   const [editHologramUrl, setEditHologramUrl] = useState<string | null>(((roomProp as any).hologramVideoUrl as string) || null);
   const [editHologramKind, setEditHologramKind] = useState<"gif" | "image" | "video">(() => {
@@ -1490,6 +1493,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [readAudiobooks, setReadAudiobooks] = useState<any[]>([]);
   const [readVideos, setReadVideos] = useState<any[]>([]);
   const [readLoading, setReadLoading] = useState(false);
+  const [readingHistory, setReadingHistory] = useState<Array<{ id: string | number; title: string; author: string; coverUrl: string | null; lastReadAt: string }>>(() => {
+    try { return JSON.parse(localStorage.getItem("vextorn_reading_history") || "[]"); } catch { return []; }
+  });
   const [selectedBook, setSelectedBook] = useState<any | null>(null);
   const [bookText, setBookText] = useState("");
   const [bookLoading, setBookLoading] = useState(false);
@@ -2604,6 +2610,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     });
 
+    socket.on("room:chat-blocked", (data: { reason: string }) => {
+      toast({ title: "Chat restricted", description: data.reason, variant: "destructive", duration: 3000 });
+    });
+
     socket.on("room:kicked", (data: { roomId: string }) => {
       if (data.roomId === room.id) {
         toast({ title: "You have been removed from this room", variant: "destructive" });
@@ -3106,6 +3116,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       moodTimersRef.current = {};
       socket.off("room:mute-update");
       socket.off("room:video-force-off");
+      socket.off("room:chat-blocked");
       socket.off("room:kicked");
       socket.off("room:host-deleted");
       socket.off("room:joined-another-room");
@@ -5870,6 +5881,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
   };
 
+  const chatPermission = ((room as any).chatPermission as "everyone" | "members" | "co_owners" | "owner_only" | undefined) || "everyone";
+  const isChatBlocked = (() => {
+    if (isHost) return false;
+    if (chatPermission === "everyone") return false;
+    if (chatPermission === "members") return isGuestOrTroll;
+    if (chatPermission === "co_owners") return myRole !== "co-owner";
+    if (chatPermission === "owner_only") return true;
+    return false;
+  })();
+  const chatBlockReason = (() => {
+    if (!isChatBlocked) return "";
+    if (chatPermission === "owner_only") return "Only the host can send messages in this room.";
+    if (chatPermission === "co_owners") return "Only the host and co-hosts can send messages.";
+    if (chatPermission === "members") return "Guests and trolls cannot send messages in this room.";
+    return "Chat is restricted in this room.";
+  })();
+
   const handleSendChat = (e: React.FormEvent) => {
     e.preventDefault();
     if (mentionQuery !== null && mentionFilteredParticipants.length > 0) {
@@ -5877,6 +5905,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return;
     }
     if (!chatText.trim() || !socket || !user) return;
+    if (isChatBlocked) {
+      toast({ variant: "destructive", title: "Chat restricted", description: chatBlockReason, duration: 3000 });
+      return;
+    }
     if (isTroll && chatText.trim().length > TROLL_MAX_CHARS) {
       toast({ variant: "destructive", title: "🧌 Troll Restriction", description: `Messages limited to ${TROLL_MAX_CHARS} characters.`, duration: 2500 });
       return;
@@ -5963,6 +5995,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       cameraPermission: editCameraPermission,
       screenPermission: editScreenPermission,
       youtubePermission: editYoutubePermission,
+      chatPermission: editChatPermission,
     });
   };
 
@@ -6043,6 +6076,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } finally { setReadLoading(false); }
   };
 
+  const saveToReadingHistory = (book: any) => {
+    const entry = {
+      id: book.id,
+      title: book.title,
+      author: book.authors?.map((a: any) => a.name).join(", ") || "",
+      coverUrl: book.formats?.["image/jpeg"] || null,
+      lastReadAt: new Date().toISOString(),
+    };
+    setReadingHistory(prev => {
+      const filtered = prev.filter(h => h.id !== entry.id);
+      const updated = [entry, ...filtered].slice(0, 10);
+      try { localStorage.setItem("vextorn_reading_history", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
   const loadBookText = async (book: any, fromShared = false) => {
     if (activeYoutubeId) {
       handleStopYoutube();
@@ -6052,6 +6101,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setWordInfo(null);
     setBookLoading(true);
     setShowEReader(true);
+    if (!fromShared) saveToReadingHistory(book);
     if (!fromShared) {
       socket?.emit("room:book", { roomId: room.id, book });
       setBookReaders(prev => { const n = new Set(prev); n.add(user?.id || ""); return n; });
@@ -6649,8 +6699,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   }
                 }
               }}
-              placeholder={pasteUploading ? "Uploading image..." : isTroll ? "🧌 Troll mode — 50 chars max, 10s cooldown…" : privateChatToId === "public" ? "Message the room…" : "Private message…"}
-              disabled={pasteUploading}
+              placeholder={pasteUploading ? "Uploading image..." : isChatBlocked ? chatBlockReason : isTroll ? "🧌 Troll mode — 50 chars max, 10s cooldown…" : privateChatToId === "public" ? "Message the room…" : "Private message…"}
+              disabled={pasteUploading || isChatBlocked}
               className="room-composer"
               data-whisper={privateChatToId !== "public"}
               rows={2}
@@ -7521,15 +7571,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
-            <div className="p-3 pb-2 border-b flex-shrink-0">
-              <p className="text-xs text-muted-foreground mb-2">Search free books from Project Gutenberg. Host opens a book to share it — followers sync scroll automatically.</p>
+            <div className="p-3 pb-2 border-b flex-shrink-0 space-y-2">
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={readSearch}
                     onChange={(e) => setReadSearch(e.target.value)}
-                    placeholder="Search books..."
+                    placeholder="Search by title, author, or topic…"
                     className="pl-8 text-sm"
                     onKeyDown={(e) => { if (e.key === "Enter") searchGutenberg(readSearch); }}
                   />
@@ -7537,6 +7586,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <Button size="sm" onClick={() => searchGutenberg(readSearch)} disabled={readLoading || !readSearch.trim()}>
                   {readLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
                 </Button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {["English", "Mystery", "Romance", "Self-help", "History", "Science", "Philosophy", "Adventure"].map(genre => (
+                  <button
+                    key={genre}
+                    onClick={() => { setReadSearch(genre); searchGutenberg(genre); }}
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-border/60 bg-muted/30 hover:bg-muted/70 hover:border-border transition-colors"
+                    data-testid={`chip-genre-${genre.toLowerCase()}`}
+                  >
+                    {genre}
+                  </button>
+                ))}
               </div>
             </div>
             <ScrollArea className="flex-1 min-h-0">
@@ -7546,7 +7607,39 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 )}
-                {readBooks.length === 0 && readCatalog.length === 0 && readAudiobooks.length === 0 && readVideos.length === 0 && !readLoading && (
+                {/* Reading History */}
+                {readingHistory.length > 0 && !readSearch.trim() && readBooks.length === 0 && !readLoading && (
+                  <div className="space-y-1.5 pb-2" data-testid="section-reading-history">
+                    <div className="flex items-center justify-between px-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Recently Read
+                      </p>
+                      <button
+                        onClick={() => { setReadingHistory([]); try { localStorage.removeItem("vextorn_reading_history"); } catch {} }}
+                        className="text-[9px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                      >Clear</button>
+                    </div>
+                    {readingHistory.map((h) => (
+                      <div key={h.id} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/10 opacity-80 hover:opacity-100 transition-opacity">
+                        {h.coverUrl ? (
+                          <img loading="lazy" decoding="async" src={h.coverUrl} alt="" className="w-8 h-11 rounded object-cover flex-shrink-0 bg-muted" />
+                        ) : (
+                          <div className="w-8 h-11 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                            <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium line-clamp-2 leading-tight">{h.title}</p>
+                          {h.author && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{h.author}</p>}
+                          <p className="text-[9px] text-muted-foreground/60 mt-0.5">{new Date(h.lastReadAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <button onClick={loadDefaultBooks} className="text-[11px] text-primary hover:underline w-full text-center pt-1" data-testid="link-browse-new">Browse new books →</button>
+                  </div>
+                )}
+
+                {readBooks.length === 0 && readCatalog.length === 0 && readAudiobooks.length === 0 && readVideos.length === 0 && !readLoading && readingHistory.length === 0 && (
                   <div className="text-center py-8 space-y-2 text-muted-foreground">
                     <BookOpen className="w-8 h-8 mx-auto opacity-30" />
                     <p className="text-xs">No matches. Try a different search.</p>
@@ -7554,7 +7647,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </div>
                 )}
                 {readBooks.length > 0 && !readSearch.trim() && (
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pb-1">📚 Popular Bestsellers</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pb-1">📚 Free Classics (Project Gutenberg)</p>
                 )}
                 {readBooks.length > 0 && readSearch.trim() && (
                   <p className="text-[10px] font-semibold text-emerald-400/90 uppercase tracking-wide px-1 pb-1 flex items-center gap-1" data-testid="text-section-free">
@@ -7658,7 +7751,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 {readCatalog.length > 0 && (
                   <div className="space-y-1.5 pt-2" data-testid="section-catalog">
                     <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wide px-1 flex items-center gap-1">
-                      <BookOpen className="w-3 h-3" /> More from Open Library
+                      {readSearch.trim() ? <><BookOpen className="w-3 h-3" /> More from Open Library</> : <><TrendingUp className="w-3 h-3" /> Trending This Week</>}
                     </p>
                     {readCatalog.map((c: any) => (
                       <a
@@ -8711,6 +8804,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   value={editYoutubePermission}
                   onChange={(v) => setEditYoutubePermission(v as any)}
                   testId="tile-perm-youtube"
+                />
+                <PermTile
+                  label="Chat"
+                  Icon={MessageSquare}
+                  value={editChatPermission}
+                  onChange={(v) => setEditChatPermission(v as any)}
+                  testId="tile-perm-chat"
                 />
               </div>
               <div className="host-perm-section-foot">
