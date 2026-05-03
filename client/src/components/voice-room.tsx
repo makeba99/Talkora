@@ -3767,23 +3767,37 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </span>
         </div>
 
-        {/* Camera */}
+        {/* Camera + flip camera (mobile-friendly: flip shown inline in toolbar when cam is on) */}
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
-          <button
-            onClick={toggleVideo}
-            disabled={!isVideoOn && !canOpenCameraByPerm}
-            data-testid="button-toggle-video"
-            title={(!isVideoOn && !canOpenCameraByPerm) ? cameraLockReason : (isVideoOn ? "Stop Camera" : "Camera")}
-            className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
-            style={isVideoOn ? videoActiveStyle : ghostStyle}
-          >
-            {(!isVideoOn && !canOpenCameraByPerm) ? (
-              <span className="relative flex items-center justify-center">
-                <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
-                <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
-              </span>
-            ) : isVideoOn ? <Video className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" /> : <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleVideo}
+              disabled={!isVideoOn && !canOpenCameraByPerm}
+              data-testid="button-toggle-video"
+              title={(!isVideoOn && !canOpenCameraByPerm) ? cameraLockReason : (isVideoOn ? "Stop Camera" : "Camera")}
+              className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
+              style={isVideoOn ? videoActiveStyle : ghostStyle}
+            >
+              {(!isVideoOn && !canOpenCameraByPerm) ? (
+                <span className="relative flex items-center justify-center">
+                  <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                  <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
+                </span>
+              ) : isVideoOn ? <Video className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" /> : <VideoOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />}
+            </button>
+            {isVideoOn && (
+              <button
+                onClick={handleFlipCamera}
+                disabled={isFlippingCamera}
+                data-testid="button-flip-camera-toolbar"
+                title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
+                aria-label="Flip camera"
+                className="w-6 h-6 rounded-full flex items-center justify-center border border-white/20 bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow"
+              >
+                <RotateCcw className={`w-3 h-3 text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
+              </button>
+            )}
+          </div>
           <span className={labelBase} style={isVideoOn ? { color: "rgba(147,197,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             Camera
           </span>
@@ -4309,6 +4323,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Screen-share locked", description: screenLockReason || "Sharing is disabled in this room.", variant: "destructive" });
       return;
     }
+    // Detect mobile browsers — Chrome on Android and most mobile browsers do
+    // not support getDisplayMedia at all. Give a clear, actionable message
+    // instead of a cryptic browser error or silent failure.
+    const isMobileBrowser = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobileBrowser) {
+      toast({
+        title: "Screen share not available on mobile",
+        description: "Mobile browsers don't support screen sharing. Use your camera to share video, or join from a desktop browser to share your screen.",
+        variant: "destructive",
+      });
+      return;
+    }
     // Check API availability. getDisplayMedia requires a secure context (HTTPS
     // or localhost). On insecure origins navigator.mediaDevices may exist but
     // getDisplayMedia will be undefined — give a precise reason rather than a
@@ -4521,7 +4547,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       // assuming the "other" device is the opposite of the current one,
       // especially on devices with multiple front or multiple back cameras.
       const actualFacing = newTrack.getSettings().facingMode;
-      setCameraFacing(actualFacing === "environment" ? "environment" : "user");
+      // Many mobile browsers (iOS Safari, Chrome Android on deviceId switch) return empty
+      // string for facingMode — fall back to the facing we explicitly requested rather than
+      // always resetting to "user", which breaks the back→front flip.
+      setCameraFacing(
+        actualFacing === "environment" ? "environment"
+        : actualFacing === "user" ? "user"
+        : newFacing
+      );
     } catch {
       toast({ title: "Camera flip failed", description: "Could not switch to the other camera.", variant: "destructive" });
     } finally {
