@@ -959,7 +959,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             // bottom-right slot for any multi-column grid (≥2 cols).
             const gridRightPad = gridCols >= 2 ? 42 : 0;
             return (
-          <div className="flex-1 flex flex-col justify-center px-3 pt-5 pb-2 min-h-0 overflow-visible">
+          <div className="flex-1 flex flex-col justify-center px-3 pt-4 pb-1.5 min-h-0 overflow-visible">
             <div
               className="grid"
               style={{
@@ -1032,7 +1032,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                      hover popover, so it's safe to hide here. */
                   const showHeartRow = displayCount <= 4;
                   const heartRow = showHeartRow ? (
-                    <div className="flex items-center justify-center gap-0.5 mt-0.5" data-testid={`text-follower-count-card-${p.id}`}>
+                    <div className="flex items-center justify-center gap-0.5 mt-0.25" data-testid={`text-follower-count-card-${p.id}`}>
                       <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" />
                       <span className="text-[9px] text-white/60 font-medium">{count}</span>
                     </div>

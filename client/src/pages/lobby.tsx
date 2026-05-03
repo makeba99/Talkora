@@ -2136,7 +2136,7 @@ export default function Lobby() {
               )}
             </section>
           ) : roomsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 lg:gap-3.5 xl:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3 xl:gap-3.5">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="space-y-3 p-5 rounded-md border" style={{ minHeight: 320 }}>
                   <Skeleton className="h-6 w-3/4" />
