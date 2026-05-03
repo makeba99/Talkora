@@ -9899,6 +9899,62 @@ html.boost-mode .glass-panel {
   50% { opacity: 1; }
 }
 
+/* ============================================================================
+   Room chat — typing indicator
+   Sits between the ScrollArea and the chat input form; fades in smoothly and
+   keeps a minimal footprint so it doesn't push content around.
+   ============================================================================ */
+.chat-typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 14px 5px;
+  min-height: 22px;
+  animation: chat-typing-appear 160ms ease forwards;
+}
+
+@keyframes chat-typing-appear {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Three bouncing dots */
+.chat-typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.chat-typing-dots span {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: hsl(var(--primary) / 0.7);
+  animation: chat-typing-bounce 1.1s ease-in-out infinite;
+}
+
+.chat-typing-dots span:nth-child(2) { animation-delay: 0.18s; }
+.chat-typing-dots span:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes chat-typing-bounce {
+  0%, 55%, 100% { transform: translateY(0);    opacity: 0.45; }
+  27%            { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Label text */
+.chat-typing-label {
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 450;
+  color: hsl(var(--muted-foreground) / 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
 /* Honour reduced-motion users — kill all decorative animations. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

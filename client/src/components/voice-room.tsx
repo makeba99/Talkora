@@ -1063,6 +1063,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<string, { name: string; avatar: string | null }>>({});
+  const typingEmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingExpireTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const aiInputRef = useRef<HTMLInputElement>(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
@@ -2171,6 +2174,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const name = leftUser ? getUserDisplayName(leftUser) : "Someone";
       setParticipants(data.participants);
       participantsRef.current = data.participants;
+      // Clear any active typing indicator for the user who left
+      if (typingExpireTimers.current[data.userId]) {
+        clearTimeout(typingExpireTimers.current[data.userId]);
+        delete typingExpireTimers.current[data.userId];
+      }
+      setTypingUsers((prev) => {
+        if (!prev[data.userId]) return prev;
+        const next = { ...prev };
+        delete next[data.userId];
+        return next;
+      });
       cleanupPeer(data.userId);
       setAvailableScreenUsers((prev) => { const n = new Set(prev); n.delete(data.userId); return n; });
       setAvailableVideoUsers((prev) => { const n = new Set(prev); n.delete(data.userId); return n; });
@@ -2399,6 +2413,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (sidePanelTabRef.current !== "chat" && (msg as any).type !== "system" && msg.userId !== user?.id) {
         setUnreadChatBadge((prev) => prev + 1);
       }
+      // Clear typing indicator as soon as the message arrives
+      if (msg.userId !== user?.id) {
+        if (typingExpireTimers.current[msg.userId]) {
+          clearTimeout(typingExpireTimers.current[msg.userId]);
+          delete typingExpireTimers.current[msg.userId];
+        }
+        setTypingUsers((prev) => {
+          if (!prev[msg.userId]) return prev;
+          const next = { ...prev };
+          delete next[msg.userId];
+          return next;
+        });
+      }
     });
 
     socket.on("room:chat-delete", (data: { messageId: string }) => {
@@ -2409,6 +2436,36 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             : m
         )
       );
+    });
+
+    const clearTypingUser = (userId: string) => {
+      if (typingExpireTimers.current[userId]) {
+        clearTimeout(typingExpireTimers.current[userId]);
+        delete typingExpireTimers.current[userId];
+      }
+      setTypingUsers((prev) => {
+        if (!prev[userId]) return prev;
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+    };
+
+    socket.on("room:typing", (data: { userId: string; displayName: string; profileImageUrl: string | null }) => {
+      if (data.userId === user?.id) return;
+      setTypingUsers((prev) => ({
+        ...prev,
+        [data.userId]: { name: data.displayName, avatar: data.profileImageUrl },
+      }));
+      // Auto-expire after 3.5 s in case typing-stop is never received
+      if (typingExpireTimers.current[data.userId]) clearTimeout(typingExpireTimers.current[data.userId]);
+      typingExpireTimers.current[data.userId] = setTimeout(() => {
+        clearTypingUser(data.userId);
+      }, 3500);
+    });
+
+    socket.on("room:typing-stop", (data: { userId: string }) => {
+      clearTypingUser(data.userId);
     });
 
     socket.on("room:reaction-update", (data: { messageId: string; reactions: Record<string, string[]> }) => {
@@ -2786,6 +2843,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:already-in-room");
       socket.off("room:chat-message");
       socket.off("room:chat-delete");
+      socket.off("room:typing");
+      socket.off("room:typing-stop");
+      Object.values(typingExpireTimers.current).forEach((t) => clearTimeout(t));
+      typingExpireTimers.current = {};
       socket.off("room:reaction-update");
       socket.off("room:movie");
       socket.off("room:movie-watchers-update");
@@ -5176,6 +5237,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } else {
       setMentionQuery(null);
     }
+    // Emit typing signal — throttled to at most once per 2 s while typing,
+    // immediately stopped when the input is cleared.
+    if (socket && user) {
+      if (val.trim()) {
+        if (!typingEmitTimerRef.current) {
+          socket.emit("room:typing", {
+            roomId: room.id,
+            userId: user.id,
+            displayName: getUserDisplayName(user),
+            profileImageUrl: (user as any).profileImageUrl ?? null,
+          });
+          typingEmitTimerRef.current = setTimeout(() => {
+            typingEmitTimerRef.current = null;
+          }, 2000);
+        }
+      } else {
+        if (typingEmitTimerRef.current) {
+          clearTimeout(typingEmitTimerRef.current);
+          typingEmitTimerRef.current = null;
+        }
+        socket.emit("room:typing-stop", { roomId: room.id, userId: user.id });
+      }
+    }
   };
 
   const insertMention = (p: Participant) => {
@@ -5214,6 +5298,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return;
     }
     if (!chatText.trim() || !socket || !user) return;
+    // Stop typing indicator immediately when the message is sent
+    if (typingEmitTimerRef.current) {
+      clearTimeout(typingEmitTimerRef.current);
+      typingEmitTimerRef.current = null;
+    }
+    socket.emit("room:typing-stop", { roomId: room.id, userId: user.id });
     socket.emit("room:chat", {
       roomId: room.id,
       userId: user.id,
@@ -5830,6 +5920,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             })()}
           </div>
         </ScrollArea>
+
+        {/* Typing indicator — shown between messages and the input */}
+        {Object.keys(typingUsers).length > 0 && (
+          <div
+            className="chat-typing-indicator"
+            aria-live="polite"
+            aria-atomic="true"
+            data-testid="typing-indicator"
+          >
+            <div className="chat-typing-dots" aria-hidden="true">
+              <span /><span /><span />
+            </div>
+            <span className="chat-typing-label">
+              {(() => {
+                const names = Object.values(typingUsers).map((u) => u.name);
+                if (names.length === 1) return `${names[0]} is typing…`;
+                if (names.length === 2) return `${names[0]} and ${names[1]} are typing…`;
+                return `${names.length} people are typing…`;
+              })()}
+            </span>
+          </div>
+        )}
+
         <form onSubmit={handleSendChat} className="p-3 border-t border-border/40 bg-muted/5 flex flex-col gap-2 relative flex-shrink-0 mt-auto">
           {replyingTo && (
             <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/60 rounded-md border-l-2 border-primary/50" data-testid="reply-preview">

@@ -4298,6 +4298,19 @@ export async function registerRoutes(
       }
     });
 
+    // Typing indicators — relay to everyone else in the room.
+    socket.on("room:typing", (data: { roomId: string; userId: string; displayName: string; profileImageUrl?: string | null }) => {
+      socket.to(data.roomId).emit("room:typing", {
+        userId: data.userId,
+        displayName: data.displayName,
+        profileImageUrl: data.profileImageUrl ?? null,
+      });
+    });
+
+    socket.on("room:typing-stop", (data: { roomId: string; userId: string }) => {
+      socket.to(data.roomId).emit("room:typing-stop", { userId: data.userId });
+    });
+
     socket.on("room:clear-chat-global", async (data: { roomId: string; clearedBy: string }) => {
       try {
         const room = await storage.getRoom(data.roomId);
