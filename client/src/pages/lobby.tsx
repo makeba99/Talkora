@@ -348,7 +348,7 @@ function PeopleDiscoveryCard({
               )}
             </div>
             <span
-              className={`neu-people-status ${isOnline ? "is-online" : ""}`}
+              className={`neu-people-status ${getSpeakerOnline(person) ? "is-online" : ""}`}
               data-testid={`status-discovery-user-${person.id}`}
             />
           </div>
@@ -359,17 +359,21 @@ function PeopleDiscoveryCard({
             >
               {name}
             </h3>
-            <p
-              className={`flex items-center gap-1.5 text-[10.5px] font-semibold mt-1 ${
-                isOnline ? "text-emerald-300" : "text-white/50"
-              }`}
-            >
+            <p className={`flex items-center gap-1.5 text-[10.5px] font-semibold mt-1 ${getPresenceClass(person.status)}`}>
               <span
                 className={`inline-block w-1.5 h-1.5 rounded-full ${
-                  isOnline ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.85)]" : "bg-white/25"
+                  getSpeakerOnline(person)
+                    ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.85)]"
+                    : person.status === "brb"
+                      ? "bg-amber-400"
+                      : person.status === "afk"
+                        ? "bg-sky-400"
+                        : person.status === "busy"
+                          ? "bg-rose-400"
+                          : "bg-white/25"
                 }`}
               />
-              {isOnline ? "Online now" : "Offline"}
+              {getPresenceLabel(person.status)}
             </p>
           </div>
         </div>
@@ -1270,6 +1274,21 @@ export default function Lobby() {
 
   const getSpeakerFollowers = (id: string) =>
     followerCounts[id] ?? SAMPLE_FOLLOWER_COUNTS[id] ?? 0;
+  const getPresenceLabel = (status?: string) => {
+    if (!status || status === "online") return "Online now";
+    if (status === "brb") return "BRB";
+    if (status === "afk") return "AFK";
+    if (status === "busy") return "Busy";
+    if (status === "offline") return "Offline";
+    return status;
+  };
+  const getPresenceClass = (status?: string) => {
+    if (!status || status === "online") return "text-emerald-300";
+    if (status === "brb") return "text-amber-300";
+    if (status === "afk") return "text-sky-300";
+    if (status === "busy") return "text-rose-300";
+    return "text-white/50";
+  };
   const getSpeakerOnline = (p: User) =>
     onlineUsers.has(p.id) || p.status === "online" || (SAMPLE_SPEAKER_META[p.id]?.isOnline ?? false);
 
@@ -2136,7 +2155,7 @@ export default function Lobby() {
               )}
             </section>
           ) : roomsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-0 lg:gap-y-0 xl:gap-y-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-4 lg:gap-y-5 xl:gap-y-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="space-y-3 p-5 rounded-md border" style={{ minHeight: 300 }}>
                   <Skeleton className="h-6 w-3/4" />
@@ -2185,7 +2204,7 @@ export default function Lobby() {
           ) : (
             <section aria-label="Voice rooms">
             <h2 className="sr-only">Voice rooms</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-0 lg:gap-y-0 xl:gap-y-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-5 lg:gap-y-6 xl:gap-y-7">
               {(() => {
                 /* PERF: mergedRoomParticipants is now a top-level useMemo so it
                  * is only recomputed when liveParticipants or roomParticipants
