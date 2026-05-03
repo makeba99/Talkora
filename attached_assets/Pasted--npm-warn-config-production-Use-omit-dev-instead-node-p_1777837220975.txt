@@ -1,0 +1,59 @@
+
+npm warn config production Use `--omit=dev` instead.
+node:path:1224
+      validateString(path, `paths[${i}]`);
+      ^
+TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+    at Object.resolve (node:path:1224:7)
+    at Cj (/app/dist/index.cjs:122:28196)
+    at /app/dist/index.cjs:202:60348
+    at Object.<anonymous> (/app/dist/index.cjs:202:61112)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+Node.js v22.19.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+node:path:1224
+      validateString(path, `paths[${i}]`);
+      ^
+TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+    at Object.resolve (node:path:1224:7)
+    at Cj (/app/dist/index.cjs:122:28196)
+    at /app/dist/index.cjs:202:60348
+    at Object.<anonymous> (/app/dist/index.cjs:202:61112)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+Node.js v22.19.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24) {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+Node.js v22.19.0
+node:path:1224
+      validateString(path, `paths[${i}]`);
+      ^
+TypeError [ERR_INVALID_ARG_TYPE]: The "paths[0]" argument must be of type string. Received undefined
+    at Object.resolve (node:path:1224:7)
+    at Cj (/app/dist/index.cjs:122:28196)
+    at /app/dist/index.cjs:202:60348
+    at Object.<anonymous> (/app/dist/index.cjs:202:61112)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
