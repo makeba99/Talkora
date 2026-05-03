@@ -90,14 +90,21 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return res.json();
     },
-    onSuccess: (_result, variables) => {
+    onSuccess: (updatedRoom, variables) => {
+      // Patch the cache immediately so the GIF/background shows without
+      // waiting for the SSE round-trip. Prefer the server's response when
+      // available, fall back to the variables we sent.
+      // Do NOT call invalidateQueries — the server emits room:updated via
+      // socket AND broadcastRooms() via SSE, both of which already sync all
+      // clients in real time. A redundant invalidation races against those
+      // updates and is the reason GIF backgrounds don't appear until refresh.
       queryClient.setQueryData(["/api/rooms"], (old: any) => {
         if (!Array.isArray(old)) return old;
+        const patch = updatedRoom ?? variables;
         return old.map((r: any) =>
-          r.id === room.id ? { ...r, ...variables } : r
+          r.id === room.id ? { ...r, ...patch } : r
         );
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       onClose();
     },
   });

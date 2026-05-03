@@ -936,10 +936,14 @@ export default function Lobby() {
     onSuccess: (newRoom) => {
       // Immediately prepend the new room to the cache so the creator sees it
       // without waiting for the SSE broadcast or a refetch round-trip.
+      // Do NOT call invalidateQueries here — the SSE stream and room:created
+      // socket event already sync all clients in real time. A redundant
+      // invalidation triggers a background refetch that races against the SSE
+      // update and can cause the new room (or its GIF background) to flicker
+      // or disappear until the next full refresh.
       queryClient.setQueryData<any[]>(["/api/rooms"], (old) =>
-        old ? [newRoom, ...old] : [newRoom]
+        old ? (old.some(r => r.id === newRoom.id) ? old : [newRoom, ...old]) : [newRoom]
       );
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       toast({ title: "Room created! Click 'Join & Talk' to enter." });
       import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },
@@ -1004,13 +1008,15 @@ export default function Lobby() {
     );
 
     socket.on("room:created", (newRoom: any) => {
+      // Always prefer setQueryData for instant UI updates. The SSE stream
+      // is the authoritative real-time source — no invalidation needed here.
       if (newRoom?.id) {
         queryClient.setQueryData<any[]>(["/api/rooms"], (old) =>
           old ? (old.some(r => r.id === newRoom.id) ? old : [newRoom, ...old]) : [newRoom]
         );
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       }
+      // If newRoom has no id (malformed), the SSE broadcastRooms() will
+      // arrive momentarily and correct the cache automatically.
     });
 
     socket.on("room:updated", (updatedRoom: any) => {
