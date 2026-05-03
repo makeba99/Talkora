@@ -1502,6 +1502,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const ytSyncTimeRef = useRef<number>(0);
   const ytBufferTimerRef = useRef<number | null>(null);
   const youtubeStartedByRef = useRef<string | null>(null);
+  const activeYoutubeIdRef = useRef<string | null>(null);
   const ytQueueRef = useRef<YtQueueItem[]>([]);
   const [ytIsPlaying, setYtIsPlaying] = useState(false);
   const [ytCurrentTime, setYtCurrentTime] = useState(0);
@@ -1693,6 +1694,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   useEffect(() => {
     youtubeStartedByRef.current = youtubeStartedBy;
   }, [youtubeStartedBy]);
+
+  useEffect(() => {
+    activeYoutubeIdRef.current = activeYoutubeId;
+  }, [activeYoutubeId]);
 
   useEffect(() => {
     movieStartedByRef.current = movieStartedBy;
@@ -2291,6 +2296,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const handleReconnect = () => {
       socket.emit("user:online", user.id);
       socket.emit("room:join", { roomId: room.id, userId: user.id });
+
+      // If this user was an active YouTube host, the server may have deleted
+      // their host slot if the disconnect lasted longer than the grace timer
+      // (8s). Re-broadcast so other room members can continue watching and
+      // the server's per-host state is restored.
+      const ytVideoId = activeYoutubeIdRef.current;
+      const ytHostId = youtubeStartedByRef.current;
+      if (ytVideoId && ytHostId === user.id) {
+        socket.emit("room:youtube", { roomId: room.id, hostId: user.id, videoId: ytVideoId });
+      }
 
       peerConnections.current.forEach((pc, peerId) => {
         try {
@@ -3279,6 +3294,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // mini-player. Non-watchers get no iframe at all, which means no audio
     // leaks to people who never clicked "Join Watch Party". When the user
     // closes their view, the player is destroyed and audio stops immediately.
+    let effectCancelled = false;
     const isActivelyWatching = showYoutube || miniPlayerMode;
     if (!activeYoutubeId || !isActivelyWatching) {
       if (youtubePlayerRef.current) {
@@ -3555,12 +3571,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         console.log("[YT] Added YT API script tag");
       }
       (window as any).onYouTubeIframeAPIReady = () => {
+        if (effectCancelled) return;
         console.log("[YT] onYouTubeIframeAPIReady fired");
         createPlayer();
       };
     }
 
     return () => {
+      effectCancelled = true;
       if (youtubePlayerRef.current) {
         try { youtubePlayerRef.current.destroy(); } catch (_) {}
         youtubePlayerRef.current = null;
