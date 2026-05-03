@@ -215,10 +215,10 @@ export function playMoodSound(emoji: string) {
 
     // ── Sleepy — real snore / yawn ──
     case "😴":
-      speak("Z z z z z z", { rate: 0.45, pitch: 0.55, volume: 0.85 });
+      speak("Snore... snore...", { rate: 0.38, pitch: 0.42, volume: 0.8 });
       break;
     case "🥱":
-      speak("Ahhhh...", { rate: 0.38, pitch: 0.85, volume: 0.85 });
+      speak("Yaaawn...", { rate: 0.34, pitch: 0.72, volume: 0.82 });
       break;
 
     // ── Anger — real human growl voice ──
