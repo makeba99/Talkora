@@ -126,23 +126,21 @@ const LANGUAGE_CODES: Record<string, string> = {
   Armenian: "am", Indonesian: "id",
 };
 
-function toFlagEmoji(code: string): string {
-  return [...code.toUpperCase()].map(c =>
-    String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
-  ).join("");
-}
-
 function LanguageFlag({ language }: { language: string; priority?: boolean }) {
   const code = LANGUAGE_CODES[language];
   if (!code) return <Globe className="w-3.5 h-3.5 text-white/50" />;
   return (
-    <span
-      className="text-sm leading-none flex-shrink-0 select-none"
-      role="img"
-      aria-label={language}
-    >
-      {toFlagEmoji(code)}
-    </span>
+    <img
+      src={`https://flagcdn.com/20x15/${code}.png`}
+      srcSet={`https://flagcdn.com/40x30/${code}.png 2x`}
+      width={20}
+      height={15}
+      alt={language}
+      loading="lazy"
+      decoding="async"
+      className="flex-shrink-0 rounded-[2px]"
+      style={{ display: "inline-block" }}
+    />
   );
 }
 
@@ -384,8 +382,8 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             backgroundImage: `url('${src.replace(/'/g, "%27")}')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            opacity: 0.65,
-            filter: "brightness(0.7) saturate(0.85)",
+            opacity: 0.88,
+            filter: "brightness(0.88) saturate(0.9)",
           }}
         />
         {overlay}
