@@ -45,7 +45,7 @@ function LobbyShell() {
               <Skeleton key={i} className="h-8 rounded-full flex-shrink-0" style={{ width: w }} />
             ))}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 xl:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-3 lg:gap-y-5 lg:gap-x-4 xl:gap-y-6 xl:gap-x-5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="space-y-3 p-5 rounded-2xl border border-white/10 bg-muted/5" style={{ minHeight: 220 }}>
                 <Skeleton className="h-6 w-3/4" />
