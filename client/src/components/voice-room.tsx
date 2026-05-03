@@ -393,6 +393,12 @@ function ParticipantCard({
   };
 
   const isFollowing = followingIds.has(p.id);
+  const [roomPresenceStatus, setRoomPresenceStatus] = useState((p as any).status || "online");
+  const savePresenceMutation = useMutation({
+    mutationFn: async (status: string) => {
+      await apiRequest("PATCH", `/api/users/${p.id}`, { status });
+    },
+  });
 
   const gearPopover = (
     <Popover>
@@ -414,6 +420,30 @@ function ParticipantCard({
                    <button className="text-white/50 font-medium hover:underline px-1" onClick={handleCopyId}>Copy ID</button>
                 </div>
                 <div className="text-sm font-semibold truncate leading-none">Name: {getUserDisplayName(p)}</div>
+                {isMe && (
+                  <div className="space-y-2 mt-2">
+                    <Label htmlFor={`room-presence-status-${p.id}`} className="text-xs text-muted-foreground">
+                      Status
+                    </Label>
+                    <Select
+                      value={roomPresenceStatus}
+                      onValueChange={(value) => {
+                        setRoomPresenceStatus(value);
+                        savePresenceMutation.mutate(value);
+                      }}
+                    >
+                      <SelectTrigger id={`room-presence-status-${p.id}`} data-testid={`select-room-presence-status-${p.id}`} className="h-8">
+                        <SelectValue placeholder="Set your status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="online">Online</SelectItem>
+                        <SelectItem value="brb">BRB</SelectItem>
+                        <SelectItem value="afk">AFK</SelectItem>
+                        <SelectItem value="busy">Busy</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 {(p.instagramUrl || p.linkedinUrl || p.facebookUrl) && (
                   <div className="flex items-center gap-2 mt-1">
                     {p.instagramUrl && (
