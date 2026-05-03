@@ -2138,7 +2138,7 @@ export default function Lobby() {
           ) : roomsLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 xl:gap-5">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="space-y-3 p-5 rounded-md border" style={{ minHeight: 220 }}>
+                <div key={i} className="space-y-3 p-5 rounded-md border" style={{ minHeight: 320 }}>
                   <Skeleton className="h-6 w-3/4" />
                   <div className="flex gap-2">
                     <Skeleton className="h-5 w-16" />
@@ -2234,11 +2234,11 @@ export default function Lobby() {
                  * card styles, and React.memo on RoomCard plus the deferred
                  * overlays in this round handle the perf side. */
                 return idx === 0 ? (
-                  <div key={room.id} data-tour-target="rooms" style={{ contain: "layout paint", minHeight: 220 }}>
+                  <div key={room.id} data-tour-target="rooms" style={{ contain: "layout paint", minHeight: 320 }}>
                     {card}
                   </div>
                 ) : (
-                  <div key={room.id} style={{ contain: "layout paint", minHeight: 220 }}>{card}</div>
+                  <div key={room.id} style={{ contain: "layout paint", minHeight: 320 }}>{card}</div>
                 );
                 });
               })()}
