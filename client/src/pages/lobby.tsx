@@ -1927,7 +1927,7 @@ export default function Lobby() {
                           type="button"
                           className="search-suggest-item"
                           onClick={() => {
-                            setSelectedLanguage(lang);
+                            startTransition(() => setSelectedLanguage(lang));
                             setShowLanguageFilters(true);
                             setSearchQuery("");
                             setSearchSuggestOpen(false);
@@ -2027,7 +2027,7 @@ export default function Lobby() {
                   <button
                     key={filter.id}
                     type="button"
-                    onClick={() => setActiveDiscovery(filter.id)}
+                    onClick={() => startTransition(() => setActiveDiscovery(filter.id))}
                     className={`filter-chip filter-chip-${filter.tone} ${isActive ? "is-active" : ""}`}
                     aria-pressed={isActive}
                     data-testid={`filter-discovery-${filter.id}`}
@@ -2080,7 +2080,7 @@ export default function Lobby() {
               return (
                 <button
                   key={lang}
-                  onClick={() => setSelectedLanguage(lang)}
+                  onClick={() => startTransition(() => setSelectedLanguage(lang))}
                   className={`neu-pill flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${isActive ? "is-active" : ""}`}
                   aria-pressed={isActive}
                   aria-label={lang === "All" ? "Show all languages" : `Filter by ${lang}`}
@@ -2105,7 +2105,7 @@ export default function Lobby() {
             })}
             {languageTags.length > 8 && (
               <button
-                onClick={() => setLanguagesExpanded(!languagesExpanded)}
+                onClick={() => startTransition(() => setLanguagesExpanded((v) => !v))}
                 className="neu-pill flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium"
                 data-testid="button-toggle-languages"
                 aria-expanded={languagesExpanded}

@@ -563,10 +563,6 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       className="neu-icon-btn-red flex-shrink-0 w-7 h-7 rounded-full"
       onClick={(e) => {
         e.stopPropagation();
-        setEditTitle(room.title);
-        setEditLanguage(room.language);
-        setEditLevel(room.level);
-        setEditMaxUsers(room.maxUsers);
         setEditOpen(true);
       }}
       data-testid={`button-room-settings-${room.id}`}

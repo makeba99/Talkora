@@ -112,15 +112,92 @@ export default defineConfig({
           // profile-dropdown.tsx without touching the critical paint path.
           if (id.includes("profile-decorations")) return "decorations-vendor";
 
-          // Consolidate all shadcn/ui wrapper components (button, popover,
-          // avatar, select, label, toast, etc.) into one preloadable chunk.
-          // Without this, Rollup splits every ~2–3 KB component into its own
-          // file → 8+ extra HTTP round-trips on the LCP critical path.
-          // These are app-level files (not node_modules), so this rule must
-          // appear BEFORE the node_modules guard below.
-          if (id.includes("/components/ui/") && !id.includes("node_modules")) return "ui-components";
+          // shadcn/ui wrapper components — split into two tiers:
+          //
+          // LOBBY-CRITICAL (ui-components): components used in the lobby's
+          // initial synchronous render (room-card.tsx, lobby.tsx, App.tsx).
+          // These are preloaded via Link header so they arrive before React
+          // mounts — keeping them in one named chunk avoids 8+ round-trips.
+          //
+          // NON-CRITICAL: components only used inside lazy-loaded routes
+          // (accordion in voice-room, switch/slider in create-room-dialog,
+          // tabs/progress in admin, toast/toaster in DeferredToasts, etc.).
+          // Returning `undefined` lets Rollup co-locate them with their
+          // consumer chunks — they are never downloaded on the lobby cold path.
+          //
+          // These rules must appear BEFORE the node_modules guard below
+          // because /components/ui/ is app-level code, not node_modules.
+          if (id.includes("/components/ui/") && !id.includes("node_modules")) {
+            const LOBBY_CRITICAL_UI = [
+              "/components/ui/button",
+              "/components/ui/badge",
+              "/components/ui/avatar",
+              "/components/ui/popover",
+              "/components/ui/input",
+              "/components/ui/skeleton",
+              "/components/ui/tooltip",
+              "/components/ui/dialog",
+              "/components/ui/dropdown-menu",
+              "/components/ui/select",
+              "/components/ui/separator",
+              "/components/ui/label",
+              "/components/ui/scroll-area",
+            ];
+            if (LOBBY_CRITICAL_UI.some((p) => id.includes(p))) return "ui-components";
+            // Non-critical UI: follows its consumer into their lazy chunk.
+            return undefined;
+          }
 
           if (!id.includes("node_modules")) return undefined;
+
+          // ── Radix UI + Floating UI chunk strategy ─────────────────────────
+          //
+          // BACKGROUND: React must live in the SAME chunk as libraries that
+          // call React.forwardRef / React.createContext at module-evaluation
+          // time. Previously ALL @radix-ui was forced into react-vendor to
+          // avoid a runtime race (splitting caused `Cannot read properties of
+          // undefined (reading 'forwardRef')`). That was safe but wasteful —
+          // every lobby visitor downloaded ~40 KB of Radix primitives that are
+          // only ever used inside lazy voice-room / admin / teacher routes.
+          //
+          // SOLUTION: Only the Radix components on the lobby's initial render
+          // path stay in react-vendor. The rest go to "radix-deferred" — a
+          // named chunk that is NOT in the Link preload header and therefore
+          // not downloaded until a consumer lazy-chunk requests it. Because
+          // radix-deferred statically imports React from react-vendor via ES
+          // module `import` statements, the browser's module linker guarantees
+          // react-vendor finishes executing BEFORE radix-deferred starts,
+          // eliminating any possibility of the forwardRef race.
+          //
+          // Lobby-critical Radix (stay in react-vendor):
+          //   slot → Button; avatar → RoomCard; popover → lobby language filter;
+          //   tooltip → App.tsx TooltipProvider; dialog → login-screen;
+          //   dropdown-menu → profile/settings; select → lobby filters;
+          //   separator, label, scroll-area → various eager lobby surfaces;
+          //   collapsible → language tag expand/collapse in lobby.
+          //
+          // Non-critical Radix (→ "radix-deferred", loaded lazily):
+          //   accordion, alert-dialog, aspect-ratio, checkbox, context-menu,
+          //   hover-card, menubar, navigation-menu, radio-group, slider,
+          //   switch, toast, toggle, toggle-group — only used in lazy routes.
+          const RADIX_DEFERRED = [
+            "@radix-ui/react-accordion",
+            "@radix-ui/react-alert-dialog",
+            "@radix-ui/react-aspect-ratio",
+            "@radix-ui/react-checkbox",
+            "@radix-ui/react-context-menu",
+            "@radix-ui/react-hover-card",
+            "@radix-ui/react-menubar",
+            "@radix-ui/react-navigation-menu",
+            "@radix-ui/react-radio-group",
+            "@radix-ui/react-slider",
+            "@radix-ui/react-switch",
+            "@radix-ui/react-toast",
+            "@radix-ui/react-toggle",
+            "@radix-ui/react-toggle-group",
+          ];
+          if (RADIX_DEFERRED.some((pkg) => id.includes(pkg))) return "radix-deferred";
+
           if (
             id.includes("react-dom") ||
             id.includes("/react/") ||
