@@ -6889,28 +6889,30 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                               </button>
                             </div>
                             {ytHistory.map((video) => (
-                              <div key={video.id} className="flex items-center gap-2 p-2 rounded-xl border border-border/25 bg-muted/8 hover:bg-muted/20 transition-colors group min-w-0">
-                                <div className="relative w-16 h-10 rounded-md overflow-hidden flex-shrink-0 bg-muted cursor-pointer" onClick={() => handleSelectYoutubeVideo(video.id)}>
-                                  {video.thumbnail ? (
-                                    <img loading="lazy" decoding="async" src={video.thumbnail} alt="" className="w-full h-full object-cover" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center"><Youtube className="w-4 h-4 text-muted-foreground/30" /></div>
-                                  )}
-                                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Play className="w-3 h-3 text-white fill-white" />
+                              <div key={video.id} className="flex flex-col gap-1.5 p-2 rounded-xl border border-border/25 bg-muted/8 hover:bg-muted/20 transition-colors group overflow-hidden">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="relative w-14 h-9 rounded-md overflow-hidden flex-shrink-0 bg-muted cursor-pointer" onClick={() => handleSelectYoutubeVideo(video.id)}>
+                                    {video.thumbnail ? (
+                                      <img loading="lazy" decoding="async" src={video.thumbnail} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center"><Youtube className="w-4 h-4 text-muted-foreground/30" /></div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Play className="w-3 h-3 text-white fill-white" />
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-medium line-clamp-2 leading-snug">{video.title}</p>
+                                    {video.channelTitle && <p className="text-[9px] text-muted-foreground/50 mt-0.5 truncate">{video.channelTitle}</p>}
                                   </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] font-medium line-clamp-2 leading-snug">{video.title}</p>
-                                  {video.channelTitle && <p className="text-[9px] text-muted-foreground/50 mt-0.5 truncate">{video.channelTitle}</p>}
-                                </div>
-                                <div className="flex-shrink-0 flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5 w-full">
                                   {canPlayYoutube && (
                                     <button
                                       onClick={() => handleSelectYoutubeVideo(video.id)}
-                                      className="px-2 py-1 rounded-md bg-red-500/15 border border-red-500/25 text-red-400 text-[9px] font-medium hover:bg-red-500/25 transition-colors whitespace-nowrap"
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md bg-red-500/15 border border-red-500/25 text-red-400 text-[9px] font-semibold hover:bg-red-500/25 transition-colors"
                                     >
-                                      Play
+                                      <Play className="w-2.5 h-2.5 fill-current" /> Play
                                     </button>
                                   )}
                                   <button
@@ -6922,9 +6924,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                         return next;
                                       });
                                     }}
-                                    className="px-2 py-1 rounded-md bg-muted/20 text-muted-foreground/40 text-[9px] hover:text-muted-foreground/70 transition-colors whitespace-nowrap"
+                                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md bg-muted/20 border border-border/20 text-muted-foreground/50 text-[9px] font-medium hover:text-muted-foreground/80 hover:bg-muted/40 transition-colors"
                                   >
-                                    Remove
+                                    <X className="w-2.5 h-2.5" /> Remove
                                   </button>
                                 </div>
                               </div>
