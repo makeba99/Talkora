@@ -2138,7 +2138,7 @@ export default function Lobby() {
           ) : roomsLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-0 lg:gap-y-0 xl:gap-y-0">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="space-y-3 p-5 rounded-md border" style={{ minHeight: 320 }}>
+                <div key={i} className="space-y-3 p-5 rounded-md border" style={{ minHeight: 300 }}>
                   <Skeleton className="h-6 w-3/4" />
                   <div className="flex gap-2">
                     <Skeleton className="h-5 w-16" />
