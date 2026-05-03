@@ -132,22 +132,23 @@ const LANGUAGE_CODES: Record<string, string> = {
   Armenian: "am", Indonesian: "id",
 };
 
-function LanguageFlag({ language, priority = false }: { language: string; priority?: boolean }) {
+function toFlagEmoji(code: string): string {
+  return [...code.toUpperCase()].map(c =>
+    String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
+  ).join("");
+}
+
+function LanguageFlag({ language }: { language: string; priority?: boolean }) {
   const code = LANGUAGE_CODES[language];
   if (!code) return <Globe className="w-3.5 h-3.5 text-white/50" />;
   return (
-    <img
-      src={`https://flagcdn.com/20x15/${code}.png`}
-      srcSet={`https://flagcdn.com/40x30/${code}.png 2x`}
-      width={20}
-      height={15}
-      alt={language}
-      loading={priority ? "eager" : "lazy"}
-      decoding={priority ? "sync" : "async"}
-      fetchpriority={priority ? "high" : undefined}
-      className="rounded-[2px] flex-shrink-0"
-      style={{ objectFit: "cover" }}
-    />
+    <span
+      className="text-sm leading-none flex-shrink-0 select-none"
+      role="img"
+      aria-label={language}
+    >
+      {toFlagEmoji(code)}
+    </span>
   );
 }
 
@@ -592,7 +593,13 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_result, variables) => {
+      queryClient.setQueryData(["/api/rooms"], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((r: any) =>
+          r.id === room.id ? { ...r, ...variables } : r
+        );
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       setEditOpen(false);
     },

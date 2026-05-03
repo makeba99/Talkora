@@ -159,7 +159,7 @@
         font-family: 'Space Grotesk';
         font-style: normal;
         font-weight: 400 700;
-        font-display: swap;
+        font-display: optional;
         src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
         unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
       }
@@ -242,48 +242,28 @@
       }
     </style>
 
-    <!-- Connect early to flag CDN (visible on every room card immediately).
-         randomuser.me shows profile pictures on the lobby people-section —
-         upgrading from dns-prefetch to preconnect does the TLS handshake early
-         so the first profile image request is instant instead of paying the
-         ~200-400ms RTT cost at render time.
+    <!-- Resource hints: connect early to external origins that serve content
+         visible shortly after first paint. Flag images are now rendered as
+         Unicode emoji (zero network cost), so flagcdn.com is no longer needed.
+         Hints are kept to a minimum — Lighthouse flags >4 preconnects as
+         wasteful (they compete for bandwidth on slow mobile connections).
 
-         IMPORTANT: these three preconnects intentionally omit the `crossorigin`
-         attribute. All three origins are fetched exclusively via plain <img>
-         tags (no crossorigin attribute on the element). Without crossorigin on
-         the img, the browser uses the *non-CORS* HTTP connection pool. A
-         preconnect with crossorigin warms the *CORS-anonymous* pool — a
-         completely separate socket — so the actual image fetch ignores the
-         pre-warmed connection and opens a second one. Removing crossorigin here
-         ensures the pre-warmed socket is reused, saving ~100 ms per origin. -->
-    <!-- Only ONE preconnect — Lighthouse flags >4 as wasteful (they compete
-         for bandwidth on slow connections). flagcdn.com is the most critical:
-         flag images appear on every visible room card immediately on first paint.
-         randomuser.me serves the People-section avatars which are below-the-fold
-         and only visible on the non-default tab, so dns-prefetch is sufficient.
-         i.ytimg.com serves YouTube thumbnails only in hologram-theme rooms
-         (rare); keep dns-prefetch only. -->
-    <!-- flagcdn.com: flag images appear on every visible room card at first paint. -->
-    <link rel="preconnect" href="https://flagcdn.com" />
-    <link rel="dns-prefetch" href="https://flagcdn.com" />
-    <!-- media.tenor.com: GIF backgrounds on room cards load lazily (they are
-         decorative; LCP is now served by same-origin content). Preconnecting
-         still helps because the first few lazy images load shortly after React
-         mounts — warming DNS+TCP+TLS saves ~150–400 ms on mobile for those.
-         crossorigin is omitted intentionally — <img> fetches are non-CORS;
-         a crossorigin preconnect would warm the wrong pool. -->
+         IMPORTANT: crossorigin is intentionally omitted on img-serving origins.
+         <img> fetches use the non-CORS connection pool; a preconnect with
+         crossorigin warms the CORS-anonymous pool instead — a different socket
+         — so the actual image request ignores the pre-warmed connection. -->
+    <!-- media.tenor.com: GIF room backgrounds. Lazy-loaded but appear within
+         ~1 s of React mount on the lobby — warming DNS+TCP+TLS saves
+         150–400 ms on the first GIF fetch. -->
     <link rel="preconnect" href="https://media.tenor.com" />
     <link rel="dns-prefetch" href="https://media.tenor.com" />
-    <!-- i.ytimg.com: YouTube thumbnails for room card backgrounds (static
-         fallback used on mobile/reduced-motion). dns-prefetch (not preconnect)
-         because thumbnails are always below-the-fold or mobile-only. -->
+    <!-- i.ytimg.com: YouTube thumbnails used as room card backgrounds on
+         mobile/reduced-motion (static fallback). Below-fold → dns-prefetch. -->
     <link rel="dns-prefetch" href="https://i.ytimg.com" />
+    <!-- randomuser.me: People-section avatars (non-default tab, below-fold). -->
     <link rel="dns-prefetch" href="https://randomuser.me" />
-    <!-- YouTube embeds are deferred and only load on user interaction; a
-         single dns-prefetch covers all yt sub-domains to stay under Lighthouse's
-         4-hint cap (www.youtube.com + www.youtube-nocookie.com share the same
-         infrastructure, so one hint is sufficient). images.unsplash.com and
-         archive.org are loaded lazily well after LCP, so no hint needed. -->
+    <!-- YouTube embeds: deferred until user interaction. One dns-prefetch
+         covers www.youtube.com and www.youtube-nocookie.com. -->
     <link rel="dns-prefetch" href="https://www.youtube.com" />
     <!-- Critical API preloads: start these fetches during HTML parsing so
          TanStack Query's first fetch hits the in-flight network response

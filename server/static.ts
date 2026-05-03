@@ -57,29 +57,38 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // socket-vendor is intentionally excluded: SocketLayer is now lazy-loaded
   // and only fetched when a user authenticates. Unauthenticated page loads
   // (Lighthouse, crawlers, first-visit) never download socket.io-client.
-  const criticalScriptPatterns: RegExp[] = [
-    /^lobby-[\w-]+\.js$/,             // LCP route (lazy — modulepreload beats lazy discovery)
-    /^react-vendor-[\w-]+\.js$/,      // react + react-dom + radix-ui + react-query + wouter
-    /^icons-vendor-[\w-]+\.js$/,      // lucide-react icons rendered on lobby
-    /^room-card-[\w-]+\.js$/,         // lobby grid item — sometimes split out
-    /^app-constants-[\w-]+\.js$/,     // zero-dep shared constants (9+ route chunks import it)
-    /^ui-components-[\w-]+\.js$/,     // consolidated shadcn UI wrappers (button, popover, etc.)
+  // Priority-ordered patterns: entries listed first get earlier slots in the
+  // HTTP Link header (the browser fetches Link entries before parsing HTML).
+  // Each pattern is tagged with its rank; we sort matches by rank so the
+  // most critical chunks always appear first regardless of filesystem order.
+  const criticalScriptPatterns: Array<{ re: RegExp; rank: number; label: string }> = [
+    { re: /^react-vendor-[\w-]+\.js$/,   rank: 0, label: "react + react-dom + radix-ui + react-query" },
+    { re: /^lobby-[\w-]+\.js$/,          rank: 1, label: "LCP route" },
+    { re: /^ui-components-[\w-]+\.js$/,  rank: 2, label: "shadcn UI wrappers" },
+    { re: /^icons-vendor-[\w-]+\.js$/,   rank: 3, label: "lucide-react lobby icons" },
+    { re: /^app-constants-[\w-]+\.js$/,  rank: 4, label: "shared constants" },
+    { re: /^room-card-[\w-]+\.js$/,      rank: 5, label: "room card (if split)" },
   ];
   const criticalStylePatterns: RegExp[] = [
     /^index-[\w-]+\.css$/,            // entry CSS
     /^lobby-[\w-]+\.css$/,            // route-level CSS, if cssCodeSplit emits one
   ];
 
-  const scriptHrefs: string[] = [];
+  // Collect matches with their priority rank so we can sort them.
+  const scriptEntries: Array<{ href: string; rank: number }> = [];
   const styleHrefs: string[] = [];
 
   for (const file of assetFiles) {
-    if (criticalScriptPatterns.some((re) => re.test(file))) {
-      scriptHrefs.push(`/assets/${file}`);
+    const match = criticalScriptPatterns.find(({ re }) => re.test(file));
+    if (match) {
+      scriptEntries.push({ href: `/assets/${file}`, rank: match.rank });
     } else if (criticalStylePatterns.some((re) => re.test(file))) {
       styleHrefs.push(`/assets/${file}`);
     }
   }
+  // Sort by rank so the most critical chunks appear first in Link header.
+  scriptEntries.sort((a, b) => a.rank - b.rank);
+  const scriptHrefs = scriptEntries.map((e) => e.href);
 
   // De-duplicate against any preload Vite already emitted into the HTML so
   // we don't ship two preload tags for the same file.
@@ -152,12 +161,15 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
 
   // Build the Link HTTP header — this beats the in-HTML link tags by a
   // round-trip because the browser sees it before HTML parsing starts.
-  // Limit to ~6 entries to stay under common 8 KB header limits.
-  const headerEntries: string[] = [];
-  for (const h of [...scriptHrefs].slice(0, 5)) {
+  // Limit to 8 entries to stay comfortably under common 8 KB header limits.
+  // Order: font first (LCP-blocking, critical render path), then JS chunks
+  // in priority rank order, then CSS.
+  const FONT_PRELOAD = `</fonts/space-grotesk-latin.woff2>; rel=preload; as=font; type=font/woff2; crossorigin`;
+  const headerEntries: string[] = [FONT_PRELOAD];
+  for (const h of [...scriptHrefs].slice(0, 6)) {
     headerEntries.push(`<${h}>; rel=modulepreload; crossorigin`);
   }
-  for (const h of [...styleHrefs].slice(0, 2)) {
+  for (const h of [...styleHrefs].slice(0, 1)) {
     headerEntries.push(`<${h}>; rel=preload; as=style`);
   }
   const linkHeader = headerEntries.join(", ");
