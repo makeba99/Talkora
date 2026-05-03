@@ -4140,10 +4140,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <span className={labelBase} style={{ color: aiTutorActive ? "hsl(var(--neu-orange-hi) / 0.95)" : "hsl(var(--neu-orange-hi) / 0.72)" }}>
             {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
-          <span className="text-[9px] uppercase tracking-[0.24em] font-bold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-200">
-            Demo
-          </span>
         </div>
+        <span className="absolute -top-1.5 -right-2 text-[9px] uppercase tracking-[0.24em] font-bold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-200 pointer-events-none">
+          Demo
+        </span>
 
         <div className="mx-0.5 h-7 sm:h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
 
