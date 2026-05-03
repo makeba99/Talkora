@@ -427,12 +427,12 @@ function ParticipantCard({
                   style={
                     participantRole === "owner" ? { background: "linear-gradient(135deg,hsl(var(--neu-orange-hi)/0.18),hsl(var(--neu-orange-lo)/0.12))", borderColor: "hsl(var(--neu-orange)/0.5)", color: "hsl(var(--neu-orange-hi))" } :
                     participantRole === "co-owner" ? { background: "rgba(56,189,248,0.12)", borderColor: "rgba(56,189,248,0.45)", color: "rgb(125,211,252)" } :
-                    participantRole === "guest" ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.40)", color: "rgb(252,165,165)" } :
+                    participantRole === "guest" ? { background: "rgba(139,92,246,0.10)", borderColor: "rgba(139,92,246,0.35)", color: "rgb(196,181,253)" } :
                     participantRole === "troll" ? { background: "rgba(234,179,8,0.12)", borderColor: "rgba(234,179,8,0.45)", color: "rgb(253,224,71)" } :
                     { background: "rgba(148,163,184,0.06)", borderColor: "rgba(148,163,184,0.18)", color: "rgb(148,163,184)" }
                   }
                   data-testid={`role-room-${p.id}`}>
-                  {participantRole === "owner" ? "👑 OWNER" : participantRole === "co-owner" ? "⚡ CO-OWNER" : participantRole === "guest" ? "🔒 GUEST" : participantRole === "troll" ? "🧌 TROLL" : <span className="flex items-center gap-0.5"><svg className="w-3 h-3 opacity-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>GUEST</span>}
+                  {participantRole === "owner" ? "👑 OWNER" : participantRole === "co-owner" ? "⚡ CO-OWNER" : participantRole === "guest" ? "👤 GUEST" : participantRole === "troll" ? "🧌 TROLL" : <span className="flex items-center gap-0.5"><svg className="w-3 h-3 opacity-40" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>GUEST</span>}
                 </div>
                 {(() => {
                   const statusMap: Record<string, { label: string; icon: string; bg: string; border: string; color: string; glow: string }> = {
@@ -11822,8 +11822,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       <RoomOnboardingTour user={user} isOwner={isHost} />
       <PinnedSocialsButton />
 
-      {/* Troll Vote Modal */}
-      {trollVoteModal && user && trollVoteModal.targetUserId !== user.id && (
+      {/* Troll Vote Modal — hidden once the user has cast their vote */}
+      {trollVoteModal && user && trollVoteModal.targetUserId !== user.id && myTrollVote === null && (
         <div className="fixed inset-0 z-[900] flex items-center justify-center pointer-events-none">
           <div
             className="pointer-events-auto relative w-80 rounded-2xl border overflow-hidden animate-in fade-in zoom-in-95 duration-300"
