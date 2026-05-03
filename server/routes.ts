@@ -1868,7 +1868,7 @@ export async function registerRoutes(
       if (userId !== req.params.id) {
         return res.status(403).json({ message: "Cannot update other users" });
       }
-      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, instagramUrl, linkedinUrl, facebookUrl, socialsPinned } = req.body;
+      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status } = req.body;
       const updateData: any = {};
       if (displayName !== undefined) updateData.displayName = displayName;
       if (profileImageUrl !== undefined) updateData.profileImageUrl = normalizeProfileImageUrl(profileImageUrl);
@@ -1880,6 +1880,7 @@ export async function registerRoutes(
       if (linkedinUrl !== undefined) updateData.linkedinUrl = linkedinUrl;
       if (facebookUrl !== undefined) updateData.facebookUrl = facebookUrl;
       if (socialsPinned !== undefined) updateData.socialsPinned = !!socialsPinned;
+      if (status !== undefined) updateData.status = status;
       const updated = await storage.updateUser(userId, updateData);
       // Broadcast profile changes to all connected clients so avatars, rings,
       // and decorations refresh in real-time without a page reload.
@@ -1890,6 +1891,7 @@ export async function registerRoutes(
         avatarRing: updated.avatarRing,
         flairBadge: updated.flairBadge,
         profileDecoration: updated.profileDecoration,
+        status: updated.status,
       });
       res.json(updated);
     } catch (err: any) {

@@ -26,7 +26,7 @@ export const users = pgTable("users", {
   linkedinUrl: varchar("linkedin_url"),
   facebookUrl: varchar("facebook_url"),
   socialsPinned: boolean("socials_pinned").notNull().default(false),
-  status: text("status").notNull().default("offline"),
+  status: text("status").notNull().default("online"),
   role: varchar("role", { length: 20 }).notNull().default("user"),
   warningCount: integer("warning_count").notNull().default(0),
   restrictedUntil: timestamp("restricted_until"),

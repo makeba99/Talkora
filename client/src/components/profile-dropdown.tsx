@@ -263,6 +263,7 @@ export function ProfileDropdown({
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
   const [socialsPinned, setSocialsPinned] = useState(false);
+  const [presenceStatus, setPresenceStatus] = useState("online");
   const [selectedRing, setSelectedRing] = useState<string>("none");
   const [selectedFlair, setSelectedFlair] = useState<string>("none");
   const [selectedDecoration, setSelectedDecoration] = useState<string>("none");
@@ -273,7 +274,7 @@ export function ProfileDropdown({
   const [cropImgSrc, setCropImgSrc] = useState("");
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: { displayName?: string; bio?: string; instagramUrl?: string; linkedinUrl?: string; facebookUrl?: string; socialsPinned?: boolean }) => {
+    mutationFn: async (data: { displayName?: string; bio?: string; instagramUrl?: string; linkedinUrl?: string; facebookUrl?: string; socialsPinned?: boolean; status?: string }) => {
       const res = await apiRequest("PATCH", `/api/users/${user?.id}`, data);
       return res.json();
     },
@@ -402,6 +403,7 @@ export function ProfileDropdown({
     setLinkedinUrl((user as any)?.linkedinUrl || "");
     setFacebookUrl((user as any)?.facebookUrl || "");
     setSocialsPinned(!!(user as any)?.socialsPinned);
+    setPresenceStatus((user as any)?.status || "online");
     setEditOpen(true);
   };
 
@@ -860,6 +862,20 @@ export function ProfileDropdown({
                 />
                 <p className="text-xs text-muted-foreground text-right">{bio.length}/150</p>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="presence-status">Status</Label>
+                <Select value={presenceStatus} onValueChange={setPresenceStatus}>
+                  <SelectTrigger id="presence-status" data-testid="select-presence-status">
+                    <SelectValue placeholder="Set your status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="brb">BRB</SelectItem>
+                    <SelectItem value="afk">AFK</SelectItem>
+                    <SelectItem value="busy">Busy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-1.5">Social Links</Label>
@@ -915,7 +931,7 @@ export function ProfileDropdown({
 
               <Button
                 className="w-full"
-                onClick={() => updateProfileMutation.mutate({ displayName, bio, instagramUrl, linkedinUrl, facebookUrl, socialsPinned })}
+                onClick={() => updateProfileMutation.mutate({ displayName, bio, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status: presenceStatus })}
                 disabled={updateProfileMutation.isPending}
                 data-testid="button-save-profile"
               >
