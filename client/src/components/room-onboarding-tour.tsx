@@ -362,7 +362,7 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
     const retry1 = window.setTimeout(update, 80);
     const retry2 = window.setTimeout(update, 240);
     const retry3 = window.setTimeout(update, 520);
-    window.addEventListener("resize", update);
+    window.addEventListener("resize", update, { passive: true });
     window.addEventListener("scroll", update, { capture: true, passive: true });
     const interval = window.setInterval(update, 700);
     return () => {

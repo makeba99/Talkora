@@ -1371,8 +1371,12 @@ export default function Lobby() {
               />
               <VextornMark size={36} className="relative z-10 drop-shadow-[0_0_12px_rgba(155,92,255,0.50)]" />
             </div>
-            <div className="min-w-0 hidden sm:flex flex-col justify-center leading-none">
-              <h1
+            {/* sr-only h1 ensures screen readers and Lighthouse accessibility
+                audits always find a page-level heading even on viewports
+                where the visible brand text is inside a display:none container. */}
+            <h1 className="sr-only">Vextorn — Talk. Share. Belong.</h1>
+            <div className="min-w-0 hidden sm:flex flex-col justify-center leading-none" aria-hidden="true">
+              <span
                 className="text-[17px] leading-none tracking-tight"
                 style={{
                   fontWeight: 700,
@@ -1381,7 +1385,7 @@ export default function Lobby() {
                 }}
               >
                 Vextorn
-              </h1>
+              </span>
               <p
                 className="text-[9.5px] leading-none mt-1.5 bg-gradient-to-r from-[#9D86FF] via-[#7B5CF6] to-[#3D8FFF] bg-clip-text text-transparent uppercase tracking-[0.18em]"
                 style={{ fontWeight: 700 }}
@@ -1701,7 +1705,7 @@ export default function Lobby() {
                         width={480}
                         height={208}
                         referrerPolicy="no-referrer"
-                        {...(i === 0 ? { fetchpriority: "high", importance: "high" } as any : {})}
+                        {...(i === 0 ? { fetchpriority: "high" } as any : {})}
                         className="w-full rounded-lg object-cover max-h-52 aspect-[12/5]"
                         data-testid={`img-lobby-announcement-media-${announcement.id}-${i}`}
                       />
@@ -1899,6 +1903,8 @@ export default function Lobby() {
                                 alt={name}
                                 width={28}
                                 height={28}
+                                loading="lazy"
+                                decoding="async"
                                 className="search-suggest-item-avatar"
                               />
                             ) : (

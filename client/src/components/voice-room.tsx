@@ -3069,7 +3069,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // Observe only the slot itself — observing document.body fires on every layout change in the app.
     const ro = new ResizeObserver(scheduleMeasure);
     if (ytSlotRef.current) ro.observe(ytSlotRef.current);
-    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("resize", scheduleMeasure, { passive: true });
     window.addEventListener("scroll", scheduleMeasure, { capture: true, passive: true });
     return () => {
       if (rafId) window.cancelAnimationFrame(rafId);

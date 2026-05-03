@@ -86,7 +86,7 @@ export function PinnedSocialsButton() {
     const onResize = () => {
       setTop((cur) => (cur === null ? cur : clampTop(cur, wrapRef.current?.offsetHeight ?? 56)));
     };
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", onResize, { passive: true });
     return () => window.removeEventListener("resize", onResize);
   }, []);
 

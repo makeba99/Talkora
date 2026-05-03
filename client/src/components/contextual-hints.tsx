@@ -71,7 +71,7 @@ export function ContextualHints() {
     const update = () => {
       setHint((h) => (h ? compute({ ...h }) : h));
     };
-    window.addEventListener("resize", update);
+    window.addEventListener("resize", update, { passive: true });
     window.addEventListener("scroll", update, { capture: true, passive: true });
     return () => {
       window.removeEventListener("resize", update);

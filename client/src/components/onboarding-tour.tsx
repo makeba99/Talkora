@@ -332,7 +332,7 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
     const retry1 = window.setTimeout(update, 80);
     const retry2 = window.setTimeout(update, 220);
     const retry3 = window.setTimeout(update, 480);
-    window.addEventListener("resize", update);
+    window.addEventListener("resize", update, { passive: true });
     window.addEventListener("scroll", update, { capture: true, passive: true });
     const interval = window.setInterval(update, 600);
     return () => {

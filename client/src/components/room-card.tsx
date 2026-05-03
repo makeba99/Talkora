@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, memo } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +22,42 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LANGUAGES, LEVELS } from "@shared/constants";
 import type { Room, User, Follow, UserBadge } from "@shared/schema";
+
+/* ─── Module-level viewport singleton ─────────────────────────────────────
+ * Each RoomCard previously installed its own window resize listener.
+ * On a 9-card lobby that's 9 handlers all firing on the same resize event
+ * — identical work done 9× per frame. This singleton installs exactly ONE
+ * passive listener for the whole page, notifies every subscribed card, and
+ * lets them recompute in a shared microtask batch instead of 9 separate
+ * ones.  The `passive: true` flag also removes the browser's
+ * scroll-blocking check and eliminates Lighthouse's non-passive-listener
+ * warning.
+ * ─────────────────────────────────────────────────────────────────────── */
+let _vpWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
+const _vpSubs = new Set<() => void>();
+let _vpInstalled = false;
+
+function subscribeVpResize(cb: () => void): () => void {
+  if (!_vpInstalled && typeof window !== "undefined") {
+    window.addEventListener(
+      "resize",
+      () => { _vpWidth = window.innerWidth; _vpSubs.forEach((fn) => fn()); },
+      { passive: true },
+    );
+    _vpInstalled = true;
+  }
+  _vpSubs.add(cb);
+  return () => _vpSubs.delete(cb);
+}
+
+function computeCircleScale(displayCount: number): number {
+  const w = _vpWidth;
+  const crowded = displayCount >= 4;
+  if (w >= 1536) return crowded ? 1.10 : 1.35;
+  if (w >= 1280) return crowded ? 1.00 : 1.18;
+  if (w >= 1024) return crowded ? 0.94 : 1.06;
+  return crowded ? 0.90 : 0.98;
+}
 
 /**
  * Avatars in this card render at 52–74 CSS px. randomuser.me serves portraits
@@ -331,7 +367,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
           loading={priority ? "eager" : "lazy"}
           decoding="async"
           referrerPolicy="no-referrer"
-          {...(priority ? { fetchpriority: "high", importance: "high" } as any : {})}
+          {...(priority ? { fetchpriority: "high" } as any : {})}
           className="absolute inset-0 w-full h-full object-cover z-0"
           style={{ opacity: 0.65, filter: "brightness(0.7) saturate(0.85)" }}
         />
@@ -359,7 +395,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
               loading={priority ? "eager" : "lazy"}
               decoding="async"
               referrerPolicy="no-referrer"
-              {...(priority ? { fetchpriority: "high", importance: "high" } as any : {})}
+              {...(priority ? { fetchpriority: "high" } as any : {})}
               className="absolute inset-0 w-full h-full object-cover z-0"
               style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)" }}
             />
@@ -581,21 +617,13 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   /* viewport-based scale factor so the participant circles grow on bigger screens
      while the card itself stays a comfortable, fixed-feeling size. Sizing is
      based on maxUsers (total capacity) so the grid always fills the card area
-     proportionally whether slots are filled or empty. */
-  const [circleScale, setCircleScale] = useState(1);
+     proportionally whether slots are filled or empty.
+     Uses the module-level singleton so all cards share ONE passive listener
+     instead of N separate resize handlers (one per card). */
+  const [circleScale, setCircleScale] = useState(() => computeCircleScale(displayCount));
   useEffect(() => {
-    const compute = () => {
-      const w = window.innerWidth;
-      // 4-person 2×2 grids overflow body at uncrowded scale — treat ≥4 as crowded
-      const crowded = displayCount >= 4;
-      if (w >= 1536) setCircleScale(crowded ? 1.10 : 1.35);
-      else if (w >= 1280) setCircleScale(crowded ? 1.00 : 1.18);
-      else if (w >= 1024) setCircleScale(crowded ? 0.94 : 1.06);
-      else setCircleScale(crowded ? 0.90 : 0.98);
-    };
-    compute();
-    window.addEventListener("resize", compute);
-    return () => window.removeEventListener("resize", compute);
+    setCircleScale(computeCircleScale(displayCount));
+    return subscribeVpResize(() => setCircleScale(computeCircleScale(displayCount)));
   }, [displayCount]);
 
   /* Fixed circle size — avatars stay the same size regardless of how many

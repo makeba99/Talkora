@@ -142,6 +142,8 @@ export function PwaInstallBanner() {
           alt="Vextorn"
           width="48"
           height="48"
+          loading="lazy"
+          decoding="async"
           className="w-12 h-12 rounded-2xl shadow-lg flex-shrink-0 object-cover"
         />
         <div className="flex-1 min-w-0">
