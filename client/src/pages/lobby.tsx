@@ -983,8 +983,22 @@ export default function Lobby() {
       }
     );
 
-    socket.on("room:created", () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    socket.on("room:created", (newRoom: any) => {
+      if (newRoom?.id) {
+        queryClient.setQueryData<any[]>(["/api/rooms"], (old) =>
+          old ? (old.some(r => r.id === newRoom.id) ? old : [newRoom, ...old]) : [newRoom]
+        );
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+      }
+    });
+
+    socket.on("room:updated", (updatedRoom: any) => {
+      if (!updatedRoom?.id) return;
+      queryClient.setQueryData<any[]>(["/api/rooms"], (old) => {
+        if (!old) return old;
+        return old.map(r => r.id === updatedRoom.id ? { ...r, ...updatedRoom } : r);
+      });
     });
 
     socket.on(
@@ -1072,6 +1086,7 @@ export default function Lobby() {
       socket.off("presence:update");
       socket.off("room:participants-update");
       socket.off("room:created");
+      socket.off("room:updated");
       socket.off("room:deleted");
       socket.off("user:profile-updated");
       socket.off("room:full");

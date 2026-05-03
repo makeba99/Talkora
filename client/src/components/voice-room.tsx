@@ -3860,7 +3860,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // Treat closing the browser tab / window the same as clicking the Leave button.
   // We can't run async work here, but we can synchronously stop local media tracks,
   // close peer connections, and emit room:leave so the server removes us from the
-  // room IMMEDIATELY (instead of waiting the 1.5s disconnect grace period). This
+  // room IMMEDIATELY (instead of waiting the 8s disconnect grace period). This
   // means other participants see us leave instantly when we close the tab.
   const handleLeaveRef = useRef(handleLeave);
   useEffect(() => { handleLeaveRef.current = handleLeave; });

@@ -5563,6 +5563,11 @@ export async function registerRoutes(
                   io.to(roomId).emit("room:youtube", { hostId: disconnectingUserId, videoId: null, startedBy: disconnectingUserId });
                 }
 
+                // Per-host: clear this user's movie host slot if they had one.
+                if (deleteMovieHost(roomId, disconnectingUserId)) {
+                  io.to(roomId).emit("room:movie", { hostId: disconnectingUserId, movieId: null, startedBy: disconnectingUserId });
+                }
+
                 const bkState = roomBookState.get(roomId);
                 if (bkState) {
                   bkState.watchers.delete(disconnectingUserId);
@@ -5589,6 +5594,8 @@ export async function registerRoutes(
                   roomVideoStatus.delete(roomId);
                   roomScreenShareStatus.delete(roomId);
                   roomYoutubeState.delete(roomId);
+                  roomYoutubeQueue.delete(roomId);
+                  roomMovieState.delete(roomId);
                   roomRoles.delete(roomId);
                   roomMuteStatus.delete(roomId);
                   startRoomDeleteTimer(roomId);
@@ -5597,7 +5604,7 @@ export async function registerRoutes(
                 }
               }
             }
-          }, 1500);
+          }, 8000);
           disconnectTimers.set(timerId, timer);
         }
       }
