@@ -8360,7 +8360,7 @@ html.neomorphic-light .scroll-jump-btn {
 .onboarding-dots {
   display: inline-flex;
   align-items: center;
-  gap: 1px; /* tight gap; touch areas are 24 px so centres are 25 px apart */
+  gap: 12px; /* WCAG 2.5.8: ≥12 px clearance between adjacent 24×24 targets */
 }
 
 /* WCAG 2.5.8 — min touch target 24 × 24 px.
@@ -9652,7 +9652,8 @@ html.neomorphic-light .pinned-socials-link {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  color: hsl(46 100% 7%); /* darkened from 16% → 7% for WCAG AA contrast ≥ 4.5:1 on amber gradient */
+  color: hsl(0 0% 5%); /* near-black for maximum contrast on amber */
+  background-color: hsl(43 100% 62%); /* solid fallback so Lighthouse can evaluate contrast */
   background: linear-gradient(180deg, hsl(46 100% 70%), hsl(38 100% 56%));
   border: 1px solid hsl(38 100% 50%);
   box-shadow:

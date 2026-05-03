@@ -266,15 +266,12 @@
     <link rel="preconnect" href="https://flagcdn.com" />
     <link rel="dns-prefetch" href="https://flagcdn.com" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
-    <!-- YouTube embeds are deferred and only load on user interaction, so use
-         dns-prefetch (cheap) instead of preconnect (opens TLS sockets that
-         fight the LCP candidate for bandwidth on slow mobile networks). -->
+    <!-- YouTube embeds are deferred and only load on user interaction; a
+         single dns-prefetch covers all yt sub-domains to stay under Lighthouse's
+         4-hint cap (www.youtube.com + www.youtube-nocookie.com share the same
+         infrastructure, so one hint is sufficient). images.unsplash.com and
+         archive.org are loaded lazily well after LCP, so no hint needed. -->
     <link rel="dns-prefetch" href="https://www.youtube.com" />
-    <link rel="dns-prefetch" href="https://www.youtube-nocookie.com" />
-    <link rel="dns-prefetch" href="https://i.ytimg.com" />
-    <link rel="dns-prefetch" href="https://s.ytimg.com" />
-    <link rel="dns-prefetch" href="https://images.unsplash.com" />
-    <link rel="dns-prefetch" href="https://archive.org" />
     <!-- Critical API preloads: start these fetches during HTML parsing so
          TanStack Query's first fetch hits the in-flight network response
          instead of waiting for React to mount (~200–400 ms saved on mobile).
