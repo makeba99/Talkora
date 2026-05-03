@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile, writeFile, readdir, stat } from "fs/promises";
+import { rm, readFile, writeFile, readdir, stat, mkdir, copyFile } from "fs/promises";
 import path from "path";
 import zlib from "zlib";
 import { promisify } from "util";
@@ -94,6 +94,32 @@ const allowlist = [
   "zod",
 ];
 
+async function copyMigrationsDir(src: string, dest: string): Promise<number> {
+  await mkdir(dest, { recursive: true });
+  const entries = await readdir(src, { withFileTypes: true });
+  let count = 0;
+  await Promise.all(
+    entries.map(async (e) => {
+      const srcPath = path.join(src, e.name);
+      const destPath = path.join(dest, e.name);
+      if (e.isDirectory()) {
+        count += await copyMigrationsDir(srcPath, destPath);
+      } else {
+        await copyFile(srcPath, destPath);
+        count++;
+      }
+    })
+  );
+  return count;
+}
+
+async function copyMigrations(): Promise<void> {
+  const src = path.resolve("migrations");
+  const dest = path.resolve("dist/migrations");
+  const count = await copyMigrationsDir(src, dest);
+  console.log(`copied ${count} migration file(s) to dist/migrations`);
+}
+
 async function buildAll() {
   await rm("dist", { recursive: true, force: true });
 
@@ -104,6 +130,9 @@ async function buildAll() {
   const t0 = Date.now();
   await precompressTree("dist/public");
   console.log(`pre-compressed in ${Date.now() - t0}ms`);
+
+  console.log("copying migration files...");
+  await copyMigrations();
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));

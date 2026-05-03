@@ -8,6 +8,7 @@ import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { startCleanupScheduler } from "./cleanup";
 import { applySecurityMiddleware } from "./security";
+import { runMigrations } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -88,6 +89,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await runMigrations();
   await setupAuth(app);
   registerAuthRoutes(app);
 

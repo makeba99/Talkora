@@ -114,15 +114,24 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // needs to render the skeleton. The CSS file lands within ~40 ms (it was
   // already preloaded in the Link header), so the FOUC window is imperceptible.
   // <noscript> ensures degraded environments still receive the stylesheet.
+  //
+  // crossorigin="" is intentionally omitted: same-origin stylesheets must be
+  // fetched with credentials-mode "include" (the default for plain <link>).
+  // Adding crossorigin switches to credentials-mode "same-origin" — a
+  // mismatch that triggers the "preload not used" browser warning. Keeping
+  // both the preload tag and the final stylesheet tag without crossorigin
+  // ensures the credentials mode matches and the preload is consumed.
   html = html.replace(
     /(<link\b([^>]*?\s)?rel="stylesheet"([^>]*?\s)?href="(\/assets\/index-[^"]+\.css)"[^>]*>)/gi,
-    (fullTag, _m, _b, _c, href) => {
+    (fullTag, _m, _b, _c, _href) => {
       const preloadTag = fullTag
+        .replace(/\s*crossorigin(?:="[^"]*")?\s*/gi, " ")
         .replace(/rel="stylesheet"/, 'rel="preload" as="style" id="_vxtcss"');
+      const noXoTag = fullTag.replace(/\s*crossorigin(?:="[^"]*")?\s*/gi, " ");
       return [
         preloadTag,
         `<script>!function(){var e=document.getElementById('_vxtcss');if(e)e.rel='stylesheet'}()</script>`,
-        `<noscript>${fullTag}</noscript>`,
+        `<noscript>${noXoTag}</noscript>`,
       ].join("\n    ");
     },
   );
