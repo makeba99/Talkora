@@ -4152,6 +4152,19 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:mood-clear", { userId: data.userId });
     });
 
+    // "Say Bye" — user waves goodbye to the room before leaving. Server
+    // broadcasts to everyone (including sender) so they all hear the sound
+    // and see the farewell toast, then the client handles the leave itself.
+    socket.on("room:say-bye", (data: { roomId: string; userId: string; userName: string }) => {
+      if (!data?.roomId || !data?.userId) return;
+      const userName = String(data.userName || "Someone").slice(0, 60);
+      io.to(data.roomId).emit("room:bye", {
+        userId: data.userId,
+        userName,
+        ts: Date.now(),
+      });
+    });
+
     socket.on("room:kick", async (data: { roomId: string; targetUserId: string; kickedBy: string }) => {
       const room = await storage.getRoom(data.roomId);
       if (!room || room.ownerId !== data.kickedBy) return;

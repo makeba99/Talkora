@@ -75,14 +75,200 @@ function noiseBurst(opts: { dur: number; gain?: number; filterFreq?: number; del
   src.stop(t0 + opts.dur + 0.02);
 }
 
-// Quick chord helper — fires several tones simultaneously to make richer sounds.
 function chord(freqs: number[], opts: Omit<ToneOpts, "freq">) {
   freqs.forEach((f) => tone({ ...opts, freq: f }));
 }
 
-// Plays an ascending or descending arpeggio.
 function arp(freqs: number[], stepDur: number, opts: Omit<ToneOpts, "freq" | "dur" | "delay"> = {}) {
   freqs.forEach((f, i) => tone({ ...opts, freq: f, dur: stepDur * 1.4, delay: i * stepDur }));
+}
+
+/* ─── Realistic laugh helper ────────────────────────────────────────────────
+   Synthesises "ha-ha-ha" by alternating a short voiced pulse (sawtooth at
+   speech fundamental ~180 Hz) with a breath-noise gap. Each "ha" has a tiny
+   upward pitch slide so it sounds human rather than mechanical.
+   ─────────────────────────────────────────────────────────────────────────── */
+function laugh(syllables: number, rate: number, baseFreq = 180, gainPeak = 0.22) {
+  const ac = ctx();
+  if (!ac) return;
+  for (let i = 0; i < syllables; i++) {
+    const t0 = ac.currentTime + i * rate;
+    const pitch = baseFreq + (Math.random() * 30 - 10);
+    // Voiced "ha" — sawtooth with formant-like bandpass
+    const osc = ac.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(pitch, t0);
+    osc.frequency.exponentialRampToValueAtTime(pitch * 1.06, t0 + 0.08);
+    const filt = ac.createBiquadFilter();
+    filt.type = "bandpass";
+    filt.frequency.value = 1100;
+    filt.Q.value = 1.4;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gainPeak, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.10);
+    osc.connect(filt).connect(g).connect(ac.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.12);
+    // Breathy aspiration noise after each syllable
+    const len = Math.floor(ac.sampleRate * 0.05);
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let j = 0; j < len; j++) d[j] = (Math.random() * 2 - 1) * (1 - j / len);
+    const ns = ac.createBufferSource();
+    ns.buffer = buf;
+    const nf = ac.createBiquadFilter();
+    nf.type = "highpass";
+    nf.frequency.value = 2800;
+    const ng = ac.createGain();
+    ng.gain.value = 0.07;
+    ns.connect(nf).connect(ng).connect(ac.destination);
+    ns.start(t0 + 0.06);
+    ns.stop(t0 + 0.11);
+  }
+}
+
+/* ─── Realistic snore helper ─────────────────────────────────────────────────
+   Models one snore cycle: an in-breath rattle then a quieter out-breath.
+   ─────────────────────────────────────────────────────────────────────────── */
+function snore(cycles: number, cycleLen = 0.9, startDelay = 0) {
+  const ac = ctx();
+  if (!ac) return;
+  for (let i = 0; i < cycles; i++) {
+    const t0 = ac.currentTime + startDelay + i * cycleLen;
+    // In-breath: rising sawtooth rattle (noisy nasal vibration)
+    const inOsc = ac.createOscillator();
+    inOsc.type = "sawtooth";
+    inOsc.frequency.setValueAtTime(80, t0);
+    inOsc.frequency.exponentialRampToValueAtTime(140, t0 + 0.28);
+    const inFilt = ac.createBiquadFilter();
+    inFilt.type = "bandpass";
+    inFilt.frequency.value = 700;
+    inFilt.Q.value = 2.2;
+    const inG = ac.createGain();
+    inG.gain.setValueAtTime(0.0001, t0);
+    inG.gain.exponentialRampToValueAtTime(0.28, t0 + 0.06);
+    inG.gain.exponentialRampToValueAtTime(0.26, t0 + 0.22);
+    inG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+    inOsc.connect(inFilt).connect(inG).connect(ac.destination);
+    inOsc.start(t0);
+    inOsc.stop(t0 + 0.34);
+    // Noise texture on in-breath
+    const len1 = Math.floor(ac.sampleRate * 0.30);
+    const nb1 = ac.createBuffer(1, len1, ac.sampleRate);
+    const d1 = nb1.getChannelData(0);
+    for (let j = 0; j < len1; j++) d1[j] = (Math.random() * 2 - 1) * Math.sin(Math.PI * j / len1);
+    const ns1 = ac.createBufferSource();
+    ns1.buffer = nb1;
+    const nf1 = ac.createBiquadFilter();
+    nf1.type = "bandpass";
+    nf1.frequency.value = 600;
+    nf1.Q.value = 1.8;
+    const ng1 = ac.createGain();
+    ng1.gain.value = 0.14;
+    ns1.connect(nf1).connect(ng1).connect(ac.destination);
+    ns1.start(t0 + 0.02);
+    ns1.stop(t0 + 0.32);
+    // Out-breath: quieter, lower, trailing off
+    const outOsc = ac.createOscillator();
+    outOsc.type = "sawtooth";
+    outOsc.frequency.setValueAtTime(110, t0 + 0.40);
+    outOsc.frequency.exponentialRampToValueAtTime(70, t0 + 0.72);
+    const outFilt = ac.createBiquadFilter();
+    outFilt.type = "bandpass";
+    outFilt.frequency.value = 500;
+    outFilt.Q.value = 1.6;
+    const outG = ac.createGain();
+    outG.gain.setValueAtTime(0.0001, t0 + 0.40);
+    outG.gain.exponentialRampToValueAtTime(0.16, t0 + 0.46);
+    outG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.75);
+    outOsc.connect(outFilt).connect(outG).connect(ac.destination);
+    outOsc.start(t0 + 0.40);
+    outOsc.stop(t0 + 0.77);
+  }
+}
+
+/* ─── Realistic angry growl ──────────────────────────────────────────────────
+   A vocal fry / chest growl: sub-harmonic buzz layered with a harsh
+   sawtooth and shaped noise to simulate a tense, tightened throat.
+   ─────────────────────────────────────────────────────────────────────────── */
+function angryGrowl(intensity: number = 1) {
+  const ac = ctx();
+  if (!ac) return;
+  const t0 = ac.currentTime;
+  // Sub-bass fundamental (vocal fry / chest resonance)
+  const sub = ac.createOscillator();
+  sub.type = "sawtooth";
+  sub.frequency.setValueAtTime(60 * intensity, t0);
+  sub.frequency.setValueAtTime(55 * intensity, t0 + 0.08);
+  sub.frequency.setValueAtTime(65 * intensity, t0 + 0.18);
+  sub.frequency.setValueAtTime(50 * intensity, t0 + 0.32);
+  const subFilt = ac.createBiquadFilter();
+  subFilt.type = "lowpass";
+  subFilt.frequency.value = 600;
+  const subG = ac.createGain();
+  subG.gain.setValueAtTime(0.0001, t0);
+  subG.gain.exponentialRampToValueAtTime(0.26 * intensity, t0 + 0.04);
+  subG.gain.exponentialRampToValueAtTime(0.22 * intensity, t0 + 0.30);
+  subG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.40);
+  sub.connect(subFilt).connect(subG).connect(ac.destination);
+  sub.start(t0);
+  sub.stop(t0 + 0.42);
+  // Harsh mid harmonic (vocal tract resonance)
+  const mid = ac.createOscillator();
+  mid.type = "sawtooth";
+  mid.frequency.setValueAtTime(180, t0);
+  mid.frequency.setValueAtTime(160, t0 + 0.20);
+  const midFilt = ac.createBiquadFilter();
+  midFilt.type = "bandpass";
+  midFilt.frequency.value = 900;
+  midFilt.Q.value = 2.8;
+  const midG = ac.createGain();
+  midG.gain.setValueAtTime(0.0001, t0);
+  midG.gain.exponentialRampToValueAtTime(0.18 * intensity, t0 + 0.05);
+  midG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.38);
+  mid.connect(midFilt).connect(midG).connect(ac.destination);
+  mid.start(t0);
+  mid.stop(t0 + 0.40);
+  // Rough noise burst (the "grrr" texture)
+  const len = Math.floor(ac.sampleRate * 0.36);
+  const buf = ac.createBuffer(1, len, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / len) * 0.5;
+  }
+  const ns = ac.createBufferSource();
+  ns.buffer = buf;
+  const nf = ac.createBiquadFilter();
+  nf.type = "bandpass";
+  nf.frequency.value = 400;
+  nf.Q.value = 1.2;
+  const ng = ac.createGain();
+  ng.gain.value = 0.10 * intensity;
+  ns.connect(nf).connect(ng).connect(ac.destination);
+  ns.start(t0 + 0.02);
+  ns.stop(t0 + 0.38);
+}
+
+/* ─── Warm goodbye chime ──────────────────────────────────────────────────── */
+export function playSayByeSound() {
+  const ac = ctx();
+  if (!ac) return;
+  // Wave-shape: descending gentle arpeggio with a warm tail
+  const freqs = [880, 698, 523, 392];
+  freqs.forEach((f, i) => {
+    tone({ freq: f, type: "triangle", dur: 0.5, gain: 0.20, attack: 0.01, release: 0.46, delay: i * 0.10 });
+  });
+  // Soft shimmer at the end
+  tone({ freq: 1046, type: "sine", dur: 0.6, gain: 0.10, attack: 0.05, release: 0.52, delay: 0.42 });
+}
+
+/* ─── Departure sound (someone else left) ───────────────────────────────────
+   Subtle, gentle "door closing" — not jarring so it doesn't interrupt speech.
+   ─────────────────────────────────────────────────────────────────────────── */
+export function playDepartureSound() {
+  tone({ freq: 440, type: "sine", dur: 0.20, gain: 0.12, attack: 0.01, release: 0.17, slideTo: 280 });
+  tone({ freq: 330, type: "sine", dur: 0.18, gain: 0.09, attack: 0.01, release: 0.15, slideTo: 220, delay: 0.06 });
 }
 
 export function playMoodSound(emoji: string) {
@@ -93,7 +279,6 @@ export function playMoodSound(emoji: string) {
       tone({ freq: 1320, type: "sine", dur: 0.22, gain: 0.13, delay: 0.07 });
       break;
     case "🙏":
-      // soft bell-like chime
       chord([523, 659, 784], { type: "sine", dur: 0.6, gain: 0.10, attack: 0.02, release: 0.55 });
       break;
 
@@ -121,41 +306,33 @@ export function playMoodSound(emoji: string) {
       arp([660, 990, 1320, 1760], 0.05, { type: "triangle", gain: 0.13, attack: 0.005, release: 0.08 });
       break;
     case "🥳":
-      // little party-horn slide + sparkle
       tone({ freq: 440, type: "sawtooth", dur: 0.25, gain: 0.16, slideTo: 880, attack: 0.02, release: 0.20 });
       noiseBurst({ dur: 0.08, gain: 0.18, filterFreq: 4000, delay: 0.18 });
       arp([784, 988, 1175], 0.06, { type: "triangle", gain: 0.12, release: 0.08 });
       break;
     case "🔥":
-      // crackling fire
       noiseBurst({ dur: 0.18, gain: 0.18, filterFreq: 1800, filterType: "highpass" });
       noiseBurst({ dur: 0.10, gain: 0.14, filterFreq: 2400, delay: 0.12 });
       noiseBurst({ dur: 0.08, gain: 0.10, filterFreq: 3000, delay: 0.22 });
       break;
     case "🚀":
-      // launch whoosh going up
       tone({ freq: 120, type: "sawtooth", dur: 0.55, gain: 0.20, slideTo: 1200, attack: 0.02, release: 0.50 });
       noiseBurst({ dur: 0.55, gain: 0.10, filterFreq: 600, filterType: "lowpass" });
       break;
 
-    // ── Laughter (funny) ──
+    // ── Laughter (funny) — now realistic "ha ha ha" ──
     case "😂":
-      tone({ freq: 700, type: "square", dur: 0.07, gain: 0.10 });
-      tone({ freq: 850, type: "square", dur: 0.07, gain: 0.10, delay: 0.10 });
-      tone({ freq: 700, type: "square", dur: 0.07, gain: 0.10, delay: 0.20 });
-      tone({ freq: 850, type: "square", dur: 0.07, gain: 0.10, delay: 0.30 });
+      laugh(4, 0.13, 180, 0.22);
       break;
     case "🤣":
-      // longer rolling laugh
-      [0, 0.09, 0.18, 0.27, 0.36, 0.45, 0.54].forEach((d, i) => {
-        tone({ freq: i % 2 ? 920 : 720, type: "square", dur: 0.07, gain: 0.10, delay: d });
-      });
+      // Rolling ROFL — starts restrained, builds, then dies off laughing
+      laugh(3, 0.12, 160, 0.18);
+      laugh(4, 0.10, 200, 0.24);
+      laugh(3, 0.13, 175, 0.15);
       break;
     case "😆":
-      // quick giggles
-      [0, 0.08, 0.16].forEach((d, i) => {
-        tone({ freq: 880 + i * 80, type: "triangle", dur: 0.06, gain: 0.12, delay: d });
-      });
+      // Higher-pitched giggles
+      laugh(3, 0.10, 220, 0.18);
       break;
 
     // ── Surprise ──
@@ -163,7 +340,6 @@ export function playMoodSound(emoji: string) {
       tone({ freq: 440, type: "sine", dur: 0.30, gain: 0.16, slideTo: 880, attack: 0.05, release: 0.22 });
       break;
     case "😱":
-      // scream-ish slide up
       tone({ freq: 660, type: "sawtooth", dur: 0.50, gain: 0.18, slideTo: 1760, attack: 0.02, release: 0.45, vibrato: { rate: 18, depth: 40 } });
       break;
     case "🤯":
@@ -176,58 +352,53 @@ export function playMoodSound(emoji: string) {
       tone({ freq: 320, type: "sine", dur: 0.35, gain: 0.14, slideTo: 240, attack: 0.05, release: 0.28 });
       break;
     case "🙄":
-      // slow descending sigh
       tone({ freq: 480, type: "triangle", dur: 0.45, gain: 0.13, slideTo: 220, attack: 0.06, release: 0.40 });
       break;
 
-    // ── Sleepy ──
+    // ── Sleepy — now realistic snoring ──
     case "😴":
-      tone({ freq: 220, type: "sawtooth", dur: 0.55, gain: 0.16, slideTo: 90, attack: 0.18, release: 0.32 });
-      tone({ freq: 180, type: "sine", dur: 0.45, gain: 0.10, slideTo: 80, attack: 0.18, release: 0.22, delay: 0.55 });
+      snore(2, 0.95, 0);
       break;
     case "🥱":
-      // big yawn slide
-      tone({ freq: 180, type: "sawtooth", dur: 0.80, gain: 0.16, slideTo: 320, attack: 0.20, release: 0.55, vibrato: { rate: 4, depth: 6 } });
+      // Big yawn: slow inhale sweep, then exhale
+      tone({ freq: 160, type: "sawtooth", dur: 0.90, gain: 0.18, slideTo: 340, attack: 0.22, release: 0.62, vibrato: { rate: 4, depth: 8 } });
+      noiseBurst({ dur: 0.40, gain: 0.08, filterFreq: 2200, filterType: "highpass", delay: 0.50 });
+      tone({ freq: 260, type: "sine", dur: 0.45, gain: 0.10, slideTo: 160, attack: 0.05, release: 0.38, delay: 0.92 });
       break;
 
-    // ── Anger ──
+    // ── Anger — now realistic growl voice ──
     case "😡":
-      tone({ freq: 110, type: "sawtooth", dur: 0.30, gain: 0.20, slideTo: 60 });
-      noiseBurst({ dur: 0.20, gain: 0.10, filterFreq: 200 });
+      angryGrowl(1.0);
       break;
     case "🤬":
-      // censored beep
-      tone({ freq: 1000, type: "square", dur: 0.30, gain: 0.20 });
+      // Furious: louder multi-layered growl + a harsh censored-beep-like shriek
+      angryGrowl(1.4);
+      tone({ freq: 220, type: "sawtooth", dur: 0.22, gain: 0.20, slideTo: 180, delay: 0.08 });
+      noiseBurst({ dur: 0.18, gain: 0.14, filterFreq: 300, filterType: "lowpass", delay: 0.05 });
       break;
 
     // ── Funny / silly ──
     case "🤡":
-      // honk honk
       tone({ freq: 320, type: "square", dur: 0.18, gain: 0.20, slideTo: 220, attack: 0.01, release: 0.15 });
       tone({ freq: 320, type: "square", dur: 0.18, gain: 0.20, slideTo: 220, attack: 0.01, release: 0.15, delay: 0.22 });
       break;
     case "💩":
-      // squelchy plop
       tone({ freq: 440, type: "sine", dur: 0.18, gain: 0.18, slideTo: 80, attack: 0.005, release: 0.16 });
       noiseBurst({ dur: 0.10, gain: 0.10, filterFreq: 300, filterType: "lowpass", delay: 0.12 });
       break;
     case "👻":
-      // spooky woo
       tone({ freq: 220, type: "sine", dur: 0.55, gain: 0.16, slideTo: 440, attack: 0.10, release: 0.45, vibrato: { rate: 7, depth: 18 } });
       break;
     case "🤖":
-      // robot bleep-bloop
       tone({ freq: 440, type: "square", dur: 0.08, gain: 0.16 });
       tone({ freq: 660, type: "square", dur: 0.08, gain: 0.16, delay: 0.10 });
       tone({ freq: 220, type: "square", dur: 0.10, gain: 0.16, delay: 0.20 });
       break;
     case "🐸":
-      // ribbit
       tone({ freq: 180, type: "sawtooth", dur: 0.10, gain: 0.20, slideTo: 90 });
       tone({ freq: 200, type: "sawtooth", dur: 0.12, gain: 0.20, slideTo: 100, delay: 0.18 });
       break;
     case "🦄":
-      // sparkly magical chord
       arp([784, 988, 1175, 1568, 1976], 0.05, { type: "triangle", gain: 0.10, release: 0.18 });
       break;
 
@@ -236,7 +407,9 @@ export function playMoodSound(emoji: string) {
       tone({ freq: 1480, type: "sine", dur: 0.16, gain: 0.16 });
       break;
     case "👋":
-      tone({ freq: 540, type: "triangle", dur: 0.22, gain: 0.14, slideTo: 880, attack: 0.02, release: 0.18 });
+      // Warm wave sound
+      tone({ freq: 540, type: "triangle", dur: 0.28, gain: 0.16, slideTo: 880, attack: 0.02, release: 0.24 });
+      tone({ freq: 660, type: "sine", dur: 0.20, gain: 0.12, slideTo: 990, attack: 0.02, release: 0.16, delay: 0.12 });
       break;
 
     default:

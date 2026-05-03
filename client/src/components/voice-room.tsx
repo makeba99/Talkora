@@ -1000,6 +1000,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // Mood picker open/closed state (for the new emoji bar that replaced the
   // raise-hand button in the bottom control row).
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
+  const [sayingBye, setSayingBye] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const participantById = useMemo(() => {
     const map = new Map<string, Participant>();
@@ -2199,6 +2200,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket.on("room:user-left", (data: { userId: string; participants: Participant[] }) => {
       const leftUser = participantsRef.current.find((p) => p.id === data.userId);
       const name = leftUser ? getUserDisplayName(leftUser) : "Someone";
+      // Subtle departure cue for remaining participants
+      if (data.userId !== user.id) {
+        import("@/lib/mood-sounds").then((m) => m.playDepartureSound()).catch(() => {});
+      }
       setParticipants(data.participants);
       participantsRef.current = data.participants;
       // Clear any active typing indicator for the user who left
@@ -2360,9 +2365,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // back. We stash the emoji keyed by userId so the corresponding participant
     // card pins the mood emoji above their avatar. The mood now PERSISTS until
     // the owner explicitly removes it (room:mood-clear) or picks a new one.
+    // "Say Bye" — someone waved goodbye before leaving. Play the farewell sound
+    // for everyone and show a toast. The bye-sender's client handles leaving itself.
+    socket.on("room:bye", (data: { userId: string; userName: string; ts?: number }) => {
+      if (!data?.userId) return;
+      import("@/lib/mood-sounds").then((m) => {
+        m.playSayByeSound();
+      }).catch(() => {});
+      const isMe = data.userId === user.id;
+      if (!isMe) {
+        toast({
+          title: `👋 ${data.userName} said bye!`,
+          description: "They're waving goodbye and leaving the room.",
+          duration: 3500,
+        });
+      }
+    });
+
     socket.on("room:mood-update", (data: { userId: string; emoji: string; ts?: number }) => {
       if (!data?.userId || !data?.emoji) return;
-      const id = `${data.ts || Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const id = `${data.ts || Date.now()}-${Math.random().toString(36).slice(2, 8)}`; 
       setParticipantMoods((prev) => ({ ...prev, [data.userId]: { id, emoji: data.emoji } }));
       // Subtle audio cue so reactions register even when you're not looking at the screen.
       try { playMoodSound(data.emoji); } catch {}
@@ -2859,6 +2881,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:speaking");
       socket.off("room:hand-raised");
       socket.off("user:profile-updated");
+      socket.off("room:bye");
       socket.off("room:mood-update");
       // Cancel any in-flight mood-clear timers so they don't fire after unmount.
       Object.values(moodTimersRef.current).forEach((t) => clearTimeout(t));
@@ -3624,6 +3647,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   // AI tutor logic is now fully handled by the useAiTutor hook above.
 
+  // "Say Bye" — broadcasts a farewell to the room (everyone hears the sound
+  // + sees a toast), then leaves after a short theatrical pause.
+  const handleSayBye = () => {
+    if (sayingBye || !socket || !user) return;
+    setSayingBye(true);
+    const userName = getUserDisplayName(user as any) || user.username || "Someone";
+    socket.emit("room:say-bye", { roomId: room.id, userId: user.id, userName });
+    setTimeout(() => {
+      handleLeave();
+    }, 1800);
+  };
+
   const handleLeave = (reason?: "joined-another-room") => {
     // If AI Tutor is active, stop it cleanly (same as if the user clicked the AI off button).
     // This cancels TTS, stops mic listening, and emits room:ai-tutor-stop so the avatar
@@ -4074,6 +4109,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         </div>
 
         <div className="mx-0.5 h-7 sm:h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
+
+        {/* Say Bye */}
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
+          <button
+            onClick={handleSayBye}
+            disabled={sayingBye}
+            data-testid="button-say-bye"
+            title="Wave goodbye to the room before leaving"
+            className={btnBase}
+            style={sayingBye ? { ...leaveStyle, opacity: 0.55, cursor: "not-allowed" } : ghostStyle}
+          >
+            <span className="text-[15px] sm:text-[18px] leading-none" style={sayingBye ? { filter: "drop-shadow(0 0 5px rgba(251,191,36,0.7))" } : undefined}>
+              👋
+            </span>
+          </button>
+          <span className={labelBase} style={{ color: sayingBye ? "rgba(251,191,36,0.86)" : "rgba(255,255,255,0.32)" }}>
+            {sayingBye ? "Bye…" : "Say Bye"}
+          </span>
+        </div>
 
         {/* Leave */}
         <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
