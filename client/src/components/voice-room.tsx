@@ -4134,7 +4134,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 boxShadow: "-3px -3px 8px rgba(255,255,255,0.025), 4px 4px 10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
               }}
             >
-              <span className="absolute -top-1.5 -right-2 text-[9px] uppercase tracking-[0.24em] font-bold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-200 pointer-events-none">
+              <span className="absolute -top-1 -right-1.5 text-[8px] uppercase tracking-[0.18em] font-bold px-1.5 py-0.25 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-200 pointer-events-none leading-none">
                 Demo
               </span>
               <BrainCircuit className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" style={aiTutorActive ? { filter: "drop-shadow(0 0 6px hsl(var(--neu-orange-hi) / 0.85))" } : undefined} />
