@@ -4561,26 +4561,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Screen-share locked", description: screenLockReason || "Sharing is disabled in this room.", variant: "destructive" });
       return;
     }
-    // Detect mobile browsers — Chrome on Android and most mobile browsers do
-    // not support getDisplayMedia at all. Give a clear, actionable message
-    // instead of a cryptic browser error or silent failure.
-    const isMobileBrowser = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobileBrowser) {
-      toast({
-        title: "Screen share not available on mobile",
-        description: "Mobile browsers don't support screen sharing. Use your camera to share video, or join from a desktop browser to share your screen.",
-        variant: "destructive",
-      });
-      return;
-    }
     // Check API availability. getDisplayMedia requires a secure context (HTTPS
-    // or localhost). On insecure origins navigator.mediaDevices may exist but
-    // getDisplayMedia will be undefined — give a precise reason rather than a
-    // generic "not supported" message.
+    // or localhost). iOS Safari 16.4+ and Chrome for Android both support it —
+    // don't block on user-agent; let the API presence check decide.
     if (!navigator.mediaDevices?.getDisplayMedia) {
       const reason = !window.isSecureContext
         ? "Screen sharing requires a secure connection (HTTPS). Please access this page over HTTPS."
-        : "Your browser doesn't support screen sharing. Try the latest Chrome or Edge on desktop, or Safari 16.4+ on iOS.";
+        : "Your browser doesn't support screen sharing. Try Chrome, Edge, or Safari 16.4+.";
       toast({ title: "Screen sharing not supported", description: reason, variant: "destructive" });
       return;
     }
