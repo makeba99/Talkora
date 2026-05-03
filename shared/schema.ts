@@ -453,3 +453,10 @@ export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
 
 // LANGUAGES, LEVELS, SPECIALIZATIONS are re-exported from ./constants above.
+
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type AppSetting = typeof appSettings.$inferSelect;

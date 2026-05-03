@@ -55,6 +55,7 @@ import {
   type SecurityEvent,
   paymentMethods,
   type PaymentMethod,
+  appSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -175,6 +176,9 @@ export interface IStorage {
   getUserNote(authorId: string, subjectId: string): Promise<import("@shared/schema").UserNote | undefined>;
   upsertUserNote(authorId: string, subjectId: string, note: string): Promise<import("@shared/schema").UserNote>;
   getExpiredRestrictions(): Promise<User[]>;
+
+  getSetting(key: string): Promise<string | null>;
+  setSetting(key: string, value: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1049,6 +1053,21 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(sql`restricted_until IS NOT NULL AND restricted_until <= NOW()`);
+  }
+
+  async getSetting(key: string): Promise<string | null> {
+    const [row] = await db.select().from(appSettings).where(eq(appSettings.key, key));
+    return row?.value ?? null;
+  }
+
+  async setSetting(key: string, value: string): Promise<void> {
+    await db
+      .insert(appSettings)
+      .values({ key, value, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: appSettings.key,
+        set: { value, updatedAt: new Date() },
+      });
   }
 }
 

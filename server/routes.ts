@@ -14,6 +14,9 @@ import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "./elevenlabs";
+import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, type AiTutorConfig } from "./ai-config";
+import { openAiSynthesize, openAiTtsHealth } from "./openai-tts";
+import { huggingFaceSynthesize, huggingFaceTtsHealth } from "./huggingface-tts";
 import { startStream, writeChunk, stopStream, getStreamInfo, stopAllStreamsForUser, getViewerCounts } from "./streaming";
 import {
   renderIndexHtml,
@@ -1317,31 +1320,42 @@ export async function registerRoutes(
     }
   });
 
-  // ── AI Tutor TTS (ElevenLabs proxy) ──────────────────────────────────────
-  // Capability probe — the client uses this to decide whether Eva can speak.
-  // Female/Male personas use the browser SpeechSynthesis engine directly and
-  // do NOT depend on this endpoint.
+  // ── AI Tutor TTS (multi-provider proxy) ──────────────────────────────────
+  // Capability probe — client uses this to decide whether Eva can speak.
+  // Female/Male personas use browser SpeechSynthesis and don't call this.
   app.get("/api/ai-tutor/tts/health", isAuthenticated, async (_req, res) => {
     try {
-      const h = await elevenLabsHealth();
-      res.json({ available: h.available, reachable: h.reachable });
+      const cfg = await getAiTutorConfig();
+      if (cfg.provider === "browser") {
+        return res.json({ available: true, reachable: true, provider: "browser" });
+      }
+      if (cfg.provider === "elevenlabs") {
+        const h = await elevenLabsHealth();
+        return res.json({ available: h.available, reachable: h.reachable, provider: "elevenlabs" });
+      }
+      if (cfg.provider === "openai") {
+        const h = await openAiTtsHealth(cfg.openai.apiKey);
+        return res.json({ ...h, provider: "openai" });
+      }
+      if (cfg.provider === "huggingface") {
+        const h = await huggingFaceTtsHealth(cfg.huggingface.apiKey);
+        return res.json({ ...h, provider: "huggingface" });
+      }
+      res.json({ available: false, reachable: false, provider: cfg.provider });
     } catch {
       res.json({ available: false, reachable: false });
     }
   });
 
-  // Synthesize a single sentence via ElevenLabs. Returns audio/mpeg bytes.
-  // The client decodes via Web Audio and plays back with amplitude-driven
-  // viseme animation.
-  //
-  // Active-session gate matches /api/ai-tutor/chat — only the user holding
-  // the active AI session in this room may request audio for it. This stops
-  // other room participants from burning ElevenLabs quota on someone else's
-  // session.
+  // Synthesize a single sentence via the configured TTS provider.
+  // Returns audio bytes. Active-session gate stops other room participants
+  // from burning quota on someone else's AI session.
   app.post("/api/ai-tutor/tts", isAuthenticated, async (req: any, res) => {
     try {
-      if (!isElevenLabsConfigured()) {
-        return res.status(501).json({ error: "elevenlabs-not-configured" });
+      const cfg = await getAiTutorConfig();
+
+      if (cfg.provider === "browser") {
+        return res.status(501).json({ error: "browser-tts-no-server" });
       }
 
       const { text, voice = "Eva", speed = 1.0, language = "en", roomId } = req.body || {};
@@ -1360,29 +1374,65 @@ export async function registerRoutes(
         }
       }
 
-      const result = await elevenLabsSynthesize({
-        text: text.trim(),
-        voice,
-        speed: typeof speed === "number" ? speed : 1.0,
-        language: typeof language === "string" ? language : "en",
-      });
+      let result: { ok: boolean; status: number; contentType: string; body?: ArrayBuffer; error?: string };
+
+      if (cfg.provider === "elevenlabs") {
+        // If keys are configured in DB use them; otherwise fall back to env-var module
+        const dbKeys = cfg.elevenlabs.apiKeys.trim();
+        if (dbKeys) {
+          // Call ElevenLabs directly with DB-configured keys/voice/model
+          const keys = dbKeys.split(",").map((k) => k.trim()).filter(Boolean);
+          const voiceId = cfg.elevenlabs.voiceId || "XB0fDUnXU5powFXDhCwa";
+          const modelId = cfg.elevenlabs.modelId || "eleven_multilingual_v2";
+          let lastErr: typeof result | null = null;
+          const tried = new Set<string>();
+          for (const key of keys) {
+            if (tried.has(key)) continue;
+            tried.add(key);
+            const controller = new AbortController();
+            const t = setTimeout(() => controller.abort(), 30_000);
+            try {
+              const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+                method: "POST",
+                headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
+                body: JSON.stringify({ text: text.trim().slice(0, 1000), model_id: modelId, voice_settings: { stability: 0.22, similarity_boost: 0.85 } }),
+                signal: controller.signal,
+              });
+              if (r.ok) {
+                result = { ok: true, status: 200, contentType: "audio/mpeg", body: await r.arrayBuffer() };
+                break;
+              }
+              lastErr = { ok: false, status: r.status, contentType: "", error: `ElevenLabs ${r.status}` };
+            } catch (e: any) {
+              lastErr = { ok: false, status: 502, contentType: "", error: e?.message };
+            } finally {
+              clearTimeout(t);
+            }
+          }
+          result = result! ?? lastErr ?? { ok: false, status: 501, contentType: "", error: "elevenlabs-not-configured" };
+        } else {
+          if (!isElevenLabsConfigured()) {
+            return res.status(501).json({ error: "elevenlabs-not-configured" });
+          }
+          result = await elevenLabsSynthesize({ text: text.trim(), voice, speed: typeof speed === "number" ? speed : 1.0, language: typeof language === "string" ? language : "en" });
+        }
+      } else if (cfg.provider === "openai") {
+        result = await openAiSynthesize(text.trim(), cfg.openai.voice, cfg.openai.model, cfg.openai.apiKey);
+      } else if (cfg.provider === "huggingface") {
+        result = await huggingFaceSynthesize(text.trim(), cfg.huggingface.model, cfg.huggingface.apiKey);
+      } else {
+        return res.status(501).json({ error: "unknown-tts-provider" });
+      }
 
       if (!result.ok || !result.body) {
-        console.error("[AI Tutor TTS] ElevenLabs error:", result.status, result.error);
+        console.error("[AI Tutor TTS] Provider error:", cfg.provider, result.status, result.error);
         const status = result.status >= 500 ? 502 : result.status;
-        // Surface the actual ElevenLabs error message (e.g. "voice_not_found",
-        // "quota_exceeded", "missing_permissions") so the client can show the
-        // real reason instead of a generic "may be invalid" message.
-        return res.status(status).json({
-          error: result.error || "tts-failed",
-          detail: { message: result.error, status: result.status },
-        });
+        return res.status(status).json({ error: result.error || "tts-failed", detail: { message: result.error, status: result.status } });
       }
 
       res.setHeader("Content-Type", result.contentType || "audio/mpeg");
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Accel-Buffering", "no");
-      // Disable compression — audio is already compressed.
       res.setHeader("Content-Encoding", "identity");
       res.send(Buffer.from(result.body));
     } catch (err: any) {
@@ -3371,6 +3421,93 @@ export async function registerRoutes(
       res.json(announcement);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Admin: AI Tutor config ────────────────────────────────────────────────
+  app.get("/api/admin/ai-config", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const cfg = await getAiTutorConfig();
+      res.json({
+        config: maskConfig(cfg),
+        hasKeys: {
+          elevenlabs: !!cfg.elevenlabs.apiKeys.trim(),
+          openai: !!cfg.openai.apiKey.trim(),
+          huggingface: !!cfg.huggingface.apiKey.trim(),
+        },
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/ai-config", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const incoming = req.body?.config as Partial<AiTutorConfig>;
+      if (!incoming) return res.status(400).json({ message: "config required" });
+      const current = await getAiTutorConfig();
+      const merged = mergeIncoming(current, incoming);
+      await setAiTutorConfig(merged);
+      res.json({ ok: true, config: maskConfig(merged) });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/ai-config/test", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const cfg = await getAiTutorConfig();
+      const testText = "Hello! The AI tutor voice is working correctly.";
+
+      if (cfg.provider === "browser") {
+        return res.json({ ok: true, provider: "browser", message: "Browser TTS uses Web Speech API — no server test needed." });
+      }
+
+      let result: { ok: boolean; status: number; contentType: string; body?: ArrayBuffer; error?: string };
+
+      if (cfg.provider === "elevenlabs") {
+        const dbKeys = cfg.elevenlabs.apiKeys.trim();
+        if (!dbKeys && !isElevenLabsConfigured()) {
+          return res.status(501).json({ ok: false, error: "No ElevenLabs API keys configured." });
+        }
+        if (dbKeys) {
+          const key = dbKeys.split(",")[0].trim();
+          const voiceId = cfg.elevenlabs.voiceId || "XB0fDUnXU5powFXDhCwa";
+          const modelId = cfg.elevenlabs.modelId || "eleven_multilingual_v2";
+          const controller = new AbortController();
+          const t = setTimeout(() => controller.abort(), 15_000);
+          try {
+            const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+              method: "POST",
+              headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
+              body: JSON.stringify({ text: testText, model_id: modelId, voice_settings: { stability: 0.22, similarity_boost: 0.85 } }),
+              signal: controller.signal,
+            });
+            result = r.ok
+              ? { ok: true, status: 200, contentType: "audio/mpeg", body: await r.arrayBuffer() }
+              : { ok: false, status: r.status, contentType: "", error: `ElevenLabs ${r.status}: ${await r.text().catch(() => "")}` };
+          } finally { clearTimeout(t); }
+        } else {
+          result = await elevenLabsSynthesize({ text: testText, voice: "Eva", speed: 1.0, language: "en" });
+        }
+      } else if (cfg.provider === "openai") {
+        result = await openAiSynthesize(testText, cfg.openai.voice, cfg.openai.model, cfg.openai.apiKey);
+      } else if (cfg.provider === "huggingface") {
+        result = await huggingFaceSynthesize(testText, cfg.huggingface.model, cfg.huggingface.apiKey);
+      } else {
+        return res.status(400).json({ ok: false, error: "Unknown provider" });
+      }
+
+      if (!result.ok || !result.body) {
+        return res.status(result.status >= 500 ? 502 : result.status).json({ ok: false, error: result.error });
+      }
+
+      res.setHeader("Content-Type", result.contentType || "audio/mpeg");
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("Content-Encoding", "identity");
+      res.send(Buffer.from(result.body));
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err.message });
     }
   });
 

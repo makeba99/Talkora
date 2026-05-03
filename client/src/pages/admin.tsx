@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,536 @@ import { GifPickerButton } from "@/components/chat-picker";
 
 const OWNER_EMAIL = "dj55jggg@gmail.com";
 type OwnerAnnouncement = Announcement & { viewCount?: number; dismissCount?: number };
+
+// ── AI Tutor configuration types ──────────────────────────────────────────
+type TtsProvider = "elevenlabs" | "openai" | "huggingface" | "browser";
+type AiTutorConfig = {
+  provider: TtsProvider;
+  elevenlabs: { apiKeys: string; voiceId: string; modelId: string };
+  openai: { apiKey: string; model: string; voice: string };
+  huggingface: { apiKey: string; model: string };
+};
+type AiConfigResponse = {
+  config: AiTutorConfig;
+  hasKeys: { elevenlabs: boolean; openai: boolean; huggingface: boolean };
+};
+
+const ELEVENLABS_MODELS = [
+  { value: "eleven_multilingual_v2", label: "Multilingual v2 (recommended)" },
+  { value: "eleven_turbo_v2_5", label: "Turbo v2.5 (fast)" },
+  { value: "eleven_monolingual_v1", label: "Monolingual v1 (English)" },
+];
+const OPENAI_MODELS = [
+  { value: "tts-1", label: "tts-1 (fast, lower quality)" },
+  { value: "tts-1-hd", label: "tts-1-hd (slower, higher quality)" },
+];
+const OPENAI_VOICES = [
+  { value: "alloy", label: "Alloy (neutral)" },
+  { value: "echo", label: "Echo (male)" },
+  { value: "fable", label: "Fable (British)" },
+  { value: "nova", label: "Nova (female, recommended)" },
+  { value: "onyx", label: "Onyx (deep)" },
+  { value: "shimmer", label: "Shimmer (gentle)" },
+];
+
+function ProviderCard({
+  provider,
+  current,
+  icon,
+  title,
+  description,
+  badge,
+  onClick,
+}: {
+  provider: TtsProvider;
+  current: TtsProvider;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  badge?: string;
+  onClick: () => void;
+}) {
+  const active = current === provider;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={`card-provider-${provider}`}
+      className={`relative flex flex-col gap-1.5 rounded-xl border p-4 text-left transition-all hover:border-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        active
+          ? "border-primary bg-primary/10 shadow-md shadow-primary/10"
+          : "border-border/50 bg-card/60"
+      }`}
+    >
+      {active && (
+        <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-primary" />
+      )}
+      <div className="text-xl">{icon}</div>
+      <p className="font-semibold text-sm leading-none">{title}</p>
+      <p className="text-xs text-muted-foreground">{description}</p>
+      {badge && (
+        <span className="mt-1 inline-block rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-400">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function MaskedKeyInput({
+  value,
+  onChange,
+  placeholder,
+  testId,
+  multiline,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  testId: string;
+  multiline?: boolean;
+}) {
+  const [show, setShow] = useState(false);
+  if (multiline) {
+    return (
+      <div className="relative">
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={2}
+          className={`font-mono text-xs pr-10 ${!show && value ? "blur-sm select-none" : ""}`}
+          data-testid={testId}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+          data-testid={`${testId}-toggle`}
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="relative">
+      <Input
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="font-mono text-xs pr-10"
+        data-testid={testId}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+        data-testid={`${testId}-toggle`}
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
+function AiTutorTab() {
+  const { toast } = useToast();
+
+  const [provider, setProvider] = useState<TtsProvider>("browser");
+  const [elKeys, setElKeys] = useState("");
+  const [elVoiceId, setElVoiceId] = useState("XB0fDUnXU5powFXDhCwa");
+  const [elModelId, setElModelId] = useState("eleven_multilingual_v2");
+  const [oaiKey, setOaiKey] = useState("");
+  const [oaiModel, setOaiModel] = useState("tts-1");
+  const [oaiVoice, setOaiVoice] = useState("nova");
+  const [hfKey, setHfKey] = useState("");
+  const [hfModel, setHfModel] = useState("facebook/mms-tts-eng");
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [testPlaying, setTestPlaying] = useState(false);
+
+  const { data, isLoading, refetch } = useQuery<AiConfigResponse>({
+    queryKey: ["/api/admin/ai-config"],
+  });
+
+  useEffect(() => {
+    if (!data?.config) return;
+    const c = data.config;
+    setProvider(c.provider);
+    setElKeys(c.elevenlabs.apiKeys);
+    setElVoiceId(c.elevenlabs.voiceId);
+    setElModelId(c.elevenlabs.modelId);
+    setOaiKey(c.openai.apiKey);
+    setOaiModel(c.openai.model);
+    setOaiVoice(c.openai.voice);
+    setHfKey(c.huggingface.apiKey);
+    setHfModel(c.huggingface.model);
+  }, [data]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      apiRequest("PATCH", "/api/admin/ai-config", {
+        config: {
+          provider,
+          elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, modelId: elModelId },
+          openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice },
+          huggingface: { apiKey: hfKey, model: hfModel },
+        },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-config"] });
+      toast({ title: "AI Tutor config saved", description: "Settings will take effect within 30 seconds." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Save failed", description: err?.message, variant: "destructive" });
+    },
+  });
+
+  const testMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/ai-config/test", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        return { kind: "info" as const, message: (await res.json()).message };
+      }
+      const blob = await res.blob();
+      return { kind: "audio" as const, url: URL.createObjectURL(blob) };
+    },
+    onSuccess: (data) => {
+      if (data.kind === "info") {
+        toast({ title: "Test result", description: data.message });
+        return;
+      }
+      setTestPlaying(true);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+      const audio = new Audio(data.url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        setTestPlaying(false);
+        URL.revokeObjectURL(data.url);
+      };
+      audio.onerror = () => setTestPlaying(false);
+      audio.play().catch(() => setTestPlaying(false));
+    },
+    onError: (err: any) => {
+      toast({ title: "Test failed", description: err?.message, variant: "destructive" });
+    },
+  });
+
+  const hasKey = data?.hasKeys;
+
+  return (
+    <div className="space-y-6">
+      {/* Header card */}
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Bot className="w-5 h-5 text-cyan-400" />
+            AI Tutor Voice Configuration
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Choose the TTS provider for Eva (the AI Tutor avatar). Changes take
+            effect within 30 seconds without restarting the server.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ProviderCard
+                provider="elevenlabs"
+                current={provider}
+                icon={<Zap className="h-5 w-5 text-yellow-400" />}
+                title="ElevenLabs"
+                description="Ultra-realistic AI voices with emotion and multilingual support."
+                badge="Highest quality"
+                onClick={() => setProvider("elevenlabs")}
+              />
+              <ProviderCard
+                provider="openai"
+                current={provider}
+                icon={<Cpu className="h-5 w-5 text-green-400" />}
+                title="OpenAI TTS"
+                description="GPT-powered voices. Fast and reliable with multiple styles."
+                badge="Best value"
+                onClick={() => setProvider("openai")}
+              />
+              <ProviderCard
+                provider="huggingface"
+                current={provider}
+                icon={<Key className="h-5 w-5 text-orange-400" />}
+                title="Hugging Face"
+                description="Open-source TTS models via HF Inference API."
+                onClick={() => setProvider("huggingface")}
+              />
+              <ProviderCard
+                provider="browser"
+                current={provider}
+                icon={<Globe2 className="h-5 w-5 text-blue-400" />}
+                title="Browser (Free)"
+                description="Web Speech API built into the browser. No API key needed."
+                badge="No cost"
+                onClick={() => setProvider("browser")}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Provider settings */}
+      {!isLoading && provider !== "browser" && (
+        <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              {provider === "elevenlabs" && <Zap className="h-4 w-4 text-yellow-400" />}
+              {provider === "openai" && <Cpu className="h-4 w-4 text-green-400" />}
+              {provider === "huggingface" && <Key className="h-4 w-4 text-orange-400" />}
+              {provider === "elevenlabs" && "ElevenLabs Settings"}
+              {provider === "openai" && "OpenAI TTS Settings"}
+              {provider === "huggingface" && "Hugging Face Settings"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {provider === "elevenlabs" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>
+                    API Keys
+                    <span className="ml-1.5 text-xs text-muted-foreground">(comma-separated for rotation)</span>
+                    {hasKey?.elevenlabs && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-green-400">
+                        <CheckCircle className="h-3 w-3" /> configured
+                      </span>
+                    )}
+                  </Label>
+                  <MaskedKeyInput
+                    value={elKeys}
+                    onChange={setElKeys}
+                    placeholder="sk_xxxx, sk_yyyy"
+                    testId="input-elevenlabs-keys"
+                    multiline
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get keys at{" "}
+                    <a href="https://elevenlabs.io" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+                      elevenlabs.io
+                    </a>. Multiple keys rotate automatically to spread quota.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="el-voice-id">Voice ID</Label>
+                    <Input
+                      id="el-voice-id"
+                      value={elVoiceId}
+                      onChange={(e) => setElVoiceId(e.target.value)}
+                      placeholder="XB0fDUnXU5powFXDhCwa"
+                      className="font-mono text-xs"
+                      data-testid="input-elevenlabs-voice-id"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Default is Charlotte (Eva). Find voice IDs in your ElevenLabs dashboard.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="el-model">Model</Label>
+                    <Select value={elModelId} onValueChange={setElModelId}>
+                      <SelectTrigger id="el-model" data-testid="select-elevenlabs-model">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ELEVENLABS_MODELS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {provider === "openai" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>
+                    API Key
+                    {hasKey?.openai && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-green-400">
+                        <CheckCircle className="h-3 w-3" /> configured
+                      </span>
+                    )}
+                  </Label>
+                  <MaskedKeyInput
+                    value={oaiKey}
+                    onChange={setOaiKey}
+                    placeholder="sk-..."
+                    testId="input-openai-key"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get a key at{" "}
+                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+                      platform.openai.com
+                    </a>.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="oai-model">Model</Label>
+                    <Select value={oaiModel} onValueChange={setOaiModel}>
+                      <SelectTrigger id="oai-model" data-testid="select-openai-model">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OPENAI_MODELS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="oai-voice">Voice</Label>
+                    <Select value={oaiVoice} onValueChange={setOaiVoice}>
+                      <SelectTrigger id="oai-voice" data-testid="select-openai-voice">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OPENAI_VOICES.map((v) => (
+                          <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {provider === "huggingface" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>
+                    API Key (HF Token)
+                    {hasKey?.huggingface && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-green-400">
+                        <CheckCircle className="h-3 w-3" /> configured
+                      </span>
+                    )}
+                  </Label>
+                  <MaskedKeyInput
+                    value={hfKey}
+                    onChange={setHfKey}
+                    placeholder="hf_..."
+                    testId="input-hf-key"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get a token at{" "}
+                    <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+                      huggingface.co/settings/tokens
+                    </a>.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="hf-model">Model (HF model ID)</Label>
+                  <Input
+                    id="hf-model"
+                    value={hfModel}
+                    onChange={(e) => setHfModel(e.target.value)}
+                    placeholder="facebook/mms-tts-eng"
+                    className="font-mono text-xs"
+                    data-testid="input-hf-model"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Recommended free models: <code className="bg-muted rounded px-1">facebook/mms-tts-eng</code>,{" "}
+                    <code className="bg-muted rounded px-1">microsoft/speecht5_tts</code>
+                  </p>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Browser TTS note */}
+      {!isLoading && provider === "browser" && (
+        <Card className="bg-card/75 backdrop-blur-xl border-blue-500/20">
+          <CardContent className="pt-5 pb-4 flex items-start gap-3">
+            <Globe2 className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Browser Web Speech API selected</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Eva will speak using the browser's built-in speech synthesis. No server-side
+                API key is required. Voice quality depends on the user's OS and browser. This
+                works on Chrome, Edge, and Safari. Firefox support is limited.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      {!isLoading && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="gap-2"
+            data-testid="button-save-ai-config"
+          >
+            {saveMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Save Configuration
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => testMutation.mutate()}
+            disabled={testMutation.isPending || testPlaying || provider === "browser"}
+            className="gap-2"
+            data-testid="button-test-ai-config"
+          >
+            {testMutation.isPending || testPlaying ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            {testPlaying ? "Playing…" : "Test Voice"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => refetch()}
+            className="text-muted-foreground hover:text-foreground"
+            title="Refresh"
+            data-testid="button-refresh-ai-config"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          {provider === "browser" && (
+            <p className="text-xs text-muted-foreground">
+              Browser TTS test runs client-side — use Test in a room instead.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function roleLabel(user: User) {
   if (user.email === OWNER_EMAIL || user.role === "superadmin") return "Platform Owner";
@@ -800,7 +1330,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-6xl grid-cols-8" : "max-w-5xl grid-cols-7"} bg-card/80 backdrop-blur`}>
+          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[80rem] grid-cols-9" : "max-w-5xl grid-cols-7"} bg-card/80 backdrop-blur`}>
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -843,6 +1373,12 @@ export default function AdminPage() {
               <TabsTrigger value="announcements" data-testid="tab-admin-announcements">
                 <Megaphone className="w-4 h-4 mr-2" />
                 Announce
+              </TabsTrigger>
+            )}
+            {isSuperAdmin && (
+              <TabsTrigger value="ai-tutor" data-testid="tab-admin-ai-tutor">
+                <Bot className="w-4 h-4 mr-2" />
+                AI Tutor
               </TabsTrigger>
             )}
           </TabsList>
@@ -1496,6 +2032,12 @@ export default function AdminPage() {
           <TabsContent value="storage">
             <StorageTab isSuperAdmin={isSuperAdmin} />
           </TabsContent>
+
+          {isSuperAdmin && (
+            <TabsContent value="ai-tutor">
+              <AiTutorTab />
+            </TabsContent>
+          )}
 
           {isSuperAdmin && (
             <TabsContent value="announcements">
