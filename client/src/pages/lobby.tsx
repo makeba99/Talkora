@@ -908,7 +908,12 @@ export default function Lobby() {
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (newRoom) => {
+      // Immediately prepend the new room to the cache so the creator sees it
+      // without waiting for the SSE broadcast or a refetch round-trip.
+      queryClient.setQueryData<any[]>(["/api/rooms"], (old) =>
+        old ? [newRoom, ...old] : [newRoom]
+      );
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       toast({ title: "Room created! Click 'Join & Talk' to enter." });
       import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
@@ -977,6 +982,38 @@ export default function Lobby() {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
     });
 
+    socket.on(
+      "user:profile-updated",
+      (data: {
+        userId: string;
+        displayName?: string;
+        profileImageUrl?: string | null;
+        avatarRing?: string | null;
+        flairBadge?: string | null;
+        profileDecoration?: string | null;
+      }) => {
+        if (!data?.userId) return;
+        // Patch the user's profile fields in every room they're currently in
+        // so lobby cards refresh avatars/rings/decorations without a reload.
+        setRoomParticipants((prev) => {
+          let changed = false;
+          const next: typeof prev = {};
+          for (const [roomId, parts] of Object.entries(prev)) {
+            const idx = parts.findIndex((p) => p.id === data.userId);
+            if (idx === -1) {
+              next[roomId] = parts;
+            } else {
+              changed = true;
+              const updated = [...parts];
+              updated[idx] = { ...updated[idx], ...data };
+              next[roomId] = updated;
+            }
+          }
+          return changed ? next : prev;
+        });
+      }
+    );
+
     socket.on("room:deleted", (data: { roomId: string }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       queryClient.invalidateQueries({ queryKey: ["/api/rooms/participants"] });
@@ -1031,6 +1068,7 @@ export default function Lobby() {
       socket.off("room:participants-update");
       socket.off("room:created");
       socket.off("room:deleted");
+      socket.off("user:profile-updated");
       socket.off("room:full");
       socket.off("room:knock-request");
       socket.off("room:knock-allowed");

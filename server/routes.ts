@@ -1881,6 +1881,16 @@ export async function registerRoutes(
       if (facebookUrl !== undefined) updateData.facebookUrl = facebookUrl;
       if (socialsPinned !== undefined) updateData.socialsPinned = !!socialsPinned;
       const updated = await storage.updateUser(userId, updateData);
+      // Broadcast profile changes to all connected clients so avatars, rings,
+      // and decorations refresh in real-time without a page reload.
+      io.emit("user:profile-updated", {
+        userId,
+        displayName: updated.displayName,
+        profileImageUrl: updated.profileImageUrl,
+        avatarRing: updated.avatarRing,
+        flairBadge: updated.flairBadge,
+        profileDecoration: updated.profileDecoration,
+      });
       res.json(updated);
     } catch (err: any) {
       res.status(500).json({ message: err.message });

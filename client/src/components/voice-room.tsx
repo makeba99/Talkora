@@ -2295,6 +2295,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       );
     });
 
+    socket.on(
+      "user:profile-updated",
+      (data: {
+        userId: string;
+        displayName?: string;
+        profileImageUrl?: string | null;
+        avatarRing?: string | null;
+        flairBadge?: string | null;
+        profileDecoration?: string | null;
+      }) => {
+        if (!data?.userId) return;
+        setParticipants((prev) =>
+          prev.map((p) =>
+            p.id === data.userId ? { ...p, ...data } : p
+          )
+        );
+      }
+    );
+
     // Mood reactions broadcast — when anyone in the room (including ourselves)
     // picks an emoji from the mood picker, the server echoes a "room:mood-update"
     // back. We stash the emoji keyed by userId so the corresponding participant
@@ -2755,6 +2774,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("webrtc:new-peer");
       socket.off("room:speaking");
       socket.off("room:hand-raised");
+      socket.off("user:profile-updated");
       socket.off("room:mood-update");
       // Cancel any in-flight mood-clear timers so they don't fire after unmount.
       Object.values(moodTimersRef.current).forEach((t) => clearTimeout(t));
