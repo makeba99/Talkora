@@ -4333,12 +4333,28 @@ export async function registerRoutes(
 
     socket.on("room:force-mute", async (data: { roomId: string; targetUserId: string; mutedBy: string }) => {
       const room = await storage.getRoom(data.roomId);
-      if (!room || room.ownerId !== data.mutedBy) return;
+      if (!room) return;
+      const roles = roomRoles.get(data.roomId);
+      const muterRole = roles?.get(data.mutedBy);
+      if (room.ownerId !== data.mutedBy && muterRole !== "co-owner") return;
 
       io.to(data.roomId).emit("room:mute-update", {
         userId: data.targetUserId,
         isMuted: true,
         forcedBy: data.mutedBy,
+      });
+    });
+
+    socket.on("room:force-mute-video", async (data: { roomId: string; targetUserId: string; mutedBy: string }) => {
+      const room = await storage.getRoom(data.roomId);
+      if (!room) return;
+      const roles = roomRoles.get(data.roomId);
+      const muterRole = roles?.get(data.mutedBy);
+      if (room.ownerId !== data.mutedBy && muterRole !== "co-owner") return;
+
+      io.to(data.roomId).emit("room:video-force-off", {
+        userId: data.targetUserId,
+        mutedBy: data.mutedBy,
       });
     });
 
@@ -4366,6 +4382,11 @@ export async function registerRoutes(
       if (targetUser && assignerUser) {
         const roleName = data.role === "co-owner" ? "Co-Owner" : data.role === "member" ? "Member" : data.role === "guest" ? "Guest" : "Troll";
         emitSystemChatMsg(data.roomId, `${getDisplayName(assignerUser)} set ${getDisplayName(targetUser)} as ${roleName}`);
+      }
+
+      // Extra info message when troll role is assigned
+      if (data.role === "troll" && targetUser) {
+        emitSystemChatMsg(data.roomId, `🧌 ${getDisplayName(targetUser)} is now a Troll — limited to 50 chars per message, 10s cooldown, and a vote-to-kick poll is now active.`);
       }
 
       // When someone is tagged as Troll, open a vote-to-kick poll for room members

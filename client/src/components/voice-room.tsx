@@ -349,6 +349,7 @@ function ParticipantCard({
   isWatchingYoutube,
   allParticipants,
   onForceMute,
+  onForceMuteVideo,
   onKick,
   onBlock,
   onReport,
@@ -532,15 +533,18 @@ function ParticipantCard({
           )}
 
           {(isCurrentUserHost || isCurrentUserCoOwner) && !isMe && p.id !== user?.id && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
                <Button variant="outline" size="sm" onClick={() => onForceMute && onForceMute(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
-                  <VolumeX className="w-3.5 h-3.5 mr-1" /> Mute
+                  <VolumeX className="w-3.5 h-3.5 mr-1" /> Mute Mic
+               </Button>
+               <Button variant="outline" size="sm" onClick={() => onForceMuteVideo && onForceMuteVideo(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
+                  <VideoOff className="w-3.5 h-3.5 mr-1" /> Mute Video
                </Button>
                <Button variant="outline" size="sm" onClick={() => onKick && onKick(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
                   <UserX className="w-3.5 h-3.5 mr-1" /> Kick
                </Button>
                <Button variant="outline" size="sm" onClick={() => onClearChatGlobal && onClearChatGlobal(true)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
-                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Clear
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Clear Chat
                </Button>
             </div>
           )}
@@ -551,9 +555,9 @@ function ParticipantCard({
               <div className="grid grid-cols-2 gap-1.5">
                 <Button variant="outline" size="sm"
                   onClick={() => onAssignRole && onAssignRole(participantRole === "guest" ? "member" : "guest")}
-                  className={`h-8 text-[11px] font-semibold transition-all ${participantRole === "guest" ? 'bg-red-950/60 text-red-300 border-red-700/60 shadow-[inset_0_1px_0_rgba(248,113,113,0.15),0_0_10px_rgba(239,68,68,0.2)]' : 'bg-transparent border-border text-muted-foreground hover:bg-red-950/30 hover:text-red-300 hover:border-red-800/50'}`}
+                  className={`h-8 text-[11px] font-semibold transition-all ${participantRole === "guest" ? 'bg-indigo-950/60 text-indigo-300 border-indigo-700/60 shadow-[inset_0_1px_0_rgba(165,180,252,0.15),0_0_10px_rgba(99,102,241,0.2)]' : 'bg-transparent border-border text-muted-foreground hover:bg-indigo-950/30 hover:text-indigo-300 hover:border-indigo-800/50'}`}
                   data-testid={`button-role-guest-${p.id}`}>
-                  🔒 Guest
+                  🎫 Guest
                 </Button>
                 <Button variant="outline" size="sm"
                   onClick={() => onAssignRole && onAssignRole(participantRole === "co-owner" ? "member" : "co-owner")}
@@ -949,12 +953,12 @@ function ParticipantCard({
           <div
             className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
             style={{
-              background: "linear-gradient(145deg, rgba(239,68,68,0.82) 0%, rgba(185,28,28,0.80) 100%)",
-              boxShadow: "0 0 8px rgba(239,68,68,0.35), inset 0 1px 0 rgba(254,202,202,0.20)",
+              background: "linear-gradient(145deg, rgba(99,102,241,0.82) 0%, rgba(67,56,202,0.80) 100%)",
+              boxShadow: "0 0 8px rgba(99,102,241,0.35), inset 0 1px 0 rgba(199,210,254,0.20)",
               color: "#fff",
             }}
           >
-            🔒 Guest
+            🎫 Guest
           </div>
         ) : participantRole === "troll" ? (
           <div
@@ -2587,6 +2591,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     });
 
+    socket.on("room:video-force-off", (data: { userId: string; mutedBy: string }) => {
+      if (data.userId === user.id) {
+        setIsVideoOn(false);
+        if (videoStream.current) {
+          videoStream.current.getVideoTracks().forEach((track) => { track.enabled = false; track.stop(); });
+          videoStream.current = null;
+        }
+        toast({ title: "Your video was turned off by the host", variant: "destructive" });
+      }
+    });
+
     socket.on("room:kicked", (data: { roomId: string }) => {
       if (data.roomId === room.id) {
         toast({ title: "You have been removed from this room", variant: "destructive" });
@@ -3088,6 +3103,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       Object.values(moodTimersRef.current).forEach((t) => clearTimeout(t));
       moodTimersRef.current = {};
       socket.off("room:mute-update");
+      socket.off("room:video-force-off");
       socket.off("room:kicked");
       socket.off("room:host-deleted");
       socket.off("room:joined-another-room");
@@ -4380,6 +4396,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const handleForceMute = (targetUserId: string) => {
     socket?.emit("room:force-mute", { roomId: room.id, targetUserId, mutedBy: user?.id });
+  };
+
+  const handleForceMuteVideo = (targetUserId: string) => {
+    socket?.emit("room:force-mute-video", { roomId: room.id, targetUserId, mutedBy: user?.id });
   };
 
   const handleAssignRole = (targetUserId: string, role: string) => {
@@ -10235,6 +10255,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onWatchYoutube={() => handleJoinYoutubeParty(p.id)}
                       isWatchingYoutube={showYoutube}
                       onForceMute={handleForceMute}
+                      onForceMuteVideo={handleForceMuteVideo}
                       onKick={handleKick}
                       onBlock={handleBlock}
                       onReport={handleReport}
