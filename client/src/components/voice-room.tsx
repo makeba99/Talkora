@@ -614,6 +614,8 @@ function ParticipantCard({
             <img
               src={`https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`}
               alt="YouTube thumbnail"
+              loading={priority ? "eager" : "lazy"}
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             {/* Gradient scrim so the profile strip is always legible */}
@@ -646,11 +648,13 @@ function ParticipantCard({
         ) : hasActiveMovie ? (
           <>
             {moviePosterPath ? (
-              <img
-                src={moviePosterPath}
-                alt="Movie poster"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+            <img
+              src={moviePosterPath}
+              alt="Movie poster"
+              loading={priority ? "eager" : "lazy"}
+              decoding="async"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-violet-900 to-indigo-900 flex items-center justify-center">
                 <Film className="w-10 h-10 text-violet-300/70" />
@@ -688,6 +692,8 @@ function ParticipantCard({
             <img
               src={watchingMoviePoster}
               alt="Movie poster"
+              loading={priority ? "eager" : "lazy"}
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             {/* Gradient scrim */}
@@ -720,6 +726,8 @@ function ParticipantCard({
           <img
             src={p.profileImageUrl}
             alt={getUserDisplayName(p)}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
@@ -931,7 +939,7 @@ function YtVideoCard({ video, canPlay, onPlay, onQueue }: {
   return (
     <div className="rounded-xl overflow-hidden border border-border/30 bg-muted/10 hover:border-border/50 transition-all duration-150 group">
       <div className="relative w-full aspect-video bg-muted overflow-hidden cursor-pointer" onClick={() => onPlay(video.id)}>
-        <img loading="lazy" decoding="async" src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+        <img loading={canPlay ? "eager" : "lazy"} decoding="async" src={video.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         {video.duration && (
           <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1">
@@ -952,12 +960,14 @@ function YtVideoCard({ video, canPlay, onPlay, onQueue }: {
         {canPlay && (
           <div className="flex gap-1.5 mt-2">
             <button
+              type="button"
               onClick={() => onPlay(video.id)}
               className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-500/15 border border-red-500/25 text-red-400 text-[10px] font-medium hover:bg-red-500/25 transition-colors"
             >
               <Play className="w-2.5 h-2.5 fill-red-400" /> Play Now
             </button>
             <button
+              type="button"
               onClick={() => onQueue({ id: video.id, title: video.title, thumbnail: video.thumbnail })}
               className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-muted/20 border border-border/30 text-muted-foreground text-[10px] font-medium hover:bg-muted/40 transition-colors"
             >

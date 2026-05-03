@@ -361,16 +361,16 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   if (isImageMedia(src)) {
     return (
       <>
-        <img
-          src={src}
-          alt=""
-          loading={priority ? "eager" : "lazy"}
-          decoding="async"
-          referrerPolicy="no-referrer"
-          {...(priority ? { fetchpriority: "high" } as any : {})}
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          style={{ opacity: 0.65, filter: "brightness(0.7) saturate(0.85)" }}
-        />
+          <img
+            src={src}
+            alt=""
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            referrerPolicy="no-referrer"
+            {...(priority ? { fetchpriority: "high" } as any : {})}
+            className="absolute inset-0 w-full h-full object-cover z-0"
+            style={{ opacity: 0.65, filter: "brightness(0.7) saturate(0.85)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
+          />
         {overlay}
       </>
     );
@@ -397,7 +397,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
               referrerPolicy="no-referrer"
               {...(priority ? { fetchpriority: "high" } as any : {})}
               className="absolute inset-0 w-full h-full object-cover z-0"
-              style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)" }}
+              style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
             />
           </picture>
           {overlay}
@@ -423,7 +423,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   }
   return (
     <>
-      <video
+        <video
         src={src}
         autoPlay
         loop
@@ -431,7 +431,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
         playsInline
         preload={priority ? "auto" : "metadata"}
         className="absolute inset-0 w-full h-full object-cover z-0"
-        style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)" }}
+          style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
       />
       {overlay}
     </>
