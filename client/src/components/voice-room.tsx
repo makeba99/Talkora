@@ -1169,6 +1169,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const typingExpireTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const aiInputRef = useRef<HTMLInputElement>(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isCameraShareMode, setIsCameraShareMode] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
   const [isFlippingCamera, setIsFlippingCamera] = useState(false);
@@ -4050,10 +4051,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <Monitor className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                 <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
               </span>
-            ) : <Monitor className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />}
+            ) : isCameraShareMode ? (
+              <Video className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+            ) : (
+              <Monitor className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+            )}
           </button>
           <span className={labelBase} style={isScreenSharing ? { color: "rgba(196,181,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
-            Share
+            {isScreenSharing && isCameraShareMode ? "Cam Share" : "Share"}
           </span>
         </div>
 
@@ -4421,6 +4426,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     screenStream.current?.getTracks().forEach((t) => t.stop());
     screenStream.current = null;
     setIsScreenSharing(false);
+    setIsCameraShareMode(false);
     socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
   };
 
@@ -4552,6 +4558,74 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [glStreamId]);
   // ─────────────────────────────────────────────────────────────────────────
 
+  // Activates a stream (native screen capture or camera fallback) through the
+  // existing screen-share WebRTC infrastructure. Called by handleScreenShare.
+  const _activateShareStream = async (stream: MediaStream, cameraFallback = false) => {
+    screenStream.current = stream;
+    setIsScreenSharing(true);
+    setIsCameraShareMode(cameraFallback);
+    socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: true });
+    if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
+    const peerEntries = Array.from(peerConnections.current.entries());
+    for (const [peerId, pc] of peerEntries) {
+      try {
+        const senders: RTCRtpSender[] = [];
+        stream.getTracks().forEach((track) => {
+          const sender = pc.addTrack(track, stream);
+          senders.push(sender);
+        });
+        screenSenders.current.set(peerId, senders);
+        if (pc.signalingState === "stable") {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          socket?.emit("webrtc:offer", { offer, to: peerId, roomId: room.id });
+        }
+      } catch (e) {
+        console.error("Error adding share track to peer:", peerId, e);
+      }
+    }
+    // When the track ends (user stops from browser UI), clean up.
+    const videoTrack = stream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.onended = () => {
+        removeScreenTracksFromPeers();
+        screenStream.current?.getTracks().forEach((t) => t.stop());
+        screenStream.current = null;
+        setIsScreenSharing(false);
+        setIsCameraShareMode(false);
+        socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
+      };
+    }
+  };
+
+  // Camera-as-share fallback: opens the camera (back-facing preferred) and
+  // broadcasts it through the screen-share channel. Works on ALL mobile
+  // browsers regardless of getDisplayMedia support.
+  const _startCameraShareFallback = async () => {
+    toast({
+      title: "Screen share not available",
+      description: "Your browser doesn't support screen capture. Opening your camera to share instead.",
+    });
+    const attempts: MediaTrackConstraints[] = [
+      { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      { facingMode: { ideal: "environment" } },
+      {},
+    ];
+    let camStream: MediaStream | null = null;
+    for (const constraints of attempts) {
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false });
+        break;
+      } catch (_) {}
+    }
+    if (!camStream) {
+      toast({ title: "Camera unavailable", description: "Could not open camera for sharing.", variant: "destructive" });
+      return;
+    }
+    await _activateShareStream(camStream, true);
+    toast({ title: "Camera sharing started", description: "Your camera is now visible to everyone in the room as a share." });
+  };
+
   const handleScreenShare = async () => {
     if (isScreenSharing) {
       await stopMyScreenShare();
@@ -4561,83 +4635,87 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Screen-share locked", description: screenLockReason || "Sharing is disabled in this room.", variant: "destructive" });
       return;
     }
-    // Check API availability. getDisplayMedia requires a secure context (HTTPS
-    // or localhost). iOS Safari 16.4+ and Chrome for Android both support it —
-    // don't block on user-agent; let the API presence check decide.
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      const reason = !window.isSecureContext
-        ? "Screen sharing requires a secure connection (HTTPS). Please access this page over HTTPS."
-        : "Your browser doesn't support screen sharing. Try Chrome, Edge, or Safari 16.4+.";
-      toast({ title: "Screen sharing not supported", description: reason, variant: "destructive" });
-      return;
-    }
-    try {
-      // Request audio as optional — some Android/browser combinations throw
-      // NotSupportedError or NotAllowedError when audio:true is included.
-      // We try with audio first and silently fall back to video-only.
-      let stream: MediaStream;
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // ── Native screen capture path ────────────────────────────────────────
+    // getDisplayMedia must be called as close to the user gesture as possible
+    // (iOS Safari requirement). We call it immediately with no async gaps.
+    if (navigator.mediaDevices?.getDisplayMedia && window.isSecureContext) {
       try {
-        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-      } catch (audioErr: any) {
-        // If the failure is specifically about audio (NotSupportedError / constraint
-        // error), retry without audio. Other errors (NotAllowedError = user denied)
-        // bubble up to the outer catch so the user sees a toast.
-        if (
-          audioErr?.name === "NotSupportedError" ||
-          audioErr?.name === "OverconstrainedError" ||
-          audioErr?.name === "TypeError"
-        ) {
-          stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-        } else {
-          throw audioErr;
-        }
-      }
-      screenStream.current = stream;
-      setIsScreenSharing(true);
-      socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: true });
-      // When the local user starts sharing their own screen, just minimize
-      // YouTube for themselves — never stop it for the whole room. Other
-      // watchers keep watching uninterrupted. If this user is not involved
-      // with YouTube at all, leave it completely alone.
-      if (screenVideoRef.current) {
-        screenVideoRef.current.srcObject = stream;
-      }
-      const peerEntries = Array.from(peerConnections.current.entries());
-      for (const [peerId, pc] of peerEntries) {
-        try {
-          const senders: RTCRtpSender[] = [];
-          stream.getTracks().forEach((track) => {
-            const sender = pc.addTrack(track, stream);
-            senders.push(sender);
-          });
-          screenSenders.current.set(peerId, senders);
-          if (pc.signalingState === "stable") {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            socket?.emit("webrtc:offer", { offer, to: peerId, roomId: room.id });
+        let stream: MediaStream;
+
+        if (isMobile) {
+          // Mobile-optimised: video-only first. iOS Safari throws NotSupportedError
+          // when audio is requested in getDisplayMedia. Android Chrome works with
+          // audio but video-only is universally supported.
+          try {
+            stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+          } catch (firstErr: any) {
+            // If user denied/dismissed — don't fallback, respect their choice.
+            if (firstErr?.name === "NotAllowedError" || firstErr?.name === "AbortError") throw firstErr;
+            // Any other error (NotSupportedError, etc.) → try minimal constraints.
+            stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
           }
-        } catch (e) {
-          console.error("Error adding screen track to peer:", peerId, e);
+        } else {
+          // Desktop: prefer audio+video, fall back to video-only.
+          try {
+            stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+          } catch (audioErr: any) {
+            if (
+              audioErr?.name === "NotSupportedError" ||
+              audioErr?.name === "OverconstrainedError" ||
+              audioErr?.name === "TypeError"
+            ) {
+              stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+            } else {
+              throw audioErr;
+            }
+          }
         }
-      }
-      stream.getVideoTracks()[0].onended = () => {
-        removeScreenTracksFromPeers();
-        setIsScreenSharing(false);
-        screenStream.current = null;
-        socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
-      };
-    } catch (err: any) {
-      console.error("Screen share failed:", err);
-      // NotAllowedError = user dismissed or denied the picker — no toast needed.
-      // Everything else is unexpected and should be surfaced to the user.
-      if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
+
+        await _activateShareStream(stream, false);
+        return;
+
+      } catch (err: any) {
+        console.error("Screen share failed:", err);
+        const userDismissed = err?.name === "NotAllowedError" || err?.name === "AbortError";
+
+        if (userDismissed) {
+          // On mobile, user dismissed the system picker — offer camera fallback.
+          if (isMobile) {
+            await _startCameraShareFallback();
+          }
+          // On desktop, user deliberately cancelled — no toast needed.
+          return;
+        }
+
+        // Unexpected failure on mobile → try camera fallback automatically.
+        if (isMobile) {
+          await _startCameraShareFallback();
+          return;
+        }
+
         toast({
           title: "Screen share failed",
-          description: "Your browser could not capture the screen. Try a different browser or check permissions.",
+          description: "Could not capture your screen. Check browser permissions and try again.",
           variant: "destructive",
         });
+        return;
       }
     }
+
+    // ── No getDisplayMedia support ────────────────────────────────────────
+    if (isMobile) {
+      // Mobile browser without getDisplayMedia → camera fallback.
+      await _startCameraShareFallback();
+      return;
+    }
+
+    const reason = !window.isSecureContext
+      ? "Screen sharing requires a secure connection (HTTPS)."
+      : "Your browser doesn't support screen sharing. Try Chrome, Edge, or Safari 16.4+.";
+    toast({ title: "Screen sharing not supported", description: reason, variant: "destructive" });
   };
 
   const toggleVideo = async () => {
