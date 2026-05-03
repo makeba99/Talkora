@@ -4755,63 +4755,99 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setIsFlippingCamera(true);
     const newFacing = cameraFacing === "user" ? "environment" : "user";
     try {
-      // Prefer switching by deviceId — the most reliable approach on mobile.
-      // facingMode: { exact } throws OverconstrainedError on many Android devices.
       let newStream: MediaStream | null = null;
 
+      // Strategy 1 — deviceId switch (most reliable on Android Chrome).
+      // Since the camera is already on we have permission, so enumerateDevices
+      // returns real labels we can use to identify front vs back camera.
       if (navigator.mediaDevices.enumerateDevices) {
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoDevices = devices.filter((d) => d.kind === "videoinput");
+          const videoDevices = devices.filter((d) => d.kind === "videoinput" && d.deviceId !== "");
           if (videoDevices.length >= 2) {
-            const currentDeviceId = videoStream.current
-              ?.getVideoTracks()[0]
-              ?.getSettings().deviceId;
-            const otherDevice = videoDevices.find(
-              (d) => d.deviceId !== currentDeviceId && d.deviceId !== ""
-            );
-            if (otherDevice) {
-              newStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                  deviceId: { exact: otherDevice.deviceId },
-                  width: { ideal: 640 },
-                  height: { ideal: 480 },
-                },
-              });
+            const currentDeviceId = videoStream.current?.getVideoTracks()[0]?.getSettings().deviceId;
+            const frontHints = /front|face|selfie/i;
+            const backHints = /back|rear|environment|main|wide|ultra/i;
+            // Prefer a device whose label matches the desired facing, then fall
+            // back to any device that isn't the current one.
+            let target = videoDevices.find((d) => {
+              if (d.deviceId === currentDeviceId) return false;
+              return newFacing === "user" ? frontHints.test(d.label) : backHints.test(d.label);
+            }) ?? videoDevices.find((d) => d.deviceId !== currentDeviceId);
+
+            if (target) {
+              try {
+                const s = await navigator.mediaDevices.getUserMedia({
+                  video: { deviceId: { exact: target.deviceId }, width: { ideal: 640 }, height: { ideal: 480 } },
+                });
+                // Guard: make sure we actually got a different camera
+                if (s.getVideoTracks()[0]?.getSettings().deviceId !== currentDeviceId) {
+                  newStream = s;
+                } else {
+                  s.getTracks().forEach((t) => t.stop());
+                }
+              } catch (_) {}
             }
           }
         } catch (_) {}
       }
 
-      // Fallback: soft facingMode constraint (no `exact` so it never throws)
+      // Strategy 2 — facingMode: { ideal } with size hints.
+      // `ideal` never throws OverconstrainedError — the browser picks the best
+      // matching camera without hard-failing when the facing isn't recognised.
       if (!newStream) {
-        newStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: newFacing },
-        });
+        try {
+          newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: newFacing }, width: { ideal: 640 }, height: { ideal: 480 } },
+          });
+        } catch (_) {}
+      }
+
+      // Strategy 3 — facingMode: { ideal } only, no size constraints.
+      // Some older iOS builds reject width/height when combined with facingMode.
+      if (!newStream) {
+        try {
+          newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: newFacing } },
+          });
+        } catch (_) {}
+      }
+
+      // Strategy 4 — any video, zero constraints (absolute last resort).
+      if (!newStream) {
+        newStream = await navigator.mediaDevices.getUserMedia({ video: true });
       }
 
       const newTrack = newStream.getVideoTracks()[0];
+
+      // Swap the track in every peer connection without renegotiation.
       for (const sender of videoSenders.current.values()) {
         try { await sender.replaceTrack(newTrack); } catch (_) {}
       }
+
       videoStream.current?.getTracks().forEach((t) => t.stop());
       videoStream.current = newStream;
       setLocalVideoStreamObj(newStream);
       if (localVideoRef.current) localVideoRef.current.srcObject = newStream;
-      // Detect actual facing mode from track settings — more reliable than
-      // assuming the "other" device is the opposite of the current one,
-      // especially on devices with multiple front or multiple back cameras.
+
+      // Detect the actual facing from track settings when available.
+      // iOS Safari and many Android browsers return "" on a deviceId-based
+      // switch — fall back to what we requested so the mirror CSS stays correct.
       const actualFacing = newTrack.getSettings().facingMode;
-      // Many mobile browsers (iOS Safari, Chrome Android on deviceId switch) return empty
-      // string for facingMode — fall back to the facing we explicitly requested rather than
-      // always resetting to "user", which breaks the back→front flip.
       setCameraFacing(
         actualFacing === "environment" ? "environment"
         : actualFacing === "user" ? "user"
         : newFacing
       );
-    } catch {
-      toast({ title: "Camera flip failed", description: "Could not switch to the other camera.", variant: "destructive" });
+    } catch (err: any) {
+      const isPermission = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
+      toast({
+        title: "Camera flip failed",
+        description: isPermission
+          ? "Allow camera access in your browser settings to switch cameras."
+          : "Could not switch camera. Your device may only have one camera.",
+        variant: "destructive",
+      });
     } finally {
       setIsFlippingCamera(false);
     }
