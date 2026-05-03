@@ -737,7 +737,7 @@ export default function Lobby() {
 
   const { data: announcements = [] } = useQuery<LobbyAnnouncement[]>({
     queryKey: ["/api/announcements"],
-    refetchInterval: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
   });
 
   const markAnnouncementsViewedMutation = useMutation({
@@ -841,7 +841,7 @@ export default function Lobby() {
     enabled: !!user,
     /* Bumped from 15s → 45s. The full users list rarely changes between
      * lobby visits — saving 4 calls/min at this single endpoint. */
-    refetchInterval: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
   });
 
   const { data: usersCurrentRooms = {} } = useQuery<Record<string, string>>({
@@ -872,7 +872,7 @@ export default function Lobby() {
       return res.json();
     },
     enabled: discoverableUserIds.length > 0,
-    refetchInterval: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
     /* Keep last successful counts while a refetch is in flight so the
      * lobby-wide override passed to RoomCards stays populated and per-card
      * follower-count queries don't briefly re-enable. */
