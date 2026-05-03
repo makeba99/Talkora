@@ -4140,6 +4140,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <span className={labelBase} style={{ color: aiTutorActive ? "hsl(var(--neu-orange-hi) / 0.95)" : "hsl(var(--neu-orange-hi) / 0.72)" }}>
             {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
+          <span className="text-[9px] uppercase tracking-[0.24em] font-bold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-200">
+            Demo
+          </span>
         </div>
 
         <div className="mx-0.5 h-7 sm:h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
@@ -10397,6 +10400,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
+              </div>
+              <div className="px-4 py-2 border-b border-amber-400/15 bg-amber-400/10 text-[10px] font-medium text-amber-100/90">
+                AI Tutor is a demo and may still change.
               </div>
 
               {/* Messages + Input */}
