@@ -1805,7 +1805,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   });
 
   const updateRoomMutation = useMutation({
-    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme?: string; isPublic?: boolean; hologramVideoUrl?: string | null; welcomeMessage?: string | null; welcomeMediaUrls?: string[]; welcomeMediaTypes?: string[]; welcomeMediaPosition?: string; welcomeAccentColor?: string; talkPermission?: string; cameraPermission?: string; screenPermission?: string; youtubePermission?: string }) => {
+    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme?: string; isPublic?: boolean; hologramVideoUrl?: string | null; welcomeMessage?: string | null; welcomeMediaUrls?: string[]; welcomeMediaTypes?: string[]; welcomeMediaPosition?: string; welcomeAccentColor?: string; talkPermission?: string; cameraPermission?: string; screenPermission?: string; youtubePermission?: string; chatPermission?: string }) => {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return await res.json();
     },

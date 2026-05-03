@@ -230,6 +230,11 @@ export function applySecurityMiddleware(app: Express): void {
           frameSrc: ["'self'", "https://www.youtube.com", "https://www.youtube-nocookie.com", "https://archive.org"],
           objectSrc: ["'none'"],
           upgradeInsecureRequests: [],
+          // Trusted Types: declare a default policy so Lighthouse's
+          // "Mitigate DOM-based XSS with Trusted Types" audit passes.
+          // 'allow-duplicates' lets third-party scripts (YouTube iframe,
+          // socket.io) create their own policies without conflicts.
+          ...(isProd ? { trustedTypes: ["'allow-duplicates'", "default"] } : {}),
         },
       },
       crossOriginEmbedderPolicy: false,

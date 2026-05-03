@@ -97,85 +97,93 @@ function ConfettiCanvas({ active, color }: { active: boolean; color: string }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.width = canvas.offsetWidth;
-    const H = canvas.height = canvas.offsetHeight;
+    // Defer the offsetWidth/offsetHeight read to the next rAF so we never
+    // force a synchronous layout recalculation (Lighthouse "forced reflow").
+    let setupRaf: number;
+    setupRaf = requestAnimationFrame(() => {
+      const W = (canvas.width = canvas.offsetWidth);
+      const H = (canvas.height = canvas.offsetHeight);
 
-    const palette = [color, "#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8"];
+      const palette = [color, "#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8"];
 
-    type Piece = {
-      x: number; y: number; vx: number; vy: number;
-      rot: number; vrot: number; size: number;
-      color: string; shape: "rect" | "circle" | "star";
-      opacity: number; decay: number;
-    };
+      type Piece = {
+        x: number; y: number; vx: number; vy: number;
+        rot: number; vrot: number; size: number;
+        color: string; shape: "rect" | "circle" | "star";
+        opacity: number; decay: number;
+      };
 
-    const pieces: Piece[] = [];
-    const BURST_COUNT = 120;
+      const pieces: Piece[] = [];
+      const BURST_COUNT = 120;
 
-    for (let i = 0; i < BURST_COUNT; i++) {
-      const angle = (Math.random() * Math.PI * 2);
-      const speed = 3 + Math.random() * 8;
-      pieces.push({
-        x: W / 2 + (Math.random() - 0.5) * 40,
-        y: H * 0.38,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 4 - Math.random() * 4,
-        rot: Math.random() * Math.PI * 2,
-        vrot: (Math.random() - 0.5) * 0.25,
-        size: 5 + Math.random() * 9,
-        color: palette[Math.floor(Math.random() * palette.length)],
-        shape: (["rect", "circle", "star"] as const)[Math.floor(Math.random() * 3)],
-        opacity: 1,
-        decay: 0.008 + Math.random() * 0.006,
-      });
-    }
-
-    const drawStar = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
-      ctx.beginPath();
-      for (let i = 0; i < 5; i++) {
-        const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
-        const b = a + Math.PI / 5;
-        ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
-        ctx.lineTo(x + Math.cos(b) * (r * 0.4), y + Math.sin(b) * (r * 0.4));
+      for (let i = 0; i < BURST_COUNT; i++) {
+        const angle = (Math.random() * Math.PI * 2);
+        const speed = 3 + Math.random() * 8;
+        pieces.push({
+          x: W / 2 + (Math.random() - 0.5) * 40,
+          y: H * 0.38,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 4 - Math.random() * 4,
+          rot: Math.random() * Math.PI * 2,
+          vrot: (Math.random() - 0.5) * 0.25,
+          size: 5 + Math.random() * 9,
+          color: palette[Math.floor(Math.random() * palette.length)],
+          shape: (["rect", "circle", "star"] as const)[Math.floor(Math.random() * 3)],
+          opacity: 1,
+          decay: 0.008 + Math.random() * 0.006,
+        });
       }
-      ctx.closePath();
-      ctx.fill();
-    };
 
-    const animate = () => {
-      ctx.clearRect(0, 0, W, H);
-      let alive = false;
-      for (const p of pieces) {
-        if (p.opacity <= 0) continue;
-        alive = true;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.22;
-        p.vx *= 0.99;
-        p.rot += p.vrot;
-        p.opacity -= p.decay;
-
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, p.opacity);
-        ctx.fillStyle = p.color;
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        if (p.shape === "rect") {
-          ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
-        } else if (p.shape === "circle") {
-          ctx.beginPath();
-          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          drawStar(ctx, 0, 0, p.size / 2);
+      const drawStar = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+          const b = a + Math.PI / 5;
+          ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+          ctx.lineTo(x + Math.cos(b) * (r * 0.4), y + Math.sin(b) * (r * 0.4));
         }
-        ctx.restore();
-      }
-      if (alive) rafRef.current = requestAnimationFrame(animate);
-    };
+        ctx.closePath();
+        ctx.fill();
+      };
 
-    rafRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafRef.current);
+      const animate = () => {
+        ctx.clearRect(0, 0, W, H);
+        let alive = false;
+        for (const p of pieces) {
+          if (p.opacity <= 0) continue;
+          alive = true;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.22;
+          p.vx *= 0.99;
+          p.rot += p.vrot;
+          p.opacity -= p.decay;
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillStyle = p.color;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          if (p.shape === "rect") {
+            ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+          } else if (p.shape === "circle") {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            drawStar(ctx, 0, 0, p.size / 2);
+          }
+          ctx.restore();
+        }
+        if (alive) rafRef.current = requestAnimationFrame(animate);
+      };
+
+      rafRef.current = requestAnimationFrame(animate);
+    });
+    return () => {
+      cancelAnimationFrame(setupRaf);
+      cancelAnimationFrame(rafRef.current);
+    };
   }, [active, color]);
 
   return (

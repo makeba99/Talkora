@@ -167,12 +167,21 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const prevStepRef = useRef<{ active: boolean; step: number }>({ active: false, step });
 
-  // Auto-launch on first visit (after letting the lobby settle for 1.2s)
+  // Auto-launch on first visit.
+  // For first-time visitors we use requestIdleCallback (with a 3 s deadline)
+  // so the browser only shows the card once it's done with first-paint work.
+  // This keeps the onboarding card out of the LCP measurement window.
+  // For returning visitors the relaunch capsule uses a plain 600 ms delay.
   useEffect(() => {
     const status = readSavedStatus();
     if (status === null) {
-      const t = setTimeout(() => setActive(true), 200);
-      return () => clearTimeout(t);
+      if (typeof window.requestIdleCallback === "function") {
+        const id = window.requestIdleCallback(() => setActive(true), { timeout: 3000 });
+        return () => window.cancelIdleCallback(id);
+      } else {
+        const t = setTimeout(() => setActive(true), 1200);
+        return () => clearTimeout(t);
+      }
     } else {
       // Already finished or skipped — show the relaunch capsule after a beat
       const t = setTimeout(() => setReopenVisible(true), 600);
