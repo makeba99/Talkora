@@ -1,0 +1,54 @@
+ A preload for 'https://www.afikgang.online/assets/index-BqGhiGtN.css' is found, but is not used because the request credentials mode does not match. Consider taking a look at crossorigin attribute.
+(anonymous) @ (index):371
+content.js:17 Creating a TrustedTypePolicy named 'vue' violates the following Content Security policy directive: "trusted-types 'allow-duplicates' default". The action has been blocked.
+(anonymous) @ content.js:17
+chrome-extension://j…ntent_reporter.js:1 Uncaught SyntaxError: Unexpected token 'export'
+/api/rooms:1  Failed to load resource: the server responded with a status of 500 ()
+/api/admin/settings/maintenance:1  Failed to load resource: the server responded with a status of 500 ()
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/admin:1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/admin:1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/admin:1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+(index):1 The resource https://www.afikgang.online/assets/index-BqGhiGtN.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/api/admin/settings/maintenance:1  Failed to load resource: the server responded with a status of 500 ()
+/api/admin/settings/maintenance:1  Failed to load resource: the server responded with a status of 500 ()
+/api/rooms:1  Failed to load resource: the server responded with a status of 500 ()
+/api/rooms:1  Failed to load resource: the server responded with a status of 500 ()
+/api/admin/settings/maintenance:1  Failed to load resource: the server responded with a status of 500 ()
+/api/admin/settings/maintenance:1  Failed to load resource: the server responded with a status of 500 ()
+/api/rooms:1  Failed to load resource: the server responded with a status of 500 ()
