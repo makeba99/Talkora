@@ -1100,6 +1100,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [movieStartOffset, setMovieStartOffset] = useState<number>(0);
   const [popularMovies, setPopularMovies] = useState<any[]>([]);
   const [popularMoviesLoading, setPopularMoviesLoading] = useState(false);
+  const dailyModernMovieRef = useRef<{ dayKey: string; movieId: string | null }>({ dayKey: "", movieId: null });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteRoomOpen, setDeleteRoomOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(roomProp.title);
@@ -4913,7 +4914,31 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setPopularMoviesLoading(true);
     try {
       const res = await fetch("/api/movies/popular", { credentials: "include" });
-      if (res.ok) setPopularMovies(await res.json());
+      if (res.ok) {
+        const movies = await res.json();
+        if (Array.isArray(movies) && movies.length > 0) {
+          const dayKey = new Date().toISOString().slice(0, 10);
+          if (dailyModernMovieRef.current.dayKey !== dayKey) {
+            const modernMovies = movies.filter((movie: any) => {
+              const title = `${movie.title || ""} ${movie.original_title || ""}`.toLowerCase();
+              return !/documentary|classic|retro|old|silent/.test(title);
+            });
+            const pool = modernMovies.length > 0 ? modernMovies : movies;
+            let hash = 0;
+            for (const ch of dayKey) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+            dailyModernMovieRef.current = { dayKey, movieId: pool[hash % pool.length]?.id ?? null };
+          }
+          const preferredMovieId = dailyModernMovieRef.current.movieId;
+          if (preferredMovieId) {
+            const preferredIndex = movies.findIndex((movie: any) => movie.id === preferredMovieId);
+            if (preferredIndex > 0) {
+              const [preferredMovie] = movies.splice(preferredIndex, 1);
+              movies.unshift(preferredMovie);
+            }
+          }
+          setPopularMovies(movies);
+        }
+      }
     } catch (_) {}
     finally { setPopularMoviesLoading(false); }
   }, [popularMovies.length]);
