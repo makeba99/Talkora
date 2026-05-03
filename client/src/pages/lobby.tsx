@@ -770,6 +770,7 @@ export default function Lobby() {
   const userOwnedRooms = fetchedRooms.filter(r => r.ownerId === user?.id);
   const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id);
   const rooms = [...userOwnedRooms, ...SAMPLE_ROOMS.slice(0, 8), ...otherRealRooms];
+  const visibleRooms = useDeferredValue(rooms);
 
   /* PERF: collect every unique participant id across every visible room so the
    * lobby can fire ONE batched fetch for badges (and reuse the lobby-wide
@@ -803,7 +804,7 @@ export default function Lobby() {
     placeholderData: keepPreviousData,
   });
 
-  const roomIds = rooms.map((r) => r.id);
+  const roomIds = visibleRooms.map((r) => r.id);
   const { data: voteData, refetch: refetchVotes } = useQuery<{ counts: Record<string, number>; userVotes: Record<string, boolean> }>({
     queryKey: ["/api/rooms/votes/batch", roomIds.join(",")],
     queryFn: async () => {
