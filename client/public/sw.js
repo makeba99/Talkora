@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vextorn-v7";
+const CACHE_VERSION = "vextorn-v8";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const ASSET_CACHE  = `${CACHE_VERSION}-assets`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
@@ -120,7 +120,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Other same-origin static resources (icons, manifest, fonts).
+  // Other same-origin static resources (icons, manifest, fonts, images).
   // Cache-first with network fallback.
   if (
     request.destination === "font"  ||
@@ -143,12 +143,12 @@ async function cacheFirstImmutable(request) {
 }
 
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const cache = await caches.open(DYNAMIC_CACHE);
+  const cached = await cache.match(request);
   if (cached) return cached;
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, response.clone());
     }
     return response;

@@ -31,6 +31,17 @@ interface GifResult {
   height: number;
 }
 
+function normalizeGifUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("tenor.com") || parsed.hostname.includes("media.tenor.com")) {
+      parsed.search = "";
+      return parsed.toString();
+    }
+  } catch {}
+  return url;
+}
+
 export function EmojiPickerButton({ onEmojiSelect }: EmojiPickerButtonProps) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
@@ -143,7 +154,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
   };
 
   const handleGifClick = (gif: GifResult) => {
-    onGifSelect(gif.url);
+    onGifSelect(normalizeGifUrl(gif.url));
     setOpen(false);
     setGifSearch("");
     setGifs([]);
@@ -225,6 +236,8 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
                       alt={gif.title}
                       className="w-full h-24 object-cover"
                       loading="lazy"
+                      referrerPolicy="no-referrer"
+                      decoding="async"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                   </button>
