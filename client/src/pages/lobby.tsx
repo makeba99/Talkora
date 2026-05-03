@@ -789,7 +789,11 @@ export default function Lobby() {
 
   const userOwnedRooms = fetchedRooms.filter(r => r.ownerId === user?.id);
   const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id);
-  const rooms = [...userOwnedRooms, ...SAMPLE_ROOMS.slice(0, 8), ...otherRealRooms];
+  const rooms = useMemo(
+    () => [...userOwnedRooms, ...SAMPLE_ROOMS.slice(0, 8), ...otherRealRooms],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fetchedRooms, user?.id],
+  );
   const visibleRooms = useDeferredValue(rooms);
 
   /* PERF: collect every unique participant id across every visible room so the

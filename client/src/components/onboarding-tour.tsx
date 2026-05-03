@@ -341,14 +341,26 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
     const retry3 = window.setTimeout(update, 480);
     window.addEventListener("resize", update, { passive: true });
     window.addEventListener("scroll", update, { capture: true, passive: true });
-    const interval = window.setInterval(() => requestAnimationFrame(update), 600);
+    // Watch for DOM subtree additions that might cause the target element's
+    // position to shift (e.g. content loaded above it). This replaces the
+    // former 600 ms setInterval which called getBoundingClientRect every
+    // 600 ms unconditionally — a forced layout reflow on every tick even
+    // when nothing moved. MutationObserver only fires when the DOM actually
+    // changes, eliminating the periodic reflow entirely.
+    const observer = new MutationObserver(() => requestAnimationFrame(update));
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: false,
+      characterData: false,
+    });
     return () => {
       window.clearTimeout(retry1);
       window.clearTimeout(retry2);
       window.clearTimeout(retry3);
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, { capture: true });
-      window.clearInterval(interval);
+      observer.disconnect();
     };
   }, [active, current]);
 

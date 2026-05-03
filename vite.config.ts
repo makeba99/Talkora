@@ -97,7 +97,7 @@ export default defineConfig({
         // pulls ~80–120 kB out of the critical first-paint download for users
         // who never trigger those code paths — safe because they never call
         // React APIs at module-evaluation time.
-        manualChunks(id) {
+        manualChunks(id, { getModuleInfo }) {
           // Force the zero-dep shared constants into a predictable named chunk
           // so server/static.ts can inject <link rel="modulepreload"> for it.
           // shared/constants.ts is imported by 9+ lazy route chunks; without a
@@ -135,7 +135,67 @@ export default defineConfig({
           if (id.includes("react-hook-form") || id.includes("@hookform")) {
             return "form-vendor";
           }
-          if (id.includes("lucide-react")) return "icons-vendor";
+
+          // ── Lucide-react icon splitting ──────────────────────────────────
+          // Previously ALL lucide icons landed in a single "icons-vendor" chunk
+          // that was preloaded on the lobby — including ~50 voice-room-only and
+          // ~30 admin-only icons that are never used during lobby paint. Those
+          // contributed ~30-40 KiB of unused JS on the lobby page.
+          //
+          // Strategy: only force icons into the preloadable "icons-vendor" chunk
+          // if at least one of their importers is a lobby-critical module. Icons
+          // that are exclusively consumed by lazy routes (voice-room, admin,
+          // teachers, etc.) fall through — Rollup places them in those lazy chunks
+          // and they are never downloaded on the lobby.
+          //
+          // NOTE: lucide-react uses a barrel (index.js) that Rollup inlines at
+          // tree-shake time. After DCE the per-icon module's immediate importers
+          // are often the barrel itself, but in Rollup's module graph the BARREL's
+          // importers are the real consumers. We therefore walk one level up
+          // through barrel-like modules (those whose own id contains "lucide-react")
+          // to reach the true consumer files, then test their paths.
+          if (id.includes("lucide-react")) {
+            const info = getModuleInfo(id);
+            if (!info) return "icons-vendor"; // safe fallback
+
+            // Lobby-critical source paths — any icon imported (directly or
+            // transitively through the barrel) by one of these modules must be
+            // in icons-vendor so it is preloaded on first paint.
+            const LOBBY_PATHS = [
+              "/pages/lobby",
+              "/components/room-card",
+              "/components/user-badge-pips",
+              "/components/vextorn-logo",
+              "/components/login-screen",
+              "/components/update-available-toast",
+              "/components/pwa-install-banner",
+              "/components/ui/", // shadcn UI primitives used eagerly
+              "/App.tsx",
+            ];
+
+            function isLobbyImporter(moduleId: string): boolean {
+              return LOBBY_PATHS.some((p) => moduleId.includes(p));
+            }
+
+            // Walk importers: if this module is the barrel, check the barrel's
+            // importers. If it is an individual icon module, check its importers
+            // (which may be the barrel — in that case recurse one more level).
+            const directImporters = info.importers ?? [];
+            for (const imp of directImporters) {
+              if (isLobbyImporter(imp)) return "icons-vendor";
+              // imp might be the lucide barrel itself — look at barrel importers
+              if (imp.includes("lucide-react")) {
+                const barrelInfo = getModuleInfo(imp);
+                for (const barrelImp of barrelInfo?.importers ?? []) {
+                  if (isLobbyImporter(barrelImp)) return "icons-vendor";
+                }
+              }
+            }
+
+            // No lobby importer found → leave to Rollup (goes to consumer chunk)
+            return undefined;
+          }
+
           if (id.includes("react-icons")) return "social-icons-vendor";
           if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "socket-vendor";
           if (id.includes("date-fns") || id.includes("zod") || id.includes("zod-validation-error")) return "forms-vendor";

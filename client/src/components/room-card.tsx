@@ -132,7 +132,7 @@ const LANGUAGE_CODES: Record<string, string> = {
   Armenian: "am", Indonesian: "id",
 };
 
-function LanguageFlag({ language }: { language: string }) {
+function LanguageFlag({ language, priority = false }: { language: string; priority?: boolean }) {
   const code = LANGUAGE_CODES[language];
   if (!code) return <Globe className="w-3.5 h-3.5 text-white/50" />;
   return (
@@ -142,8 +142,9 @@ function LanguageFlag({ language }: { language: string }) {
       width={20}
       height={15}
       alt={language}
-      loading="lazy"
-      decoding="async"
+      loading={priority ? "eager" : "lazy"}
+      decoding={priority ? "sync" : "async"}
+      fetchpriority={priority ? "high" : undefined}
       className="rounded-[2px] flex-shrink-0"
       style={{ objectFit: "cover" }}
     />
@@ -846,7 +847,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               </div>
               {/* Sub-row: flag, language, level, mic status, LIVE */}
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                <LanguageFlag language={room.language} />
+                <LanguageFlag language={room.language} priority={priority} />
                 <span className="text-[11px] text-white/70 font-medium">{room.language}</span>
                 <span className="text-white/30 text-[10px]" aria-hidden="true">•</span>
                 <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-orange-400"}`}>

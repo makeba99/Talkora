@@ -24,6 +24,7 @@ const STATIC_ASSETS = [
 //   - /api/rooms            — public room list, changes infrequently
 //   - /api/rooms/participants — live participant counts (short stale window)
 //   - /api/announcements    — platform announcements, rarely change
+//   - /api/maintenance      — maintenance flag, changes extremely rarely
 //
 // /api/auth/user is intentionally excluded: it's private (Cookie-gated),
 // changes on login/logout, and must never be served stale to avoid showing
@@ -32,6 +33,7 @@ const SWR_PATHS = [
   "/api/rooms",
   "/api/rooms/participants",
   "/api/announcements",
+  "/api/maintenance",
 ];
 
 self.addEventListener("install", (event) => {

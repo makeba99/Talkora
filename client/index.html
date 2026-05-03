@@ -290,10 +290,14 @@
          instead of waiting for React to mount (~200–400 ms saved on mobile).
          crossorigin="use-credentials" matches queryClient's credentials:"include"
          so the browser reuses the same request rather than opening a duplicate.
-         Only the two lobby-critical endpoints — /api/rooms and /api/auth/user —
-         are preloaded; the rest are secondary and would compete for bandwidth. -->
+         /api/rooms and /api/auth/user drive the lobby LCP — highest priority.
+         /api/maintenance is fetched by AppContent on every page load with a
+         30 s interval; preloading it eliminates a sequential round-trip that
+         previously stalled on cold DB connections (observed 760 ms on first hit).
+         fetchpriority="low" keeps it from competing with the LCP-critical fetches. -->
     <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
     <link rel="preload" href="/api/rooms" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
+    <link rel="preload" href="/api/maintenance" as="fetch" crossorigin="use-credentials" fetchpriority="low" />
     <!-- Self-recovery for users on the old service worker. The previous SW
          used stale-while-revalidate for HTML and pre-cached "/", so after a
          deploy returning users got the OLD index.html that referenced new-
