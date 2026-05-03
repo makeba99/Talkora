@@ -1,0 +1,81 @@
+You are a senior WebRTC, mobile browser, and frontend performance engineer.
+
+Your task is to FIX critical camera and screen sharing issues in my web app.
+
+⚠️ STRICT RULES:
+- DO NOT change UI, layout, or design
+- DO NOT remove existing features
+- DO NOT rewrite unrelated logic
+- ONLY fix the issues below in a clean, production-grade way
+- KEEP performance optimal
+- OUTPUT only the updated parts of the code (no explanations)
+
+========================================
+ISSUE 1: MOBILE CAMERA FLIP / MIRROR BUG
+========================================
+Problem:
+- On mobile devices, when switching between front and back camera, video appears reversed, mirrored incorrectly, or flipped.
+
+Required Fix Behavior:
+- Front camera behaves correctly (optionally mirrored ONLY if intended)
+- Back camera NEVER appears mirrored or flipped
+- Switching cameras must:
+  - Fully stop previous media stream
+  - Reinitialize with correct constraints
+- Ensure correct camera selection using proper device handling (not guesswork)
+- Remove any incorrect CSS or transformations causing unintended flipping
+- Apply mirroring ONLY intentionally and conditionally
+
+Edge Cases:
+- Android Chrome
+- iOS Safari
+- Multiple camera devices
+- Orientation changes (portrait/landscape)
+
+========================================
+ISSUE 2: SCREEN SHARING NOT WORKING
+========================================
+Problem:
+- App incorrectly shows error like:
+  "Your Chrome version does not support screen sharing"
+- Screen sharing fails even on supported browsers
+
+Required Fix Behavior:
+- Screen sharing MUST work on all modern supported browsers
+- REMOVE all outdated or incorrect browser/version detection logic
+- Use ONLY modern, standards-based screen capture approach
+- Ensure feature works on:
+  - Chrome (desktop + Android where supported)
+  - Edge
+  - Safari (handle limitations gracefully)
+
+- Properly handle:
+  - Permission prompts
+  - User denial
+  - Screen share stopping manually
+  - Switching between screen share and camera
+
+- Ensure fallback behavior:
+  - If screen sharing is not supported, show correct reason (NOT fake version error)
+
+- Ensure app is compliant with browser security requirements (e.g. secure context)
+
+========================================
+RELIABILITY + UX REQUIREMENTS
+========================================
+- No console errors
+- Add proper error handling for media access failures
+- Ensure smooth switching:
+  camera ↔ screen share ↔ camera
+- Do NOT break WebRTC connections if used
+- Preserve existing state and session
+
+========================================
+FINAL OUTPUT REQUIREMENTS
+========================================
+- Modify only necessary functions/modules
+- Keep code clean and minimal
+- No placeholders
+- No pseudocode
+- No explanations
+- Only final working implementation
