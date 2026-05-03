@@ -464,13 +464,13 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
         <h3 className="onboarding-card-title" data-testid="text-room-onboarding-title">{current.title}</h3>
         <p className="onboarding-card-body">{renderRichBody(current.body)}</p>
         <div className="onboarding-card-footer">
-          <div className="onboarding-dots" role="tablist" aria-label="Tour progress">
+          <div className="onboarding-progress-bar" role="tablist" aria-label="Tour progress">
             {visibleSteps.map((s, i) => (
               <button
                 key={s.id}
                 type="button"
                 role="tab"
-                className={`onboarding-dot ${i === step ? "is-active" : ""} ${i < step ? "is-done" : ""}`}
+                className={`onboarding-progress-seg ${i === step ? "is-active" : ""} ${i < step ? "is-done" : ""}`}
                 onClick={() => goTo(i)}
                 aria-label={`Go to step ${i + 1}`}
                 aria-selected={i === step}

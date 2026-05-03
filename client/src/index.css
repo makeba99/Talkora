@@ -8374,69 +8374,57 @@ html.neomorphic-light .scroll-jump-btn {
 
 .onboarding-card-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
-.onboarding-dots {
-  display: inline-flex;
+/* Segmented progress bar — one thin pill per step, scales to any step count */
+.onboarding-progress-bar {
+  display: flex;
   align-items: center;
-  gap: 12px; /* WCAG 2.5.8: ≥12 px clearance between adjacent 24×24 targets */
+  gap: 4px;
+  width: 100%;
 }
 
-/* WCAG 2.5.8 — min touch target 24 × 24 px.
-   The button is a transparent 24 × 24 container; the visible dot is drawn
-   via ::before so the visual stays at 7 px while the hit area is accessible. */
-.onboarding-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
+.onboarding-progress-seg {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 8px 0;
   background: transparent;
   border: none;
-  padding: 0;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform 200ms ease;
-}
-
-.onboarding-dot::before {
-  content: '';
-  width: 7px;
-  height: 7px;
+  position: relative;
   border-radius: 999px;
-  background: hsl(0 0% 100% / 0.16);
-  flex-shrink: 0;
-  transition: background 200ms ease, width 220ms ease;
 }
 
-.onboarding-dot:hover::before {
-  background: hsl(0 0% 100% / 0.32);
+.onboarding-progress-seg::before {
+  content: '';
+  position: absolute;
+  inset: 8px 0;
+  border-radius: 999px;
+  background: hsl(0 0% 100% / 0.14);
+  transition: background 200ms ease, box-shadow 200ms ease;
 }
 
-.onboarding-dot:hover {
-  transform: scale(1.15);
+.onboarding-progress-seg:hover::before {
+  background: hsl(0 0% 100% / 0.28);
 }
 
-.onboarding-dot.is-done::before {
-  background: hsl(var(--neu-orange) / 0.55);
+.onboarding-progress-seg.is-done::before {
+  background: hsl(var(--neu-orange) / 0.5);
 }
 
-.onboarding-dot.is-active::before {
-  width: 18px;
+.onboarding-progress-seg.is-active::before {
   background: hsl(var(--neu-orange));
-  box-shadow: 0 0 10px hsl(var(--neu-orange) / 0.55);
+  box-shadow: 0 0 8px hsl(var(--neu-orange) / 0.55);
 }
 
 .onboarding-card-actions {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
+  justify-content: flex-end;
 }
 
 .onboarding-btn {

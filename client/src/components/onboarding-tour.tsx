@@ -490,13 +490,13 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
           </div>
         )}
         <div className="onboarding-card-footer">
-          <div className="onboarding-dots" role="tablist" aria-label="Tour progress">
+          <div className="onboarding-progress-bar" role="tablist" aria-label="Tour progress">
             {STEPS.map((s, i) => (
               <button
                 key={s.id}
                 type="button"
                 role="tab"
-                className={`onboarding-dot ${i === step ? "is-active" : ""} ${i < step ? "is-done" : ""}`}
+                className={`onboarding-progress-seg ${i === step ? "is-active" : ""} ${i < step ? "is-done" : ""}`}
                 onClick={() => goTo(i)}
                 aria-label={`Go to step ${i + 1}`}
                 aria-selected={i === step}
