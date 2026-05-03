@@ -184,21 +184,39 @@ export function playMoodSound(emoji: string) {
 
     // ── Laughter — real human ha-ha-ha ──
     case "😂":
-      speak("Ha ha ha ha ha!", { rate: 1.4, pitch: 1.3, volume: 0.95 });
+      speak("Ha ha ha ha ha!", { rate: 1.35, pitch: 1.28, volume: 0.95 });
+      speak("No way!", { rate: 1.2, pitch: 1.2, volume: 0.82, delay: 0.45 });
       break;
     case "🤣":
-      speak("Ha ha ha ha ha ha!", { rate: 1.5, pitch: 1.35, volume: 0.98 });
+      speak("I can't breathe!", { rate: 1.35, pitch: 1.22, volume: 0.95 });
+      speak("Hahaha!", { rate: 1.55, pitch: 1.4, volume: 0.88, delay: 0.38 });
       break;
     case "😆":
-      speak("Hee hee hee!", { rate: 1.4, pitch: 1.5, volume: 0.9 });
+      speak("Hee hee hee!", { rate: 1.35, pitch: 1.45, volume: 0.9 });
+      speak("That's so dumb!", { rate: 1.15, pitch: 1.18, volume: 0.8, delay: 0.42 });
+      break;
+    case "😁":
+      speak("Haha, yes!", { rate: 1.2, pitch: 1.25, volume: 0.88 });
+      break;
+    case "😹":
+      speak("Meee-owww!", { rate: 1.05, pitch: 1.35, volume: 0.86 });
+      speak("Ha ha!", { rate: 1.35, pitch: 1.3, volume: 0.84, delay: 0.35 });
+      break;
+    case "🙂":
+      speak("Mm-hm.", { rate: 0.9, pitch: 1.0, volume: 0.78 });
+      break;
+    case "😬":
+      speak("Oooof.", { rate: 0.85, pitch: 0.9, volume: 0.8 });
       break;
 
     // ── Surprise ──
     case "😮":
       speak("Oh!", { rate: 0.85, pitch: 1.4, volume: 0.95 });
+      speak("Whoa!", { rate: 1.0, pitch: 1.25, volume: 0.85, delay: 0.28 });
       break;
     case "😱":
       speak("Oh my god!", { rate: 0.9, pitch: 1.5, volume: 0.98 });
+      speak("No way!", { rate: 1.0, pitch: 1.35, volume: 0.88, delay: 0.32 });
       break;
     case "🤯":
       speak("What?!", { rate: 1.1, pitch: 1.4, volume: 0.98 });
@@ -208,43 +226,57 @@ export function playMoodSound(emoji: string) {
     // ── Thoughtful / annoyed ──
     case "🤔":
       speak("Hmm...", { rate: 0.75, pitch: 0.9, volume: 0.85 });
+      speak("Interesting.", { rate: 0.85, pitch: 1.0, volume: 0.75, delay: 0.3 });
       break;
     case "🙄":
       speak("Ugh...", { rate: 0.7, pitch: 0.8, volume: 0.85 });
+      speak("Really?", { rate: 0.85, pitch: 0.95, volume: 0.78, delay: 0.25 });
       break;
 
     // ── Sleepy — real snore / yawn ──
     case "😴":
-      speak("Snore... snore...", { rate: 0.38, pitch: 0.42, volume: 0.8 });
+      speak("Snore... snore...", { rate: 0.36, pitch: 0.4, volume: 0.8 });
+      speak("Zzz...", { rate: 0.32, pitch: 0.35, volume: 0.72, delay: 0.42 });
       break;
     case "🥱":
       speak("Yaaawn...", { rate: 0.34, pitch: 0.72, volume: 0.82 });
+      speak("Too sleepy...", { rate: 0.55, pitch: 0.8, volume: 0.72, delay: 0.38 });
+      break;
+    case "💤":
+      speak("Snore...", { rate: 0.33, pitch: 0.38, volume: 0.78 });
       break;
 
     // ── Anger — real human growl voice ──
     case "😡":
       speak("Grr!", { rate: 0.75, pitch: 0.55, volume: 0.95 });
+      speak("Hey!", { rate: 0.9, pitch: 0.7, volume: 0.85, delay: 0.28 });
       break;
     case "🤬":
       speak("Argh!", { rate: 0.8, pitch: 0.50, volume: 0.98 });
+      speak("No!", { rate: 0.88, pitch: 0.6, volume: 0.9, delay: 0.25 });
       noiseBurst({ dur: 0.18, gain: 0.12, filterFreq: 300, filterType: "lowpass", delay: 0.5 });
       break;
 
     // ── Funny / silly ──
     case "🤡":
       speak("Boing!", { rate: 1.2, pitch: 1.6, volume: 0.9 });
+      speak("Clown mode!", { rate: 1.1, pitch: 1.45, volume: 0.82, delay: 0.34 });
       break;
     case "💩":
       speak("Oof!", { rate: 1.0, pitch: 0.8, volume: 0.85 });
+      speak("Ew!", { rate: 1.1, pitch: 1.0, volume: 0.82, delay: 0.28 });
       break;
     case "👻":
       speak("Booo!", { rate: 0.65, pitch: 0.65, volume: 0.9 });
+      speak("Wooo!", { rate: 0.7, pitch: 0.8, volume: 0.78, delay: 0.35 });
       break;
     case "🤖":
       speak("Bee boo boop.", { rate: 0.9, pitch: 0.6, volume: 0.9 });
+      speak("Not a robot.", { rate: 0.95, pitch: 0.7, volume: 0.8, delay: 0.3 });
       break;
     case "🐸":
       speak("Ribbit!", { rate: 0.85, pitch: 0.65, volume: 0.85 });
+      speak("Funny frog.", { rate: 0.95, pitch: 0.9, volume: 0.8, delay: 0.3 });
       break;
     case "🦄":
       speak("Yay!", { rate: 1.3, pitch: 1.6, volume: 0.9 });
