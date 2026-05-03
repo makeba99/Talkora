@@ -331,7 +331,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
           loading={priority ? "eager" : "lazy"}
           decoding="async"
           referrerPolicy="no-referrer"
-          {...(priority ? { fetchpriority: "high" } as any : {})}
+          {...(priority ? { fetchpriority: "high", importance: "high" } as any : {})}
           className="absolute inset-0 w-full h-full object-cover z-0"
           style={{ opacity: 0.65, filter: "brightness(0.7) saturate(0.85)" }}
         />
@@ -359,7 +359,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
               loading={priority ? "eager" : "lazy"}
               decoding="async"
               referrerPolicy="no-referrer"
-              {...(priority ? { fetchpriority: "high" } as any : {})}
+              {...(priority ? { fetchpriority: "high", importance: "high" } as any : {})}
               className="absolute inset-0 w-full h-full object-cover z-0"
               style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)" }}
             />
@@ -393,6 +393,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
         loop
         muted
         playsInline
+        preload={priority ? "auto" : "metadata"}
         className="absolute inset-0 w-full h-full object-cover z-0"
         style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)" }}
       />

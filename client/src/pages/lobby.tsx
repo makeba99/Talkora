@@ -1695,12 +1695,13 @@ export default function Lobby() {
                         key={i}
                         src={url}
                         alt={mediaTypes[i] === "gif" ? "Announcement GIF" : "Announcement image"}
-                        loading="lazy"
+                        loading={i === 0 ? "eager" : "lazy"}
                         decoding="async"
                         width={480}
                         height={208}
                         referrerPolicy="no-referrer"
-                        className="w-full rounded-lg object-cover max-h-52"
+                        {...(i === 0 ? { fetchpriority: "high", importance: "high" } as any : {})}
+                        className="w-full rounded-lg object-cover max-h-52 aspect-[12/5]"
                         data-testid={`img-lobby-announcement-media-${announcement.id}-${i}`}
                       />
                     ))}
