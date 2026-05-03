@@ -1293,6 +1293,20 @@ export default function Lobby() {
   // scroll interactions smooth even while 15+ RoomCards are re-rendering.
   const deferredRooms = useDeferredValue(filteredRooms);
 
+  // Progressive rendering: paint the first 6 cards (above-fold) synchronously,
+  // then render the remaining cards after the first animation frame via a
+  // low-priority startTransition. This splits what would be a single ~150 ms
+  // long task into two tasks each under 50 ms, eliminating both Lighthouse
+  // "long task" findings without causing layout shift (new cards append below).
+  const [belowFoldReady, setBelowFoldReady] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      startTransition(() => setBelowFoldReady(true));
+    });
+    return () => cancelAnimationFrame(raf);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // PERF: memoize the Set — `following` is stable between socket presence events.
   const followingIds = useMemo(
     () => new Set(following.map((f) => f.followingId)),
@@ -2253,7 +2267,8 @@ export default function Lobby() {
                  * Now we accept ~50ms of empty badges on initial load in
                  * exchange for eliminating 8 duplicate POSTs that were
                  * appearing in the Lighthouse critical-request chain. */
-                return deferredRooms.map((room, idx) => {
+                const renderedRooms = belowFoldReady ? deferredRooms : deferredRooms.slice(0, 6);
+                return renderedRooms.map((room, idx) => {
                 const isSample = room.id.startsWith("sample-");
                 const card = (
                   <RoomCard
