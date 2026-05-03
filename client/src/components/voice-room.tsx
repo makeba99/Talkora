@@ -777,12 +777,12 @@ function ParticipantCard({
               </div>
             </div>
           </>
-        ) : isMovieWatcherBadge && watchingMoviePoster ? (
+        ) : isMovieWatcherBadge && moviePosterPath ? (
           <>
             <img
-              src={watchingMoviePoster}
+              src={moviePosterPath}
               alt="Movie poster"
-              loading={priority ? "eager" : "lazy"}
+              loading="lazy"
               decoding="async"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
