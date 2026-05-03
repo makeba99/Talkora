@@ -991,6 +991,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // raise-hand button in the bottom control row).
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const participantById = useMemo(() => {
+    const map = new Map<string, Participant>();
+    for (const participant of participants) map.set(participant.id, participant);
+    return map;
+  }, [participants]);
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
   const [micError, setMicError] = useState(false);
   const [showMicHelp, setShowMicHelp] = useState(false);
@@ -1203,6 +1208,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const socketRef = useRef<typeof socket>(null);    // always-fresh socket ref (avoids player restart on reconnect)
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [focusedUserId, setFocusedUserId] = useState<string | null>(null);
+  const getParticipantNameById = useCallback((userId: string) => {
+    if (userId === user?.id) return "You";
+    const participant = participantById.get(userId);
+    return participant ? getUserDisplayName(participant) : "Unknown";
+  }, [participantById, user?.id]);
+  const formatReactionTooltip = useCallback((emoji: string, userIds: string[]) => {
+    const names = userIds.map(getParticipantNameById);
+    const displayNames = names.length <= 3 ? names : [...names.slice(0, 3), `+${names.length - 3} more`];
+    return { heading: `${emoji} ${userIds.length === 1 ? "1 reaction" : `${userIds.length} reactions`}`, names: displayNames.join(", ") };
+  }, [getParticipantNameById]);
   const [participantVolumes, setParticipantVolumes] = useState<Record<string, number>>({});
   const [miniPlayerMode, setMiniPlayerMode] = useState(false);
   const [miniPlayerPos, setMiniPlayerPos] = useState({ x: 16, y: 80 });
@@ -5806,7 +5821,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   );
                 }
 
-                const msgParticipant = participants.find((p) => p.id === msg.userId);
+                const msgParticipant = participantById.get(msg.userId);
                 const msgUser = msg.user || msgParticipant;
                 const pIndex = participants.findIndex((p) => p.id === msg.userId);
                 const gradient = getAvatarGradient(pIndex >= 0 ? pIndex : 0);
@@ -5859,14 +5874,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {hasReactions && (
                         <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`reactions-${msg.id}`}>
                           {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
-                            const reactorNames = uids.map((uid) => {
-                              if (uid === user?.id) return "You";
-                              const p = participants.find((p) => p.id === uid);
-                              return p ? getUserDisplayName(p) : "Unknown";
-                            });
-                            const tooltipText = reactorNames.length <= 3
-                              ? reactorNames.join(", ")
-                              : `${reactorNames.slice(0, 3).join(", ")} +${reactorNames.length - 3} more`;
+                            const tooltip = formatReactionTooltip(emoji, uids);
                             return (
                               <Tooltip key={emoji}>
                                 <TooltipTrigger asChild>
@@ -5880,8 +5888,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="text-xs max-w-[200px] text-center">
-                                  <p className="font-medium mb-0.5">{emoji} {uids.length === 1 ? "1 reaction" : `${uids.length} reactions`}</p>
-                                  <p className="text-muted-foreground">{tooltipText}</p>
+                                  <p className="font-medium mb-0.5">{tooltip.heading}</p>
+                                  <p className="text-muted-foreground">{tooltip.names}</p>
                                 </TooltipContent>
                               </Tooltip>
                             );
@@ -6268,7 +6276,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </button>
             )}
             {activeYoutubeId && user?.id !== youtubeStartedBy && !showYoutube && (() => {
-              const broadcaster = participants.find(p => p.id === youtubeStartedBy);
+              const broadcaster = youtubeStartedBy ? participantById.get(youtubeStartedBy) : undefined;
               return (
                 <button
                   onClick={() => {
@@ -6629,7 +6637,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </button>
             )}
             {activeMovieId && user?.id !== movieStartedBy && !showMovie && (() => {
-              const broadcaster = participants.find(p => p.id === movieStartedBy);
+              const broadcaster = movieStartedBy ? participantById.get(movieStartedBy) : undefined;
               return (
                 <button
                   onClick={() => {
@@ -8457,7 +8465,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </button>
               )}
               {!isHost && (() => {
-                const ownerUser = participants.find(p => p.id === room.ownerId);
+                const ownerUser = participantById.get(room.ownerId);
                 const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
                 const ownerAvatar = ownerUser?.profileImageUrl || undefined;
                 const ownerInitials = ownerUser ? getUserInitials(ownerUser) : "?";
@@ -8587,7 +8595,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             <div className="flex-1 min-h-0 relative flex items-center justify-center p-4 cursor-pointer" onClick={() => { setFocusedUserId(null); setMiniCameraMode(false); setMiniPlayerMode(false); }}>
                <div className="w-[40vw] max-w-[160px] sm:max-w-[200px] aspect-square relative rounded-full overflow-hidden shadow-2xl flex flex-col items-center justify-center cursor-default transition-all duration-300 pointer-events-none" onClick={(e) => e.stopPropagation()}>
                   {(() => {
-                     const fP = participants.find(p => p.id === focusedUserId);
+                     const fP = focusedUserId ? participantById.get(focusedUserId) : undefined;
                      if (!fP) return null;
                      return fP.profileImageUrl ? (
                        <img loading="lazy" decoding="async" src={fP.profileImageUrl} alt={getUserDisplayName(fP)} className="w-full h-full object-cover pointer-events-auto" />
@@ -8606,7 +8614,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               they tap the red YouTube badge on the host's avatar (or the side panel)
               to opt in to the watch party. */}
           {false && activeYoutubeId && !showYoutube && !userDismissedYoutube && (() => {
-            const broadcaster = participants.find(p => p.id === youtubeStartedBy);
+            const broadcaster = youtubeStartedBy ? participantById.get(youtubeStartedBy) : undefined;
             const thumb = `https://img.youtube.com/vi/${activeYoutubeId}/hqdefault.jpg`;
             const handleJoinWatch = () => {
               setShowYoutube(true);
@@ -8661,7 +8669,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <Film className="w-4 h-4 text-violet-400" />
                   <span className="text-white text-sm font-semibold truncate max-w-xs">{activeMovieTitle}</span>
                   {movieStartedBy && movieStartedBy !== user?.id && (() => {
-                    const host = participants.find(p => p.id === movieStartedBy);
+                    const host = movieStartedBy ? participantById.get(movieStartedBy) : undefined;
                     return host ? (
                       <span className="text-white/50 text-xs">shared by {getUserDisplayName(host)}</span>
                     ) : null;
@@ -8759,7 +8767,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
           {activeYoutubeId && showYoutube && (() => {
             const isYoutubeHost = true;
-            const broadcaster = participants.find(p => p.id === youtubeStartedBy);
+            const broadcaster = youtubeStartedBy ? participantById.get(youtubeStartedBy) : undefined;
             const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
             const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
             return (
@@ -9315,7 +9323,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm border border-white/15 rounded-full px-3 py-1 shadow-lg">
                   <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse flex-shrink-0" />
                   <Monitor className="w-3 h-3 text-orange-400 flex-shrink-0" />
-                  <span className="text-white text-xs">{getUserDisplayName(participants.find(p => p.id === remoteScreenShareUserId))} is sharing screen</span>
+                  <span className="text-white text-xs">{getUserDisplayName(remoteScreenShareUserId ? participantById.get(remoteScreenShareUserId) : undefined)} is sharing screen</span>
                 </div>
                 {isHost && remoteScreenShareUserId && (
                   <button
@@ -9333,7 +9341,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 )}
               </div>
               {(() => {
-                const sharer = participants.find(p => p.id === remoteScreenShareUserId);
+                const sharer = remoteScreenShareUserId ? participantById.get(remoteScreenShareUserId) : undefined;
                 return sharer ? (
                   <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full pl-1 pr-3 py-1 shadow-lg border border-white/10 z-10">
                     <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-orange-500/60 bg-orange-900/60 flex items-center justify-center">
@@ -9362,7 +9370,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 className="w-full h-full object-contain"
               />
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/70 backdrop-blur-sm rounded-full px-3 py-1 text-xs">
-                {getUserDisplayName(participants.find(p => p.id === remoteVideoUserId))}
+                {getUserDisplayName(remoteVideoUserId ? participantById.get(remoteVideoUserId) : undefined)}
               </div>
             </div>
           )}
@@ -11236,7 +11244,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
       {/* Report Dialog */}
       {reportTargetUserId && (() => {
-        const target = participants.find(p => p.id === reportTargetUserId);
+        const target = reportTargetUserId ? participantById.get(reportTargetUserId) : undefined;
         return (
           <ReportDialog
             open={!!reportTargetUserId}
