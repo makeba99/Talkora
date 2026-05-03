@@ -450,6 +450,14 @@ function ParticipantCard({
                         <SelectItem value="busy">Busy</SelectItem>
                       </SelectContent>
                     </Select>
+                    {roomPresenceStatus !== "online" && (
+                      <div data-testid={`status-room-presence-${p.id}`} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-border bg-muted/60 text-muted-foreground w-fit">
+                        <span className={roomPresenceStatus === "busy" ? "text-rose-300" : roomPresenceStatus === "afk" ? "text-sky-300" : "text-amber-300"}>
+                          {roomPresenceStatus === "busy" ? "BUSY" : roomPresenceStatus === "afk" ? "AFK" : "BRB"}
+                        </span>
+                        <span>visible to others</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 {(p.instagramUrl || p.linkedinUrl || p.facebookUrl) && (
