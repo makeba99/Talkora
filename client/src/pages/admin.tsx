@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,6 +156,102 @@ function MaskedKeyInput({
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
+    </div>
+  );
+}
+
+function MaintenanceTab() {
+  const { toast } = useToast();
+
+  const { data, isLoading, refetch } = useQuery<{ active: boolean }>({
+    queryKey: ["/api/admin/settings/maintenance"],
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async (active: boolean) => {
+      const res = await apiRequest("POST", "/api/admin/settings/maintenance", { active });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/maintenance"] });
+      toast({
+        title: result.active ? "Maintenance mode ON" : "Maintenance mode OFF",
+        description: result.active
+          ? "All non-admin visitors now see the maintenance page."
+          : "The platform is now publicly accessible again.",
+      });
+    },
+    onError: () => {
+      toast({ title: "Failed to update maintenance mode", variant: "destructive" });
+    },
+  });
+
+  const isActive = data?.active ?? false;
+
+  return (
+    <div className="max-w-xl mx-auto space-y-6">
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wrench className="w-5 h-5 text-amber-400" />
+            Maintenance Mode
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {isLoading ? (
+            <Skeleton className="h-12 w-full rounded-xl" />
+          ) : (
+            <>
+              <div className="flex items-center justify-between rounded-xl border px-5 py-4"
+                style={{
+                  borderColor: isActive ? "rgba(251,191,36,0.4)" : "rgba(99,102,241,0.2)",
+                  background: isActive ? "rgba(251,191,36,0.07)" : "rgba(99,102,241,0.05)",
+                }}>
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-sm">
+                    {isActive ? (
+                      <span className="text-amber-400">Maintenance is active</span>
+                    ) : (
+                      <span className="text-emerald-400">Platform is live</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isActive
+                      ? "Visitors see the animated maintenance page. Admins are unaffected."
+                      : "Everyone can access the platform normally."}
+                  </p>
+                </div>
+                <Switch
+                  checked={isActive}
+                  onCheckedChange={(v) => toggleMutation.mutate(v)}
+                  disabled={toggleMutation.isPending}
+                  data-testid="switch-maintenance"
+                />
+              </div>
+
+              {isActive && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-300 flex gap-3">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>
+                    All non-admin visitors are currently seeing the maintenance page.
+                    Turn off maintenance mode when your changes are ready.
+                  </span>
+                </div>
+              )}
+
+              <div className="rounded-xl border border-border/40 bg-background/30 px-5 py-4 space-y-2 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground/80">What happens when active:</p>
+                <ul className="space-y-1 list-disc list-inside">
+                  <li>All visitors see a full-screen animated maintenance page</li>
+                  <li>Superadmins bypass the maintenance page automatically</li>
+                  <li>The platform checks status every 30 seconds and recovers instantly when you turn it off</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -1330,7 +1426,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[80rem] grid-cols-9" : "max-w-5xl grid-cols-7"} bg-card/80 backdrop-blur`}>
+          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[90rem] grid-cols-10" : "max-w-5xl grid-cols-7"} bg-card/80 backdrop-blur`}>
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -1379,6 +1475,12 @@ export default function AdminPage() {
               <TabsTrigger value="ai-tutor" data-testid="tab-admin-ai-tutor">
                 <Bot className="w-4 h-4 mr-2" />
                 AI Tutor
+              </TabsTrigger>
+            )}
+            {isSuperAdmin && (
+              <TabsTrigger value="maintenance" data-testid="tab-admin-maintenance">
+                <Wrench className="w-4 h-4 mr-2" />
+                Maintenance
               </TabsTrigger>
             )}
           </TabsList>
@@ -2277,6 +2379,12 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+          )}
+
+          {isSuperAdmin && (
+            <TabsContent value="maintenance">
+              <MaintenanceTab />
             </TabsContent>
           )}
         </Tabs>

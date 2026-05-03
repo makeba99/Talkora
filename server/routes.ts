@@ -3527,6 +3527,36 @@ export async function registerRoutes(
     }
   });
 
+  // ── Maintenance mode ─────────────────────────────────────────────────────
+  app.get("/api/maintenance", async (_req, res) => {
+    try {
+      const value = await storage.getSetting("maintenance_mode");
+      res.json({ active: value === "true" });
+    } catch {
+      res.json({ active: false });
+    }
+  });
+
+  app.get("/api/admin/settings/maintenance", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const value = await storage.getSetting("maintenance_mode");
+      res.json({ active: value === "true" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/settings/maintenance", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { active } = req.body;
+      if (typeof active !== "boolean") return res.status(400).json({ message: "active must be boolean" });
+      await storage.setSetting("maintenance_mode", active ? "true" : "false");
+      res.json({ ok: true, active });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.post("/api/admin/elevate-super", isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser((req.user as any).id);

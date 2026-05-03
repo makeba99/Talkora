@@ -2,10 +2,12 @@ import { useEffect, useState, lazy, Suspense } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MaintenancePage } from "@/components/maintenance-page";
 
 // Socket module is lazy — socket.io-client (~55 kB gzipped) is only fetched
 // when a user is authenticated. Unauthenticated Lighthouse/crawlers never pay
@@ -71,6 +73,17 @@ function LobbyShell() {
 
 function AppContent() {
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === "superadmin" || user?.email === "dj55jggg@gmail.com";
+
+  const { data: maintenanceData } = useQuery<{ active: boolean }>({
+    queryKey: ["/api/maintenance"],
+    refetchInterval: 30_000,
+    staleTime: 20_000,
+  });
+
+  if (maintenanceData?.active && !isSuperAdmin) {
+    return <MaintenancePage />;
+  }
 
   const content = (
     <div className="h-screen flex flex-col overflow-hidden">
