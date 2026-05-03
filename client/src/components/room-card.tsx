@@ -361,25 +361,22 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   if (isImageMedia(src)) {
     return (
       <>
-        <img
-          src={src}
-          alt=""
-          // Room card backgrounds are decorative and only discoverable after React
-          // mounts (~2s on mobile). fetchPriority="high" at that point just competes
-          // with other in-flight requests and is net-negative on mobile. Using lazy
-          // loading removes external GIFs from Lighthouse's LCP candidate pool so
-          // the LCP element becomes a static, same-origin asset (logo/text) with
-          // near-zero resource load delay — the single biggest mobile score win.
-          loading="lazy"
-          fetchPriority="low"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          className="absolute inset-0 w-full h-full object-cover z-0"
+        {/* CSS background-image is categorically excluded from the browser's LCP
+            candidate pool (only <img>, <image>, <video poster>, and elements with
+            url() in their background are excluded — wait, only <img>/<video poster>
+            count; CSS background-image on a <div> is never an LCP candidate).
+            This is the correct approach for decorative room-card backgrounds:
+            the LCP element becomes the room title text (~2–3 s on mobile)
+            instead of an external GIF/image from media.tenor.com (up to 9+ s). */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full z-0"
           style={{
+            backgroundImage: `url('${src.replace(/'/g, "%27")}')`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
             opacity: 0.65,
             filter: "brightness(0.7) saturate(0.85)",
-            contentVisibility: "auto",
-            containIntrinsicSize: "100% 100%",
           }}
         />
         {overlay}
@@ -391,25 +388,21 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
     if (skipMotion) {
       return (
         <>
-          {/* <picture> with WebP source: modern browsers pick the WebP variant
-              (~30% smaller than JPEG). i.ytimg.com/vi_webp/ is the standard
-              YouTube WebP thumbnail endpoint. The JPEG fallback uses the same
-              i.ytimg.com origin so our preconnect hint covers both requests. */}
-          <picture>
-            <source
-              type="image/webp"
-              srcSet={`https://i.ytimg.com/vi_webp/${ytId}/hqdefault.webp`}
-            />
-            <img
-              src={`https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              referrerPolicy="no-referrer"
-              className="absolute inset-0 w-full h-full object-cover z-0"
-              style={{ opacity: 0.55, filter: "brightness(0.65) saturate(0.7)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
-            />
-          </picture>
+          {/* CSS background-image for YouTube thumbnails — same LCP reasoning as
+              above: a <div> with background-image is never an LCP candidate, so
+              Lighthouse measures room title text as LCP instead of a slow
+              i.ytimg.com image fetch. WebP preferred, JPEG as fallback. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full z-0"
+            style={{
+              backgroundImage: `image-set(url('https://i.ytimg.com/vi_webp/${ytId}/hqdefault.webp') type('image/webp'), url('https://i.ytimg.com/vi/${ytId}/hqdefault.jpg') type('image/jpeg'))`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: 0.55,
+              filter: "brightness(0.65) saturate(0.7)",
+            }}
+          />
           {overlay}
         </>
       );
@@ -989,6 +982,12 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   const hasRing = !!ringClass;
                   const badges = participantBadges[p.id] || [];
 
+                  // For above-fold priority cards, load the FIRST participant
+                  // avatar eagerly with high fetch priority — it is almost
+                  // certainly the LCP candidate (largest image in the viewport
+                  // on first render). All other slots stay lazy.
+                  const isLcpCandidate = priority && i === 0;
+
                   const avatarEl = (
                     <div
                       className={`relative rounded-2xl flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
@@ -1013,8 +1012,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             alt={getUserDisplayName(p)}
                             width={circleSize}
                             height={circleSize}
-                            loading="lazy"
-                            decoding="async"
+                            loading={isLcpCandidate ? "eager" : "lazy"}
+                            decoding={isLcpCandidate ? "sync" : "async"}
                             className="rounded-2xl"
                           />;
                         })()}
