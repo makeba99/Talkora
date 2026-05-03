@@ -219,8 +219,6 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
   const hasPinnedSocials = !!(
     u?.socialsPinned && (u?.instagramUrl || u?.linkedinUrl || u?.facebookUrl)
   );
-  // Filter the steps once per render based on host vs guest context and
-  // whether the user has actually opted into the pinned-socials button.
   const visibleSteps = STEPS.filter(
     (s) => !s.showIf || s.showIf({ isOwner, hasPinnedSocials }),
   );
@@ -232,35 +230,27 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
   const [cardPos, setCardPos] = useState<{ top: number; left: number; placement: "top" | "bottom" } | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-launch only for newly registered users who have not seen the tour
-  // AND who haven't permanently dismissed it.
   useEffect(() => {
     if (isPermanentlyDismissed()) return;
     const status = readSavedStatus();
     const fresh = isNewUser(user);
-    if (status === null && fresh) {
-      // Let the room mount + audio init settle before popping the spotlight.
-      const t = setTimeout(() => setActive(true), 1400);
-      return () => clearTimeout(t);
+    if (status === "completed" || (status === "skipped" && !fresh)) {
+      setReopenVisible(true);
+      return;
     }
-    // Returning new user (skipped/completed) → show tiny relaunch capsule.
-    // Old / non-new users see nothing at all unless they previously interacted.
-    if (status !== null && fresh) {
-      const t = setTimeout(() => setReopenVisible(true), 800);
-      return () => clearTimeout(t);
+    if (fresh && !status) {
+      const t = window.setTimeout(() => setActive(true), 600);
+      return () => window.clearTimeout(t);
     }
-  }, [user?.id, user?.createdAt]);
+    setReopenVisible(true);
+  }, [user]);
 
-  useEffect(() => {
+  const complete = useCallback(() => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_STEP_KEY, String(step));
+      window.localStorage.setItem(STORAGE_KEY, "completed");
     }
-  }, [step]);
-
-  const start = useCallback(() => {
-    setStep(0);
-    setActive(true);
-    setReopenVisible(false);
+    setActive(false);
+    setReopenVisible(true);
   }, []);
 
   const skip = useCallback(() => {
@@ -268,51 +258,42 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
       window.localStorage.setItem(STORAGE_KEY, "skipped");
     }
     setActive(false);
-    setTimeout(() => setReopenVisible(true), 400);
+    setReopenVisible(true);
   }, []);
 
-  // Hard close — closing the tour with the X (or the relaunch X) means the
-  // user never wants to see it again. Block both auto-launch and the small
-  // "Tour" relaunch capsule for good.
   const dismissForever = useCallback(() => {
     setPermanentlyDismissed();
     setActive(false);
     setReopenVisible(false);
   }, []);
 
-  const complete = useCallback(() => {
+  const start = useCallback(() => {
+    if (visibleSteps.length === 0) return;
+    setActive(true);
+    setStep(0);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, "completed");
       window.localStorage.setItem(STORAGE_STEP_KEY, "0");
     }
-    setStep(0);
-    setActive(false);
-    setTimeout(() => setReopenVisible(true), 400);
-  }, []);
+  }, [visibleSteps.length]);
 
   const next = useCallback(() => {
-    setStep((s) => {
-      if (s + 1 >= visibleSteps.length) {
-        complete();
-        return 0;
-      }
-      return s + 1;
-    });
-  }, [complete, visibleSteps.length]);
+    if (step + 1 >= visibleSteps.length) {
+      complete();
+    } else {
+      setStep((s) => s + 1);
+    }
+  }, [complete, step, visibleSteps.length]);
 
   const goTo = useCallback((i: number) => {
     if (i >= 0 && i < visibleSteps.length) setStep(i);
   }, [visibleSteps.length]);
 
-  // Clamp the step index if visibleSteps shrank (e.g. host status changed).
   useEffect(() => {
     if (step >= visibleSteps.length) setStep(Math.max(0, visibleSteps.length - 1));
   }, [step, visibleSteps.length]);
 
   const current = visibleSteps[step];
 
-  // Position the card relative to its target. Falls back to center if the
-  // target element is not in the DOM (e.g. the side panel was collapsed).
   useLayoutEffect(() => {
     if (!active || !current) {
       setTargetRect(null);
@@ -335,20 +316,20 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
       const rect = el.getBoundingClientRect();
       setTargetRect(rect);
 
-      const cardWidth = 360;
-      const cardEstHeight = 240;
       const margin = 16;
       const viewportH = window.innerHeight;
       const viewportW = window.innerWidth;
+      const cardHeight = Math.min(320, Math.max(220, Math.round(viewportH * 0.32)));
+      const cardWidth = Math.min(392, Math.max(300, Math.round(viewportW * 0.92)));
 
       let top = rect.bottom + margin;
       let placement: "top" | "bottom" = "bottom";
-      if (top + cardEstHeight > viewportH - margin) {
-        if (rect.top - margin - cardEstHeight > margin) {
-          top = rect.top - margin - cardEstHeight;
+      if (top + cardHeight > viewportH - margin) {
+        if (rect.top - margin - cardHeight > margin) {
+          top = rect.top - margin - cardHeight;
           placement = "top";
         } else {
-          top = Math.max(margin, viewportH - cardEstHeight - margin);
+          top = Math.max(margin, viewportH - cardHeight - margin);
         }
       }
 
@@ -375,7 +356,6 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
     };
   }, [active, current]);
 
-  // Bring the highlighted target into view on each step.
   useEffect(() => {
     if (!active || !current?.target) return;
     const el = document.querySelector(current.target);
@@ -384,7 +364,6 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
     }
   }, [active, step, current]);
 
-  // Esc to skip.
   useEffect(() => {
     if (!active) return;
     const onKey = (e: KeyboardEvent) => {
@@ -448,12 +427,7 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
             )}
           </mask>
         </defs>
-        <rect
-          width="100%"
-          height="100%"
-          fill="rgba(8, 9, 16, 0.62)"
-          mask="url(#room-onboarding-mask)"
-        />
+        <rect width="100%" height="100%" fill="rgba(8, 9, 16, 0.62)" mask="url(#room-onboarding-mask)" />
       </svg>
 
       {targetRect && (
@@ -475,7 +449,7 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
         style={
           isCenter || !cardPos
             ? undefined
-            : { top: cardPos.top, left: cardPos.left, width: 360 }
+            : { top: cardPos.top, left: cardPos.left, width: "min(392px, calc(100vw - 32px))" }
         }
         data-testid={`room-onboarding-card-${current.id}`}
       >
@@ -483,20 +457,11 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
           <span className="onboarding-card-medallion" aria-hidden="true">
             <Icon className="w-4 h-4" />
           </span>
-          <button
-            type="button"
-            className="onboarding-card-close"
-            onClick={dismissForever}
-            aria-label="Close tour and don't show again"
-            title="Close — don't show again"
-            data-testid="button-room-onboarding-close"
-          >
+          <button type="button" className="onboarding-card-close" onClick={dismissForever} aria-label="Close tour and don't show again" title="Close — don't show again" data-testid="button-room-onboarding-close">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
-        <h3 className="onboarding-card-title" data-testid="text-room-onboarding-title">
-          {current.title}
-        </h3>
+        <h3 className="onboarding-card-title" data-testid="text-room-onboarding-title">{current.title}</h3>
         <p className="onboarding-card-body">{renderRichBody(current.body)}</p>
         <div className="onboarding-card-footer">
           <div className="onboarding-dots" role="tablist" aria-label="Tour progress">
@@ -515,24 +480,12 @@ export function RoomOnboardingTour({ user, isOwner }: RoomOnboardingTourProps) {
           </div>
           <div className="onboarding-card-actions">
             {current.secondary && (
-              <button
-                type="button"
-                className="onboarding-btn onboarding-btn-ghost"
-                onClick={skip}
-                data-testid="button-room-onboarding-skip"
-              >
-                {current.secondary}
-              </button>
+              <button type="button" className="onboarding-btn onboarding-btn-ghost" onClick={skip} data-testid="button-room-onboarding-skip">{current.secondary}</button>
             )}
             {current.primary && (
-              <button
-                type="button"
-                className="onboarding-btn onboarding-btn-primary"
-                onClick={next}
-                data-testid="button-room-onboarding-primary"
-              >
+              <button type="button" className="onboarding-btn onboarding-btn-primary" onClick={next} data-testid="button-room-onboarding-next">
                 <span>{current.primary}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             )}
           </div>
