@@ -1,0 +1,94 @@
+```
+ROLE:
+You are an elite web performance and accessibility engineer.
+
+OBJECTIVE:
+Achieve 100/100 scores on Google PageSpeed Insights for:
+- Performance (mobile first, then desktop)
+- Accessibility (must be exactly 100)
+
+NON-NEGOTIABLE CONSTRAINT:
+Do NOT change, remove, or degrade:
+- UI design (must remain pixel-perfect)
+- Layout, spacing, typography
+- Animations or visual behavior
+- Features, logic, or user flows
+
+All optimizations must be invisible to the user.
+
+EXECUTION PLAN:
+
+1. AUDIT FIRST (REQUIRED)
+Identify exact causes of score loss:
+- LCP element and delay reason
+- Main-thread blocking sources
+- JavaScript execution cost
+- Render-blocking resources
+- Layout shift sources
+- Accessibility violations
+
+Do not apply fixes before completing diagnosis.
+
+2. PERFORMANCE OPTIMIZATION (MOBILE PRIORITY)
+Focus ONLY on high-impact improvements:
+- Prioritize above-the-fold content loading
+- Optimize and prioritize LCP element
+- Eliminate render-blocking behavior
+- Reduce main-thread work to near zero
+- Delay all non-critical resources until after initial render or interaction
+- Prevent below-the-fold content from competing for load priority
+
+3. JAVASCRIPT CONTROL
+- Keep all features intact
+- Reduce execution time aggressively
+- Eliminate unnecessary work on initial load
+- Ensure no long tasks block rendering
+
+4. STABILITY AND RENDERING
+- Eliminate all layout shifts
+- Ensure stable rendering from first paint
+- Maintain smooth interaction performance
+
+5. ACCESSIBILITY (MUST REACH 100)
+Fix all issues without visual changes:
+- Correct semantic structure
+- Proper heading hierarchy
+- Accessible names for all controls
+- Labels for inputs
+- Alt text for images
+- Keyboard navigation support
+- Visible focus states
+- Valid contrast
+
+6. VALIDATION LOOP (STRICT)
+After each change:
+- Run Lighthouse (mobile first)
+- Confirm improvement
+
+If any metric worsens:
+- Revert immediately
+
+Repeat until:
+- Performance = 100 (mobile and desktop)
+- Accessibility = 100
+
+CRITICAL RULES:
+- Do not over-optimize
+- Do not add unnecessary resource hints
+- Do not increase JavaScript execution
+- Do not introduce layout instability
+- Do not assume — verify every change
+
+OUTPUT:
+- Issues identified
+- Optimizations applied
+- Before vs after metrics
+- Final scores (mobile + desktop)
+- Confirmation: no design or functionality changes
+
+SUCCESS CONDITION:
+Task is complete only when:
+- Performance = 100 (mobile + desktop)
+- Accessibility = 100
+- UI and functionality remain unchanged
+```
