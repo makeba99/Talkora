@@ -378,23 +378,22 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   if (isImageMedia(src)) {
     return (
       <>
-        {/* CSS background-image is categorically excluded from the browser's LCP
-            candidate pool (only <img>, <image>, <video poster>, and elements with
-            url() in their background are excluded — wait, only <img>/<video poster>
-            count; CSS background-image on a <div> is never an LCP candidate).
-            This is the correct approach for decorative room-card backgrounds:
-            the LCP element becomes the room title text (~2–3 s on mobile)
-            instead of an external GIF/image from media.tenor.com (up to 9+ s). */}
-        <div
+        {/* Use a real <img> so the browser's normal image pipeline handles
+            loading, caching, and GIF animation. CSS background-image on a
+            <div> silently produces a blank area when the parent div has its
+            own opaque background gradient — the gradient paints first and
+            the background-image URL renders underneath it due to z-index
+            stacking order in certain browser compositing paths. fetchPriority
+            low keeps it from displacing the room-title as the LCP element. */}
+        <img
+          src={src}
+          alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full z-0"
-          style={{
-            backgroundImage: `url('${src.replace(/'/g, "%27")}')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            opacity: 0.92,
-            filter: "brightness(0.92) saturate(0.95)",
-          }}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          style={{ opacity: 0.92, filter: "brightness(0.92) saturate(0.95)" }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
         {gifOverlay}
       </>
@@ -712,12 +711,16 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
         style={{
           borderRadius: "24px",
-          // Opaque background keeps paint cost low (no backdrop-filter needed).
-          // The subtle inset shadows add physical depth: a bright top-edge rim
-          // (light catching the raised surface) + dark bottom-edge undercut.
-          background: isPremiumAtmosphere
-            ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
-            : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
+          // When a GIF/image hologram is active the background must be
+          // transparent so the <img> inside CardHologramVideo (absolute inset-0
+          // z-0) is actually visible. Without this the opaque gradient paints
+          // over the image and the card looks blank. For video/YouTube we keep
+          // the dark gradient as a fallback while the media loads.
+          background: hologramVideoUrl && isImageMedia(hologramVideoUrl)
+            ? "transparent"
+            : isPremiumAtmosphere
+              ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
+              : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
           height: isPremiumAtmosphere ? 268 : 252,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
