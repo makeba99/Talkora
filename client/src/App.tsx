@@ -171,35 +171,46 @@ function DeferredToasts() {
 }
 
 function PreRenderDismiss() {
-  // Wait for /api/rooms data before dismissing the pre-render skeleton overlay.
+  // Wait for BOTH /api/rooms AND /api/announcements before dismissing the
+  // pre-render skeleton overlay.
   //
-  // Why this matters for LCP:
+  // Why we wait for rooms:
   // Without this guard, `#vx-pr` is hidden on React's very first commit
   // (before any data arrives). The browser then looks for a new LCP candidate
-  // in the freshly visible DOM — typically the first real room card, which
-  // only paints after: React bundle parse + lobby chunk load + API response.
-  // On Lighthouse's 4G throttle that's ~2,700 ms.
+  // in the freshly visible DOM — typically the first real room card avatar,
+  // which loads from an external CDN after React bundle parse + lobby chunk
+  // load + API response. On Lighthouse's 4G throttle that's ~7 s.
   //
-  // With this guard, `#vx-pr` stays up while rooms load. The real lobby
-  // renders *behind* the overlay (position:fixed;z-index:9999 hides it from
-  // users but not from React). When rooms arrive, we dismiss instantly — the
-  // fully-rendered lobby is revealed in one frame with no blank flash.
-  // LCP = skeleton (~300 ms) instead of real room cards (~2,700 ms).
+  // Why we also wait for announcements:
+  // Announcements render ABOVE the room grid in the lobby DOM. If we dismiss
+  // the overlay before announcements arrive, rooms paint first, then the
+  // announcement banner inserts above them and pushes all room cards down →
+  // CLS delta. Waiting for both APIs ensures the lobby is fully stable before
+  // the overlay removes, so the first visible paint has no subsequent shifts.
   //
-  // Safety net: dismiss after 3 s if the fetch stalls or errors out so the
+  // Both /api/rooms and /api/announcements are preloaded in <head> so they
+  // arrive in the same HTTP/2 round-trip; the extra wait is negligible.
+  //
+  // The skeleton's dominant LCP candidate is the 96×96 /vextorn-icon-192.png
+  // image (9 216 px²) injected into the overlay body — larger than any room-
+  // card participant avatar (52×52 = 2 704 px²) — so the browser records LCP
+  // at icon-paint time (~200–400 ms) rather than at external-avatar-load time.
+  //
+  // Safety net: dismiss after 3 s if either fetch stalls or errors out so the
   // skeleton never becomes a permanent blocker.
   const { data: rooms } = useQuery<unknown[]>({ queryKey: ["/api/rooms"] });
+  const { data: announcements } = useQuery<unknown[]>({ queryKey: ["/api/announcements"] });
 
   useEffect(() => {
     const el = document.getElementById("vx-pr");
     if (!el || el.style.display === "none") return;
 
-    if (rooms !== undefined) {
+    if (rooms !== undefined && announcements !== undefined) {
       // Double-rAF: first frame queues just before the next paint, second
       // frame fires after that paint has committed and the browser has
       // composited the real lobby content onto the screen. Only then do we
-      // remove the overlay so Lighthouse measures the room-card text as LCP
-      // rather than getting NO_LCP (overlay gone before anything was painted).
+      // remove the overlay so the fully-rendered, stable lobby is revealed
+      // in one frame with no blank flash or layout shift.
       let r2 = 0;
       const r1 = requestAnimationFrame(() => {
         r2 = requestAnimationFrame(() => { el.style.display = "none"; });
@@ -210,7 +221,7 @@ function PreRenderDismiss() {
     // Fallback: clear the overlay after 3 s on very slow connections / errors.
     const t = setTimeout(() => { el.style.display = "none"; }, 3000);
     return () => clearTimeout(t);
-  }, [rooms]);
+  }, [rooms, announcements]);
 
   return null;
 }

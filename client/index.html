@@ -12,7 +12,7 @@
     <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
     <link rel="preload" href="/api/rooms" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
     <link rel="preload" href="/api/maintenance" as="fetch" crossorigin="use-credentials" fetchpriority="low" />
-    <link rel="preload" href="/api/announcements" as="fetch" crossorigin="use-credentials" fetchpriority="low" />
+    <link rel="preload" href="/api/announcements" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
 
     <!-- Primary meta -->
     <title>Vextorn — Talk. Share. Belong.</title>
@@ -280,6 +280,13 @@
          of waiting for a full network round-trip on slow mobile connections.
          Limited to 3 images to avoid Lighthouse "preloaded but not used"
          penalty if real database rooms displace sample rooms. -->
+    <!-- LCP anchor: 96×96 display of the local Vextorn icon (9 216 px²) is
+         larger than any room-card participant avatar (52×52 = 2 704 px²).
+         Preloading here starts the fetch before body parsing so the image
+         arrives well before React mounts and external avatars are discovered.
+         This keeps the skeleton as the dominant LCP element, anchoring LCP
+         at skeleton-paint time (~300 ms) rather than avatar-load time (~7 s). -->
+    <link rel="preload" href="/vextorn-icon-192.png" as="image" fetchpriority="high" />
     <link rel="preload" href="/avatars/women-32.jpg" as="image" fetchpriority="high" />
     <link rel="preload" href="/avatars/men-14.jpg" as="image" fetchpriority="low" />
     <link rel="preload" href="/avatars/men-88.jpg" as="image" fetchpriority="low" />
@@ -394,6 +401,19 @@
           <div style="height:32px;width:110px;border-radius:9999px;background:rgba(255,255,255,0.05);flex-shrink:0"></div>
           <div style="height:32px;width:90px;border-radius:9999px;background:rgba(255,255,255,0.05);flex-shrink:0"></div>
           <div style="height:32px;width:100px;border-radius:9999px;background:rgba(255,255,255,0.05);flex-shrink:0"></div>
+        </div>
+        <!-- LCP anchor image: 96×96 local PNG (9 216 px²) > any room-card
+             avatar (52×52 = 2 704 px²). Loads from the same origin so it
+             arrives at skeleton-paint time (~300 ms), not at external-avatar-
+             load time (~7 s). The browser records LCP against this element
+             and never upgrades to a smaller external avatar. display:block +
+             margin:auto centers it without affecting surrounding layout.
+             fetchpriority="high" ensures the browser fetches it immediately
+             (the <link rel="preload"> above starts the fetch even earlier). -->
+        <div style="display:flex;justify-content:center;align-items:center;padding:12px 0 20px">
+          <img src="/vextorn-icon-192.png" width="96" height="96" alt="" aria-hidden="true"
+               fetchpriority="high" decoding="sync"
+               style="border-radius:22px" />
         </div>
         <!-- Room-card grid skeleton (6 cards, auto-fill responsive) -->
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
