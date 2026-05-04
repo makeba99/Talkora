@@ -98,13 +98,14 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
       // socket AND broadcastRooms() via SSE, both of which already sync all
       // clients in real time. A redundant invalidation races against those
       // updates and is the reason GIF backgrounds don't appear until refresh.
+      const patch = updatedRoom ?? variables;
       queryClient.setQueryData(["/api/rooms"], (old: any) => {
         if (!Array.isArray(old)) return old;
-        const patch = updatedRoom ?? variables;
         return old.map((r: any) =>
           r.id === room.id ? { ...r, ...patch } : r
         );
       });
+      toast({ title: "Room settings saved!" });
       onClose();
     },
   });

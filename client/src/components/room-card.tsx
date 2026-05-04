@@ -460,6 +460,13 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   // proxy returns 413 (GIF > 4 MB). Must be declared unconditionally here to
   // satisfy React's Rules of Hooks (no hooks inside conditional branches).
   const [imgSrc, setImgSrc] = useState(() => proxyExternalUrl(src));
+  // Sync imgSrc whenever the src prop changes (e.g. host edits the background
+  // GIF from the lobby or in-room settings). Without this, the stale proxied
+  // URL from the previous mount keeps showing the old GIF (or nothing if the
+  // previous src was null and the component was just mounted fresh via key=).
+  useEffect(() => {
+    setImgSrc(proxyExternalUrl(src));
+  }, [src]);
   useEffect(() => {
     if (shouldLoad) return;
     if (typeof IntersectionObserver === "undefined") { setShouldLoad(true); return; }
@@ -890,7 +897,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             <span className="premium-atmosphere-sweep" />
           </div>
         )}
-        {hologramVideoUrl && <CardHologramVideo src={hologramVideoUrl} priority={priority} />}
+        {hologramVideoUrl && <CardHologramVideo key={hologramVideoUrl} src={hologramVideoUrl} priority={priority} />}
 
         <div className="relative z-[2] flex flex-col h-full">
 

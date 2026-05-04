@@ -636,7 +636,23 @@ export default function Lobby() {
 
     es.addEventListener("rooms", (e: MessageEvent) => {
       try {
-        queryClient.setQueryData(["/api/rooms"], JSON.parse(e.data));
+        const incoming: any[] = JSON.parse(e.data);
+        // Merge SSE data into the existing cache rather than replacing it
+        // wholesale. A full replacement wipes any locally-patched fields
+        // (e.g. hologramVideoUrl set by room-edit-dialog's onSuccess) if
+        // the SSE snapshot arrives slightly before the DB write is visible
+        // to getAllRooms, causing the GIF to disappear until the next SSE.
+        queryClient.setQueryData<any[]>(["/api/rooms"], (old) => {
+          if (!old || old.length === 0) return incoming;
+          const incomingMap = new Map(incoming.map((r: any) => [r.id, r]));
+          // Update rooms that appear in the SSE payload (they have active users).
+          const updated = old.map((r: any) =>
+            incomingMap.has(r.id) ? { ...r, ...incomingMap.get(r.id) } : r
+          );
+          // Append any brand-new rooms from SSE that weren't in the old cache.
+          const newRooms = incoming.filter((r: any) => !old.some((o: any) => o.id === r.id));
+          return [...updated, ...newRooms];
+        });
       } catch {}
     });
 

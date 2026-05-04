@@ -1910,6 +1910,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     onSuccess: (updatedRoom: any) => {
       setRoomData((prev: any) => ({ ...prev, ...updatedRoom }));
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
+      // Also patch the lobby cache directly so the GIF background appears on
+      // the room card immediately — the socket room:updated event does the
+      // same but can arrive after one extra round-trip.
+      queryClient.setQueryData(["/api/rooms"], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((r: any) =>
+          r.id === room.id ? { ...r, ...updatedRoom } : r
+        );
+      });
       setEditDialogOpen(false);
       if (updatedRoom.welcomeMessage !== undefined) setWelcomeText(updatedRoom.welcomeMessage || "");
       if (updatedRoom.welcomeMediaUrls !== undefined) setWelcomeMediaUrlsState(updatedRoom.welcomeMediaUrls || []);
