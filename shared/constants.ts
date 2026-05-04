@@ -86,6 +86,20 @@ export const FLAG_EMOJI: Record<string, string> = {
   Armenian: "🇦🇲", Indonesian: "🇮🇩",
 };
 
+// ISO 3166-1 alpha-2 country codes for flagcdn.com image lookup.
+// Kept in sync with FLAG_EMOJI above. Used instead of Unicode regional
+// indicator emoji because flag emoji do not render as flag images on
+// Windows (they appear as two-letter codes: "GB", "ES", etc.).
+export const LANGUAGE_COUNTRY_CODE: Record<string, string> = {
+  English: "gb",   Spanish: "es",   French: "fr",    German: "de",
+  Japanese: "jp",  Chinese: "cn",   Korean: "kr",    Portuguese: "br",
+  Arabic: "sa",    Hindi: "in",     Russian: "ru",   Italian: "it",
+  Dutch: "nl",     Turkish: "tr",   Polish: "pl",    Swedish: "se",
+  Norwegian: "no", Danish: "dk",    Finnish: "fi",   Greek: "gr",
+  Hebrew: "il",    Ukrainian: "ua", Romanian: "ro",  Hungarian: "hu",
+  Armenian: "am",  Indonesian: "id",
+};
+
 export const LANGUAGES = [
   "All",
   "English",

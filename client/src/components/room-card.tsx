@@ -29,7 +29,7 @@ import { useTheme } from "@/lib/theme";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Room, User, Follow, UserBadge } from "@shared/schema";
-import { FLAG_EMOJI } from "@shared/constants";
+import { FLAG_EMOJI, LANGUAGE_COUNTRY_CODE } from "@shared/constants";
 
 /* ─── Module-level viewport singleton ─────────────────────────────────────
  * Each RoomCard previously installed its own window resize listener.
@@ -133,17 +133,19 @@ interface RoomCardProps {
 
 
 function LanguageFlag({ language, priority = false }: { language: string; priority?: boolean }) {
-  const emoji = FLAG_EMOJI[language];
-  if (!emoji) return <Globe className="w-3.5 h-3.5 text-white/50" />;
+  const code = LANGUAGE_COUNTRY_CODE[language];
+  if (!code) return <Globe className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />;
   return (
-    <span
-      role="img"
-      aria-label={language}
-      className="flex-shrink-0 leading-none select-none"
-      style={{ fontSize: "14px", lineHeight: 1 }}
-    >
-      {emoji}
-    </span>
+    <img
+      src={`https://flagcdn.com/w20/${code}.png`}
+      srcSet={`https://flagcdn.com/w40/${code}.png 2x`}
+      width={20}
+      height={15}
+      alt={language}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      style={{ borderRadius: 2, flexShrink: 0, objectFit: "cover" }}
+    />
   );
 }
 

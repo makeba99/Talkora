@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { LANGUAGES, LEVELS, SPECIALIZATIONS, FLAG_EMOJI } from "@shared/constants";
+import { LANGUAGES, LEVELS, SPECIALIZATIONS, FLAG_EMOJI, LANGUAGE_COUNTRY_CODE } from "@shared/constants";
 import type { Teacher, Booking, TeacherApplication } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,17 +72,19 @@ type BookingWithTeacher = Booking & { teacher: Teacher | null };
 
 
 function LanguageFlag({ language }: { language: string }) {
-  const emoji = FLAG_EMOJI[language];
-  if (!emoji) return <Globe className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />;
+  const code = LANGUAGE_COUNTRY_CODE[language];
+  if (!code) return <Globe className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />;
   return (
-    <span
-      role="img"
-      aria-label={language}
-      className="flex-shrink-0 leading-none select-none"
-      style={{ fontSize: "14px", lineHeight: 1 }}
-    >
-      {emoji}
-    </span>
+    <img
+      src={`https://flagcdn.com/w20/${code}.png`}
+      srcSet={`https://flagcdn.com/w40/${code}.png 2x`}
+      width={20}
+      height={15}
+      alt={language}
+      loading="lazy"
+      decoding="async"
+      style={{ borderRadius: 2, flexShrink: 0, objectFit: "cover" }}
+    />
   );
 }
 
