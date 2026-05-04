@@ -363,15 +363,25 @@ function buildYoutubeEmbed(id: string) {
   return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&rel=0`;
 }
 
+/**
+ * Returns true if the URL is served by Tenor's CDN.
+ * Tenor backgrounds are routed through the proxy which rewrites GIF → MP4
+ * server-side, so they must render as <video>, not <img>.
+ */
+function isTenorUrl(src: string): boolean {
+  const lower = src.toLowerCase();
+  return lower.includes("media.tenor.com")
+    || lower.includes("c.tenor.com")
+    || lower.includes("/tenor/");
+}
+
 function isImageMedia(src: string): boolean {
-  // Treat anything that ends in a static-image / animated-GIF extension as an
-  // <img>. <video> tags silently fail on .gif / .png / .jpg / .webp, which was
-  // the reason GIF picks and image uploads "didn't display" on the card.
+  // Treat anything that ends in a static-image extension as an <img>.
+  // Tenor URLs are intentionally excluded — the proxy rewrites .gif → .mp4
+  // and serves video/mp4, so they must go through the <video> branch below.
+  if (isTenorUrl(src)) return false;
   const cleaned = src.split("?")[0].toLowerCase();
-  return /\.(gif|png|jpe?g|webp|avif|bmp)$/.test(cleaned)
-    || cleaned.includes("media.tenor.com")
-    || cleaned.includes("/tenor/")
-    || cleaned.includes("c.tenor.com");
+  return /\.(gif|png|jpe?g|webp|avif|bmp)$/.test(cleaned);
 }
 
 const PROXIED_HOSTNAMES = new Set([
@@ -469,7 +479,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             the background-image URL renders underneath it due to z-index
             stacking order in certain browser compositing paths. fetchPriority
             low keeps it from displacing the room-title as the LCP element.
-            proxyExternalUrl routes tenor/Google CDN images through our server
+            proxyExternalUrl routes Google CDN images through our server
             so the browser gets a 1-year Cache-Control instead of 1-day. */}
         {shouldLoad && (
           <img
@@ -481,6 +491,35 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             className="absolute inset-0 w-full h-full object-cover z-0"
             style={{ opacity: 0.92, filter: "brightness(0.92) saturate(0.95)" }}
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
+        {gifOverlay}
+      </>
+    );
+  }
+
+  // Tenor URLs: the proxy rewrites .gif → .mp4 server-side (5–10× smaller).
+  // We use <video autoPlay loop muted> to play the MP4 bytes correctly.
+  // skipMotion (mobile / prefers-reduced-motion) falls back to overlay only,
+  // consistent with how regular video backgrounds behave on those viewports.
+  if (isTenorUrl(src)) {
+    if (skipMotion) {
+      return <>{sentinel}{gifOverlay}</>;
+    }
+    return (
+      <>
+        {sentinel}
+        {shouldLoad && (
+          <video
+            src={proxyExternalUrl(src)}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload={priority ? "auto" : "metadata"}
+            className="absolute inset-0 w-full h-full object-cover z-0"
+            style={{ opacity: 0.92, filter: "brightness(0.92) saturate(0.95)" }}
+            onError={(e) => { (e.currentTarget as HTMLVideoElement).style.display = "none"; }}
           />
         )}
         {gifOverlay}
@@ -813,7 +852,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           // z-0) is actually visible. Without this the opaque gradient paints
           // over the image and the card looks blank. For video/YouTube we keep
           // the dark gradient as a fallback while the media loads.
-          background: hologramVideoUrl && isImageMedia(hologramVideoUrl)
+          background: hologramVideoUrl && (isImageMedia(hologramVideoUrl) || isTenorUrl(hologramVideoUrl))
             ? "transparent"
             : isPremiumAtmosphere
               ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
