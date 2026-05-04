@@ -190,9 +190,12 @@ function PreRenderDismiss() {
     if (!el || el.style.display === "none") return;
 
     if (rooms !== undefined) {
-      // Data is ready — reveal the real lobby in the same frame.
-      el.style.display = "none";
-      return;
+      // Data is ready — wait one animation frame so React has committed and
+      // the browser has painted the actual lobby content before we remove the
+      // overlay. Without this rAF, the overlay disappears before room-card
+      // elements enter the DOM → Lighthouse finds no LCP candidate (NO_LCP).
+      const raf = requestAnimationFrame(() => { el.style.display = "none"; });
+      return () => cancelAnimationFrame(raf);
     }
 
     // Fallback: clear the overlay after 3 s on very slow connections / errors.

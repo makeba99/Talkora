@@ -90,6 +90,23 @@ function getUserName(person: User) {
   return person.displayName || [person.firstName, person.lastName].filter(Boolean).join(" ") || person.email || "Language learner";
 }
 
+function getPresenceLabel(status?: string) {
+  if (!status || status === "online") return "Online now";
+  if (status === "brb") return "BRB";
+  if (status === "afk") return "AFK";
+  if (status === "busy") return "Busy";
+  if (status === "offline") return "Offline";
+  return status;
+}
+
+function getPresenceClass(status?: string) {
+  if (!status || status === "online") return "text-emerald-300";
+  if (status === "brb") return "text-amber-300";
+  if (status === "afk") return "text-sky-300";
+  if (status === "busy") return "text-rose-300";
+  return "text-white/50";
+}
+
 /**
  * Single floating circular button used in the bottom-right corner pin stack.
  * Renders a neumorphic dark FAB with a centered icon, an optional unread dot,
@@ -230,7 +247,7 @@ function PeopleDiscoveryCard({
               )}
             </div>
             <span
-              className={`neu-people-status ${getSpeakerOnline(person) ? "is-online" : ""}`}
+              className={`neu-people-status ${isOnline ? "is-online" : ""}`}
               data-testid={`status-discovery-user-${person.id}`}
             />
           </div>
@@ -244,7 +261,7 @@ function PeopleDiscoveryCard({
             <p className={`flex items-center gap-1.5 text-[10.5px] font-semibold mt-1 ${getPresenceClass(person.status)}`}>
               <span
                 className={`inline-block w-1.5 h-1.5 rounded-full ${
-                  getSpeakerOnline(person)
+                  isOnline
                     ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.85)]"
                     : person.status === "brb"
                       ? "bg-amber-400"
@@ -1221,21 +1238,7 @@ export default function Lobby() {
 
   const getSpeakerFollowers = (id: string) =>
     followerCounts[id] ?? SAMPLE_FOLLOWER_COUNTS[id] ?? 0;
-  const getPresenceLabel = (status?: string) => {
-    if (!status || status === "online") return "Online now";
-    if (status === "brb") return "BRB";
-    if (status === "afk") return "AFK";
-    if (status === "busy") return "Busy";
-    if (status === "offline") return "Offline";
-    return status;
-  };
-  const getPresenceClass = (status?: string) => {
-    if (!status || status === "online") return "text-emerald-300";
-    if (status === "brb") return "text-amber-300";
-    if (status === "afk") return "text-sky-300";
-    if (status === "busy") return "text-rose-300";
-    return "text-white/50";
-  };
+  // getPresenceLabel and getPresenceClass are module-level helpers (above).
   const getSpeakerOnline = (p: User) =>
     onlineUsers.has(p.id) || p.status === "online" || (SAMPLE_SPEAKER_META[p.id]?.isOnline ?? false);
 
