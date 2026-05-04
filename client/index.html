@@ -3,6 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, viewport-fit=cover" />
+    <!-- API preloads FIRST — start network round-trips before any other head
+         content is parsed. Every millisecond here directly reduces the time
+         until TanStack Query gets data and PreRenderDismiss can dismiss the
+         overlay, which determines the final LCP time.
+         crossorigin="use-credentials" matches queryClient credentials:"include"
+         so the browser reuses the preloaded response instead of a 2nd fetch. -->
+    <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
+    <link rel="preload" href="/api/rooms" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
+    <link rel="preload" href="/api/maintenance" as="fetch" crossorigin="use-credentials" fetchpriority="low" />
+    <link rel="preload" href="/api/announcements" as="fetch" crossorigin="use-credentials" fetchpriority="low" />
 
     <!-- Primary meta -->
     <title>Vextorn — Talk. Share. Belong.</title>
@@ -269,20 +279,6 @@
     <!-- YouTube embeds: deferred until user interaction. One dns-prefetch
          covers www.youtube.com and www.youtube-nocookie.com. -->
     <link rel="dns-prefetch" href="https://www.youtube.com" />
-    <!-- Critical API preloads: start these fetches during HTML parsing so
-         TanStack Query's first fetch hits the in-flight network response
-         instead of waiting for React to mount (~200–400 ms saved on mobile).
-         crossorigin="use-credentials" matches queryClient's credentials:"include"
-         so the browser reuses the same request rather than opening a duplicate.
-         /api/rooms and /api/auth/user drive the lobby LCP — highest priority.
-         /api/maintenance is fetched by AppContent on every page load with a
-         30 s interval; preloading it eliminates a sequential round-trip that
-         previously stalled on cold DB connections (observed 760 ms on first hit).
-         fetchpriority="low" keeps it from competing with the LCP-critical fetches. -->
-    <link rel="preload" href="/api/auth/user" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
-    <link rel="preload" href="/api/rooms" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
-    <link rel="preload" href="/api/maintenance" as="fetch" crossorigin="use-credentials" fetchpriority="low" />
-    <link rel="preload" href="/api/announcements" as="fetch" crossorigin="use-credentials" fetchpriority="low" />
     <!-- Above-fold sample room avatars. These are the LCP candidates on the
          lobby's first row (rooms 1–3, slot 0). Pre-fetching them during HTML
          parsing means Radix Avatar's useImageLoadingStatus hook resolves them
@@ -380,8 +376,11 @@
       <div style="height:57px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;padding:0 20px;gap:10px">
         <svg width="28" height="28" viewBox="0 0 200 200" aria-hidden="true" focusable="false"><defs><linearGradient id="vxpg" x1="0.2" y1="0" x2="0.6" y2="1"><stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#6366f1"/></linearGradient></defs><path d="M30 35 L100 170 L170 35 L143 35 L100 128 L57 35 Z" fill="url(#vxpg)"/></svg>
         <div style="display:flex;flex-direction:column;gap:4px">
-          <div style="height:13px;width:72px;border-radius:3px;background:rgba(255,255,255,0.18)"></div>
-          <div style="height:8px;width:130px;border-radius:3px;background:rgba(255,255,255,0.07)"></div>
+          <!-- Real text: gives Lighthouse a valid LCP candidate at HTML-parse
+               time (~200 ms) so FCP/LCP are measured against this element
+               instead of waiting for React + API (fixes NO_LCP audit error). -->
+          <span style="font-size:17px;font-weight:700;color:rgba(255,255,255,0.88);letter-spacing:-0.025em;line-height:1;font-family:'Space Grotesk',system-ui,sans-serif">Vextorn</span>
+          <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.42);text-transform:uppercase;letter-spacing:0.18em;line-height:1;font-family:system-ui,sans-serif">Talk · Share · Belong</span>
         </div>
         <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
           <div style="height:34px;width:115px;border-radius:9999px;background:rgba(255,255,255,0.05)"></div>

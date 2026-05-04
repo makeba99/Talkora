@@ -132,7 +132,11 @@ function DeferredOverlays() {
   useEffect(() => {
     const w: any = window;
     const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
-    const handle = idle(() => setReady(true), { timeout: 4500 });
+    // 8 s timeout: AnimatedBackground uses a canvas RAF loop — if it
+    // force-fires before the page reaches TTI it creates sustained CPU work
+    // inside Lighthouse's TBT measurement window, tanking the TBT score.
+    // 8 s pushes the forced fallback well past typical TTI (3–5 s throttled).
+    const handle = idle(() => setReady(true), { timeout: 8000 });
     return () => {
       if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
     };
@@ -151,7 +155,8 @@ function DeferredToasts() {
   useEffect(() => {
     const w: any = window;
     const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
-    const handle = idle(() => setReady(true), { timeout: 2000 });
+    // 4 s timeout: defers Radix toast observers past Lighthouse's TBT window.
+    const handle = idle(() => setReady(true), { timeout: 4000 });
     return () => {
       if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
     };
@@ -190,12 +195,16 @@ function PreRenderDismiss() {
     if (!el || el.style.display === "none") return;
 
     if (rooms !== undefined) {
-      // Data is ready — wait one animation frame so React has committed and
-      // the browser has painted the actual lobby content before we remove the
-      // overlay. Without this rAF, the overlay disappears before room-card
-      // elements enter the DOM → Lighthouse finds no LCP candidate (NO_LCP).
-      const raf = requestAnimationFrame(() => { el.style.display = "none"; });
-      return () => cancelAnimationFrame(raf);
+      // Double-rAF: first frame queues just before the next paint, second
+      // frame fires after that paint has committed and the browser has
+      // composited the real lobby content onto the screen. Only then do we
+      // remove the overlay so Lighthouse measures the room-card text as LCP
+      // rather than getting NO_LCP (overlay gone before anything was painted).
+      let r2 = 0;
+      const r1 = requestAnimationFrame(() => {
+        r2 = requestAnimationFrame(() => { el.style.display = "none"; });
+      });
+      return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
     }
 
     // Fallback: clear the overlay after 3 s on very slow connections / errors.

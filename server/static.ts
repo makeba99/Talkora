@@ -160,12 +160,20 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   );
 
   // Build the Link HTTP header — this beats the in-HTML link tags by a
-  // round-trip because the browser sees it before HTML parsing starts.
-  // Limit to 8 entries to stay comfortably under common 8 KB header limits.
-  // Order: font first (LCP-blocking, critical render path), then JS chunks
-  // in priority rank order, then CSS.
+  // round-trip because the browser sees it (via 103 Early Hints or the 200
+  // response headers) before HTML parsing even starts.
+  // Total budget: ~12 entries × ~130 B = ~1.6 KB, well under typical 8 KB
+  // header limits.
+  // Order:
+  //  1. LCP-critical API fetches first — rooms data determines when the
+  //     overlay dismisses and the room-card text (LCP candidate) appears.
+  //  2. Font — needed for any text paint; must arrive before first CSS parse.
+  //  3. JS chunks in priority rank order (entry → lobby → react-vendor → ui).
+  //  4. CSS last (already made non-blocking, so less urgent).
+  const API_ROOMS    = `</api/rooms>; rel=preload; as=fetch; crossorigin=use-credentials`;
+  const API_AUTH     = `</api/auth/user>; rel=preload; as=fetch; crossorigin=use-credentials`;
   const FONT_PRELOAD = `</fonts/space-grotesk-latin.woff2>; rel=preload; as=font; type=font/woff2; crossorigin`;
-  const headerEntries: string[] = [FONT_PRELOAD];
+  const headerEntries: string[] = [API_ROOMS, API_AUTH, FONT_PRELOAD];
   for (const h of [...scriptHrefs].slice(0, 6)) {
     headerEntries.push(`<${h}>; rel=modulepreload; crossorigin`);
   }
