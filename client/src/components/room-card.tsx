@@ -456,6 +456,10 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   // the user, but invisible to Lighthouse which measures only above-fold cost.
   const containerRef = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(priority);
+  // imgSrc starts as the proxied URL; falls back to the direct CDN URL if the
+  // proxy returns 413 (GIF > 4 MB). Must be declared unconditionally here to
+  // satisfy React's Rules of Hooks (no hooks inside conditional branches).
+  const [imgSrc, setImgSrc] = useState(() => proxyExternalUrl(src));
   useEffect(() => {
     if (shouldLoad) return;
     if (typeof IntersectionObserver === "undefined") { setShouldLoad(true); return; }
@@ -491,6 +495,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   const sentinel = <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true" />;
 
   if (isImageMedia(src)) {
+    const proxied = imgSrc !== src;
     return (
       <>
         {sentinel}
@@ -500,24 +505,38 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             (e.g. 340×220 px = 74,800 px²) became the LCP element and took
             38+ s to load on slow mobile — catastrophic for PageSpeed.
             CSS background-image still animates GIFs in all modern browsers.
-            proxyExternalUrl routes Google CDN images through our server. */}
+            proxyExternalUrl routes Google CDN images through our server.
+            If the proxy returns 413 (GIF > 4 MB), the hidden <img> probe
+            triggers onError and imgSrc switches to the direct CDN URL. */}
         {shouldLoad && (
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full z-0"
-            style={{
-              backgroundImage: `url('${proxyExternalUrl(src)}')`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              // Dark fallback color shown if the proxy returns an error (e.g.
-              // 413 for GIFs >4 MB). CSS background-image has no onError hook,
-              // so without this the card falls back to the outer border gradient
-              // bleeding through the transparent inner card — looks broken.
-              backgroundColor: "rgb(5, 8, 20)",
-              opacity: 0.92,
-              filter: "brightness(0.92) saturate(0.95)",
-            }}
-          />
+          <>
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full z-0"
+              style={{
+                backgroundImage: `url('${imgSrc}')`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundColor: "rgb(5, 8, 20)",
+                opacity: 0.92,
+                filter: "brightness(0.92) saturate(0.95)",
+              }}
+            />
+            {/* Invisible probe: detects proxy 413 / fetch errors so we can
+                fall back to the direct CDN URL. 1×1 keeps it out of LCP. */}
+            {proxied && (
+              <img
+                src={imgSrc}
+                alt=""
+                aria-hidden="true"
+                width={1}
+                height={1}
+                className="absolute opacity-0 pointer-events-none"
+                style={{ width: 1, height: 1 }}
+                onError={() => setImgSrc(src)}
+              />
+            )}
+          </>
         )}
         {gifOverlay}
       </>

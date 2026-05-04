@@ -713,19 +713,6 @@ function ParticipantCard({
         } transition-all duration-300`}
         style={{ width: cardPx, height: cardPx, flexShrink: 0 }}
       >
-        {/* ── Hologram GIF card background ── */}
-        {hologramVideoUrl && /\.(gif|png|jpe?g|webp|avif)(\?|#|$)/i.test(hologramVideoUrl) && (
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 z-0 pointer-events-none"
-            style={{
-              backgroundImage: `url('${hologramVideoUrl}')`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              opacity: 0.22,
-            }}
-          />
-        )}
         {hasActiveYoutube && youtubeVideoId ? (
           <>
             <img
@@ -851,6 +838,46 @@ function ParticipantCard({
           </>
         ) : remoteVideoStream ? (
           <RemoteVideoPreview stream={remoteVideoStream} className={isMe && localVideoFlipped ? "scale-x-[-1]" : ""} />
+        ) : hologramVideoUrl && (() => {
+          try {
+            const u = new URL(hologramVideoUrl);
+            return /\.(gif|png|jpe?g|webp|avif)(\?|#|$)/i.test(hologramVideoUrl) ||
+              ["media.tenor.com","c.tenor.com","tenor.com","media1.giphy.com","media2.giphy.com","media3.giphy.com","media4.giphy.com","i.imgur.com","i.giphy.com"].includes(u.hostname);
+          } catch { return false; }
+        })() ? (
+          <>
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 z-0"
+              style={{
+                backgroundImage: `url('${hologramVideoUrl}')`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                opacity: 0.9,
+                filter: "brightness(0.88) saturate(0.95)",
+              }}
+            />
+            <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none z-[1]" />
+            <div className="absolute inset-x-0 bottom-0 z-[2] flex items-center gap-1 px-1.5 pb-1.5 pt-1">
+              <div className="w-7 h-7 rounded-full overflow-hidden border border-white/60 shadow-md flex-shrink-0">
+                {p.profileImageUrl ? (
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={28} height={28} decoding="async" className="w-full h-full object-cover" />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                    <span className="text-[8px] font-bold text-white">{getUserInitials(p)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-[9px] font-semibold text-white leading-tight truncate drop-shadow-md">
+                  {isMe ? "You" : getUserDisplayName(p)}
+                </span>
+              </div>
+              <div className="flex-shrink-0 opacity-80">
+                {p.isMuted ? <MicOff className="w-3 h-3 text-white" /> : <Mic className="w-3 h-3 text-white" />}
+              </div>
+            </div>
+          </>
         ) : p.profileImageUrl ? (
           <img
             src={p.profileImageUrl}
