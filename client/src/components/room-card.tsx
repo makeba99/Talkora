@@ -116,32 +116,28 @@ interface RoomCardProps {
 }
 
 
-const LANGUAGE_CODES: Record<string, string> = {
-  English: "gb", Spanish: "es", French: "fr", German: "de",
-  Japanese: "jp", Chinese: "cn", Korean: "kr", Portuguese: "br",
-  Italian: "it", Russian: "ru", Arabic: "sa", Hindi: "in",
-  Turkish: "tr", Dutch: "nl", Polish: "pl", Swedish: "se",
-  Norwegian: "no", Danish: "dk", Finnish: "fi", Greek: "gr",
-  Hebrew: "il", Ukrainian: "ua", Romanian: "ro", Hungarian: "hu",
-  Armenian: "am", Indonesian: "id",
+const FLAG_EMOJI: Record<string, string> = {
+  English: "🇬🇧", Spanish: "🇪🇸", French: "🇫🇷", German: "🇩🇪",
+  Japanese: "🇯🇵", Chinese: "🇨🇳", Korean: "🇰🇷", Portuguese: "🇧🇷",
+  Arabic: "🇸🇦", Hindi: "🇮🇳", Russian: "🇷🇺", Italian: "🇮🇹",
+  Dutch: "🇳🇱", Turkish: "🇹🇷", Polish: "🇵🇱", Swedish: "🇸🇪",
+  Norwegian: "🇳🇴", Danish: "🇩🇰", Finnish: "🇫🇮", Greek: "🇬🇷",
+  Hebrew: "🇮🇱", Ukrainian: "🇺🇦", Romanian: "🇷🇴", Hungarian: "🇭🇺",
+  Armenian: "🇦🇲", Indonesian: "🇮🇩",
 };
 
 function LanguageFlag({ language, priority = false }: { language: string; priority?: boolean }) {
-  const code = LANGUAGE_CODES[language];
-  if (!code) return <Globe className="w-3.5 h-3.5 text-white/50" />;
+  const emoji = FLAG_EMOJI[language];
+  if (!emoji) return <Globe className="w-3.5 h-3.5 text-white/50" />;
   return (
-    <img
-      src={`https://flagcdn.com/20x15/${code}.png`}
-      srcSet={`https://flagcdn.com/40x30/${code}.png 2x`}
-      width={20}
-      height={15}
-      alt={language}
-      loading={priority ? "eager" : "lazy"}
-      decoding={priority ? "sync" : "async"}
-      fetchpriority={priority ? "high" : "auto"}
-      className="flex-shrink-0 rounded-[2px]"
-      style={{ display: "inline-block" }}
-    />
+    <span
+      role="img"
+      aria-label={language}
+      className="flex-shrink-0 leading-none select-none"
+      style={{ fontSize: "14px", lineHeight: 1 }}
+    >
+      {emoji}
+    </span>
   );
 }
 
@@ -415,6 +411,29 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   // Image/GIF overlay is kept lighter than the video overlay so the GIF is
   // clearly visible — the heavy 44–58% dark scrim was the reason GIF backgrounds
   // appeared almost invisible (they rendered at only ~43% brightness).
+
+  // IntersectionObserver gate: above-fold (priority) cards load immediately;
+  // below-fold cards don't fetch ANY media until they scroll near the viewport.
+  // This is the single biggest payload reduction — GIF/image backgrounds can be
+  // several MB each, and native loading="lazy" fetches too eagerly (starts
+  // loading ~2 viewports away). Our observer uses rootMargin:"200px" so the
+  // media starts loading just before the card enters view — imperceptible to
+  // the user, but invisible to Lighthouse which measures only above-fold cost.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(priority);
+  useEffect(() => {
+    if (shouldLoad) return;
+    if (typeof IntersectionObserver === "undefined") { setShouldLoad(true); return; }
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setShouldLoad(true); obs.disconnect(); } },
+      { rootMargin: "200px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [shouldLoad]);
+
   const gifOverlay = (
     <div
       className="absolute inset-0 z-[1] pointer-events-none"
@@ -435,9 +454,14 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
     || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
   );
 
+  // Sentinel div is always rendered so the IntersectionObserver can observe it
+  // even before any media mounts. Invisible to users (absolute inset-0, z-0).
+  const sentinel = <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true" />;
+
   if (isImageMedia(src)) {
     return (
       <>
+        {sentinel}
         {/* Use a real <img> so the browser's normal image pipeline handles
             loading, caching, and GIF animation. CSS background-image on a
             <div> silently produces a blank area when the parent div has its
@@ -447,16 +471,18 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             low keeps it from displacing the room-title as the LCP element.
             proxyExternalUrl routes tenor/Google CDN images through our server
             so the browser gets a 1-year Cache-Control instead of 1-day. */}
-        <img
-          src={proxyExternalUrl(src)}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          style={{ opacity: 0.92, filter: "brightness(0.92) saturate(0.95)" }}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-        />
+        {shouldLoad && (
+          <img
+            src={proxyExternalUrl(src)}
+            alt=""
+            aria-hidden="true"
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover z-0"
+            style={{ opacity: 0.92, filter: "brightness(0.92) saturate(0.95)" }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
         {gifOverlay}
       </>
     );
@@ -466,54 +492,63 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
     if (skipMotion) {
       return (
         <>
+          {sentinel}
           {/* CSS background-image for YouTube thumbnails — same LCP reasoning as
               above: a <div> with background-image is never an LCP candidate, so
               Lighthouse measures room title text as LCP instead of a slow
               i.ytimg.com image fetch. WebP preferred, JPEG as fallback. */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full z-0"
-            style={{
-              backgroundImage: `image-set(url('https://i.ytimg.com/vi_webp/${ytId}/hqdefault.webp') type('image/webp'), url('https://i.ytimg.com/vi/${ytId}/hqdefault.jpg') type('image/jpeg'))`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              opacity: 0.55,
-              filter: "brightness(0.65) saturate(0.7)",
-            }}
-          />
+          {shouldLoad && (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full z-0"
+              style={{
+                backgroundImage: `image-set(url('https://i.ytimg.com/vi_webp/${ytId}/hqdefault.webp') type('image/webp'), url('https://i.ytimg.com/vi/${ytId}/hqdefault.jpg') type('image/jpeg'))`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                opacity: 0.55,
+                filter: "brightness(0.65) saturate(0.7)",
+              }}
+            />
+          )}
           {videoOverlay}
         </>
       );
     }
     return (
       <>
-        <iframe
-          src={buildYoutubeEmbed(ytId)}
-          title="Room background video"
-          className="absolute inset-0 w-full h-full z-0"
-          allow="autoplay; encrypted-media"
-          style={{ border: "none", pointerEvents: "none", opacity: 0.55, filter: "brightness(0.7) saturate(0.7)" }}
-        />
+        {sentinel}
+        {shouldLoad && (
+          <iframe
+            src={buildYoutubeEmbed(ytId)}
+            title="Room background video"
+            className="absolute inset-0 w-full h-full z-0"
+            allow="autoplay; encrypted-media"
+            style={{ border: "none", pointerEvents: "none", opacity: 0.55, filter: "brightness(0.7) saturate(0.7)" }}
+          />
+        )}
         {videoOverlay}
       </>
     );
   }
 
   if (skipMotion) {
-    return videoOverlay;
+    return <>{sentinel}{videoOverlay}</>;
   }
   return (
     <>
-      <video
-        src={src}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        className="absolute inset-0 w-full h-full object-cover z-0"
-        style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
-      />
+      {sentinel}
+      {shouldLoad && (
+        <video
+          src={src}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
+        />
+      )}
       {videoOverlay}
     </>
   );

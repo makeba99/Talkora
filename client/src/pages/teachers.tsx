@@ -70,27 +70,28 @@ type ReviewWithUser = {
 
 type BookingWithTeacher = Booking & { teacher: Teacher | null };
 
-const LANGUAGE_CODES: Record<string, string> = {
-  English: "gb", Spanish: "es", French: "fr", German: "de",
-  Japanese: "jp", Chinese: "cn", Korean: "kr", Portuguese: "br",
-  Arabic: "sa", Hindi: "in", Armenian: "am", Indonesian: "id",
+const FLAG_EMOJI: Record<string, string> = {
+  English: "🇬🇧", Spanish: "🇪🇸", French: "🇫🇷", German: "🇩🇪",
+  Japanese: "🇯🇵", Chinese: "🇨🇳", Korean: "🇰🇷", Portuguese: "🇧🇷",
+  Arabic: "🇸🇦", Hindi: "🇮🇳", Russian: "🇷🇺", Italian: "🇮🇹",
+  Dutch: "🇳🇱", Turkish: "🇹🇷", Polish: "🇵🇱", Swedish: "🇸🇪",
+  Norwegian: "🇳🇴", Danish: "🇩🇰", Finnish: "🇫🇮", Greek: "🇬🇷",
+  Hebrew: "🇮🇱", Ukrainian: "🇺🇦", Romanian: "🇷🇴", Hungarian: "🇭🇺",
+  Armenian: "🇦🇲", Indonesian: "🇮🇩",
 };
 
 function LanguageFlag({ language }: { language: string }) {
-  const code = LANGUAGE_CODES[language];
-  if (!code) return <Globe className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />;
+  const emoji = FLAG_EMOJI[language];
+  if (!emoji) return <Globe className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />;
   return (
-    <img
-      src={`https://flagcdn.com/20x15/${code}.png`}
-      srcSet={`https://flagcdn.com/40x30/${code}.png 2x`}
-      width={18}
-      height={13}
-      alt={language}
-      loading="lazy"
-      decoding="async"
-      className="rounded-[2px] flex-shrink-0"
-      style={{ objectFit: "cover" }}
-    />
+    <span
+      role="img"
+      aria-label={language}
+      className="flex-shrink-0 leading-none select-none"
+      style={{ fontSize: "14px", lineHeight: 1 }}
+    >
+      {emoji}
+    </span>
   );
 }
 

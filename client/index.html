@@ -262,14 +262,8 @@
          <img> fetches use the non-CORS connection pool; a preconnect with
          crossorigin warms the CORS-anonymous pool instead — a different socket
          — so the actual image request ignores the pre-warmed connection. -->
-    <!-- flagcdn.com: language flag images rendered immediately above the fold
-         in every room card — warming DNS+TCP+TLS here removes 150–300 ms of
-         connection setup from the LCP waterfall on mobile.
-         NOTE: crossorigin is intentionally omitted — <img> fetches use the
-         non-CORS connection pool; adding crossorigin would warm a CORS-
-         anonymous pool instead, a different socket that <img> never uses. -->
-    <link rel="preconnect" href="https://flagcdn.com" />
-    <link rel="dns-prefetch" href="https://flagcdn.com" />
+    <!-- flagcdn.com removed: language flags are now rendered as Unicode emoji
+         (zero network cost, instant render, no external dependency). -->
     <!-- Tenor GIF backgrounds are now routed through /api/proxy/image on our
          own origin — no preconnect to media.tenor.com needed (would add to
          the >4-preconnect Lighthouse warning and waste a connection slot). -->
