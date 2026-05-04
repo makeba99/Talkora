@@ -208,7 +208,14 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
     htmlGz = zlib.gzipSync(htmlBuf, { level: 9 });
   } catch { /* fall back to runtime compression */ }
 
-  return { html, linkHeader, htmlBr, htmlGz };
+  // Pre-strip the /api/rooms and /api/announcements fetch-preload hints so
+  // the SSR injection path can use this cached string directly instead of
+  // running regex replacements on every request.
+  const htmlNoApiPreloads = html
+    .replace(/\s*<link[^>]+href="\/api\/rooms"[^>]*>\s*/g, "\n    ")
+    .replace(/\s*<link[^>]+href="\/api\/announcements"[^>]*>\s*/g, "\n    ");
+
+  return { html, htmlNoApiPreloads, linkHeader, htmlBr, htmlGz };
 }
 
 // Minimal MIME table for the precompressed-asset handler. The runtime
@@ -345,7 +352,13 @@ export function serveStatic(app: Express, getSSRData?: SSRDataProvider) {
         // of the script tag even if a room title contains "</script>".
         const json = JSON.stringify(data).replace(/<\/script>/gi, "<\\/script>");
         const script = `<script id="__ssr__">window.__SSR_DATA__=${json};</script>`;
-        const html = precomputed.html.replace("</body>", `${script}\n</body>`);
+        // Use the pre-stripped HTML (computed once at startup) to avoid
+        // per-request regex. SSR data pre-populates TanStack Query
+        // (staleTime:Infinity) so /api/rooms and /api/announcements preloads
+        // are never consumed — stripping them eliminates the Lighthouse
+        // "preloaded but not used" penalty and saves two wasted network fetches.
+        const baseHtml = precomputed.htmlNoApiPreloads ?? precomputed.html;
+        const html = baseHtml.replace("</body>", `${script}\n</body>`);
         res.send(html);
         return;
       } catch {

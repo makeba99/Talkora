@@ -111,10 +111,15 @@ app.use((req, res, next) => {
 
   if (process.env.NODE_ENV === "production") {
     serveStatic(app, async () => {
-      const [rooms, announcements] = await Promise.all([
+      const [allRooms, announcements] = await Promise.all([
         storage.getAllRooms(),
         storage.getAnnouncements(),
       ]);
+      // Match the /api/rooms filter exactly: only rooms with active users,
+      // and strip the accessKey field for public safety.
+      const rooms = allRooms
+        .filter((r: any) => (r.activeUsers ?? 0) > 0)
+        .map((r: any) => ({ ...r, accessKey: null }));
       return { rooms, announcements } as Record<string, unknown>;
     });
   } else {

@@ -381,9 +381,32 @@ function buildYoutubeEmbed(id: string) {
   return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&rel=0`;
 }
 
+// Hostnames that exclusively serve image/GIF content (no HTML pages).
+// Used as a fallback for CDN URLs that lack a file extension.
+const IMAGE_CDN_HOSTNAMES = new Set([
+  "media.tenor.com",
+  "c.tenor.com",
+  "media1.giphy.com",
+  "media2.giphy.com",
+  "media3.giphy.com",
+  "media4.giphy.com",
+  "i.imgur.com",
+  "i.giphy.com",
+  "lh3.googleusercontent.com",
+  "lh4.googleusercontent.com",
+  "lh5.googleusercontent.com",
+  "lh6.googleusercontent.com",
+]);
+
 function isImageMedia(src: string): boolean {
   const cleaned = src.split("?")[0].toLowerCase();
-  return /\.(gif|png|jpe?g|webp|avif|bmp)$/.test(cleaned);
+  if (/\.(gif|png|jpe?g|webp|avif|bmp)$/.test(cleaned)) return true;
+  // Also treat well-known image CDN hostnames as images even without extension
+  try {
+    const { hostname } = new URL(src);
+    return IMAGE_CDN_HOSTNAMES.has(hostname);
+  } catch {}
+  return false;
 }
 
 const PROXIED_HOSTNAMES = new Set([
@@ -486,6 +509,11 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
               backgroundImage: `url('${proxyExternalUrl(src)}')`,
               backgroundSize: "cover",
               backgroundPosition: "center",
+              // Dark fallback color shown if the proxy returns an error (e.g.
+              // 413 for GIFs >4 MB). CSS background-image has no onError hook,
+              // so without this the card falls back to the outer border gradient
+              // bleeding through the transparent inner card — looks broken.
+              backgroundColor: "rgb(5, 8, 20)",
               opacity: 0.92,
               filter: "brightness(0.92) saturate(0.95)",
             }}
