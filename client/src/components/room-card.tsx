@@ -351,7 +351,17 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   // theme mood reads even when we skip animation. Static images render with a
   // plain <img> (cheap), animated videos render with <video> on capable
   // viewports, and YouTube URLs render through the muted lite-iframe.
-  const overlay = (
+  //
+  // Image/GIF overlay is kept lighter than the video overlay so the GIF is
+  // clearly visible — the heavy 44–58% dark scrim was the reason GIF backgrounds
+  // appeared almost invisible (they rendered at only ~43% brightness).
+  const gifOverlay = (
+    <div
+      className="absolute inset-0 z-[1] pointer-events-none"
+      style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.18) 0%, rgba(2,4,18,0.10) 50%, rgba(2,4,18,0.30) 100%)" }}
+    />
+  );
+  const videoOverlay = (
     <div
       className="absolute inset-0 z-[1] pointer-events-none"
       style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.44) 0%, rgba(2,4,18,0.32) 58%, rgba(2,4,18,0.58) 100%)" }}
@@ -382,11 +392,11 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             backgroundImage: `url('${src.replace(/'/g, "%27")}')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            opacity: 0.88,
-            filter: "brightness(0.88) saturate(0.9)",
+            opacity: 0.92,
+            filter: "brightness(0.92) saturate(0.95)",
           }}
         />
-        {overlay}
+        {gifOverlay}
       </>
     );
   }
@@ -410,7 +420,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
               filter: "brightness(0.65) saturate(0.7)",
             }}
           />
-          {overlay}
+          {videoOverlay}
         </>
       );
     }
@@ -423,17 +433,17 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
           allow="autoplay; encrypted-media"
           style={{ border: "none", pointerEvents: "none", opacity: 0.55, filter: "brightness(0.7) saturate(0.7)" }}
         />
-        {overlay}
+        {videoOverlay}
       </>
     );
   }
 
   if (skipMotion) {
-    return overlay;
+    return videoOverlay;
   }
   return (
     <>
-        <video
+      <video
         src={src}
         autoPlay
         loop
@@ -441,9 +451,9 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
         playsInline
         preload="metadata"
         className="absolute inset-0 w-full h-full object-cover z-0"
-          style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
+        style={{ opacity: 0.55, filter: "brightness(0.7) saturate(0.85)", contentVisibility: "auto", containIntrinsicSize: "100% 100%" }}
       />
-      {overlay}
+      {videoOverlay}
     </>
   );
 }

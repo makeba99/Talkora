@@ -2267,6 +2267,11 @@ export async function registerRoutes(
 
       io.emit("room:created", room);
       broadcastRooms().catch(() => {});
+      // Auto-delete the room if the owner never enters it via socket.
+      // When they do join, cancelRoomDeleteTimer is called inside the
+      // join-room socket handler (line ~4180). ROOM_STARTUP_GRACE_MS
+      // gives them 2 minutes to click "Join & Talk" before cleanup fires.
+      startRoomDeleteTimer(room.id, ROOM_STARTUP_GRACE_MS);
       res.json(room);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
