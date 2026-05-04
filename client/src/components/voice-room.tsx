@@ -377,6 +377,8 @@ function ParticipantCard({
   roomLevel,
   cardPx = 128,
   hologramVideoUrl,
+  avatarGifUrl,
+  onSetAvatarGif,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -481,6 +483,37 @@ function ParticipantCard({
                         <SelectItem value="zz"><span className="flex items-center gap-2"><span>💤</span> Sleeping</span></SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                )}
+                {isMe && (
+                  <div className="space-y-1.5 mt-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> Card GIF
+                      </Label>
+                      {avatarGifUrl && (
+                        <button
+                          type="button"
+                          className="text-[10px] text-destructive hover:underline flex items-center gap-0.5"
+                          onClick={() => onSetAvatarGif && onSetAvatarGif(null)}
+                        >
+                          <X className="w-2.5 h-2.5" /> Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {avatarGifUrl ? (
+                        <img src={avatarGifUrl} alt="Card GIF" width={40} height={40} className="w-10 h-10 rounded-md object-cover border border-border flex-shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-md border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-[9px] text-muted-foreground flex-shrink-0">
+                          GIF
+                        </div>
+                      )}
+                      <GifPickerButton
+                        onGifSelect={(url) => onSetAvatarGif && onSetAvatarGif(url)}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-snug">Shows as your card background in this room.</p>
                   </div>
                 )}
                 {(p.instagramUrl || p.linkedinUrl || p.facebookUrl) && (
@@ -838,19 +871,13 @@ function ParticipantCard({
           </>
         ) : remoteVideoStream ? (
           <RemoteVideoPreview stream={remoteVideoStream} className={isMe && localVideoFlipped ? "scale-x-[-1]" : ""} />
-        ) : hologramVideoUrl && (() => {
-          try {
-            const u = new URL(hologramVideoUrl);
-            return /\.(gif|png|jpe?g|webp|avif)(\?|#|$)/i.test(hologramVideoUrl) ||
-              ["media.tenor.com","c.tenor.com","tenor.com","media1.giphy.com","media2.giphy.com","media3.giphy.com","media4.giphy.com","i.imgur.com","i.giphy.com"].includes(u.hostname);
-          } catch { return false; }
-        })() ? (
+        ) : avatarGifUrl ? (
           <>
             <div
               aria-hidden="true"
               className="absolute inset-0 z-0"
               style={{
-                backgroundImage: `url('${hologramVideoUrl}')`,
+                backgroundImage: `url('${avatarGifUrl}')`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 opacity: 0.9,
@@ -1200,6 +1227,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // (the `key` prop on the floating div), so picking the same emoji twice in a
   // row still re-triggers the animation. Entries are auto-cleared after the
   // animation duration so the card returns to its normal state.
+  const [participantAvatarGifs, setParticipantAvatarGifs] = useState<Record<string, string>>({});
   const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({});
   const moodTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // Mood picker open/closed state (for the new emoji bar that replaced the
@@ -3119,6 +3147,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
     socket.on("room:troll-restricted", (data: { reason: string }) => {
       toast({ variant: "destructive", title: "🧌 Troll Restriction", description: data.reason, duration: 3000 });
+    });
+
+    socket.on("room:avatar-gif", (data: { userId: string; gifUrl: string | null }) => {
+      if (!data?.userId) return;
+      setParticipantAvatarGifs((prev) => {
+        if (data.gifUrl) return { ...prev, [data.userId]: data.gifUrl };
+        const next = { ...prev };
+        delete next[data.userId];
+        return next;
+      });
     });
 
     socket.on("room:updated", (updatedRoom: any) => {
@@ -10540,6 +10578,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       } : undefined}
                       cardPx={cardPx}
                       hologramVideoUrl={(room as any).hologramVideoUrl || null}
+                      avatarGifUrl={participantAvatarGifs[p.id] || null}
+                      onSetAvatarGif={isMe ? (gifUrl: string | null) => {
+                        setParticipantAvatarGifs((prev) => {
+                          if (gifUrl) return { ...prev, [user!.id]: gifUrl };
+                          const next = { ...prev };
+                          delete next[user!.id];
+                          return next;
+                        });
+                        socket?.emit("room:avatar-gif", { roomId: room.id, userId: user?.id, gifUrl });
+                      } : undefined}
                     />
                   </div>
                 );

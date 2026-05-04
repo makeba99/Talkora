@@ -4372,6 +4372,14 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:mood-clear", { userId: data.userId });
     });
 
+    // Per-user avatar GIF — each user can set their own card background GIF.
+    // Server just relays to the room; gifUrl=null means clear.
+    socket.on("room:avatar-gif", (data: { roomId: string; userId: string; gifUrl: string | null }) => {
+      if (!data?.roomId || !data?.userId) return;
+      const gifUrl = data.gifUrl ? String(data.gifUrl).slice(0, 2048) : null;
+      io.to(data.roomId).emit("room:avatar-gif", { userId: data.userId, gifUrl });
+    });
+
     // "Say Bye" — user waves goodbye to the room before leaving. Server
     // broadcasts to everyone (including sender) so they all hear the sound
     // and see the farewell toast, then the client handles the leave itself.
