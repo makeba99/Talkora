@@ -8186,13 +8186,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       <button
                         data-testid={`button-follow-${u.id}`}
                         onClick={() => isFollowingUser ? unfollowMutation.mutate(u.id) : followMutation.mutate(u.id)}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all duration-150"
+                        className="p-1.5 rounded-lg transition-all duration-150"
+                        title={isFollowingUser ? `Unfollow ${getUserDisplayName(u)}` : `Follow ${getUserDisplayName(u)}`}
                         style={isFollowingUser
                           ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.50)", border: "1px solid rgba(255,255,255,0.10)" }
                           : { background: "hsla(var(--neu-orange) / 0.22)", color: "hsla(var(--neu-orange-hi) / 0.95)", border: "1px solid hsla(var(--neu-orange) / 0.34)" }
                         }
                       >
-                        {isFollowingUser ? "Following" : "Follow"}
+                        {isFollowingUser ? <UserCheck className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />}
                       </button>
                     </div>
                   </div>

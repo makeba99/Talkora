@@ -670,7 +670,9 @@ export default function Lobby() {
   }, [user, announcements]);
 
   const userOwnedRooms = fetchedRooms.filter(r => r.ownerId === user?.id);
-  const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id);
+  // Hide other users' rooms that are empty (activeUsers === 0) — no point
+  // showing a ghost room. Owner rooms are always shown so they can share the link.
+  const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id && (r.activeUsers ?? 0) > 0);
   const rooms = useMemo(
     () => [...userOwnedRooms, ...SAMPLE_ROOMS.slice(0, 8), ...otherRealRooms],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1181,17 +1183,25 @@ export default function Lobby() {
   // scroll interactions smooth even while 15+ RoomCards are re-rendering.
   const deferredRooms = useDeferredValue(filteredRooms);
 
-  // Progressive rendering: paint the first 6 cards (above-fold) synchronously,
-  // then render the remaining cards after the first animation frame via a
-  // low-priority startTransition. This splits what would be a single ~150 ms
-  // long task into two tasks each under 50 ms, eliminating both Lighthouse
-  // "long task" findings without causing layout shift (new cards append below).
+  // Progressive rendering: three scheduler yield points break the 9-card render
+  // across three separate tasks instead of one 100ms+ block.
+  //   Task 1 (immediate):  cards 0-2  — first viewport row, highest priority
+  //   Task 2 (RAF tick 1): cards 3-5  — second row, after browser paints task 1
+  //   Task 3 (RAF tick 2): cards 6+   — below-fold, lowest priority
+  // Each startTransition marks the batch as non-urgent so React can yield to
+  // higher-priority updates (scroll, input) between tasks. Directly reduces the
+  // "13 long tasks" count by splitting the heaviest initial commit into thirds.
+  const [midFoldReady, setMidFoldReady] = useState(false);
   const [belowFoldReady, setBelowFoldReady] = useState(false);
   useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      startTransition(() => setBelowFoldReady(true));
+    const raf1 = requestAnimationFrame(() => {
+      startTransition(() => setMidFoldReady(true));
+      const raf2 = requestAnimationFrame(() => {
+        startTransition(() => setBelowFoldReady(true));
+      });
+      return () => cancelAnimationFrame(raf2);
     });
-    return () => cancelAnimationFrame(raf);
+    return () => cancelAnimationFrame(raf1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2155,7 +2165,7 @@ export default function Lobby() {
                  * Now we accept ~50ms of empty badges on initial load in
                  * exchange for eliminating 8 duplicate POSTs that were
                  * appearing in the Lighthouse critical-request chain. */
-                const renderedRooms = belowFoldReady ? deferredRooms : deferredRooms.slice(0, 6);
+                const renderedRooms = belowFoldReady ? deferredRooms : midFoldReady ? deferredRooms.slice(0, 6) : deferredRooms.slice(0, 3);
                 return renderedRooms.map((room, idx) => {
                 const isSample = room.id.startsWith("sample-");
                 const card = (
