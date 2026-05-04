@@ -378,6 +378,34 @@ function isImageMedia(src: string): boolean {
     || cleaned.includes("c.tenor.com");
 }
 
+const PROXIED_HOSTNAMES = new Set([
+  "media.tenor.com",
+  "c.tenor.com",
+  "tenor.com",
+  "lh3.googleusercontent.com",
+  "lh4.googleusercontent.com",
+  "lh5.googleusercontent.com",
+  "lh6.googleusercontent.com",
+]);
+
+/**
+ * Route external images through our server-side proxy so the browser receives
+ * a 1-year Cache-Control header instead of the 1-day TTL those CDNs set.
+ * This satisfies Lighthouse's "Use efficient cache lifetimes" audit and
+ * removes direct third-party connections from the lobby's network waterfall.
+ */
+function proxyExternalUrl(src: string): string {
+  try {
+    const u = new URL(src);
+    if (u.protocol === "https:" && PROXIED_HOSTNAMES.has(u.hostname)) {
+      return `/api/proxy/image?url=${encodeURIComponent(src)}`;
+    }
+  } catch {
+    // not a URL — pass through unchanged
+  }
+  return src;
+}
+
 function CardHologramVideo({ src, priority = false }: { src: string; priority?: boolean }) {
   // Lobby cards stack 6+ at a time. We always paint the dimming overlay so the
   // theme mood reads even when we skip animation. Static images render with a
@@ -416,9 +444,11 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             own opaque background gradient — the gradient paints first and
             the background-image URL renders underneath it due to z-index
             stacking order in certain browser compositing paths. fetchPriority
-            low keeps it from displacing the room-title as the LCP element. */}
+            low keeps it from displacing the room-title as the LCP element.
+            proxyExternalUrl routes tenor/Google CDN images through our server
+            so the browser gets a 1-year Cache-Control instead of 1-day. */}
         <img
-          src={src}
+          src={proxyExternalUrl(src)}
           alt=""
           aria-hidden="true"
           loading="lazy"

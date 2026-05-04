@@ -260,11 +260,9 @@
          anonymous pool instead, a different socket that <img> never uses. -->
     <link rel="preconnect" href="https://flagcdn.com" />
     <link rel="dns-prefetch" href="https://flagcdn.com" />
-    <!-- media.tenor.com: GIF room backgrounds. Lazy-loaded but appear within
-         ~1 s of React mount on the lobby — warming DNS+TCP+TLS saves
-         150–400 ms on the first GIF fetch. -->
-    <link rel="preconnect" href="https://media.tenor.com" />
-    <link rel="dns-prefetch" href="https://media.tenor.com" />
+    <!-- Tenor GIF backgrounds are now routed through /api/proxy/image on our
+         own origin — no preconnect to media.tenor.com needed (would add to
+         the >4-preconnect Lighthouse warning and waste a connection slot). -->
     <!-- i.ytimg.com: YouTube thumbnails used as room card backgrounds on
          mobile/reduced-motion (static fallback). Below-fold → dns-prefetch. -->
     <link rel="dns-prefetch" href="https://i.ytimg.com" />

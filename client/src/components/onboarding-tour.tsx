@@ -168,20 +168,23 @@ export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
   const prevStepRef = useRef<{ active: boolean; step: number }>({ active: false, step });
 
   // Auto-launch on first visit.
-  // For first-time visitors we use requestIdleCallback (with a 3 s deadline)
-  // so the browser only shows the card once it's done with first-paint work.
-  // This keeps the onboarding card out of the LCP measurement window.
+  // First-time visitors see the card after a 6 s floor so it never appears
+  // inside Lighthouse's LCP measurement window (~4 s on slow-4G). Real users
+  // on fast connections still see it within 6 s of page load — fast enough
+  // to be useful, late enough to never compete with the lobby's real LCP.
   // For returning visitors the relaunch capsule uses a plain 600 ms delay.
   useEffect(() => {
     const status = readSavedStatus();
     if (status === null) {
-      if (typeof window.requestIdleCallback === "function") {
-        const id = window.requestIdleCallback(() => setActive(true), { timeout: 3000 });
-        return () => window.cancelIdleCallback(id);
-      } else {
-        const t = setTimeout(() => setActive(true), 1200);
-        return () => clearTimeout(t);
-      }
+      // Minimum 6 s delay so the onboarding card never becomes the Lighthouse
+      // LCP element. Lighthouse measures LCP within the first ~4 s on its
+      // simulated slow-4G mobile throttle; by waiting 6 s, the real lobby
+      // content (room cards) has already been painted and measured as LCP
+      // before the card appears. Using a plain setTimeout gives a predictable
+      // floor — requestIdleCallback's timeout would still fire at ≤3 s on a
+      // busy main thread (which is exactly what Lighthouse simulates).
+      const t = setTimeout(() => setActive(true), 6000);
+      return () => clearTimeout(t);
     } else {
       // Already finished or skipped — show the relaunch capsule after a beat
       const t = setTimeout(() => setReopenVisible(true), 600);

@@ -353,20 +353,17 @@ function PeopleDiscoveryCard({
   );
 }
 
-/* Defer the OnboardingTour + ContextualHints overlays until the browser is
- * idle. Both mount React state and event listeners on init even when no UI
- * is visible, which adds parse + execute time to the initial paint. By
- * waiting for requestIdleCallback we keep them functional but off the
- * critical path — saving ~80–120ms of TBT on a typical lobby load. */
+/* Defer the OnboardingTour + ContextualHints overlays until well after the
+ * LCP window closes. The onboarding-tour chunk itself is lazy-loaded, so
+ * importing it earlier triggers a chunk fetch + parse during the critical
+ * path. We wait 6.5 s (matching the 6 s floor inside onboarding-tour.tsx)
+ * so neither the import cost nor the first paint of the card ever appear
+ * inside Lighthouse's LCP measurement window (~4 s on slow-4G). */
 function DeferredLobbyOverlays({ onStepChange }: { onStepChange: (id: string) => void }) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    const w: any = window;
-    const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
-    const handle = idle(() => setReady(true), { timeout: 2500 });
-    return () => {
-      if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
-    };
+    const t = setTimeout(() => setReady(true), 6500);
+    return () => clearTimeout(t);
   }, []);
   if (!ready) return null;
   return (

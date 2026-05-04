@@ -24,6 +24,7 @@ import {
   type BreadcrumbItem,
 } from "./seo-meta";
 import { getPrecomputedHtml } from "./static";
+import { registerImageProxy } from "./image-proxy";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -338,6 +339,8 @@ export async function registerRoutes(
     upgradeTimeout: 30000,
     allowUpgrades: true,
   });
+
+  registerImageProxy(app);
 
   app.use("/api", apiRateLimiter);
   app.use("/api/auth", authRateLimiter);
