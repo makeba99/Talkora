@@ -4,13 +4,14 @@ function makeSampleUser(
   id: string, firstName: string, lastName: string, portrait: string,
   opts?: { ring?: string; flair?: string; decoration?: string; bio?: string; offline?: boolean }
 ): User {
+  const [gender, num] = portrait.split("/");
   return {
     id,
     email: null,
     firstName,
     lastName,
     displayName: `${firstName} ${lastName}`,
-    profileImageUrl: `https://randomuser.me/api/portraits/${portrait}.jpg`,
+    profileImageUrl: `/avatars/${gender}-${num}.jpg`,
     bio: opts?.bio || null,
     avatarRing: opts?.ring || null,
     flairBadge: opts?.flair || null,

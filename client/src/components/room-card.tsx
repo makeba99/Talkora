@@ -73,8 +73,8 @@ function computeCircleScale(displayCount: number): number {
  * path variant (~72 px) which is the perfect base for 1× displays. We then
  * upgrade to the 128 px file via `srcSet` for retina screens.
  *
- * For non-randomuser URLs (Replit object storage, Google profile pictures, etc.)
- * the original src is returned untouched.
+ * For non-randomuser URLs (local /avatars/, Replit object storage, Google
+ * profile pictures, etc.) the original src is returned untouched.
  */
 function buildAvatarSources(url: string | null | undefined): {
   src: string | undefined;

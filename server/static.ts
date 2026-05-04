@@ -356,6 +356,13 @@ export function serveStatic(app: Express) {
           res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
           return;
         }
+        // Avatar portraits (/avatars/*.jpg) are content-stable: the filename
+        // encodes gender+number and the files never change. Cache indefinitely
+        // so repeat visits and SW pre-cache serve them without revalidation.
+        if (filePath.includes(`${path.sep}avatars${path.sep}`)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
         // index.html, robots.txt, sitemap.xml and the SW must always
         // revalidate so users and crawlers pick up new builds/sitemaps as
         // soon as we ship them.

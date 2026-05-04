@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vextorn-v10";
+const CACHE_VERSION = "vextorn-v11";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const ASSET_CACHE  = `${CACHE_VERSION}-assets`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
@@ -11,12 +11,28 @@ const API_CACHE    = `${CACHE_VERSION}-api`;
 // real lobby when their simulated network throttling makes the fetch fail.
 // Letting the browser fetch HTML natively means crawlers and real users always
 // get the live page; static assets below are still cached for speed.
+// Sample user avatar portraits — served from same origin, pre-cached so
+// the first lobby load doesn't need external network requests to randomuser.me.
+const AVATAR_ASSETS = [
+  "/avatars/women-32.jpg", "/avatars/men-46.jpg",  "/avatars/women-28.jpg",
+  "/avatars/men-14.jpg",   "/avatars/women-61.jpg", "/avatars/men-88.jpg",
+  "/avatars/women-52.jpg", "/avatars/men-67.jpg",  "/avatars/women-77.jpg",
+  "/avatars/men-33.jpg",   "/avatars/women-5.jpg",  "/avatars/men-72.jpg",
+  "/avatars/women-44.jpg", "/avatars/men-55.jpg",  "/avatars/women-17.jpg",
+  "/avatars/men-78.jpg",   "/avatars/women-90.jpg", "/avatars/men-36.jpg",
+  "/avatars/women-26.jpg", "/avatars/men-22.jpg",  "/avatars/women-13.jpg",
+  "/avatars/men-19.jpg",   "/avatars/women-47.jpg", "/avatars/men-25.jpg",
+  "/avatars/women-65.jpg", "/avatars/men-71.jpg",  "/avatars/women-38.jpg",
+  "/avatars/men-85.jpg",   "/avatars/women-57.jpg", "/avatars/men-8.jpg",
+];
+
 const STATIC_ASSETS = [
   "/manifest.json",
   "/vextorn-mark.svg",
   "/vextorn-icon-192.png",
   "/vextorn-icon-512.png",
   "/fonts/space-grotesk-latin.woff2",
+  ...AVATAR_ASSETS,
 ];
 
 // Lobby-critical API endpoints that are safe to serve stale on repeat visits.

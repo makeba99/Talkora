@@ -2201,11 +2201,11 @@ export default function Lobby() {
                  * card styles, and React.memo on RoomCard plus the deferred
                  * overlays in this round handle the perf side. */
                 return idx === 0 ? (
-                <div key={`${room.id}-${idx}`} data-tour-target="rooms" style={{ contain: "layout paint", minHeight: 220 }}>
+                <div key={`${room.id}-${idx}`} data-tour-target="rooms" style={{ contain: "layout paint", minHeight: 255 }}>
                     {card}
                   </div>
                 ) : (
-                  <div key={`${room.id}-${idx}`} style={{ contain: "layout paint", minHeight: 220 }}>{card}</div>
+                  <div key={`${room.id}-${idx}`} style={{ contain: "layout paint", minHeight: 255 }}>{card}</div>
                 );
                 });
               })()}
