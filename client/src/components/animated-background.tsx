@@ -293,17 +293,21 @@ const AURORA_BANDS: AuroraBand[] = [
   { baseY: 0.20, freq: 1.2, amp: 90, phase: 3.5,  speed: 0.15, height: 120, colors: ["rgba(160,40,255,0.10)", "rgba(100,0,200,0)"] },
 ];
 
-const AURORA_STARS = Array.from({ length: 260 }, () => ({
-  x: Math.random(), y: Math.random(),
-  r: Math.random() * 0.7 + 0.15,
-  a: Math.random() * 0.5 + 0.1,
-  tw: Math.random() * Math.PI * 2,
-}));
+interface AuroraStar { x: number; y: number; r: number; a: number; tw: number; }
+let _auroraStars: AuroraStar[] | null = null;
+function getAuroraStars(): AuroraStar[] {
+  return (_auroraStars ??= Array.from({ length: 260 }, () => ({
+    x: Math.random(), y: Math.random(),
+    r: Math.random() * 0.7 + 0.15,
+    a: Math.random() * 0.5 + 0.1,
+    tw: Math.random() * Math.PI * 2,
+  })));
+}
 
 function drawAurora(ctx: Ctx, W: number, H: number, t: number) {
   ctx.clearRect(0, 0, W, H);
 
-  AURORA_STARS.forEach(s => {
+  getAuroraStars().forEach(s => {
     ctx.globalAlpha = s.a * (0.5 + 0.5 * Math.sin(t + s.tw));
     ctx.fillStyle   = "#e0f0ff";
     ctx.beginPath();
@@ -506,16 +510,19 @@ function drawNebula(ctx: Ctx, W: number, H: number, t: number, particles: NebPar
 ───────────────────────────────────────────── */
 interface BloodStar { x: number; y: number; r: number; tw: number; }
 
-const BLOOD_STARS: BloodStar[] = Array.from({ length: 200 }, () => ({
-  x: Math.random(), y: Math.random(),
-  r: Math.random() * 0.8 + 0.15,
-  tw: Math.random() * Math.PI * 2,
-}));
+let _bloodStars: BloodStar[] | null = null;
+function getBloodStars(): BloodStar[] {
+  return (_bloodStars ??= Array.from({ length: 200 }, () => ({
+    x: Math.random(), y: Math.random(),
+    r: Math.random() * 0.8 + 0.15,
+    tw: Math.random() * Math.PI * 2,
+  })));
+}
 
 function drawBloodMoon(ctx: Ctx, W: number, H: number, t: number) {
   ctx.clearRect(0, 0, W, H);
 
-  BLOOD_STARS.forEach(s => {
+  getBloodStars().forEach(s => {
     ctx.globalAlpha = 0.25 + Math.sin(t * 0.8 + s.tw) * 0.15;
     ctx.fillStyle = "#ffcccc";
     ctx.beginPath();

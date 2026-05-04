@@ -186,6 +186,37 @@ function getFallbackTextClass(maxUsers: number): string {
   return "text-xs";
 }
 
+function ParticipantPopoverShell({
+  participant,
+  currentUserId,
+  onOpenDm,
+  badges = [],
+  children,
+}: {
+  participant: User;
+  currentUserId?: string;
+  onOpenDm?: (userId: string) => void;
+  badges?: UserBadge[];
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      {open && (
+        <PopoverContent className="w-60 p-2" align="center">
+          <ParticipantPopover
+            participant={participant}
+            currentUserId={currentUserId}
+            onOpenDm={onOpenDm}
+            badges={badges}
+          />
+        </PopoverContent>
+      )}
+    </Popover>
+  );
+}
+
 function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] }: { participant: User; currentUserId?: string; onOpenDm?: (userId: string) => void; badges?: UserBadge[] }) {
   const { data: following = [] } = useQuery<Follow[]>({
     queryKey: ["/api/follows/following", currentUserId],
@@ -994,22 +1025,23 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   }
 
                   return (
-                    <Popover key={i}>
-                      <PopoverTrigger asChild>
-                        <button
-                          className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
-                          data-testid={`button-card-participant-${p.id}`}
-                          aria-label={`View ${getUserDisplayName(p)}'s profile`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {decorated}
-                          {heartRow}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-60 p-2" align="center">
-                        <ParticipantPopover participant={p} currentUserId={user?.id} onOpenDm={onOpenDm} badges={badges} />
-                      </PopoverContent>
-                    </Popover>
+                    <ParticipantPopoverShell
+                      key={i}
+                      participant={p}
+                      currentUserId={user?.id}
+                      onOpenDm={onOpenDm}
+                      badges={badges}
+                    >
+                      <button
+                        className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                        data-testid={`button-card-participant-${p.id}`}
+                        aria-label={`View ${getUserDisplayName(p)}'s profile`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {decorated}
+                        {heartRow}
+                      </button>
+                    </ParticipantPopoverShell>
                   );
                 }
 
