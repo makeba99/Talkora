@@ -2279,9 +2279,9 @@ export async function registerRoutes(
       broadcastRooms().catch(() => {});
       // Auto-delete the room if the owner never enters it via socket.
       // When they do join, cancelRoomDeleteTimer is called inside the
-      // join-room socket handler (line ~4180). ROOM_STARTUP_GRACE_MS
-      // gives them 2 minutes to click "Join & Talk" before cleanup fires.
-      startRoomDeleteTimer(room.id, ROOM_STARTUP_GRACE_MS);
+      // join-room socket handler. ROOM_CREATE_GRACE_MS gives the creator
+      // 5 minutes to click "Join & Talk" — enough time for any user flow.
+      startRoomDeleteTimer(room.id, ROOM_CREATE_GRACE_MS);
       res.json(room);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -3748,13 +3748,16 @@ export async function registerRoutes(
   }
 
   // Grace period for an empty room before it's auto-deleted.
-  // 60s gives users plenty of time to handle network blips, mobile-app
-  // backgrounding, page refreshes, and quick re-joins without losing the room.
+  // 25s covers network blips, mobile-app backgrounding, and quick re-joins
+  // without letting truly-abandoned rooms linger on the lobby forever.
   const ROOM_EMPTY_GRACE_MS = 25_000;
-  // Longer grace at server startup — clients still need to socket-reconnect
-  // and re-emit `room:join` to repopulate the in-memory participants map,
-  // so we wait substantially longer before assuming a room is truly empty.
+  // Grace at server startup — clients need to socket-reconnect and re-emit
+  // `room:join` to repopulate the in-memory participants map.
   const ROOM_STARTUP_GRACE_MS = 60_000;
+  // Grace for a brand-new room — the creator still needs to read the toast,
+  // scroll to their room card, and click "Join & Talk". 5 minutes is generous
+  // enough for any user flow without letting abandoned created rooms pile up.
+  const ROOM_CREATE_GRACE_MS = 5 * 60 * 1000;
 
   function startRoomDeleteTimer(roomId: string, graceMs: number = ROOM_EMPTY_GRACE_MS) {
     cancelRoomDeleteTimer(roomId);
