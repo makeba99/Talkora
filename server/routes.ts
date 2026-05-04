@@ -229,7 +229,8 @@ function roomPublicPayload(room: any, includeAccessKey = false) {
 async function broadcastRooms() {
   if (sseRoomClients.size === 0) return;
   try {
-    const rooms = (await storage.getAllRooms()).map((r) => roomPublicPayload(r));
+    const allRooms = await storage.getAllRooms();
+    const rooms = allRooms.filter((r) => (r.activeUsers ?? 0) > 0).map((r) => roomPublicPayload(r));
     const payload = `event: rooms\ndata: ${JSON.stringify(rooms)}\n\n`;
     for (const client of sseRoomClients) {
       try { client.res.write(payload); } catch {}
@@ -2061,13 +2062,17 @@ export async function registerRoutes(
   app.get("/api/rooms", async (_req, res) => {
     try {
       const allRooms = await storage.getAllRooms();
+      // Filter out empty rooms — rooms with 0 active users are either in the
+      // 25-second grace period before deletion or truly abandoned. Either way
+      // there's no value showing them in the lobby.
+      const nonEmptyRooms = allRooms.filter((room) => (room.activeUsers ?? 0) > 0);
       // Public data — safe to cache. max-age=60 keeps it fresh for 60 s;
       // stale-while-revalidate=86400 lets the browser/SW serve the stale
       // response instantly on repeat visits while fetching a fresh copy in
       // the background. This satisfies Lighthouse "Use efficient cache
       // lifetimes" without ever showing data older than 24 h.
       res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
-      res.json(allRooms.map((room) => roomPublicPayload(room)));
+      res.json(nonEmptyRooms.map((room) => roomPublicPayload(room)));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -2086,9 +2091,10 @@ export async function registerRoutes(
     res.flushHeaders();
 
     // Send the current room list immediately so the client hydrates without
-    // waiting for the next mutation event.
+    // waiting for the next mutation event. Filter empty rooms here too.
     try {
-      const rooms = (await storage.getAllRooms()).map((r) => roomPublicPayload(r));
+      const allRooms = await storage.getAllRooms();
+      const rooms = allRooms.filter((r) => (r.activeUsers ?? 0) > 0).map((r) => roomPublicPayload(r));
       res.write(`event: rooms\ndata: ${JSON.stringify(rooms)}\n\n`);
     } catch {}
 
@@ -3740,11 +3746,11 @@ export async function registerRoutes(
   // Grace period for an empty room before it's auto-deleted.
   // 60s gives users plenty of time to handle network blips, mobile-app
   // backgrounding, page refreshes, and quick re-joins without losing the room.
-  const ROOM_EMPTY_GRACE_MS = 60_000;
+  const ROOM_EMPTY_GRACE_MS = 25_000;
   // Longer grace at server startup — clients still need to socket-reconnect
   // and re-emit `room:join` to repopulate the in-memory participants map,
   // so we wait substantially longer before assuming a room is truly empty.
-  const ROOM_STARTUP_GRACE_MS = 120_000;
+  const ROOM_STARTUP_GRACE_MS = 60_000;
 
   function startRoomDeleteTimer(roomId: string, graceMs: number = ROOM_EMPTY_GRACE_MS) {
     cancelRoomDeleteTimer(roomId);

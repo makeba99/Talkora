@@ -669,9 +669,10 @@ export default function Lobby() {
     markAnnouncementsViewedMutation.mutate(unseenIds);
   }, [user, announcements]);
 
-  const userOwnedRooms = fetchedRooms.filter(r => r.ownerId === user?.id);
-  // Hide other users' rooms that are empty (activeUsers === 0) — no point
-  // showing a ghost room. Owner rooms are always shown so they can share the link.
+  // Hide all empty rooms (activeUsers === 0) from the lobby — the server
+  // already filters them from /api/rooms, but this guards against stale
+  // cache / in-flight socket updates delivering a 0-participant room briefly.
+  const userOwnedRooms = fetchedRooms.filter(r => r.ownerId === user?.id && (r.activeUsers ?? 0) > 0);
   const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id && (r.activeUsers ?? 0) > 0);
   const rooms = useMemo(
     () => [...userOwnedRooms, ...SAMPLE_ROOMS.slice(0, 8), ...otherRealRooms],
