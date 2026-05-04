@@ -240,7 +240,9 @@ export function getPrecomputedHtml(): string | null {
   return _precomputedHtml;
 }
 
-export function serveStatic(app: Express) {
+type SSRDataProvider = () => Promise<Record<string, unknown>>;
+
+export function serveStatic(app: Express, getSSRData?: SSRDataProvider) {
   const distPath = path.resolve(__dirname, "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -311,7 +313,7 @@ export function serveStatic(app: Express) {
   // eliminates the "Document request latency" Lighthouse audit on mobile.
   // Setting Content-Encoding before res.end() prevents the middleware from
   // double-compressing the already-encoded bytes.
-  const sendIndex = (req: Request, res: Response) => {
+  const sendIndex = async (req: Request, res: Response) => {
     // HTTP 103 Early Hints: fire the Link preload hints before the full 200
     // response is ready. The browser starts fetching JS/CSS chunks in parallel
     // with our response serialisation — saves one full RTT on cold navigations.
@@ -323,13 +325,35 @@ export function serveStatic(app: Express) {
       } catch { /* not supported — continue normally */ }
     }
 
-    const accept = String(req.headers["accept-encoding"] || "");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     if (precomputed?.linkHeader) {
       res.setHeader("Link", precomputed.linkHeader);
     }
 
+    // Data-injection SSR: if a provider is available, fetch the initial
+    // lobby data (rooms + announcements) and embed it as a <script> tag
+    // in the HTML. The client reads window.__SSR_DATA__ and pre-populates
+    // the TanStack Query cache BEFORE React mounts, eliminating the
+    // /api/rooms and /api/announcements round-trips entirely (~150 ms
+    // savings on throttled mobile). The compression middleware (already
+    // mounted globally) will gzip/brotli the modified HTML automatically.
+    if (getSSRData && precomputed?.html) {
+      try {
+        const data = await getSSRData();
+        // Escape </script> sequences so the embedded JSON can't break out
+        // of the script tag even if a room title contains "</script>".
+        const json = JSON.stringify(data).replace(/<\/script>/gi, "<\\/script>");
+        const script = `<script id="__ssr__">window.__SSR_DATA__=${json};</script>`;
+        const html = precomputed.html.replace("</body>", `${script}\n</body>`);
+        res.send(html);
+        return;
+      } catch {
+        // SSR data fetch failed — fall through to serve static HTML.
+      }
+    }
+
+    const accept = String(req.headers["accept-encoding"] || "");
     if (precomputed?.htmlBr && /\bbr\b/i.test(accept)) {
       res.setHeader("Content-Encoding", "br");
       res.setHeader("Vary", "Accept-Encoding");

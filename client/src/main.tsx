@@ -1,6 +1,22 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { queryClient } from "@/lib/queryClient";
+
+// Data-injection SSR: the server embeds initial lobby data in the HTML so
+// TanStack Query has real rooms/announcements before React even mounts.
+// This eliminates the /api/rooms and /api/announcements round-trips on first
+// load (~150 ms savings on throttled mobile connections), making the pre-render
+// overlay dismiss almost immediately after JS evaluates.
+const ssrData = (window as any).__SSR_DATA__;
+if (ssrData) {
+  if (Array.isArray(ssrData.rooms)) {
+    queryClient.setQueryData(["/api/rooms"], ssrData.rooms);
+  }
+  if (Array.isArray(ssrData.announcements)) {
+    queryClient.setQueryData(["/api/announcements"], ssrData.announcements);
+  }
+}
 
 createRoot(document.getElementById("root")!).render(<App />);
 

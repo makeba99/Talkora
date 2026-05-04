@@ -110,7 +110,13 @@ app.use((req, res, next) => {
   });
 
   if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
+    serveStatic(app, async () => {
+      const [rooms, announcements] = await Promise.all([
+        storage.getAllRooms(),
+        storage.getAnnouncements(),
+      ]);
+      return { rooms, announcements } as Record<string, unknown>;
+    });
   } else {
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);

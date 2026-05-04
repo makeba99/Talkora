@@ -961,14 +961,17 @@ export default function Lobby() {
     );
 
     socket.on("room:deleted", (data: { roomId: string }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms/participants"] });
       if (data?.roomId) {
+        queryClient.setQueryData<any[]>(["/api/rooms"], (old) =>
+          old ? old.filter((r) => r.id !== data.roomId) : old
+        );
         setRoomParticipants((prev) => {
           const next = { ...prev };
           delete next[data.roomId];
           return next;
         });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       }
     });
 
