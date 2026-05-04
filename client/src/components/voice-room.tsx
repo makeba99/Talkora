@@ -344,6 +344,7 @@ function ParticipantCard({
   isCurrentUserCoOwner,
   onAssignRole,
   onTransferHost,
+  onNominateHost,
   hasActiveYoutubeGlobal,
   onWatchYoutube,
   isWatchingYoutube,
@@ -588,6 +589,17 @@ function ParticipantCard({
                   <Trash2 className="w-3.5 h-3.5 mr-1" /> Clear My Chat
                </Button>
              </div>
+          )}
+
+          {(!isCurrentUserHost && !isMe && !isRoomOwner) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onNominateHost && onNominateHost(p.id)}
+              className="w-full h-8 text-xs border-border bg-transparent hover:bg-purple-900/20 text-purple-400 mt-1"
+            >
+              <Crown className="w-3.5 h-3.5 mr-1" /> Nominate as Host
+            </Button>
           )}
 
           {isCurrentUserHost && !isMe && !isRoomOwner && (
@@ -1316,6 +1328,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [trollVoteModal, setTrollVoteModal] = useState<{ targetUserId: string; targetName: string; assignedByName: string; totalMembers: number } | null>(null);
   const [trollVoteProgress, setTrollVoteProgress] = useState<{ kickVotes: number; totalVoters: number } | null>(null);
   const [myTrollVote, setMyTrollVote] = useState<boolean | null>(null);
+  const [hostVoteModal, setHostVoteModal] = useState<{ nomineeId: string; nomineeName: string; nominatorId: string; nominatorName: string; totalVoters: number } | null>(null);
+  const [hostVoteProgress, setHostVoteProgress] = useState<{ yesVotes: number; noVotes: number; totalVoters: number } | null>(null);
+  const [myHostVote, setMyHostVote] = useState<"yes" | "no" | null>(null);
   const [remoteVideoUserId, setRemoteVideoUserId] = useState<string | null>(null);
   const [remoteScreenShareUserId, setRemoteScreenShareUserId] = useState<string | null>(null);
   // Tracks whether the remote screen <video> has actually started painting
@@ -3015,6 +3030,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setParticipantRoles(data.roles);
     });
 
+    socket.on("room:host-vote-start", (data: { nomineeId: string; nomineeName: string; nominatorId: string; nominatorName: string; totalVoters: number; yesVotes: number; noVotes: number }) => {
+      setHostVoteModal({ nomineeId: data.nomineeId, nomineeName: data.nomineeName, nominatorId: data.nominatorId, nominatorName: data.nominatorName, totalVoters: data.totalVoters });
+      setHostVoteProgress({ yesVotes: data.yesVotes, noVotes: data.noVotes, totalVoters: data.totalVoters });
+      setMyHostVote(null);
+    });
+
+    socket.on("room:host-vote-progress", (data: { nomineeId: string; yesVotes: number; noVotes: number; totalVoters: number }) => {
+      setHostVoteProgress({ yesVotes: data.yesVotes, noVotes: data.noVotes, totalVoters: data.totalVoters });
+    });
+
+    socket.on("room:host-vote-end", (data: { nomineeId: string; transferred: boolean; reason: string }) => {
+      setHostVoteModal(null);
+      setHostVoteProgress(null);
+      setMyHostVote(null);
+    });
+
     socket.on("room:troll-vote-start", (data: { targetUserId: string; targetName: string; assignedByName: string; totalMembers: number }) => {
       setTrollVoteModal(data);
       setTrollVoteProgress({ kickVotes: 0, totalVoters: Math.max(1, data.totalMembers - 1) });
@@ -3142,6 +3173,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:youtube-state");
       socket.off("room:roles");
       socket.off("room:roles-update");
+      socket.off("room:host-vote-start");
+      socket.off("room:host-vote-progress");
+      socket.off("room:host-vote-end");
       socket.off("room:troll-vote-start");
       socket.off("room:troll-vote-progress");
       socket.off("room:troll-vote-end");
@@ -5696,6 +5730,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       roomId: room.id,
       newOwnerId,
       currentOwnerId: user?.id,
+    });
+  };
+
+  const handleNominateHost = (nomineeId: string) => {
+    if (!user) return;
+    socket?.emit("room:nominate-host", {
+      roomId: room.id,
+      nominatorId: user.id,
+      nomineeId,
     });
   };
 
@@ -10362,6 +10405,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       isCurrentUserCoOwner={myRole === "co-owner"}
                       onAssignRole={(role: string) => handleAssignRole(p.id, role)}
                       onTransferHost={() => handleTransferHost(p.id)}
+                      onNominateHost={() => handleNominateHost(p.id)}
                       hasActiveYoutubeGlobal={!!activeYoutubeId}
                       onWatchYoutube={() => handleJoinYoutubeParty(p.id)}
                       isWatchingYoutube={showYoutube}
@@ -12157,6 +12201,71 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </div>
               <p className="text-[9px] text-white/20 text-center mt-3">Poll expires in 60 seconds</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {hostVoteModal && hostVoteProgress && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1a2e] border border-purple-500/30 rounded-2xl shadow-2xl p-6 w-80 max-w-[90vw]">
+            <div className="text-center mb-4">
+              <div className="text-3xl mb-2">👑</div>
+              <h3 className="text-white font-bold text-base">Host Vote</h3>
+              <p className="text-white/60 text-xs mt-1">
+                <span className="text-purple-300 font-medium">{hostVoteModal.nominatorName}</span> nominated{" "}
+                <span className="text-yellow-300 font-medium">{hostVoteModal.nomineeName}</span> to be the new host
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-2 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">{hostVoteProgress.yesVotes}</div>
+                <div className="text-[10px] text-white/40">Yes</div>
+              </div>
+              <div className="text-white/20 text-2xl self-center">/</div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-400">{hostVoteProgress.noVotes}</div>
+                <div className="text-[10px] text-white/40">No</div>
+              </div>
+              <div className="text-white/20 text-2xl self-center">/</div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white/50">{hostVoteProgress.totalVoters}</div>
+                <div className="text-[10px] text-white/40">Total</div>
+              </div>
+            </div>
+
+            {user && hostVoteModal.nomineeId !== user.id && (
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => {
+                    if (!user || myHostVote === "yes") return;
+                    setMyHostVote("yes");
+                    socket?.emit("room:host-vote", { roomId: room.id, voterId: user.id, vote: "yes" });
+                  }}
+                  disabled={myHostVote !== null}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${myHostVote === "yes" ? "bg-green-600 text-white cursor-default" : "bg-green-900/30 text-green-400 hover:bg-green-800/50 border border-green-600/30"}`}
+                >
+                  👑 Yes
+                </button>
+                <button
+                  onClick={() => {
+                    if (!user || myHostVote === "no") return;
+                    setMyHostVote("no");
+                    socket?.emit("room:host-vote", { roomId: room.id, voterId: user.id, vote: "no" });
+                  }}
+                  disabled={myHostVote !== null}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${myHostVote === "no" ? "bg-red-600 text-white cursor-default" : "bg-red-900/30 text-red-400 hover:bg-red-800/50 border border-red-600/30"}`}
+                >
+                  ✕ No
+                </button>
+              </div>
+            )}
+
+            {user && hostVoteModal.nomineeId === user.id && (
+              <p className="text-center text-xs text-white/40 mt-2">You are the nominee — the room is voting for you!</p>
+            )}
+
+            <p className="text-[9px] text-white/20 text-center mt-3">Poll expires in 60 seconds</p>
           </div>
         </div>
       )}

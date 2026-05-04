@@ -142,6 +142,7 @@ const POPULAR_MOVIES: Array<{ id: string; title: string; poster: string | null; 
 const roomBookState = new Map<string, { book: any; hostId: string; scrollPct: number; watchers: Set<string> }>();
 const roomRoles = new Map<string, Map<string, string>>();
 const trollVoteState = new Map<string, { targetUserId: string; votes: Set<string> }>();
+const hostVoteState = new Map<string, { nomineeId: string; nomineeName: string; nominatorId: string; nominatorName: string; yesVotes: Set<string>; noVotes: Set<string>; timer: NodeJS.Timeout }>();
 const trollCooldown = new Map<string, number>();
 const roomMuteStatus = new Map<string, Map<string, boolean>>();
 const userSockets = new Map<string, string>();
@@ -4529,6 +4530,132 @@ export async function registerRoutes(
         if (targetUser) {
           emitSystemChatMsg(data.roomId, `🗳️ ${getDisplayName(targetUser)} was voted out by the room.`);
         }
+      }
+    });
+
+    // ── Vote-for-host ──────────────────────────────────────────────────────────
+    // Any participant (not the current host) can nominate another participant
+    // to become host. Everyone votes yes/no; majority wins in 60 s.
+    socket.on("room:nominate-host", async (data: { roomId: string; nominatorId: string; nomineeId: string }) => {
+      const room = await storage.getRoom(data.roomId);
+      if (!room) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants?.has(data.nominatorId)) return;
+      if (!participants?.has(data.nomineeId)) return;
+      if (data.nominatorId === data.nomineeId) return;
+      // Only non-hosts may start a vote
+      if (room.ownerId === data.nominatorId) return;
+      // Can't nominate the current host
+      if (room.ownerId === data.nomineeId) return;
+      // One vote at a time
+      if (hostVoteState.has(data.roomId)) {
+        socket.emit("room:host-vote-error", { message: "A host vote is already in progress." });
+        return;
+      }
+
+      const [nominator, nominee] = await Promise.all([
+        storage.getUser(data.nominatorId),
+        storage.getUser(data.nomineeId),
+      ]);
+      const nominatorName = nominator ? (nominator.firstName && nominator.lastName ? `${nominator.firstName} ${nominator.lastName}` : nominator.firstName || nominator.username || "Someone") : "Someone";
+      const nomineeName = nominee ? (nominee.firstName && nominee.lastName ? `${nominee.firstName} ${nominee.lastName}` : nominee.firstName || nominee.username || "Someone") : "Someone";
+
+      const timer = setTimeout(() => {
+        const state = hostVoteState.get(data.roomId);
+        if (state && state.nomineeId === data.nomineeId) {
+          hostVoteState.delete(data.roomId);
+          io.to(data.roomId).emit("room:host-vote-end", {
+            nomineeId: data.nomineeId,
+            transferred: false,
+            reason: "expired",
+          });
+        }
+      }, 60_000);
+
+      const yesVotes = new Set<string>();
+      // Nominator auto-casts a yes vote
+      yesVotes.add(data.nominatorId);
+
+      hostVoteState.set(data.roomId, {
+        nomineeId: data.nomineeId,
+        nomineeName,
+        nominatorId: data.nominatorId,
+        nominatorName,
+        yesVotes,
+        noVotes: new Set(),
+        timer,
+      });
+
+      const totalVoters = participants.size;
+      io.to(data.roomId).emit("room:host-vote-start", {
+        nomineeId: data.nomineeId,
+        nomineeName,
+        nominatorId: data.nominatorId,
+        nominatorName,
+        totalVoters,
+        yesVotes: yesVotes.size,
+        noVotes: 0,
+      });
+
+      emitSystemChatMsg(data.roomId, `👑 ${nominatorName} nominated ${nomineeName} to be the new host — vote now!`);
+    });
+
+    socket.on("room:host-vote", async (data: { roomId: string; voterId: string; vote: "yes" | "no" }) => {
+      const state = hostVoteState.get(data.roomId);
+      if (!state) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants?.has(data.voterId)) return;
+
+      // Record vote (toggle off if same)
+      if (data.vote === "yes") {
+        state.yesVotes.add(data.voterId);
+        state.noVotes.delete(data.voterId);
+      } else {
+        state.noVotes.add(data.voterId);
+        state.yesVotes.delete(data.voterId);
+      }
+
+      const totalVoters = participants.size;
+      const yesCount = state.yesVotes.size;
+      const noCount = state.noVotes.size;
+
+      io.to(data.roomId).emit("room:host-vote-progress", {
+        nomineeId: state.nomineeId,
+        yesVotes: yesCount,
+        noVotes: noCount,
+        totalVoters,
+      });
+
+      const needed = Math.floor(totalVoters / 2) + 1;
+
+      // Majority yes → transfer host
+      if (yesCount >= needed) {
+        clearTimeout(state.timer);
+        hostVoteState.delete(data.roomId);
+        io.to(data.roomId).emit("room:host-vote-end", { nomineeId: state.nomineeId, transferred: true, reason: "majority" });
+
+        const room = await storage.getRoom(data.roomId);
+        if (!room) return;
+        const updated = await storage.updateRoom(data.roomId, { ownerId: state.nomineeId });
+        if (!updated) return;
+        const roles = roomRoles.get(data.roomId);
+        if (roles) {
+          roles.set(state.nomineeId, "host");
+          roles.set(room.ownerId, "co-owner");
+        }
+        io.to(data.roomId).emit("room:updated", updated);
+        io.to(data.roomId).emit("room:roles-update", { userId: state.nomineeId, role: "host", roles: roles ? Object.fromEntries(roles) : {} });
+        io.to(data.roomId).emit("room:host-transferred", { newOwnerId: state.nomineeId, previousOwnerId: room.ownerId });
+        emitSystemChatMsg(data.roomId, `👑 ${state.nomineeName} is now the host — voted by the room!`);
+        return;
+      }
+
+      // Majority no → cancel vote
+      if (noCount >= needed) {
+        clearTimeout(state.timer);
+        hostVoteState.delete(data.roomId);
+        io.to(data.roomId).emit("room:host-vote-end", { nomineeId: state.nomineeId, transferred: false, reason: "rejected" });
+        emitSystemChatMsg(data.roomId, `🗳️ The vote to make ${state.nomineeName} host was rejected.`);
       }
     });
 
