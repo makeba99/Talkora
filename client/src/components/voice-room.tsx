@@ -376,6 +376,7 @@ function ParticipantCard({
   onWatchMovie,
   roomLevel,
   cardPx = 128,
+  hologramVideoUrl,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -712,6 +713,19 @@ function ParticipantCard({
         } transition-all duration-300`}
         style={{ width: cardPx, height: cardPx, flexShrink: 0 }}
       >
+        {/* ── Hologram GIF card background ── */}
+        {hologramVideoUrl && /\.(gif|png|jpe?g|webp|avif)(\?|#|$)/i.test(hologramVideoUrl) && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 z-0 pointer-events-none"
+            style={{
+              backgroundImage: `url('${hologramVideoUrl}')`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: 0.22,
+            }}
+          />
+        )}
         {hasActiveYoutube && youtubeVideoId ? (
           <>
             <img
@@ -9095,29 +9109,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
-        {/* ── Room GIF/image background ── */}
-        {((room as any).hologramVideoUrl) && (() => {
-          const holoUrl = (room as any).hologramVideoUrl as string;
-          if (/\.(gif|png|jpe?g|webp|avif)(\?|#|$)/i.test(holoUrl) || holoUrl.includes("tenor.com") || holoUrl.includes("giphy.com") || holoUrl.includes("media.tenor")) {
-            return (
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 z-0 pointer-events-none"
-                style={{
-                  backgroundImage: `url('${holoUrl}')`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  opacity: 0.18,
-                  filter: "brightness(0.85) saturate(0.9)",
-                }}
-              />
-            );
-          }
-          return null;
-        })()}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <div
-          className="border-b px-3 py-2 relative z-[1]"
+          className="border-b px-3 py-2"
           style={{
             background: "linear-gradient(180deg, hsl(228 14% 10% / 0.97) 0%, hsl(228 14% 8% / 0.94) 100%)",
             backdropFilter: "blur(24px) saturate(1.3)",
@@ -10518,6 +10512,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         socket?.emit("room:movie-watching", { roomId: room.id, hostId: p.id, watching: true });
                       } : undefined}
                       cardPx={cardPx}
+                      hologramVideoUrl={(room as any).hologramVideoUrl || null}
                     />
                   </div>
                 );
