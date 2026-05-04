@@ -126,7 +126,7 @@ const LANGUAGE_CODES: Record<string, string> = {
   Armenian: "am", Indonesian: "id",
 };
 
-function LanguageFlag({ language }: { language: string; priority?: boolean }) {
+function LanguageFlag({ language, priority = false }: { language: string; priority?: boolean }) {
   const code = LANGUAGE_CODES[language];
   if (!code) return <Globe className="w-3.5 h-3.5 text-white/50" />;
   return (
@@ -136,8 +136,9 @@ function LanguageFlag({ language }: { language: string; priority?: boolean }) {
       width={20}
       height={15}
       alt={language}
-      loading="lazy"
-      decoding="async"
+      loading={priority ? "eager" : "lazy"}
+      decoding={priority ? "sync" : "async"}
+      fetchpriority={priority ? "high" : "auto"}
       className="flex-shrink-0 rounded-[2px]"
       style={{ display: "inline-block" }}
     />

@@ -252,6 +252,14 @@
          <img> fetches use the non-CORS connection pool; a preconnect with
          crossorigin warms the CORS-anonymous pool instead — a different socket
          — so the actual image request ignores the pre-warmed connection. -->
+    <!-- flagcdn.com: language flag images rendered immediately above the fold
+         in every room card — warming DNS+TCP+TLS here removes 150–300 ms of
+         connection setup from the LCP waterfall on mobile.
+         NOTE: crossorigin is intentionally omitted — <img> fetches use the
+         non-CORS connection pool; adding crossorigin would warm a CORS-
+         anonymous pool instead, a different socket that <img> never uses. -->
+    <link rel="preconnect" href="https://flagcdn.com" />
+    <link rel="dns-prefetch" href="https://flagcdn.com" />
     <!-- media.tenor.com: GIF room backgrounds. Lazy-loaded but appear within
          ~1 s of React mount on the lobby — warming DNS+TCP+TLS saves
          150–400 ms on the first GIF fetch. -->
@@ -260,7 +268,10 @@
     <!-- i.ytimg.com: YouTube thumbnails used as room card backgrounds on
          mobile/reduced-motion (static fallback). Below-fold → dns-prefetch. -->
     <link rel="dns-prefetch" href="https://i.ytimg.com" />
-    <!-- randomuser.me: People-section avatars (non-default tab, below-fold). -->
+    <!-- randomuser.me: avatars appear in the FIRST ROW of room cards (LCP
+         area). Upgrading from dns-prefetch to preconnect warms TCP+TLS so
+         the first avatar fetch starts as soon as React mounts. -->
+    <link rel="preconnect" href="https://randomuser.me" />
     <link rel="dns-prefetch" href="https://randomuser.me" />
     <!-- YouTube embeds: deferred until user interaction. One dns-prefetch
          covers www.youtube.com and www.youtube-nocookie.com. -->

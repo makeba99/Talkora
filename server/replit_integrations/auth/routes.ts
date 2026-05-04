@@ -10,6 +10,12 @@ export function registerAuthRoutes(app: Express): void {
   // unauthenticated page load, which PageSpeed/Lighthouse counts as a Best
   // Practices failure.
   app.get("/api/auth/user", async (req: any, res) => {
+    // Private user data — must never be cached by CDNs or shared caches.
+    // Explicit no-store makes proxy/CDN behaviour unambiguous and prevents
+    // Lighthouse from flagging this endpoint with "Serve static assets with
+    // an efficient cache policy". The browser preload hint in index.html
+    // still works — it uses the network response directly, not a cache entry.
+    res.setHeader("Cache-Control", "private, no-store");
     try {
       if (!req.isAuthenticated()) {
         return res.json(null);

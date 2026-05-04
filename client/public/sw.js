@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vextorn-v9";
+const CACHE_VERSION = "vextorn-v10";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const ASSET_CACHE  = `${CACHE_VERSION}-assets`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
   "/vextorn-mark.svg",
   "/vextorn-icon-192.png",
   "/vextorn-icon-512.png",
+  "/fonts/space-grotesk-latin.woff2",
 ];
 
 // Lobby-critical API endpoints that are safe to serve stale on repeat visits.

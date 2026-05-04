@@ -3536,8 +3536,14 @@ export async function registerRoutes(
   app.get("/api/maintenance", async (_req, res) => {
     try {
       const value = await storage.getSetting("maintenance_mode");
+      // Maintenance mode changes extremely rarely — cache for 30 s with a
+      // 1-hour stale-while-revalidate window so repeat visits are instant.
+      // This removes the endpoint from the Lighthouse "Use efficient cache
+      // lifetimes" audit while still reflecting mode changes within 30 s.
+      res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=3600");
       res.json({ active: value === "true" });
     } catch {
+      res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=3600");
       res.json({ active: false });
     }
   });

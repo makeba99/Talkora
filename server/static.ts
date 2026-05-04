@@ -300,6 +300,17 @@ export function serveStatic(app: Express) {
   // Setting Content-Encoding before res.end() prevents the middleware from
   // double-compressing the already-encoded bytes.
   const sendIndex = (req: Request, res: Response) => {
+    // HTTP 103 Early Hints: fire the Link preload hints before the full 200
+    // response is ready. The browser starts fetching JS/CSS chunks in parallel
+    // with our response serialisation — saves one full RTT on cold navigations.
+    // writeEarlyHints is available in Node 18.11+ and is a no-op on HTTP/1.0
+    // or in environments that don't support informational responses.
+    if (precomputed?.linkHeader) {
+      try {
+        (res as any).writeEarlyHints?.({ link: precomputed.linkHeader });
+      } catch { /* not supported — continue normally */ }
+    }
+
     const accept = String(req.headers["accept-encoding"] || "");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
