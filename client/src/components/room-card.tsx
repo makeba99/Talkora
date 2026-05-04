@@ -500,12 +500,13 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
 
   // Tenor URLs: the proxy rewrites .gif → .mp4 server-side (5–10× smaller).
   // We use <video autoPlay loop muted> to play the MP4 bytes correctly.
-  // skipMotion (mobile / prefers-reduced-motion) falls back to overlay only,
-  // consistent with how regular video backgrounds behave on those viewports.
+  //
+  // IMPORTANT: no skipMotion check here. Tenor backgrounds previously went
+  // through the <img> branch (isImageMedia returned true for Tenor) which has
+  // no skipMotion gate — they always showed on all devices including mobile.
+  // Keeping the same unconditional behaviour preserves the original design on
+  // every viewport; the only change is bytes-on-the-wire (MP4 vs GIF).
   if (isTenorUrl(src)) {
-    if (skipMotion) {
-      return <>{sentinel}{gifOverlay}</>;
-    }
     return (
       <>
         {sentinel}
