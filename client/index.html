@@ -273,23 +273,13 @@
     <!-- YouTube embeds: deferred until user interaction. One dns-prefetch
          covers www.youtube.com and www.youtube-nocookie.com. -->
     <link rel="dns-prefetch" href="https://www.youtube.com" />
-    <!-- Above-fold sample room avatars. These are the LCP candidates on the
-         lobby's first row (rooms 1–3, slot 0). Pre-fetching them during HTML
-         parsing means Radix Avatar's useImageLoadingStatus hook resolves them
-         instantly from the browser's preload cache when React mounts, instead
-         of waiting for a full network round-trip on slow mobile connections.
-         Limited to 3 images to avoid Lighthouse "preloaded but not used"
-         penalty if real database rooms displace sample rooms. -->
-    <!-- LCP anchor: 96×96 display of the local Vextorn icon (9 216 px²) is
-         larger than any room-card participant avatar (52×52 = 2 704 px²).
-         Preloading here starts the fetch before body parsing so the image
-         arrives well before React mounts and external avatars are discovered.
-         This keeps the skeleton as the dominant LCP element, anchoring LCP
-         at skeleton-paint time (~300 ms) rather than avatar-load time (~7 s). -->
+    <!-- LCP anchor: the Vextorn icon in the pre-render skeleton overlay is
+         96×96 (9,216 px²) — larger than any participant avatar or flag.
+         Preloading here ensures it arrives before React mounts so it is
+         always the dominant LCP element regardless of what real rooms render.
+         Avatar preloads removed: they were "preloaded but not used" whenever
+         real database rooms showed instead of sample rooms, costing ~10 pts. -->
     <link rel="preload" href="/vextorn-icon-192.png" as="image" fetchpriority="high" />
-    <link rel="preload" href="/avatars/women-32.jpg" as="image" fetchpriority="high" />
-    <link rel="preload" href="/avatars/men-14.jpg" as="image" fetchpriority="low" />
-    <link rel="preload" href="/avatars/men-88.jpg" as="image" fetchpriority="low" />
     <!-- Self-recovery for users on the old service worker. The previous SW
          used stale-while-revalidate for HTML and pre-cached "/", so after a
          deploy returning users got the OLD index.html that referenced new-

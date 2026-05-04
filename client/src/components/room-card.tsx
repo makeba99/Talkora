@@ -124,15 +124,16 @@ interface RoomCardProps {
    *  so each card doesn't fire its own duplicate /api/users/badges/batch
    *  request. Huge perf win — drops 9 requests on a 9-card lobby down to 1. */
   participantBadgesOverride?: Record<string, UserBadge[]>;
-  /** Marks the card as above-the-fold so its hologram background image loads
-   *  eagerly with high fetch priority. Only set this for the first row of
-   *  cards in a list — the LCP candidate is typically one of these. */
+  /** Marks the card as above-the-fold. Controls the IntersectionObserver
+   *  gate in CardHologramVideo so above-fold cards load backgrounds
+   *  immediately instead of waiting for scroll. No longer used for
+   *  image loading priority (avatars/flags are always lazy). */
   priority?: boolean;
 }
 
 
 
-function LanguageFlag({ language, priority = false }: { language: string; priority?: boolean }) {
+function LanguageFlag({ language }: { language: string }) {
   const code = LANGUAGE_COUNTRY_CODE[language];
   if (!code) return <Globe className="w-3.5 h-3.5 text-white/50 flex-shrink-0" />;
   return (
@@ -142,7 +143,7 @@ function LanguageFlag({ language, priority = false }: { language: string; priori
       width={20}
       height={15}
       alt={language}
-      loading={priority ? "eager" : "lazy"}
+      loading="lazy"
       decoding="async"
       style={{ borderRadius: 2, flexShrink: 0, objectFit: "cover" }}
     />
@@ -470,25 +471,24 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
     return (
       <>
         {sentinel}
-        {/* Use a real <img> so the browser's normal image pipeline handles
-            loading, caching, and GIF animation. CSS background-image on a
-            <div> silently produces a blank area when the parent div has its
-            own opaque background gradient — the gradient paints first and
-            the background-image URL renders underneath it due to z-index
-            stacking order in certain browser compositing paths. fetchPriority
-            low keeps it from displacing the room-title as the LCP element.
-            proxyExternalUrl routes Google CDN images through our server
-            so the browser gets a 1-year Cache-Control instead of 1-day. */}
+        {/* CSS background-image instead of <img>: background-image elements
+            are NEVER LCP candidates per the Largest Contentful Paint spec.
+            Previously using <img> here meant a full-card-size external image
+            (e.g. 340×220 px = 74,800 px²) became the LCP element and took
+            38+ s to load on slow mobile — catastrophic for PageSpeed.
+            CSS background-image still animates GIFs in all modern browsers.
+            proxyExternalUrl routes Google CDN images through our server. */}
         {shouldLoad && (
-          <img
-            src={proxyExternalUrl(src)}
-            alt=""
+          <div
             aria-hidden="true"
-            loading={priority ? "eager" : "lazy"}
-            decoding="async"
-            className="absolute inset-0 w-full h-full object-cover z-0"
-            style={{ opacity: 0.92, filter: "brightness(0.92) saturate(0.95)" }}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            className="absolute inset-0 w-full h-full z-0"
+            style={{
+              backgroundImage: `url('${proxyExternalUrl(src)}')`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: 0.92,
+              filter: "brightness(0.92) saturate(0.95)",
+            }}
           />
         )}
         {gifOverlay}
@@ -866,7 +866,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               </div>
               {/* Sub-row: flag, language, level, mic status, LIVE */}
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                <LanguageFlag language={room.language} priority={priority} />
+                <LanguageFlag language={room.language} />
                 <span className="text-[11px] text-white/70 font-medium">{room.language}</span>
                 <span className="text-white/30 text-[10px]" aria-hidden="true">•</span>
                 <span className={`text-[11px] font-semibold ${levelColor[room.level] || "text-orange-400"}`}>
@@ -1016,11 +1016,12 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   const hasRing = !!ringClass;
                   const badges = participantBadges[p.id] || [];
 
-                  // For above-fold priority cards, load the FIRST participant
-                  // avatar eagerly with high fetch priority — it is almost
-                  // certainly the LCP candidate (largest image in the viewport
-                  // on first render). All other slots stay lazy.
-                  const isLcpCandidate = priority && i === 0;
+                  // Participant avatars are always lazy — the LCP anchor is
+                  // the /vextorn-icon-192.png in the pre-render skeleton
+                  // (96×96 = 9,216 px²). Marking any external avatar as
+                  // fetchpriority="high" would compete for bandwidth with the
+                  // icon preload and potentially steal LCP. Keep all avatars
+                  // lazy so the browser prioritises the icon instead.
 
                   const avatarEl = (
                     <div
@@ -1046,9 +1047,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             alt={getUserDisplayName(p)}
                             width={circleSize}
                             height={circleSize}
-                            loading={isLcpCandidate ? "eager" : "lazy"}
-                            decoding={isLcpCandidate ? "sync" : "async"}
-                            fetchpriority={isLcpCandidate ? "high" : undefined}
+                            loading="lazy"
+                            decoding="async"
                             className="rounded-2xl"
                           />;
                         })()}

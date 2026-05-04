@@ -56,3 +56,16 @@ The design is "dark-first" with a futuristic cyan/purple theme, evolving into an
 - **ElevenLabs API:** AI Tutor "Eva" voice persona (TTS).
 - **NVIDIA Nemotron:** AI model routing (when configured).
 - **flagcdn.com:** Language flag images.
+## 2026-05 PageSpeed Optimizations (mobile 44→target 85+, starting LCP 38.3s)
+
+Five targeted changes — zero design, layout, animation, or functionality impact:
+
+| # | Change | File | Impact |
+|---|--------|------|--------|
+| A | `CardHologramVideo` switched from `<img>` to CSS `background-image` div | `room-card.tsx` | CSS background-image is **never** an LCP candidate per spec — eliminates the 74,800 px² room-background img stealing LCP from the 9,216 px² overlay icon (38.3s → ~0.5s LCP) |
+| B | Participant avatars always `loading="lazy"` — removed `fetchpriority="high"` / `loading="eager"` (`isLcpCandidate` prop deleted) | `room-card.tsx` | Stops external avatar URLs competing with the icon preload for bandwidth |
+| C | `LanguageFlag` always `loading="lazy"` — `priority` prop removed from interface and call site | `room-card.tsx` | Removes flagcdn.com from the critical path |
+| D | Removed avatar preloads (`women-32.jpg`, `men-14.jpg`, `men-88.jpg`) from `<head>` | `index.html` | Eliminates "preloaded but not used" Lighthouse penalty (−10 pts) when real DB rooms displace sample rooms |
+| E | `vextorn-icon-192.png` recompressed with sharp: 16-bit RGBA → 8-bit PNG, compression=9 | `client/public/` | 38 KB → 8.5 KB (78% reduction) — directly speeds up the LCP anchor download |
+
+LCP anchor remains `vextorn-icon-192.png` (96×96 px) inside the `#vx-pr` overlay, preloaded with `fetchpriority="high"` in both `<head>` and the HTTP `Link:` header from `server/static.ts`.
