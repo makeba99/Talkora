@@ -719,6 +719,8 @@ function ParticipantCard({
               alt="YouTube thumbnail"
               loading="lazy"
               decoding="async"
+              width={480}
+              height={360}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             {/* Gradient scrim so the profile strip is always legible */}
@@ -756,6 +758,8 @@ function ParticipantCard({
               alt="Movie poster"
               loading="lazy"
               decoding="async"
+              width={300}
+              height={450}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             ) : (
@@ -797,6 +801,8 @@ function ParticipantCard({
               alt="Movie poster"
               loading="lazy"
               decoding="async"
+              width={300}
+              height={450}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             {/* Gradient scrim */}
@@ -831,6 +837,8 @@ function ParticipantCard({
             alt={getUserDisplayName(p)}
             loading="lazy"
             decoding="async"
+            width={200}
+            height={200}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
@@ -6338,6 +6346,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           key={i}
                           src={url}
                           alt={mediaTypes[i] === "gif" ? "Announcement GIF" : "Announcement image"}
+                          loading="lazy"
+                          decoding="async"
+                          width={480}
+                          height={192}
                           className="w-full rounded-lg object-cover max-h-48"
                           data-testid={`img-announcement-media-chat-${msg.id}-${i}`}
                         />
@@ -7353,6 +7365,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             decoding="async"
                             src={movie.poster}
                             alt={movie.title}
+                            width={56}
+                            height={84}
                             className="w-14 h-[84px] rounded-lg object-cover flex-shrink-0 bg-muted group-hover:scale-[1.02] transition-transform duration-300"
                           />
                         ) : (
@@ -7427,6 +7441,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             decoding="async"
                             src={movie.poster}
                             alt={movie.title}
+                            width={48}
+                            height={72}
                             className="w-12 h-[72px] rounded-lg object-cover flex-shrink-0 bg-muted group-hover:scale-[1.02] transition-transform duration-300"
                           />
                         ) : (
@@ -8538,6 +8554,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <img
                       src={theme.img}
                       alt={theme.label}
+                      width={120}
+                      height={52}
                       className="w-full h-[52px] object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).style.display = "none";
@@ -8678,6 +8696,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       <img
                         src={theme.img}
                         alt={theme.label}
+                        width={120}
+                        height={52}
                         className="w-full h-[52px] object-cover"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).style.display = "none";
@@ -8768,6 +8788,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <img
                       src={editHologramUrl}
                       alt="Selected media"
+                      width={56}
+                      height={56}
                       className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
                       data-testid="img-edit-card-media-preview"
                     />
@@ -9363,6 +9385,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <img
                   src={thumb}
                   alt="Now playing"
+                  width={480}
+                  height={360}
                   className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/ytpreview:opacity-75 transition-opacity"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/55" />
@@ -11820,6 +11844,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               <img
                 src={lightboxMedia.url}
                 alt="media"
+                width={800}
+                height={600}
                 className="max-w-full max-h-[70vh] rounded-xl object-contain shadow-2xl"
               />
               <div className="flex items-center gap-2">

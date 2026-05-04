@@ -84,6 +84,8 @@ export function AiTutorFace({ gender, viseme, speaking, personaName }: AiTutorFa
       <img
         src={imgSrc}
         alt={`${gender} AI tutor`}
+        width={400}
+        height={400}
         style={{
           position: "relative",
           width: "100%",

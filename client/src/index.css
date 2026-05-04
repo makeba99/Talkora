@@ -4287,6 +4287,15 @@ html.synthwave .neon-text {
     inset -3px -3px 7px rgba(255, 235, 215, 0.03),
     0 0 0 1px hsl(var(--neu-orange) / 0.18);
 }
+.neu-pill:focus-visible {
+  outline: none;
+  box-shadow:
+    -5px -5px 12px rgba(255, 235, 215, 0.045),
+    6px 6px 14px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 235, 215, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    0 0 0 2px hsl(var(--neu-orange) / 0.75);
+}
 .neu-pill[data-active="true"],
 .neu-pill.is-active {
   color: #fff;
@@ -7453,6 +7462,15 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 }
 .filter-chip:active {
   transform: translateY(0);
+}
+.filter-chip:focus-visible {
+  outline: none;
+  border-color: hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.85);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 4px 10px rgba(0, 0, 0, 0.35),
+    0 0 0 2px hsl(var(--tone-h) var(--tone-s) var(--tone-l) / 0.6);
 }
 .filter-chip-icon {
   display: inline-flex;

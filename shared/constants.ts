@@ -76,6 +76,16 @@ export const BADGE_TYPES = {
 
 export type BadgeType = keyof typeof BADGE_TYPES;
 
+export const FLAG_EMOJI: Record<string, string> = {
+  English: "🇬🇧", Spanish: "🇪🇸", French: "🇫🇷", German: "🇩🇪",
+  Japanese: "🇯🇵", Chinese: "🇨🇳", Korean: "🇰🇷", Portuguese: "🇧🇷",
+  Arabic: "🇸🇦", Hindi: "🇮🇳", Russian: "🇷🇺", Italian: "🇮🇹",
+  Dutch: "🇳🇱", Turkish: "🇹🇷", Polish: "🇵🇱", Swedish: "🇸🇪",
+  Norwegian: "🇳🇴", Danish: "🇩🇰", Finnish: "🇫🇮", Greek: "🇬🇷",
+  Hebrew: "🇮🇱", Ukrainian: "🇺🇦", Romanian: "🇷🇴", Hungarian: "🇭🇺",
+  Armenian: "🇦🇲", Indonesian: "🇮🇩",
+};
+
 export const LANGUAGES = [
   "All",
   "English",

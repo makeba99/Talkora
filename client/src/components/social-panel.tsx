@@ -252,8 +252,11 @@ function UserProfileDialog({
                   <img
                     src={ytThumb}
                     alt="Currently watching"
+                    width={480}
+                    height={270}
                     className="w-full h-full object-cover opacity-80"
                     loading="lazy"
+                    decoding="async"
                   />
                 )}
                 <div className="absolute inset-0 flex items-center justify-center">

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Flag, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -88,6 +89,7 @@ export function ReportDialog({
           overflow: "hidden",
         }}
       >
+        <VisuallyHidden><DialogTitle>Report User</DialogTitle></VisuallyHidden>
         {/* ── Fixed header ── */}
         <div
           className="flex-shrink-0 px-5 py-3 flex items-center gap-3"

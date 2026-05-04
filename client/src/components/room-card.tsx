@@ -29,6 +29,7 @@ import { useTheme } from "@/lib/theme";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Room, User, Follow, UserBadge } from "@shared/schema";
+import { FLAG_EMOJI } from "@shared/constants";
 
 /* ─── Module-level viewport singleton ─────────────────────────────────────
  * Each RoomCard previously installed its own window resize listener.
@@ -130,15 +131,6 @@ interface RoomCardProps {
 }
 
 
-const FLAG_EMOJI: Record<string, string> = {
-  English: "🇬🇧", Spanish: "🇪🇸", French: "🇫🇷", German: "🇩🇪",
-  Japanese: "🇯🇵", Chinese: "🇨🇳", Korean: "🇰🇷", Portuguese: "🇧🇷",
-  Arabic: "🇸🇦", Hindi: "🇮🇳", Russian: "🇷🇺", Italian: "🇮🇹",
-  Dutch: "🇳🇱", Turkish: "🇹🇷", Polish: "🇵🇱", Swedish: "🇸🇪",
-  Norwegian: "🇳🇴", Danish: "🇩🇰", Finnish: "🇫🇮", Greek: "🇬🇷",
-  Hebrew: "🇮🇱", Ukrainian: "🇺🇦", Romanian: "🇷🇴", Hungarian: "🇭🇺",
-  Armenian: "🇦🇲", Indonesian: "🇮🇩",
-};
 
 function LanguageFlag({ language, priority = false }: { language: string; priority?: boolean }) {
   const emoji = FLAG_EMOJI[language];

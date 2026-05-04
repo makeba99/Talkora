@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { LANGUAGES, LEVELS, SPECIALIZATIONS } from "@shared/constants";
+import { LANGUAGES, LEVELS, SPECIALIZATIONS, FLAG_EMOJI } from "@shared/constants";
 import type { Teacher, Booking, TeacherApplication } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,15 +70,6 @@ type ReviewWithUser = {
 
 type BookingWithTeacher = Booking & { teacher: Teacher | null };
 
-const FLAG_EMOJI: Record<string, string> = {
-  English: "🇬🇧", Spanish: "🇪🇸", French: "🇫🇷", German: "🇩🇪",
-  Japanese: "🇯🇵", Chinese: "🇨🇳", Korean: "🇰🇷", Portuguese: "🇧🇷",
-  Arabic: "🇸🇦", Hindi: "🇮🇳", Russian: "🇷🇺", Italian: "🇮🇹",
-  Dutch: "🇳🇱", Turkish: "🇹🇷", Polish: "🇵🇱", Swedish: "🇸🇪",
-  Norwegian: "🇳🇴", Danish: "🇩🇰", Finnish: "🇫🇮", Greek: "🇬🇷",
-  Hebrew: "🇮🇱", Ukrainian: "🇺🇦", Romanian: "🇷🇴", Hungarian: "🇭🇺",
-  Armenian: "🇦🇲", Indonesian: "🇮🇩",
-};
 
 function LanguageFlag({ language }: { language: string }) {
   const emoji = FLAG_EMOJI[language];

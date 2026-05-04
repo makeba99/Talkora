@@ -69,7 +69,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket-context";
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LANGUAGES } from "@shared/constants";
+import { LANGUAGES, FLAG_EMOJI } from "@shared/constants";
 import type { Announcement, Follow, Room, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
@@ -1830,8 +1830,12 @@ export default function Lobby() {
                           data-testid={`suggest-language-${lang.toLowerCase()}`}
                           aria-label={`Filter by language: ${lang}`}
                         >
-                          <span className="search-suggest-item-icon search-suggest-item-icon-lang">
-                            <Globe className="w-3.5 h-3.5" />
+                                  <span className="search-suggest-item-icon search-suggest-item-icon-lang" aria-hidden="true">
+                            {FLAG_EMOJI[lang] ? (
+                              <span style={{ fontSize: "14px", lineHeight: 1 }}>{FLAG_EMOJI[lang]}</span>
+                            ) : (
+                              <Globe className="w-3.5 h-3.5" />
+                            )}
                           </span>
                           <span className="search-suggest-item-body">
                             <span className="search-suggest-item-title">{lang}</span>
@@ -1953,6 +1957,9 @@ export default function Lobby() {
                   <span className="filter-chip-label">Languages</span>
                   {selectedLanguage !== "All" && (
                     <span className="filter-chip-meta" data-testid="badge-active-language">
+                      {FLAG_EMOJI[selectedLanguage] && (
+                        <span aria-hidden="true" style={{ fontSize: "12px", lineHeight: 1 }}>{FLAG_EMOJI[selectedLanguage]}</span>
+                      )}
                       {selectedLanguage}
                     </span>
                   )}
@@ -1988,6 +1995,11 @@ export default function Lobby() {
                   } : undefined}
                   data-testid={`tab-language-${lang.toLowerCase()}`}
                 >
+                  {FLAG_EMOJI[lang] ? (
+                    <span role="img" aria-label={lang} style={{ fontSize: "13px", lineHeight: 1 }} className="select-none">
+                      {FLAG_EMOJI[lang]}
+                    </span>
+                  ) : null}
                   {lang}
                   <span
                     className="text-[11px] font-bold min-w-4 text-center"
