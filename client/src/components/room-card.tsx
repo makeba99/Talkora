@@ -44,6 +44,20 @@ let _vpWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
 const _vpSubs = new Set<() => void>();
 let _vpInstalled = false;
 
+// Module-level MediaQueryList singletons — created once when the module loads
+// instead of inside the render function. Previously `window.matchMedia` was
+// called twice per CardHologramVideo render, meaning 6–9 redundant queries
+// per paint cycle with multiple cards on screen. Singleton avoids that cost.
+const _mqlCoarse = typeof window !== "undefined"
+  ? window.matchMedia("(max-width: 767px), (pointer: coarse)")
+  : null;
+const _mqlReduced = typeof window !== "undefined"
+  ? window.matchMedia("(prefers-reduced-motion: reduce)")
+  : null;
+function _getSkipMotion(): boolean {
+  return (_mqlCoarse?.matches ?? false) || (_mqlReduced?.matches ?? false);
+}
+
 function subscribeVpResize(cb: () => void): () => void {
   if (!_vpInstalled && typeof window !== "undefined") {
     window.addEventListener(
@@ -141,7 +155,16 @@ function LanguageFlag({ language, priority = false }: { language: string; priori
   );
 }
 
+const _themeGlowCache = new Map<string, { from: string; to: string; ring: string; animated?: string }>();
 function getThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string; animated?: string } {
+  const key = themeId ?? "";
+  const cached = _themeGlowCache.get(key);
+  if (cached) return cached;
+  const result = _computeThemeGlowColor(themeId);
+  _themeGlowCache.set(key, result);
+  return result;
+}
+function _computeThemeGlowColor(themeId: string | null | undefined): { from: string; to: string; ring: string; animated?: string } {
   switch (themeId) {
     case "premium-atmosphere": return { from: "rgba(0,210,255,1)",    to: "rgba(120,50,255,1)",     ring: "rgba(0,210,255,0.95), rgba(130,50,255,0.95), rgba(80,180,255,0.95)", animated: "premium-atmosphere-border-wrap" };
     /* ── Premium Animated Themes ── */
@@ -363,23 +386,7 @@ function buildYoutubeEmbed(id: string) {
   return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&rel=0`;
 }
 
-/**
- * Returns true if the URL is served by Tenor's CDN.
- * Tenor backgrounds are routed through the proxy which rewrites GIF → MP4
- * server-side, so they must render as <video>, not <img>.
- */
-function isTenorUrl(src: string): boolean {
-  const lower = src.toLowerCase();
-  return lower.includes("media.tenor.com")
-    || lower.includes("c.tenor.com")
-    || lower.includes("/tenor/");
-}
-
 function isImageMedia(src: string): boolean {
-  // Treat anything that ends in a static-image extension as an <img>.
-  // Tenor URLs are intentionally excluded — the proxy rewrites .gif → .mp4
-  // and serves video/mp4, so they must go through the <video> branch below.
-  if (isTenorUrl(src)) return false;
   const cleaned = src.split("?")[0].toLowerCase();
   return /\.(gif|png|jpe?g|webp|avif|bmp)$/.test(cleaned);
 }
@@ -459,10 +466,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   const ytId = extractYoutubeId(src) || (src.includes("youtube.com/embed/") ? src.split("/embed/")[1]?.split("?")[0] : null);
   // Only video/iframe playback is throttled on phones — images are essentially
   // free, so we keep them visible everywhere.
-  const skipMotion = typeof window !== "undefined" && (
-    window.matchMedia?.("(max-width: 767px), (pointer: coarse)").matches === true
-    || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
-  );
+  const skipMotion = _getSkipMotion();
 
   // Sentinel div is always rendered so the IntersectionObserver can observe it
   // even before any media mounts. Invisible to users (absolute inset-0, z-0).
@@ -491,36 +495,6 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
             className="absolute inset-0 w-full h-full object-cover z-0"
             style={{ opacity: 0.92, filter: "brightness(0.92) saturate(0.95)" }}
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
-        )}
-        {gifOverlay}
-      </>
-    );
-  }
-
-  // Tenor URLs: the proxy rewrites .gif → .mp4 server-side (5–10× smaller).
-  // We use <video autoPlay loop muted> to play the MP4 bytes correctly.
-  //
-  // IMPORTANT: no skipMotion check here. Tenor backgrounds previously went
-  // through the <img> branch (isImageMedia returned true for Tenor) which has
-  // no skipMotion gate — they always showed on all devices including mobile.
-  // Keeping the same unconditional behaviour preserves the original design on
-  // every viewport; the only change is bytes-on-the-wire (MP4 vs GIF).
-  if (isTenorUrl(src)) {
-    return (
-      <>
-        {sentinel}
-        {shouldLoad && (
-          <video
-            src={proxyExternalUrl(src)}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload={priority ? "auto" : "metadata"}
-            className="absolute inset-0 w-full h-full object-cover z-0"
-            style={{ opacity: 0.92, filter: "brightness(0.92) saturate(0.95)" }}
-            onError={(e) => { (e.currentTarget as HTMLVideoElement).style.display = "none"; }}
           />
         )}
         {gifOverlay}
@@ -853,7 +827,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           // z-0) is actually visible. Without this the opaque gradient paints
           // over the image and the card looks blank. For video/YouTube we keep
           // the dark gradient as a fallback while the media loads.
-          background: hologramVideoUrl && (isImageMedia(hologramVideoUrl) || isTenorUrl(hologramVideoUrl))
+          background: hologramVideoUrl && isImageMedia(hologramVideoUrl)
             ? "transparent"
             : isPremiumAtmosphere
               ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
