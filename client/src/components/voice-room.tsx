@@ -794,17 +794,23 @@ function ParticipantCard({
               </div>
             </div>
           </>
-        ) : isMovieWatcherBadge && watchingMoviePoster ? (
+        ) : isMovieWatcherBadge ? (
           <>
-            <img
-              src={watchingMoviePoster}
-              alt="Movie poster"
-              loading="lazy"
-              decoding="async"
-              width={300}
-              height={450}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
+            {watchingMoviePoster ? (
+              <img
+                src={watchingMoviePoster}
+                alt="Movie poster"
+                loading="lazy"
+                decoding="async"
+                width={300}
+                height={450}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-violet-900 to-indigo-900 flex items-center justify-center">
+                <Film className="w-10 h-10 text-violet-300/70" />
+              </div>
+            )}
             {/* Gradient scrim */}
             <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none z-[24]" />
             {/* Profile strip — always visible at bottom */}
@@ -5692,6 +5698,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return;
     }
 
+    // Clicking your own card while watching a movie (as a watcher, not host)
+    // closes the movie just for you — same as pressing the X button.
+    if (!isClickingOther && activeMovieId && showMovie && user?.id !== movieStartedBy) {
+      setShowMovie(false);
+      setActiveMovieId(null);
+      setMovieStartedBy(null);
+      socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false });
+      return;
+    }
+
     setFocusedUserId(prev => prev === peerId ? null : peerId);
   };
 
@@ -9079,9 +9095,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
+        {/* ── Room GIF/image background ── */}
+        {((room as any).hologramVideoUrl) && (() => {
+          const holoUrl = (room as any).hologramVideoUrl as string;
+          if (/\.(gif|png|jpe?g|webp|avif)(\?|#|$)/i.test(holoUrl) || holoUrl.includes("tenor.com") || holoUrl.includes("giphy.com") || holoUrl.includes("media.tenor")) {
+            return (
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 z-0 pointer-events-none"
+                style={{
+                  backgroundImage: `url('${holoUrl}')`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  opacity: 0.18,
+                  filter: "brightness(0.85) saturate(0.9)",
+                }}
+              />
+            );
+          }
+          return null;
+        })()}
         <div
-          className="border-b px-3 py-2"
+          className="border-b px-3 py-2 relative z-[1]"
           style={{
             background: "linear-gradient(180deg, hsl(228 14% 10% / 0.97) 0%, hsl(228 14% 8% / 0.94) 100%)",
             backdropFilter: "blur(24px) saturate(1.3)",
@@ -9414,6 +9450,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               style={moviePlayerHeight ? { height: moviePlayerHeight, flexShrink: 0 } : { flex: 1, minHeight: 0 }}
               data-testid="media-main-movie"
             >
+              {/* Always-visible close X for non-host watchers */}
+              {user?.id !== movieStartedBy && (
+                <button
+                  onClick={() => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false }); }}
+                  className="absolute top-2 right-2 z-30 w-7 h-7 rounded-full bg-black/70 hover:bg-red-500/80 text-white flex items-center justify-center border border-white/20 shadow-md transition-colors"
+                  data-testid="button-close-movie-self"
+                  title="Close movie (just for me)"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
               {/* Title bar — revealed on hover */}
               <div
                 className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2.5 opacity-0 hover:opacity-100 transition-opacity duration-200"
@@ -9439,7 +9486,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </button>
                 ) : (
                   <button
-                    onClick={() => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); }}
+                    onClick={() => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false }); }}
                     className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-medium transition-colors"
                     data-testid="button-hide-movie-main"
                   >
