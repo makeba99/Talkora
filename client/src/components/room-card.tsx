@@ -873,16 +873,25 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
         style={{
           borderRadius: "24px",
-          // When a GIF/image hologram is active the background must be
-          // transparent so the <img> inside CardHologramVideo (absolute inset-0
-          // z-0) is actually visible. Without this the opaque gradient paints
-          // over the image and the card looks blank. For video/YouTube we keep
-          // the dark gradient as a fallback while the media loads.
+          // For GIF/image holograms: apply the background-image directly on
+          // this div so overflow:hidden + border-radius clip it correctly and
+          // no CSS stacking-context or containing-block quirks from the outer
+          // wrapper's `contain: layout style` can hide it. A dark solid color
+          // is the fallback while the image loads or if it fails.
+          // For video/YouTube: keep the dark gradient so the card looks fine
+          // while the iframe/video loads inside CardHologramVideo.
           background: hologramVideoUrl && isImageMedia(hologramVideoUrl)
-            ? "transparent"
+            ? "rgb(5, 8, 20)"
             : isPremiumAtmosphere
               ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
               : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
+          ...(hologramVideoUrl && isImageMedia(hologramVideoUrl)
+            ? {
+                backgroundImage: `url("${proxyExternalUrl(hologramVideoUrl).replace(/"/g, "%22")}")`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : {}),
           height: isPremiumAtmosphere ? 268 : 252,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
