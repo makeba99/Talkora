@@ -3027,7 +3027,11 @@ export async function registerRoutes(
         roomRoles.delete(room.id);
         roomMuteStatus.delete(room.id);
         roomMessageReactions.delete(room.id);
-        io.to(room.id).emit("room:deleted", { roomId: room.id });
+        // Broadcast to ALL clients (including lobby watchers) so the room card
+        // disappears instantly instead of waiting for the next SSE/refetch.
+        // Previously this used io.to(room.id) which only reached users already
+        // inside the room socket — lobby viewers never received the event.
+        io.emit("room:deleted", { roomId: room.id });
       }
 
       const socketId = userSockets.get(userId);
@@ -3044,7 +3048,6 @@ export async function registerRoutes(
 
       await storage.deleteUser(userId);
       io.emit("presence:online", Array.from(onlineUsers));
-      io.emit("room:deleted", { userIds: [userId] });
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
