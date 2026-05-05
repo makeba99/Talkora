@@ -874,24 +874,27 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         style={{
           borderRadius: "24px",
           // For GIF/image holograms: apply the background-image directly on
-          // this div so overflow:hidden + border-radius clip it correctly and
-          // no CSS stacking-context or containing-block quirks from the outer
-          // wrapper's `contain: layout style` can hide it. A dark solid color
-          // is the fallback while the image loads or if it fails.
-          // For video/YouTube: keep the dark gradient so the card looks fine
+          // this div so overflow:hidden + border-radius clip it correctly.
+          // IMPORTANT: use backgroundColor (not the `background` shorthand)
+          // for the fallback color. The `background` shorthand resets
+          // background-image to `none`, which cancels out the backgroundImage
+          // longhand set alongside it — causing GIFs to be invisible.
+          // Using backgroundColor leaves backgroundImage untouched.
+          // For video/YouTube: use the dark gradient so the card looks fine
           // while the iframe/video loads inside CardHologramVideo.
-          background: hologramVideoUrl && isImageMedia(hologramVideoUrl)
-            ? "rgb(5, 8, 20)"
-            : isPremiumAtmosphere
-              ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
-              : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
           ...(hologramVideoUrl && isImageMedia(hologramVideoUrl)
             ? {
+                backgroundColor: "rgb(5, 8, 20)",
                 backgroundImage: `url("${proxyExternalUrl(hologramVideoUrl).replace(/"/g, "%22")}")`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
               }
-            : {}),
+            : {
+                background: isPremiumAtmosphere
+                  ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
+                  : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
+              }),
           height: isPremiumAtmosphere ? 268 : 252,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
