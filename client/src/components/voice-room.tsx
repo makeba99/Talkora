@@ -1072,7 +1072,7 @@ function ParticipantCard({
           </div>
         ) : null)}
 
-        {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && (
+        {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && !avatarGifUrl && (
           <div className="absolute bottom-1 right-1 z-20 drop-shadow-md">
             {p.isMuted ? (
               <MicOff className="w-4 h-4 text-white opacity-80" />
@@ -3917,13 +3917,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Mic locked", description: talkLockReason || "Talking is disabled in this room.", variant: "destructive" });
       return;
     }
+    const newMuted = !isMuted;
     if (localStream.current) {
       localStream.current.getAudioTracks().forEach((track) => {
-        track.enabled = isMuted;
+        track.enabled = !newMuted;
       });
     }
-    setIsMuted(!isMuted);
-    socket?.emit("room:mute", { roomId: room.id, userId: user?.id, isMuted: !isMuted });
+    // Keep screen-share system audio in sync with the mute state so peers
+    // never hear screen audio while the user's mic is muted.
+    if (screenStream.current) {
+      screenStream.current.getAudioTracks().forEach((track) => {
+        track.enabled = !newMuted;
+      });
+    }
+    setIsMuted(newMuted);
+    socket?.emit("room:mute", { roomId: room.id, userId: user?.id, isMuted: newMuted });
   };
 
   const retryMicPermission = async () => {
@@ -4864,6 +4872,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // existing screen-share WebRTC infrastructure. Called by handleScreenShare.
   const _activateShareStream = async (stream: MediaStream, cameraFallback = false) => {
     screenStream.current = stream;
+    // Respect the current mute state: if the user is muted when they start
+    // sharing, disable the screen-share audio track immediately so peers
+    // never hear system audio while the sharer's mic is silenced.
+    if (isMutedRef.current) {
+      stream.getAudioTracks().forEach((t) => { t.enabled = false; });
+    }
     setIsScreenSharing(true);
     setIsCameraShareMode(cameraFallback);
     socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: true });
