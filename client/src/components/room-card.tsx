@@ -452,15 +452,18 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   // clearly visible — the heavy 44–58% dark scrim was the reason GIF backgrounds
   // appeared almost invisible (they rendered at only ~43% brightness).
 
-  // IntersectionObserver gate: above-fold (priority) cards load immediately;
-  // below-fold cards don't fetch ANY media until they scroll near the viewport.
-  // This is the single biggest payload reduction — GIF/image backgrounds can be
-  // several MB each, and native loading="lazy" fetches too eagerly (starts
-  // loading ~2 viewports away). Our observer uses rootMargin:"200px" so the
-  // media starts loading just before the card enters view — imperceptible to
-  // the user, but invisible to Lighthouse which measures only above-fold cost.
+  // IntersectionObserver gate: applies only to video/YouTube (heavy) media.
+  // Images/GIFs are always eager-loaded regardless of scroll position because:
+  //   1. GIFs are typically <1 MB and render immediately via the proxy cache.
+  //   2. CSS containment contexts (contain: layout style / layout paint) on
+  //      ancestor wrappers can prevent IntersectionObserver from firing, so
+  //      relying on it for above-fold image cards caused them to never load.
+  //   3. LCP: CSS background-image is never an LCP candidate regardless of
+  //      loading strategy, so there is no PageSpeed penalty for eager loading.
+  // For video/YouTube (potentially many MB), we keep the observer gate so
+  // off-screen cards don't hammer the network on initial page load.
   const containerRef = useRef<HTMLDivElement>(null);
-  const [shouldLoad, setShouldLoad] = useState(priority);
+  const [shouldLoad, setShouldLoad] = useState(isImageMedia(src) ? true : priority);
   // imgSrc starts as the proxied URL; falls back to the direct CDN URL if the
   // proxy returns 413 (GIF > 4 MB). Must be declared unconditionally here to
   // satisfy React's Rules of Hooks (no hooks inside conditional branches).
