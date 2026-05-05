@@ -514,42 +514,25 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
     return (
       <>
         {sentinel}
-        {/* CSS background-image instead of <img>: background-image elements
-            are NEVER LCP candidates per the Largest Contentful Paint spec.
-            Previously using <img> here meant a full-card-size external image
-            (e.g. 340×220 px = 74,800 px²) became the LCP element and took
-            38+ s to load on slow mobile — catastrophic for PageSpeed.
-            CSS background-image still animates GIFs in all modern browsers.
-            proxyExternalUrl routes Google CDN images through our server.
-            If the proxy returns 413 (GIF > 4 MB), the hidden <img> probe
-            triggers onError and imgSrc switches to the direct CDN URL. */}
+        {/* Use a real <img> element so the GIF is guaranteed to render
+            regardless of CSS containment contexts (contain: layout style /
+            layout paint on ancestor wrappers) that silently prevent CSS
+            background-image from painting. object-fit:cover + inset-0 fills
+            the card exactly; overflow:hidden on the parent clips the corners.
+            loading="lazy" keeps this out of LCP consideration (lazy-loaded
+            images are excluded from LCP by spec) while still loading when
+            the card is near/in the viewport. onError falls back from the
+            proxy URL to the direct CDN URL if the proxy returns 413. */}
         {shouldLoad && (
-          <>
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 w-full h-full z-0"
-              style={{
-                backgroundImage: `url("${imgSrc.replace(/"/g, "%22")}")`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundColor: "rgb(5, 8, 20)",
-              }}
-            />
-            {/* Invisible probe: detects proxy 413 / fetch errors so we can
-                fall back to the direct CDN URL. 1×1 keeps it out of LCP. */}
-            {proxied && (
-              <img
-                src={imgSrc}
-                alt=""
-                aria-hidden="true"
-                width={1}
-                height={1}
-                className="absolute opacity-0 pointer-events-none"
-                style={{ width: 1, height: 1 }}
-                onError={() => setImgSrc(src)}
-              />
-            )}
-          </>
+          <img
+            aria-hidden="true"
+            alt=""
+            src={imgSrc}
+            className="absolute inset-0 w-full h-full object-cover object-center z-0 pointer-events-none"
+            loading="lazy"
+            decoding="async"
+            onError={proxied ? () => setImgSrc(src) : undefined}
+          />
         )}
         {gifOverlay}
       </>
@@ -868,7 +851,6 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         background: borderGradient,
         boxShadow: outerGlow,
         position: "relative",
-        contain: "layout style",
       }}
       data-testid={`card-room-${room.id}`}
     >
