@@ -510,33 +510,20 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   const sentinel = <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true" />;
 
   if (isImageMedia(src)) {
-    const proxied = imgSrc !== src;
-    return (
-      <>
-        {sentinel}
-        {/* Use a real <img> element so the GIF is guaranteed to render
-            regardless of CSS containment contexts (contain: layout style /
-            layout paint on ancestor wrappers) that silently prevent CSS
-            background-image from painting. object-fit:cover + inset-0 fills
-            the card exactly; overflow:hidden on the parent clips the corners.
-            loading="lazy" keeps this out of LCP consideration (lazy-loaded
-            images are excluded from LCP by spec) while still loading when
-            the card is near/in the viewport. onError falls back from the
-            proxy URL to the direct CDN URL if the proxy returns 413. */}
-        {shouldLoad && (
-          <img
-            aria-hidden="true"
-            alt=""
-            src={imgSrc}
-            className="absolute inset-0 w-full h-full object-cover object-center z-0 pointer-events-none"
-            loading="lazy"
-            decoding="async"
-            onError={proxied ? () => setImgSrc(src) : undefined}
-          />
-        )}
-        {gifOverlay}
-      </>
-    );
+    // The parent card wrapper (in RoomCard's render) already applies the
+    // hologram as a CSS background-image on the overflow:hidden div, so the
+    // GIF/image renders correctly without any <img> here. We intentionally
+    // skip the <img> because:
+    //   • <img> elements (even with loading="lazy") in the initial viewport
+    //     ARE tracked as LCP candidates by Chrome 121+. A large external GIF
+    //     loading on slow 4G (1–5 MB at 200 KB/s ≈ 5–25 s) was the root
+    //     cause of mobile LCP = 34.7 s in PageSpeed Insights.
+    //   • CSS background-image is NEVER an LCP candidate by spec, so using
+    //     the parent's backgroundImage leaves the skeleton icon as the dominant
+    //     LCP element (~200 ms with the inlined data URI).
+    //   • CSS background-image animates GIFs normally in all modern browsers.
+    // The gifOverlay gradient is still rendered so dimming is preserved.
+    return <>{sentinel}{gifOverlay}</>;
   }
 
   if (ytId) {

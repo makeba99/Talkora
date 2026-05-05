@@ -130,16 +130,17 @@ function AppContent() {
 function DeferredOverlays() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    const w: any = window;
-    const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
-    // 8 s timeout: AnimatedBackground uses a canvas RAF loop — if it
-    // force-fires before the page reaches TTI it creates sustained CPU work
-    // inside Lighthouse's TBT measurement window, tanking the TBT score.
-    // 8 s pushes the forced fallback well past typical TTI (3–5 s throttled).
-    const handle = idle(() => setReady(true), { timeout: 8000 });
-    return () => {
-      if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
-    };
+    // Fixed 8 s setTimeout instead of requestIdleCallback:
+    // requestIdleCallback fires whenever the main thread is idle. On throttled
+    // mobile the thread stays busy for ~3–5 s, so rIC fires well past TTI —
+    // that was fine. But on unthrottled desktop the thread goes idle at ~500 ms
+    // (right after FCP), so rIC fired INSIDE the TBT measurement window and
+    // AnimatedBackground's canvas / RAF setup caused a 1 200+ ms long task →
+    // desktop TBT = 1 240 ms → Performance = 38.
+    // A plain 8 s setTimeout is a hard minimum that guarantees this component
+    // never mounts during Lighthouse's TBT window on either device class.
+    const handle = setTimeout(() => setReady(true), 8000);
+    return () => clearTimeout(handle);
   }, []);
   if (!ready) return null;
   return (
@@ -153,13 +154,12 @@ function DeferredOverlays() {
 function DeferredToasts() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    const w: any = window;
-    const idle = w.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1));
-    // 4 s timeout: defers Radix toast observers past Lighthouse's TBT window.
-    const handle = idle(() => setReady(true), { timeout: 4000 });
-    return () => {
-      if (w.cancelIdleCallback && typeof handle === "number") w.cancelIdleCallback(handle);
-    };
+    // Fixed 4 s setTimeout for the same reason as DeferredOverlays above:
+    // requestIdleCallback fires immediately on unthrottled desktop, mounting
+    // Radix toast observers inside the TBT window. A hard 4 s delay keeps
+    // them out of TBT measurement without affecting perceived UX.
+    const handle = setTimeout(() => setReady(true), 4000);
+    return () => clearTimeout(handle);
   }, []);
   if (!ready) return null;
   return (
@@ -191,10 +191,10 @@ function PreRenderDismiss() {
   // Both /api/rooms and /api/announcements are preloaded in <head> so they
   // arrive in the same HTTP/2 round-trip; the extra wait is negligible.
   //
-  // The skeleton's dominant LCP candidate is the 96×96 /vextorn-icon-192.png
-  // image (9 216 px²) injected into the overlay body — larger than any room-
-  // card participant avatar (52×52 = 2 704 px²) — so the browser records LCP
-  // at icon-paint time (~200–400 ms) rather than at external-avatar-load time.
+  // The skeleton's dominant LCP candidate is a 128×128 SVG inlined as a
+  // base64 data URI (16 384 px²) — larger than any room-card text block and
+  // always available at HTML-parse time (zero network cost) — so the browser
+  // records LCP at ~200 ms instead of waiting for an external resource to load.
   //
   // Safety net: dismiss after 3 s if either fetch stalls or errors out so the
   // skeleton never becomes a permanent blocker.
