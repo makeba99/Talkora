@@ -1919,6 +1919,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           r.id === room.id ? { ...r, ...updatedRoom } : r
         );
       });
+      // Cancel any in-flight /api/rooms/mine refetch and sync it with the
+      // mutation result to prevent a stale response from overwriting
+      // hologramVideoUrl back to null via the myOwnRooms useEffect.
+      queryClient.cancelQueries({ queryKey: ["/api/rooms/mine"] });
+      queryClient.setQueryData(["/api/rooms/mine"], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((r: any) => r.id === room.id ? { ...r, ...updatedRoom } : r);
+      });
       setEditDialogOpen(false);
       if (updatedRoom.welcomeMessage !== undefined) setWelcomeText(updatedRoom.welcomeMessage || "");
       if (updatedRoom.welcomeMediaUrls !== undefined) setWelcomeMediaUrlsState(updatedRoom.welcomeMediaUrls || []);

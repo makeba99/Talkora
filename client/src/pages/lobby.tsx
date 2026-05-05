@@ -889,6 +889,16 @@ export default function Lobby() {
       queryClient.setQueryData<any[]>(["/api/rooms"], (old) =>
         old ? (old.some(r => r.id === newRoom.id) ? old : [newRoom, ...old]) : [newRoom]
       );
+      // Also sync the /api/rooms/mine cache so the myOwnRooms useEffect always
+      // has the correct hologramVideoUrl for this room. Without this, a stale
+      // in-flight /api/rooms/mine refetch can complete after onSuccess and
+      // overwrite hologramVideoUrl back to null in the /api/rooms cache.
+      queryClient.cancelQueries({ queryKey: ["/api/rooms/mine"] });
+      queryClient.setQueryData<any[]>(["/api/rooms/mine"], (old = []) =>
+        Array.isArray(old)
+          ? (old.some((r) => r.id === newRoom.id) ? old : [...old, newRoom])
+          : [newRoom]
+      );
       toast({ title: "Room created! Click 'Join & Talk' to enter." });
       import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },

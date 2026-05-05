@@ -105,6 +105,16 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
           r.id === room.id ? { ...r, ...patch } : r
         );
       });
+      // Cancel any in-flight /api/rooms/mine refetch and immediately sync it
+      // with the mutation result. A stale background refetch that was already
+      // in-flight (triggered by a 30s stale-timer or window-focus event) can
+      // complete AFTER onSuccess and overwrite hologramVideoUrl back to null
+      // in the /api/rooms cache via the myOwnRooms useEffect in lobby.tsx.
+      queryClient.cancelQueries({ queryKey: ["/api/rooms/mine"] });
+      queryClient.setQueryData(["/api/rooms/mine"], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((r: any) => r.id === room.id ? { ...r, ...patch } : r);
+      });
       toast({ title: "Room settings saved!" });
       onClose();
     },
