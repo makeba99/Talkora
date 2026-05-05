@@ -62,12 +62,14 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // Each pattern is tagged with its rank; we sort matches by rank so the
   // most critical chunks always appear first regardless of filesystem order.
   const criticalScriptPatterns: Array<{ re: RegExp; rank: number; label: string }> = [
-    { re: /^react-vendor-[\w-]+\.js$/,   rank: 0, label: "react + react-dom + radix-ui + react-query" },
-    { re: /^lobby-[\w-]+\.js$/,          rank: 1, label: "LCP route" },
-    { re: /^ui-components-[\w-]+\.js$/,  rank: 2, label: "shadcn UI wrappers" },
-    { re: /^icons-vendor-[\w-]+\.js$/,   rank: 3, label: "lucide-react lobby icons" },
-    { re: /^app-constants-[\w-]+\.js$/,  rank: 4, label: "shared constants" },
-    { re: /^room-card-[\w-]+\.js$/,      rank: 5, label: "room card (if split)" },
+    { re: /^react-vendor-[\w-]+\.js$/,   rank: 0, label: "react + react-dom + radix-ui" },
+    { re: /^query-vendor-[\w-]+\.js$/,   rank: 1, label: "react-query + query-core" },
+    { re: /^router-vendor-[\w-]+\.js$/,  rank: 2, label: "wouter router" },
+    { re: /^lobby-[\w-]+\.js$/,          rank: 3, label: "LCP route" },
+    { re: /^ui-components-[\w-]+\.js$/,  rank: 4, label: "shadcn UI wrappers" },
+    { re: /^icons-vendor-[\w-]+\.js$/,   rank: 5, label: "lucide-react lobby icons" },
+    { re: /^app-constants-[\w-]+\.js$/,  rank: 6, label: "shared constants" },
+    { re: /^room-card-[\w-]+\.js$/,      rank: 7, label: "room card (if split)" },
   ];
   const criticalStylePatterns: RegExp[] = [
     /^index-[\w-]+\.css$/,            // entry CSS

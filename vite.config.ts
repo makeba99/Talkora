@@ -198,12 +198,33 @@ export default defineConfig({
           ];
           if (RADIX_DEFERRED.some((pkg) => id.includes(pkg))) return "radix-deferred";
 
+          // ── react-query split ────────────────────────────────────────────
+          // @tanstack/react-query + query-core are safe to move out of
+          // react-vendor because they only use React via static ES module
+          // imports. The browser's module linker guarantees react-vendor
+          // executes before query-vendor, so createContext/createRef are
+          // available by the time query-vendor evaluates. Splitting this
+          // out shrinks react-vendor by ~10-12 KB gzipped and lets the
+          // browser's background parser handle both chunks in parallel.
+          if (
+            id.includes("@tanstack/react-query") ||
+            id.includes("@tanstack/query-core")
+          ) {
+            return "query-vendor";
+          }
+
+          // ── wouter split ─────────────────────────────────────────────────
+          // wouter is ~3 KB gzipped and only uses React hooks at call time
+          // (not createContext at module-eval time). Moving it to its own
+          // chunk reduces react-vendor parse cost and allows parallel fetch.
+          if (id.includes("wouter")) {
+            return "router-vendor";
+          }
+
           if (
             id.includes("react-dom") ||
             id.includes("/react/") ||
             id.includes("scheduler") ||
-            id.includes("wouter") ||
-            id.includes("@tanstack/react-query") ||
             id.includes("@radix-ui") ||
             id.includes("@floating-ui")
           ) {
