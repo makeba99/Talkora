@@ -2142,6 +2142,20 @@ export async function registerRoutes(
     }
   });
 
+  // Returns the authenticated user's own rooms regardless of activeUsers.
+  // Used by the lobby to ensure the owner always sees their room card with
+  // the correct hologramVideoUrl even when activeUsers=0 (just created,
+  // owner left temporarily) or when the HTTP cache served stale room data.
+  app.get("/api/rooms/mine", isAuthenticated, async (req: any, res) => {
+    try {
+      const myRooms = await storage.getRoomsByOwner(req.user.id);
+      res.setHeader("Cache-Control", "no-cache");
+      res.json(myRooms.map((r) => roomPublicPayload(r, false)));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/rooms/:id", async (req, res) => {
     try {
       const roomParam = req.params.id;

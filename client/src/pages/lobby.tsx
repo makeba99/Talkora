@@ -667,6 +667,34 @@ export default function Lobby() {
     staleTime: 60_000,
   });
 
+  // Always fetch the owner's own rooms directly from the DB, bypassing the
+  // activeUsers>0 filter used by /api/rooms. This prevents two issues:
+  //   1. staleTime elapsing → refetch removes room (activeUsers=0) from cache
+  //   2. HTTP 304 cache response predating the hologramVideoUrl edit
+  // When this data arrives it is merged into the /api/rooms cache so the
+  // normal rendering path (userOwnedRooms → rooms → filteredRooms → cards)
+  // always has fresh hologramVideoUrl for the owner's room card.
+  const { data: myOwnRooms = [] } = useQuery<Room[]>({
+    queryKey: ["/api/rooms/mine"],
+    enabled: !!user,
+    staleTime: 30_000,
+    refetchInterval: 2 * 60 * 1000,
+  });
+  useEffect(() => {
+    if (myOwnRooms.length === 0) return;
+    queryClient.setQueryData<any[]>(["/api/rooms"], (old) => {
+      if (!old) return myOwnRooms;
+      const myMap = new Map(myOwnRooms.map((r) => [r.id, r]));
+      // Merge fresh owner data into existing cache — prefer /api/rooms/mine
+      // for owner's rooms (always DB-fresh) while keeping all other rooms.
+      const updated = old.map((r: any) =>
+        myMap.has(r.id) ? { ...r, ...myMap.get(r.id) } : r
+      );
+      const brandNew = myOwnRooms.filter((r) => !old.some((o: any) => o.id === r.id));
+      return [...updated, ...brandNew];
+    });
+  }, [myOwnRooms]);
+
   const { data: announcements = [] } = useQuery<LobbyAnnouncement[]>({
     queryKey: ["/api/announcements"],
     refetchInterval: 10 * 60 * 1000,
