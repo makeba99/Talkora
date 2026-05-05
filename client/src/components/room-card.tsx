@@ -385,7 +385,10 @@ function buildYoutubeEmbed(id: string) {
 // Used as a fallback for CDN URLs that lack a file extension.
 const IMAGE_CDN_HOSTNAMES = new Set([
   "media.tenor.com",
+  "media1.tenor.com",
+  "media2.tenor.com",
   "c.tenor.com",
+  "tenor.com",
   "media1.giphy.com",
   "media2.giphy.com",
   "media3.giphy.com",
@@ -411,6 +414,8 @@ function isImageMedia(src: string): boolean {
 
 const PROXIED_HOSTNAMES = new Set([
   "media.tenor.com",
+  "media1.tenor.com",
+  "media2.tenor.com",
   "c.tenor.com",
   "tenor.com",
   "lh3.googleusercontent.com",
@@ -521,12 +526,10 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
               aria-hidden="true"
               className="absolute inset-0 w-full h-full z-0"
               style={{
-                backgroundImage: `url('${imgSrc}')`,
+                backgroundImage: `url("${imgSrc.replace(/"/g, "%22")}")`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundColor: "rgb(5, 8, 20)",
-                opacity: 0.92,
-                filter: "brightness(0.92) saturate(0.95)",
               }}
             />
             {/* Invisible probe: detects proxy 413 / fetch errors so we can

@@ -27,6 +27,8 @@ import type { Express, Request, Response } from "express";
 
 const ALLOWED_HOSTNAMES = new Set([
   "media.tenor.com",
+  "media1.tenor.com",
+  "media2.tenor.com",
   "c.tenor.com",
   "tenor.com",
   "lh3.googleusercontent.com",
