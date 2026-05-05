@@ -174,12 +174,12 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   //  4. CSS last (already made non-blocking, so less urgent).
   const API_ROOMS    = `</api/rooms>; rel=preload; as=fetch; crossorigin=use-credentials`;
   const API_AUTH     = `</api/auth/user>; rel=preload; as=fetch; crossorigin=use-credentials`;
-  // LCP anchor: preload the skeleton icon in the HTTP Link header so the
-  // browser starts fetching it before HTML parsing even begins (beats the
-  // in-HTML <link rel="preload"> by one full round-trip on cold navigations).
-  const ICON_PRELOAD = `</vextorn-icon-192.png>; rel=preload; as=image`;
+  // ICON_PRELOAD removed: the LCP anchor image is now inlined as a base64
+  // SVG data URI in index.html so the browser never issues a network request
+  // for it. Keeping a Link preload for a data URI is a no-op and wastes a
+  // header slot that could go to a font or script chunk.
   const FONT_PRELOAD = `</fonts/space-grotesk-latin.woff2>; rel=preload; as=font; type=font/woff2; crossorigin`;
-  const headerEntries: string[] = [API_ROOMS, API_AUTH, ICON_PRELOAD, FONT_PRELOAD];
+  const headerEntries: string[] = [API_ROOMS, API_AUTH, FONT_PRELOAD];
   for (const h of [...scriptHrefs].slice(0, 6)) {
     headerEntries.push(`<${h}>; rel=modulepreload; crossorigin`);
   }
