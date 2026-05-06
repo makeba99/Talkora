@@ -1379,13 +1379,14 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
     case "volcanic":
       return { background: "rgba(14,2,0,0.76)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(200,40,0,0.22)" };
     default:
-      // Default chat panel — matches the lobby's midnight-purple neumorphic
-      // surface (deep violet-charcoal with a faint warm amber rim).
+      // Default chat panel — deep charcoal, no purple tint.
+      // Pure near-black with a faint white rim so it reads as a
+      // sculpted dark surface, not a tinted glass pane.
       return {
-        background: "rgba(20, 14, 30, 0.82)",
-        backdropFilter: "blur(18px) saturate(1.15)",
-        WebkitBackdropFilter: "blur(18px) saturate(1.15)",
-        borderColor: "rgba(255, 168, 92, 0.10)",
+        background: "rgba(10, 11, 16, 0.96)",
+        backdropFilter: "blur(18px) saturate(1.05)",
+        WebkitBackdropFilter: "blur(18px) saturate(1.05)",
+        borderColor: "rgba(255, 255, 255, 0.07)",
       };
   }
 }

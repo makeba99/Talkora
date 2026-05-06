@@ -6630,7 +6630,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 return (
                   <div
                     key={msg.id}
-                    className="group flex items-start gap-2.5 relative rounded-lg px-2 py-1.5 -mx-2 transition-colors duration-100 hover:bg-muted/20"
+                    className="group chat-msg-card flex items-start gap-2.5 relative transition-colors duration-100"
                     data-testid={`room-chat-${msg.id}`}
                     onMouseEnter={() => setHoveredMsgId(msg.id)}
                     onMouseLeave={() => setHoveredMsgId(null)}
