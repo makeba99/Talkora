@@ -854,10 +854,16 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           // Using backgroundColor leaves backgroundImage untouched.
           // For video/YouTube: use the dark gradient so the card looks fine
           // while the iframe/video loads inside CardHologramVideo.
+          //
+          // NOTE: CSS background-image has NO onError fallback. The image
+          // proxy has a 4 MB size cap — if a GIF exceeds it the proxy returns
+          // 413 and the background silently disappears (shows only the dark
+          // backgroundColor). To guarantee visibility, use the direct URL for
+          // all GIF/image backgrounds; the CSP already allows all https: imgs.
           ...(hologramVideoUrl && isImageMedia(hologramVideoUrl)
             ? {
                 backgroundColor: "rgb(5, 8, 20)",
-                backgroundImage: `url("${proxyExternalUrl(hologramVideoUrl).replace(/"/g, "%22")}")`,
+                backgroundImage: `url("${hologramVideoUrl.replace(/"/g, "%22")}")`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundRepeat: "no-repeat",

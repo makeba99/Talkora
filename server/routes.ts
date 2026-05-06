@@ -1626,7 +1626,11 @@ export async function registerRoutes(
   function mapTenorResults(items: any[]) {
     return items.map((item: any) => {
       const media = item.media?.[0] || {};
-      const gif = media.gif || media.mediumgif || media.tinygif || {};
+      // Prefer mediumgif over gif: mediumgif is ~60% smaller than the full
+      // gif format while still being large enough to look good as a card
+      // background. Using the full gif format regularly exceeded the image
+      // proxy's 4 MB cap, silently breaking CSS background-image display.
+      const gif = media.mediumgif || media.gif || media.tinygif || {};
       const preview = media.tinygif || media.nanogif || media.gif || {};
       return {
         id: item.id,
