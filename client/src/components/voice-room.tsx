@@ -6593,19 +6593,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                 if (msg.type === "system" && !showMentionsOnly) {
                   return (
-                    <div key={msg.id} className="flex items-center justify-center gap-1.5 py-0.5" data-testid={`room-chat-${msg.id}`}>
-                      <div className="h-px flex-1 bg-border/30" />
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50 bg-muted/20 rounded-full px-2.5 py-0.5">
+                    <div key={msg.id} className="chat-system-msg" data-testid={`room-chat-${msg.id}`}>
+                      <div className="chat-system-line" />
+                      <div className="chat-system-pill">
                         {msg.text.includes("joined") ? (
-                          <LogIn className="w-2.5 h-2.5 text-emerald-500/70" />
+                          <LogIn className="w-2.5 h-2.5 chat-system-icon-join" />
                         ) : msg.text.includes("left") ? (
-                          <LogOut className="w-2.5 h-2.5 text-rose-400/70" />
+                          <LogOut className="w-2.5 h-2.5 chat-system-icon-leave" />
                         ) : (
-                          <Shield className="w-2.5 h-2.5 text-primary/60" />
+                          <Shield className="w-2.5 h-2.5 chat-system-icon-system" />
                         )}
                         <span>{msg.text}</span>
                       </div>
-                      <div className="h-px flex-1 bg-border/30" />
+                      <div className="chat-system-line" />
                     </div>
                   );
                 }
@@ -6631,6 +6631,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <div
                     key={msg.id}
                     className="group chat-msg-card flex items-start gap-2.5 relative transition-colors duration-100"
+                    data-own={msg.userId === user?.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                     onMouseEnter={() => setHoveredMsgId(msg.id)}
                     onMouseLeave={() => setHoveredMsgId(null)}
@@ -6678,7 +6679,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 <TooltipTrigger asChild>
                                   <button
                                     onClick={() => handleReact(msg.id, emoji)}
-                                    className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] border transition-colors ${uids.includes(user?.id || "") ? "bg-primary/20 border-primary/40 text-primary" : "bg-muted border-border hover:bg-muted/80"}`}
+                                    className="chat-reaction-pill"
+                                    data-self={uids.includes(user?.id || "") ? "true" : undefined}
                                     data-testid={`reaction-${msg.id}-${emoji}`}
                                   >
                                     <span>{emoji}</span>
@@ -6696,7 +6698,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       )}
                     </div>
                     {hoveredMsgId === msg.id && (
-                      <div className="absolute right-0 top-0 flex items-center gap-0.5 bg-popover border rounded-md shadow-sm px-1 py-0.5 z-10">
+                      <div className="absolute right-0 top-0 flex items-center gap-0.5 z-10" style={{background:"rgba(8,9,15,0.90)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:"10px",boxShadow:"0 4px 16px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06)",padding:"3px 5px"}}>
                         {QUICK_EMOJIS.map((emoji) => (
                           <button
                             key={emoji}
@@ -6767,7 +6769,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </div>
         )}
 
-        <form onSubmit={handleSendChat} className="p-3 border-t border-border/40 bg-muted/5 flex flex-col gap-2 relative flex-shrink-0 mt-auto">
+        <form onSubmit={handleSendChat} className="chat-form-area flex flex-col gap-2 relative flex-shrink-0 mt-auto">
           {replyingTo && (
             <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/60 rounded-md border-l-2 border-primary/50" data-testid="reply-preview">
               <div className="flex-1 min-w-0">

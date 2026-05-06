@@ -8744,276 +8744,293 @@ html.neomorphic-light .scroll-jump-btn {
    theme HSL vars so they automatically follow the rest of the room palette.
    ============================================================================ */
 
-/* ---- 1. Tab buttons (top icon row) ---------------------------------------- */
+/* ==========================================================================
+   CHAT PANEL — Complete Neumorphic Design System
+   Deep charcoal surface, frosted-glass message bubbles, soft ambient
+   shadows, muted neon accents. No harsh contrast, no purple bleed.
+   ========================================================================== */
+
+/* ---- 1. Tab icon buttons ------------------------------------------------- */
 .room-tab-btn {
   --tab-accent-h: 256;
-  --tab-accent-s: 90%;
-  --tab-accent-l: 70%;
+  --tab-accent-s: 88%;
+  --tab-accent-l: 72%;
   position: relative;
   width: 38px;
   height: 38px;
-  border-radius: 12px;
+  border-radius: 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.42);
-  background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.018) 0%,
-    rgba(0, 0, 0, 0.18) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.35);
+  /* Pressed-in neomorphic surface */
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.016) 0%, rgba(0,0,0,0.22) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.055);
   box-shadow:
-    inset 1px 1px 2px rgba(0, 0, 0, 0.55),
-    inset -1px -1px 1.5px rgba(255, 255, 255, 0.025),
-    0 1px 0 rgba(255, 255, 255, 0.025);
+    inset 2px 2px 4px rgba(0, 0, 0, 0.60),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.028),
+    0 1px 0 rgba(255, 255, 255, 0.022);
   transition:
     color 180ms ease,
-    background 220ms ease,
-    border-color 220ms ease,
+    background 200ms ease,
+    border-color 200ms ease,
     box-shadow 220ms ease,
-    transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .room-tab-btn:hover {
-  color: rgba(255, 255, 255, 0.78);
-  border-color: rgba(255, 255, 255, 0.12);
-  background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.045) 0%,
-    rgba(0, 0, 0, 0.10) 100%
-  );
+  color: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.10);
+  background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.14) 100%);
   box-shadow:
-    inset 1px 1px 1.5px rgba(255, 255, 255, 0.045),
-    -2px -2px 6px rgba(255, 255, 255, 0.025),
-    3px 3px 8px rgba(0, 0, 0, 0.55);
+    inset 1px 1px 2px rgba(0, 0, 0, 0.40),
+    inset -1px -1px 1.5px rgba(255, 255, 255, 0.045),
+    -2px -2px 6px rgba(255, 255, 255, 0.022),
+    3px 3px 9px rgba(0, 0, 0, 0.55);
   transform: translateY(-1px);
 }
 .room-tab-btn:active {
-  transform: translateY(0) scale(0.96);
+  transform: translateY(0) scale(0.95);
   box-shadow:
-    inset 2px 2px 4px rgba(0, 0, 0, 0.6),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.04);
+    inset 3px 3px 6px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.03);
 }
+/* Active state: raised + colored glow border */
 .room-tab-btn[data-active="true"] {
-  color: hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.98);
+  color: hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 1);
   background: linear-gradient(
-    155deg,
-    hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.22) 0%,
-    hsla(var(--tab-accent-h), var(--tab-accent-s), 30%, 0.32) 100%
+    145deg,
+    hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.18) 0%,
+    hsla(var(--tab-accent-h), var(--tab-accent-s), 28%, 0.28) 100%
   );
-  border-color: hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.55);
+  border-color: hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.60);
   box-shadow:
-    inset 0 1px 0 hsla(var(--tab-accent-h), 100%, 90%, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    0 0 14px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.35),
-    0 0 28px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.18),
-    -2px -2px 6px rgba(255, 255, 255, 0.04),
-    3px 3px 9px rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 hsla(var(--tab-accent-h), 100%, 88%, 0.30),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.38),
+    0 0 0 1px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.22),
+    0 0 16px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.38),
+    0 0 32px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.16),
+    -2px -2px 5px rgba(255, 255, 255, 0.03),
+    3px 3px 10px rgba(0, 0, 0, 0.60);
   transform: translateY(-1px);
 }
-/* Per-tab accent overrides — keep colors expressive but unified system */
-.room-tab-btn[data-accent="primary"]   { --tab-accent-h: var(--neu-orange-h, 256); --tab-accent-s: 90%; --tab-accent-l: 72%; }
-.room-tab-btn[data-accent="youtube"]   { --tab-accent-h: 0;   --tab-accent-s: 84%; --tab-accent-l: 64%; }
-.room-tab-btn[data-accent="movies"]    { --tab-accent-h: 270; --tab-accent-s: 70%; --tab-accent-l: 60%; }
-.room-tab-btn[data-accent="read"]      { --tab-accent-h: 158; --tab-accent-s: 70%; --tab-accent-l: 58%; }
-.room-tab-btn[data-accent="chess"]     { --tab-accent-h: 45;  --tab-accent-s: 92%; --tab-accent-l: 62%; }
-.room-tab-btn[data-accent="golive"]    { --tab-accent-h: 4;   --tab-accent-s: 88%; --tab-accent-l: 62%; }
-.room-tab-btn[data-accent="people"]    { --tab-accent-h: 256; --tab-accent-s: 90%; --tab-accent-l: 72%; }
+.room-tab-btn[data-accent="primary"]   { --tab-accent-h: 258; --tab-accent-s: 85%; --tab-accent-l: 74%; }
+.room-tab-btn[data-accent="youtube"]   { --tab-accent-h: 0;   --tab-accent-s: 82%; --tab-accent-l: 62%; }
+.room-tab-btn[data-accent="movies"]    { --tab-accent-h: 268; --tab-accent-s: 68%; --tab-accent-l: 62%; }
+.room-tab-btn[data-accent="read"]      { --tab-accent-h: 158; --tab-accent-s: 68%; --tab-accent-l: 56%; }
+.room-tab-btn[data-accent="chess"]     { --tab-accent-h: 44;  --tab-accent-s: 90%; --tab-accent-l: 60%; }
+.room-tab-btn[data-accent="golive"]    { --tab-accent-h: 4;   --tab-accent-s: 86%; --tab-accent-l: 60%; }
+.room-tab-btn[data-accent="people"]    { --tab-accent-h: 258; --tab-accent-s: 85%; --tab-accent-l: 74%; }
 
 /* ---- 2. Filter pills (All / @Mentions) ----------------------------------- */
 .room-filter-pill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 26px;
+  height: 27px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.40);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  box-shadow:
+    inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 1.5px rgba(255, 255, 255, 0.022);
+  transition: color 160ms ease, background 180ms ease, border-color 180ms ease, box-shadow 200ms ease, transform 150ms ease;
+  cursor: pointer;
+}
+.room-filter-pill:hover {
+  color: rgba(255, 255, 255, 0.80);
+  border-color: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.40),
+    -1px -1px 4px rgba(255, 255, 255, 0.02),
+    2px 2px 6px rgba(0, 0, 0, 0.40);
+  transform: translateY(-1px);
+}
+/* Active: solid bright white pill — clean, no glow clutter */
+.room-filter-pill[data-active="true"] {
+  color: #0c0d14;
+  background: rgba(242, 243, 250, 0.94);
+  border-color: rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 1px 5px rgba(0, 0, 0, 0.40),
+    0 3px 10px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  text-shadow: none;
+  transform: translateY(-1px);
+}
+.room-filter-pill[data-active="true"]:hover { color: #0c0d14; transform: translateY(-1px); }
+
+/* ---- 3. Welcome pill (host) --------------------------------------------- */
+.room-welcome-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 27px;
   padding: 0 12px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.2px;
-  color: rgba(255, 255, 255, 0.46);
-  background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.32) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow:
-    inset 1px 1px 2px rgba(0, 0, 0, 0.5),
-    inset -1px -1px 1px rgba(255, 255, 255, 0.025);
-  transition: color 180ms ease, background 200ms ease, border-color 200ms ease, box-shadow 220ms ease, transform 160ms ease;
-}
-.room-filter-pill:hover {
-  color: rgba(255, 255, 255, 0.85);
-  border-color: rgba(255, 255, 255, 0.10);
-}
-.room-filter-pill[data-active="true"] {
-  color: #0a0b10;
-  background: rgba(240, 241, 248, 0.92);
-  border-color: rgba(255, 255, 255, 0.70);
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.80);
-  text-shadow: none;
-}
-.room-filter-pill[data-active="true"]:hover { color: #0a0b10; }
-
-/* ---- 3. Welcome pill (host) — special amber/orange treatment -------------- */
-.room-welcome-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 11px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
-  background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.32) 100%);
+  color: rgba(255, 255, 255, 0.48);
+  background: rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow:
-    inset 1px 1px 2px rgba(0, 0, 0, 0.5),
-    inset -1px -1px 1px rgba(255, 255, 255, 0.025);
-  transition: color 180ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, transform 160ms ease;
+    inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 1.5px rgba(255, 255, 255, 0.022);
+  transition: color 160ms ease, background 180ms ease, border-color 180ms ease, box-shadow 200ms ease, transform 150ms ease;
+  cursor: pointer;
 }
 .room-welcome-pill:hover {
-  color: rgba(255, 255, 255, 0.92);
-  border-color: hsla(var(--neu-orange) / 0.45);
+  color: rgba(255, 255, 255, 0.88);
+  border-color: rgba(251, 191, 36, 0.40);
   box-shadow:
-    inset 1px 1px 1.5px rgba(255, 255, 255, 0.045),
-    0 0 10px hsla(var(--neu-orange) / 0.20);
+    inset 1px 1px 2px rgba(0, 0, 0, 0.40),
+    0 0 10px rgba(251, 191, 36, 0.18);
+  transform: translateY(-1px);
 }
 .room-welcome-pill[data-active="true"] {
-  color: hsla(var(--neu-orange-hi, 252 95% 84%));
-  background: linear-gradient(
-    180deg,
-    hsla(var(--neu-orange) / 0.32) 0%,
-    hsla(var(--neu-orange) / 0.18) 100%
-  );
-  border-color: hsla(var(--neu-orange) / 0.60);
+  color: rgba(253, 224, 120, 0.96);
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.55);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 1px 0 rgba(255, 240, 150, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.30),
-    0 0 14px hsla(var(--neu-orange) / 0.40),
+    0 0 12px rgba(251, 191, 36, 0.35),
     0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
-/* ---- 4. Toolbar icon buttons (globe, color, gif, image) ------------------- */
+/* ---- 4. Toolbar icon buttons (globe, color, gif, image) ----------------- */
 .room-tool-btn {
   position: relative;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.5);
-  background: linear-gradient(155deg, rgba(255,255,255,0.018) 0%, rgba(0,0,0,0.18) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.44);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.055);
   box-shadow:
-    inset 1px 1px 1.5px rgba(0, 0, 0, 0.50),
-    inset -1px -1px 1px rgba(255, 255, 255, 0.022);
-  transition: color 180ms ease, background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 160ms ease;
+    inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.58),
+    inset -1px -1px 1.5px rgba(255, 255, 255, 0.022);
+  transition: color 160ms ease, background 180ms ease, border-color 180ms ease, box-shadow 200ms ease, transform 150ms ease;
+  cursor: pointer;
 }
 .room-tool-btn:hover {
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.90);
   border-color: rgba(255, 255, 255, 0.12);
-  background: linear-gradient(155deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.10) 100%);
+  background: rgba(255, 255, 255, 0.05);
   box-shadow:
-    inset 1px 1px 1.5px rgba(255, 255, 255, 0.045),
+    inset 1px 1px 2px rgba(0, 0, 0, 0.38),
     -1.5px -1.5px 5px rgba(255, 255, 255, 0.022),
-    2.5px 2.5px 7px rgba(0, 0, 0, 0.55);
+    2.5px 2.5px 8px rgba(0, 0, 0, 0.52);
   transform: translateY(-1px);
 }
 .room-tool-btn:active {
-  transform: translateY(0) scale(0.95);
+  transform: translateY(0) scale(0.94);
   box-shadow:
-    inset 2px 2px 3px rgba(0, 0, 0, 0.6),
-    inset -1px -1px 1.5px rgba(255, 255, 255, 0.035);
+    inset 2px 2px 5px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 1.5px rgba(255, 255, 255, 0.03);
 }
 .room-tool-btn[data-active="true"] {
-  color: rgba(252, 211, 77, 0.98);
-  background: linear-gradient(155deg, rgba(251,191,36,0.20) 0%, rgba(180,120,20,0.30) 100%);
-  border-color: rgba(251, 191, 36, 0.55);
+  color: rgba(253, 216, 88, 0.98);
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.52);
   box-shadow:
-    inset 0 1px 0 rgba(255, 220, 130, 0.30),
+    inset 0 1px 0 rgba(255, 230, 130, 0.28),
     inset 0 -1px 0 rgba(0, 0, 0, 0.28),
-    0 0 10px rgba(251, 191, 36, 0.32),
+    0 0 12px rgba(251, 191, 36, 0.30),
     0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
-/* ---- 5. Send button — deep slate-violet CTA ----------------------------- */
+/* ---- 5. Send button — deep slate-violet with soft glow ------------------ */
 .room-send-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 14px 0 12px;
-  border-radius: 10px;
+  gap: 5px;
+  height: 34px;
+  padding: 0 16px 0 13px;
+  border-radius: 11px;
   font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: 0.2px;
-  color: rgba(255, 255, 255, 0.94);
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.96);
   background: linear-gradient(
     160deg,
-    rgba(100, 82, 200, 0.95) 0%,
-    rgba(72, 56, 170, 0.90) 100%
+    rgba(108, 88, 210, 0.96) 0%,
+    rgba(76, 58, 178, 0.92) 55%,
+    rgba(60, 44, 158, 0.95) 100%
   );
-  border: 1px solid rgba(130, 110, 220, 0.55);
+  border: 1px solid rgba(140, 118, 228, 0.52);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.30),
-    0 0 12px rgba(100, 80, 200, 0.30),
+    inset 0 1px 0 rgba(200, 190, 255, 0.20),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.32),
+    0 0 14px rgba(108, 88, 210, 0.32),
+    0 0 28px rgba(108, 88, 210, 0.14),
     0 3px 8px rgba(0, 0, 0, 0.50);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
-  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease, filter 200ms ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease, filter 200ms ease;
 }
 .room-send-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: brightness(1.12);
+  transform: translateY(-2px);
+  filter: brightness(1.14);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.30),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.30),
-    0 0 18px rgba(110, 90, 215, 0.42),
-    0 4px 10px rgba(0, 0, 0, 0.55);
+    inset 0 1px 0 rgba(220, 210, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.32),
+    0 0 20px rgba(118, 96, 220, 0.48),
+    0 0 40px rgba(108, 88, 210, 0.20),
+    0 5px 12px rgba(0, 0, 0, 0.55);
 }
 .room-send-btn:active:not(:disabled) {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0) scale(0.97);
+  filter: brightness(0.95);
 }
 .room-send-btn:disabled {
   cursor: not-allowed;
-  opacity: 0.35;
+  opacity: 0.32;
   filter: grayscale(0.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
-    0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 3px rgba(0,0,0,0.35);
 }
 
-/* ---- 6. Composer textarea — deep sunken dark well ----------------------- */
+/* ---- 6. Composer textarea — deep sunken neumorphic well ----------------- */
 .room-composer {
   width: 100%;
-  border-radius: 12px;
-  padding: 10px 36px 10px 14px;
+  border-radius: 13px;
+  padding: 10px 38px 10px 14px;
   font-size: 13px;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.88);
-  background: rgba(5, 6, 10, 0.70);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.86);
+  background: rgba(4, 5, 9, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow:
-    inset 2px 2px 7px rgba(0, 0, 0, 0.65),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.02),
-    0 1px 0 rgba(255, 255, 255, 0.03);
+    inset 3px 3px 8px rgba(0, 0, 0, 0.68),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.018),
+    0 1px 0 rgba(255, 255, 255, 0.025);
   resize: none;
   transition: border-color 180ms ease, box-shadow 220ms ease;
 }
-.room-composer::placeholder { color: rgba(255, 255, 255, 0.28); }
+.room-composer::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+  font-style: normal;
+}
 .room-composer:focus-visible {
   outline: none;
-  border-color: rgba(140, 120, 220, 0.50);
+  border-color: rgba(130, 108, 218, 0.52);
   box-shadow:
-    inset 2px 2px 7px rgba(0, 0, 0, 0.65),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.03),
-    0 0 0 1px rgba(130, 110, 210, 0.22),
-    0 0 12px rgba(120, 100, 200, 0.14);
+    inset 3px 3px 8px rgba(0, 0, 0, 0.68),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.02),
+    0 0 0 1px rgba(120, 98, 210, 0.20),
+    0 0 14px rgba(110, 88, 200, 0.16);
 }
-.room-composer:disabled { opacity: 0.55; cursor: wait; }
+.room-composer:disabled { opacity: 0.50; cursor: wait; }
 /* Whisper / private-mode tint applied via data attribute on the textarea */
 .room-composer[data-whisper="true"] {
   border-color: rgba(251, 191, 36, 0.45);
@@ -9948,28 +9965,126 @@ html.boost-mode .glass-panel {
    keeps a minimal footprint so it doesn't push content around.
    ============================================================================ */
 /* ============================================================================
-   Chat message cards — deep neomorphic "pressed" cards matching the reference.
-   Each message renders as its own dark card floating on the panel surface.
+   Chat message cards — frosted-glass neumorphic bubbles
+   Each message is an independent dark card with backdrop blur for depth.
    ============================================================================ */
 .chat-msg-card {
-  background: rgba(16, 18, 26, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
-  padding: 10px 12px;
+  position: relative;
+  background: rgba(14, 16, 24, 0.68);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.068);
+  border-radius: 15px;
+  padding: 10px 12px 9px;
   margin-bottom: 5px;
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
-  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    0 2px 10px rgba(0, 0, 0, 0.32),
+    0 1px 2px rgba(0, 0, 0, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.042),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.20);
+  transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease;
 }
 .chat-msg-card:hover {
-  background: rgba(20, 22, 32, 0.82);
-  border-color: rgba(255, 255, 255, 0.11);
+  background: rgba(18, 20, 30, 0.78);
+  border-color: rgba(255, 255, 255, 0.10);
   box-shadow:
-    0 3px 12px rgba(0, 0, 0, 0.36),
+    0 4px 16px rgba(0, 0, 0, 0.38),
+    0 1px 3px rgba(0, 0, 0, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.055),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+}
+/* Own messages — slightly lighter frosted tint + subtle violet left accent */
+.chat-msg-card[data-own="true"] {
+  background: rgba(22, 24, 38, 0.74);
+  border-color: rgba(120, 100, 200, 0.18);
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(180, 160, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.20),
+    inset 3px 0 0 rgba(108, 88, 210, 0.28);
+}
+.chat-msg-card[data-own="true"]:hover {
+  background: rgba(26, 28, 44, 0.82);
+  border-color: rgba(130, 110, 215, 0.26);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(180, 160, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+    inset 3px 0 0 rgba(108, 88, 210, 0.40);
+}
+
+/* ---- System event messages (join / leave / moderation) ------------------ */
+.chat-system-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.chat-system-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.chat-system-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.42);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.40);
+  white-space: nowrap;
+}
+.chat-system-icon-join    { color: rgba(52, 211, 153, 0.80); }
+.chat-system-icon-leave   { color: rgba(248, 113, 113, 0.80); }
+.chat-system-icon-system  { color: rgba(148, 130, 210, 0.75); }
+
+/* ---- Chat form area — deep panel base ----------------------------------- */
+.chat-form-area {
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  background: rgba(6, 7, 12, 0.72);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+/* ---- Reaction emoji pills beneath messages ------------------------------ */
+.chat-reaction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.70);
+  background: rgba(0, 0, 0, 0.30);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.45);
+  transition: background 150ms ease, border-color 150ms ease, transform 130ms ease;
+  cursor: pointer;
+}
+.chat-reaction-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: scale(1.06);
+}
+.chat-reaction-pill[data-self="true"] {
+  color: rgba(180, 162, 255, 0.96);
+  background: rgba(108, 88, 210, 0.22);
+  border-color: rgba(120, 98, 220, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 190, 255, 0.12),
+    0 0 8px rgba(108, 88, 210, 0.22);
 }
 
 .chat-typing-indicator {
