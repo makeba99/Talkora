@@ -842,7 +842,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       data-testid={`card-room-${room.id}`}
     >
       <div
-        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
+        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""} ${hologramVideoUrl && isImageMedia(hologramVideoUrl) ? "card-image-bg" : ""}`}
         style={{
           borderRadius: "24px",
           // For GIF/image holograms: apply the background-image directly on

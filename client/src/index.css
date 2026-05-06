@@ -1069,9 +1069,12 @@ html.neomorphic-light [data-testid^="card-room"]:hover {
     inset 0 -1px 0 rgba(0, 0, 0, 0.55) !important;
 }
 
-/* Inner gradient overlays on room cards become flat in neo theme */
-html.neomorphic-dark [data-testid^="card-room"] [style*="background"],
-html.neomorphic-light [data-testid^="card-room"] [style*="background"] {
+/* Inner gradient overlays on room cards become flat in neo theme.
+   Exempt .card-image-bg — that class marks the div whose inline
+   background-image is the user's GIF/image hologram; clearing it
+   with the `background` shorthand would wipe out background-image. */
+html.neomorphic-dark [data-testid^="card-room"] [style*="background"]:not(.card-image-bg),
+html.neomorphic-light [data-testid^="card-room"] [style*="background"]:not(.card-image-bg) {
   background: transparent !important;
 }
 
