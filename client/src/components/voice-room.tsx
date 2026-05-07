@@ -2668,6 +2668,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     });
 
+    // Snapshot of all moods already set before this user joined
+    socket.on("room:moods-snapshot", (snapshot: Record<string, string>) => {
+      if (!snapshot) return;
+      setParticipantMoods((prev) => {
+        const next = { ...prev };
+        for (const [userId, emoji] of Object.entries(snapshot)) {
+          if (!next[userId]) {
+            const id = `snap-${Date.now()}-${userId}`;
+            next[userId] = { id, emoji };
+          }
+        }
+        return next;
+      });
+    });
+
     socket.on("room:mood-update", (data: { userId: string; emoji: string; ts?: number }) => {
       if (!data?.userId || !data?.emoji) return;
       const id = `${data.ts || Date.now()}-${Math.random().toString(36).slice(2, 8)}`; 
@@ -3166,6 +3181,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ variant: "destructive", title: "🧌 Troll Restriction", description: data.reason, duration: 3000 });
     });
 
+    // Snapshot of all avatar GIFs already set before this user joined
+    socket.on("room:avatar-gifs-snapshot", (snapshot: Record<string, string>) => {
+      if (!snapshot) return;
+      setParticipantAvatarGifs((prev) => ({ ...snapshot, ...prev }));
+    });
+
     socket.on("room:avatar-gif", (data: { userId: string; gifUrl: string | null }) => {
       if (!data?.userId) return;
       setParticipantAvatarGifs((prev) => {
@@ -3251,7 +3272,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:hand-raised");
       socket.off("user:profile-updated");
       socket.off("room:bye");
+      socket.off("room:moods-snapshot");
       socket.off("room:mood-update");
+      socket.off("room:avatar-gifs-snapshot");
       // Cancel any in-flight mood-clear timers so they don't fire after unmount.
       Object.values(moodTimersRef.current).forEach((t) => clearTimeout(t));
       moodTimersRef.current = {};
@@ -6358,11 +6381,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const sidePanelContent = (
     <div className="flex flex-col h-full">
-      {/* Icon-only tab switcher row — neumorphic, evenly aligned via gap-2 and
-          shared .room-tab-btn class. Each tab declares its accent via
-          data-accent so colors stay consistent across the panel without
-          redefining shadow/border/background per button. */}
-      <div className="flex items-center justify-between gap-2 px-3 py-3 border-b border-white/[0.06] shrink-0">
+      {/* ── Tab bar — neumorphic raised tray ──────────────────────────── */}
+      <div className="chat-header-tabs shrink-0">
         {/* Chat */}
         <div className="relative">
           <button
@@ -6376,7 +6396,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             <MessageSquare className="w-[15px] h-[15px]" />
           </button>
           {unreadChatBadge > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.55), inset 0 1px 0 rgba(255,255,255,0.35)" }}>
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.60), inset 0 1px 0 rgba(255,255,255,0.40)" }}>
               {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
             </span>
           )}
@@ -6402,8 +6422,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       </div>
 
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chat" ? "flex" : "none" }}>
-        {/* Filter row — All / @Mentions on the left; Welcome pill on the right */}
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.06]">
+        {/* ── Filter row — All / @Mentions / Welcome ────────────────────── */}
+        <div className="chat-header-filters">
           <button
             onClick={() => setShowMentionsOnly(false)}
             className="room-filter-pill"

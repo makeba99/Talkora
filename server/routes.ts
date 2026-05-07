@@ -28,6 +28,9 @@ import { registerImageProxy } from "./image-proxy";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
+// Persistent mood/gif state so new joiners see what existing participants set
+const roomMoods = new Map<string, Map<string, string>>();
+const roomAvatarGifs = new Map<string, Map<string, string>>();
 const roomVideoStatus = new Map<string, Set<string>>();
 const roomScreenShareStatus = new Map<string, string | null>();
 // Per-host YouTube state: each user can independently host their own video
@@ -4283,6 +4286,18 @@ export async function registerRoutes(
 
       socket.emit("room:participants", participantsWithStatus);
       socket.emit("room:roles", Object.fromEntries(roles));
+
+      // Send existing mood + gif state so new joiners immediately see what
+      // participants already set before they arrived.
+      const moodSnapshot = roomMoods.get(roomId);
+      if (moodSnapshot && moodSnapshot.size > 0) {
+        socket.emit("room:moods-snapshot", Object.fromEntries(moodSnapshot));
+      }
+      const gifSnapshot = roomAvatarGifs.get(roomId);
+      if (gifSnapshot && gifSnapshot.size > 0) {
+        socket.emit("room:avatar-gifs-snapshot", Object.fromEntries(gifSnapshot));
+      }
+
       if (!isRejoin) {
         socket.to(roomId).emit("room:user-joined", { user, participants: participantsWithStatus });
         if (room.welcomeMessage && room.ownerId !== userId) {
@@ -4375,9 +4390,10 @@ export async function registerRoutes(
     // client's job (we already prevent spamming via the picker UI).
     socket.on("room:mood", (data: { roomId: string; userId: string; emoji: string }) => {
       if (!data?.roomId || !data?.userId || !data?.emoji) return;
-      // Trim emoji to a sane length so a malicious client can't broadcast a
-      // megabyte-long string.
       const emoji = String(data.emoji).slice(0, 16);
+      // Persist so new joiners receive the current mood snapshot
+      if (!roomMoods.has(data.roomId)) roomMoods.set(data.roomId, new Map());
+      roomMoods.get(data.roomId)!.set(data.userId, emoji);
       io.to(data.roomId).emit("room:mood-update", {
         userId: data.userId,
         emoji,
@@ -4385,19 +4401,22 @@ export async function registerRoutes(
       });
     });
 
-    // Mood "remove" — the owner clicked the × on their pinned mood sticker.
-    // We just relay so every participant drops it from their local map and the
-    // sticker disappears from the sender's avatar card across the whole room.
     socket.on("room:mood-clear", (data: { roomId: string; userId: string }) => {
       if (!data?.roomId || !data?.userId) return;
+      roomMoods.get(data.roomId)?.delete(data.userId);
       io.to(data.roomId).emit("room:mood-clear", { userId: data.userId });
     });
 
-    // Per-user avatar GIF — each user can set their own card background GIF.
-    // Server just relays to the room; gifUrl=null means clear.
+    // Per-user avatar GIF — persisted so new joiners see existing GIFs
     socket.on("room:avatar-gif", (data: { roomId: string; userId: string; gifUrl: string | null }) => {
       if (!data?.roomId || !data?.userId) return;
       const gifUrl = data.gifUrl ? String(data.gifUrl).slice(0, 2048) : null;
+      if (!roomAvatarGifs.has(data.roomId)) roomAvatarGifs.set(data.roomId, new Map());
+      if (gifUrl) {
+        roomAvatarGifs.get(data.roomId)!.set(data.userId, gifUrl);
+      } else {
+        roomAvatarGifs.get(data.roomId)?.delete(data.userId);
+      }
       io.to(data.roomId).emit("room:avatar-gif", { userId: data.userId, gifUrl });
     });
 

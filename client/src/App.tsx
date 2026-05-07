@@ -78,8 +78,8 @@ function LobbyShell() {
 }
 
 function AppContent() {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === "superadmin" || user?.email === "dj55jggg@gmail.com";
+  const { user, isLoading: authLoading } = useAuth();
+  const isSuperAdmin = user?.role === "superadmin" || user?.role === "admin" || user?.email === "dj55jggg@gmail.com";
 
   const { data: maintenanceData } = useQuery<{ active: boolean }>({
     queryKey: ["/api/maintenance"],
@@ -87,7 +87,9 @@ function AppContent() {
     staleTime: 20_000,
   });
 
-  if (maintenanceData?.active && !isSuperAdmin) {
+  // Don't show maintenance page while auth is still resolving — the user
+  // might be a superadmin and we don't want to flash the maintenance screen.
+  if (maintenanceData?.active && !authLoading && !isSuperAdmin) {
     return (
       <Suspense fallback={null}>
         <MaintenancePage />
