@@ -259,6 +259,14 @@ export function MaintenancePage() {
         >
           🛠️ &nbsp; Under maintenance — hang tight, we move fast.
         </div>
+
+        <a
+          href="/api/login"
+          className="mt-6 text-xs opacity-30 hover:opacity-70 transition-opacity duration-300 cursor-pointer"
+          style={{ color: "rgba(196,181,253,0.9)" }}
+        >
+          Admin login
+        </a>
       </div>
     </div>
   );
