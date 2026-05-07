@@ -8789,20 +8789,22 @@ html.neomorphic-light .scroll-jump-btn {
   --tab-accent-s: 88%;
   --tab-accent-l: 72%;
   position: relative;
-  width: 38px;
-  height: 38px;
-  border-radius: 13px;
+  width: 46px;
+  height: 46px;
+  border-radius: 17px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Icons render at 20px inside the bigger button */
+  font-size: 20px;
   color: rgba(255, 255, 255, 0.35);
-  /* Pressed-in neomorphic surface */
+  /* Deep pressed-in neumorphic surface */
   background:
-    linear-gradient(145deg, rgba(255,255,255,0.016) 0%, rgba(0,0,0,0.22) 100%);
+    linear-gradient(145deg, rgba(255,255,255,0.012) 0%, rgba(0,0,0,0.30) 100%);
   border: 1px solid rgba(255, 255, 255, 0.055);
   box-shadow:
-    inset 2px 2px 4px rgba(0, 0, 0, 0.60),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.028),
+    inset 3px 3px 7px rgba(0, 0, 0, 0.72),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.032),
     0 1px 0 rgba(255, 255, 255, 0.022);
   transition:
     color 180ms ease,
@@ -8814,19 +8816,19 @@ html.neomorphic-light .scroll-jump-btn {
 .room-tab-btn:hover {
   color: rgba(255, 255, 255, 0.72);
   border-color: rgba(255, 255, 255, 0.10);
-  background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.14) 100%);
+  background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.20) 100%);
   box-shadow:
-    inset 1px 1px 2px rgba(0, 0, 0, 0.40),
-    inset -1px -1px 1.5px rgba(255, 255, 255, 0.045),
-    -2px -2px 6px rgba(255, 255, 255, 0.022),
-    3px 3px 9px rgba(0, 0, 0, 0.55);
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.05),
+    -2px -2px 7px rgba(255, 255, 255, 0.018),
+    4px 4px 12px rgba(0, 0, 0, 0.60);
   transform: translateY(-1px);
 }
 .room-tab-btn:active {
-  transform: translateY(0) scale(0.95);
+  transform: translateY(0) scale(0.94);
   box-shadow:
-    inset 3px 3px 6px rgba(0, 0, 0, 0.65),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.03);
+    inset 4px 4px 9px rgba(0, 0, 0, 0.75),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.025);
 }
 /* Active state: raised + colored glow border */
 .room-tab-btn[data-active="true"] {
@@ -8834,17 +8836,17 @@ html.neomorphic-light .scroll-jump-btn {
   background: linear-gradient(
     145deg,
     hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.18) 0%,
-    hsla(var(--tab-accent-h), var(--tab-accent-s), 28%, 0.28) 100%
+    hsla(var(--tab-accent-h), var(--tab-accent-s), 28%, 0.30) 100%
   );
-  border-color: hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.60);
+  border-color: hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.65);
   box-shadow:
-    inset 0 1px 0 hsla(var(--tab-accent-h), 100%, 88%, 0.30),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.38),
-    0 0 0 1px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.22),
-    0 0 16px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.38),
-    0 0 32px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.16),
-    -2px -2px 5px rgba(255, 255, 255, 0.03),
-    3px 3px 10px rgba(0, 0, 0, 0.60);
+    inset 0 1px 0 hsla(var(--tab-accent-h), 100%, 88%, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
+    0 0 0 1px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.25),
+    0 0 18px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.42),
+    0 0 36px hsla(var(--tab-accent-h), var(--tab-accent-s), var(--tab-accent-l), 0.18),
+    -2px -2px 6px rgba(255, 255, 255, 0.03),
+    4px 4px 12px rgba(0, 0, 0, 0.65);
   transform: translateY(-1px);
 }
 .room-tab-btn[data-accent="primary"]   { --tab-accent-h: 258; --tab-accent-s: 85%; --tab-accent-l: 74%; }

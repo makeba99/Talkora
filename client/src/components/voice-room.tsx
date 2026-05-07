@@ -6393,7 +6393,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             data-accent="primary"
             data-active={sidePanelTab === "chat"}
           >
-            <MessageSquare className="w-[15px] h-[15px]" />
+            <MessageSquare className="w-[20px] h-[20px]" />
           </button>
           {unreadChatBadge > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.60), inset 0 1px 0 rgba(255,255,255,0.40)" }}>
@@ -6402,22 +6402,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
         </div>
         <button onClick={() => setSidePanelTab("youtube")} data-testid="tab-youtube" title="YouTube" className="room-tab-btn" data-accent="youtube" data-active={sidePanelTab === "youtube"}>
-          <Youtube className="w-[15px] h-[15px]" />
+          <Youtube className="w-[20px] h-[20px]" />
         </button>
         <button onClick={() => setSidePanelTab("movies")} data-testid="tab-movies" title="Movies" className="room-tab-btn" data-accent="movies" data-active={sidePanelTab === "movies"}>
-          <Film className="w-[15px] h-[15px]" />
+          <Film className="w-[20px] h-[20px]" />
         </button>
         <button onClick={() => setSidePanelTab("read")} data-testid="tab-read" title="Read" className="room-tab-btn" data-accent="read" data-active={sidePanelTab === "read"}>
-          <BookOpen className="w-[15px] h-[15px]" />
+          <BookOpen className="w-[20px] h-[20px]" />
         </button>
         <button onClick={() => setSidePanelTab("chess")} data-testid="tab-chess" title="Chess" className="room-tab-btn" data-accent="chess" data-active={sidePanelTab === "chess"}>
-          <Gamepad2 className="w-[15px] h-[15px]" />
+          <Gamepad2 className="w-[20px] h-[20px]" />
         </button>
         <button onClick={() => setSidePanelTab("golive")} data-testid="tab-golive" title="Go Live" className="room-tab-btn" data-accent="golive" data-active={sidePanelTab === "golive"}>
-          <Radio className="w-[15px] h-[15px]" />
+          <Radio className="w-[20px] h-[20px]" />
         </button>
         <button onClick={() => setSidePanelTab("people")} data-testid="tab-people" title="People" className="room-tab-btn" data-accent="people" data-active={sidePanelTab === "people"}>
-          <UsersRound className="w-[15px] h-[15px]" />
+          <UsersRound className="w-[20px] h-[20px]" />
         </button>
       </div>
 
