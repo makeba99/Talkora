@@ -8758,55 +8758,26 @@ html.neomorphic-light .scroll-jump-btn {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 10px 12px 9px;
+  padding: 10px 12px 10px;
   flex-shrink: 0;
-  background:
-    linear-gradient(180deg,
-      rgba(50, 53, 60, 0.92) 0%,
-      rgba(38, 40, 46, 0.96) 100%
-    );
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
-    0 4px 14px rgba(0, 0, 0, 0.24);
+  /* Transparent — blends into the unified panel surface */
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
   position: relative;
   z-index: 2;
 }
-/* Subtle top-edge light bead — makes the tray look raised */
-.chat-header-tabs::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 12px;
-  right: 12px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.12) 30%,
-    rgba(255, 255, 255, 0.12) 70%,
-    transparent 100%
-  );
-  pointer-events: none;
-}
+.chat-header-tabs::before { display: none; }
 
 /* Filter row — sits just below the tab bar */
 .chat-header-filters {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 12px 8px;
+  gap: 8px;
+  padding: 9px 12px 10px;
   flex-shrink: 0;
-  background:
-    linear-gradient(180deg,
-      rgba(40, 42, 48, 0.90) 0%,
-      rgba(34, 36, 42, 0.94) 100%
-    );
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.18);
+  /* Transparent — same unified panel surface as the tab bar above */
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
   position: relative;
   z-index: 1;
 }
@@ -8887,31 +8858,31 @@ html.neomorphic-light .scroll-jump-btn {
 .room-filter-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 27px;
-  padding: 0 13px;
+  gap: 5px;
+  height: 40px;
+  padding: 0 20px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.40);
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.055);
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow:
-    inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.55),
-    inset -1px -1px 1.5px rgba(255, 255, 255, 0.022);
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.028);
   transition: color 160ms ease, background 180ms ease, border-color 180ms ease, box-shadow 200ms ease, transform 150ms ease;
   cursor: pointer;
 }
 .room-filter-pill:hover {
-  color: rgba(255, 255, 255, 0.80);
-  border-color: rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.08);
   box-shadow:
-    inset 1px 1px 2px rgba(0, 0, 0, 0.40),
-    -1px -1px 4px rgba(255, 255, 255, 0.02),
-    2px 2px 6px rgba(0, 0, 0, 0.40);
+    inset 1px 1px 3px rgba(0, 0, 0, 0.40),
+    -1px -1px 5px rgba(255, 255, 255, 0.02),
+    2px 2px 8px rgba(0, 0, 0, 0.40);
   transform: translateY(-1px);
 }
 /* Active: solid bright white pill — clean, no glow clutter */
@@ -8933,18 +8904,19 @@ html.neomorphic-light .scroll-jump-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 27px;
-  padding: 0 12px;
+  height: 40px;
+  padding: 0 18px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
   color: rgba(255, 255, 255, 0.48);
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow:
-    inset 1.5px 1.5px 3px rgba(0, 0, 0, 0.55),
-    inset -1px -1px 1.5px rgba(255, 255, 255, 0.022);
+    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.022);
   transition: color 160ms ease, background 180ms ease, border-color 180ms ease, box-shadow 200ms ease, transform 150ms ease;
   cursor: pointer;
 }
@@ -9069,12 +9041,12 @@ html.neomorphic-light .scroll-jump-btn {
   font-size: 13px;
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.86);
-  background: rgba(20, 22, 26, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(10, 11, 17, 0.80);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow:
-    inset 3px 3px 8px rgba(0, 0, 0, 0.55),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.025),
-    0 1px 0 rgba(255, 255, 255, 0.03);
+    inset 3px 3px 10px rgba(0, 0, 0, 0.65),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.022),
+    0 1px 0 rgba(255, 255, 255, 0.025);
   resize: none;
   transition: border-color 180ms ease, box-shadow 220ms ease;
 }
@@ -10108,8 +10080,8 @@ html.boost-mode .glass-panel {
 /* ---- Chat form area — deep panel base ----------------------------------- */
 .chat-form-area {
   padding: 10px 12px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(30, 32, 37, 0.96);
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  background: transparent;
   display: flex;
   flex-direction: column;
   gap: 8px;

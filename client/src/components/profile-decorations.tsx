@@ -1379,12 +1379,13 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
     case "volcanic":
       return { background: "rgba(14,2,0,0.76)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(200,40,0,0.22)" };
     default:
-      // Default chat panel — mid-tone neutral grey, no blue/purple tint.
+      // Default chat panel — matches the room's base dark violet-slate so the
+      // panel reads as ONE unified surface with the room background.
       return {
-        background: "rgba(32, 34, 38, 0.97)",
-        backdropFilter: "blur(18px) saturate(1.05)",
-        WebkitBackdropFilter: "blur(18px) saturate(1.05)",
-        borderColor: "rgba(255, 255, 255, 0.09)",
+        background: "rgba(18, 20, 28, 0.97)",
+        backdropFilter: "blur(20px) saturate(1.1)",
+        WebkitBackdropFilter: "blur(20px) saturate(1.1)",
+        borderColor: "rgba(255, 255, 255, 0.07)",
       };
   }
 }
