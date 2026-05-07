@@ -8760,9 +8760,10 @@ html.neomorphic-light .scroll-jump-btn {
   gap: 6px;
   padding: 10px 12px 10px;
   flex-shrink: 0;
-  /* Transparent — blends into the unified panel surface */
-  background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  /* Solid dark base — same violet-slate as the room, slightly deeper so the
+     icon tray reads as one clean dark block rather than absorbing room glow */
+  background: rgba(14, 15, 22, 0.96);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
   position: relative;
   z-index: 2;
 }
@@ -8775,8 +8776,8 @@ html.neomorphic-light .scroll-jump-btn {
   gap: 8px;
   padding: 9px 12px 10px;
   flex-shrink: 0;
-  /* Transparent — same unified panel surface as the tab bar above */
-  background: transparent;
+  /* Same solid dark base as the tab bar — forms one continuous dark header block */
+  background: rgba(14, 15, 22, 0.96);
   border-bottom: 1px solid rgba(255, 255, 255, 0.055);
   position: relative;
   z-index: 1;
