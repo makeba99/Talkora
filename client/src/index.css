@@ -9439,6 +9439,67 @@ html.neomorphic-light .scroll-jump-btn {
     0 1px 0 rgba(255, 255, 255, 0.030);
 }
 
+/* Ready-state pulse: send button glows when composer has text */
+.room-send-btn[data-ready="true"] {
+  animation: send-ready-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes send-ready-pulse {
+  0%, 100% {
+    box-shadow:
+      0 8px 24px rgba(60, 40, 140, 0.55),
+      0 4px 10px rgba(0, 0, 0, 0.72),
+      0 2px 4px  rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(200, 188, 255, 0.28),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 8px 28px rgba(80, 60, 200, 0.72),
+      0 4px 12px rgba(0, 0, 0, 0.70),
+      0 0  32px rgba(100, 80, 240, 0.38),
+      0 0  52px rgba(100, 80, 240, 0.18),
+      inset 0 1px 0 rgba(220, 210, 255, 0.38),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* ── Chat scroll well — depth-well vignette that frames the message list ── */
+.chat-scroll-well {
+  position: relative;
+}
+/* Top fade: messages fade into the header above */
+.chat-scroll-well::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 36px;
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 9, 18, 0.92) 0%,
+    rgba(8, 9, 18, 0.55) 40%,
+    transparent 100%
+  );
+  z-index: 10;
+  pointer-events: none;
+  border-radius: 0;
+}
+/* Bottom fade: messages dissolve into the composer below */
+.chat-scroll-well::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 52px;
+  background: linear-gradient(
+    to top,
+    rgba(8, 9, 18, 0.95) 0%,
+    rgba(8, 9, 18, 0.60) 40%,
+    transparent 100%
+  );
+  z-index: 10;
+  pointer-events: none;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    CHAT INPUT TOOLBAR SLAB — unified pill containing emoji, tools + send
    Same neumorphic carved-tray language as the tab bar and filter row.
@@ -9555,14 +9616,40 @@ html.neomorphic-light .scroll-jump-btn {
 }
 .room-composer:focus-visible {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(130, 105, 255, 0.32);
   box-shadow:
     inset 0 5px 16px rgba(0, 0, 0, 0.80),
     inset 0 2px 6px  rgba(0, 0, 0, 0.62),
     inset 0 -1px 0   rgba(255, 255, 255, 0.028),
-    0 0 0 1.5px rgba(100, 80, 220, 0.22),
-    0 0 18px rgba(100, 80, 220, 0.10),
+    /* Animated violet ring */
+    0 0 0 2px rgba(110, 88, 245, 0.28),
+    0 0 0 4px rgba(110, 88, 245, 0.09),
+    /* Aura bloom */
+    0 0 24px rgba(100, 80, 240, 0.22),
+    0 0 48px rgba(100, 80, 240, 0.08),
     0 1px 0 rgba(255, 255, 255, 0.038);
+  animation: composer-focus-bloom 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes composer-focus-bloom {
+  from {
+    box-shadow:
+      inset 0 5px 16px rgba(0, 0, 0, 0.80),
+      inset 0 2px 6px  rgba(0, 0, 0, 0.62),
+      0 0 0 0px rgba(110, 88, 245, 0),
+      0 0 0px rgba(100, 80, 240, 0);
+  }
+  to {
+    box-shadow:
+      inset 0 5px 16px rgba(0, 0, 0, 0.80),
+      inset 0 2px 6px  rgba(0, 0, 0, 0.62),
+      inset 0 -1px 0   rgba(255, 255, 255, 0.028),
+      0 0 0 2px rgba(110, 88, 245, 0.28),
+      0 0 0 4px rgba(110, 88, 245, 0.09),
+      0 0 24px rgba(100, 80, 240, 0.22),
+      0 0 48px rgba(100, 80, 240, 0.08),
+      0 1px 0 rgba(255, 255, 255, 0.038);
+  }
 }
 .room-composer:disabled { opacity: 0.48; cursor: wait; }
 /* Whisper mode — amber border glow */
@@ -10975,66 +11062,102 @@ html.boost-mode .glass-panel {
     0 1px 0 rgba(255, 255, 255, 0.04);
   transform: scale(1.08) translateY(-1px);
 }
-/* Self-reacted — muted silver highlight, no purple bloom */
+/* Self-reacted — golden inset-pressed: looks physically depressed + glows */
 .chat-reaction-pill[data-self="true"] {
-  color: rgba(220, 218, 230, 0.92);
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(253, 224, 120, 0.97);
+  background: linear-gradient(160deg, rgba(30, 22, 8, 0.90) 0%, rgba(20, 14, 4, 0.95) 100%);
+  border-color: rgba(251, 191, 36, 0.38);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-    0 2px 6px rgba(0, 0, 0, 0.32);
+    /* Inset carved press */
+    inset 0 2px 8px rgba(0, 0, 0, 0.68),
+    inset 0 1px 3px rgba(0, 0, 0, 0.52),
+    inset 0 -1px 0  rgba(251, 191, 36, 0.10),
+    /* Amber corona glow */
+    0 0 10px rgba(251, 191, 36, 0.22),
+    0 0 20px rgba(251, 191, 36, 0.10);
+  text-shadow: 0 0 8px rgba(253, 200, 60, 0.50);
+}
+.chat-reaction-pill[data-self="true"]:hover {
+  background: linear-gradient(160deg, rgba(36, 26, 8, 0.92) 0%, rgba(26, 18, 4, 0.96) 100%);
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow:
+    inset 0 2px 7px rgba(0, 0, 0, 0.60),
+    inset 0 1px 2px rgba(0, 0, 0, 0.45),
+    0 0 14px rgba(251, 191, 36, 0.32),
+    0 0 28px rgba(251, 191, 36, 0.14);
+  transform: scale(1.06);
 }
 
+/* ── Typing indicator — floating neumorphic glass pill ─────────────────── */
 .chat-typing-indicator {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 14px 5px;
-  min-height: 22px;
-  animation: chat-typing-appear 160ms ease forwards;
+  gap: 9px;
+  align-self: flex-start;
+  margin: 0 10px 6px;
+  padding: 7px 14px 7px 11px;
+  border-radius: 999px;
+  /* Raised neumorphic tile — same language as active tab buttons */
+  background: linear-gradient(
+    158deg,
+    #252532 0%,
+    #1d1d28 55%,
+    #171720 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.72),
+    0 3px 9px  rgba(0, 0, 0, 0.58),
+    0 1px 3px  rgba(0, 0, 0, 0.44),
+    inset 0  1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.50),
+    0 0 22px rgba(120, 100, 255, 0.07);
+  animation: chat-typing-appear 200ms cubic-bezier(0.34, 1.22, 0.64, 1) forwards;
 }
 
 @keyframes chat-typing-appear {
-  from { opacity: 0; transform: translateY(3px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 
-/* Three bouncing dots */
+/* Three bouncing dots — violet/indigo color with glow */
 .chat-typing-dots {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .chat-typing-dots span {
   display: block;
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: rgba(200, 202, 220, 0.55);
-  animation: chat-typing-bounce 1.1s ease-in-out infinite;
+  background: rgba(140, 120, 255, 0.90);
+  box-shadow: 0 0 6px rgba(120, 100, 255, 0.70), 0 0 12px rgba(100, 80, 255, 0.35);
+  animation: chat-typing-bounce 1.2s ease-in-out infinite;
 }
-
-.chat-typing-dots span:nth-child(2) { animation-delay: 0.18s; }
-.chat-typing-dots span:nth-child(3) { animation-delay: 0.36s; }
+/* Stagger color slightly per dot for a living wave */
+.chat-typing-dots span:nth-child(1) { background: rgba(160, 140, 255, 0.95); animation-delay: 0s; }
+.chat-typing-dots span:nth-child(2) { background: rgba(130, 110, 255, 0.90); animation-delay: 0.18s; }
+.chat-typing-dots span:nth-child(3) { background: rgba(110,  88, 245, 0.85); animation-delay: 0.36s; }
 
 @keyframes chat-typing-bounce {
-  0%, 55%, 100% { transform: translateY(0);    opacity: 0.45; }
-  27%            { transform: translateY(-5px); opacity: 1; }
+  0%, 60%, 100% { transform: translateY(0);    opacity: 0.50; box-shadow: 0 0 4px rgba(120,100,255,0.40); }
+  30%            { transform: translateY(-6px); opacity: 1;    box-shadow: 0 0 10px rgba(140,120,255,0.85), 0 0 20px rgba(110,88,245,0.40); }
 }
 
 /* Label text */
 .chat-typing-label {
-  font-size: 11px;
+  font-size: 11.5px;
   font-style: italic;
-  font-weight: 450;
-  color: hsl(var(--muted-foreground) / 0.75);
+  font-weight: 500;
+  color: rgba(200, 198, 225, 0.60);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
+  letter-spacing: 0.01em;
 }
 
 /* ---- Pinned message banner — persistent slot between filters & scroll -- */

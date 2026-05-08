@@ -6509,7 +6509,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </div>
         )}
 
-        <ScrollArea className="flex-1 min-h-0" ref={chatScrollRef} onScroll={handleScroll}>
+        <div className="chat-scroll-well flex-1 min-h-0">
+        <ScrollArea className="h-full" ref={chatScrollRef} onScroll={handleScroll}>
           <div className="px-3 py-3 space-y-1 min-h-full flex flex-col justify-end">
             {(() => {
               const displayedMessages = showMentionsOnly
@@ -6920,6 +6921,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             })()}
           </div>
         </ScrollArea>
+        </div>
 
         {/* Typing indicator — shown between messages and the input */}
         {Object.keys(typingUsers).length > 0 && (
@@ -7206,6 +7208,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               type="submit"
               disabled={!chatText.trim()}
               data-testid="button-send-room-chat"
+              data-ready={chatText.trim() ? "true" : undefined}
               className="room-send-btn"
             >
               <Send className="w-3.5 h-3.5" />
