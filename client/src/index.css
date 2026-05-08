@@ -9242,75 +9242,142 @@ html.neomorphic-light .scroll-jump-btn {
    Ghost at rest, carved inset on press, violet glow for owner variant.
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* Circular neumorphic pill — same convex-glass visual language as the
+   PinnedSocialsButton: radial-gradient crown, top specular gloss, ambient
+   glow corona, and a satisfying gear spin on hover. */
 .lobby-card-settings-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+  color: rgba(200, 205, 220, 0.55);
+  /* Convex radial-gradient surface — light crown, dark base */
+  background: radial-gradient(
+    120% 120% at 50% 0%,
+    rgba(52, 55, 80, 0.92) 0%,
+    rgba(16, 17, 30, 0.96) 70%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.50),
-    0 1px 0 rgba(255, 255, 255, 0.04);
+    inset 0  1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.55),
+    0 6px 16px rgba(0, 0, 0, 0.52),
+    0 2px 6px  rgba(0, 0, 0, 0.38),
+    0 0 18px rgba(160, 165, 200, 0.06);
   cursor: pointer;
   transition:
-    color 140ms ease,
-    background 140ms ease,
-    box-shadow 160ms ease,
-    transform 120ms ease;
+    color        160ms ease,
+    transform    160ms ease,
+    box-shadow   220ms ease,
+    border-color 220ms ease;
   outline: none;
 }
 
+/* Top specular gloss — convex lens illusion, mirrors pinned-socials-toggle::before */
+.lobby-card-settings-btn::before {
+  content: "";
+  position: absolute;
+  top: 1px; left: 1px; right: 1px;
+  height: 45%;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.17) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  pointer-events: none;
+}
+
+.lobby-card-settings-btn svg {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
+  transition: transform 480ms cubic-bezier(0.34, 1.22, 0.64, 1);
+}
+
 .lobby-card-settings-btn:hover {
-  color: rgba(255, 255, 255, 0.72);
-  background: rgba(255, 255, 255, 0.07);
+  color: rgba(220, 225, 240, 0.92);
   transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0  1px 0 rgba(255, 255, 255, 0.17),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.60),
+    0 10px 22px rgba(0, 0, 0, 0.58),
+    0  3px  8px rgba(0, 0, 0, 0.40),
+    0  0   26px rgba(180, 185, 220, 0.14);
+}
+
+.lobby-card-settings-btn:hover svg {
+  transform: rotate(60deg);
 }
 
 .lobby-card-settings-btn:active {
   transform: translateY(0);
   box-shadow:
-    inset 0 3px 9px rgba(0, 0, 0, 0.70),
-    inset 0 1px 3px rgba(0, 0, 0, 0.50);
+    inset 0 3px 9px rgba(0, 0, 0, 0.72),
+    inset 0 1px 3px rgba(0, 0, 0, 0.50),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 0 14px rgba(160, 165, 200, 0.09);
 }
 
-/* Owner variant — violet accent glow so it's visually distinct */
+/* Owner variant — violet/indigo convex pill with branded corona glow */
 .lobby-card-settings-btn--owner {
-  color: rgba(180, 160, 255, 0.75);
-  background: linear-gradient(145deg, rgba(110, 70, 240, 0.14) 0%, rgba(80, 40, 200, 0.08) 100%);
-  border-color: rgba(140, 100, 255, 0.22);
+  color: rgba(180, 160, 255, 0.88);
+  background: radial-gradient(
+    120% 120% at 50% 0%,
+    rgba(72, 48, 168, 0.94) 0%,
+    rgba(28, 14, 80, 0.97) 70%
+  );
+  border-color: rgba(140, 100, 255, 0.38);
   box-shadow:
-    inset 0 2px 7px rgba(0, 0, 0, 0.55),
-    0 0 8px rgba(110, 70, 240, 0.18),
-    0 1px 0 rgba(200, 180, 255, 0.06);
-}
-
-.lobby-card-settings-btn--owner:hover {
-  color: rgba(200, 185, 255, 0.95);
-  background: linear-gradient(145deg, rgba(110, 70, 240, 0.22) 0%, rgba(80, 40, 200, 0.14) 100%);
-  border-color: rgba(160, 130, 255, 0.40);
-  box-shadow:
-    inset 0 2px 7px rgba(0, 0, 0, 0.55),
-    0 0 14px rgba(110, 70, 240, 0.38),
-    0 0 28px rgba(80, 40, 200, 0.16),
-    0 1px 0 rgba(200, 180, 255, 0.10);
-  transform: translateY(-1px);
+    inset 0  1px 0 rgba(200, 185, 255, 0.22),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.58),
+    0 6px 16px rgba(0, 0, 0, 0.55),
+    0 2px 6px  rgba(0, 0, 0, 0.38),
+    0 0 20px rgba(110, 70, 240, 0.32);
 }
 
 .lobby-card-settings-btn--owner svg {
   filter:
-    drop-shadow(0 0 3px rgba(140, 100, 255, 0.60))
-    drop-shadow(0 0 7px rgba(100, 60, 220, 0.28));
+    drop-shadow(0 0 3px rgba(160, 130, 255, 0.70))
+    drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
+}
+
+.lobby-card-settings-btn--owner:hover {
+  color: rgba(215, 200, 255, 0.98);
+  border-color: rgba(175, 148, 255, 0.70);
+  box-shadow:
+    inset 0  1px 0 rgba(215, 200, 255, 0.26),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.62),
+    0 10px 22px rgba(0, 0, 0, 0.60),
+    0  0   30px rgba(130, 90, 255, 0.55),
+    0  0   52px rgba(90, 50, 220, 0.22);
+  transform: translateY(-1px);
 }
 
 .lobby-card-settings-btn--owner:hover svg {
+  transform: rotate(60deg);
   filter:
-    drop-shadow(0 0 5px rgba(160, 130, 255, 0.90))
-    drop-shadow(0 0 11px rgba(110, 70, 240, 0.45));
+    drop-shadow(0 0 6px rgba(180, 150, 255, 0.95))
+    drop-shadow(0 0 14px rgba(130, 90, 255, 0.55));
+}
+
+.lobby-card-settings-btn--owner:active {
+  box-shadow:
+    inset 0 3px 9px rgba(0, 0, 0, 0.72),
+    inset 0 1px 3px rgba(0, 0, 0, 0.50),
+    0 0 18px rgba(110, 70, 240, 0.28);
+}
+
+/* Gear-spin reduced motion override */
+@media (prefers-reduced-motion: reduce) {
+  .lobby-card-settings-btn:hover svg,
+  .lobby-card-settings-btn--owner:hover svg { transform: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
