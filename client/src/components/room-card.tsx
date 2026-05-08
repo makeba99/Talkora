@@ -699,10 +699,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
-    <Button
-      size="icon"
-      variant="ghost"
-      className="neu-icon-btn-red flex-shrink-0 w-7 h-7 rounded-full"
+    <button
+      className="lobby-card-settings-btn lobby-card-settings-btn--owner flex-shrink-0"
       onClick={(e) => {
         e.stopPropagation();
         setEditOpen(true);
@@ -711,7 +709,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       aria-label={`Edit settings for room ${room.title}`}
     >
       <Settings className="w-3.5 h-3.5" aria-hidden="true" />
-    </Button>
+    </button>
   ) : (() => {
     const ownerUser = participants.find(p => p.id === room.ownerId);
     const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
@@ -723,16 +721,14 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="flex-shrink-0 w-7 h-7 text-white/50 hover:text-white hover:bg-white/10"
+          <button
+            className="lobby-card-settings-btn flex-shrink-0"
             onClick={(e) => e.stopPropagation()}
             data-testid={`button-room-info-${room.id}`}
             aria-label={`Show details for room ${room.title}`}
           >
             <Settings className="w-3.5 h-3.5" aria-hidden="true" />
-          </Button>
+          </button>
         </PopoverTrigger>
         <PopoverContent
           className="w-60 p-0 border-0 shadow-2xl overflow-hidden"

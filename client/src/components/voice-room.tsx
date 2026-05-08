@@ -9458,137 +9458,134 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               {renderControlDock()}
             </div>
 
-            {/* ── Right: Panel toggles ── */}
-            <div className="flex items-center justify-end gap-0.5 flex-1 basis-0">
-              {/* Social Panel Toggle */}
-              {(() => {
-                const isActive = sidePanelOpen;
-                return (
-                  <div className="relative">
-                    <button
-                      onClick={() => {
-                        const isMobile = window.innerWidth < 768;
-                        if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); }
-                        else { setSidePanelOpen(!sidePanelOpen); }
-                      }}
-                      data-testid="button-panel-social"
-                      title="Social Panel"
-                      className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
-                      style={isActive
-                        ? { background: "hsl(var(--neu-orange) / 0.18)", border: "1px solid hsl(var(--neu-orange) / 0.40)", color: "hsl(var(--neu-orange-hi) / 0.96)", boxShadow: "0 0 12px hsl(var(--neu-orange) / 0.28), inset 0 1px 0 rgba(220,210,255,0.18)" }
-                        : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }
-                      }
-                    >
-                      <LayoutGrid className="w-[14px] h-[14px]" />
-                    </button>
-                    {unreadChatBadge > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.5)" }}>
-                        {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
-                      </span>
-                    )}
-                  </div>
-                );
-              })()}
+            {/* ── Right: Unified action pill ── */}
+            <div className="flex items-center justify-end flex-1 basis-0">
+              <div className="room-header-pill">
+                {/* Panel toggle */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      const isMobile = window.innerWidth < 768;
+                      if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); }
+                      else { setSidePanelOpen(!sidePanelOpen); }
+                    }}
+                    data-testid="button-panel-social"
+                    title="Social Panel"
+                    className="room-header-pill-btn"
+                    data-active={sidePanelOpen}
+                  >
+                    <LayoutGrid className="w-[18px] h-[18px]" />
+                  </button>
+                  {unreadChatBadge > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none z-10" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
+                      {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
+                    </span>
+                  )}
+                </div>
 
-              {/* Settings */}
-              {isHost && (
-                <button
-                  onClick={() => {
-                    setEditTitle(room.title);
-                    setEditLanguage(room.language);
-                    setEditLevel(room.level);
-                    setEditMaxUsers(room.maxUsers);
-                    setEditIsPublic(((room as any).isPublic ?? true) as boolean);
-                    const currentHologram = ((room as any).hologramVideoUrl as string) || null;
-                    setEditHologramUrl(currentHologram);
-                    setEditHologramKind(
-                      currentHologram
-                        ? (/\.(mp4|webm|mov)(\?|$)/i.test(currentHologram)
-                            ? "video"
-                            : /\.(jpe?g|png|webp)(\?|$)/i.test(currentHologram)
-                            ? "image"
-                            : "gif")
-                        : "gif"
-                    );
-                    const currentEditTheme = (room as any).roomTheme || "none";
-                    const themeIndex = ROOM_THEMES.findIndex((theme) => theme.id === currentEditTheme);
-                    setEditRoomTheme(currentEditTheme);
-                    setEditThemeOffset(Math.max(0, Math.floor(Math.max(0, themeIndex) / 4) * 4));
-                    setEditDialogOpen(true);
-                  }}
-                  data-testid="button-host-settings"
-                  title="Room Settings"
-                  className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }}
-                >
-                  <Settings className="w-[14px] h-[14px]" />
-                </button>
-              )}
-              {!isHost && (() => {
-                const ownerUser = participantById.get(room.ownerId);
-                const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
-                const ownerAvatar = ownerUser?.profileImageUrl || undefined;
-                const ownerInitials = ownerUser ? getUserInitials(ownerUser) : "?";
-                const createdAtStr = room.createdAt
-                  ? new Date(room.createdAt).toLocaleString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })
-                  : "—";
-                return (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        data-testid="button-non-host-settings"
-                        title="Room Info"
-                        className="w-8 h-8 rounded-[10px] flex items-center justify-center transition-all duration-200 hover:-translate-y-px hover:scale-[1.06] active:scale-[0.96]"
-                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.38)" }}
+                {/* Separator */}
+                <div className="room-header-pill-sep" />
+
+                {/* Settings (host) */}
+                {isHost && (
+                  <button
+                    onClick={() => {
+                      setEditTitle(room.title);
+                      setEditLanguage(room.language);
+                      setEditLevel(room.level);
+                      setEditMaxUsers(room.maxUsers);
+                      setEditIsPublic(((room as any).isPublic ?? true) as boolean);
+                      const currentHologram = ((room as any).hologramVideoUrl as string) || null;
+                      setEditHologramUrl(currentHologram);
+                      setEditHologramKind(
+                        currentHologram
+                          ? (/\.(mp4|webm|mov)(\?|$)/i.test(currentHologram)
+                              ? "video"
+                              : /\.(jpe?g|png|webp)(\?|$)/i.test(currentHologram)
+                              ? "image"
+                              : "gif")
+                          : "gif"
+                      );
+                      const currentEditTheme = (room as any).roomTheme || "none";
+                      const themeIndex = ROOM_THEMES.findIndex((theme) => theme.id === currentEditTheme);
+                      setEditRoomTheme(currentEditTheme);
+                      setEditThemeOffset(Math.max(0, Math.floor(Math.max(0, themeIndex) / 4) * 4));
+                      setEditDialogOpen(true);
+                    }}
+                    data-testid="button-host-settings"
+                    title="Room Settings"
+                    className="room-header-pill-btn room-header-pill-btn--host"
+                  >
+                    <Settings className="w-[18px] h-[18px]" />
+                  </button>
+                )}
+
+                {/* Room Info (non-host) */}
+                {!isHost && (() => {
+                  const ownerUser = participantById.get(room.ownerId);
+                  const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
+                  const ownerAvatar = ownerUser?.profileImageUrl || undefined;
+                  const ownerInitials = ownerUser ? getUserInitials(ownerUser) : "?";
+                  const createdAtStr = room.createdAt
+                    ? new Date(room.createdAt).toLocaleString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })
+                    : "—";
+                  return (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          data-testid="button-non-host-settings"
+                          title="Room Info"
+                          className="room-header-pill-btn"
+                        >
+                          <Settings className="w-[18px] h-[18px]" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-60 p-0 border-0 shadow-2xl overflow-hidden"
+                        style={{ background: "hsl(228 14% 10%)" }}
+                        align="end"
                       >
-                        <Settings className="w-[14px] h-[14px]" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-60 p-0 border-0 shadow-2xl overflow-hidden"
-                      style={{ background: "hsl(228 14% 10%)" }}
-                      align="end"
-                    >
-                      <div className="flex flex-col">
-                        <div className="pt-4 pb-1 text-center">
-                          <p className="text-sm font-semibold text-white">Group Owner</p>
+                        <div className="flex flex-col">
+                          <div className="pt-4 pb-1 text-center">
+                            <p className="text-sm font-semibold text-white">Group Owner</p>
+                          </div>
+                          <div className="flex flex-col items-center gap-1.5 pb-3">
+                            <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
+                              <AvatarImage src={ownerAvatar} alt="" />
+                              <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
+                            </Avatar>
+                            <p className="text-sm font-medium text-white">{ownerName}</p>
+                          </div>
+                          <div className="border-t border-white/10" />
+                          <button
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+                            onClick={() => {
+                              navigator.clipboard.writeText(room.ownerId);
+                              toast({ description: "Owner ID copied!" });
+                            }}
+                            data-testid="button-copy-owner-id"
+                          >
+                            <Copy className="w-4 h-4 text-white/50" />
+                            Copy Owner ID
+                          </button>
+                          <button
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+                            data-testid="button-report-bad-topic"
+                          >
+                            <Bell className="w-4 h-4 text-white/50" />
+                            Report Bad Topic
+                          </button>
+                          <div className="border-t border-white/10" />
+                          <div className="px-4 py-3 text-center">
+                            <p className="text-xs text-white/40 mb-0.5">Created At</p>
+                            <p className="text-sm font-medium text-white">{createdAtStr}</p>
+                          </div>
                         </div>
-                        <div className="flex flex-col items-center gap-1.5 pb-3">
-                          <Avatar className="w-16 h-16 rounded-full border-2 border-white/10" style={{ filter: "grayscale(100%)" }}>
-                            <AvatarImage src={ownerAvatar} alt="" />
-                            <AvatarFallback className="bg-zinc-700 text-white text-lg">{ownerInitials}</AvatarFallback>
-                          </Avatar>
-                          <p className="text-sm font-medium text-white">{ownerName}</p>
-                        </div>
-                        <div className="border-t border-white/10" />
-                        <button
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
-                          onClick={() => {
-                            navigator.clipboard.writeText(room.ownerId);
-                            toast({ description: "Owner ID copied!" });
-                          }}
-                          data-testid="button-copy-owner-id"
-                        >
-                          <Copy className="w-4 h-4 text-white/50" />
-                          Copy Owner ID
-                        </button>
-                        <button
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
-                          data-testid="button-report-bad-topic"
-                        >
-                          <Bell className="w-4 h-4 text-white/50" />
-                          Report Bad Topic
-                        </button>
-                        <div className="border-t border-white/10" />
-                        <div className="px-4 py-3 text-center">
-                          <p className="text-xs text-white/40 mb-0.5">Created At</p>
-                          <p className="text-sm font-medium text-white">{createdAtStr}</p>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                );
-              })()}
+                      </PopoverContent>
+                    </Popover>
+                  );
+                })()}
+              </div>
             </div>
           </div>
 
