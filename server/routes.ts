@@ -2244,7 +2244,11 @@ export async function registerRoutes(
     if (!roomParticipants.has(roomId)) return [];
 
     const leavingUser = roomParticipants.get(roomId)!.get(userId);
-    const leavingDisplayName = leavingUser ? getDisplayName(leavingUser) : null;
+    let leavingDisplayName = leavingUser ? getDisplayName(leavingUser) : null;
+    if (!leavingDisplayName) {
+      const dbUser = await storage.getUser(userId);
+      if (dbUser) leavingDisplayName = getDisplayName(dbUser);
+    }
     roomParticipants.get(roomId)!.delete(userId);
     const participants = Array.from(roomParticipants.get(roomId)!.values());
     await storage.updateRoomActiveUsers(roomId, participants.length);
@@ -5944,7 +5948,11 @@ export async function registerRoutes(
             for (const [roomId, participants] of Array.from(roomParticipants.entries())) {
               if (participants.has(disconnectingUserId)) {
                 const disconnectingUser = participants.get(disconnectingUserId);
-                const disconnectingDisplayName = disconnectingUser ? getDisplayName(disconnectingUser) : null;
+                let disconnectingDisplayName = disconnectingUser ? getDisplayName(disconnectingUser) : null;
+                if (!disconnectingDisplayName) {
+                  const dbUser = await storage.getUser(disconnectingUserId);
+                  if (dbUser) disconnectingDisplayName = getDisplayName(dbUser);
+                }
                 participants.delete(disconnectingUserId);
 
                 // Per-user room state cleanup — identical to manual room:leave
