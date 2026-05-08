@@ -6666,8 +6666,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-2 flex-wrap min-w-0">
-                        <span className="text-[12px] font-semibold min-w-0 break-words [overflow-wrap:anywhere] tracking-tight">{getUserDisplayName(msgUser)}</span>
-                        <span className="text-[10px] text-muted-foreground/50">{formatTime(msg.createdAt)}</span>
+                        <span className="chat-msg-name min-w-0 break-words [overflow-wrap:anywhere]">{getUserDisplayName(msgUser)}</span>
+                        <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
                         {msg.isPrivate && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
                             <LockKeyhole className="w-2.5 h-2.5 mr-1" />
@@ -6676,15 +6676,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
                       </div>
                       {msg.replyTo && (
-                        <div className="mt-0.5 mb-1.5 pl-2 border-l-2 border-primary/40 rounded-r-md" style={{ background: "rgba(255,255,255,0.04)" }}>
-                          <span className="text-[10px] font-semibold text-primary/70 block px-1.5 pt-1">{msg.replyTo.userName}</span>
-                          <div className="px-1.5 pb-1 text-xs opacity-80 pointer-events-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]" data-testid={`reply-preview-message-${msg.id}`}>
+                        <div className="chat-reply-preview mt-0.5 mb-1.5 pl-2 border-l-2 rounded-r-md">
+                          <span className="text-[10px] font-semibold text-white/45 block px-1.5 pt-1">{msg.replyTo.userName}</span>
+                          <div className="px-1.5 pb-1 text-xs opacity-70 pointer-events-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]" data-testid={`reply-preview-message-${msg.id}`}>
                             {renderReplyPreview(msg.replyTo.text)}
                           </div>
                         </div>
                       )}
                       <div
-                        className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] mt-0.5 max-w-full"
+                        className="chat-msg-body whitespace-pre-wrap break-words [overflow-wrap:anywhere] mt-0.5 max-w-full"
                         style={{ color: msg.messageColor || undefined }}
                         data-testid={`text-room-chat-${msg.id}`}
                       >
