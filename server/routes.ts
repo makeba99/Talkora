@@ -4230,14 +4230,10 @@ export async function registerRoutes(
         }
         await leaveRoomState(existingRoomId, userId, previousSocketId === socket.id ? socket : previousSocket);
       } else if (existingRoomId === roomId && previousSocketId && previousSocketId !== socket.id) {
-        // User opened the SAME room in a new tab — the new socket takes over.
-        // Tell the old tab it has been replaced so it cleans up without leaving
-        // the room participant list (the new socket is already taking over).
-        io.to(previousSocketId).emit("room:session-replaced", { roomId });
-        // Remove the old socket from the Socket.IO room so it stops receiving
-        // duplicate events, but do NOT call leaveRoomState (that would remove
-        // the user from roomParticipants and broadcast a spurious "left" event).
-        previousSocket?.leave(roomId);
+        // User opened the SAME room in a new tab — reject the new tab and keep
+        // the existing session alive. Tell the new socket to redirect back.
+        socket.emit("room:duplicate-tab", { roomId });
+        return;
       }
 
       cancelRoomDeleteTimer(roomId);
