@@ -2243,10 +2243,12 @@ export async function registerRoutes(
 
     if (!roomParticipants.has(roomId)) return [];
 
+    const leavingUser = roomParticipants.get(roomId)!.get(userId);
+    const leavingDisplayName = leavingUser ? getDisplayName(leavingUser) : null;
     roomParticipants.get(roomId)!.delete(userId);
     const participants = Array.from(roomParticipants.get(roomId)!.values());
     await storage.updateRoomActiveUsers(roomId, participants.length);
-    io.to(roomId).emit("room:user-left", { userId, participants });
+    io.to(roomId).emit("room:user-left", { userId, participants, displayName: leavingDisplayName });
     io.emit("room:participants-update", { roomId, participants });
 
     if (participants.length === 0) {
@@ -4457,10 +4459,12 @@ export async function registerRoutes(
       }
 
       if (roomParticipants.has(data.roomId)) {
+        const kickedUser = roomParticipants.get(data.roomId)!.get(data.targetUserId);
+        const kickedDisplayName = kickedUser ? getDisplayName(kickedUser) : null;
         roomParticipants.get(data.roomId)!.delete(data.targetUserId);
         const participants = Array.from(roomParticipants.get(data.roomId)!.values());
         await storage.updateRoomActiveUsers(data.roomId, participants.length);
-        io.to(data.roomId).emit("room:user-left", { userId: data.targetUserId, participants });
+        io.to(data.roomId).emit("room:user-left", { userId: data.targetUserId, participants, displayName: kickedDisplayName });
         io.emit("room:participants-update", { roomId: data.roomId, participants });
       }
     });
@@ -4582,10 +4586,12 @@ export async function registerRoutes(
           if (targetSocket) targetSocket.leave(data.roomId);
         }
         if (roomParticipants.has(data.roomId)) {
+          const trollUser = roomParticipants.get(data.roomId)!.get(state.targetUserId);
+          const trollDisplayName = trollUser ? getDisplayName(trollUser) : null;
           roomParticipants.get(data.roomId)!.delete(state.targetUserId);
           const updatedParts = Array.from(roomParticipants.get(data.roomId)!.values());
           await storage.updateRoomActiveUsers(data.roomId, updatedParts.length);
-          io.to(data.roomId).emit("room:user-left", { userId: state.targetUserId, participants: updatedParts });
+          io.to(data.roomId).emit("room:user-left", { userId: state.targetUserId, participants: updatedParts, displayName: trollDisplayName });
           io.emit("room:participants-update", { roomId: data.roomId, participants: updatedParts });
         }
         const targetUser = await storage.getUser(state.targetUserId);
@@ -5920,6 +5926,8 @@ export async function registerRoutes(
 
             for (const [roomId, participants] of Array.from(roomParticipants.entries())) {
               if (participants.has(disconnectingUserId)) {
+                const disconnectingUser = participants.get(disconnectingUserId);
+                const disconnectingDisplayName = disconnectingUser ? getDisplayName(disconnectingUser) : null;
                 participants.delete(disconnectingUserId);
 
                 // Per-user room state cleanup — identical to manual room:leave
@@ -5964,6 +5972,7 @@ export async function registerRoutes(
                 io.to(roomId).emit("room:user-left", {
                   userId: disconnectingUserId,
                   participants: remainingParticipants,
+                  displayName: disconnectingDisplayName,
                 });
                 io.emit("room:participants-update", {
                   roomId,

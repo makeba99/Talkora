@@ -2510,9 +2510,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     });
 
-    socket.on("room:user-left", (data: { userId: string; participants: Participant[] }) => {
+    socket.on("room:user-left", (data: { userId: string; participants: Participant[]; displayName?: string | null }) => {
       const leftUser = participantsRef.current.find((p) => p.id === data.userId);
-      const name = leftUser ? getUserDisplayName(leftUser) : "Someone";
+      const name = data.displayName || (leftUser ? getUserDisplayName(leftUser) : null) || "Someone";
       // Subtle departure cue for remaining participants
       if (data.userId !== user.id) {
         import("@/lib/mood-sounds").then((m) => m.playDepartureSound()).catch(() => {});
