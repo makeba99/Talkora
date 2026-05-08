@@ -9415,20 +9415,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               {/* Icon — deep neumorphic gem */}
               <div className="relative flex-shrink-0">
                 <div
-                  className="w-10 h-10 rounded-[14px] flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(145deg, hsl(252 30% 14%) 0%, hsl(248 26% 10%) 60%, hsl(244 22% 8%) 100%)",
-                    border: "1px solid rgba(157,134,255,0.22)",
-                    boxShadow: [
-                      "-3px -3px 7px rgba(255,255,255,0.055)",
-                      "4px 4px 12px rgba(0,0,0,0.85)",
-                      "2px 2px 4px rgba(0,0,0,0.60)",
-                      "inset 0 1.5px 0 rgba(200,180,255,0.14)",
-                      "inset 0 -1.5px 0 rgba(0,0,0,0.55)",
-                      "0 0 18px rgba(110,70,240,0.22)",
-                      "0 0 36px rgba(80,40,200,0.10)",
-                    ].join(", "),
-                  }}
+                  className="brand-room-mark"
                   data-testid="brand-room-mark"
                 >
                   <VextornMark size={22} />

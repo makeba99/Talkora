@@ -9237,6 +9237,125 @@ html.neomorphic-light .scroll-jump-btn {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   VOICE ROOM HEADER — BRAND MARK GEM
+   Next-level deep neumorphism: asymmetric dual ambient shadow, 5-layer
+   lift stack, convex top gloss (::before), side-rim catch (::after),
+   inner bevel highlight, and a slow-breathing violet corona glow.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.brand-room-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  /* Deep layered dark-violet gradient */
+  background: linear-gradient(
+    148deg,
+    hsl(252 34% 17%) 0%,
+    hsl(248 28% 12%) 48%,
+    hsl(244 24% 7%)  100%
+  );
+  border: 1px solid rgba(157, 134, 255, 0.28);
+  /* NEXT-LEVEL neumorphic shadow stack:
+     1. Asymmetric ambient dual-shadow (top-left light / bottom-right dark)
+     2. Five-layer physical lift stack
+     3. Hairline outer rim catch
+     4. Inner convex bevel highlight
+     5. Inner bottom anchor groove
+     6. Branded violet corona glow (near + far) */
+  box-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.065),
+     5px  5px 16px rgba(0,   0,   0,   0.90),
+    0 10px 32px rgba(0, 0, 0, 0.82),
+    0  5px 14px rgba(0, 0, 0, 0.68),
+    0  2px  5px rgba(0, 0, 0, 0.52),
+    0  0    0 1px rgba(255, 255, 255, 0.038),
+    inset 0  2px 0   rgba(215, 200, 255, 0.20),
+    inset 0 -2px 5px rgba(0,   0,   0,   0.72),
+    0 0 24px rgba(120, 80, 255, 0.38),
+    0 0 56px rgba(85,  45, 210, 0.16);
+  animation: brand-mark-breathe 3.8s ease-in-out infinite;
+  cursor: default;
+}
+
+/* Convex top-gloss specular — catches a virtual light source above */
+.brand-room-mark::before {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px; right: 2px;
+  height: 44%;
+  border-radius: 13px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.20) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Diagonal side-rim catch — rakes across the face like a studio key light */
+.brand-room-mark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    transparent           45%,
+    rgba(0,   0,   0,   0.22) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure the SVG logo sits above both pseudo-element layers */
+.brand-room-mark > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Slow violet corona breathe — the gem feels subtly alive */
+@keyframes brand-mark-breathe {
+  0%, 100% {
+    box-shadow:
+      -5px -5px 12px rgba(255, 255, 255, 0.065),
+       5px  5px 16px rgba(0,   0,   0,   0.90),
+      0 10px 32px rgba(0, 0, 0, 0.82),
+      0  5px 14px rgba(0, 0, 0, 0.68),
+      0  2px  5px rgba(0, 0, 0, 0.52),
+      0  0    0 1px rgba(255, 255, 255, 0.038),
+      inset 0  2px 0   rgba(215, 200, 255, 0.20),
+      inset 0 -2px 5px rgba(0,   0,   0,   0.72),
+      0 0 24px rgba(120, 80, 255, 0.38),
+      0 0 56px rgba(85,  45, 210, 0.16);
+  }
+  50% {
+    box-shadow:
+      -5px -5px 12px rgba(255, 255, 255, 0.072),
+       5px  5px 16px rgba(0,   0,   0,   0.92),
+      0 10px 32px rgba(0, 0, 0, 0.84),
+      0  5px 14px rgba(0, 0, 0, 0.70),
+      0  2px  5px rgba(0, 0, 0, 0.54),
+      0  0    0 1px rgba(255, 255, 255, 0.045),
+      inset 0  2px 0   rgba(215, 200, 255, 0.26),
+      inset 0 -2px 5px rgba(0,   0,   0,   0.76),
+      0 0 36px rgba(140, 95, 255, 0.58),
+      0 0 78px rgba(100, 55, 230, 0.26);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-room-mark { animation: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    LOBBY CARD SETTINGS BUTTON
    Premium neumorphic mini-button for the gear icon on each room card.
    Ghost at rest, carved inset on press, violet glow for owner variant.
