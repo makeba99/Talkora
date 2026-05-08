@@ -10802,7 +10802,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               className="overflow-x-auto w-full"
               style={{ scrollbarWidth: "none" }}
             >
-            <div className="flex flex-nowrap items-end justify-center" style={{ gap: gapPx, minWidth: "max-content", margin: "0 auto" }}>
+            <div className="flex flex-nowrap items-end justify-center pt-14" style={{ gap: gapPx, minWidth: "max-content", margin: "0 auto" }}>
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
                 const isBlockedUser = blockedIds.has(p.id) && p.id !== user?.id;
