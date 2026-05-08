@@ -10437,7 +10437,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             const gapPx = cardPx <= 72 ? 6 : 8;
           return (
           <div className={`flex items-end justify-center p-2 pb-4 ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 overflow-y-auto pt-4"}`}>
-            <div className="flex flex-wrap items-end justify-center" style={{ gap: gapPx }}>
+            <div
+              className="overflow-x-auto w-full"
+              style={{ scrollbarWidth: "none" }}
+            >
+            <div className="flex flex-nowrap items-end justify-center" style={{ gap: gapPx, minWidth: "max-content", margin: "0 auto" }}>
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
                 const isBlockedUser = blockedIds.has(p.id) && p.id !== user?.id;
@@ -10878,6 +10882,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </button>
                 </div>
               )}
+            </div>
             </div>
           </div>
           );})()}
