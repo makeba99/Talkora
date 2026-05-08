@@ -6683,14 +6683,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 return (
                   <div
                     key={msg.id}
-                    className="group chat-msg-card flex items-start gap-2.5 relative transition-colors duration-100"
+                    className="group chat-msg-card flex items-start gap-3 relative transition-colors duration-100"
                     data-own={msg.userId === user?.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                     onMouseEnter={() => setHoveredMsgId(msg.id)}
                     onMouseLeave={() => setHoveredMsgId(null)}
                   >
-                    <div className={`rounded-full p-[2px] bg-gradient-to-br ${gradient} flex-shrink-0 mt-0.5 shadow-sm`}>
-                      <Avatar className="w-8 h-8 border border-background/80">
+                    {/* Avatar — deep neumorphic gem ring */}
+                    <div
+                      className={`rounded-full flex-shrink-0 mt-0.5`}
+                      style={{
+                        padding: "2.5px",
+                        background: `linear-gradient(135deg, ${gradient.includes("from-") ? "rgba(120,90,220,0.70)" : "rgba(80,60,180,0.60)"} 0%, rgba(40,30,100,0.50) 100%)`,
+                        boxShadow: [
+                          "-2px -2px 5px rgba(255,255,255,0.06)",
+                          "3px 3px 8px rgba(0,0,0,0.70)",
+                          "0 0 10px rgba(100,70,200,0.20)",
+                        ].join(", "),
+                      }}
+                    >
+                      <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,0.50)" }}>
                         <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
                         <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
                           {getUserInitials(msgUser)}
