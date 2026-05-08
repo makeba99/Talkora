@@ -6919,6 +6919,93 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
                       </div>
 
+                      {/* Hover toolbar — sits between name and bubble, no overlap */}
+                      {hoveredMsgId === msg.id && (
+                        <div
+                          className={`flex items-center gap-0.5 ${isOwn ? "flex-row-reverse" : ""}`}
+                          style={{ background:"rgba(8,9,15,.92)", backdropFilter:"blur(14px)", border:"1px solid rgba(255,255,255,.09)", borderRadius:"10px", boxShadow:"0 4px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)", padding:"3px 5px", alignSelf: isOwn ? "flex-end" : "flex-start" }}
+                        >
+                          {QUICK_EMOJIS.map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleReact(msg.id, emoji)}
+                              className="text-sm hover:scale-125 transition-transform px-0.5 leading-none"
+                              data-testid={`quick-react-${msg.id}-${emoji}`}
+                              title={`React with ${emoji}`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => {
+                              setReplyingTo({
+                                id: msg.id,
+                                userId: msg.userId,
+                                userName: getUserDisplayName(msgUser) || "Unknown",
+                                text: msg.text,
+                              });
+                              chatInputRef.current?.focus();
+                            }}
+                            className="ml-1 text-[10px] text-muted-foreground hover:text-foreground px-1 py-0.5 rounded hover:bg-accent transition-colors"
+                            data-testid={`button-reply-${msg.id}`}
+                          >
+                            Reply
+                          </button>
+                          {(isHost || participantRoles[user?.id || ""] === "co-owner") && msg.type !== "system" && (msg as any).type !== "deleted" && (
+                            <button
+                              onClick={() => {
+                                if (pinnedMessage?.message?.id === msg.id) {
+                                  socket?.emit("room:unpin-message", { roomId: room.id });
+                                } else {
+                                  socket?.emit("room:pin-message", {
+                                    roomId: room.id,
+                                    message: msg,
+                                    pinnedBy: user?.id,
+                                    pinnedByName: getUserDisplayName(user) || "Host",
+                                  });
+                                }
+                              }}
+                              className="ml-0.5 text-[10px] px-1 py-0.5 rounded transition-colors"
+                              style={pinnedMessage?.message?.id === msg.id
+                                ? { color: "rgba(251,191,36,.90)", background: "rgba(251,191,36,.12)" }
+                                : { color: "rgba(255,255,255,.38)", background: "transparent" }
+                              }
+                              title={pinnedMessage?.message?.id === msg.id ? "Unpin message" : "Pin message"}
+                              data-testid={`button-pin-${msg.id}`}
+                            >
+                              📌
+                            </button>
+                          )}
+                          {isOwn && msg.type !== "deleted" && (msg as any).type !== "system" && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingMsgId(msg.id);
+                                  setEditingText(msg.text);
+                                  setHoveredMsgId(null);
+                                }}
+                                className="ml-0.5 text-[10px] text-blue-300 hover:text-white px-1 py-0.5 rounded hover:bg-blue-500/20 transition-colors flex items-center gap-1"
+                                title="Edit"
+                                data-testid={`button-edit-${msg.id}`}
+                              >
+                                <Pencil className="w-3 h-3" /> Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                  setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                }}
+                                className="ml-0.5 text-[10px] text-destructive hover:text-white px-1 py-0.5 rounded hover:bg-destructive transition-colors flex items-center gap-1"
+                                title="Delete"
+                                data-testid={`button-delete-${msg.id}`}
+                              >
+                                <Trash2 className="w-3 h-3" /> Del
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+
                       {/* The actual bubble */}
                       <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
                         {msg.replyTo && (
@@ -7060,92 +7147,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       )}
                     </div>
 
-                    {/* Hover toolbar */}
-                    {hoveredMsgId === msg.id && (
-                      <div
-                        className="absolute right-0 top-0 flex items-center gap-0.5 z-10"
-                        style={{ background:"rgba(8,9,15,.92)", backdropFilter:"blur(14px)", border:"1px solid rgba(255,255,255,.09)", borderRadius:"10px", boxShadow:"0 4px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)", padding:"3px 5px" }}
-                      >
-                        {QUICK_EMOJIS.map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={() => handleReact(msg.id, emoji)}
-                            className="text-sm hover:scale-125 transition-transform px-0.5 leading-none"
-                            data-testid={`quick-react-${msg.id}-${emoji}`}
-                            title={`React with ${emoji}`}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => {
-                            setReplyingTo({
-                              id: msg.id,
-                              userId: msg.userId,
-                              userName: getUserDisplayName(msgUser) || "Unknown",
-                              text: msg.text,
-                            });
-                            chatInputRef.current?.focus();
-                          }}
-                          className="ml-1 text-[10px] text-muted-foreground hover:text-foreground px-1 py-0.5 rounded hover:bg-accent transition-colors"
-                          data-testid={`button-reply-${msg.id}`}
-                        >
-                          Reply
-                        </button>
-                        {(isHost || participantRoles[user?.id || ""] === "co-owner") && msg.type !== "system" && (msg as any).type !== "deleted" && (
-                          <button
-                            onClick={() => {
-                              if (pinnedMessage?.message?.id === msg.id) {
-                                socket?.emit("room:unpin-message", { roomId: room.id });
-                              } else {
-                                socket?.emit("room:pin-message", {
-                                  roomId: room.id,
-                                  message: msg,
-                                  pinnedBy: user?.id,
-                                  pinnedByName: getUserDisplayName(user) || "Host",
-                                });
-                              }
-                            }}
-                            className="ml-0.5 text-[10px] px-1 py-0.5 rounded transition-colors"
-                            style={pinnedMessage?.message?.id === msg.id
-                              ? { color: "rgba(251,191,36,.90)", background: "rgba(251,191,36,.12)" }
-                              : { color: "rgba(255,255,255,.38)", background: "transparent" }
-                            }
-                            title={pinnedMessage?.message?.id === msg.id ? "Unpin message" : "Pin message"}
-                            data-testid={`button-pin-${msg.id}`}
-                          >
-                            📌
-                          </button>
-                        )}
-                        {isOwn && msg.type !== "deleted" && (msg as any).type !== "system" && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setEditingMsgId(msg.id);
-                                setEditingText(msg.text);
-                                setHoveredMsgId(null);
-                              }}
-                              className="ml-0.5 text-[10px] text-blue-300 hover:text-white px-1 py-0.5 rounded hover:bg-blue-500/20 transition-colors flex items-center gap-1"
-                              title="Edit"
-                              data-testid={`button-edit-${msg.id}`}
-                            >
-                              <Pencil className="w-3 h-3" /> Edit
-                            </button>
-                            <button
-                              onClick={() => {
-                                socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                                setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
-                              }}
-                              className="ml-0.5 text-[10px] text-destructive hover:text-white px-1 py-0.5 rounded hover:bg-destructive transition-colors flex items-center gap-1"
-                              title="Delete"
-                              data-testid={`button-delete-${msg.id}`}
-                            >
-                              <Trash2 className="w-3 h-3" /> Del
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })
