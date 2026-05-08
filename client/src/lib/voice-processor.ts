@@ -4,7 +4,8 @@ export type VoicePresetId =
   | "bright"
   | "warm"
   | "radio"
-  | "bass";
+  | "bass"
+  | "cold";
 
 interface FilterConfig {
   type: BiquadFilterType;
@@ -82,6 +83,18 @@ export const VOICE_PRESETS: VoicePreset[] = [
       { type: "lowshelf", frequency: 150, gain: 9 },
       { type: "peaking", frequency: 300, gain: 5, Q: 1 },
       { type: "highshelf", frequency: 3000, gain: -3 },
+    ],
+  },
+  {
+    id: "cold",
+    label: "Cold",
+    description: "Icy deep, hollow & raw",
+    emoji: "❄️",
+    filters: [
+      { type: "lowshelf", frequency: 100, gain: 10 },
+      { type: "peaking", frequency: 250, gain: 6, Q: 0.8 },
+      { type: "peaking", frequency: 900, gain: -6, Q: 1.4 },
+      { type: "highshelf", frequency: 5000, gain: -7 },
     ],
   },
 ];
