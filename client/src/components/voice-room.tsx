@@ -22,7 +22,7 @@ import {
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
-  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star
+  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -31,6 +31,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { playMoodSound } from "@/lib/mood-sounds";
+import {
+  VoiceProcessor,
+  VOICE_PRESETS,
+  getSavedVoicePresetId,
+  saveVoicePresetId,
+  type VoicePresetId,
+} from "@/lib/voice-processor";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { LANGUAGES, LEVELS } from "@shared/constants";
 import { DmDialog } from "@/components/dm-dialog";
@@ -1256,6 +1263,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // Mood picker open/closed state (for the new emoji bar that replaced the
   // raise-hand button in the bottom control row).
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
+  const [voicePickerOpen, setVoicePickerOpen] = useState(false);
+  const [selectedVoicePresetId, setSelectedVoicePresetId] = useState<VoicePresetId>(getSavedVoicePresetId);
+  const selectedVoicePresetIdRef = useRef<VoicePresetId>(getSavedVoicePresetId());
+  const rawMicStreamRef = useRef<MediaStream | null>(null);
+  const voiceProcessorRef = useRef<VoiceProcessor | null>(null);
   const [sayingBye, setSayingBye] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const participantById = useMemo(() => {
@@ -2359,18 +2371,79 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [socket, room.id]);
 
   const applyLocalAudioStream = useCallback(async (stream: MediaStream, keepMuteState = false) => {
-    const previousStream = localStream.current;
-    stream.getAudioTracks().forEach((track) => {
+    const previousRawStream = rawMicStreamRef.current;
+    rawMicStreamRef.current = stream;
+
+    // Route through voice processor if a non-natural preset is active
+    let processedStream: MediaStream = stream;
+    const presetId = selectedVoicePresetIdRef.current;
+    if (presetId !== "natural") {
+      if (!audioContextRef.current) {
+        const AC = window.AudioContext || (window as any).webkitAudioContext;
+        if (AC) audioContextRef.current = new AC();
+      }
+      if (audioContextRef.current) {
+        if (!voiceProcessorRef.current) {
+          voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
+        }
+        processedStream = voiceProcessorRef.current.process(stream, presetId);
+      }
+    }
+
+    processedStream.getAudioTracks().forEach((track) => {
       track.enabled = keepMuteState ? !isMutedRef.current : false;
     });
-    localStream.current = stream;
-    if (previousStream && previousStream !== stream) {
-      previousStream.getTracks().forEach((track) => track.stop());
+    localStream.current = processedStream;
+
+    // Stop the previous raw mic stream's tracks (not the destination/processed stream)
+    if (previousRawStream && previousRawStream !== stream) {
+      previousRawStream.getTracks().forEach((track) => track.stop());
     }
+
     setMicError(false);
     setShowMicHelp(false);
-    attachLocalAnalyser(stream);
-    await publishLocalAudioStream(stream);
+    attachLocalAnalyser(processedStream);
+    await publishLocalAudioStream(processedStream);
+  }, [attachLocalAnalyser, publishLocalAudioStream]);
+
+  // Keep the preset ref in sync whenever state changes
+  useEffect(() => {
+    selectedVoicePresetIdRef.current = selectedVoicePresetId;
+  }, [selectedVoicePresetId]);
+
+  const handleVoicePresetChange = useCallback(async (presetId: VoicePresetId) => {
+    setSelectedVoicePresetId(presetId);
+    selectedVoicePresetIdRef.current = presetId;
+    saveVoicePresetId(presetId);
+    setVoicePickerOpen(false);
+
+    const rawStream = rawMicStreamRef.current;
+    if (!rawStream) return;
+
+    if (!audioContextRef.current) {
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      if (AC) audioContextRef.current = new AC();
+    }
+
+    let processedStream: MediaStream;
+    if (presetId === "natural") {
+      voiceProcessorRef.current?.destroy();
+      voiceProcessorRef.current = null;
+      processedStream = rawStream;
+    } else {
+      if (!audioContextRef.current) return;
+      if (!voiceProcessorRef.current) {
+        voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
+      }
+      processedStream = voiceProcessorRef.current.process(rawStream, presetId);
+    }
+
+    processedStream.getAudioTracks().forEach((track) => {
+      track.enabled = !isMutedRef.current;
+    });
+    localStream.current = processedStream;
+    attachLocalAnalyser(processedStream);
+    await publishLocalAudioStream(processedStream);
   }, [attachLocalAnalyser, publishLocalAudioStream]);
 
   useEffect(() => {
@@ -3398,6 +3471,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("user:unblocked");
       socket.off("room:welcome-message");
       // AI tutor socket.off handled by useAiTutor hook cleanup.
+      rawMicStreamRef.current?.getTracks().forEach((t) => t.stop());
+      voiceProcessorRef.current?.destroy();
+      voiceProcessorRef.current = null;
       localStream.current?.getTracks().forEach((t) => t.stop());
       screenStream.current?.getTracks().forEach((t) => t.stop());
       videoStream.current?.getTracks().forEach((t) => t.stop());
@@ -4493,6 +4569,81 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </button>
           <span className={labelBase} style={isScreenSharing ? { color: "rgba(196,181,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             {isScreenSharing && isCameraShareMode ? "Cam Share" : "Share"}
+          </span>
+        </div>
+
+        {/* Voice preset picker */}
+        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px] relative">
+          <div className="relative">
+            {voicePickerOpen && (
+              <span
+                className="absolute inset-0 rounded-[14px] sm:rounded-[18px] animate-ping"
+                style={{ background: "rgba(99,102,241,0.28)", animationDuration: "1.4s" }}
+              />
+            )}
+            <button
+              onClick={() => setVoicePickerOpen((v) => !v)}
+              data-testid="button-toggle-voice"
+              title={voicePickerOpen ? "Close voice effects" : "Voice effects"}
+              className={btnBase}
+              style={voicePickerOpen ? { background: "rgba(99,102,241,0.22)", borderColor: "rgba(99,102,241,0.55)", color: "rgba(165,180,252,0.95)" } : (selectedVoicePresetId !== "natural" ? { background: "rgba(99,102,241,0.18)", borderColor: "rgba(99,102,241,0.45)", color: "rgba(165,180,252,0.9)" } : ghostStyle)}
+            >
+              <AudioLines className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+            </button>
+            {voicePickerOpen && createPortal(
+              <>
+                <div
+                  className="fixed inset-0 z-[9998]"
+                  onClick={() => setVoicePickerOpen(false)}
+                  data-testid="voice-picker-backdrop"
+                />
+                <div
+                  data-testid="voice-picker"
+                  className="fixed left-1/2 -translate-x-1/2 z-[9999] p-3 rounded-2xl shadow-2xl border border-white/15"
+                  style={{
+                    top: "calc(env(safe-area-inset-top, 0px) + 56px)",
+                    background: "linear-gradient(180deg, rgba(20,16,40,0.97), rgba(8,6,24,0.97))",
+                    backdropFilter: "blur(14px)",
+                    width: "min(340px, 92vw)",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-white/35 mb-2.5 px-0.5">Voice Effect</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {VOICE_PRESETS.map((preset) => {
+                      const isActive = selectedVoicePresetId === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          onClick={() => handleVoicePresetChange(preset.id)}
+                          className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border transition-all duration-150 text-center"
+                          style={isActive
+                            ? { background: "rgba(99,102,241,0.25)", borderColor: "rgba(99,102,241,0.6)", color: "rgba(199,210,254,1)" }
+                            : { background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.65)" }
+                          }
+                        >
+                          <span className="text-xl leading-none">{preset.emoji}</span>
+                          <span className="text-[12px] font-semibold leading-tight">{preset.label}</span>
+                          <span className="text-[10px] leading-tight opacity-60">{preset.description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>,
+              document.body
+            )}
+          </div>
+          <span
+            className={labelBase}
+            style={selectedVoicePresetId !== "natural"
+              ? { color: "rgba(165,180,252,0.85)" }
+              : { color: "rgba(255,255,255,0.32)" }
+            }
+          >
+            {selectedVoicePresetId !== "natural"
+              ? (VOICE_PRESETS.find(p => p.id === selectedVoicePresetId)?.label ?? "Voice")
+              : "Voice"}
           </span>
         </div>
 
