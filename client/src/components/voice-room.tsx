@@ -3287,40 +3287,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // AI tutor socket events are handled by the useAiTutor hook.
 
     let roomBc: BroadcastChannel | null = null;
-    let sessionBc: BroadcastChannel | null = null;
-    try {
-      // Detect if the same room is already open in another tab.
-      // We ping on a room-specific channel; if an existing tab pongs back
-      // within 250 ms we close this new tab and redirect to the lobby.
-      const sessionChannel = `room-session-${user.id}-${room.id}`;
-      sessionBc = new BroadcastChannel(sessionChannel);
-      let pongReceived = false;
-      const pongTimer = setTimeout(() => {
-        if (!pongReceived) {
-          // No existing tab — we're the first; start listening for future pings
-          if (sessionBc) {
-            sessionBc.onmessage = (ev) => {
-              if (ev.data?.type === "ping") sessionBc?.postMessage({ type: "pong" });
-            };
-          }
-        }
-      }, 250);
-      sessionBc.onmessage = (ev) => {
-        if (ev.data?.type === "pong" && !pongReceived) {
-          pongReceived = true;
-          clearTimeout(pongTimer);
-          // Another tab is already in this room — close this duplicate tab
-          sessionBc?.close();
-          sessionBc = null;
-          try { window.close(); } catch {}
-          setTimeout(() => { window.location.href = "/"; }, 100);
-        } else if (ev.data?.type === "ping") {
-          sessionBc?.postMessage({ type: "pong" });
-        }
-      };
-      sessionBc.postMessage({ type: "ping" });
-    } catch {}
-
     try {
       roomBc = new BroadcastChannel(`connect-room-${user.id}`);
       roomBc.onmessage = (ev) => {
@@ -3333,7 +3299,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
     return () => {
       roomBc?.close();
-      sessionBc?.close();
       cancelAnimationFrame(animationFrameId);
       document.removeEventListener("visibilitychange", handleVisibilityForRoom);
       socket.emit("room:leave", { roomId: room.id, userId: user.id });
@@ -10698,10 +10663,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               56;
             const gapPx = cardPx <= 72 ? 6 : 8;
           return (
-          <div className={`flex items-end justify-center p-2 pb-4 ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 overflow-y-auto pt-4"}`}>
+          <div className={`flex items-end justify-center p-2 pb-4 ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 pt-14 overflow-visible"}`}>
             <div
               className="overflow-x-auto w-full"
-              style={{ scrollbarWidth: "none", paddingTop: "56px", marginTop: "-56px" }}
+              style={{ scrollbarWidth: "none" }}
             >
             <div className="flex flex-nowrap items-end justify-center" style={{ gap: gapPx, minWidth: "max-content", margin: "0 auto" }}>
               {participants.map((p, index) => {
