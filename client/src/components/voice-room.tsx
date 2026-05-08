@@ -1407,6 +1407,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [blockDialogName, setBlockDialogName] = useState<string>("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [pinnedMessage, setPinnedMessage] = useState<{ message: ChatMessage; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null>(null);
   const [participantRoles, setParticipantRoles] = useState<Record<string, string>>({});
   const [trollVoteModal, setTrollVoteModal] = useState<{ targetUserId: string; targetName: string; assignedByName: string; totalMembers: number } | null>(null);
   const [trollVoteProgress, setTrollVoteProgress] = useState<{ kickVotes: number; totalVoters: number } | null>(null);
@@ -2801,6 +2802,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             : m
         )
       );
+    });
+
+    socket.on("room:pinned-message", (data: { message: ChatMessage; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null) => {
+      setPinnedMessage(data || null);
     });
 
     const clearTypingUser = (userId: string) => {
@@ -6453,6 +6458,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </button>
           )}
         </div>
+        {/* ── Pinned message banner ─────────────────────────────────────── */}
+        {pinnedMessage && (
+          <div className="chat-pin-banner" data-testid="chat-pinned-banner">
+            <div className="chat-pin-icon">📌</div>
+            <div className="chat-pin-body" onClick={() => {
+              const el = document.querySelector(`[data-testid="room-chat-${pinnedMessage.message.id}"]`);
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}>
+              <span className="chat-pin-label">Pinned by {pinnedMessage.pinnedByName}</span>
+              <span className="chat-pin-text">
+                {pinnedMessage.message.text.length > 80
+                  ? pinnedMessage.message.text.slice(0, 80) + "…"
+                  : pinnedMessage.message.text}
+              </span>
+            </div>
+            {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
+              <button
+                onClick={() => socket?.emit("room:unpin-message", { roomId: room.id })}
+                className="chat-pin-dismiss"
+                title="Unpin"
+                data-testid="button-unpin-message"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
+
         <ScrollArea className="flex-1 min-h-0" ref={chatScrollRef} onScroll={handleScroll}>
           <div className="px-3 py-3 space-y-1 min-h-full flex flex-col justify-end">
             {(() => {
@@ -6745,6 +6778,31 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         >
                           Reply
                         </button>
+                        {(isHost || participantRoles[user?.id || ""] === "co-owner") && msg.type !== "system" && (msg as any).type !== "deleted" && (
+                          <button
+                            onClick={() => {
+                              if (pinnedMessage?.message?.id === msg.id) {
+                                socket?.emit("room:unpin-message", { roomId: room.id });
+                              } else {
+                                socket?.emit("room:pin-message", {
+                                  roomId: room.id,
+                                  message: msg,
+                                  pinnedBy: user?.id,
+                                  pinnedByName: getUserDisplayName(user) || "Host",
+                                });
+                              }
+                            }}
+                            className="ml-0.5 text-[10px] px-1 py-0.5 rounded transition-colors"
+                            style={pinnedMessage?.message?.id === msg.id
+                              ? { color: "rgba(251,191,36,0.90)", background: "rgba(251,191,36,0.12)" }
+                              : { color: "rgba(255,255,255,0.38)", background: "transparent" }
+                            }
+                            title={pinnedMessage?.message?.id === msg.id ? "Unpin message" : "Pin message"}
+                            data-testid={`button-pin-${msg.id}`}
+                          >
+                            📌
+                          </button>
+                        )}
                         {msg.userId === user?.id && (
                           <button
                             onClick={() => {

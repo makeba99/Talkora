@@ -158,6 +158,7 @@ const roomKnockGrants = new Map<string, Set<string>>();
 const roomDeleteTimers = new Map<string, NodeJS.Timeout>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
+const roomPinnedMessages = new Map<string, { message: any; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null>();
 // AI Tutor room state: one active session per room
 const roomAiTutorState = new Map<string, { userId: string; username: string; speaking: boolean; avatarId?: string | null; voice?: "Female" | "Male" | null; voiceId?: string | null } | null>();
 // SSE clients subscribed to real-time room list updates.
@@ -2257,6 +2258,7 @@ export async function registerRoutes(
       roomRoles.delete(roomId);
       roomMuteStatus.delete(roomId);
       roomKnockGrants.delete(roomId);
+      roomPinnedMessages.delete(roomId);
       startRoomDeleteTimer(roomId);
     } else {
       roomMuteStatus.get(roomId)?.delete(userId);
@@ -4357,6 +4359,12 @@ export async function registerRoutes(
         socket.emit("room:screen-share", { userId: screenSharer, active: true });
       }
 
+      // Send current pinned message (if any) to the new joiner
+      const pinnedMsg = roomPinnedMessages.get(roomId);
+      if (pinnedMsg) {
+        socket.emit("room:pinned-message", pinnedMsg);
+      }
+
       socket.to(roomId).emit("webrtc:new-peer", { peerId: userId });
     });
 
@@ -4860,6 +4868,37 @@ export async function registerRoutes(
         }
       } catch (err) {
         console.error("Error global clearing chat:", err);
+      }
+    });
+
+    socket.on("room:pin-message", async (data: { roomId: string; message: any; pinnedBy: string; pinnedByName: string }) => {
+      try {
+        if (!currentUserId) return;
+        const room = await storage.getRoom(data.roomId);
+        if (!room) return;
+        const roles = roomRoles.get(data.roomId);
+        const userRole = roles?.get(currentUserId);
+        if (room.ownerId !== currentUserId && userRole !== "co-owner") return;
+        const pinState = { message: data.message, pinnedBy: data.pinnedBy, pinnedByName: data.pinnedByName, pinnedAt: Date.now() };
+        roomPinnedMessages.set(data.roomId, pinState);
+        io.to(data.roomId).emit("room:pinned-message", pinState);
+      } catch (err) {
+        console.error("Error pinning message:", err);
+      }
+    });
+
+    socket.on("room:unpin-message", async (data: { roomId: string }) => {
+      try {
+        if (!currentUserId) return;
+        const room = await storage.getRoom(data.roomId);
+        if (!room) return;
+        const roles = roomRoles.get(data.roomId);
+        const userRole = roles?.get(currentUserId);
+        if (room.ownerId !== currentUserId && userRole !== "co-owner") return;
+        roomPinnedMessages.set(data.roomId, null);
+        io.to(data.roomId).emit("room:pinned-message", null);
+      } catch (err) {
+        console.error("Error unpinning message:", err);
       }
     });
 
