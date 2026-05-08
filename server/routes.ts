@@ -4859,6 +4859,16 @@ export async function registerRoutes(
       }
     });
 
+    // Seen receipts — relay to everyone else in the room.
+    socket.on("room:chat-seen", (data: { roomId: string; userId: string; messageId: string; userName: string; profileImageUrl?: string | null }) => {
+      socket.to(data.roomId).emit("room:chat-seen", {
+        userId: data.userId,
+        messageId: data.messageId,
+        userName: data.userName,
+        profileImageUrl: data.profileImageUrl ?? null,
+      });
+    });
+
     // Typing indicators — relay to everyone else in the room.
     socket.on("room:typing", (data: { roomId: string; userId: string; displayName: string; profileImageUrl?: string | null }) => {
       socket.to(data.roomId).emit("room:typing", {

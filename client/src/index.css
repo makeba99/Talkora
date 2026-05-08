@@ -10860,6 +10860,9 @@ html.boost-mode .glass-panel {
   gap: 10px;
   margin-bottom: 8px;
   position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* Only animate newly-arrived messages (data-new set by JS) */
@@ -11600,6 +11603,26 @@ html.boost-mode .glass-panel {
 .chat-msg-card[data-own="true"] .chat-reply-preview {
   border-left-color: rgba(200, 210, 255, 0.45);
   background: rgba(0, 0, 0, 0.18);
+}
+
+/* ── Seen receipts — tiny avatar bubbles under last-seen message ─────────── */
+.chat-seen-avatar {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(80, 80, 120, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+.chat-seen-avatar:hover {
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 /* Honour reduced-motion users — kill all decorative animations. */

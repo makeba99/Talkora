@@ -1432,6 +1432,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [blockDialogName, setBlockDialogName] = useState<string>("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [seenByMap, setSeenByMap] = useState<Record<string, { userId: string; userName: string; profileImageUrl?: string | null }[]>>({});
+  const lastSeenEmittedRef = useRef<string | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState<string>("");
   const [pinnedMessage, setPinnedMessage] = useState<{ message: ChatMessage; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null>(null);
@@ -2845,6 +2847,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setPinnedMessage(data || null);
     });
 
+    socket.on("room:chat-seen", (data: { userId: string; messageId: string; userName: string; profileImageUrl?: string | null }) => {
+      setSeenByMap(prev => {
+        const next = { ...prev };
+        // Remove this user from whatever message they previously "seen"
+        Object.keys(next).forEach(msgId => {
+          next[msgId] = next[msgId].filter(u => u.userId !== data.userId);
+          if (next[msgId].length === 0) delete next[msgId];
+        });
+        // Add them to the new message
+        next[data.messageId] = [
+          ...(next[data.messageId] || []),
+          { userId: data.userId, userName: data.userName, profileImageUrl: data.profileImageUrl },
+        ];
+        return next;
+      });
+    });
+
     const clearTypingUser = (userId: string) => {
       if (typingExpireTimers.current[userId]) {
         clearTimeout(typingExpireTimers.current[userId]);
@@ -3450,6 +3469,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [chatMessages]);
+
+  // Emit seen receipt when chat tab is active and new messages arrive
+  useEffect(() => {
+    if (!socket || !user || sidePanelTab !== "chat") return;
+    const visibleMsgs = chatMessages.filter(m => m.type !== "system" && (m as any).type !== "deleted");
+    if (visibleMsgs.length === 0) return;
+    const lastMsg = visibleMsgs[visibleMsgs.length - 1];
+    if (lastMsg.id === lastSeenEmittedRef.current) return;
+    lastSeenEmittedRef.current = lastMsg.id;
+    socket.emit("room:chat-seen", {
+      roomId: room.id,
+      userId: user.id,
+      messageId: lastMsg.id,
+      userName: user.firstName || user.email || "User",
+      profileImageUrl: user.profileImageUrl ?? null,
+    });
+  }, [chatMessages, sidePanelTab, socket, user, room.id]);
 
   useEffect(() => {
     if (!historyLoadedRef.current) {
@@ -6955,6 +6991,35 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           </div>
                         )}
                       </div>
+                      {/* Seen avatars — show who has seen up to this message */}
+                      {seenByMap[msg.id] && seenByMap[msg.id].length > 0 && (
+                        <div className={`flex items-center gap-0.5 mt-0.5 flex-wrap ${isOwn ? "justify-end" : "justify-start"}`}>
+                          {seenByMap[msg.id].slice(0, 6).map(seenUser => (
+                            <Tooltip key={seenUser.userId}>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className="chat-seen-avatar"
+                                  data-testid={`seen-avatar-${msg.id}-${seenUser.userId}`}
+                                >
+                                  {seenUser.profileImageUrl ? (
+                                    <img src={seenUser.profileImageUrl} alt={seenUser.userName} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="text-[7px] font-bold text-white/80 leading-none">
+                                      {seenUser.userName.slice(0, 1).toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-[10px] px-2 py-1">
+                                {seenUser.userName} saw this
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                          {seenByMap[msg.id].length > 6 && (
+                            <span className="text-[9px] text-white/30 ml-0.5">+{seenByMap[msg.id].length - 6}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Hover toolbar */}
