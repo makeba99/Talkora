@@ -11584,25 +11584,88 @@ html.boost-mode .glass-panel {
   color: rgba(240, 242, 255, 0.97);
   text-shadow: 0 1px 4px rgba(0, 0, 50, 0.20);
 }
-/* Reply preview — inside bubble */
-.chat-msg-card .chat-reply-preview {
-  border-left-color: rgba(160, 130, 255, 0.40);
-  background: rgba(0, 0, 0, 0.20);
-  border-radius: 0 8px 8px 0;
-  margin-bottom: 6px;
+/* ── Reply chip — compact indicator inside bubble ────────────────────────── */
+.chat-reply-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 5px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 999px;
+  background: rgba(120, 100, 255, 0.14);
+  border: 1px solid rgba(160, 130, 255, 0.22);
+  max-width: 100%;
   overflow: hidden;
-  max-height: 72px;
+  cursor: default;
 }
-.chat-msg-card .chat-reply-preview > div:last-child {
+.chat-reply-chip-arrow {
+  font-size: 10px;
+  color: rgba(160, 140, 255, 0.70);
+  flex-shrink: 0;
+  line-height: 1;
+}
+.chat-reply-chip-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(200, 185, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.chat-msg-card[data-own="true"] .chat-reply-chip {
+  background: rgba(160, 150, 255, 0.12);
+  border-color: rgba(200, 190, 255, 0.20);
+}
+.chat-msg-card[data-own="true"] .chat-reply-chip-arrow,
+.chat-msg-card[data-own="true"] .chat-reply-chip-name {
+  color: rgba(220, 210, 255, 0.70);
+}
+
+/* ── Reply hover panel — full quoted preview shown below bubble on hover ──── */
+.chat-reply-hover-panel {
+  display: flex;
+  flex-direction: column;
+  margin-top: 3px;
+  animation: reply-panel-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.chat-reply-hover-panel[data-own="true"] {
+  align-items: flex-end;
+}
+@keyframes reply-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.chat-reply-hover-inner {
+  max-width: 100%;
+  padding: 6px 10px 7px;
+  border-radius: 10px;
+  background: rgba(10, 12, 30, 0.82);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(140, 120, 255, 0.22);
+  border-left: 3px solid rgba(140, 120, 255, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+.chat-reply-hover-name {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(190, 170, 255, 0.80);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-reply-hover-body {
+  font-size: 12px;
+  color: rgba(210, 210, 230, 0.72);
+  line-height: 1.45;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-/* Reply preview in own (indigo) bubble */
-.chat-msg-card[data-own="true"] .chat-reply-preview {
-  border-left-color: rgba(200, 210, 255, 0.45);
-  background: rgba(0, 0, 0, 0.18);
 }
 
 /* ── Seen receipts — tiny avatar bubbles under last-seen message ─────────── */

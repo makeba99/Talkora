@@ -6922,11 +6922,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {/* The actual bubble */}
                       <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
                         {msg.replyTo && (
-                          <div className="chat-reply-preview pl-2 border-l-2 rounded-r-md">
-                            <span className="text-[10px] font-semibold text-white/45 block px-1.5 pt-1">{msg.replyTo.userName}</span>
-                            <div className="px-1.5 pb-1 text-xs opacity-70 pointer-events-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]" data-testid={`reply-preview-message-${msg.id}`}>
-                              {renderReplyPreview(msg.replyTo.text)}
-                            </div>
+                          <div className="chat-reply-chip" data-testid={`reply-chip-${msg.id}`}>
+                            <span className="chat-reply-chip-arrow">↩</span>
+                            <span className="chat-reply-chip-name">{msg.replyTo.userName}</span>
                           </div>
                         )}
                         {editingMsgId === msg.id ? (
@@ -7015,6 +7013,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           </div>
                         )}
                       </div>
+                      {/* Reply hover panel — full quoted text, shown on hover */}
+                      {msg.replyTo && hoveredMsgId === msg.id && (
+                        <div
+                          className={`chat-reply-hover-panel ${isOwn ? "items-end" : "items-start"}`}
+                          data-own={isOwn ? "true" : undefined}
+                          data-testid={`reply-hover-panel-${msg.id}`}
+                        >
+                          <div className="chat-reply-hover-inner">
+                            <span className="chat-reply-hover-name">↩ {msg.replyTo.userName}</span>
+                            <div className="chat-reply-hover-body" data-testid={`reply-hover-text-${msg.id}`}>
+                              {renderReplyPreview(msg.replyTo.text)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Seen avatars — show who has seen up to this message */}
                       {seenByMap[msg.id] && seenByMap[msg.id].length > 0 && (
                         <div className={`flex items-center gap-0.5 mt-0.5 flex-wrap ${isOwn ? "justify-end" : "justify-start"}`}>
