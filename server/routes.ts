@@ -4220,13 +4220,24 @@ export async function registerRoutes(
       if (!room) return;
 
       const existingRoomId = userCurrentRoom.get(userId);
+      const previousSocketId = userSockets.get(userId);
+      const previousSocket = previousSocketId ? io.sockets.sockets.get(previousSocketId) : undefined;
+
       if (existingRoomId && existingRoomId !== roomId) {
-        const previousSocketId = userSockets.get(userId);
-        const previousSocket = previousSocketId ? io.sockets.sockets.get(previousSocketId) : undefined;
+        // User is joining a DIFFERENT room — evict from the old one.
         if (previousSocketId) {
           io.to(previousSocketId).emit("room:joined-another-room", { oldRoomId: existingRoomId, newRoomId: roomId });
         }
         await leaveRoomState(existingRoomId, userId, previousSocketId === socket.id ? socket : previousSocket);
+      } else if (existingRoomId === roomId && previousSocketId && previousSocketId !== socket.id) {
+        // User opened the SAME room in a new tab — the new socket takes over.
+        // Tell the old tab it has been replaced so it cleans up without leaving
+        // the room participant list (the new socket is already taking over).
+        io.to(previousSocketId).emit("room:session-replaced", { roomId });
+        // Remove the old socket from the Socket.IO room so it stops receiving
+        // duplicate events, but do NOT call leaveRoomState (that would remove
+        // the user from roomParticipants and broadcast a spurious "left" event).
+        previousSocket?.leave(roomId);
       }
 
       cancelRoomDeleteTimer(roomId);

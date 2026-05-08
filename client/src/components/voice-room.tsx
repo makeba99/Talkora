@@ -2794,6 +2794,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     });
 
+    socket.on("room:session-replaced", (data: { roomId: string }) => {
+      if (data.roomId === room.id) {
+        // This tab's session has been taken over by a newer tab — clean up
+        // silently without emitting room:leave (the new tab is already active).
+        toast({
+          title: "Session moved",
+          description: "You opened this room in another tab. This tab has been disconnected.",
+        });
+        // Stop local media tracks and peer connections
+        localStream.current?.getTracks().forEach((t) => t.stop());
+        screenStream.current?.getTracks().forEach((t) => t.stop());
+        videoStream.current?.getTracks().forEach((t) => t.stop());
+        peerConnections.current.forEach((pc) => pc.close());
+        peerConnections.current.clear();
+        audioElements.current.forEach((audio) => { audio.srcObject = null; audio.remove(); });
+        audioElements.current.clear();
+        // Detach all socket listeners so this tab stops reacting to room events
+        socket.off();
+        // Navigate back to lobby
+        setTimeout(() => { window.location.href = "/"; }, 1500);
+      }
+    });
+
     socket.on("room:already-in-room", (data: { roomId: string }) => {
       toast({
         title: "Already in another room",
@@ -3345,6 +3368,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:kicked");
       socket.off("room:host-deleted");
       socket.off("room:joined-another-room");
+      socket.off("room:session-replaced");
       socket.off("room:already-in-room");
       socket.off("room:chat-message");
       socket.off("room:chat-delete");
