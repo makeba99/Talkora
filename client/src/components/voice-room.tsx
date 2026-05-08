@@ -1336,6 +1336,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const seenMsgIdsRef = useRef(new Set<string>());
+  const historyLoadedRef = useRef(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, { name: string; avatar: string | null }>>({});
   const typingEmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingExpireTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -3434,6 +3436,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
+  }, [chatMessages]);
+
+  useEffect(() => {
+    if (!historyLoadedRef.current) {
+      if (chatMessages.length > 0) {
+        historyLoadedRef.current = true;
+        chatMessages.forEach(m => seenMsgIdsRef.current.add(String(m.id)));
+      }
+      return;
+    }
+    chatMessages.forEach(m => seenMsgIdsRef.current.add(String(m.id)));
   }, [chatMessages]);
 
   useEffect(() => {
@@ -6705,8 +6718,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 }
 
                 if (msg.type === "system" && !showMentionsOnly) {
+                  const isSysNew = historyLoadedRef.current && !seenMsgIdsRef.current.has(String(msg.id));
                   return (
-                    <div key={msg.id} className="chat-system-msg" data-testid={`room-chat-${msg.id}`}>
+                    <div key={msg.id} className="chat-system-msg" data-new={isSysNew ? "true" : undefined} data-testid={`room-chat-${msg.id}`}>
                       <div className="chat-system-line" />
                       <div className="chat-system-pill">
                         {msg.text.includes("joined") ? (
@@ -6754,11 +6768,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 ];
                 const rc = ringPalette[(pIndex >= 0 ? pIndex : 0) % ringPalette.length];
 
+                const isNew = historyLoadedRef.current && !seenMsgIdsRef.current.has(String(msg.id));
                 return (
                   <div
                     key={msg.id}
                     className={`group chat-msg-row${isOwn ? " flex-row-reverse" : ""}`}
                     data-own={isOwn ? "true" : undefined}
+                    data-new={isNew ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                     onMouseEnter={() => setHoveredMsgId(msg.id)}
                     onMouseLeave={() => setHoveredMsgId(null)}

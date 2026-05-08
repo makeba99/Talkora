@@ -10600,7 +10600,7 @@ html.boost-mode .glass-panel {
    ─ Own     : Indigo Void  rgba(14,10,40) ·  violet accent     #7864ff
    ============================================================================ */
 
-/* Entrance — bubble materialises with spring physics + de-blur */
+/* ── Entrance keyframes (kept for DM bubbles + legacy) ─────────────────── */
 @keyframes bubble-emerge {
   0%   { opacity: 0; transform: translateY(14px) scale(0.84); filter: blur(5px); }
   55%  { opacity: 1; filter: blur(0px); }
@@ -10609,7 +10609,32 @@ html.boost-mode .glass-panel {
   100% { transform: translateY(0)    scale(1); }
 }
 
-/* Bubble row — transparent wrapper, handles left/right layout */
+/* Row-level directional entrances — avatar + bubble move as one unit.
+   "other" slides from bottom-left; "own" slides from bottom-right.
+   Both share the same spring curve and duration. */
+@keyframes msg-enter-other {
+  0%   { opacity: 0; transform: translateY(14px) translateX(-8px) scale(0.93); }
+  55%  { opacity: 1; }
+  72%  { transform: translateY(-4px) translateX(1px) scale(1.016); }
+  88%  { transform: translateY(1px)  translateX(-0.5px) scale(0.997); }
+  100% { opacity: 1; transform: translateY(0) translateX(0) scale(1); }
+}
+
+@keyframes msg-enter-own {
+  0%   { opacity: 0; transform: translateY(14px) translateX(8px) scale(0.93); }
+  55%  { opacity: 1; }
+  72%  { transform: translateY(-4px) translateX(-1px) scale(1.016); }
+  88%  { transform: translateY(1px)  translateX(0.5px) scale(0.997); }
+  100% { opacity: 1; transform: translateY(0) translateX(0) scale(1); }
+}
+
+@keyframes msg-enter-system {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* Bubble row — transparent wrapper, handles left/right layout.
+   Animates only when data-new="true" so initial history renders silently. */
 .chat-msg-row {
   display: flex;
   align-items: flex-start;
@@ -10618,12 +10643,49 @@ html.boost-mode .glass-panel {
   position: relative;
 }
 
+/* Only animate newly-arrived messages (data-new set by JS) */
+.chat-msg-row[data-new="true"] {
+  animation: msg-enter-other 430ms cubic-bezier(0.34, 1.22, 0.64, 1) both;
+}
+.chat-msg-row[data-own="true"][data-new="true"] {
+  animation: msg-enter-own 430ms cubic-bezier(0.34, 1.22, 0.64, 1) both;
+}
+
+/* System event lines animate too — subtle fade-up */
+.chat-system-msg[data-new="true"] {
+  animation: msg-enter-system 300ms ease-out both;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .chat-msg-row[data-new="true"],
+  .chat-msg-row[data-own="true"][data-new="true"],
+  .chat-system-msg[data-new="true"] {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* ── Base bubble — others ───────────────────────────────────────────────── */
 .chat-msg-card {
   position: relative;
   overflow: hidden;
-  animation: bubble-emerge 360ms cubic-bezier(0.34, 1.22, 0.64, 1) both;
+  /* Card-level micro-spring: a gentle scale pulse that sits on top of the
+     row's directional slide. Plays for both new and history messages to
+     keep the tactile quality. Only scale — no translate, so it doesn't
+     fight with the row animation. */
+  animation: card-scale-spring 380ms cubic-bezier(0.34, 1.28, 0.64, 1) both;
+}
 
+@keyframes card-scale-spring {
+  0%   { transform: scale(0.90); }
+  62%  { transform: scale(1.018); }
+  82%  { transform: scale(0.995); }
+  100% { transform: scale(1); }
+}
+
+/* ── Base bubble — others (remaining properties) ───────────────────────── */
+.chat-msg-card {
   /* Liquid glass — abyss navy with translucent depth */
   background: linear-gradient(
     162deg,
