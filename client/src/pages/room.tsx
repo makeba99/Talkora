@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { VoiceRoom } from "@/components/voice-room";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
+import { LogIn, MonitorX, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
+import { useRoomTabGuard } from "@/hooks/use-room-tab-guard";
 import type { Room } from "@shared/schema";
 
 export default function RoomPage() {
@@ -27,6 +28,11 @@ export default function RoomPage() {
       return res.json();
     },
   });
+
+  const tabGuard = useRoomTabGuard(
+    user ? (params.id ?? undefined) : undefined,
+    user?.id,
+  );
 
   useDocumentMeta({
     title: room?.title ? `${room.title} — ${room.language} voice room` : "Voice room",
@@ -78,6 +84,40 @@ export default function RoomPage() {
           <Button variant="outline" onClick={() => navigate("/")} data-testid="link-back-lobby">
             Back to Lobby
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (tabGuard === "duplicate") {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center space-y-5 max-w-sm px-6">
+          <div className="flex justify-center">
+            <div className="rounded-full bg-amber-500/15 p-4">
+              <MonitorX className="w-8 h-8 text-amber-400" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Room already open</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              You already have <span className="font-medium text-foreground">{room.title}</span> open
+              in another tab. Switch back to that tab to continue.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                try { window.close(); } catch (_) {}
+                setTimeout(() => navigate("/"), 200);
+              }}
+              data-testid="button-close-duplicate-tab"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Lobby
+            </Button>
+          </div>
         </div>
       </div>
     );
