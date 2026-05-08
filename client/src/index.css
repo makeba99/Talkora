@@ -8751,247 +8751,237 @@ html.neomorphic-light .scroll-jump-btn {
    ========================================================================== */
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CHAT HEADER — Next-level dark neumorphic toolbar
-   Rule: container = near-black INSET carved tray
-         active element = RAISED tile popping out of the tray
+   CHAT HEADER — Premium dark neumorphic toolbar
+   Principle: ONE seamless pill slab. Inactive = shapeless ghost icons.
+              Only the active slot gets a raised tile that pops out.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── 1. Unified toolbar tray — carved inset ──────────────────────────────── */
+/* ── 1. Toolbar pill slab ─────────────────────────────────────────────────── */
 .chat-header-tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;          /* buttons fill the full inner height */
   gap: 0;
-  padding: 6px 6px;
+  padding: 7px 7px;
   margin: 10px 10px 8px;
   flex-shrink: 0;
-  /* Deep near-black — the tray colour */
   background: linear-gradient(
     180deg,
-    rgba(16, 16, 20, 1) 0%,
-    rgba(12, 12, 16, 1) 100%
+    rgba(17, 17, 21, 1) 0%,
+    rgba(13, 13, 17, 1) 100%
   );
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.028);
-  /* Neumorphic INSET — the tray is carved INTO the panel surface */
+  /* Large radius = proper pill ends */
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.030);
+  /* Deep inset — the whole bar sits carved INTO the panel */
   box-shadow:
-    inset 0 4px 18px rgba(0, 0, 0, 0.92),
-    inset 0 2px 7px  rgba(0, 0, 0, 0.72),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.024),
-    /* Outer top rim catch — defines the lip of the carved channel */
-    0 1px 0 rgba(255, 255, 255, 0.035);
+    inset 0 4px 20px rgba(0, 0, 0, 0.94),
+    inset 0 2px 8px  rgba(0, 0, 0, 0.76),
+    inset 0 -1px 3px rgba(255, 255, 255, 0.026),
+    0 1px 0 rgba(255, 255, 255, 0.038);
   position: relative;
   z-index: 2;
   overflow: visible;
 }
 
-/* Thin elegant separators between inactive icons */
+/* Thin separators between adjacent inactive icons */
 .chat-header-tabs > div::after,
 .chat-header-tabs > button.room-tab-btn:not(:last-child)::after {
   content: "";
   position: absolute;
-  right: -1px;
-  top: 20%;
-  height: 60%;
+  right: 0;
+  top: 22%;
+  height: 56%;
   width: 1px;
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.07) 30%,
-    rgba(255, 255, 255, 0.07) 70%,
+    rgba(255, 255, 255, 0.065) 30%,
+    rgba(255, 255, 255, 0.065) 70%,
     transparent 100%
   );
   pointer-events: none;
   z-index: 1;
-  transition: opacity 200ms ease;
+  transition: opacity 180ms ease;
 }
-/* Separator vanishes beside the active button */
-.chat-header-tabs > button.room-tab-btn[data-active="true"]::after {
+/* No separator next to the active slot */
+.chat-header-tabs > button.room-tab-btn[data-active="true"]::after,
+.chat-header-tabs > button.room-tab-btn[data-active="true"] + button::after {
   opacity: 0;
 }
 
-/* ── 2. Segmented filter row — same carved inset surface ─────────────────── */
+/* ── 2. Filter row slab ───────────────────────────────────────────────────── */
 .chat-header-filters {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
+  gap: 0;
   padding: 5px 5px;
   margin: 0 10px 10px;
   flex-shrink: 0;
   background: linear-gradient(
     180deg,
-    rgba(16, 16, 20, 1) 0%,
-    rgba(12, 12, 16, 1) 100%
+    rgba(17, 17, 21, 1) 0%,
+    rgba(13, 13, 17, 1) 100%
   );
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.028);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.030);
   box-shadow:
-    inset 0 4px 16px rgba(0, 0, 0, 0.90),
-    inset 0 2px 6px  rgba(0, 0, 0, 0.68),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.022),
-    0 1px 0 rgba(255, 255, 255, 0.030);
+    inset 0 4px 18px rgba(0, 0, 0, 0.92),
+    inset 0 2px 7px  rgba(0, 0, 0, 0.72),
+    inset 0 -1px 3px rgba(255, 255, 255, 0.024),
+    0 1px 0 rgba(255, 255, 255, 0.034);
   position: relative;
   z-index: 1;
 }
 
-/* ── 3. Tab icon buttons — ghost rest state, raised when active ──────────── */
+/* ── 3. Tab buttons — shapeless ghost; only active gets a tile ───────────── */
 .room-tab-btn {
   position: relative;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  /* Fill the slab evenly — no fixed width, no fixed height */
+  flex: 1;
+  min-width: 0;
+  height: auto;
+  /* NO individual rounded corners on inactive — they are part of the slab */
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Ghost: just a dim icon floating in the dark tray */
-  color: rgba(255, 255, 255, 0.22);
+  /* Ghost: dim icon, invisible shape */
+  color: rgba(255, 255, 255, 0.20);
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   box-shadow: none;
   transition:
-    color        200ms cubic-bezier(0.4, 0, 0.2, 1),
-    background   210ms cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 210ms ease,
-    box-shadow   230ms ease,
-    transform    150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    color      190ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 220ms ease;
   cursor: pointer;
   flex-shrink: 0;
 }
 
-/* Hover: icon brightens, no shape change yet */
+/* Hover: only the icon brightens — zero background, zero shape */
 .room-tab-btn:hover {
-  color: rgba(255, 255, 255, 0.60);
-  background: rgba(255, 255, 255, 0.038);
-  border-color: rgba(255, 255, 255, 0.055);
+  color: rgba(255, 255, 255, 0.58);
+  background: transparent;
+  border: none;
 }
 
-/* Press: snap inward momentarily */
+/* Press: brief opacity dip */
 .room-tab-btn:active {
-  transform: scale(0.90);
-  color: rgba(255, 255, 255, 0.50);
+  color: rgba(255, 255, 255, 0.45);
 }
 
-/* Active: RAISED tile that pops OUT of the carved dark tray */
+/* Active: raised rounded tile that pops OUT of the inset slab */
 .room-tab-btn[data-active="true"] {
-  color: rgba(255, 255, 255, 0.92);
-  /* Medium-dark tile — visibly lighter than the near-black tray */
+  color: rgba(255, 255, 255, 0.93);
+  border-radius: 18px;
   background: linear-gradient(
-    155deg,
-    rgba(46, 46, 56, 1) 0%,
-    rgba(36, 36, 46, 1) 100%
+    160deg,
+    rgba(44, 44, 54, 1) 0%,
+    rgba(34, 34, 44, 1) 100%
   );
-  border-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.075);
   box-shadow:
-    /* Outer drop shadows — lifts tile physically off the tray */
-    0 6px 20px rgba(0, 0, 0, 0.80),
-    0 3px 8px  rgba(0, 0, 0, 0.60),
-    0 1px 3px  rgba(0, 0, 0, 0.45),
-    /* Top rim light — the bright bead that makes it look raised */
-    inset 0 1px 0 rgba(255, 255, 255, 0.17),
-    /* Bottom inner anchor */
-    inset 0 -1px 0 rgba(0, 0, 0, 0.44);
-  transform: none;
+    0 6px 22px rgba(0, 0, 0, 0.82),
+    0 3px 9px  rgba(0, 0, 0, 0.64),
+    0 1px 3px  rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.46);
 }
 .room-tab-btn[data-active="true"]:hover {
-  transform: none;
-  color: rgba(255, 255, 255, 0.97);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.82),
-    0 4px 10px rgba(0, 0, 0, 0.62),
-    0 1px 4px  rgba(0, 0, 0, 0.46),
-    inset 0 1px 0 rgba(255, 255, 255, 0.20),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.44);
+  color: rgba(255, 255, 255, 0.98);
 }
 
-/* ── 4. Filter pills (ALL / @ MENTIONS) — same inset/raised logic ────────── */
+/* ── 4. Filter segment buttons (ALL / @MENTIONS) ─────────────────────────── */
 .room-filter-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   flex: 1;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 14px;
+  min-width: 0;
+  height: auto;
+  padding: 9px 14px;
+  /* Shapeless when inactive */
+  border-radius: 0;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.24);
+  color: rgba(255, 255, 255, 0.22);
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   box-shadow: none;
   transition:
-    color        200ms cubic-bezier(0.4, 0, 0.2, 1),
-    background   210ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow   230ms ease,
-    border-color 210ms ease;
+    color      190ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 220ms ease,
+    border-radius 180ms ease,
+    background 200ms ease;
   cursor: pointer;
 }
 .room-filter-pill:hover {
-  color: rgba(255, 255, 255, 0.56);
-  background: rgba(255, 255, 255, 0.038);
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
 }
 .room-filter-pill:active {
-  transform: scale(0.96);
+  color: rgba(255, 255, 255, 0.42);
 }
 
-/* Active: raised pill — pops out of the dark tray identically to the icon tabs */
+/* Active: raised pill tile — identical depth treatment to active tab */
 .room-filter-pill[data-active="true"] {
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.93);
+  border-radius: 18px;
   background: linear-gradient(
-    155deg,
-    rgba(46, 46, 56, 1) 0%,
-    rgba(36, 36, 46, 1) 100%
+    160deg,
+    rgba(44, 44, 54, 1) 0%,
+    rgba(34, 34, 44, 1) 100%
   );
-  border-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.075);
   box-shadow:
-    0 5px 18px rgba(0, 0, 0, 0.78),
-    0 3px 7px  rgba(0, 0, 0, 0.58),
-    0 1px 3px  rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.42);
-  transform: none;
+    0 5px 20px rgba(0, 0, 0, 0.80),
+    0 3px 8px  rgba(0, 0, 0, 0.60),
+    0 1px 3px  rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.17),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.44);
 }
 .room-filter-pill[data-active="true"]:hover {
-  color: rgba(255, 255, 255, 0.96);
-  transform: none;
+  color: rgba(255, 255, 255, 0.97);
 }
 
-/* ── 5. Welcome pill (host) — amber tint, same raised geometry ───────────── */
+/* ── 5. Welcome pill — amber, same raised geometry ───────────────────────── */
 .room-welcome-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   flex: 1;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 14px;
+  min-width: 0;
+  height: auto;
+  padding: 9px 14px;
+  border-radius: 0;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: rgba(255, 200, 80, 0.36);
+  color: rgba(255, 200, 80, 0.34);
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   box-shadow: none;
   transition:
-    color        200ms ease,
-    background   210ms ease,
-    box-shadow   230ms ease,
-    border-color 210ms ease;
+    color      200ms ease,
+    background 210ms ease,
+    box-shadow 230ms ease,
+    border-radius 180ms ease;
   cursor: pointer;
 }
 .room-welcome-pill:hover {
-  color: rgba(255, 210, 100, 0.68);
-  background: rgba(255, 200, 80, 0.045);
+  color: rgba(255, 210, 100, 0.65);
+  background: transparent;
 }
 .room-welcome-pill[data-active="true"] {
-  color: rgba(253, 218, 100, 0.92);
+  color: rgba(253, 218, 100, 0.93);
+  border-radius: 18px;
   background: linear-gradient(
-    155deg,
-    rgba(46, 46, 56, 1) 0%,
+    160deg,
+    rgba(44, 44, 54, 1) 0%,
     rgba(36, 36, 46, 1) 100%
   );
   border-color: rgba(255, 200, 80, 0.09);
