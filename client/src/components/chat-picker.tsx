@@ -163,14 +163,14 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <button
           type="button"
-          size="icon"
-          variant="ghost"
+          className="room-tool-btn"
           data-testid="button-gif-picker"
+          aria-label="Send a GIF"
         >
-          <span className="text-xs font-bold leading-none">GIF</span>
-        </Button>
+          <span className="text-[10px] font-black leading-none tracking-tight">GIF</span>
+        </button>
       </PopoverTrigger>
       <PopoverContent
         className="w-[340px] p-0"
@@ -315,21 +315,20 @@ export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
         onChange={handleFileChange}
         data-testid="input-chat-image-upload"
       />
-      <Button
+      <button
         type="button"
-        size="icon"
-        variant="ghost"
+        className="room-tool-btn"
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
         data-testid="button-chat-image-upload"
         aria-label="Upload image"
       >
         {uploading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
-          <ImagePlus className="w-4 h-4" />
+          <ImagePlus className="w-3.5 h-3.5" />
         )}
-      </Button>
+      </button>
     </>
   );
 }
