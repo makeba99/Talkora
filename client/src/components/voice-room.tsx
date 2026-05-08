@@ -6689,20 +6689,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     onMouseEnter={() => setHoveredMsgId(msg.id)}
                     onMouseLeave={() => setHoveredMsgId(null)}
                   >
-                    {/* Avatar — deep neumorphic gem ring */}
+                    {/* Avatar — deep neumorphic amber gem ring */}
                     <div
-                      className={`rounded-full flex-shrink-0 mt-0.5`}
+                      className="rounded-full flex-shrink-0 mt-0.5"
                       style={{
                         padding: "2.5px",
-                        background: `linear-gradient(135deg, ${gradient.includes("from-") ? "rgba(120,90,220,0.70)" : "rgba(80,60,180,0.60)"} 0%, rgba(40,30,100,0.50) 100%)`,
+                        background: "linear-gradient(135deg, rgba(251,191,36,0.85) 0%, rgba(245,158,11,0.65) 45%, rgba(194,115,10,0.45) 100%)",
                         boxShadow: [
-                          "-2px -2px 5px rgba(255,255,255,0.06)",
-                          "3px 3px 8px rgba(0,0,0,0.70)",
-                          "0 0 10px rgba(100,70,200,0.20)",
+                          "-2px -2px 6px rgba(255,255,255,0.06)",
+                          "3px 3px 10px rgba(0,0,0,0.75)",
+                          "0 0 14px rgba(245,158,11,0.30)",
+                          "0 0 28px rgba(245,158,11,0.12)",
                         ].join(", "),
                       }}
                     >
-                      <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,0.50)" }}>
+                      <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,0.55)" }}>
                         <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
                         <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
                           {getUserInitials(msgUser)}
