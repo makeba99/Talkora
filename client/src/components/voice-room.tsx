@@ -6795,21 +6795,53 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   >
                     {/* Per-user coloured avatar ring — marginTop offsets it to align with
                         the bubble's flat corner, which sits below the name header (~19px) */}
-                    <div
-                      className="chat-msg-avatar-ring rounded-full flex-shrink-0"
-                      style={{
-                        padding: "2.5px",
-                        marginTop: "19px",
-                        background: rc.bg,
-                        boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 14px ${rc.glow}`,
-                      }}
-                    >
-                      <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,.55)" }}>
-                        <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
-                        <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
-                          {getUserInitials(msgUser)}
-                        </AvatarFallback>
-                      </Avatar>
+                    <div className="relative flex-shrink-0 group/avatar" style={{ marginTop: "19px" }}>
+                      <div
+                        className="chat-msg-avatar-ring rounded-full"
+                        style={{
+                          padding: "2.5px",
+                          background: rc.bg,
+                          boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 14px ${rc.glow}`,
+                        }}
+                      >
+                        <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,.55)" }}>
+                          <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
+                          <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
+                            {getUserInitials(msgUser)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      {/* DM quick-action badge — only for other people's messages */}
+                      {!isOwn && msg.userId !== "system" && (
+                        <button
+                          onClick={() => {
+                            setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
+                            chatInputRef.current?.focus();
+                          }}
+                          title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
+                          data-testid={`button-dm-avatar-${msg.id}`}
+                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-all duration-150 scale-90 group-hover/avatar:scale-100"
+                          style={{
+                            background: privateChatToId === msg.userId
+                              ? "linear-gradient(135deg,rgba(251,191,36,.95),rgba(194,115,10,.85))"
+                              : "linear-gradient(135deg,rgba(99,102,241,.92),rgba(67,56,202,.80))",
+                            border: privateChatToId === msg.userId
+                              ? "1px solid rgba(251,191,36,.45)"
+                              : "1px solid rgba(139,92,246,.40)",
+                            borderRadius: "999px",
+                            padding: "1px 5px",
+                            fontSize: "8px",
+                            fontWeight: 700,
+                            letterSpacing: "0.04em",
+                            color: "#fff",
+                            boxShadow: "0 2px 6px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18)",
+                            whiteSpace: "nowrap",
+                            lineHeight: "1.4",
+                          }}
+                        >
+                          {privateChatToId === msg.userId ? "✓ DM" : "DM"}
+                        </button>
+                      )}
                     </div>
 
                     {/* Bubble column — name above, bubble below */}
