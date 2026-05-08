@@ -6607,20 +6607,56 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <p className="text-[12px] text-white/80 leading-relaxed whitespace-pre-wrap">{msg.welcomeMessage}</p>
                   ) : null;
                   return (
-                    <div key={msg.id} className="mx-1 mb-2 rounded-xl border overflow-hidden" style={{ borderColor: wAccent + "55", background: wAccent + "15" }} data-testid={`room-chat-${msg.id}`}>
-                      <div className="px-3 py-1.5 flex items-center gap-1.5 border-b" style={{ borderColor: wAccent + "33", background: wAccent + "22" }}>
-                        <span className="text-base">👋</span>
-                        <span className="text-[11px] font-semibold" style={{ color: wAccent }}>Welcome Message</span>
+                    <div
+                      key={msg.id}
+                      className="mx-2 mb-3 overflow-hidden"
+                      style={{
+                        borderRadius: "14px",
+                        border: `1px solid ${wAccent}38`,
+                        background: `linear-gradient(135deg, ${wAccent}12 0%, rgba(14,18,40,0.88) 55%, ${wAccent}07 100%)`,
+                        backdropFilter: "blur(24px) saturate(1.3)",
+                        WebkitBackdropFilter: "blur(24px) saturate(1.3)",
+                        boxShadow: `inset 0 1px 0 ${wAccent}20, 0 6px 24px rgba(0,0,0,0.45), 0 0 28px ${wAccent}0d`,
+                      }}
+                      data-testid={`room-chat-${msg.id}`}
+                    >
+                      {/* Header bar */}
+                      <div
+                        className="px-3 py-2 flex items-center gap-2"
+                        style={{
+                          borderBottom: `1px solid ${wAccent}25`,
+                          background: `linear-gradient(90deg, ${wAccent}18 0%, transparent 80%)`,
+                          position: "relative",
+                        }}
+                      >
+                        {/* Left accent stripe */}
+                        <div
+                          className="absolute left-0 top-0 bottom-0 w-[3px]"
+                          style={{
+                            background: `linear-gradient(180deg, ${wAccent} 0%, ${wAccent}60 100%)`,
+                            borderRadius: "14px 0 0 0",
+                          }}
+                        />
+                        <span className="text-sm ml-1" style={{ filter: `drop-shadow(0 0 5px ${wAccent}99)` }}>👋</span>
+                        <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: wAccent, letterSpacing: "0.06em" }}>Welcome Message</span>
                         <button
                           onClick={() => setDismissedWelcomeIds(prev => { const next = new Set(Array.from(prev)); next.add(msg.id); return next; })}
-                          className="ml-auto p-0.5 rounded hover:bg-black/20 transition-colors opacity-50 hover:opacity-100"
+                          className="ml-auto flex items-center justify-center w-5 h-5 rounded-full transition-all"
+                          style={{
+                            color: "rgba(255,255,255,0.35)",
+                            background: "rgba(255,255,255,0.05)",
+                            border: "1px solid rgba(255,255,255,0.09)",
+                          }}
                           title="Close"
                           data-testid={`button-dismiss-welcome-${msg.id}`}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${wAccent}28`; (e.currentTarget as HTMLElement).style.color = wAccent; (e.currentTarget as HTMLElement).style.borderColor = `${wAccent}50`; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.35)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.09)"; }}
                         >
-                          <X className="w-3 h-3" style={{ color: wAccent }} />
+                          <X className="w-2.5 h-2.5" />
                         </button>
                       </div>
-                      <div className="px-3 py-2 flex flex-col gap-1.5">
+                      {/* Body */}
+                      <div className="px-3.5 py-2.5 flex flex-col gap-2">
                         {wPosition === "above" && mediaBlock}
                         {bodyBlock}
                         {wPosition === "below" && mediaBlock}
@@ -6726,11 +6762,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     onMouseEnter={() => setHoveredMsgId(msg.id)}
                     onMouseLeave={() => setHoveredMsgId(null)}
                   >
-                    {/* Per-user coloured avatar ring */}
+                    {/* Per-user coloured avatar ring — marginTop offsets it to align with
+                        the bubble's flat corner, which sits below the name header (~19px) */}
                     <div
                       className="rounded-full flex-shrink-0"
                       style={{
                         padding: "2.5px",
+                        marginTop: "19px",
                         background: rc.bg,
                         boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 14px ${rc.glow}`,
                       }}
