@@ -6782,7 +6782,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     {/* Per-user coloured avatar ring — marginTop offsets it to align with
                         the bubble's flat corner, which sits below the name header (~19px) */}
                     <div
-                      className="rounded-full flex-shrink-0"
+                      className="chat-msg-avatar-ring rounded-full flex-shrink-0"
                       style={{
                         padding: "2.5px",
                         marginTop: "19px",
