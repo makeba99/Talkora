@@ -6919,10 +6919,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
                       </div>
 
-                      {/* Hover toolbar — sits between name and bubble, no overlap */}
+                      {/* Hover toolbar — emoji reactions + host/own actions only, no Reply */}
                       {hoveredMsgId === msg.id && (
                         <div
-                          className={`flex items-center gap-0.5 ${isOwn ? "flex-row-reverse" : ""}`}
+                          className="flex items-center gap-0.5 max-w-full flex-wrap"
                           style={{ background:"rgba(8,9,15,.92)", backdropFilter:"blur(14px)", border:"1px solid rgba(255,255,255,.09)", borderRadius:"10px", boxShadow:"0 4px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)", padding:"3px 5px", alignSelf: isOwn ? "flex-end" : "flex-start" }}
                         >
                           {QUICK_EMOJIS.map((emoji) => (
@@ -6936,21 +6936,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                               {emoji}
                             </button>
                           ))}
-                          <button
-                            onClick={() => {
-                              setReplyingTo({
-                                id: msg.id,
-                                userId: msg.userId,
-                                userName: getUserDisplayName(msgUser) || "Unknown",
-                                text: msg.text,
-                              });
-                              chatInputRef.current?.focus();
-                            }}
-                            className="ml-1 text-[10px] text-muted-foreground hover:text-foreground px-1 py-0.5 rounded hover:bg-accent transition-colors"
-                            data-testid={`button-reply-${msg.id}`}
-                          >
-                            Reply
-                          </button>
                           {(isHost || participantRoles[user?.id || ""] === "co-owner") && msg.type !== "system" && (msg as any).type !== "deleted" && (
                             <button
                               onClick={() => {
@@ -7071,6 +7056,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             {(msg as any).edited && (
                               <span className="text-[9px] text-white/25 ml-1 italic">(edited)</span>
                             )}
+                          </div>
+                        )}
+                        {/* Reply button — embedded at the bottom of the bubble, visible on hover */}
+                        {hoveredMsgId === msg.id && msg.type !== "deleted" && (msg as any).type !== "system" && (
+                          <div className={`flex mt-1.5 ${isOwn ? "justify-start" : "justify-end"}`}>
+                            <button
+                              onClick={() => {
+                                setReplyingTo({
+                                  id: msg.id,
+                                  userId: msg.userId,
+                                  userName: getUserDisplayName(msgUser) || "Unknown",
+                                  text: msg.text,
+                                });
+                                chatInputRef.current?.focus();
+                              }}
+                              className="chat-reply-inline-btn"
+                              data-testid={`button-reply-${msg.id}`}
+                            >
+                              ↩ Reply
+                            </button>
                           </div>
                         )}
                         {hasReactions && (

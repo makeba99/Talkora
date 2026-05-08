@@ -11668,6 +11668,39 @@ html.boost-mode .glass-panel {
   overflow: hidden;
 }
 
+/* ── Reply button embedded inside bubble ────────────────────────────────── */
+.chat-reply-inline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(180, 160, 255, 0.65);
+  background: rgba(120, 100, 255, 0.10);
+  border: 1px solid rgba(140, 120, 255, 0.18);
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.chat-reply-inline-btn:hover {
+  color: rgba(200, 185, 255, 0.95);
+  background: rgba(120, 100, 255, 0.22);
+  border-color: rgba(160, 140, 255, 0.38);
+}
+.chat-msg-card[data-own="true"] .chat-reply-inline-btn {
+  color: rgba(200, 195, 255, 0.60);
+  background: rgba(160, 150, 255, 0.08);
+  border-color: rgba(200, 190, 255, 0.15);
+}
+.chat-msg-card[data-own="true"] .chat-reply-inline-btn:hover {
+  color: rgba(220, 215, 255, 0.92);
+  background: rgba(160, 150, 255, 0.20);
+  border-color: rgba(200, 190, 255, 0.35);
+}
+
 /* ── Seen receipts — tiny avatar bubbles under last-seen message ─────────── */
 .chat-seen-avatar {
   width: 14px;
