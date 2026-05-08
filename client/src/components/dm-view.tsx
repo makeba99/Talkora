@@ -187,21 +187,9 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                   className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                   data-testid={`message-${msg.id}`}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-md px-3 py-2 ${
-                      isMe
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <div className="text-sm break-words">{renderMessageContent(msg.text)}</div>
-                    <p
-                      className={`text-xs mt-1 ${
-                        isMe ? "text-primary-foreground/70" : "text-muted-foreground"
-                      }`}
-                    >
-                      {formatTime(msg.createdAt)}
-                    </p>
+                  <div className={`dm-bubble ${isMe ? "dm-bubble-own" : "dm-bubble-other"}`}>
+                    <div className="dm-bubble-text break-words">{renderMessageContent(msg.text)}</div>
+                    <p className="dm-bubble-time">{formatTime(msg.createdAt)}</p>
                   </div>
                 </div>
               );
