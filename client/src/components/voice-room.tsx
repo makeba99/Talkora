@@ -4368,8 +4368,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         </div>
 
 
-        {/* Share */}
-        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
+        {/* Share — hidden on mobile, screen share is not supported on mobile browsers */}
+        <div className="hidden sm:flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={handleScreenShare}
             disabled={!isScreenSharing && !canShareScreenByPerm}
