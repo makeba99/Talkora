@@ -6720,7 +6720,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               const el = document.querySelector(`[data-testid="room-chat-${pinnedMessage.message.id}"]`);
               if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
             }}>
-              <span className="chat-pin-label">Pinned by {pinnedMessage.pinnedByName}</span>
+              <span className="chat-pin-label">
+                Pinned by {pinnedMessage.pinnedByName}
+                {pinnedMessage.message.userName && pinnedMessage.message.userName !== pinnedMessage.pinnedByName && (
+                  <span style={{ opacity: 0.65, fontWeight: 400 }}> · from {pinnedMessage.message.userName}</span>
+                )}
+              </span>
               <span className="chat-pin-text">
                 {pinnedMessage.message.text.length > 80
                   ? pinnedMessage.message.text.slice(0, 80) + "…"

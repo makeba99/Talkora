@@ -72,6 +72,13 @@ export const BADGE_TYPES = {
     color: "#ec4899",
     quote: "Watch out world — a remarkable new star has risen!",
   },
+  platform_legend: {
+    id: "platform_legend",
+    label: "Platform Nigga",
+    emoji: "👑",
+    color: "#f59e0b",
+    quote: "A real one. Born on this platform, built with this platform.",
+  },
 } as const;
 
 export type BadgeType = keyof typeof BADGE_TYPES;
