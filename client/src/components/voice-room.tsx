@@ -9296,30 +9296,64 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <div className="flex flex-wrap items-center gap-2">
 
             {/* ── Left: Title ── */}
-            <div className="flex items-center gap-2 min-w-0 flex-1 basis-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1 basis-0">
+              {/* Icon — deep neumorphic gem */}
               <div className="relative flex-shrink-0">
                 <div
-                  className="w-7 h-7 rounded-[10px] flex items-center justify-center"
-                  style={{ background: "rgba(157,134,255,0.10)", border: "1px solid rgba(157,134,255,0.20)", boxShadow: "0 0 10px rgba(91,60,224,0.18)" }}
+                  className="w-10 h-10 rounded-[14px] flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(145deg, hsl(252 30% 14%) 0%, hsl(248 26% 10%) 60%, hsl(244 22% 8%) 100%)",
+                    border: "1px solid rgba(157,134,255,0.22)",
+                    boxShadow: [
+                      "-3px -3px 7px rgba(255,255,255,0.055)",
+                      "4px 4px 12px rgba(0,0,0,0.85)",
+                      "2px 2px 4px rgba(0,0,0,0.60)",
+                      "inset 0 1.5px 0 rgba(200,180,255,0.14)",
+                      "inset 0 -1.5px 0 rgba(0,0,0,0.55)",
+                      "0 0 18px rgba(110,70,240,0.22)",
+                      "0 0 36px rgba(80,40,200,0.10)",
+                    ].join(", "),
+                  }}
                   data-testid="brand-room-mark"
                 >
-                  <VextornMark size={20} />
+                  <VextornMark size={22} />
                 </div>
-                <span className="absolute -top-px -right-px w-[7px] h-[7px] rounded-full bg-green-400 border border-black/40" style={{ boxShadow: "0 0 4px rgba(74,222,128,0.7)" }} />
+                {/* Live dot — double ring pulse */}
+                <span className="absolute -top-[3px] -right-[3px] flex items-center justify-center">
+                  <span className="absolute w-3 h-3 rounded-full bg-green-400/30 animate-ping" style={{ animationDuration: "1.6s" }} />
+                  <span className="relative w-[8px] h-[8px] rounded-full bg-green-400" style={{ boxShadow: "0 0 6px rgba(74,222,128,0.9), 0 0 12px rgba(74,222,128,0.4)", border: "1.5px solid rgba(0,0,0,0.5)" }} />
+                </span>
               </div>
+
+              {/* Text block */}
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <h2
-                    className="font-semibold text-[13px] truncate leading-tight"
-                    style={{ color: "rgba(255,255,255,0.92)", letterSpacing: "-0.01em" }}
+                    className="font-extrabold text-[14px] truncate"
+                    style={{
+                      color: "rgba(255,255,255,0.95)",
+                      letterSpacing: "-0.025em",
+                      lineHeight: 1.2,
+                      textShadow: "0 1px 8px rgba(140,100,255,0.25), 0 0 24px rgba(100,60,220,0.15)",
+                    }}
                     data-testid="text-voice-room-title"
                   >
                     {room.title}
                   </h2>
                   {isHost && (
                     <span
-                      className="flex-shrink-0 text-[9px] font-bold px-1.5 py-[2px] rounded-md tracking-wider uppercase"
-                      style={{ background: "hsl(var(--neu-orange) / 0.18)", color: "hsl(var(--neu-orange-hi) / 0.96)", border: "1px solid hsl(var(--neu-orange) / 0.40)", boxShadow: "0 0 10px hsl(var(--neu-orange) / 0.22), inset 0 1px 0 rgba(220,210,255,0.18)" }}
+                      className="flex-shrink-0 text-[8px] font-black px-[7px] py-[3px] rounded-[6px] tracking-[0.12em] uppercase"
+                      style={{
+                        background: "linear-gradient(135deg, hsl(var(--neu-orange) / 0.28) 0%, hsl(var(--neu-orange) / 0.16) 100%)",
+                        color: "hsl(var(--neu-orange-hi) / 1)",
+                        border: "1px solid hsl(var(--neu-orange) / 0.50)",
+                        boxShadow: [
+                          "0 0 10px hsl(var(--neu-orange) / 0.30)",
+                          "0 0 20px hsl(var(--neu-orange) / 0.14)",
+                          "inset 0 1px 0 rgba(255,240,200,0.22)",
+                          "inset 0 -1px 0 rgba(0,0,0,0.35)",
+                        ].join(", "),
+                      }}
                     >
                       HOST
                     </span>
@@ -9339,12 +9373,24 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     );
                   })()}
                 </div>
-                <div className="flex items-center gap-1 mt-[2px]">
-                  <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.40)" }}>{room.language}</span>
-                  <span style={{ color: "rgba(255,255,255,0.16)", fontSize: 10 }}>·</span>
-                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.30)" }}>{room.level}</span>
-                  <span style={{ color: "rgba(255,255,255,0.16)", fontSize: 10 }}>·</span>
-                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.30)" }}>{participants.length}/{room.maxUsers}</span>
+
+                {/* Metadata row */}
+                <div className="flex items-center gap-[5px] mt-[3px]">
+                  <span
+                    className="text-[10px] font-semibold tracking-wide"
+                    style={{ color: "rgba(180,160,255,0.75)" }}
+                  >
+                    {room.language}
+                  </span>
+                  <span style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.15)", flexShrink: 0, display: "inline-block" }} />
+                  <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>{room.level}</span>
+                  <span style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.15)", flexShrink: 0, display: "inline-block" }} />
+                  <span
+                    className="text-[10px] font-semibold tabular-nums"
+                    style={{ color: "rgba(100,220,160,0.70)" }}
+                  >
+                    {participants.length}<span style={{ color: "rgba(255,255,255,0.22)" }}>/{room.maxUsers === 0 ? "∞" : room.maxUsers}</span>
+                  </span>
                 </div>
               </div>
             </div>
