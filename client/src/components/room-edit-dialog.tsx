@@ -134,7 +134,7 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Edit Room Settings</DialogTitle>
         </DialogHeader>

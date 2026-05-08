@@ -1042,6 +1042,95 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             // Door is now absolutely positioned at bottom-right; protect the
             // bottom-right slot for any multi-column grid (≥2 cols).
             const gridRightPad = gridCols >= 2 ? 42 : 0;
+
+            // ── Full-room: 2-row horizontal-scroll layout with smaller avatars ──
+            // When every slot is taken, swap the fixed grid for a 2-row
+            // column-flow grid that overflows horizontally.  Avatars are
+            // shrunk so both rows sit comfortably inside the card body,
+            // and the user can swipe/scroll to see participants that are
+            // off-screen on narrow viewports.
+            if (isFull) {
+              const smallBase = 38;
+              const smallSize = Math.max(30, Math.round(smallBase * circleScale));
+              return (
+                <div className="flex-1 flex flex-col justify-center px-3 pt-5 pb-2 min-h-0">
+                  <div
+                    style={{
+                      overflowX: "auto",
+                      overflowY: "visible",
+                      scrollbarWidth: "none",
+                      WebkitOverflowScrolling: "touch" as any,
+                      paddingRight: 42, // clear the door icon
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateRows: "repeat(2, auto)",
+                        gridAutoFlow: "column",
+                        columnGap: 4,
+                        rowGap: 4,
+                        width: "max-content",
+                      }}
+                    >
+                      {participants.slice(0, 12).map((p, i) => {
+                        const badges = participantBadges[p.id] || [];
+                        const ringClass = getAvatarRingClass(p.avatarRing);
+                        const hasRing = !!ringClass;
+                        const avatarEl = (
+                          <div
+                            className={`relative rounded-2xl flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
+                            style={{
+                              width: smallSize + 6,
+                              height: smallSize + 6,
+                              padding: 3,
+                              background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
+                              boxShadow: hasRing
+                                ? undefined
+                                : isPremiumAtmosphere
+                                  ? "0 0 7px rgba(145,40,130,0.40), 0 0 14px rgba(145,40,130,0.20)"
+                                  : `0 0 8px ${glow.from}, 0 0 16px ${glow.to}`,
+                            }}
+                          >
+                            <Avatar style={{ width: smallSize, height: smallSize }} className={`rounded-2xl border-2 ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20" : "border-[#0a1228]"}`}>
+                              {(() => {
+                                const a = buildAvatarSources(p.profileImageUrl);
+                                return <AvatarImage src={a.src} srcSet={a.srcSet} alt={getUserDisplayName(p)} width={smallSize} height={smallSize} loading="lazy" decoding="async" className="rounded-2xl" />;
+                              })()}
+                              <AvatarFallback className="rounded-2xl text-[10px] font-bold bg-[#1a1520] text-white/70">{getUserInitials(p)}</AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
+                              <UserBadgePips badges={badges} userId={p.id} compact />
+                            </div>
+                          </div>
+                        );
+                        const decorated = (p as any).profileDecoration ? (
+                          <Suspense fallback={avatarEl}>
+                            <ProfileDecoration decorationId={(p as any).profileDecoration} size={smallSize}>{avatarEl}</ProfileDecoration>
+                          </Suspense>
+                        ) : avatarEl;
+                        if (!isLoggedIn) {
+                          return <div key={i} className="flex flex-col items-center">{decorated}</div>;
+                        }
+                        return (
+                          <ParticipantPopoverShell key={i} participant={p} currentUserId={user?.id} onOpenDm={onOpenDm} badges={badges}>
+                            <button
+                              className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                              data-testid={`button-card-participant-${p.id}`}
+                              aria-label={`View ${getUserDisplayName(p)}'s profile`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {decorated}
+                            </button>
+                          </ParticipantPopoverShell>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
             return (
           <div className="flex-1 flex flex-col justify-center px-3 pt-5 pb-2 min-h-0 overflow-visible">
             <div
