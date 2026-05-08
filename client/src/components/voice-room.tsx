@@ -229,43 +229,80 @@ interface ChatMessage {
 function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
-  const smoothedRef = useRef<number[]>(new Array(14).fill(0));
+  const tRef = useRef<number>(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !analyserNode) return;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const NUM_BARS = 14;
-    const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
-    const binStep = Math.max(1, Math.floor(analyserNode.frequencyBinCount / NUM_BARS));
-    const smoothed = smoothedRef.current;
+    const W = canvas.width;
+    const H = canvas.height;
+    const dataArray = analyserNode ? new Uint8Array(analyserNode.frequencyBinCount) : null;
+
+    /* Three layered sine waves: amber (primary), violet (mid), cyan (deep) */
+    const LAYERS = [
+      { r: 251, g: 146, b:  60, alpha: 0.92, lw: 2.2, blur: 12, speed: 0.072, freq: 2.0, ampMul: 0.90 },
+      { r: 167, g: 139, b: 250, alpha: 0.58, lw: 1.5, blur:  7, speed: 0.052, freq: 3.2, ampMul: 0.62 },
+      { r:   6, g: 182, b: 212, alpha: 0.34, lw: 1.0, blur:  5, speed: 0.032, freq: 1.5, ampMul: 0.40 },
+    ];
+
+    const STEPS = 44;
 
     const draw = () => {
-      analyserNode.getByteFrequencyData(dataArray);
-      const W = canvas.width;
-      const H = canvas.height;
+      const t = tRef.current++;
       ctx.clearRect(0, 0, W, H);
-      const barW = Math.floor(W / NUM_BARS) - 1;
-      for (let i = 0; i < NUM_BARS; i++) {
-        const raw = dataArray[i * binStep] / 255;
-        smoothed[i] = smoothed[i] * 0.65 + raw * 0.35;
-        const barH = Math.max(2, smoothed[i] * H * 0.92);
-        const x = i * (barW + 1);
-        const y = H - barH;
-        const grad = ctx.createLinearGradient(0, y, 0, H);
-        grad.addColorStop(0, "rgba(255,255,255,0.95)");
-        grad.addColorStop(1, "rgba(0,224,255,0.9)");
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        if ((ctx as any).roundRect) {
-          (ctx as any).roundRect(x, y, barW, barH, [2, 2, 0, 0]);
-        } else {
-          ctx.rect(x, y, barW, barH);
-        }
-        ctx.fill();
+
+      let level = 0;
+      if (analyserNode && dataArray) {
+        analyserNode.getByteFrequencyData(dataArray);
+        let sum = 0;
+        const cap = Math.min(56, dataArray.length);
+        for (let i = 0; i < cap; i++) sum += dataArray[i];
+        level = sum / cap / 255;
+      } else {
+        /* Gentle idle pulse when no live audio */
+        level = 0.18 + Math.sin(t * 0.038) * 0.055;
       }
+
+      for (let li = 0; li < LAYERS.length; li++) {
+        const L = LAYERS[li];
+        const phase = t * L.speed + li * Math.PI * 0.68;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(${L.r},${L.g},${L.b},${L.alpha})`;
+        ctx.lineWidth = L.lw;
+        ctx.shadowBlur = L.blur;
+        ctx.shadowColor = `rgba(${L.r},${L.g},${L.b},0.60)`;
+
+        const pts: [number, number][] = [];
+        for (let i = 0; i <= STEPS; i++) {
+          const x = (i / STEPS) * W;
+          let amp: number;
+          if (analyserNode && dataArray) {
+            const bin = Math.floor((i / STEPS) * Math.min(56, dataArray.length - 1));
+            amp = (dataArray[bin] / 255) * H * L.ampMul;
+          } else {
+            amp = level * H * L.ampMul;
+          }
+          const y = H / 2 + Math.sin((x / W) * Math.PI * L.freq + phase) * Math.max(1.2, amp);
+          pts.push([x, y]);
+        }
+
+        /* Smooth bezier through all points */
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length - 1; i++) {
+          const mx = (pts[i][0] + pts[i + 1][0]) / 2;
+          const my = (pts[i][1] + pts[i + 1][1]) / 2;
+          ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+        }
+        ctx.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
+        ctx.stroke();
+        ctx.restore();
+      }
+
       animRef.current = requestAnimationFrame(draw);
     };
 
@@ -273,27 +310,13 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
     return () => cancelAnimationFrame(animRef.current);
   }, [analyserNode]);
 
-  if (!analyserNode) {
-    return (
-      <div className="absolute bottom-6 left-0 right-0 flex justify-center items-end gap-[2px] h-5 z-20 pointer-events-none px-2">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div
-            key={i}
-            className="w-1.5 bg-orange-400/80 rounded-t-sm animate-sound-wave origin-bottom"
-            style={{ animationDelay: `${i * 0.13}s`, height: "70%" }}
-          />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="absolute bottom-5 left-0 right-0 flex justify-center z-20 pointer-events-none px-1.5">
+    <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
       <canvas
         ref={canvasRef}
-        width={88}
-        height={22}
-        className="opacity-95 drop-shadow-md"
+        width={104}
+        height={30}
+        className="opacity-96"
         data-testid="waveform-canvas"
       />
     </div>
