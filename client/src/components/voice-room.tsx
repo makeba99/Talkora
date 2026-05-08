@@ -6679,40 +6679,53 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 const reactions = msg.reactions || {};
                 const hasReactions = Object.keys(reactions).some((e) => reactions[e].length > 0);
                 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "👏"];
+                const isOwn = msg.userId === user?.id;
+
+                /* Per-user ring colour palette — 8 distinct hues */
+                const ringPalette = [
+                  { bg: "linear-gradient(135deg,rgba(251,191,36,.90) 0%,rgba(194,115,10,.55) 100%)", glow: "rgba(245,158,11,.36)" },
+                  { bg: "linear-gradient(135deg,rgba(52,211,153,.90) 0%,rgba(4,120,87,.55) 100%)",   glow: "rgba(16,185,129,.30)" },
+                  { bg: "linear-gradient(135deg,rgba(99,102,241,.90) 0%,rgba(67,56,202,.55) 100%)",  glow: "rgba(99,102,241,.30)" },
+                  { bg: "linear-gradient(135deg,rgba(251,113,133,.90) 0%,rgba(190,18,60,.55) 100%)", glow: "rgba(244,63,94,.30)"  },
+                  { bg: "linear-gradient(135deg,rgba(34,211,238,.90) 0%,rgba(14,116,144,.55) 100%)", glow: "rgba(6,182,212,.30)"  },
+                  { bg: "linear-gradient(135deg,rgba(167,139,250,.90) 0%,rgba(109,40,217,.55) 100%)",glow: "rgba(139,92,246,.30)" },
+                  { bg: "linear-gradient(135deg,rgba(251,146,60,.90) 0%,rgba(154,52,18,.55) 100%)",  glow: "rgba(234,88,12,.30)"  },
+                  { bg: "linear-gradient(135deg,rgba(163,230,53,.90) 0%,rgba(77,124,15,.55) 100%)",  glow: "rgba(101,163,13,.30)" },
+                ];
+                const rc = ringPalette[(pIndex >= 0 ? pIndex : 0) % ringPalette.length];
 
                 return (
                   <div
                     key={msg.id}
-                    className="group chat-msg-card flex items-start gap-3 relative transition-colors duration-100"
-                    data-own={msg.userId === user?.id ? "true" : undefined}
+                    className={`group chat-msg-row${isOwn ? " flex-row-reverse" : ""}`}
+                    data-own={isOwn ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                     onMouseEnter={() => setHoveredMsgId(msg.id)}
                     onMouseLeave={() => setHoveredMsgId(null)}
                   >
-                    {/* Avatar — deep neumorphic amber gem ring */}
+                    {/* Per-user coloured avatar ring */}
                     <div
-                      className="rounded-full flex-shrink-0 mt-0.5"
+                      className="rounded-full flex-shrink-0"
                       style={{
                         padding: "2.5px",
-                        background: "linear-gradient(135deg, rgba(251,191,36,0.85) 0%, rgba(245,158,11,0.65) 45%, rgba(194,115,10,0.45) 100%)",
-                        boxShadow: [
-                          "-2px -2px 6px rgba(255,255,255,0.06)",
-                          "3px 3px 10px rgba(0,0,0,0.75)",
-                          "0 0 14px rgba(245,158,11,0.30)",
-                          "0 0 28px rgba(245,158,11,0.12)",
-                        ].join(", "),
+                        background: rc.bg,
+                        boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 14px ${rc.glow}`,
                       }}
                     >
-                      <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,0.55)" }}>
+                      <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,.55)" }}>
                         <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
                         <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
                           {getUserInitials(msgUser)}
                         </AvatarFallback>
                       </Avatar>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2 flex-wrap min-w-0">
-                        <span className="chat-msg-name min-w-0 break-words [overflow-wrap:anywhere]">{getUserDisplayName(msgUser)}</span>
+
+                    {/* Bubble column — name above, bubble below */}
+                    <div className={`flex flex-col gap-[3px] max-w-[72%] min-w-0 ${isOwn ? "items-end" : "items-start"}`}>
+
+                      {/* Name + time header — outside the bubble */}
+                      <div className={`flex items-baseline gap-1.5 flex-wrap px-1 ${isOwn ? "flex-row-reverse" : ""}`}>
+                        <span className="chat-msg-name">{getUserDisplayName(msgUser)}</span>
                         <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
                         {msg.isPrivate && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
@@ -6721,50 +6734,59 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           </Badge>
                         )}
                       </div>
-                      {msg.replyTo && (
-                        <div className="chat-reply-preview mt-0.5 mb-1.5 pl-2 border-l-2 rounded-r-md">
-                          <span className="text-[10px] font-semibold text-white/45 block px-1.5 pt-1">{msg.replyTo.userName}</span>
-                          <div className="px-1.5 pb-1 text-xs opacity-70 pointer-events-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]" data-testid={`reply-preview-message-${msg.id}`}>
-                            {renderReplyPreview(msg.replyTo.text)}
+
+                      {/* The actual bubble */}
+                      <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
+                        {msg.replyTo && (
+                          <div className="chat-reply-preview pl-2 border-l-2 rounded-r-md">
+                            <span className="text-[10px] font-semibold text-white/45 block px-1.5 pt-1">{msg.replyTo.userName}</span>
+                            <div className="px-1.5 pb-1 text-xs opacity-70 pointer-events-auto whitespace-pre-wrap break-words [overflow-wrap:anywhere]" data-testid={`reply-preview-message-${msg.id}`}>
+                              {renderReplyPreview(msg.replyTo.text)}
+                            </div>
                           </div>
+                        )}
+                        <div
+                          className="chat-msg-body whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-w-full"
+                          style={{ color: msg.messageColor || undefined }}
+                          data-testid={`text-room-chat-${msg.id}`}
+                        >
+                          {renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}
                         </div>
-                      )}
-                      <div
-                        className="chat-msg-body whitespace-pre-wrap break-words [overflow-wrap:anywhere] mt-0.5 max-w-full"
-                        style={{ color: msg.messageColor || undefined }}
-                        data-testid={`text-room-chat-${msg.id}`}
-                      >
-                        {renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}
+                        {hasReactions && (
+                          <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`reactions-${msg.id}`}>
+                            {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
+                              const tooltip = formatReactionTooltip(emoji, uids);
+                              return (
+                                <Tooltip key={emoji}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => handleReact(msg.id, emoji)}
+                                      className="chat-reaction-pill"
+                                      data-self={uids.includes(user?.id || "") ? "true" : undefined}
+                                      data-testid={`reaction-${msg.id}-${emoji}`}
+                                    >
+                                      <span>{emoji}</span>
+                                      <span className="font-medium">{uids.length}</span>
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs max-w-[200px] text-center">
+                                    <p className="font-medium mb-0.5">{tooltip.heading}</p>
+                                    <p className="text-muted-foreground">{tooltip.names}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                      {hasReactions && (
-                        <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`reactions-${msg.id}`}>
-                          {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
-                            const tooltip = formatReactionTooltip(emoji, uids);
-                            return (
-                              <Tooltip key={emoji}>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => handleReact(msg.id, emoji)}
-                                    className="chat-reaction-pill"
-                                    data-self={uids.includes(user?.id || "") ? "true" : undefined}
-                                    data-testid={`reaction-${msg.id}-${emoji}`}
-                                  >
-                                    <span>{emoji}</span>
-                                    <span className="font-medium">{uids.length}</span>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-xs max-w-[200px] text-center">
-                                  <p className="font-medium mb-0.5">{tooltip.heading}</p>
-                                  <p className="text-muted-foreground">{tooltip.names}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
+
+                    {/* Hover toolbar */}
                     {hoveredMsgId === msg.id && (
-                      <div className="absolute right-0 top-0 flex items-center gap-0.5 z-10" style={{background:"rgba(8,9,15,0.90)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:"10px",boxShadow:"0 4px 16px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06)",padding:"3px 5px"}}>
+                      <div
+                        className="absolute right-0 top-0 flex items-center gap-0.5 z-10"
+                        style={{ background:"rgba(8,9,15,.92)", backdropFilter:"blur(14px)", border:"1px solid rgba(255,255,255,.09)", borderRadius:"10px", boxShadow:"0 4px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)", padding:"3px 5px" }}
+                      >
                         {QUICK_EMOJIS.map((emoji) => (
                           <button
                             key={emoji}
@@ -6807,8 +6829,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             }}
                             className="ml-0.5 text-[10px] px-1 py-0.5 rounded transition-colors"
                             style={pinnedMessage?.message?.id === msg.id
-                              ? { color: "rgba(251,191,36,0.90)", background: "rgba(251,191,36,0.12)" }
-                              : { color: "rgba(255,255,255,0.38)", background: "transparent" }
+                              ? { color: "rgba(251,191,36,.90)", background: "rgba(251,191,36,.12)" }
+                              : { color: "rgba(255,255,255,.38)", background: "transparent" }
                             }
                             title={pinnedMessage?.message?.id === msg.id ? "Unpin message" : "Pin message"}
                             data-testid={`button-pin-${msg.id}`}
@@ -6816,10 +6838,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             📌
                           </button>
                         )}
-                        {msg.userId === user?.id && (
+                        {isOwn && (
                           <button
                             onClick={() => {
-                              socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user.id });
+                              socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
                               setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
                             }}
                             className="ml-1 text-[10px] text-destructive hover:text-white px-1 py-0.5 rounded hover:bg-destructive transition-colors flex items-center gap-1"
