@@ -54,15 +54,14 @@ export function EmojiPickerButton({ onEmojiSelect }: EmojiPickerButtonProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <button
           type="button"
-          size="icon"
-          variant="ghost"
+          className="room-tool-btn"
           data-testid="button-emoji-picker"
           aria-label="Open emoji picker"
         >
-          <Smile className="w-4 h-4" aria-hidden="true" />
-        </Button>
+          <Smile className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
       </PopoverTrigger>
       <PopoverContent
         className="w-[340px] p-0 vextorn-emoji-popover"

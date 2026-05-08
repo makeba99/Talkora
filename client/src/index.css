@@ -8875,10 +8875,10 @@ html.neomorphic-light .scroll-jump-btn {
   cursor: pointer;
   flex-shrink: 0;
 }
-/* Icon size — slightly larger for breathing room in the taller slab */
+/* Icon size — 22 px for a bolder, more physical presence */
 .room-tab-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 }
 
@@ -8920,20 +8920,21 @@ html.neomorphic-light .scroll-jump-btn {
   color: rgba(255, 255, 255, 1) !important;
 }
 
-/* ── 4. Filter segment buttons — ghost inside inset slab ─────────────────── */
+/* ── 4. Filter segment buttons — compact ghost labels ────────────────────── */
 .room-filter-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
   height: auto;
-  padding: 9px 14px;
+  /* Tighter: less vertical padding, smaller text */
+  padding: 6px 10px;
   border-radius: 0 !important;
-  font-size: 10.5px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 1.8px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.20);
   background: transparent !important;
@@ -8946,6 +8947,7 @@ html.neomorphic-light .scroll-jump-btn {
     border-radius 160ms ease,
     box-shadow 200ms ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 .room-filter-pill:hover {
   color: rgba(255, 255, 255, 0.58) !important;
@@ -8954,10 +8956,10 @@ html.neomorphic-light .scroll-jump-btn {
   color: rgba(255, 255, 255, 0.38) !important;
 }
 
-/* Active filter: raised tile — same depth language as tab active */
+/* Active filter: raised tile */
 .room-filter-pill[data-active="true"] {
   color: rgba(255, 255, 255, 0.95) !important;
-  border-radius: 20px !important;
+  border-radius: 18px !important;
   background: linear-gradient(
     158deg,
     #2e2e3a 0%,
@@ -8966,30 +8968,30 @@ html.neomorphic-light .scroll-jump-btn {
   ) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow:
-    0 7px 24px rgba(0, 0, 0, 0.86),
-    0 4px 10px rgba(0, 0, 0, 0.68),
-    0 1px 4px  rgba(0, 0, 0, 0.52),
+    0 6px 20px rgba(0, 0, 0, 0.84),
+    0 3px 8px  rgba(0, 0, 0, 0.66),
+    0 1px 3px  rgba(0, 0, 0, 0.50),
     inset 0 1px 0 rgba(255, 255, 255, 0.20),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.52) !important;
+    inset 0 -1px 0 rgba(0, 0, 0, 0.50) !important;
 }
 .room-filter-pill[data-active="true"]:hover {
   color: rgba(255, 255, 255, 1) !important;
 }
 
-/* ── 5. Welcome pill — amber tint, same ghost/raised logic ───────────────── */
+/* ── 5. Welcome pill — compact amber ghost ───────────────────────────────── */
 .room-welcome-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
   height: auto;
-  padding: 9px 14px;
+  padding: 6px 10px;
   border-radius: 0 !important;
-  font-size: 10.5px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.1px;
   text-transform: uppercase;
   color: rgba(255, 200, 80, 0.30);
   background: transparent !important;
@@ -9002,13 +9004,14 @@ html.neomorphic-light .scroll-jump-btn {
     border-radius 160ms ease,
     box-shadow 200ms ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 .room-welcome-pill:hover {
   color: rgba(255, 210, 100, 0.62) !important;
 }
 .room-welcome-pill[data-active="true"] {
   color: rgba(253, 218, 100, 0.95) !important;
-  border-radius: 20px !important;
+  border-radius: 18px !important;
   background: linear-gradient(
     158deg,
     #2e2e3a 0%,
@@ -9017,11 +9020,11 @@ html.neomorphic-light .scroll-jump-btn {
   ) !important;
   border: 1px solid rgba(255, 200, 80, 0.10) !important;
   box-shadow:
-    0 7px 22px rgba(0, 0, 0, 0.84),
-    0 3px 9px  rgba(0, 0, 0, 0.64),
-    0 1px 4px  rgba(0, 0, 0, 0.48),
+    0 6px 20px rgba(0, 0, 0, 0.82),
+    0 3px 8px  rgba(0, 0, 0, 0.62),
+    0 1px 3px  rgba(0, 0, 0, 0.46),
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.50) !important;
+    inset 0 -1px 0 rgba(0, 0, 0, 0.48) !important;
 }
 .room-welcome-pill[data-active="true"]:hover {
   color: rgba(255, 228, 120, 1) !important;
@@ -9245,11 +9248,100 @@ html.neomorphic-light .scroll-jump-btn {
     0 1px 0 rgba(255, 255, 255, 0.030);
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   CHAT INPUT TOOLBAR SLAB — unified pill containing emoji, tools + send
+   Same neumorphic carved-tray language as the tab bar and filter row.
+   Tool buttons = pure ghost icons. Send = the only raised element.
+   ══════════════════════════════════════════════════════════════════════════ */
+.chat-toolbar-slab {
+  display: flex;
+  align-items: stretch;
+  padding: 5px 5px;
+  gap: 0;
+  background: linear-gradient(180deg, #0c0c10 0%, #080809 100%);
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.038);
+  box-shadow:
+    inset 0 5px 22px rgba(0, 0, 0, 0.94),
+    inset 0 2px 8px  rgba(0, 0, 0, 0.76),
+    inset 0 1px 3px  rgba(0, 0, 0, 0.58),
+    inset 0 -1px 0   rgba(255, 255, 255, 0.026),
+    0 1px 0 rgba(255, 255, 255, 0.052),
+    0 2px 5px rgba(0, 0, 0, 0.52);
+  overflow: hidden;
+}
+
+/* Inner tool group — stretches to fill all space left of send button */
+.chat-tools-group {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+}
+
+/* Ghost tool buttons inside the slab — no individual shape at all */
+.chat-toolbar-slab .room-tool-btn {
+  flex: 1 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 36px;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.22) !important;
+  transition: color 150ms ease !important;
+}
+.chat-toolbar-slab .room-tool-btn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.70) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.chat-toolbar-slab .room-tool-btn:active:not(:disabled) {
+  color: rgba(255, 255, 255, 0.38) !important;
+  transform: none !important;
+}
+/* Whisper-mode globe — amber tint ghost */
+.chat-toolbar-slab .room-tool-btn[data-active="true"] {
+  color: rgba(253, 216, 88, 0.88) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hair-line separators between tool slots */
+.chat-tools-group > *:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.065) 35%,
+    rgba(255, 255, 255, 0.065) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Send button inside slab — only raised element, clips cleanly to pill end */
+.chat-toolbar-slab .room-send-btn {
+  border-radius: 20px !important;
+  align-self: stretch !important;
+  height: auto !important;
+  padding: 0 18px 0 14px !important;
+  flex-shrink: 0;
+}
+
 /* ---- Composer textarea — deep sunken neumorphic well -------------------- */
 .room-composer {
   width: 100%;
   border-radius: 14px;
-  padding: 10px 42px 10px 14px;
+  padding: 10px 14px;
   font-size: 13px;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.88);

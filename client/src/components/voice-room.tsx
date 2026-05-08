@@ -6902,9 +6902,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
 
           <div className="relative">
-            <div className="absolute top-1.5 right-1.5 z-10">
-              <EmojiPickerButton onEmojiSelect={(emoji) => setChatText((prev) => prev + emoji)} />
-            </div>
             {!isAtBottom && (
               <button
                 type="button"
@@ -6978,8 +6975,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
+          <div className="chat-toolbar-slab">
+            <div className="chat-tools-group">
+              <EmojiPickerButton onEmojiSelect={(emoji) => setChatText((prev) => prev + emoji)} />
               <Popover>
                 <PopoverTrigger asChild>
                   <button
