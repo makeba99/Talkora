@@ -4843,6 +4843,16 @@ export async function registerRoutes(
       }
     });
 
+    socket.on("room:chat-edit", async (data: { roomId: string; messageId: string; newText: string; editedBy: string }) => {
+      try {
+        const trimmed = (data.newText || "").trim().slice(0, 4000);
+        if (!trimmed) return;
+        io.to(data.roomId).emit("room:chat-edit", { messageId: data.messageId, newText: trimmed });
+      } catch (err) {
+        console.error("Error editing room message:", err);
+      }
+    });
+
     // Typing indicators — relay to everyone else in the room.
     socket.on("room:typing", (data: { roomId: string; userId: string; displayName: string; profileImageUrl?: string | null }) => {
       socket.to(data.roomId).emit("room:typing", {

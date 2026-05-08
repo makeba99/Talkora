@@ -1432,6 +1432,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [blockDialogName, setBlockDialogName] = useState<string>("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState<string>("");
   const [pinnedMessage, setPinnedMessage] = useState<{ message: ChatMessage; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null>(null);
   const [participantRoles, setParticipantRoles] = useState<Record<string, string>>({});
   const [trollVoteModal, setTrollVoteModal] = useState<{ targetUserId: string; targetName: string; assignedByName: string; totalMembers: number } | null>(null);
@@ -2829,6 +2831,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       );
     });
 
+    socket.on("room:chat-edit", (data: { messageId: string; newText: string }) => {
+      setChatMessages((prev) =>
+        prev.map((m) =>
+          m.id === data.messageId
+            ? { ...m, text: data.newText, edited: true }
+            : m
+        )
+      );
+    });
+
     socket.on("room:pinned-message", (data: { message: ChatMessage; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null) => {
       setPinnedMessage(data || null);
     });
@@ -3275,6 +3287,40 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // AI tutor socket events are handled by the useAiTutor hook.
 
     let roomBc: BroadcastChannel | null = null;
+    let sessionBc: BroadcastChannel | null = null;
+    try {
+      // Detect if the same room is already open in another tab.
+      // We ping on a room-specific channel; if an existing tab pongs back
+      // within 250 ms we close this new tab and redirect to the lobby.
+      const sessionChannel = `room-session-${user.id}-${room.id}`;
+      sessionBc = new BroadcastChannel(sessionChannel);
+      let pongReceived = false;
+      const pongTimer = setTimeout(() => {
+        if (!pongReceived) {
+          // No existing tab — we're the first; start listening for future pings
+          if (sessionBc) {
+            sessionBc.onmessage = (ev) => {
+              if (ev.data?.type === "ping") sessionBc?.postMessage({ type: "pong" });
+            };
+          }
+        }
+      }, 250);
+      sessionBc.onmessage = (ev) => {
+        if (ev.data?.type === "pong" && !pongReceived) {
+          pongReceived = true;
+          clearTimeout(pongTimer);
+          // Another tab is already in this room — close this duplicate tab
+          sessionBc?.close();
+          sessionBc = null;
+          try { window.close(); } catch {}
+          setTimeout(() => { window.location.href = "/"; }, 100);
+        } else if (ev.data?.type === "ping") {
+          sessionBc?.postMessage({ type: "pong" });
+        }
+      };
+      sessionBc.postMessage({ type: "ping" });
+    } catch {}
+
     try {
       roomBc = new BroadcastChannel(`connect-room-${user.id}`);
       roomBc.onmessage = (ev) => {
@@ -3287,6 +3333,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
     return () => {
       roomBc?.close();
+      sessionBc?.close();
       cancelAnimationFrame(animationFrameId);
       document.removeEventListener("visibilitychange", handleVisibilityForRoom);
       socket.emit("room:leave", { roomId: room.id, userId: user.id });
@@ -3317,6 +3364,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:already-in-room");
       socket.off("room:chat-message");
       socket.off("room:chat-delete");
+      socket.off("room:chat-edit");
       socket.off("room:typing");
       socket.off("room:typing-stop");
       Object.values(typingExpireTimers.current).forEach((t) => clearTimeout(t));
@@ -4516,6 +4564,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       aria-label={label}
                       data-testid={`mood-emoji-${e}`}
                       className="w-11 h-11 flex items-center justify-center rounded-xl text-2xl hover:bg-white/10 active:scale-95 transition-all touch-manipulation"
+                      style={{ color: "white", WebkitTextFillColor: "initial" }}
                     >
                       {e}
                     </button>
@@ -6823,13 +6872,65 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             </div>
                           </div>
                         )}
-                        <div
-                          className="chat-msg-body whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-w-full"
-                          style={{ color: msg.messageColor || undefined }}
-                          data-testid={`text-room-chat-${msg.id}`}
-                        >
-                          {renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}
-                        </div>
+                        {editingMsgId === msg.id ? (
+                          <div className="flex flex-col gap-1.5 mt-0.5">
+                            <textarea
+                              autoFocus
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  const trimmed = editingText.trim();
+                                  if (trimmed && trimmed !== msg.text) {
+                                    socket?.emit("room:chat-edit", { roomId: room.id, messageId: msg.id, newText: trimmed, editedBy: user!.id });
+                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: trimmed, edited: true } : m));
+                                  }
+                                  setEditingMsgId(null);
+                                  setEditingText("");
+                                } else if (e.key === "Escape") {
+                                  setEditingMsgId(null);
+                                  setEditingText("");
+                                }
+                              }}
+                              className="w-full rounded-lg px-2 py-1.5 text-[13px] resize-none bg-white/5 border border-white/15 text-white/90 focus:outline-none focus:border-blue-400/50 min-h-[52px]"
+                              rows={2}
+                              data-testid={`input-edit-msg-${msg.id}`}
+                            />
+                            <div className="flex items-center gap-1.5 text-[10px]">
+                              <button
+                                onClick={() => {
+                                  const trimmed = editingText.trim();
+                                  if (trimmed && trimmed !== msg.text) {
+                                    socket?.emit("room:chat-edit", { roomId: room.id, messageId: msg.id, newText: trimmed, editedBy: user!.id });
+                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: trimmed, edited: true } : m));
+                                  }
+                                  setEditingMsgId(null);
+                                  setEditingText("");
+                                }}
+                                className="px-2 py-0.5 rounded bg-blue-500/25 text-blue-300 hover:bg-blue-500/40 transition-colors font-medium"
+                                data-testid={`button-save-edit-${msg.id}`}
+                              >Save</button>
+                              <button
+                                onClick={() => { setEditingMsgId(null); setEditingText(""); }}
+                                className="px-2 py-0.5 rounded text-white/35 hover:text-white/60 transition-colors"
+                                data-testid={`button-cancel-edit-${msg.id}`}
+                              >Cancel</button>
+                              <span className="text-white/20">↵ Enter to save · Esc to cancel</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="chat-msg-body whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-w-full"
+                            style={{ color: msg.messageColor || undefined }}
+                            data-testid={`text-room-chat-${msg.id}`}
+                          >
+                            {renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}
+                            {(msg as any).edited && (
+                              <span className="text-[9px] text-white/25 ml-1 italic">(edited)</span>
+                            )}
+                          </div>
+                        )}
                         {hasReactions && (
                           <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`reactions-${msg.id}`}>
                             {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
@@ -6916,17 +7017,32 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             📌
                           </button>
                         )}
-                        {isOwn && (
-                          <button
-                            onClick={() => {
-                              socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                              setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
-                            }}
-                            className="ml-1 text-[10px] text-destructive hover:text-white px-1 py-0.5 rounded hover:bg-destructive transition-colors flex items-center gap-1"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3 h-3" /> Del
-                          </button>
+                        {isOwn && msg.type !== "deleted" && (msg as any).type !== "system" && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingMsgId(msg.id);
+                                setEditingText(msg.text);
+                                setHoveredMsgId(null);
+                              }}
+                              className="ml-0.5 text-[10px] text-blue-300 hover:text-white px-1 py-0.5 rounded hover:bg-blue-500/20 transition-colors flex items-center gap-1"
+                              title="Edit"
+                              data-testid={`button-edit-${msg.id}`}
+                            >
+                              <Pencil className="w-3 h-3" /> Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                              }}
+                              className="ml-0.5 text-[10px] text-destructive hover:text-white px-1 py-0.5 rounded hover:bg-destructive transition-colors flex items-center gap-1"
+                              title="Delete"
+                              data-testid={`button-delete-${msg.id}`}
+                            >
+                              <Trash2 className="w-3 h-3" /> Del
+                            </button>
+                          </>
                         )}
                       </div>
                     )}
@@ -9559,6 +9675,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     data-testid="button-host-settings"
                     title="Room Settings"
                     className="room-header-pill-btn room-header-pill-btn--host"
+                    style={{ color: "rgba(167,139,250,0.9)" }}
                   >
                     <Settings className="w-[18px] h-[18px]" />
                   </button>
@@ -10584,7 +10701,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <div className={`flex items-end justify-center p-2 pb-4 ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 overflow-y-auto pt-4"}`}>
             <div
               className="overflow-x-auto w-full"
-              style={{ scrollbarWidth: "none" }}
+              style={{ scrollbarWidth: "none", paddingTop: "56px", marginTop: "-56px" }}
             >
             <div className="flex flex-nowrap items-end justify-center" style={{ gap: gapPx, minWidth: "max-content", margin: "0 auto" }}>
               {participants.map((p, index) => {

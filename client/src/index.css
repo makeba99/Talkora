@@ -11571,6 +11571,14 @@ html.boost-mode .glass-panel {
   background: rgba(0, 0, 0, 0.20);
   border-radius: 0 8px 8px 0;
   margin-bottom: 6px;
+  overflow: hidden;
+  max-height: 72px;
+}
+.chat-msg-card .chat-reply-preview > div:last-child {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 /* Reply preview in own (indigo) bubble */
 .chat-msg-card[data-own="true"] .chat-reply-preview {
