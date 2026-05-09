@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vextorn-v11";
+const CACHE_VERSION = "vextorn-v12";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const ASSET_CACHE  = `${CACHE_VERSION}-assets`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;

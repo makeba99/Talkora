@@ -325,7 +325,14 @@ export default defineConfig({
           if (id.includes("react-icons")) return "social-icons-vendor";
           if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "socket-vendor";
           if (id.includes("date-fns") || id.includes("zod") || id.includes("zod-validation-error")) return "forms-vendor";
-          if (id.includes("recharts") || id.includes("d3-")) return "charts-vendor";
+          // recharts internally imports every d3-* sub-package. Putting them all into
+          // one flat "charts-vendor" chunk removes Rollup's dependency-ordering info,
+          // causing d3 const bindings to be accessed before they initialise → TDZ
+          // "Cannot access 'T' before initialization". Splitting into two chunks
+          // lets the browser's ES-module linker guarantee d3-vendor finishes
+          // executing BEFORE recharts-vendor starts — eliminating the TDZ crash.
+          if (id.includes("recharts")) return "recharts-vendor";
+          if (id.includes("d3-")) return "d3-vendor";
           if (id.includes("emoji-picker-react")) return "emoji-vendor";
           if (id.includes("chess.js") || id.includes("react-chessboard")) return "chess-vendor";
           return undefined;
