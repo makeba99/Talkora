@@ -73,6 +73,50 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+// Fire-and-forget page view tracking — never blocks the request, zero latency impact.
+// Only records HTML page loads (not API calls, uploads, or asset requests).
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  const accept = req.headers.accept || "";
+  if (
+    req.method !== "GET" ||
+    req.path.startsWith("/api/") ||
+    req.path.startsWith("/uploads/") ||
+    req.path.startsWith("/assets/") ||
+    req.path.includes(".") ||
+    !accept.includes("text/html")
+  ) {
+    return next();
+  }
+  void (async () => {
+    try {
+      const { storage: s } = await import("./storage");
+      const { createHash } = await import("crypto");
+      const referrer = (req.headers.referer as string) || (req.headers.referrer as string) || "";
+      let referrerDomain = "";
+      if (referrer) {
+        try { referrerDomain = new URL(referrer).hostname.replace(/^www\./, ""); } catch {}
+      }
+      const country = (
+        (req.headers["cf-ipcountry"] as string) ||
+        (req.headers["x-vercel-ip-country"] as string) ||
+        (req.headers["x-country-code"] as string) ||
+        ""
+      ).slice(0, 2).toUpperCase() || undefined;
+      const ip = ((req.headers["x-forwarded-for"] as string) || (req.headers["x-real-ip"] as string) || "").split(",")[0].trim();
+      const ua = (req.headers["user-agent"] || "").slice(0, 200);
+      const sessionHash = createHash("sha256").update(`${ip}::${ua}`).digest("hex").slice(0, 32);
+      await s.recordPageView({
+        path: req.path.slice(0, 255),
+        referrer: referrer.slice(0, 500) || undefined,
+        referrerDomain: referrerDomain.slice(0, 120) || undefined,
+        country,
+        sessionHash,
+      });
+    } catch {}
+  })();
+  next();
+});
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",

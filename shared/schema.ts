@@ -462,3 +462,17 @@ export const appSettings = pgTable("app_settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 export type AppSetting = typeof appSettings.$inferSelect;
+
+export const pageViews = pgTable("page_views", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  path: varchar("path", { length: 255 }).notNull(),
+  referrer: text("referrer"),
+  referrerDomain: varchar("referrer_domain", { length: 120 }),
+  country: varchar("country", { length: 2 }),
+  sessionHash: varchar("session_hash", { length: 32 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  pvCreatedAtIdx: index("page_views_created_at_idx").on(table.createdAt),
+  pvReferrerIdx: index("page_views_referrer_domain_idx").on(table.referrerDomain),
+  pvCountryIdx: index("page_views_country_idx").on(table.country),
+}));

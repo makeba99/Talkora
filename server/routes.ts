@@ -2803,6 +2803,16 @@ export async function registerRoutes(
   };
 
   // ── Cleanup / Storage admin endpoints ───────────────────────────────────
+  app.get("/api/admin/analytics", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const days = Math.min(90, Math.max(1, Number(req.query.days) || 30));
+      const data = await storage.getAnalytics(days);
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/admin/cleanup/stats", isAuthenticated, isAdmin, async (_req, res) => {
     try {
       res.json(getCleanupStats());

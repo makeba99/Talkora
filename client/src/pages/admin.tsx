@@ -2,7 +2,8 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,6 +157,241 @@ function MaskedKeyInput({
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
+    </div>
+  );
+}
+
+type AnalyticsData = {
+  dailyViews: { date: string; views: number }[];
+  topReferrers: { domain: string; count: number }[];
+  topCountries: { country: string; count: number }[];
+  totalViews: number;
+  uniqueSessions: number;
+  redirectViews: number;
+};
+
+function AnalyticsTab() {
+  const [days, setDays] = useState(30);
+  const { data, isLoading, refetch } = useQuery<AnalyticsData>({
+    queryKey: ["/api/admin/analytics", days],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/analytics?days=${days}`);
+      if (!res.ok) throw new Error("Failed to fetch analytics");
+      return res.json();
+    },
+    refetchInterval: 60_000,
+  });
+
+  const chartColor = "hsl(var(--primary))";
+  const gridColor = "rgba(255,255,255,0.06)";
+
+  const CustomTooltipStyle = {
+    backgroundColor: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: "8px",
+    fontSize: "12px",
+    color: "hsl(var(--foreground))",
+  };
+
+  return (
+    <div className="space-y-6" data-testid="tab-content-analytics">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 text-primary" />
+            Traffic Analytics
+          </h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Page views, referrers, and visitor locations</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {([7, 30, 90] as const).map((d) => (
+            <Button
+              key={d}
+              size="sm"
+              variant={days === d ? "default" : "outline"}
+              onClick={() => setDays(d)}
+              data-testid={`button-analytics-days-${d}`}
+              className="text-xs"
+            >
+              {d}d
+            </Button>
+          ))}
+          <Button size="sm" variant="ghost" onClick={() => refetch()} data-testid="button-analytics-refresh">
+            <RefreshCw className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <Card className="bg-card/75 border-primary/15">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <TrendingUp className="w-3.5 h-3.5" /> Page Views
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : (
+              <p className="text-2xl font-bold text-primary" data-testid="text-analytics-total-views">
+                {(data?.totalViews ?? 0).toLocaleString()}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-0.5">last {days} days</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/75 border-violet-400/15">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <Users className="w-3.5 h-3.5" /> Unique Visitors
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : (
+              <p className="text-2xl font-bold text-violet-300" data-testid="text-analytics-unique">
+                {(data?.uniqueSessions ?? 0).toLocaleString()}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-0.5">last {days} days</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/75 border-amber-400/15 col-span-2 sm:col-span-1">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <MousePointerClick className="w-3.5 h-3.5" /> Redirect Traffic
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : (
+              <p className="text-2xl font-bold text-amber-300" data-testid="text-analytics-redirect">
+                {(data?.redirectViews ?? 0).toLocaleString()}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-0.5">from afikgang.online</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Daily views line chart */}
+      <Card className="bg-card/75 border-primary/15">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Daily Page Views</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : !data?.dailyViews.length ? (
+            <div className="h-48 flex items-center justify-center text-sm text-muted-foreground">No data yet — views will appear here as visitors arrive.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={data.dailyViews} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(v) => v.slice(5)}
+                  interval="preserveStartEnd"
+                />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                <Tooltip contentStyle={CustomTooltipStyle} labelFormatter={(v) => `Date: ${v}`} />
+                <Line type="monotone" dataKey="views" stroke={chartColor} strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        {/* Top referrers */}
+        <Card className="bg-card/75 border-primary/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <MousePointerClick className="w-3.5 h-3.5" /> Top Referrers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : !data?.topReferrers.length ? (
+              <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">No referrer data yet.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={data.topReferrers} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="domain" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={100} />
+                  <Tooltip contentStyle={CustomTooltipStyle} />
+                  <Bar dataKey="count" fill={chartColor} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top countries */}
+        <Card className="bg-card/75 border-primary/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5" /> Top Countries
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : !data?.topCountries.length ? (
+              <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">No location data yet.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={data.topCountries} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="country" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={32} />
+                  <Tooltip contentStyle={CustomTooltipStyle} />
+                  <Bar dataKey="count" fill="hsl(270 70% 65%)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Raw referrer list */}
+      {data?.topReferrers && data.topReferrers.length > 0 && (
+        <Card className="bg-card/75 border-primary/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Referrer Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {data.topReferrers.map((r, i) => {
+                const pct = data.totalViews > 0 ? Math.round((r.count / data.totalViews) * 100) : 0;
+                const isRedirect = r.domain === "afikgang.online";
+                return (
+                  <div key={r.domain} className="flex items-center gap-3" data-testid={`row-referrer-${i}`}>
+                    <span className="text-xs text-muted-foreground w-4 text-right">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-medium truncate flex items-center gap-1">
+                          {r.domain}
+                          {isRedirect && (
+                            <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-1">redirect</span>
+                          )}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-2 shrink-0">{r.count.toLocaleString()} ({pct}%)</span>
+                      </div>
+                      <div className="h-1.5 bg-muted/40 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${isRedirect ? "bg-amber-400" : "bg-primary"}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -1426,7 +1662,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[90rem] grid-cols-10" : "max-w-5xl grid-cols-7"} bg-card/80 backdrop-blur`}>
+          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[90rem] grid-cols-11" : "max-w-5xl grid-cols-8"} bg-card/80 backdrop-blur`}>
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -1477,6 +1713,10 @@ export default function AdminPage() {
                 AI Tutor
               </TabsTrigger>
             )}
+            <TabsTrigger value="analytics" data-testid="tab-admin-analytics">
+              <BarChart2 className="w-4 h-4 mr-2" />
+              Analytics
+            </TabsTrigger>
             {isSuperAdmin && (
               <TabsTrigger value="maintenance" data-testid="tab-admin-maintenance">
                 <Wrench className="w-4 h-4 mr-2" />
@@ -2133,6 +2373,14 @@ export default function AdminPage() {
 
           <TabsContent value="storage">
             <StorageTab isSuperAdmin={isSuperAdmin} />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+              <CardContent className="p-5">
+                <AnalyticsTab />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {isSuperAdmin && (
