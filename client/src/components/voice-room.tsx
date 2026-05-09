@@ -1280,6 +1280,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // state for the "Test voice" button (rawMicStreamRef is a ref, so reading
   // it directly in JSX won't trigger re-renders when the stream arrives).
   const [hasMicStream, setHasMicStream] = useState(false);
+  // ── Voice enhancement / noise cancellation ───────────────────────────────
+  const [enhancementEnabled, setEnhancementEnabled] = useState(
+    () => localStorage.getItem("vextorn:voice-enhance") !== "false"
+  );
+  const enhancementEnabledRef = useRef(
+    localStorage.getItem("vextorn:voice-enhance") !== "false"
+  );
+  const [noiseCancellationEnabled, setNoiseCancellationEnabled] = useState(
+    () => localStorage.getItem("vextorn:voice-denoise") !== "false"
+  );
+  const noiseCancellationEnabledRef = useRef(
+    localStorage.getItem("vextorn:voice-denoise") !== "false"
+  );
+  // Live mic level meter: rms 0-1, peak 0-1
+  const [micLevel, setMicLevel] = useState<{ rms: number; peak: number }>({ rms: 0, peak: 0 });
   const [sayingBye, setSayingBye] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const participantById = useMemo(() => {
@@ -2386,22 +2401,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const previousRawStream = rawMicStreamRef.current;
     rawMicStreamRef.current = stream;
 
-    // Route through voice processor if a non-natural preset is active.
-    // process() is async — it awaits AudioContext.resume() before wiring the
-    // filter graph so audio is never silently dropped on a suspended context.
+    // Always route through the AudioEngine so the enhancement chain (noise gate,
+    // EQ, compressor, limiter) and the level meter worklet are active even when
+    // the voice-effect preset is "natural".
     let processedStream: MediaStream = stream;
     const presetId = selectedVoicePresetIdRef.current;
-    if (presetId !== "natural") {
-      if (!audioContextRef.current) {
-        const AC = window.AudioContext || (window as any).webkitAudioContext;
-        if (AC) audioContextRef.current = new AC();
+    if (!audioContextRef.current) {
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      if (AC) audioContextRef.current = new AC();
+    }
+    if (audioContextRef.current) {
+      if (!voiceProcessorRef.current) {
+        voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
       }
-      if (audioContextRef.current) {
-        if (!voiceProcessorRef.current) {
-          voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
-        }
-        processedStream = await voiceProcessorRef.current.process(stream, presetId);
-      }
+      voiceProcessorRef.current.onLevelMeter = (rms, peak) => setMicLevel({ rms, peak });
+      processedStream = await voiceProcessorRef.current.process(
+        stream, presetId,
+        enhancementEnabledRef.current,
+        noiseCancellationEnabledRef.current,
+      );
     }
 
     processedStream.getAudioTracks().forEach((track) => {
@@ -2439,21 +2457,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const AC = window.AudioContext || (window as any).webkitAudioContext;
       if (AC) audioContextRef.current = new AC();
     }
-
-    let processedStream: MediaStream;
-    if (presetId === "natural") {
-      voiceProcessorRef.current?.destroy();
-      voiceProcessorRef.current = null;
-      processedStream = rawStream;
-    } else {
-      if (!audioContextRef.current) return;
-      if (!voiceProcessorRef.current) {
-        voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
-      }
-      // CRITICAL: await process() so AudioContext is resumed before the graph
-      // is wired — without this the filter chain is silently inactive.
-      processedStream = await voiceProcessorRef.current.process(rawStream, presetId);
+    if (!audioContextRef.current) return;
+    if (!voiceProcessorRef.current) {
+      voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
     }
+    voiceProcessorRef.current.onLevelMeter = (rms, peak) => setMicLevel({ rms, peak });
+    // CRITICAL: await process() so AudioContext is resumed before the graph is
+    // wired — without this the filter chain is silently inactive.
+    const processedStream = await voiceProcessorRef.current.process(
+      rawStream, presetId,
+      enhancementEnabledRef.current,
+      noiseCancellationEnabledRef.current,
+    );
 
     processedStream.getAudioTracks().forEach((track) => {
       track.enabled = !isMutedRef.current;
@@ -2471,6 +2486,42 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
     return audioContextRef.current;
   }, []);
+
+  // ── Enhancement / noise-cancellation rebuild helpers ─────────────────────
+  const rebuildAudioPipeline = useCallback(async (
+    enh: boolean,
+    denoise: boolean,
+  ) => {
+    const rawStream = rawMicStreamRef.current;
+    if (!rawStream || !audioContextRef.current) return;
+    if (!voiceProcessorRef.current) {
+      voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
+    }
+    voiceProcessorRef.current.onLevelMeter = (rms, peak) => setMicLevel({ rms, peak });
+    const processed = await voiceProcessorRef.current.process(
+      rawStream, selectedVoicePresetIdRef.current, enh, denoise,
+    );
+    processed.getAudioTracks().forEach((t) => { t.enabled = !isMutedRef.current; });
+    localStream.current = processed;
+    attachLocalAnalyser(processed);
+    await publishLocalAudioStream(processed);
+  }, [attachLocalAnalyser, publishLocalAudioStream]);
+
+  const handleToggleEnhancement = useCallback(async () => {
+    const next = !enhancementEnabledRef.current;
+    setEnhancementEnabled(next);
+    enhancementEnabledRef.current = next;
+    try { localStorage.setItem("vextorn:voice-enhance", next ? "true" : "false"); } catch {}
+    await rebuildAudioPipeline(next, noiseCancellationEnabledRef.current);
+  }, [rebuildAudioPipeline]);
+
+  const handleToggleNoiseCancellation = useCallback(async () => {
+    const next = !noiseCancellationEnabledRef.current;
+    setNoiseCancellationEnabled(next);
+    noiseCancellationEnabledRef.current = next;
+    try { localStorage.setItem("vextorn:voice-denoise", next ? "true" : "false"); } catch {}
+    await rebuildAudioPipeline(enhancementEnabledRef.current, next);
+  }, [rebuildAudioPipeline]);
 
   const handleVoicePreview = useCallback(async (presetId: VoicePresetId) => {
     const ctx = ensureAudioContext();
@@ -4674,7 +4725,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between px-3.5 pt-3 pb-2 border-b border-white/[0.07]">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">Voice Effects</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">Voice Settings</p>
                     {/* Test your voice button — records 2s & plays back through active preset */}
                     {hasMicStream ? (
                       <button
@@ -4710,7 +4761,97 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     )}
                   </div>
 
-                  {/* Preset grid grouped by category */}
+                  {/* ── Enhancement controls ─────────────────────────────── */}
+                  <div className="px-3 pt-2.5 pb-2 border-b border-white/[0.07] space-y-2">
+                    {/* Live mic level meter — only shown while mic is active */}
+                    {hasMicStream && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9.5px] font-semibold uppercase tracking-[0.1em] text-white/25">Signal</span>
+                          <span className="text-[9px] text-white/20 tabular-nums">
+                            {micLevel.peak > 0.88 ? "🔴 Hot" : micLevel.peak > 0.52 ? "🟡 Good" : micLevel.peak > 0.05 ? "🟢 OK" : "⚫ Quiet"}
+                          </span>
+                        </div>
+                        {/* RMS bar */}
+                        <div
+                          className="h-[5px] rounded-full overflow-hidden relative"
+                          style={{ background: "rgba(255,255,255,0.05)" }}
+                        >
+                          <div
+                            className="absolute inset-y-0 left-0 rounded-full"
+                            style={{
+                              width: `${Math.min(100, micLevel.rms * 420)}%`,
+                              background: micLevel.peak > 0.88
+                                ? "linear-gradient(90deg,#22c55e 50%,#ef4444)"
+                                : micLevel.peak > 0.52
+                                ? "linear-gradient(90deg,#22c55e 60%,#eab308)"
+                                : "linear-gradient(90deg,#22c55e,#6366f1)",
+                              transition: "width 70ms linear",
+                            }}
+                          />
+                          {/* Peak hold indicator */}
+                          <div
+                            className="absolute inset-y-0 w-0.5 rounded-full"
+                            style={{
+                              left: `${Math.min(99, micLevel.peak * 420)}%`,
+                              background: micLevel.peak > 0.88 ? "#ef4444" : micLevel.peak > 0.52 ? "#eab308" : "#6366f1",
+                              opacity: micLevel.peak > 0.04 ? 0.9 : 0,
+                              transition: "left 120ms ease-out, opacity 200ms",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Enhancement toggle row */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {/* Voice Enhancement */}
+                      <button
+                        data-testid="button-toggle-enhancement"
+                        onClick={handleToggleEnhancement}
+                        title={enhancementEnabled ? "Voice Enhancement ON — EQ, compressor, limiter active" : "Voice Enhancement OFF"}
+                        className="flex items-center gap-1.5 px-2 py-[7px] rounded-xl border text-[10.5px] font-semibold transition-all duration-150 select-none"
+                        style={enhancementEnabled
+                          ? { background: "rgba(34,197,94,0.11)", borderColor: "rgba(34,197,94,0.38)", color: "rgba(134,239,172,0.95)" }
+                          : { background: "rgba(255,255,255,0.035)", borderColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.32)" }
+                        }
+                      >
+                        <span className="text-[14px] leading-none">🎚</span>
+                        <span className="flex-1 text-left leading-tight">Enhance</span>
+                        <span
+                          className="text-[8.5px] font-bold px-1 py-0.5 rounded-md"
+                          style={enhancementEnabled
+                            ? { background: "rgba(34,197,94,0.2)", color: "rgba(134,239,172,0.9)" }
+                            : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.25)" }
+                          }
+                        >{enhancementEnabled ? "ON" : "OFF"}</span>
+                      </button>
+
+                      {/* Noise Cancellation */}
+                      <button
+                        data-testid="button-toggle-noise"
+                        onClick={handleToggleNoiseCancellation}
+                        title={noiseCancellationEnabled ? "Noise Gate ON — keyboard/fan noise gated" : "Noise Gate OFF"}
+                        className="flex items-center gap-1.5 px-2 py-[7px] rounded-xl border text-[10.5px] font-semibold transition-all duration-150 select-none"
+                        style={noiseCancellationEnabled
+                          ? { background: "rgba(99,102,241,0.12)", borderColor: "rgba(99,102,241,0.38)", color: "rgba(165,180,252,0.95)" }
+                          : { background: "rgba(255,255,255,0.035)", borderColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.32)" }
+                        }
+                      >
+                        <span className="text-[14px] leading-none">🤫</span>
+                        <span className="flex-1 text-left leading-tight">De-noise</span>
+                        <span
+                          className="text-[8.5px] font-bold px-1 py-0.5 rounded-md"
+                          style={noiseCancellationEnabled
+                            ? { background: "rgba(99,102,241,0.2)", color: "rgba(165,180,252,0.9)" }
+                            : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.25)" }
+                          }
+                        >{noiseCancellationEnabled ? "ON" : "OFF"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── Preset grid grouped by category ──────────────────── */}
                   <div className="p-2.5 space-y-2.5">
                     {PRESET_CATEGORIES.map((cat) => {
                       const presetsInCat = VOICE_PRESETS.filter((p) => p.category === cat.id);
@@ -4763,7 +4904,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   {/* Footer hint */}
                   <div className="px-3.5 pb-2.5 pt-0.5">
                     <p className="text-[9px] text-white/20 text-center">
-                      Effects process your mic in real-time · hover a card to preview tone
+                      EQ · compressor · limiter · noise gate · real-time effects
                     </p>
                   </div>
                 </div>
