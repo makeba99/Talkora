@@ -1467,6 +1467,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [uploadingWelcomeMedia, setUploadingWelcomeMedia] = useState(false);
   const [dmUserId, setDmUserId] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [grammarEnabled, setGrammarEnabled] = useState(() => localStorage.getItem("vx-grammar-enabled") !== "false");
   const [grammarSuggestion, setGrammarSuggestion] = useState<GrammarSuggestion | null>(null);
   const [grammarDismissed, setGrammarDismissed] = useState(false);
   const grammarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -6597,10 +6598,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } else {
       setMentionQuery(null);
     }
-    // Debounced grammar check — fires 1.2s after typing stops
+    // Debounced grammar check — fires 1.2s after typing stops (only when enabled)
     setGrammarDismissed(false);
     if (grammarTimerRef.current) clearTimeout(grammarTimerRef.current);
-    if (val.trim().length > 6) {
+    if (grammarEnabled && val.trim().length > 6) {
       grammarTimerRef.current = setTimeout(() => {
         setGrammarSuggestion(checkGrammar(val));
       }, 1200);
@@ -7797,7 +7798,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             )}
           </div>
 
-          {grammarSuggestion && !grammarDismissed && grammarSuggestion.corrected !== chatText.trim() && (
+          {grammarDismissed === false && grammarSuggestion && grammarSuggestion.corrected !== chatText.trim() && (
             <div
               className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg animate-in fade-in slide-in-from-bottom-1"
               style={{ background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.25)" }}
@@ -7822,7 +7823,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   type="button"
                   onClick={() => setGrammarDismissed(true)}
                   className="text-white/30 hover:text-white/60 transition-colors p-0.5"
-                  data-testid="button-grammar-dismiss"
+                  data-testid="button-grammar-close"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -7960,6 +7961,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   setReplyingTo(null);
                 }
               }} />
+              {/* Grammar toggle */}
+              <button
+                type="button"
+                title={grammarEnabled ? "Grammar check on — click to turn off" : "Grammar check off — click to turn on"}
+                data-testid="button-grammar-toggle"
+                data-active={grammarEnabled}
+                className="room-tool-btn"
+                onClick={() => {
+                  const next = !grammarEnabled;
+                  setGrammarEnabled(next);
+                  localStorage.setItem("vx-grammar-enabled", String(next));
+                  if (!next) setGrammarSuggestion(null);
+                }}
+              >
+                <Wand2 className="w-3.5 h-3.5" style={grammarEnabled ? { color: "rgba(167,139,250,0.9)" } : undefined} />
+              </button>
             </div>
             <button
               type="submit"
@@ -10254,6 +10271,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   >
                     {participants.length}<span style={{ color: "rgba(255,255,255,0.20)" }}>/{room.maxUsers === 0 ? "∞" : room.maxUsers}</span>
                   </span>
+                  {/* Tiny share icon inline next to participant count */}
+                  <button
+                    type="button"
+                    onClick={() => setShareDialogOpen(true)}
+                    title="Share room"
+                    data-testid="button-share-room-inline"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: 4, background: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.25)", color: "rgba(196,181,253,0.8)", flexShrink: 0, marginLeft: 2 }}
+                    className="transition-opacity hover:opacity-80 active:scale-95"
+                  >
+                    <Copy className="w-[9px] h-[9px]" />
+                  </button>
                 </div>
 
                 {/* Talk-mode badge */}
@@ -10304,16 +10332,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </span>
                   )}
                 </div>
-
-                {/* Share room */}
-                <button
-                  onClick={() => setShareDialogOpen(true)}
-                  data-testid="button-share-room"
-                  title="Share Room"
-                  className="room-header-pill-btn"
-                >
-                  <Share2 className="w-[18px] h-[18px]" />
-                </button>
 
                 {/* Separator */}
                 <div className="room-header-pill-sep" />
@@ -13511,23 +13529,51 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </div>
             </div>
 
-            {/* Current participants */}
+            {/* Current participants — card grid matching room-card style */}
             {participants.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-2">Currently in the room</p>
-                <div className="flex flex-wrap gap-2">
-                  {participants.slice(0, 12).map((p) => (
-                    <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                      <Avatar className="w-5 h-5">
-                        <AvatarImage src={p.profileImageUrl || ""} alt="" loading="lazy" decoding="async" />
-                        <AvatarFallback className="text-[8px] bg-violet-800 text-violet-200">{getUserInitials(p)}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-[11px] text-white/80 max-w-[80px] truncate">{getUserDisplayName(p)}</span>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-2.5">
+                  In the room now · {participants.length}
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {participants.slice(0, 8).map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex flex-col items-center gap-1.5"
+                      data-testid={`share-participant-${p.id}`}
+                    >
+                      <div
+                        className="w-full aspect-square rounded-xl overflow-hidden relative"
+                        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}
+                      >
+                        {p.profileImageUrl ? (
+                          <img
+                            src={p.profileImageUrl}
+                            alt={getUserDisplayName(p)}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white/40">
+                            {getUserInitials(p)}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[9px] text-white/60 truncate w-full text-center leading-tight">
+                        {getUserDisplayName(p).split(" ")[0]}
+                      </span>
                     </div>
                   ))}
-                  {participants.length > 12 && (
-                    <div className="flex items-center px-2 py-1 rounded-full text-[11px] text-white/40" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                      +{participants.length - 12} more
+                  {participants.length > 8 && (
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div
+                        className="w-full aspect-square rounded-xl flex items-center justify-center text-sm font-semibold text-white/40"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        +{participants.length - 8}
+                      </div>
+                      <span className="text-[9px] text-white/30">more</span>
                     </div>
                   )}
                 </div>
