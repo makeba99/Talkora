@@ -2871,6 +2871,28 @@ export async function registerRoutes(
         auth: { user: smtpUser, pass: smtpPass },
       });
 
+      const adminId = (req.user as any).id;
+      const campaign = await storage.createEmailCampaign({
+        subject,
+        body,
+        recipientType,
+        recipientCount: recipients.length,
+        adminId,
+      });
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const trackingPixel = `<img src="${baseUrl}/t/o/${campaign.id}.gif" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`;
+
+      function wrapLinksForTracking(text: string, cid: string, base: string): string {
+        return text.replace(/https?:\/\/[^\s<>"]+[^\s<>".,!?;:)]/g, (url) =>
+          `${base}/t/c/${cid}?url=${encodeURIComponent(url)}`
+        );
+      }
+
+      const trackedBody = wrapLinksForTracking(body.replace(/\n/g, "<br>"), campaign.id, baseUrl);
+      const htmlBody = `<div style="font-family:sans-serif;max-width:600px;margin:auto">${trackedBody}${trackingPixel}</div>`;
+      const textBody = body;
+
       const chunkSize = 50;
       let sent = 0;
       for (let i = 0; i < recipients.length; i += chunkSize) {
@@ -2879,13 +2901,13 @@ export async function registerRoutes(
           from: `"Vextorn Platform" <${smtpUser}>`,
           bcc: chunk,
           subject,
-          html: `<div style="font-family:sans-serif;max-width:600px;margin:auto">${body.replace(/\n/g, "<br>")}</div>`,
-          text: body,
+          html: htmlBody,
+          text: textBody,
         });
         sent += chunk.length;
       }
 
-      res.json({ success: true, sent, total: recipients.length });
+      res.json({ success: true, sent, total: recipients.length, campaignId: campaign.id });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -6166,6 +6188,47 @@ export async function registerRoutes(
         }
       }
     });
+  });
+
+  // ── Email tracking pixel ──────────────────────────────────────────────────
+  // GET /t/o/:id.gif  — 1×1 transparent GIF served when an email is "opened".
+  // No auth required (email clients fetch this pixel automatically).
+  const TRACKING_GIF = Buffer.from(
+    "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+    "base64"
+  );
+  app.get("/t/o/:id.gif", async (req, res) => {
+    const { id } = req.params;
+    if (id && /^[0-9a-f-]{36}$/i.test(id)) {
+      storage.incrementCampaignOpens(id).catch(() => {});
+    }
+    res.setHeader("Content-Type", "image/gif");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.end(TRACKING_GIF);
+  });
+
+  // GET /t/c/:id?url=... — click tracking redirect.
+  app.get("/t/c/:id", async (req, res) => {
+    const { id } = req.params;
+    const target = req.query.url as string | undefined;
+    if (id && /^[0-9a-f-]{36}$/i.test(id)) {
+      storage.incrementCampaignClicks(id).catch(() => {});
+    }
+    if (target && /^https?:\/\//.test(target)) {
+      return res.redirect(302, target);
+    }
+    res.redirect(302, "/");
+  });
+
+  // GET /api/admin/outreach/campaigns — campaign history for superadmin.
+  app.get("/api/admin/outreach/campaigns", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const campaigns = await storage.getEmailCampaigns();
+      res.json(campaigns);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   setCleanupContext(io, storage, userSockets);

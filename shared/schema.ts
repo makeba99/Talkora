@@ -490,3 +490,19 @@ export const roomJoins = pgTable("room_joins", {
   rjCountryIdx: index("room_joins_country_idx").on(table.country),
 }));
 export type RoomJoin = typeof roomJoins.$inferSelect;
+
+export const emailCampaigns = pgTable("email_campaigns", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  recipientType: varchar("recipient_type", { length: 20 }).notNull(),
+  recipientCount: integer("recipient_count").notNull().default(0),
+  openCount: integer("open_count").notNull().default(0),
+  clickCount: integer("click_count").notNull().default(0),
+  adminId: varchar("admin_id", { length: 36 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  ecAdminIdx: index("email_campaigns_admin_id_idx").on(table.adminId),
+  ecCreatedAtIdx: index("email_campaigns_created_at_idx").on(table.createdAt),
+}));
+export type EmailCampaign = typeof emailCampaigns.$inferSelect;

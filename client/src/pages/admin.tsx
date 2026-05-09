@@ -1103,6 +1103,16 @@ function formatRelative(ts: number): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
+type EmailCampaign = {
+  id: string;
+  subject: string;
+  recipientType: string;
+  recipientCount: number;
+  openCount: number;
+  clickCount: number;
+  createdAt: string;
+};
+
 function OutreachTab({ users }: { users: { id: string; email: string | null; displayName: string | null; firstName: string | null }[] }) {
   const { toast } = useToast();
   const [emailSubject, setEmailSubject] = useState("");
@@ -1124,6 +1134,11 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
       })
     : users;
 
+  const { data: campaigns = [], refetch: refetchCampaigns } = useQuery<EmailCampaign[]>({
+    queryKey: ["/api/admin/outreach/campaigns"],
+    refetchInterval: 30000,
+  });
+
   const emailMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/admin/outreach/email", {
@@ -1139,6 +1154,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
       setEmailSubject("");
       setEmailBody("");
       setCustomEmails("");
+      refetchCampaigns();
     },
     onError: (err: any) => toast({ title: "Failed to send email", description: err.message, variant: "destructive" }),
   });
@@ -1354,6 +1370,73 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
           </CardContent>
         </Card>
       </div>
+
+      {/* Campaign History */}
+      <Card className="bg-card/75 border-primary/15">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-primary" />
+            Email Campaign History
+            <Badge variant="outline" className="ml-auto text-xs">{campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {campaigns.length === 0 ? (
+            <p className="text-center text-muted-foreground text-sm py-8">No campaigns sent yet. Send your first email above.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border/50 text-muted-foreground">
+                    <th className="text-left px-4 py-2 font-medium">Subject</th>
+                    <th className="text-left px-4 py-2 font-medium">Audience</th>
+                    <th className="text-right px-4 py-2 font-medium">Sent</th>
+                    <th className="text-right px-4 py-2 font-medium">
+                      <span className="flex items-center justify-end gap-1"><Eye className="w-3 h-3" /> Opens</span>
+                    </th>
+                    <th className="text-right px-4 py-2 font-medium">
+                      <span className="flex items-center justify-end gap-1"><MousePointerClick className="w-3 h-3" /> Clicks</span>
+                    </th>
+                    <th className="text-right px-4 py-2 font-medium">Sent at</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map((c) => {
+                    const openRate = c.recipientCount > 0 ? Math.round((c.openCount / c.recipientCount) * 100) : 0;
+                    const clickRate = c.recipientCount > 0 ? Math.round((c.clickCount / c.recipientCount) * 100) : 0;
+                    return (
+                      <tr key={c.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors" data-testid={`row-campaign-${c.id}`}>
+                        <td className="px-4 py-2.5 max-w-[200px]">
+                          <span className="truncate block font-medium text-foreground/90" title={c.subject}>{c.subject}</span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <Badge variant="outline" className="text-[10px]">
+                            {c.recipientType === "all_registered" ? "All users" : "Custom list"}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{c.recipientCount.toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right">
+                          <span className="tabular-nums">{c.openCount}</span>
+                          <span className={`ml-1.5 tabular-nums ${openRate >= 20 ? "text-green-400" : openRate >= 10 ? "text-amber-400" : "text-muted-foreground"}`}>
+                            ({openRate}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          <span className="tabular-nums">{c.clickCount}</span>
+                          <span className={`ml-1.5 tabular-nums ${clickRate >= 5 ? "text-green-400" : clickRate >= 2 ? "text-amber-400" : "text-muted-foreground"}`}>
+                            ({clickRate}%)
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-muted-foreground">{formatRelative(new Date(c.createdAt).getTime())}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

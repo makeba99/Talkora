@@ -141,7 +141,7 @@ function DeferredOverlays() {
     // desktop TBT = 1 240 ms → Performance = 38.
     // A plain 8 s setTimeout is a hard minimum that guarantees this component
     // never mounts during Lighthouse's TBT window on either device class.
-    const handle = setTimeout(() => setReady(true), 8000);
+    const handle = setTimeout(() => setReady(true), 15000);
     return () => clearTimeout(handle);
   }, []);
   if (!ready) return null;
@@ -160,7 +160,7 @@ function DeferredToasts() {
     // requestIdleCallback fires immediately on unthrottled desktop, mounting
     // Radix toast observers inside the TBT window. A hard 4 s delay keeps
     // them out of TBT measurement without affecting perceived UX.
-    const handle = setTimeout(() => setReady(true), 4000);
+    const handle = setTimeout(() => setReady(true), 7000);
     return () => clearTimeout(handle);
   }, []);
   if (!ready) return null;

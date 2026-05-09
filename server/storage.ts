@@ -58,6 +58,8 @@ import {
   appSettings,
   pageViews,
   roomJoins,
+  emailCampaigns,
+  type EmailCampaign,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -196,6 +198,11 @@ export interface IStorage {
     uniqueRoomJoiners: number;
     dailyJoins: { date: string; joins: number }[];
   }>;
+
+  createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign>;
+  getEmailCampaigns(): Promise<EmailCampaign[]>;
+  incrementCampaignOpens(id: string): Promise<void>;
+  incrementCampaignClicks(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1220,6 +1227,23 @@ export class DatabaseStorage implements IStorage {
       todayRoomJoins: Number(todayJoins.today_joins ?? 0),
       todayUniqueJoiners: Number(todayJoins.today_joiners ?? 0),
     };
+  }
+
+  async createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign> {
+    const [campaign] = await db.insert(emailCampaigns).values(data).returning();
+    return campaign;
+  }
+
+  async getEmailCampaigns(): Promise<EmailCampaign[]> {
+    return db.select().from(emailCampaigns).orderBy(desc(emailCampaigns.createdAt)).limit(50);
+  }
+
+  async incrementCampaignOpens(id: string): Promise<void> {
+    await db.execute(sql`UPDATE email_campaigns SET open_count = open_count + 1 WHERE id = ${id}`);
+  }
+
+  async incrementCampaignClicks(id: string): Promise<void> {
+    await db.execute(sql`UPDATE email_campaigns SET click_count = click_count + 1 WHERE id = ${id}`);
   }
 }
 
