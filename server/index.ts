@@ -13,6 +13,16 @@ import { runMigrations } from "./db";
 const app = express();
 const httpServer = createServer(app);
 
+// Redirect legacy domain afikgang.online → vextorn.com (301 permanent)
+const REDIRECT_HOSTS = new Set(["afikgang.online", "www.afikgang.online"]);
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const host = (req.headers["x-forwarded-host"] || req.headers.host || "").toString().split(":")[0];
+  if (REDIRECT_HOSTS.has(host)) {
+    return res.redirect(301, `https://vextorn.com${req.url}`);
+  }
+  next();
+});
+
 // Brotli + gzip + deflate compression for all text responses.
 // `compression` v1.8 has built-in Brotli support — it picks `br` when the
 // client advertises it and falls back to gzip/deflate otherwise — so we
