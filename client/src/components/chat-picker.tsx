@@ -172,12 +172,15 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[340px] p-0"
+        className="w-[min(340px,90vw)] p-0 flex flex-col"
+        style={{ maxHeight: "min(380px,55svh)" }}
         side="top"
         align="start"
         sideOffset={8}
+        avoidCollisions
+        collisionPadding={12}
       >
-        <div className="p-2 border-b">
+        <div className="flex-shrink-0 p-2 border-b">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
@@ -205,7 +208,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
             )}
           </div>
         </div>
-        <div className="h-[300px] overflow-y-auto overscroll-contain" onWheel={(e) => e.stopPropagation()}>
+        <div className="flex-1 overflow-y-auto overscroll-contain min-h-0" onWheel={(e) => e.stopPropagation()}>
           <div className="p-2">
             {gifLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -245,7 +248,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
             )}
           </div>
         </div>
-        <div className="px-2 pb-1.5 pt-0.5 border-t">
+        <div className="flex-shrink-0 px-2 pb-1.5 pt-0.5 border-t">
           <p className="text-[10px] text-muted-foreground text-right">Powered by GIPHY</p>
         </div>
       </PopoverContent>

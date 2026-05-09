@@ -178,11 +178,18 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
           </button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-        <DialogHeader>
+      <DialogContent
+        className="sm:max-w-md flex flex-col gap-0 p-0"
+        style={{ maxHeight: "min(90svh, 640px)" }}
+        aria-describedby={undefined}
+      >
+        {/* Sticky header */}
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-border/40">
           <DialogTitle>Create a Voice Room</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4 space-y-4 min-h-0">
           <div className="space-y-2">
             <Label htmlFor="room-title">Room Name</Label>
             <Input
@@ -326,16 +333,20 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
               Pick a GIF from Tenor or upload your own picture / short video. Themes and host controls are set inside the room.
             </p>
           </div>
+        </div>
 
+        {/* Pinned footer with submit */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-border/40">
           <button
-            type="submit"
-            className="neu-submit"
+            type="button"
+            onClick={handleSubmit}
+            className="neu-submit w-full"
             disabled={isPending}
             data-testid="button-submit-room"
           >
             {isPending ? "Creating..." : "Create Room"}
           </button>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
