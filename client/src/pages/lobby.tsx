@@ -1782,12 +1782,12 @@ export default function Lobby() {
             </div>
           )}
           {/* Search bar — sculpted neumorphic capsule with live suggestions */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+          <div>
             <div
               ref={searchShellRef}
               role="search"
               data-tour-target="search"
-              className={`search-neu-shell relative flex-1 ${searchQuery ? "is-filled" : ""} ${searchSuggestOpen && hasSuggestions ? "is-suggesting" : ""}`}
+              className={`search-neu-shell relative ${searchQuery ? "is-filled" : ""} ${searchSuggestOpen && hasSuggestions ? "is-suggesting" : ""}`}
             >
               <span className="search-neu-icon-wrap" aria-hidden="true">
                 <Search className="w-[17px] h-[17px]" />
@@ -1956,20 +1956,11 @@ export default function Lobby() {
                 </div>
               )}
             </div>
-            {user && (
-              <div className="w-full md:w-auto flex-shrink-0 [&_button]:w-full md:[&_button]:w-auto [&_button]:whitespace-nowrap" data-testid="container-create-room">
-                <Suspense fallback={<Skeleton className="h-10 w-full md:w-44 rounded-lg" />}>
-                  <CreateRoomDialog
-                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
-                    isPending={createRoomMutation.isPending}
-                  />
-                </Suspense>
-              </div>
-            )}
           </div>
 
           {/* Filter strip: each chip has its own colour family so Rooms,
-              Speakers, Famous and Languages stay easy to tell apart. */}
+              Speakers, Famous and Languages stay easy to tell apart.
+              Create Room button sits at the far right of this row. */}
           <div className="filter-strip" data-testid="filters-discovery-search">
             <div role="group" aria-label="View filter" className="filter-strip-group">
               {([
@@ -2029,6 +2020,17 @@ export default function Lobby() {
               )}
             </div>
 
+            {/* Create Room — right-aligned in the filter row */}
+            {user && (
+              <div className="ml-auto flex-shrink-0" data-testid="container-create-room">
+                <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
+                  <CreateRoomDialog
+                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
+                    isPending={createRoomMutation.isPending}
+                  />
+                </Suspense>
+              </div>
+            )}
           </div>
 
           {activeDiscovery === "rooms" && showLanguageFilters && (
