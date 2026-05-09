@@ -2242,6 +2242,7 @@ export async function registerRoutes(
     }
 
     if (!roomParticipants.has(roomId)) return [];
+    if (!roomParticipants.get(roomId)!.has(userId)) return [];
 
     const leavingUser = roomParticipants.get(roomId)!.get(userId);
     let leavingDisplayName = leavingUser ? getDisplayName(leavingUser) : null;

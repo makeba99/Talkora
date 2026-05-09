@@ -610,14 +610,14 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
           {cleanText && <span className="leading-snug break-words [overflow-wrap:anywhere]">{renderTextWithMentions(cleanText, onImageClick)}</span>}
         <div
           className="relative w-full rounded-lg overflow-hidden bg-black cursor-pointer group"
-          style={{ paddingBottom: "56.25%", height: 0 }}
+          style={{ aspectRatio: "16/9" }}
           onClick={() => onVideoClick?.(videoId)}
           data-testid="youtube-thumbnail-click"
         >
           <img
             src={thumbnailUrl}
             alt="YouTube video"
-            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
           />
           <div
