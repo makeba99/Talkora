@@ -9946,7 +9946,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 maxLength={500}
                 data-testid="input-welcome-message"
               />
-              <p className="text-[10px] text-muted-foreground text-right">{welcomeText.length}/500</p>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-primary/70 flex items-center gap-1">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/15 border border-primary/25 font-mono text-[9px] text-primary">@username</span>
+                  <span className="text-muted-foreground">→ replaced with each joiner's name</span>
+                </span>
+                <p className="text-[10px] text-muted-foreground">{welcomeText.length}/500</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-muted-foreground">Accent color:</span>

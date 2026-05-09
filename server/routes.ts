@@ -4326,14 +4326,17 @@ export async function registerRoutes(
       if (!isRejoin) {
         socket.to(roomId).emit("room:user-joined", { user, participants: participantsWithStatus });
         if (room.welcomeMessage && room.ownerId !== userId) {
+          const joinerName = user.displayName || user.firstName || user.email?.split("@")[0] || "there";
+          const personalizedMsg = room.welcomeMessage.replace(/@username/gi, `@${joinerName}`);
           socket.emit("room:welcome-message", {
-            welcomeMessage: room.welcomeMessage,
+            welcomeMessage: personalizedMsg,
             welcomeMediaUrls: room.welcomeMediaUrls || [],
             welcomeMediaTypes: room.welcomeMediaTypes || [],
             welcomeMediaPosition: room.welcomeMediaPosition || "below",
             welcomeAccentColor: room.welcomeAccentColor || "#8B5CF6",
           });
         }
+        void storage.recordRoomJoin({ roomId, userId }).catch(() => {});
       }
       io.emit("room:participants-update", { roomId, participants });
 

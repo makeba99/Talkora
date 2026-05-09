@@ -1177,14 +1177,23 @@ export default function Lobby() {
         durationMs: 8000,
       });
       try {
-        const res = await apiRequest("POST", `/api/rooms/${encodeURIComponent(roomId)}/access-link`, {});
-        const data = await res.json();
+        // Fast path: public rooms already have shortId in the fetched room list.
+        // Skip the round-trip API call entirely and navigate directly.
+        const cachedRoom = fetchedRooms.find((r) => r.id === roomId);
+        let path: string | undefined;
+        if (cachedRoom && cachedRoom.isPublic && cachedRoom.shortId) {
+          path = `/room/${cachedRoom.shortId}`;
+        } else {
+          const res = await apiRequest("POST", `/api/rooms/${encodeURIComponent(roomId)}/access-link`, {});
+          const data = await res.json();
+          path = data.path || `/room/${roomId}`;
+        }
         try {
           const bc = new BroadcastChannel(`connect-room-${user.id}`);
           bc.postMessage({ type: "room-joined", roomId });
           bc.close();
         } catch {}
-        const url = data.path || `/room/${roomId}`;
+        const url = path;
         const target = `vextorn-room-${roomId}`;
         // Try to focus an existing room tab without overwriting its state.
         let popup: Window | null = null;

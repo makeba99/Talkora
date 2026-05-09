@@ -476,3 +476,17 @@ export const pageViews = pgTable("page_views", {
   pvReferrerIdx: index("page_views_referrer_domain_idx").on(table.referrerDomain),
   pvCountryIdx: index("page_views_country_idx").on(table.country),
 }));
+
+export const roomJoins = pgTable("room_joins", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  roomId: varchar("room_id", { length: 36 }).notNull(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  country: varchar("country", { length: 2 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  rjRoomIdx: index("room_joins_room_id_idx").on(table.roomId),
+  rjUserIdx: index("room_joins_user_id_idx").on(table.userId),
+  rjCreatedAtIdx: index("room_joins_created_at_idx").on(table.createdAt),
+  rjCountryIdx: index("room_joins_country_idx").on(table.country),
+}));
+export type RoomJoin = typeof roomJoins.$inferSelect;

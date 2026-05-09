@@ -1314,6 +1314,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 aria-label={cardAlreadyIn ? `Re-enter ${room.title}` : `Enter ${room.title}`}
                 onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
                 onKeyDown={(e) => e.key === "Enter" && onJoin(room.id)}
+                onMouseEnter={() => { try { import("@/pages/room"); } catch {} }}
                 data-testid={`button-join-room-${room.id}`}>
                 {doorBody}
               </div>

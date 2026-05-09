@@ -57,6 +57,7 @@ import {
   type PaymentMethod,
   appSettings,
   pageViews,
+  roomJoins,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -182,13 +183,18 @@ export interface IStorage {
   setSetting(key: string, value: string): Promise<void>;
 
   recordPageView(data: { path: string; referrer?: string; referrerDomain?: string; country?: string; sessionHash?: string }): Promise<void>;
+  recordRoomJoin(data: { roomId: string; userId: string; country?: string }): Promise<void>;
   getAnalytics(days?: number): Promise<{
     dailyViews: { date: string; views: number }[];
     topReferrers: { domain: string; count: number }[];
     topCountries: { country: string; count: number }[];
+    topJoinCountries: { country: string; count: number }[];
     totalViews: number;
     uniqueSessions: number;
     redirectViews: number;
+    totalRoomJoins: number;
+    uniqueRoomJoiners: number;
+    dailyJoins: { date: string; joins: number }[];
   }>;
 }
 
@@ -1091,17 +1097,29 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async recordRoomJoin(data: { roomId: string; userId: string; country?: string }): Promise<void> {
+    await db.insert(roomJoins).values({
+      roomId: data.roomId,
+      userId: data.userId,
+      country: data.country ?? null,
+    });
+  }
+
   async getAnalytics(days = 30): Promise<{
     dailyViews: { date: string; views: number }[];
     topReferrers: { domain: string; count: number }[];
     topCountries: { country: string; count: number }[];
+    topJoinCountries: { country: string; count: number }[];
     totalViews: number;
     uniqueSessions: number;
     redirectViews: number;
+    totalRoomJoins: number;
+    uniqueRoomJoiners: number;
+    dailyJoins: { date: string; joins: number }[];
   }> {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const [dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw] = await Promise.all([
+    const [dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw, joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw] = await Promise.all([
       db.execute(sql`
         SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
                COUNT(*)::int AS views
@@ -1142,18 +1160,47 @@ export class DatabaseStorage implements IStorage {
         WHERE created_at >= ${since}
           AND referrer_domain IN ('afikgang.online', 'www.afikgang.online')
       `),
+      db.execute(sql`
+        SELECT COUNT(*)::int AS total_joins,
+               COUNT(DISTINCT user_id)::int AS unique_joiners
+        FROM room_joins
+        WHERE created_at >= ${since}
+      `),
+      db.execute(sql`
+        SELECT country, COUNT(*)::int AS count
+        FROM room_joins
+        WHERE created_at >= ${since}
+          AND country IS NOT NULL
+          AND country != ''
+        GROUP BY country
+        ORDER BY count DESC
+        LIMIT 10
+      `),
+      db.execute(sql`
+        SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
+               COUNT(*)::int AS joins
+        FROM room_joins
+        WHERE created_at >= ${since}
+        GROUP BY date
+        ORDER BY date ASC
+      `),
     ]);
 
     const totals = (totalsRaw.rows[0] ?? {}) as any;
     const redirect = (redirectRaw.rows[0] ?? {}) as any;
+    const joinTotals = (joinTotalsRaw.rows[0] ?? {}) as any;
 
     return {
       dailyViews: (dailyRaw.rows as any[]).map((r) => ({ date: r.date as string, views: Number(r.views) })),
       topReferrers: (referrersRaw.rows as any[]).map((r) => ({ domain: r.domain as string, count: Number(r.count) })),
       topCountries: (countriesRaw.rows as any[]).map((r) => ({ country: r.country as string, count: Number(r.count) })),
+      topJoinCountries: (joinCountriesRaw.rows as any[]).map((r) => ({ country: r.country as string, count: Number(r.count) })),
       totalViews: Number(totals.total_views ?? 0),
       uniqueSessions: Number(totals.unique_sessions ?? 0),
       redirectViews: Number(redirect.count ?? 0),
+      totalRoomJoins: Number(joinTotals.total_joins ?? 0),
+      uniqueRoomJoiners: Number(joinTotals.unique_joiners ?? 0),
+      dailyJoins: (dailyJoinsRaw.rows as any[]).map((r) => ({ date: r.date as string, joins: Number(r.joins) })),
     };
   }
 }

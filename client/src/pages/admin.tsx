@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -165,9 +165,13 @@ type AnalyticsData = {
   dailyViews: { date: string; views: number }[];
   topReferrers: { domain: string; count: number }[];
   topCountries: { country: string; count: number }[];
+  topJoinCountries: { country: string; count: number }[];
   totalViews: number;
   uniqueSessions: number;
   redirectViews: number;
+  totalRoomJoins: number;
+  uniqueRoomJoiners: number;
+  dailyJoins: { date: string; joins: number }[];
 };
 
 function AnalyticsTab() {
@@ -222,7 +226,7 @@ function AnalyticsTab() {
         </div>
       </div>
 
-      {/* Stat cards */}
+      {/* Stat cards — page views row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Card className="bg-card/75 border-primary/15">
           <CardContent className="p-4">
@@ -271,6 +275,40 @@ function AnalyticsTab() {
         </Card>
       </div>
 
+      {/* Room Join stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+        <Card className="bg-card/75 border-emerald-400/15">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <DoorOpen className="w-3.5 h-3.5" /> Room Joins
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : (
+              <p className="text-2xl font-bold text-emerald-300" data-testid="text-analytics-total-joins">
+                {(data?.totalRoomJoins ?? 0).toLocaleString()}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-0.5">last {days} days</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/75 border-cyan-400/15">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <UserCheck className="w-3.5 h-3.5" /> Unique Joiners
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : (
+              <p className="text-2xl font-bold text-cyan-300" data-testid="text-analytics-unique-joiners">
+                {(data?.uniqueRoomJoiners ?? 0).toLocaleString()}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-0.5">distinct users who joined rooms</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Daily views line chart */}
       <Card className="bg-card/75 border-primary/15">
         <CardHeader className="pb-2">
@@ -294,6 +332,37 @@ function AnalyticsTab() {
                 <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
                 <Tooltip contentStyle={CustomTooltipStyle} labelFormatter={(v) => `Date: ${v}`} />
                 <Line type="monotone" dataKey="views" stroke={chartColor} strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Daily room joins chart */}
+      <Card className="bg-card/75 border-emerald-400/15">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <DoorOpen className="w-3.5 h-3.5 text-emerald-400" /> Daily Room Joins
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : !data?.dailyJoins.length ? (
+            <div className="h-48 flex items-center justify-center text-sm text-muted-foreground">No joins yet — will populate as users enter rooms.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={data.dailyJoins} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(v) => v.slice(5)}
+                  interval="preserveStartEnd"
+                />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                <Tooltip contentStyle={CustomTooltipStyle} labelFormatter={(v) => `Date: ${v}`} />
+                <Line type="monotone" dataKey="joins" stroke="hsl(160 60% 55%)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -327,11 +396,11 @@ function AnalyticsTab() {
           </CardContent>
         </Card>
 
-        {/* Top countries */}
+        {/* Top countries (page views) */}
         <Card className="bg-card/75 border-primary/15">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5" /> Top Countries
+              <Globe className="w-3.5 h-3.5" /> Top Countries (Visitors)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -353,6 +422,28 @@ function AnalyticsTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Top countries by room joins */}
+      {(data?.topJoinCountries?.length ?? 0) > 0 && (
+        <Card className="bg-card/75 border-emerald-400/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <DoorOpen className="w-3.5 h-3.5 text-emerald-400" /> Top Countries by Room Joins
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={data!.topJoinCountries} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                <YAxis type="category" dataKey="country" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={32} />
+                <Tooltip contentStyle={CustomTooltipStyle} />
+                <Bar dataKey="count" fill="hsl(160 60% 55%)" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Raw referrer list */}
       {data?.topReferrers && data.topReferrers.length > 0 && (
