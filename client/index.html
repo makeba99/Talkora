@@ -110,12 +110,33 @@
           "@type": "Organization",
           "@id": "https://vextorn.com/#organization",
           "name": "Vextorn",
+          "alternateName": "Vextorn — Talk. Share. Belong.",
+          "description": "Vextorn is a real-time, voice-first community platform where people join live audio rooms by language and level to practice speaking, share ideas, and build connections worldwide.",
           "url": "https://vextorn.com/",
           "logo": {
             "@type": "ImageObject",
+            "@id": "https://vextorn.com/#logo",
             "url": "https://vextorn.com/vextorn-icon-512.png",
+            "contentUrl": "https://vextorn.com/vextorn-icon-512.png",
+            "caption": "Vextorn",
             "width": 512,
             "height": 512
+          },
+          "image": { "@id": "https://vextorn.com/#logo" },
+          "sameAs": [
+            "https://twitter.com/vextorn",
+            "https://x.com/vextorn",
+            "https://instagram.com/vextorn",
+            "https://facebook.com/vextorn",
+            "https://tiktok.com/@vextorn",
+            "https://discord.gg/vextorn",
+            "https://youtube.com/@vextorn"
+          ],
+          "foundingDate": "2024",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": ["English", "Spanish", "French", "Japanese", "Korean", "Armenian"]
           }
         },
         {
@@ -136,15 +157,97 @@
           }
         },
         {
-          "@type": "WebApplication",
+          "@type": "SoftwareApplication",
+          "@id": "https://vextorn.com/#app",
           "name": "Vextorn",
           "alternateName": "Vextorn — Talk. Share. Belong.",
           "url": "https://vextorn.com/",
           "description": "Vextorn is a real-time, voice-first community where you join live audio rooms by language and level to talk, share, and belong.",
           "applicationCategory": "CommunicationApplication",
+          "applicationSubCategory": "LanguageLearning",
           "operatingSystem": "Web, iOS, Android",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "publisher": { "@id": "https://vextorn.com/#organization" }
+          "browserRequirements": "Requires JavaScript. Works in Chrome, Firefox, Safari, Edge.",
+          "inLanguage": ["en", "es", "fr", "ja", "ko", "de", "pt", "ar", "hy"],
+          "featureList": [
+            "Live voice rooms by language and level",
+            "Real-time peer-to-peer voice chat",
+            "In-room text chat with emoji and GIF support",
+            "Screen sharing",
+            "YouTube watch-together",
+            "Read Together with Project Gutenberg",
+            "AI language tutor",
+            "Book 1-on-1 language teachers",
+            "Follow friends and direct messaging",
+            "Beginner to advanced skill levels"
+          ],
+          "screenshot": {
+            "@type": "ImageObject",
+            "url": "https://vextorn.com/vextorn-icon-512.png",
+            "caption": "Vextorn lobby — browse live voice rooms by language"
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/InStock",
+            "description": "Free to join and use"
+          },
+          "publisher": { "@id": "https://vextorn.com/#organization" },
+          "author": { "@id": "https://vextorn.com/#organization" }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://vextorn.com/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is Vextorn?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Vextorn is a real-time, voice-first community platform where people join live audio rooms organized by language and skill level to practice speaking, share ideas, and build connections with others around the world. It's free to join and works directly in your browser — no download required."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do I join a voice room on Vextorn?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Go to vextorn.com, browse the lobby to find a room in your target language and skill level (Beginner, Intermediate, or Advanced), then click Enter. You can join as a guest to listen or sign in to speak and chat. Rooms are live and real-time — no scheduling needed."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What languages are available on Vextorn?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Vextorn hosts live rooms for dozens of languages including English, Spanish, French, Japanese, Korean, German, Portuguese, Arabic, Armenian, Mandarin Chinese, Italian, Hindi, and more. New language rooms are created by the community every day."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is Vextorn free to use?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes — Vextorn is completely free. You can browse rooms, join as a listener, and use the platform without creating an account. Sign up (also free) to speak in rooms, send messages, follow other users, and book 1-on-1 sessions with language teachers."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I book a language teacher on Vextorn?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Vextorn has a dedicated Teachers section where you can browse verified language tutors, read their reviews, and book a private 1-on-1 conversation session. Teachers specialize in languages like English, Spanish, French, Korean, Japanese, and more."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Does Vextorn have an AI language tutor?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Vextorn includes an AI language tutor available inside every voice room. The AI tutor responds in your target language, corrects mistakes, explains grammar, and adapts to your level — from total beginner to advanced speaker."
+              }
+            }
+          ]
         }
       ]
     }
