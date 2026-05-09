@@ -34,8 +34,11 @@ import { playMoodSound } from "@/lib/mood-sounds";
 import {
   VoiceProcessor,
   VOICE_PRESETS,
+  PRESET_CATEGORIES,
   getSavedVoicePresetId,
   saveVoicePresetId,
+  previewVoicePreset,
+  testVoiceThroughPreset,
   type VoicePresetId,
 } from "@/lib/voice-processor";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
@@ -1268,6 +1271,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const selectedVoicePresetIdRef = useRef<VoicePresetId>(getSavedVoicePresetId());
   const rawMicStreamRef = useRef<MediaStream | null>(null);
   const voiceProcessorRef = useRef<VoiceProcessor | null>(null);
+  // Voice preview: which preset is playing a tone preview right now
+  const [previewingPresetId, setPreviewingPresetId] = useState<VoicePresetId | null>(null);
+  // Voice test: record & play back user's actual voice through the active preset
+  const [voiceTestState, setVoiceTestState] = useState<"idle" | "recording" | "playing" | "done" | "error">("idle");
+  const voiceTestCleanupRef = useRef<(() => void) | null>(null);
+  // Tracks whether the raw mic stream is currently live — used as reactive
+  // state for the "Test voice" button (rawMicStreamRef is a ref, so reading
+  // it directly in JSX won't trigger re-renders when the stream arrives).
+  const [hasMicStream, setHasMicStream] = useState(false);
   const [sayingBye, setSayingBye] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const participantById = useMemo(() => {
@@ -2374,7 +2386,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const previousRawStream = rawMicStreamRef.current;
     rawMicStreamRef.current = stream;
 
-    // Route through voice processor if a non-natural preset is active
+    // Route through voice processor if a non-natural preset is active.
+    // process() is async — it awaits AudioContext.resume() before wiring the
+    // filter graph so audio is never silently dropped on a suspended context.
     let processedStream: MediaStream = stream;
     const presetId = selectedVoicePresetIdRef.current;
     if (presetId !== "natural") {
@@ -2386,7 +2400,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         if (!voiceProcessorRef.current) {
           voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
         }
-        processedStream = voiceProcessorRef.current.process(stream, presetId);
+        processedStream = await voiceProcessorRef.current.process(stream, presetId);
       }
     }
 
@@ -2402,6 +2416,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
     setMicError(false);
     setShowMicHelp(false);
+    setHasMicStream(true);
     attachLocalAnalyser(processedStream);
     await publishLocalAudioStream(processedStream);
   }, [attachLocalAnalyser, publishLocalAudioStream]);
@@ -2435,7 +2450,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (!voiceProcessorRef.current) {
         voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
       }
-      processedStream = voiceProcessorRef.current.process(rawStream, presetId);
+      // CRITICAL: await process() so AudioContext is resumed before the graph
+      // is wired — without this the filter chain is silently inactive.
+      processedStream = await voiceProcessorRef.current.process(rawStream, presetId);
     }
 
     processedStream.getAudioTracks().forEach((track) => {
@@ -2445,6 +2462,53 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     attachLocalAnalyser(processedStream);
     await publishLocalAudioStream(processedStream);
   }, [attachLocalAnalyser, publishLocalAudioStream]);
+
+  // Ensure the AudioContext exists (creates it lazily if needed) and return it
+  const ensureAudioContext = useCallback((): AudioContext | null => {
+    if (!audioContextRef.current) {
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      if (AC) audioContextRef.current = new AC();
+    }
+    return audioContextRef.current;
+  }, []);
+
+  const handleVoicePreview = useCallback(async (presetId: VoicePresetId) => {
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    setPreviewingPresetId(presetId);
+    try {
+      await previewVoicePreset(ctx, presetId);
+    } catch (e) {
+      console.warn("[voice-preview] failed:", e);
+    } finally {
+      setPreviewingPresetId(null);
+    }
+  }, [ensureAudioContext]);
+
+  const handleVoiceTest = useCallback(() => {
+    const rawStream = rawMicStreamRef.current;
+    if (!rawStream) return;
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+
+    // Cancel any in-flight test
+    voiceTestCleanupRef.current?.();
+    voiceTestCleanupRef.current = null;
+
+    const cleanup = testVoiceThroughPreset(
+      rawStream,
+      selectedVoicePresetIdRef.current,
+      ctx,
+      (state) => {
+        setVoiceTestState(state);
+        if (state === "done" || state === "error") {
+          voiceTestCleanupRef.current = null;
+          setTimeout(() => setVoiceTestState("idle"), 1800);
+        }
+      },
+    );
+    voiceTestCleanupRef.current = cleanup;
+  }, [ensureAudioContext]);
 
   useEffect(() => {
     updateMicPermissionStatus();
@@ -4594,40 +4658,113 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               <>
                 <div
                   className="fixed inset-0 z-[9998]"
-                  onClick={() => setVoicePickerOpen(false)}
+                  onClick={() => { setVoicePickerOpen(false); voiceTestCleanupRef.current?.(); }}
                   data-testid="voice-picker-backdrop"
                 />
                 <div
                   data-testid="voice-picker"
-                  className="fixed left-1/2 -translate-x-1/2 z-[9999] p-3 rounded-2xl shadow-2xl border border-white/15"
+                  className="fixed left-1/2 -translate-x-1/2 z-[9999] rounded-2xl shadow-2xl border border-white/[0.12] overflow-hidden"
                   style={{
-                    top: "calc(env(safe-area-inset-top, 0px) + 56px)",
-                    background: "linear-gradient(180deg, rgba(20,16,40,0.97), rgba(8,6,24,0.97))",
-                    backdropFilter: "blur(14px)",
-                    width: "min(340px, 92vw)",
+                    bottom: "calc(env(safe-area-inset-bottom, 0px) + 88px)",
+                    background: "linear-gradient(180deg, rgba(18,14,36,0.98), rgba(8,6,22,0.98))",
+                    backdropFilter: "blur(18px)",
+                    width: "min(360px, 94vw)",
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-white/35 mb-2.5 px-0.5">Voice Effect</p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {VOICE_PRESETS.map((preset) => {
-                      const isActive = selectedVoicePresetId === preset.id;
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-3.5 pt-3 pb-2 border-b border-white/[0.07]">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">Voice Effects</p>
+                    {/* Test your voice button — records 2s & plays back through active preset */}
+                    {hasMicStream ? (
+                      <button
+                        data-testid="button-voice-test"
+                        onClick={handleVoiceTest}
+                        disabled={voiceTestState === "recording" || voiceTestState === "playing"}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all duration-150 disabled:opacity-50"
+                        style={
+                          voiceTestState === "recording"
+                            ? { background: "rgba(239,68,68,0.18)", borderColor: "rgba(239,68,68,0.45)", color: "rgba(252,165,165,0.95)" }
+                            : voiceTestState === "playing"
+                            ? { background: "rgba(99,102,241,0.18)", borderColor: "rgba(99,102,241,0.45)", color: "rgba(165,180,252,0.95)" }
+                            : voiceTestState === "done"
+                            ? { background: "rgba(34,197,94,0.15)", borderColor: "rgba(34,197,94,0.4)", color: "rgba(134,239,172,0.95)" }
+                            : { background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }
+                        }
+                        title="Record 2s of your voice and play it back through the active effect"
+                      >
+                        {voiceTestState === "recording" ? (
+                          <><span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />Recording…</>
+                        ) : voiceTestState === "playing" ? (
+                          <><Volume2 className="w-3 h-3" />Playing…</>
+                        ) : voiceTestState === "done" ? (
+                          <><span className="text-[10px]">✓</span>Done</>
+                        ) : voiceTestState === "error" ? (
+                          <>⚠ Retry</>
+                        ) : (
+                          <><Mic className="w-3 h-3" />Test voice</>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-white/25 italic">Join mic to test</span>
+                    )}
+                  </div>
+
+                  {/* Preset grid grouped by category */}
+                  <div className="p-2.5 space-y-2.5">
+                    {PRESET_CATEGORIES.map((cat) => {
+                      const presetsInCat = VOICE_PRESETS.filter((p) => p.category === cat.id);
+                      if (presetsInCat.length === 0) return null;
                       return (
-                        <button
-                          key={preset.id}
-                          onClick={() => handleVoicePresetChange(preset.id)}
-                          className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border transition-all duration-150 text-center"
-                          style={isActive
-                            ? { background: "rgba(99,102,241,0.25)", borderColor: "rgba(99,102,241,0.6)", color: "rgba(199,210,254,1)" }
-                            : { background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.65)" }
-                          }
-                        >
-                          <span className="text-xl leading-none">{preset.emoji}</span>
-                          <span className="text-[12px] font-semibold leading-tight">{preset.label}</span>
-                          <span className="text-[10px] leading-tight opacity-60">{preset.description}</span>
-                        </button>
+                        <div key={cat.id}>
+                          <p className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-1.5 px-0.5">{cat.label}</p>
+                          <div className="grid grid-cols-4 gap-1">
+                            {presetsInCat.map((preset) => {
+                              const isActive = selectedVoicePresetId === preset.id;
+                              const isPreviewing = previewingPresetId === preset.id;
+                              return (
+                                <div key={preset.id} className="relative group">
+                                  <button
+                                    data-testid={`voice-preset-${preset.id}`}
+                                    onClick={() => handleVoicePresetChange(preset.id)}
+                                    className="w-full flex flex-col items-center gap-0.5 px-1.5 py-2 rounded-xl border transition-all duration-150 text-center"
+                                    style={isActive
+                                      ? { background: "rgba(99,102,241,0.28)", borderColor: "rgba(99,102,241,0.65)", color: "rgba(199,210,254,1)", boxShadow: "0 0 0 1px rgba(99,102,241,0.35) inset" }
+                                      : { background: "rgba(255,255,255,0.035)", borderColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.7)" }
+                                    }
+                                  >
+                                    <span className="text-lg leading-none">{preset.emoji}</span>
+                                    <span className="text-[10.5px] font-semibold leading-tight">{preset.label}</span>
+                                    <span className="text-[9px] leading-tight opacity-50 line-clamp-1">{preset.description}</span>
+                                  </button>
+                                  {/* Tone preview button — auditions the effect with a synthetic tone */}
+                                  <button
+                                    data-testid={`button-preview-${preset.id}`}
+                                    title={`Preview ${preset.label} tone`}
+                                    onClick={(e) => { e.stopPropagation(); handleVoicePreview(preset.id); }}
+                                    disabled={previewingPresetId !== null}
+                                    className="absolute top-1 right-1 w-4 h-4 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity disabled:opacity-30"
+                                    style={{ background: "rgba(99,102,241,0.3)", color: "rgba(199,210,254,0.9)" }}
+                                  >
+                                    {isPreviewing
+                                      ? <span className="w-2 h-2 rounded-full bg-indigo-300 animate-ping" />
+                                      : <Volume1 className="w-2.5 h-2.5" />
+                                    }
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       );
                     })}
+                  </div>
+
+                  {/* Footer hint */}
+                  <div className="px-3.5 pb-2.5 pt-0.5">
+                    <p className="text-[9px] text-white/20 text-center">
+                      Effects process your mic in real-time · hover a card to preview tone
+                    </p>
                   </div>
                 </div>
               </>,
