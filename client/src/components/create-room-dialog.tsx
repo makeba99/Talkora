@@ -84,9 +84,8 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     import("@/lib/sound-fx").then((s) => s.sfxBuildRoom()).catch(() => {});
-    const finalTitle = title.trim() || `${language} ${level} Room`;
     onCreateRoom({
-      title: finalTitle,
+      title: title.trim(),
       language,
       level,
       maxUsers,
@@ -191,11 +190,13 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4 space-y-4 min-h-0">
           <div className="space-y-2">
-            <Label htmlFor="room-title">Room Name</Label>
+            <Label htmlFor="room-title">
+              Room Name <span className="text-[11px] font-normal text-muted-foreground">(optional)</span>
+            </Label>
             <Input
               id="room-title"
               data-testid="input-room-title"
-              placeholder="e.g. English Beginners Chat"
+              placeholder="Leave blank for no title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={50}
