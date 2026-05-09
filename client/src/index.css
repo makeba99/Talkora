@@ -7418,9 +7418,8 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     0 1px 0 rgba(255, 255, 255, 0.04) inset,
     0 -1px 0 rgba(0, 0, 0, 0.3) inset,
     0 6px 18px rgba(0, 0, 0, 0.35);
-  /* Allow the group to shrink so Create Room button always stays visible */
   min-width: 0;
-  flex: 1 1 0;
+  flex: 0 0 auto;
   overflow-x: auto;
   /* Hide scrollbar visually while keeping it functional */
   scrollbar-width: none;
