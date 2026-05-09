@@ -706,14 +706,6 @@ export function ProfileDropdown({
                   {getUserInitials(user)}
                 </AvatarFallback>
               </Avatar>
-              <span
-                className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
-                style={{
-                  background: appearOffline ? "#6b7280" : "#22c55e",
-                  borderColor: "rgb(15 17 28 / 1)",
-                  boxShadow: appearOffline ? "none" : "0 0 6px rgba(34,197,94,0.7)",
-                }}
-              />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-semibold truncate" data-testid="text-dropdown-user-name">

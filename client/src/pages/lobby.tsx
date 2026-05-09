@@ -64,7 +64,6 @@ const ThemePicker = lazy(() =>
   import("@/components/theme-picker").then((m) => ({ default: m.ThemePicker }))
 );
 import { useLowBandwidthHint } from "@/hooks/use-low-bandwidth-hint";
-import { VextornMark } from "@/components/vextorn-logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket-context";
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
@@ -1395,7 +1394,16 @@ export default function Lobby() {
                     "linear-gradient(135deg, rgba(91,108,255,0.55), rgba(155,92,255,0.55), rgba(255,107,161,0.55))",
                 }}
               />
-              <VextornMark size={36} className="relative z-10 drop-shadow-[0_0_12px_rgba(155,92,255,0.50)]" />
+              <img
+                src="/vextorn-icon-192.png"
+                alt="Vextorn"
+                width={36}
+                height={36}
+                fetchpriority="high"
+                decoding="async"
+                className="relative z-10 rounded-[10px] drop-shadow-[0_0_12px_rgba(155,92,255,0.50)]"
+                style={{ display: "block" }}
+              />
             </div>
             {/* sr-only h1 ensures screen readers and Lighthouse accessibility
                 audits always find a page-level heading even on viewports
