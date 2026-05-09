@@ -418,6 +418,7 @@ export default function Lobby() {
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [socialOpen, setSocialOpen] = useState(false);
   const [orbitOpen, setOrbitOpen] = useState(false);
+  const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [languagesExpanded, setLanguagesExpanded] = useState(false);
   const [showLanguageFilters, setShowLanguageFilters] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -429,6 +430,17 @@ export default function Lobby() {
       window.localStorage.setItem("vextorn:showLanguageFilters", String(showLanguageFilters));
     }
   }, [showLanguageFilters]);
+
+  // Auto-open Create Room dialog if user just logged in from the guest CTA
+  useEffect(() => {
+    if (!user) return;
+    if (typeof window === "undefined") return;
+    const pending = sessionStorage.getItem("vextorn:pending_create_room");
+    if (pending === "1") {
+      sessionStorage.removeItem("vextorn:pending_create_room");
+      setCreateRoomOpen(true);
+    }
+  }, [user]);
   const [searchSuggestOpen, setSearchSuggestOpen] = useState(false);
   const searchShellRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -1469,6 +1481,17 @@ export default function Lobby() {
                     <span className="hidden sm:inline">Admin</span>
                   </button>
                 )}
+                {/* Create Room — always visible in the sticky header on all screen sizes.
+                    The mobile FAB (fixed bottom-right) only shows on <640px, so this
+                    header button covers tablet + desktop without needing to scroll. */}
+                <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
+                  <CreateRoomDialog
+                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
+                    isPending={createRoomMutation.isPending}
+                    open={createRoomOpen}
+                    onOpenChange={setCreateRoomOpen}
+                  />
+                </Suspense>
                 <span className="header-pro-divider hidden sm:inline-block" aria-hidden="true" />
                 {/* hidden controlled triggers — opened from the orbital profile menu OR from pinned chips */}
                 <Suspense fallback={null}>
@@ -1963,21 +1986,16 @@ export default function Lobby() {
             </div>
             </div>{/* end flex-1 min-w-0 */}
 
-            {/* Create Room — always visible, right of search bar. */}
-            <div className="flex flex-shrink-0" data-testid="container-create-room">
-              {user ? (
-                <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
-                  <CreateRoomDialog
-                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
-                    isPending={createRoomMutation.isPending}
-                  />
-                </Suspense>
-              ) : (
+            {/* Guest sign-in prompt — only shown to unauthenticated users.
+                Authenticated users have Create Room in the sticky header. */}
+            {!user && (
+              <div className="flex flex-shrink-0" data-testid="container-create-room">
                 <a
                   href="/api/login"
                   className="hammer-btn cr-shimmer"
                   aria-label="Sign in to create a room"
                   data-testid="button-create-room-guest"
+                  onClick={() => sessionStorage.setItem("vextorn:pending_create_room", "1")}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -2010,8 +2028,8 @@ export default function Lobby() {
                   </span>
                   <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.02em", textShadow: "0 1px 3px rgba(0,0,0,0.85)" }}>Create Room</span>
                 </a>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Filter strip: each chip has its own colour family so Rooms,
@@ -2277,15 +2295,15 @@ export default function Lobby() {
                 </p>
               </div>
               {user ? (
-                <Suspense fallback={<Skeleton className="h-10 w-44 rounded-lg" />}>
-                  <CreateRoomDialog
-                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
-                    isPending={createRoomMutation.isPending}
-                  />
-                </Suspense>
+                <Button onClick={() => setCreateRoomOpen(true)} data-testid="button-create-room-empty">
+                  Create a Room
+                </Button>
               ) : (
                 <Button asChild data-testid="button-sign-in-empty">
-                  <a href="/api/login">Sign in to create a room</a>
+                  <a
+                    href="/api/login"
+                    onClick={() => sessionStorage.setItem("vextorn:pending_create_room", "1")}
+                  >Sign in to create a room</a>
                 </Button>
               )}
             </div>

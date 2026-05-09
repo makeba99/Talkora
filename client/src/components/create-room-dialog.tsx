@@ -22,11 +22,18 @@ interface CreateRoomDialogProps {
   }) => void;
   isPending?: boolean;
   mobileFab?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateRoomDialogProps) {
+export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: controlledOpen, onOpenChange: controlledOnOpenChange }: CreateRoomDialogProps) {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled
+    ? (v: boolean) => controlledOnOpenChange?.(v)
+    : setInternalOpen;
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState("English");
   const [level, setLevel] = useState("Beginner");
