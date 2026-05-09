@@ -217,6 +217,7 @@ export interface VoicePreset {
 // ── Presets ───────────────────────────────────────────────────────────────────
 
 export const VOICE_PRESETS: VoicePreset[] = [
+  // ── Original ──────────────────────────────────────────────────────────────
   {
     id: "natural",
     label: "Natural",
@@ -224,10 +225,115 @@ export const VOICE_PRESETS: VoicePreset[] = [
     emoji: "🎙️",
     category: "natural",
   },
+
+  // ── Fun ───────────────────────────────────────────────────────────────────
+  {
+    id: "chipmunk",
+    label: "Chipmunk",
+    description: "High & squeaky",
+    emoji: "🐿️",
+    category: "fun",
+    pitch: 1.8,
+  },
+  {
+    id: "giant",
+    label: "Giant",
+    description: "Big & booming",
+    emoji: "🗿",
+    category: "fun",
+    pitch: 0.58,
+  },
+  {
+    id: "demon",
+    label: "Demon",
+    description: "Dark & gritty",
+    emoji: "👹",
+    category: "fun",
+    pitch: 0.68,
+    distortion: { drive: 28, lowpass: 2200 },
+  },
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+  {
+    id: "robot",
+    label: "Robot",
+    description: "Robotic buzz",
+    emoji: "🤖",
+    category: "effect",
+    ringmod: 65,
+  },
+  {
+    id: "alien",
+    label: "Alien",
+    description: "Alien chatter",
+    emoji: "👽",
+    category: "effect",
+    pitch: 1.35,
+    ringmod: 130,
+  },
+  {
+    id: "radio",
+    label: "Radio",
+    description: "AM radio crackle",
+    emoji: "📻",
+    category: "effect",
+    distortion: { drive: 12, lowpass: 4000 },
+    filters: [
+      { type: "bandpass", frequency: 1900, gain: 0, Q: 0.75 },
+    ],
+  },
+  {
+    id: "underwater",
+    label: "Underwater",
+    description: "Muffled & warped",
+    emoji: "🌊",
+    category: "effect",
+    pitch: 0.88,
+    filters: [
+      { type: "lowpass", frequency: 700, gain: 0, Q: 1.4 },
+    ],
+  },
+
+  // ── Tone ──────────────────────────────────────────────────────────────────
+  {
+    id: "deep",
+    label: "Deep",
+    description: "Smooth bass boost",
+    emoji: "🎤",
+    category: "tone",
+    pitch: 0.85,
+    filters: [
+      { type: "lowshelf", frequency: 220, gain: 9 },
+    ],
+  },
+  {
+    id: "bright",
+    label: "Bright",
+    description: "Crisp & clear",
+    emoji: "✨",
+    category: "tone",
+    filters: [
+      { type: "highshelf", frequency: 3000, gain: 7 },
+    ],
+  },
+  {
+    id: "stage",
+    label: "Stage",
+    description: "Concert hall",
+    emoji: "🎭",
+    category: "tone",
+    filters: [
+      { type: "peaking", frequency: 900, gain: 4, Q: 1.2 },
+      { type: "highshelf", frequency: 5000, gain: 3 },
+    ],
+  },
 ];
 
 export const PRESET_CATEGORIES: { id: VoicePresetCategory; label: string }[] = [
   { id: "natural", label: "Original" },
+  { id: "fun",     label: "Fun" },
+  { id: "effect",  label: "Effects" },
+  { id: "tone",    label: "Tone" },
 ];
 
 // ── Persistence ───────────────────────────────────────────────────────────────
