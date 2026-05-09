@@ -5807,7 +5807,7 @@ export async function registerRoutes(
         return;
       }
       const safeAvatarId = typeof avatarId === "string" ? avatarId.slice(0, 40) : "aurora";
-      const safeVoice = voice === "Male" ? "Male" : "Female";
+      const safeVoice = voice === "Male" ? "Male" : voice === "Eva" ? "Eva" : "Female";
       const safeVoiceId = typeof voiceId === "string" ? voiceId.slice(0, 120) : null;
       roomAiTutorState.set(roomId, { userId, username, speaking: existing?.speaking || false, avatarId: safeAvatarId, voice: safeVoice, voiceId: safeVoiceId });
       io.to(roomId).emit("room:ai-tutor-state", { active: true, userId, username, speaking: existing?.speaking || false, avatarId: safeAvatarId, voice: safeVoice, voiceId: safeVoiceId });

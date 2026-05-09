@@ -1798,10 +1798,10 @@ export default function Lobby() {
                 }
                 placeholder={
                   activeDiscovery === "rooms"
-                    ? "Search rooms, languages, people…"
+                    ? window.innerWidth < 640 ? "Search…" : "Search rooms, languages, people…"
                     : activeDiscovery === "top-speakers"
-                      ? "Search top speakers…"
-                      : "Search famous users…"
+                      ? window.innerWidth < 640 ? "Top speakers…" : "Search top speakers…"
+                      : window.innerWidth < 640 ? "Famous users…" : "Search famous users…"
                 }
                 value={searchQuery}
                 onChange={(e) => {
@@ -1954,8 +1954,8 @@ export default function Lobby() {
             </div>
             </div>{/* end flex-1 min-w-0 */}
 
-            {/* Create Room — desktop only (≥640px): right of search bar. */}
-            <div className="hidden sm:flex flex-shrink-0" data-testid="container-create-room">
+            {/* Create Room — always visible, right of search bar. */}
+            <div className="flex flex-shrink-0" data-testid="container-create-room">
               {user ? (
                 <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
                   <CreateRoomDialog
@@ -2499,34 +2499,6 @@ export default function Lobby() {
         </div>
       )}
 
-      {/* ── Mobile Create Room FAB ──────────────────────────────────────────
-          Fixed bottom-right pill, only visible on phones (<640px).
-          Uses the premium logo gradient so it's unmistakably the primary
-          creation action regardless of filter-strip overflow state.
-          ─────────────────────────────────────────────────────────────────── */}
-      <div className="sm:hidden">
-        {user ? (
-          <Suspense fallback={null}>
-            <CreateRoomDialog
-              onCreateRoom={(data) => createRoomMutation.mutate(data)}
-              isPending={createRoomMutation.isPending}
-              mobileFab
-            />
-          </Suspense>
-        ) : (
-          <a
-            href="/api/login"
-            className="create-room-fab"
-            aria-label="Sign in to create a room"
-            data-testid="button-create-room-fab-guest"
-          >
-            <span className="create-room-fab-orb">
-              <Hammer className="w-[18px] h-[18px]" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.7))" }} />
-            </span>
-            <span>Create Room</span>
-          </a>
-        )}
-      </div>
     </div>
   );
 }

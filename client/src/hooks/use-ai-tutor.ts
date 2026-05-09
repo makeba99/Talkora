@@ -609,7 +609,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       };
       setAiConversation(prev => [...prev, msg]);
       setAiLastBroadcast(data.text);
-      setAiRoomSession(prev => prev.active ? { ...prev, avatarId: data.avatarId ?? prev.avatarId, voice: data.voice === "Male" ? "Male" : "Female", voiceId: data.voiceId ?? prev.voiceId } : prev);
+      setAiRoomSession(prev => prev.active ? { ...prev, avatarId: data.avatarId ?? prev.avatarId, voice: data.voice === "Male" ? "Male" : data.voice === "Eva" ? "Eva" : "Female", voiceId: data.voiceId ?? prev.voiceId } : prev);
       observeSpeakText(data.text, data.voice || "Female", data.speed || 0.7, data.voiceId);
     };
 
