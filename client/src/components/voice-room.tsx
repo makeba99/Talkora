@@ -1375,6 +1375,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const welcomeTextareaRef = useRef<HTMLTextAreaElement>(null);
   const seenMsgIdsRef = useRef(new Set<string>());
   const historyLoadedRef = useRef(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, { name: string; avatar: string | null }>>({});
@@ -9939,6 +9940,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               <Label htmlFor="vr-welcome-msg">Message</Label>
               <textarea
                 id="vr-welcome-msg"
+                ref={welcomeTextareaRef}
                 value={welcomeText}
                 onChange={(e) => setWelcomeText(e.target.value)}
                 placeholder="Write a greeting for your room…"
@@ -9948,8 +9950,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               />
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-primary/70 flex items-center gap-1">
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/15 border border-primary/25 font-mono text-[9px] text-primary">@username</span>
-                  <span className="text-muted-foreground">→ replaced with each joiner's name</span>
+                  <button
+                    type="button"
+                    title="Click to insert @username placeholder"
+                    onClick={() => {
+                      const ta = welcomeTextareaRef.current;
+                      if (!ta) { setWelcomeText(prev => prev + "@username"); return; }
+                      const start = ta.selectionStart ?? welcomeText.length;
+                      const end = ta.selectionEnd ?? welcomeText.length;
+                      const newText = welcomeText.slice(0, start) + "@username" + welcomeText.slice(end);
+                      setWelcomeText(newText);
+                      requestAnimationFrame(() => {
+                        ta.focus();
+                        const pos = start + "@username".length;
+                        ta.setSelectionRange(pos, pos);
+                      });
+                    }}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/15 border border-primary/25 font-mono text-[9px] text-primary hover:bg-primary/30 hover:border-primary/50 transition-colors cursor-pointer"
+                    data-testid="button-insert-username"
+                  >@username</button>
+                  <span className="text-muted-foreground">→ click to insert, replaced with each joiner's name</span>
                 </span>
                 <p className="text-[10px] text-muted-foreground">{welcomeText.length}/500</p>
               </div>

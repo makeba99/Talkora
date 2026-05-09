@@ -2360,13 +2360,35 @@ export async function registerRoutes(
       broadcastRooms().catch(() => {});
 
       if (updateData.welcomeMessage !== undefined && updateData.welcomeMessage) {
-        io.to(roomId).emit("room:welcome-message", {
-          welcomeMessage: updateData.welcomeMessage,
-          welcomeMediaUrls: updateData.welcomeMediaUrls ?? updated.welcomeMediaUrls ?? [],
-          welcomeMediaTypes: updateData.welcomeMediaTypes ?? updated.welcomeMediaTypes ?? [],
-          welcomeMediaPosition: updateData.welcomeMediaPosition ?? updated.welcomeMediaPosition ?? "below",
-          welcomeAccentColor: updateData.welcomeAccentColor ?? updated.welcomeAccentColor ?? "#8B5CF6",
-        });
+        const rawMsg = updateData.welcomeMessage;
+        const mediaUrls = updateData.welcomeMediaUrls ?? updated.welcomeMediaUrls ?? [];
+        const mediaTypes = updateData.welcomeMediaTypes ?? updated.welcomeMediaTypes ?? [];
+        const mediaPosition = updateData.welcomeMediaPosition ?? updated.welcomeMediaPosition ?? "below";
+        const accentColor = updateData.welcomeAccentColor ?? updated.welcomeAccentColor ?? "#8B5CF6";
+        const participants = roomParticipants.get(roomId);
+        if (participants && participants.size > 0 && rawMsg.match(/@username/i)) {
+          for (const [participantId, participantUser] of Array.from(participants.entries())) {
+            const socketId = userSockets.get(participantId);
+            if (!socketId) continue;
+            const name = (participantUser as any).displayName || (participantUser as any).firstName || (participantUser as any).email?.split("@")[0] || "there";
+            const personalizedMsg = rawMsg.replace(/@username/gi, `@${name}`);
+            io.to(socketId).emit("room:welcome-message", {
+              welcomeMessage: personalizedMsg,
+              welcomeMediaUrls: mediaUrls,
+              welcomeMediaTypes: mediaTypes,
+              welcomeMediaPosition: mediaPosition,
+              welcomeAccentColor: accentColor,
+            });
+          }
+        } else {
+          io.to(roomId).emit("room:welcome-message", {
+            welcomeMessage: rawMsg,
+            welcomeMediaUrls: mediaUrls,
+            welcomeMediaTypes: mediaTypes,
+            welcomeMediaPosition: mediaPosition,
+            welcomeAccentColor: accentColor,
+          });
+        }
       }
 
       // Announce host control changes to the room chat as system messages so
