@@ -8,6 +8,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
+import { VextornMark } from "@/components/vextorn-logo";
 import { showHintOnce } from "@/lib/hints";
 
 /* SiteFooter (~425 lines) sits below the fold and is never the LCP.
@@ -1386,24 +1387,10 @@ export default function Lobby() {
         <div className="header-pro-inner flex items-center justify-between gap-4 px-4 sm:px-5 py-2.5 max-w-[1600px] mx-auto">
           {/* Brand */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 relative group">
-              <div
-                className="absolute -inset-2 rounded-[18px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-lg"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(91,108,255,0.55), rgba(155,92,255,0.55), rgba(255,107,161,0.55))",
-                }}
-              />
-              <img
-                src="/vextorn-icon-192.png"
-                alt="Vextorn"
-                width={36}
-                height={36}
-                fetchpriority="high"
-                decoding="async"
-                className="relative z-10 rounded-[10px] drop-shadow-[0_0_12px_rgba(155,92,255,0.50)]"
-                style={{ display: "block" }}
-              />
+            <div className="flex-shrink-0 relative">
+              <div className="brand-room-mark" data-testid="brand-lobby-mark">
+                <VextornMark size={22} />
+              </div>
             </div>
             {/* sr-only h1 ensures screen readers and Lighthouse accessibility
                 audits always find a page-level heading even on viewports
