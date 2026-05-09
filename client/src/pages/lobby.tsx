@@ -2020,9 +2020,9 @@ export default function Lobby() {
               )}
             </div>
 
-            {/* Create Room — right-aligned in the filter row */}
+            {/* Create Room — desktop only (≥640px): right end of filter row */}
             {user && (
-              <div className="ml-auto flex-shrink-0" data-testid="container-create-room">
+              <div className="hidden sm:flex ml-auto flex-shrink-0" data-testid="container-create-room">
                 <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
                   <CreateRoomDialog
                     onCreateRoom={(data) => createRoomMutation.mutate(data)}
@@ -2032,6 +2032,18 @@ export default function Lobby() {
               </div>
             )}
           </div>
+
+          {/* Create Room — mobile only (<640px): own compact row, right-aligned */}
+          {user && (
+            <div className="flex sm:hidden justify-end" data-testid="container-create-room-mobile">
+              <Suspense fallback={<Skeleton className="h-[34px] w-[34px] rounded-full" />}>
+                <CreateRoomDialog
+                  onCreateRoom={(data) => createRoomMutation.mutate(data)}
+                  isPending={createRoomMutation.isPending}
+                />
+              </Suspense>
+            </div>
+          )}
 
           {activeDiscovery === "rooms" && showLanguageFilters && (
           <div className="flex gap-2 flex-wrap items-center" data-testid="row-language-filters">
