@@ -183,7 +183,7 @@ function AnalyticsTab() {
   const { data, isLoading, refetch } = useQuery<AnalyticsData>({
     queryKey: ["/api/admin/analytics", days],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/analytics?days=${days}`);
+      const res = await fetch(`/api/admin/analytics?days=${days}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch analytics");
       return res.json();
     },
@@ -1626,6 +1626,10 @@ export default function AdminPage() {
   const [restrictDaysMap, setRestrictDaysMap] = useState<Record<string, number>>({});
   const [userSearch, setUserSearch] = useState("");
   const [newRegPeriod, setNewRegPeriod] = useState<"today" | "yesterday" | "week" | "month" | null>(null);
+  const [userIdLookup, setUserIdLookup] = useState("");
+  const [lookupResult, setLookupResult] = useState<User | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -2277,6 +2281,73 @@ export default function AdminPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* ── Find user by exact ID ── */}
+                <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 space-y-3">
+                  <div className="flex items-center gap-1.5 text-violet-400">
+                    <Search className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Find User by Exact ID</span>
+                  </div>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!userIdLookup.trim()) return;
+                      setLookupLoading(true);
+                      setLookupResult(null);
+                      setLookupError(null);
+                      try {
+                        const res = await fetch(`/api/admin/users/lookup?id=${encodeURIComponent(userIdLookup.trim())}`, { credentials: "include" });
+                        if (!res.ok) {
+                          const err = await res.json().catch(() => ({}));
+                          setLookupError((err as any).message || "User not found");
+                        } else {
+                          setLookupResult(await res.json());
+                        }
+                      } catch {
+                        setLookupError("Request failed. Please try again.");
+                      } finally {
+                        setLookupLoading(false);
+                      }
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Input
+                      data-testid="input-user-id-lookup"
+                      placeholder="Paste exact user ID…"
+                      value={userIdLookup}
+                      onChange={(e) => { setUserIdLookup(e.target.value); setLookupResult(null); setLookupError(null); }}
+                      className="h-8 text-sm bg-background/60 font-mono"
+                    />
+                    <Button size="sm" type="submit" disabled={lookupLoading || !userIdLookup.trim()} data-testid="button-user-id-lookup">
+                      {lookupLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                    </Button>
+                  </form>
+                  {lookupError && (
+                    <p className="text-xs text-destructive" data-testid="text-lookup-error">{lookupError}</p>
+                  )}
+                  {lookupResult && (
+                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-background/50 border border-violet-400/20" data-testid={`card-lookup-user-${lookupResult.id}`}>
+                      <Avatar className="w-9 h-9 flex-shrink-0">
+                        <AvatarImage src={lookupResult.profileImageUrl || ""} alt="" />
+                        <AvatarFallback className="text-xs bg-violet-800 text-violet-200">{getUserDisplayName(lookupResult).slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold truncate" data-testid="text-lookup-name">{getUserDisplayName(lookupResult)}</p>
+                        <p className="text-[10px] text-muted-foreground truncate font-mono" data-testid="text-lookup-id">{lookupResult.id}</p>
+                        <p className="text-[10px] text-muted-foreground" data-testid="text-lookup-role">{lookupResult.role || "user"}{lookupResult.email ? ` · ${lookupResult.email}` : ""}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setUserSearch(lookupResult.id)}
+                        data-testid="button-lookup-find-in-list"
+                        className="text-xs flex-shrink-0"
+                      >
+                        View
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5 text-emerald-400 flex-shrink-0">

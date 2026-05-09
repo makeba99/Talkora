@@ -22,7 +22,7 @@ import {
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
-  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines
+  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, Share2, CheckCheck, Wand2
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -60,6 +60,7 @@ import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
+import { checkGrammar, type GrammarSuggestion } from "@/lib/grammar-check";
 import type { Room, User, Follow } from "@shared/schema";
 import evaAvatarUrl from "@/assets/eva-avatar.webp";
 
@@ -1465,6 +1466,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [welcomeAccentColorState, setWelcomeAccentColorState] = useState((roomProp as any).welcomeAccentColor || "#8B5CF6");
   const [uploadingWelcomeMedia, setUploadingWelcomeMedia] = useState(false);
   const [dmUserId, setDmUserId] = useState<string | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [grammarSuggestion, setGrammarSuggestion] = useState<GrammarSuggestion | null>(null);
+  const [grammarDismissed, setGrammarDismissed] = useState(false);
+  const grammarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reportTargetUserId, setReportTargetUserId] = useState<string | null>(null);
   const [blockDialogUserId, setBlockDialogUserId] = useState<string | null>(null);
   const [blockDialogStep, setBlockDialogStep] = useState<"choose" | "forever-confirm">("choose");
@@ -6592,6 +6597,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } else {
       setMentionQuery(null);
     }
+    // Debounced grammar check — fires 1.2s after typing stops
+    setGrammarDismissed(false);
+    if (grammarTimerRef.current) clearTimeout(grammarTimerRef.current);
+    if (val.trim().length > 6) {
+      grammarTimerRef.current = setTimeout(() => {
+        setGrammarSuggestion(checkGrammar(val));
+      }, 1200);
+    } else {
+      setGrammarSuggestion(null);
+    }
     // Emit typing signal — throttled to at most once per 2 s while typing,
     // immediately stopped when the input is cleared.
     if (socket && user) {
@@ -7781,6 +7796,39 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </div>
             )}
           </div>
+
+          {grammarSuggestion && !grammarDismissed && grammarSuggestion.corrected !== chatText.trim() && (
+            <div
+              className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg animate-in fade-in slide-in-from-bottom-1"
+              style={{ background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.25)" }}
+              data-testid="grammar-suggestion-bar"
+            >
+              <Wand2 className="w-3 h-3 text-violet-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] text-violet-300 font-medium">{grammarSuggestion.message}</span>
+                <div className="text-[11px] text-white/60 truncate mt-0.5">{grammarSuggestion.corrected}</div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => { setChatText(grammarSuggestion.corrected); setGrammarSuggestion(null); }}
+                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded transition-colors"
+                  style={{ background: "rgba(167,139,250,0.22)", color: "rgba(216,180,254,0.9)" }}
+                  data-testid="button-grammar-apply"
+                >
+                  Apply
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGrammarDismissed(true)}
+                  className="text-white/30 hover:text-white/60 transition-colors p-0.5"
+                  data-testid="button-grammar-dismiss"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="chat-toolbar-slab">
             <div className="chat-tools-group">
@@ -10256,6 +10304,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </span>
                   )}
                 </div>
+
+                {/* Share room */}
+                <button
+                  onClick={() => setShareDialogOpen(true)}
+                  data-testid="button-share-room"
+                  title="Share Room"
+                  className="room-header-pill-btn"
+                >
+                  <Share2 className="w-[18px] h-[18px]" />
+                </button>
 
                 {/* Separator */}
                 <div className="room-header-pill-sep" />
@@ -13414,6 +13472,113 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </div>
         </div>
       )}
+
+      {/* ── Share Room Dialog ── */}
+      {shareDialogOpen && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShareDialogOpen(false); }}
+          data-testid="share-room-dialog"
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl p-5 space-y-4"
+            style={{ background: "hsl(var(--card))", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 25px 60px rgba(0,0,0,0.5), 0 0 40px rgba(139,92,246,0.08)" }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-white text-base">Share Room</h3>
+                <p className="text-xs text-white/50 mt-0.5">Invite others to join this room</p>
+              </div>
+              <button
+                onClick={() => setShareDialogOpen(false)}
+                className="text-white/40 hover:text-white/70 transition-colors"
+                data-testid="button-close-share-dialog"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Room info */}
+            <div className="rounded-xl p-3 space-y-1" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <p className="text-sm font-semibold text-white truncate">{room.title}</p>
+              <div className="flex items-center gap-2 text-[11px] text-white/50">
+                <span>{room.language}</span>
+                <span>·</span>
+                <span>{room.level}</span>
+                <span>·</span>
+                <span className="text-emerald-400">{participants.length} in room</span>
+              </div>
+            </div>
+
+            {/* Current participants */}
+            {participants.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40 mb-2">Currently in the room</p>
+                <div className="flex flex-wrap gap-2">
+                  {participants.slice(0, 12).map((p) => (
+                    <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <Avatar className="w-5 h-5">
+                        <AvatarImage src={p.profileImageUrl || ""} alt="" loading="lazy" decoding="async" />
+                        <AvatarFallback className="text-[8px] bg-violet-800 text-violet-200">{getUserInitials(p)}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-[11px] text-white/80 max-w-[80px] truncate">{getUserDisplayName(p)}</span>
+                    </div>
+                  ))}
+                  {participants.length > 12 && (
+                    <div className="flex items-center px-2 py-1 rounded-full text-[11px] text-white/40" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                      +{participants.length - 12} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Copy link */}
+            <ShareRoomLinkButton roomId={room.id} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShareRoomLinkButton({ roomId }: { roomId: string }) {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/room/${roomId}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      toast({ description: "Room link copied to clipboard!" });
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => {
+      toast({ variant: "destructive", description: "Failed to copy link" });
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className="flex-1 min-w-0 px-3 py-2 rounded-lg text-[11px] text-white/50 truncate select-all"
+        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", fontFamily: "monospace" }}
+        data-testid="text-room-share-url"
+      >
+        {url}
+      </div>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+        style={copied
+          ? { background: "rgba(52,211,153,0.20)", color: "rgba(52,211,153,0.9)", border: "1px solid rgba(52,211,153,0.35)" }
+          : { background: "rgba(167,139,250,0.20)", color: "rgba(196,181,253,0.9)", border: "1px solid rgba(167,139,250,0.35)" }}
+        data-testid="button-copy-room-link"
+      >
+        {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        {copied ? "Copied!" : "Copy"}
+      </button>
     </div>
   );
 }

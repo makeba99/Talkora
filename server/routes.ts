@@ -844,6 +844,17 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/rooms/:id/participants", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const roomParts = roomParticipants.get(id);
+      res.setHeader("Cache-Control", "public, max-age=10, stale-while-revalidate=60");
+      res.json(roomParts ? Array.from(roomParts.values()) : []);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/users/rooms", isAuthenticated, async (req: any, res) => {
     try {
       const mapping: Record<string, string> = {};
@@ -3158,6 +3169,20 @@ export async function registerRoutes(
       const canSeeEmails = admin?.role === "superadmin" || admin?.email === SUPER_ADMIN_EMAIL;
       const allUsers = await storage.getAllUsers();
       res.json(canSeeEmails ? allUsers : allUsers.map((user) => ({ ...user, email: null })));
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/users/lookup", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.query as { id?: string };
+      if (!id || !id.trim()) return res.status(400).json({ message: "id query param required" });
+      const admin = await storage.getUser((req.user as any).id);
+      const canSeeEmails = admin?.role === "superadmin" || admin?.email === SUPER_ADMIN_EMAIL;
+      const found = await storage.getUser(id.trim());
+      if (!found) return res.status(404).json({ message: "User not found" });
+      res.json(canSeeEmails ? found : { ...found, email: null });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

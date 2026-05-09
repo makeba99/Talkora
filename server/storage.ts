@@ -197,6 +197,10 @@ export interface IStorage {
     totalRoomJoins: number;
     uniqueRoomJoiners: number;
     dailyJoins: { date: string; joins: number }[];
+    todayViews: number;
+    todayUniqueVisitors: number;
+    todayRoomJoins: number;
+    todayUniqueJoiners: number;
   }>;
 
   createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign>;
