@@ -1481,17 +1481,6 @@ export default function Lobby() {
                     <span className="hidden sm:inline">Admin</span>
                   </button>
                 )}
-                {/* Create Room — always visible in the sticky header on all screen sizes.
-                    The mobile FAB (fixed bottom-right) only shows on <640px, so this
-                    header button covers tablet + desktop without needing to scroll. */}
-                <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
-                  <CreateRoomDialog
-                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
-                    isPending={createRoomMutation.isPending}
-                    open={createRoomOpen}
-                    onOpenChange={setCreateRoomOpen}
-                  />
-                </Suspense>
                 <span className="header-pro-divider hidden sm:inline-block" aria-hidden="true" />
                 {/* hidden controlled triggers — opened from the orbital profile menu OR from pinned chips */}
                 <Suspense fallback={null}>
@@ -1986,10 +1975,18 @@ export default function Lobby() {
             </div>
             </div>{/* end flex-1 min-w-0 */}
 
-            {/* Guest sign-in prompt — only shown to unauthenticated users.
-                Authenticated users have Create Room in the sticky header. */}
-            {!user && (
-              <div className="flex flex-shrink-0" data-testid="container-create-room">
+            {/* Create Room — always shown next to search bar for all users */}
+            <div className="flex flex-shrink-0" data-testid="container-create-room">
+              {user ? (
+                <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
+                  <CreateRoomDialog
+                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
+                    isPending={createRoomMutation.isPending}
+                    open={createRoomOpen}
+                    onOpenChange={setCreateRoomOpen}
+                  />
+                </Suspense>
+              ) : (
                 <a
                   href="/api/login"
                   className="hammer-btn cr-shimmer"
@@ -2028,8 +2025,8 @@ export default function Lobby() {
                   </span>
                   <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.02em", textShadow: "0 1px 3px rgba(0,0,0,0.85)" }}>Create Room</span>
                 </a>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Filter strip: each chip has its own colour family so Rooms,
