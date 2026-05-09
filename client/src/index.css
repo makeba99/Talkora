@@ -7083,10 +7083,9 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
    than dominating it. The icon medallion is the only piece that carries
    the brand violet so the eye is drawn to ONE point of focus.
    ============================================================================ */
-/* ── Create Room button — premium logo-gradient style ──────────────────────
-   Mirrors the Vextorn mark palette: purple #9D86FF → #7B5CF6 left wing,
-   blue/cyan #3D8FFF → #22D3EE right wing. The button body uses the same
-   purple-to-cyan sweep so it reads as a first-class extension of the brand.
+/* ── Create Room button — dark premium style ────────────────────────────────
+   Deep charcoal body with a sculpted top sheen and crisp shadow stack.
+   Matches the app's dark logo aesthetic — no colour, just depth and light.
    ──────────────────────────────────────────────────────────────────────── */
 .create-room-neu {
   position: relative;
@@ -7095,77 +7094,67 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   align-items: center;
   border: 0;
   border-radius: 999px;
-  color: #fff;
-  /* Glossy top sheen over the logo-gradient body */
+  color: rgba(255, 255, 255, 0.92);
   background:
+    /* convex specular sheen across the top quarter */
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(255, 255, 255, 0)    32%,
-      rgba(0,   0,   0,   0)    68%,
-      rgba(0,   0,   0,   0.22) 100%
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0)    30%,
+      rgba(0, 0, 0, 0)          65%,
+      rgba(0, 0, 0, 0.28)       100%
     ),
+    /* deep charcoal body — hi → lo */
     linear-gradient(
-      105deg,
-      #7B5CF6 0%,
-      #6A4FE8 35%,
-      #3D8FFF 72%,
-      #22D3EE 100%
+      180deg,
+      hsl(230 22% 18%) 0%,
+      hsl(230 22% 10%) 100%
     );
   box-shadow:
-    /* crisp top rim of light — raises the pill */
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    /* dark bottom rim — anchors it */
-    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
-    /* subtle inner glow matching brand */
-    inset 0 0 0 1px rgba(157, 134, 255, 0.30),
-    /* lift shadow */
-    0 8px 20px -8px rgba(0, 0, 0, 0.55),
-    0 2px 6px -1px rgba(0, 0, 0, 0.35),
-    /* purple halo — brand glow */
-    0 0 22px -4px rgba(123, 92, 246, 0.55),
-    /* cyan halo — depth of the gradient */
-    0 0 30px -8px rgba(61, 143, 255, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.08);
+    /* bright top rim — the key neumorphic "raised" cue */
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    /* dark underside — grounds the pill */
+    inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+    /* hairline border — definition at any zoom */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    /* ambient lift shadow */
+    0 10px 24px -10px rgba(0, 0, 0, 0.70),
+    0 2px 6px -1px rgba(0, 0, 0, 0.50),
+    /* subtle light reflection underneath */
+    0 1px 0 rgba(255, 255, 255, 0.05);
   transition:
     transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
-    box-shadow 280ms cubic-bezier(0.2, 0.7, 0.2, 1),
-    filter 280ms ease;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   letter-spacing: -0.005em;
 }
 .create-room-neu:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.015);
-  filter: brightness(1.08);
+  transform: translateY(-1px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
-    inset 0 0 0 1px rgba(157, 134, 255, 0.45),
-    0 14px 28px -8px rgba(0, 0, 0, 0.6),
-    0 2px 6px -1px rgba(0, 0, 0, 0.4),
-    0 0 32px -4px rgba(123, 92, 246, 0.72),
-    0 0 44px -8px rgba(34, 211, 238, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.10);
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+    0 14px 28px -10px rgba(0, 0, 0, 0.75),
+    0 3px 8px -1px rgba(0, 0, 0, 0.55),
+    0 0 28px -6px rgba(255, 255, 255, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.07);
 }
 .create-room-neu:active:not(:disabled) {
-  transform: translateY(0) scale(0.98);
-  filter: brightness(0.95);
+  transform: translateY(0);
   box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.5),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 0 1px rgba(157, 134, 255, 0.4),
-    0 0 22px -4px rgba(123, 92, 246, 0.6),
-    0 0 30px -8px rgba(34, 211, 238, 0.4);
+    inset 0 2px 6px rgba(0, 0, 0, 0.70),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.45);
 }
 .create-room-neu:focus-visible {
   outline: none;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
-    inset 0 0 0 1px rgba(157, 134, 255, 0.5),
-    0 0 0 3px rgba(123, 92, 246, 0.40),
-    0 14px 28px -8px rgba(0, 0, 0, 0.6),
-    0 0 32px -4px rgba(123, 92, 246, 0.65);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 0 3px rgba(255, 255, 255, 0.14),
+    0 10px 24px -10px rgba(0, 0, 0, 0.70);
 }
 /* ── Icon medallion inside the button ──────────────────────────────────── */
 .create-room-neu-icon {
@@ -7176,57 +7165,56 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  color: #fff;
-  /* Semi-translucent white orb that floats on the gradient body */
+  color: rgba(255, 255, 255, 0.90);
+  /* Slightly lighter dark orb — same language, one step brighter */
   background:
     radial-gradient(
-      circle at 35% 28%,
-      rgba(255, 255, 255, 0.55) 0%,
+      circle at 34% 28%,
+      rgba(255, 255, 255, 0.22) 0%,
       rgba(255, 255, 255, 0)    56%
     ),
-    rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+    linear-gradient(
+      180deg,
+      hsl(230 22% 26%) 0%,
+      hsl(230 22% 14%) 100%
+    );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.50),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
-    0 0 0 1px rgba(0, 0, 0, 0.30),
-    0 3px 10px rgba(0, 0, 0, 0.40),
-    0 0 16px rgba(157, 134, 255, 0.45);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 0 0 1px rgba(0, 0, 0, 0.50),
+    0 3px 8px rgba(0, 0, 0, 0.55),
+    0 0 12px rgba(255, 255, 255, 0.06);
   transition: box-shadow 240ms ease, transform 220ms ease;
 }
 .create-room-neu:hover:not(:disabled) .create-room-neu-icon {
-  transform: scale(1.06) rotate(-4deg);
+  transform: scale(1.06) rotate(-5deg);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.60),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.30),
-    0 0 0 1px rgba(0, 0, 0, 0.30),
-    0 4px 14px rgba(0, 0, 0, 0.45),
-    0 0 24px rgba(157, 134, 255, 0.70);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.50),
+    0 4px 12px rgba(0, 0, 0, 0.60),
+    0 0 18px rgba(255, 255, 255, 0.10);
 }
 .create-room-neu-label {
   display: inline-flex;
   align-items: center;
   font-size: 12.5px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.97);
+  color: rgba(255, 255, 255, 0.92);
   letter-spacing: 0.01em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 .create-room-neu .sparkle-icon {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.88);
   filter:
-    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.40))
-    drop-shadow(0 0 5px rgba(255, 255, 255, 0.70))
-    drop-shadow(0 0 10px rgba(157, 134, 255, 0.65));
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.30));
 }
 
 /* ── Mobile floating action button (FAB) ───────────────────────────────────
-   Always visible on mobile (<640px) regardless of filter-strip state.
-   Fixed at bottom-right so it's reachable with one thumb. Uses the same
-   premium logo gradient so it's unmistakably the primary creation action.
+   Fixed bottom-right pill. Same dark premium language as the header button.
    ──────────────────────────────────────────────────────────────────────── */
 .create-room-fab {
   display: none;
@@ -7244,51 +7232,46 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     border-radius: 999px;
     height: 52px;
     padding: 0 20px 0 6px;
-    color: #fff;
+    color: rgba(255, 255, 255, 0.92);
     cursor: pointer;
     font-family: "Space Grotesk", system-ui, sans-serif;
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.01em;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.50);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.60);
     text-decoration: none;
     background:
       linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.16) 0%,
-        rgba(255, 255, 255, 0)    36%,
-        rgba(0,   0,   0,   0)    66%,
-        rgba(0,   0,   0,   0.20) 100%
+        rgba(255, 255, 255, 0.10) 0%,
+        rgba(255, 255, 255, 0)    30%,
+        rgba(0, 0, 0, 0)          65%,
+        rgba(0, 0, 0, 0.30)       100%
       ),
       linear-gradient(
-        105deg,
-        #7B5CF6 0%,
-        #6A4FE8 35%,
-        #3D8FFF 72%,
-        #22D3EE 100%
+        180deg,
+        hsl(230 22% 20%) 0%,
+        hsl(230 22% 10%) 100%
       );
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.24),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.38),
-      inset 0 0 0 1px rgba(157, 134, 255, 0.32),
-      0 8px 28px -6px rgba(0, 0, 0, 0.65),
-      0 2px 8px rgba(0, 0, 0, 0.40),
-      0 0 32px -4px rgba(123, 92, 246, 0.65),
-      0 0 44px -10px rgba(34, 211, 238, 0.50);
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+      0 12px 32px -8px rgba(0, 0, 0, 0.80),
+      0 4px 10px rgba(0, 0, 0, 0.55),
+      0 1px 0 rgba(255, 255, 255, 0.05);
     transition:
       transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      box-shadow 280ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      filter 280ms ease;
+      box-shadow 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
   }
   .create-room-fab:active {
     transform: scale(0.96);
-    filter: brightness(0.92);
     box-shadow:
-      inset 0 2px 6px rgba(0, 0, 0, 0.55),
-      inset 0 0 0 1px rgba(157, 134, 255, 0.45),
-      0 0 24px -4px rgba(123, 92, 246, 0.65);
+      inset 0 2px 6px rgba(0, 0, 0, 0.70),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 2px 6px rgba(0, 0, 0, 0.50);
   }
   .create-room-fab-orb {
     width: 40px;
@@ -7299,18 +7282,15 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     justify-content: center;
     flex-shrink: 0;
     background:
-      radial-gradient(circle at 35% 28%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 56%),
-      rgba(255, 255, 255, 0.20);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+      radial-gradient(circle at 34% 28%, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 56%),
+      linear-gradient(180deg, hsl(230 22% 28%) 0%, hsl(230 22% 16%) 100%);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.22),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.22),
-      0 0 0 1px rgba(0, 0, 0, 0.28),
-      0 2px 8px rgba(0, 0, 0, 0.38),
-      0 0 18px rgba(157, 134, 255, 0.55);
-    color: #fff;
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+      0 0 0 1px rgba(0, 0, 0, 0.50),
+      0 2px 8px rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.88);
     transition: transform 220ms ease;
   }
   .create-room-fab:active .create-room-fab-orb {
