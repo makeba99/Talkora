@@ -10148,52 +10148,121 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
               {/* Text block */}
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <h2
-                    className="font-extrabold text-[14px] truncate"
+                {/* Platform branding — mirrors the lobby header lockup */}
+                <div className="flex flex-col leading-none mb-[3px]">
+                  <span
                     style={{
-                      color: "rgba(255,255,255,0.95)",
-                      letterSpacing: "-0.025em",
-                      lineHeight: 1.2,
-                      textShadow: "0 1px 8px rgba(140,100,255,0.25), 0 0 24px rgba(100,60,220,0.15)",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                      color: "rgba(255,255,255,0.92)",
+                      fontSize: room.title ? "11px" : "15px",
+                      lineHeight: 1,
                     }}
-                    data-testid="text-voice-room-title"
                   >
-                    {room.title}
-                  </h2>
-                  {isHost && (
-                    <span
-                      className="flex-shrink-0 text-[8px] font-black px-[7px] py-[3px] rounded-[6px] tracking-[0.12em] uppercase"
-                      style={{
-                        background: "linear-gradient(135deg, hsl(var(--neu-orange) / 0.28) 0%, hsl(var(--neu-orange) / 0.16) 100%)",
-                        color: "hsl(var(--neu-orange-hi) / 1)",
-                        border: "1px solid hsl(var(--neu-orange) / 0.50)",
-                        boxShadow: [
-                          "0 0 10px hsl(var(--neu-orange) / 0.30)",
-                          "0 0 20px hsl(var(--neu-orange) / 0.14)",
-                          "inset 0 1px 0 rgba(255,240,200,0.22)",
-                          "inset 0 -1px 0 rgba(0,0,0,0.35)",
-                        ].join(", "),
-                      }}
-                    >
-                      HOST
-                    </span>
-                  )}
-                  {talkBadge && (() => {
-                    const TalkIcon = talkBadge.icon;
-                    const toneClass = talkBadge.tone ? ` talk-mode-badge--${talkBadge.tone}` : "";
-                    return (
-                      <span
-                        className={`talk-mode-badge${toneClass}`}
-                        title={talkLockReason || talkBadge.label}
-                        data-testid="badge-talk-mode"
-                      >
-                        <TalkIcon className="w-[9px] h-[9px]" />
-                        {talkBadge.label}
-                      </span>
-                    );
-                  })()}
+                    Vextorn
+                  </span>
+                  <span
+                    className="bg-gradient-to-r from-[#9D86FF] via-[#7B5CF6] to-[#3D8FFF] bg-clip-text text-transparent uppercase"
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "7.5px",
+                      letterSpacing: "0.16em",
+                      marginTop: "3px",
+                      lineHeight: 1,
+                    }}
+                  >
+                    Talk · Share · Belong
+                  </span>
                 </div>
+
+                {/* Room title + badges */}
+                {room.title && (
+                  <div className="flex items-center gap-1.5 min-w-0 mt-[4px]">
+                    <h2
+                      className="font-extrabold text-[14px] truncate"
+                      style={{
+                        color: "rgba(255,255,255,0.95)",
+                        letterSpacing: "-0.025em",
+                        lineHeight: 1.2,
+                        textShadow: "0 1px 8px rgba(140,100,255,0.25), 0 0 24px rgba(100,60,220,0.15)",
+                      }}
+                      data-testid="text-voice-room-title"
+                    >
+                      {room.title}
+                    </h2>
+                    {isHost && (
+                      <span
+                        className="flex-shrink-0 text-[8px] font-black px-[7px] py-[3px] rounded-[6px] tracking-[0.12em] uppercase"
+                        style={{
+                          background: "linear-gradient(135deg, hsl(var(--neu-orange) / 0.28) 0%, hsl(var(--neu-orange) / 0.16) 100%)",
+                          color: "hsl(var(--neu-orange-hi) / 1)",
+                          border: "1px solid hsl(var(--neu-orange) / 0.50)",
+                          boxShadow: [
+                            "0 0 10px hsl(var(--neu-orange) / 0.30)",
+                            "0 0 20px hsl(var(--neu-orange) / 0.14)",
+                            "inset 0 1px 0 rgba(255,240,200,0.22)",
+                            "inset 0 -1px 0 rgba(0,0,0,0.35)",
+                          ].join(", "),
+                        }}
+                      >
+                        HOST
+                      </span>
+                    )}
+                    {talkBadge && (() => {
+                      const TalkIcon = talkBadge.icon;
+                      const toneClass = talkBadge.tone ? ` talk-mode-badge--${talkBadge.tone}` : "";
+                      return (
+                        <span
+                          className={`talk-mode-badge${toneClass}`}
+                          title={talkLockReason || talkBadge.label}
+                          data-testid="badge-talk-mode"
+                        >
+                          <TalkIcon className="w-[9px] h-[9px]" />
+                          {talkBadge.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Badges row when no room title */}
+                {!room.title && (isHost || talkBadge) && (
+                  <div className="flex items-center gap-1.5 mt-[3px]">
+                    {isHost && (
+                      <span
+                        className="flex-shrink-0 text-[8px] font-black px-[7px] py-[3px] rounded-[6px] tracking-[0.12em] uppercase"
+                        style={{
+                          background: "linear-gradient(135deg, hsl(var(--neu-orange) / 0.28) 0%, hsl(var(--neu-orange) / 0.16) 100%)",
+                          color: "hsl(var(--neu-orange-hi) / 1)",
+                          border: "1px solid hsl(var(--neu-orange) / 0.50)",
+                          boxShadow: [
+                            "0 0 10px hsl(var(--neu-orange) / 0.30)",
+                            "0 0 20px hsl(var(--neu-orange) / 0.14)",
+                            "inset 0 1px 0 rgba(255,240,200,0.22)",
+                            "inset 0 -1px 0 rgba(0,0,0,0.35)",
+                          ].join(", "),
+                        }}
+                      >
+                        HOST
+                      </span>
+                    )}
+                    {talkBadge && (() => {
+                      const TalkIcon = talkBadge.icon;
+                      const toneClass = talkBadge.tone ? ` talk-mode-badge--${talkBadge.tone}` : "";
+                      return (
+                        <span
+                          className={`talk-mode-badge${toneClass}`}
+                          title={talkLockReason || talkBadge.label}
+                          data-testid="badge-talk-mode"
+                        >
+                          <TalkIcon className="w-[9px] h-[9px]" />
+                          {talkBadge.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
 
                 {/* Metadata row */}
                 <div className="flex items-center gap-[5px] mt-[3px]">
