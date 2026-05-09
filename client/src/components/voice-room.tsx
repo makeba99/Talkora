@@ -6744,7 +6744,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const handleEditRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editTitle.trim()) return;
 
     // Card background editing has moved to the lobby room card. In-room
     // settings only manage live theme/animations and host control permissions.
@@ -9901,7 +9900,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             <Button
               type="submit"
               className="w-full"
-              disabled={!editTitle.trim() || updateRoomMutation.isPending}
+              disabled={updateRoomMutation.isPending}
               data-testid="button-submit-edit-room"
             >
               {updateRoomMutation.isPending ? "Saving..." : "Save Changes"}
@@ -10147,82 +10146,84 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </div>
 
               {/* Text block */}
-              <div className="min-w-0">
-                {/* Platform branding — mirrors the lobby header lockup */}
-                <div className="flex flex-col leading-none">
-                  {/* Brand name — always prominent */}
-                  <span
+              <div className="min-w-0 flex flex-col gap-[2px]">
+
+                {/* Brand name — gradient, always dominant */}
+                <span
+                  style={{
+                    fontWeight: 900,
+                    letterSpacing: "-0.04em",
+                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontSize: "22px",
+                    lineHeight: 1,
+                    background: "linear-gradient(110deg, #fff 0%, rgba(220,210,255,0.96) 40%, rgba(160,130,255,0.88) 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    filter: "drop-shadow(0 0 12px rgba(160,130,255,0.35))",
+                  }}
+                >
+                  Vextorn
+                </span>
+
+                {/* Room title — styled like a premium subtitle */}
+                {room.title && (
+                  <h2
+                    className="truncate"
                     style={{
-                      fontWeight: 800,
-                      letterSpacing: "-0.03em",
-                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                      color: "rgba(255,255,255,0.96)",
-                      fontSize: "20px",
+                      fontWeight: 600,
+                      fontSize: "12px",
+                      letterSpacing: "0.005em",
                       lineHeight: 1,
+                      marginTop: "3px",
+                      color: "transparent",
+                      background: "linear-gradient(90deg, rgba(255,200,100,0.95) 0%, rgba(255,160,80,0.80) 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      maxWidth: "240px",
                     }}
+                    data-testid="text-voice-room-title"
                   >
-                    Vextorn
-                  </span>
-
-                  {/* Room title — sits just below the brand name */}
-                  {room.title && (
-                    <h2
-                      className="truncate"
-                      style={{
-                        fontWeight: 500,
-                        fontSize: "11px",
-                        letterSpacing: "0.01em",
-                        lineHeight: 1,
-                        marginTop: "5px",
-                        color: "transparent",
-                        background: "linear-gradient(90deg, rgba(180,155,255,0.90) 0%, rgba(130,180,255,0.75) 100%)",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                        backgroundClip: "text",
-                        maxWidth: "220px",
-                      }}
-                      data-testid="text-voice-room-title"
-                    >
-                      {room.title}
-                    </h2>
-                  )}
-
-                  {/* Talk-mode badge */}
-                  {talkBadge && (() => {
-                    const TalkIcon = talkBadge.icon;
-                    const toneClass = talkBadge.tone ? ` talk-mode-badge--${talkBadge.tone}` : "";
-                    return (
-                      <span
-                        className={`talk-mode-badge${toneClass}`}
-                        style={{ marginTop: "5px", alignSelf: "flex-start" }}
-                        title={talkLockReason || talkBadge.label}
-                        data-testid="badge-talk-mode"
-                      >
-                        <TalkIcon className="w-[9px] h-[9px]" />
-                        {talkBadge.label}
-                      </span>
-                    );
-                  })()}
-                </div>
+                    {room.title}
+                  </h2>
+                )}
 
                 {/* Metadata row */}
-                <div className="flex items-center gap-[5px] mt-[3px]">
+                <div className="flex items-center gap-[5px] mt-[4px]">
                   <span
                     className="text-[10px] font-semibold tracking-wide"
-                    style={{ color: "rgba(180,160,255,0.75)" }}
+                    style={{ color: "rgba(200,185,255,0.70)" }}
                   >
                     {room.language}
                   </span>
-                  <span style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.15)", flexShrink: 0, display: "inline-block" }} />
-                  <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.35)" }}>{room.level}</span>
-                  <span style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.15)", flexShrink: 0, display: "inline-block" }} />
+                  <span style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(255,255,255,0.18)", flexShrink: 0, display: "inline-block" }} />
+                  <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.30)" }}>{room.level}</span>
+                  <span style={{ width: 2, height: 2, borderRadius: "50%", background: "rgba(255,255,255,0.18)", flexShrink: 0, display: "inline-block" }} />
                   <span
                     className="text-[10px] font-semibold tabular-nums"
-                    style={{ color: "rgba(100,220,160,0.70)" }}
+                    style={{ color: "rgba(90,220,150,0.75)" }}
                   >
-                    {participants.length}<span style={{ color: "rgba(255,255,255,0.22)" }}>/{room.maxUsers === 0 ? "∞" : room.maxUsers}</span>
+                    {participants.length}<span style={{ color: "rgba(255,255,255,0.20)" }}>/{room.maxUsers === 0 ? "∞" : room.maxUsers}</span>
                   </span>
                 </div>
+
+                {/* Talk-mode badge */}
+                {talkBadge && (() => {
+                  const TalkIcon = talkBadge.icon;
+                  const toneClass = talkBadge.tone ? ` talk-mode-badge--${talkBadge.tone}` : "";
+                  return (
+                    <span
+                      className={`talk-mode-badge${toneClass}`}
+                      style={{ marginTop: "3px", alignSelf: "flex-start" }}
+                      title={talkLockReason || talkBadge.label}
+                      data-testid="badge-talk-mode"
+                    >
+                      <TalkIcon className="w-[9px] h-[9px]" />
+                      {talkBadge.label}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
 

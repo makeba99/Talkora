@@ -603,28 +603,30 @@ export function renderMessageContent(text: string, onImageClick?: (url: string) 
     const cleanText = text.replace(ytMatch[0], "").trim();
     return (
       <div
-        className="flex flex-col gap-2 w-full"
+        style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}
         data-testid="message-youtube-embed"
         onClick={e => e.stopPropagation()}
       >
-          {cleanText && <span className="leading-snug break-words [overflow-wrap:anywhere]">{renderTextWithMentions(cleanText, onImageClick)}</span>}
+        {cleanText && (
+          <span className="leading-snug break-words [overflow-wrap:anywhere]">
+            {renderTextWithMentions(cleanText, onImageClick)}
+          </span>
+        )}
         <div
-          className="relative w-full rounded-lg overflow-hidden bg-black cursor-pointer group"
-          style={{ aspectRatio: "16/9" }}
+          style={{ position: "relative", width: "100%", display: "block", borderRadius: 10, overflow: "hidden", background: "#000", cursor: "pointer" }}
           onClick={() => onVideoClick?.(videoId)}
           data-testid="youtube-thumbnail-click"
         >
           <img
             src={thumbnailUrl}
             alt="YouTube video"
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
+            style={{ display: "block", width: "100%", aspectRatio: "16/9", objectFit: "cover" }}
           />
           <div
-            className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors"
+            style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.28)" }}
           >
-            <div className="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-              <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white ml-1" xmlns="http://www.w3.org/2000/svg">
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#dc2626", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
+              <svg viewBox="0 0 24 24" style={{ width: 26, height: 26, fill: "white", marginLeft: 3 }} xmlns="http://www.w3.org/2000/svg">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </div>
