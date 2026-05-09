@@ -7083,6 +7083,11 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
    than dominating it. The icon medallion is the only piece that carries
    the brand violet so the eye is drawn to ONE point of focus.
    ============================================================================ */
+/* ── Create Room button — premium logo-gradient style ──────────────────────
+   Mirrors the Vextorn mark palette: purple #9D86FF → #7B5CF6 left wing,
+   blue/cyan #3D8FFF → #22D3EE right wing. The button body uses the same
+   purple-to-cyan sweep so it reads as a first-class extension of the brand.
+   ──────────────────────────────────────────────────────────────────────── */
 .create-room-neu {
   position: relative;
   isolation: isolate;
@@ -7091,69 +7096,78 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   border: 0;
   border-radius: 999px;
   color: #fff;
+  /* Glossy top sheen over the logo-gradient body */
   background:
-    /* a faint sheen running across the top quarter, then a clean dark */
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.05) 0%,
-      rgba(255, 255, 255, 0) 28%,
-      rgba(0, 0, 0, 0) 70%,
-      rgba(0, 0, 0, 0.18) 100%
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0)    32%,
+      rgba(0,   0,   0,   0)    68%,
+      rgba(0,   0,   0,   0.22) 100%
     ),
     linear-gradient(
-      180deg,
-      hsl(var(--neu-bg-hi, 232 35% 18%)) 0%,
-      hsl(var(--neu-bg-lo, 232 35% 9%)) 100%
+      105deg,
+      #7B5CF6 0%,
+      #6A4FE8 35%,
+      #3D8FFF 72%,
+      #22D3EE 100%
     );
   box-shadow:
-    /* crisp inner rim of light at the top — sells the raised feel */
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    /* dark inner rim at the bottom — anchors the pill */
-    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
-    /* faint hairline border that catches the eye at any zoom */
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    /* deep ambient drop so the pill floats over the search row */
-    0 10px 22px -10px rgba(0, 0, 0, 0.62),
-    0 2px 6px -1px rgba(0, 0, 0, 0.45),
-    /* hairline of light underneath — final neumorphic touch */
-    0 1px 0 rgba(255, 255, 255, 0.06);
+    /* crisp top rim of light — raises the pill */
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    /* dark bottom rim — anchors it */
+    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
+    /* subtle inner glow matching brand */
+    inset 0 0 0 1px rgba(157, 134, 255, 0.30),
+    /* lift shadow */
+    0 8px 20px -8px rgba(0, 0, 0, 0.55),
+    0 2px 6px -1px rgba(0, 0, 0, 0.35),
+    /* purple halo — brand glow */
+    0 0 22px -4px rgba(123, 92, 246, 0.55),
+    /* cyan halo — depth of the gradient */
+    0 0 30px -8px rgba(61, 143, 255, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.08);
   transition:
     transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
     box-shadow 280ms cubic-bezier(0.2, 0.7, 0.2, 1),
-    color 200ms ease;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+    filter 280ms ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   letter-spacing: -0.005em;
 }
 .create-room-neu:hover:not(:disabled) {
-  transform: translateY(-1px);
-  color: #fff;
+  transform: translateY(-2px) scale(1.015);
+  filter: brightness(1.08);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
-    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.32),
-    0 14px 26px -10px rgba(0, 0, 0, 0.65),
-    0 2px 6px -1px rgba(0, 0, 0, 0.5),
-    0 0 24px -2px hsl(var(--neu-orange, 252 90% 70%) / 0.38),
-    0 1px 0 rgba(255, 255, 255, 0.07);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
+    inset 0 0 0 1px rgba(157, 134, 255, 0.45),
+    0 14px 28px -8px rgba(0, 0, 0, 0.6),
+    0 2px 6px -1px rgba(0, 0, 0, 0.4),
+    0 0 32px -4px rgba(123, 92, 246, 0.72),
+    0 0 44px -8px rgba(34, 211, 238, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.10);
 }
 .create-room-neu:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
+  filter: brightness(0.95);
   box-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.6),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.32),
-    0 0 18px -4px hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+    inset 0 2px 6px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(157, 134, 255, 0.4),
+    0 0 22px -4px rgba(123, 92, 246, 0.6),
+    0 0 30px -8px rgba(34, 211, 238, 0.4);
 }
 .create-room-neu:focus-visible {
   outline: none;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
-    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.4),
-    0 0 0 3px hsl(var(--neu-orange, 252 90% 70%) / 0.28),
-    0 14px 26px -10px rgba(0, 0, 0, 0.65),
-    0 0 22px -2px hsl(var(--neu-orange, 252 90% 70%) / 0.4);
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.40),
+    inset 0 0 0 1px rgba(157, 134, 255, 0.5),
+    0 0 0 3px rgba(123, 92, 246, 0.40),
+    0 14px 28px -8px rgba(0, 0, 0, 0.6),
+    0 0 32px -4px rgba(123, 92, 246, 0.65);
 }
+/* ── Icon medallion inside the button ──────────────────────────────────── */
 .create-room-neu-icon {
   flex-shrink: 0;
   width: 32px;
@@ -7163,55 +7177,145 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   justify-content: center;
   border-radius: 999px;
   color: #fff;
+  /* Semi-translucent white orb that floats on the gradient body */
   background:
-    /* glossy specular highlight in the upper-left of the medallion */
     radial-gradient(
-      circle at 32% 28%,
-      rgba(255, 255, 255, 0.45) 0%,
-      rgba(255, 255, 255, 0) 55%
+      circle at 35% 28%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0)    56%
     ),
-    linear-gradient(
-      180deg,
-      hsl(var(--neu-orange-hi, 252 92% 72%)) 0%,
-      hsl(var(--neu-orange-lo, 258 84% 54%)) 100%
-    );
+    rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow:
-    /* soft top sheen + crisp dark base inside the medallion */
-    inset 0 1px 0 rgba(255, 255, 255, 0.40),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.6),
-    /* outer dark ring carving it into the pill — the "socket" effect */
-    0 0 0 1px rgba(0, 0, 0, 0.45),
-    /* drop shadow lifting it forward */
-    0 4px 10px rgba(0, 0, 0, 0.55),
-    /* halo of brand colour around it — the only candy in the button */
-    0 0 14px hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+    inset 0 1px 0 rgba(255, 255, 255, 0.50),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.30),
+    0 3px 10px rgba(0, 0, 0, 0.40),
+    0 0 16px rgba(157, 134, 255, 0.45);
   transition: box-shadow 240ms ease, transform 220ms ease;
 }
 .create-room-neu:hover:not(:disabled) .create-room-neu-icon {
-  transform: scale(1.04);
+  transform: scale(1.06) rotate(-4deg);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    inset 0 0 0 1px hsl(var(--neu-orange, 252 90% 70%) / 0.75),
-    0 0 0 1px rgba(0, 0, 0, 0.45),
-    0 5px 14px rgba(0, 0, 0, 0.55),
-    0 0 22px hsl(var(--neu-orange, 252 90% 70%) / 0.78);
+    inset 0 1px 0 rgba(255, 255, 255, 0.60),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.30),
+    0 0 0 1px rgba(0, 0, 0, 0.30),
+    0 4px 14px rgba(0, 0, 0, 0.45),
+    0 0 24px rgba(157, 134, 255, 0.70);
 }
 .create-room-neu-label {
   display: inline-flex;
   align-items: center;
   font-size: 12.5px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.96);
-  letter-spacing: 0.005em;
+  color: rgba(255, 255, 255, 0.97);
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 .create-room-neu .sparkle-icon {
   color: #fff;
   filter:
-    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45))
-    drop-shadow(0 0 6px rgba(255, 255, 255, 0.55))
-    drop-shadow(0 0 10px hsl(var(--neu-orange, 252 90% 70%) / 0.55));
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.40))
+    drop-shadow(0 0 5px rgba(255, 255, 255, 0.70))
+    drop-shadow(0 0 10px rgba(157, 134, 255, 0.65));
+}
+
+/* ── Mobile floating action button (FAB) ───────────────────────────────────
+   Always visible on mobile (<640px) regardless of filter-strip state.
+   Fixed at bottom-right so it's reachable with one thumb. Uses the same
+   premium logo gradient so it's unmistakably the primary creation action.
+   ──────────────────────────────────────────────────────────────────────── */
+.create-room-fab {
+  display: none;
+}
+@media (max-width: 639px) {
+  .create-room-fab {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    position: fixed;
+    bottom: 24px;
+    right: 18px;
+    z-index: 200;
+    border: 0;
+    border-radius: 999px;
+    height: 52px;
+    padding: 0 20px 0 6px;
+    color: #fff;
+    cursor: pointer;
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.50);
+    text-decoration: none;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(255, 255, 255, 0)    36%,
+        rgba(0,   0,   0,   0)    66%,
+        rgba(0,   0,   0,   0.20) 100%
+      ),
+      linear-gradient(
+        105deg,
+        #7B5CF6 0%,
+        #6A4FE8 35%,
+        #3D8FFF 72%,
+        #22D3EE 100%
+      );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.24),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.38),
+      inset 0 0 0 1px rgba(157, 134, 255, 0.32),
+      0 8px 28px -6px rgba(0, 0, 0, 0.65),
+      0 2px 8px rgba(0, 0, 0, 0.40),
+      0 0 32px -4px rgba(123, 92, 246, 0.65),
+      0 0 44px -10px rgba(34, 211, 238, 0.50);
+    transition:
+      transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      box-shadow 280ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      filter 280ms ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .create-room-fab:active {
+    transform: scale(0.96);
+    filter: brightness(0.92);
+    box-shadow:
+      inset 0 2px 6px rgba(0, 0, 0, 0.55),
+      inset 0 0 0 1px rgba(157, 134, 255, 0.45),
+      0 0 24px -4px rgba(123, 92, 246, 0.65);
+  }
+  .create-room-fab-orb {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background:
+      radial-gradient(circle at 35% 28%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 56%),
+      rgba(255, 255, 255, 0.20);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 0 0 1px rgba(0, 0, 0, 0.28),
+      0 2px 8px rgba(0, 0, 0, 0.38),
+      0 0 18px rgba(157, 134, 255, 0.55);
+    color: #fff;
+    transition: transform 220ms ease;
+  }
+  .create-room-fab:active .create-room-fab-orb {
+    transform: scale(0.94) rotate(-6deg);
+  }
 }
 
 /* ============================================================================
@@ -7419,7 +7523,7 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     0 -1px 0 rgba(0, 0, 0, 0.3) inset,
     0 6px 18px rgba(0, 0, 0, 0.35);
   min-width: 0;
-  flex: 0 0 auto;
+  flex: 1 1 0;
   overflow-x: auto;
   /* Hide scrollbar visually while keeping it functional */
   scrollbar-width: none;

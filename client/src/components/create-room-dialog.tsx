@@ -21,9 +21,10 @@ interface CreateRoomDialogProps {
     hologramVideoUrl?: string | null;
   }) => void;
   isPending?: boolean;
+  mobileFab?: boolean;
 }
 
-export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogProps) {
+export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateRoomDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -97,17 +98,31 @@ export function CreateRoomDialog({ onCreateRoom, isPending }: CreateRoomDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          data-testid="button-create-room"
-          className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full"
-          aria-label="Create Room"
-          title="Create Room"
-        >
-          <span className="create-room-neu-icon">
-            <Hammer className="sparkle-icon w-[14px] h-[14px]" />
-          </span>
-          <span className="create-room-neu-label">Create Room</span>
-        </Button>
+        {mobileFab ? (
+          <button
+            type="button"
+            data-testid="button-create-room-fab"
+            className="create-room-fab"
+            aria-label="Create Room"
+          >
+            <span className="create-room-fab-orb">
+              <Hammer className="w-[18px] h-[18px]" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.7))" }} />
+            </span>
+            <span>Create Room</span>
+          </button>
+        ) : (
+          <Button
+            data-testid="button-create-room"
+            className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full"
+            aria-label="Create Room"
+            title="Create Room"
+          >
+            <span className="create-room-neu-icon">
+              <Hammer className="sparkle-icon w-[14px] h-[14px]" />
+            </span>
+            <span className="create-room-neu-label">Create Room</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>

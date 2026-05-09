@@ -2040,29 +2040,6 @@ export default function Lobby() {
               )}
             </div>
 
-            {/* Create Room — mobile only (<640px): compact icon button at far right of filter strip */}
-            <div className="sm:hidden ml-auto flex-shrink-0" data-testid="container-create-room-mobile">
-              {user ? (
-                <Suspense fallback={<Skeleton className="h-[34px] w-[34px] rounded-full" />}>
-                  <CreateRoomDialog
-                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
-                    isPending={createRoomMutation.isPending}
-                  />
-                </Suspense>
-              ) : (
-                <a
-                  href="/api/login"
-                  className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full inline-flex items-center"
-                  aria-label="Sign in to create a room"
-                  data-testid="button-create-room-guest-mobile"
-                >
-                  <span className="create-room-neu-icon">
-                    <Hammer className="sparkle-icon w-[14px] h-[14px]" />
-                  </span>
-                  <span className="create-room-neu-label">Create Room</span>
-                </a>
-              )}
-            </div>
           </div>
 
           {activeDiscovery === "rooms" && showLanguageFilters && (
@@ -2495,6 +2472,35 @@ export default function Lobby() {
           )}
         </div>
       )}
+
+      {/* ── Mobile Create Room FAB ──────────────────────────────────────────
+          Fixed bottom-right pill, only visible on phones (<640px).
+          Uses the premium logo gradient so it's unmistakably the primary
+          creation action regardless of filter-strip overflow state.
+          ─────────────────────────────────────────────────────────────────── */}
+      <div className="sm:hidden">
+        {user ? (
+          <Suspense fallback={null}>
+            <CreateRoomDialog
+              onCreateRoom={(data) => createRoomMutation.mutate(data)}
+              isPending={createRoomMutation.isPending}
+              mobileFab
+            />
+          </Suspense>
+        ) : (
+          <a
+            href="/api/login"
+            className="create-room-fab"
+            aria-label="Sign in to create a room"
+            data-testid="button-create-room-fab-guest"
+          >
+            <span className="create-room-fab-orb">
+              <Hammer className="w-[18px] h-[18px]" style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.7))" }} />
+            </span>
+            <span>Create Room</span>
+          </a>
+        )}
+      </div>
     </div>
   );
 }
