@@ -1966,7 +1966,7 @@ export default function Lobby() {
               ) : (
                 <a
                   href="/api/login"
-                  className="hammer-btn"
+                  className="hammer-btn cr-shimmer"
                   aria-label="Sign in to create a room"
                   data-testid="button-create-room-guest"
                   style={{
@@ -1980,8 +1980,8 @@ export default function Lobby() {
                     flexShrink: 0,
                     whiteSpace: "nowrap",
                     cursor: "pointer",
-                    background: "linear-gradient(175deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 22%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.38) 100%), linear-gradient(180deg, hsl(230, 18%, 9%) 0%, hsl(230, 18%, 3%) 100%)",
-                    boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.32), inset 1px 0 0 rgba(255,255,255,0.06), inset -1px 0 0 rgba(255,255,255,0.04), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.09), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.85)",
+                    background: "linear-gradient(175deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 22%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.40) 100%), linear-gradient(180deg, hsl(255, 40%, 12%) 0%, hsl(255, 35%, 5%) 100%)",
+                    boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.28), inset 1px 0 0 rgba(255,255,255,0.05), inset -1px 0 0 rgba(255,255,255,0.03), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(140,100,255,0.18), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.80), 0 0 18px -4px rgba(120,80,255,0.20)",
                     color: "rgba(255,255,255,0.95)",
                   }}
                 >
@@ -1993,8 +1993,8 @@ export default function Lobby() {
                     alignItems: "center",
                     justifyContent: "center",
                     borderRadius: "999px",
-                    background: "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 52%), linear-gradient(180deg, hsl(230, 18%, 22%) 0%, hsl(230, 18%, 11%) 100%)",
-                    boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.38), inset 0 -1px 0 rgba(0,0,0,0.72), 0 0 0 1px rgba(0,0,0,0.65), 0 3px 8px rgba(0,0,0,0.70)",
+                    background: "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 52%), linear-gradient(180deg, hsl(255, 40%, 24%) 0%, hsl(255, 35%, 12%) 100%)",
+                    boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.72), 0 0 0 1px rgba(0,0,0,0.65), 0 3px 8px rgba(0,0,0,0.70), 0 0 10px rgba(120,80,255,0.25)",
                     color: "rgba(255,255,255,0.92)",
                   }}>
                     <Hammer className="sparkle-icon w-[14px] h-[14px]" />

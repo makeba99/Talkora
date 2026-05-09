@@ -114,7 +114,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateR
           <button
             type="button"
             data-testid="button-create-room"
-            className="hammer-btn"
+            className="hammer-btn cr-shimmer"
             aria-label="Create Room"
             title="Create Room"
             style={{
@@ -127,8 +127,8 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateR
               borderRadius: "999px",
               cursor: "pointer",
               fontFamily: "inherit",
-              background: "linear-gradient(175deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 22%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.38) 100%), linear-gradient(180deg, hsl(230 18% 9%) 0%, hsl(230 18% 3%) 100%)",
-              boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.32), inset 1px 0 0 rgba(255,255,255,0.06), inset -1px 0 0 rgba(255,255,255,0.04), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.09), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.85), 0 20px 40px -14px rgba(0,0,0,0.60)",
+              background: "linear-gradient(175deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 22%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.40) 100%), linear-gradient(180deg, hsl(255 40% 12%) 0%, hsl(255 35% 5%) 100%)",
+              boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.28), inset 1px 0 0 rgba(255,255,255,0.05), inset -1px 0 0 rgba(255,255,255,0.03), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(140,100,255,0.18), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.80), 0 0 18px -4px rgba(120,80,255,0.20)",
               color: "rgba(255,255,255,0.95)",
               textShadow: "0 1px 3px rgba(0,0,0,0.85)",
               transition: "transform 200ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 260ms cubic-bezier(0.2,0.8,0.2,1)",
@@ -137,11 +137,11 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateR
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = "inset 0 1.5px 0 rgba(255,255,255,0.40), inset 1px 0 0 rgba(255,255,255,0.08), inset -1px 0 0 rgba(255,255,255,0.05), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.12), 0 3px 8px rgba(0,0,0,0.70), 0 14px 32px -6px rgba(0,0,0,0.90), 0 0 20px -4px rgba(255,255,255,0.10)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "inset 0 1.5px 0 rgba(255,255,255,0.35), inset 1px 0 0 rgba(255,255,255,0.07), inset -1px 0 0 rgba(255,255,255,0.04), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(160,120,255,0.30), 0 3px 8px rgba(0,0,0,0.70), 0 14px 32px -6px rgba(0,0,0,0.85), 0 0 28px -4px rgba(140,100,255,0.35)";
             }}
             onMouseLeave={e => {
               (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = "inset 0 1.5px 0 rgba(255,255,255,0.32), inset 1px 0 0 rgba(255,255,255,0.06), inset -1px 0 0 rgba(255,255,255,0.04), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.09), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.85), 0 20px 40px -14px rgba(0,0,0,0.60)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "inset 0 1.5px 0 rgba(255,255,255,0.28), inset 1px 0 0 rgba(255,255,255,0.05), inset -1px 0 0 rgba(255,255,255,0.03), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(140,100,255,0.18), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.80), 0 0 18px -4px rgba(120,80,255,0.20)";
             }}
             onMouseDown={e => {
               (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0) scale(0.985)";
@@ -158,8 +158,8 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateR
               alignItems: "center",
               justifyContent: "center",
               borderRadius: "999px",
-              background: "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 52%), linear-gradient(180deg, hsl(230 18% 22%) 0%, hsl(230 18% 11%) 100%)",
-              boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.38), inset 0 -1px 0 rgba(0,0,0,0.72), inset 0 0 0 1px rgba(255,255,255,0.10), 0 0 0 1px rgba(0,0,0,0.65), 0 3px 8px rgba(0,0,0,0.70)",
+              background: "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 52%), linear-gradient(180deg, hsl(255 40% 24%) 0%, hsl(255 35% 12%) 100%)",
+              boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.72), inset 0 0 0 1px rgba(255,255,255,0.09), 0 0 0 1px rgba(0,0,0,0.65), 0 3px 8px rgba(0,0,0,0.70), 0 0 10px rgba(120,80,255,0.25)",
               color: "rgba(255,255,255,0.92)",
             }}>
               <Hammer className="sparkle-icon w-[14px] h-[14px]" />

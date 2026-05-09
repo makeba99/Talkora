@@ -7083,9 +7083,44 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
    than dominating it. The icon medallion is the only piece that carries
    the brand violet so the eye is drawn to ONE point of focus.
    ============================================================================ */
-/* ── Create Room button — polished obsidian style ───────────────────────────
-   Jet-black body with a mirror-like convex chrome sheen, deep drop shadow,
-   and a raised inner chrome lip — matches the dark polished Vextorn icon.
+/* ── Shimmer sweep — liquid-metal hover shine ────────────────────────────────
+   A diagonal highlight sweeps left-to-right on hover via a ::after layer.
+   Works on any element with overflow:hidden + position:relative.
+   ──────────────────────────────────────────────────────────────────────── */
+@keyframes cr-shimmer-sweep {
+  0%   { transform: translateX(-130%) skewX(-18deg); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(230%)  skewX(-18deg); opacity: 0; }
+}
+.cr-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.cr-shimmer::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(255,255,255,0)   20%,
+    rgba(255,255,255,0.22) 48%,
+    rgba(255,255,255,0.32) 50%,
+    rgba(255,255,255,0.22) 52%,
+    rgba(255,255,255,0)   80%
+  );
+  transform: translateX(-130%) skewX(-18deg);
+  opacity: 0;
+  border-radius: inherit;
+}
+.cr-shimmer:hover::after {
+  animation: cr-shimmer-sweep 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ── Create Room button — dark purple polished style ────────────────────────
+   Deep violet-black body matching the Vextorn icon's purple-tinted darkness,
+   chrome top rim, convex sheen, and shimmer sweep on hover.
    ──────────────────────────────────────────────────────────────────────── */
 .create-room-neu {
   position: relative;
@@ -7505,20 +7540,12 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   gap: 6px;
   padding: 5px;
   border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    hsl(var(--neu-bg-hi, 232 35% 14%) / 0.55) 0%,
-    hsl(var(--neu-bg-lo, 232 35% 8%) / 0.55) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.3) inset,
-    0 6px 18px rgba(0, 0, 0, 0.35);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   min-width: 0;
   flex: 1 1 0;
   overflow-x: auto;
-  /* Hide scrollbar visually while keeping it functional */
   scrollbar-width: none;
 }
 .filter-strip-group::-webkit-scrollbar { display: none; }
