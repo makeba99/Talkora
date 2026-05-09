@@ -204,39 +204,11 @@ export default defineConfig({
           //   navigation-menu, radio-group, scroll-area, select, separator,
           //   slider, switch, toast, toggle, toggle-group — only used in
           //   lazy routes (never needed during lobby first paint).
-          const RADIX_DEFERRED = [
-            "@radix-ui/react-accordion",
-            "@radix-ui/react-alert-dialog",
-            "@radix-ui/react-aspect-ratio",
-            "@radix-ui/react-checkbox",
-            "@radix-ui/react-context-menu",
-            // dialog → only used by lazy CreateRoomDialog, CommentThreadDialog,
-            //   DmDialog, NeuParticipantSlider, RoomEditDialog, SiteFooter, etc.
-            //   LoginScreen uses Card/Button/Input only (no Dialog).
-            "@radix-ui/react-dialog",
-            // dropdown-menu → only used by lazy ProfileDropdown
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-hover-card",
-            // label → only used by lazy CreateRoomDialog, RoomEditDialog, forms
-            "@radix-ui/react-label",
-            "@radix-ui/react-menubar",
-            "@radix-ui/react-navigation-menu",
-            "@radix-ui/react-radio-group",
-            // scroll-area → only used by lazy MessagesDropdown,
-            //   NotificationsDropdown, ProfileDropdown, SocialPanel
-            "@radix-ui/react-scroll-area",
-            // select → only used by lazy CreateRoomDialog, RoomEditDialog, admin;
-            //   not imported by lobby.tsx or room-card.tsx at all.
-            "@radix-ui/react-select",
-            // separator → only used by lazy ProfileDropdown, admin sidebar
-            "@radix-ui/react-separator",
-            "@radix-ui/react-slider",
-            "@radix-ui/react-switch",
-            "@radix-ui/react-toast",
-            "@radix-ui/react-toggle",
-            "@radix-ui/react-toggle-group",
-          ];
-          if (RADIX_DEFERRED.some((pkg) => id.includes(pkg))) return "radix-deferred";
+          // NOTE: radix-deferred chunk removed — Radix UI packages call React APIs
+          // (useLayoutEffect, forwardRef, createContext) at module-evaluation time,
+          // so splitting them from react-vendor causes a runtime race in production
+          // ("Cannot read properties of undefined (reading 'useLayoutEffect')").
+          // All @radix-ui packages fall through to the react-vendor rule below.
 
           // ── react-query split ────────────────────────────────────────────
           // @tanstack/react-query + query-core are safe to move out of
