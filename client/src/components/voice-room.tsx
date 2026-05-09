@@ -6991,37 +6991,54 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
         </div>
         {/* ── Pinned message banner ─────────────────────────────────────── */}
-        {pinnedMessage && (
-          <div className="chat-pin-banner" data-testid="chat-pinned-banner">
-            <div className="chat-pin-icon">📌</div>
-            <div className="chat-pin-body" onClick={() => {
-              const el = document.querySelector(`[data-testid="room-chat-${pinnedMessage.message.id}"]`);
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-            }}>
-              <span className="chat-pin-label">
-                Pinned by {pinnedMessage.pinnedByName}
-                {pinnedMessage.message.userName && pinnedMessage.message.userName !== pinnedMessage.pinnedByName && (
-                  <span style={{ opacity: 0.65, fontWeight: 400 }}> · from {pinnedMessage.message.userName}</span>
-                )}
-              </span>
-              <span className="chat-pin-text">
-                {pinnedMessage.message.text.length > 80
-                  ? pinnedMessage.message.text.slice(0, 80) + "…"
-                  : pinnedMessage.message.text}
-              </span>
+        {pinnedMessage && (() => {
+          const pinAuthorObj = pinnedMessage.message.user || participantById.get(pinnedMessage.message.userId);
+          const pinAuthorName = pinAuthorObj
+            ? getUserDisplayName(pinAuthorObj)
+            : (pinnedMessage.message as any).userName || "Unknown";
+          const pinAuthorAvatar = pinAuthorObj?.profileImageUrl;
+          const pinAuthorInitial = (pinAuthorName?.[0] || "?").toUpperCase();
+          return (
+            <div className="chat-pin-banner" data-testid="chat-pinned-banner">
+              <div className="chat-pin-icon">📌</div>
+              <div className="chat-pin-body" onClick={() => {
+                const el = document.querySelector(`[data-testid="room-chat-${pinnedMessage.message.id}"]`);
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}>
+                <span className="chat-pin-label">
+                  {pinAuthorAvatar ? (
+                    <img
+                      src={pinAuthorAvatar}
+                      alt=""
+                      width={14}
+                      height={14}
+                      className="chat-pin-author-avatar"
+                    />
+                  ) : (
+                    <span className="chat-pin-author-initials">{pinAuthorInitial}</span>
+                  )}
+                  <span className="chat-pin-author-name">{pinAuthorName}</span>
+                  <span className="chat-pin-pinned-by">· pinned by {pinnedMessage.pinnedByName}</span>
+                </span>
+                <span className="chat-pin-text">
+                  {pinnedMessage.message.text.length > 80
+                    ? pinnedMessage.message.text.slice(0, 80) + "…"
+                    : pinnedMessage.message.text}
+                </span>
+              </div>
+              {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
+                <button
+                  onClick={() => socket?.emit("room:unpin-message", { roomId: room.id })}
+                  className="chat-pin-dismiss"
+                  title="Unpin"
+                  data-testid="button-unpin-message"
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
-              <button
-                onClick={() => socket?.emit("room:unpin-message", { roomId: room.id })}
-                className="chat-pin-dismiss"
-                title="Unpin"
-                data-testid="button-unpin-message"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        )}
+          );
+        })()}
 
         <div className="chat-scroll-well flex-1 min-h-0">
         <ScrollArea className="h-full" ref={chatScrollRef} onScroll={handleScroll}>

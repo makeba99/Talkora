@@ -11641,12 +11641,48 @@ html.boost-mode .glass-panel {
 .chat-pin-label {
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.60px;
+  letter-spacing: 0.40px;
   text-transform: uppercase;
   color: rgba(251, 191, 36, 0.80);
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+}
+.chat-pin-author-avatar {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  box-shadow: 0 0 4px rgba(251, 191, 36, 0.20);
+}
+.chat-pin-author-initials {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(251, 191, 36, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.32);
+  font-size: 7px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(251, 191, 36, 0.92);
+  flex-shrink: 0;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+.chat-pin-author-name {
+  font-weight: 800;
+  color: rgba(251, 191, 36, 0.92);
+  letter-spacing: 0.30px;
+}
+.chat-pin-pinned-by {
+  font-weight: 400;
+  color: rgba(251, 191, 36, 0.48);
+  letter-spacing: 0.30px;
+  font-size: 8px;
 }
 .chat-pin-text {
   font-size: 12px;
