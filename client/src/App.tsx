@@ -1,5 +1,5 @@
-import { useEffect, useState, lazy, Suspense } from "react";
-import { Switch, Route } from "wouter";
+import { useEffect, useState, useRef, lazy, Suspense } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
@@ -75,6 +75,28 @@ function LobbyShell() {
       </div>
     </div>
   );
+}
+
+function RouteTracker() {
+  const [location] = useLocation();
+  const prevLocation = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (prevLocation.current === location) return;
+    const prev = prevLocation.current;
+    prevLocation.current = location;
+    fetch("/api/analytics/pageview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        path: location,
+        referrer: prev ? window.location.origin + prev : document.referrer || undefined,
+      }),
+      credentials: "include",
+    }).catch(() => {});
+  }, [location]);
+
+  return null;
 }
 
 function AppContent() {
@@ -246,6 +268,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ThemeProvider>
+          <RouteTracker />
           <PreRenderDismiss />
           <DeferredOverlays />
           <AppContent />

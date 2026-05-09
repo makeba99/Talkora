@@ -2825,6 +2825,41 @@ export async function registerRoutes(
   };
 
   // ── Cleanup / Storage admin endpoints ───────────────────────────────────
+  // ── Client-side page view tracking ────────────────────────────────────────
+  // SPA route changes don't trigger a server HTML request, so the middleware
+  // in index.ts only captures the initial load. This endpoint lets the client
+  // report route changes directly so analytics reflect actual navigation.
+  app.post("/api/analytics/pageview", async (req: any, res) => {
+    try {
+      const { path: pvPath, referrer } = req.body || {};
+      if (!pvPath || typeof pvPath !== "string") return res.status(400).json({ message: "path required" });
+      const { createHash } = await import("crypto");
+      const ip = ((req.headers["x-forwarded-for"] as string) || (req.headers["x-real-ip"] as string) || "").split(",")[0].trim();
+      const ua = (req.headers["user-agent"] || "").slice(0, 200);
+      const sessionHash = createHash("sha256").update(`${ip}::${ua}`).digest("hex").slice(0, 32);
+      let referrerDomain = "";
+      if (referrer) {
+        try { referrerDomain = new URL(referrer).hostname.replace(/^www\./, ""); } catch {}
+      }
+      const country = (
+        (req.headers["cf-ipcountry"] as string) ||
+        (req.headers["x-vercel-ip-country"] as string) ||
+        (req.headers["x-country-code"] as string) ||
+        ""
+      ).slice(0, 2).toUpperCase() || undefined;
+      await storage.recordPageView({
+        path: pvPath.slice(0, 255),
+        referrer: typeof referrer === "string" ? referrer.slice(0, 500) : undefined,
+        referrerDomain: referrerDomain.slice(0, 120) || undefined,
+        country,
+        sessionHash,
+      });
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/admin/analytics", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const days = Math.min(90, Math.max(1, Number(req.query.days) || 30));

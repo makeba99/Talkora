@@ -6514,6 +6514,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const isAtBottomRef = useRef(true);
   const [showMentionsOnly, setShowMentionsOnly] = useState(false);
 
   const isMentionedInMessage = useCallback((text: string) => {
@@ -6535,6 +6536,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (viewport) {
         const { scrollTop, scrollHeight, clientHeight } = viewport;
         const atBottom = scrollHeight - scrollTop <= clientHeight + 50;
+        isAtBottomRef.current = atBottom;
         setIsAtBottom(atBottom);
         if (atBottom) {
           setUnreadCount(0);
@@ -6557,14 +6559,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const isOwnMessage = lastMsg.userId === user?.id;
     const viewport = chatScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
     if (!viewport) return;
-    if (isAtBottom || isOwnMessage) {
+    if (isAtBottomRef.current || isOwnMessage) {
       viewport.scrollTop = viewport.scrollHeight;
       setUnreadCount(0);
-      if (!isAtBottom && isOwnMessage) setIsAtBottom(true);
+      if (!isAtBottomRef.current && isOwnMessage) {
+        isAtBottomRef.current = true;
+        setIsAtBottom(true);
+      }
     } else if (lastMsg.type !== "system") {
       setUnreadCount(prev => prev + 1);
     }
-  }, [chatMessages, isAtBottom, user?.id]);
+  }, [chatMessages, user?.id]);
 
   const scrollToBottom = useCallback(() => {
     const viewport = chatScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');

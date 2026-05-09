@@ -76,13 +76,10 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateR
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
-      return;
-    }
     import("@/lib/sound-fx").then((s) => s.sfxBuildRoom()).catch(() => {});
+    const finalTitle = title.trim() || `${language} ${level} Room`;
     onCreateRoom({
-      title: title.trim(),
+      title: finalTitle,
       language,
       level,
       maxUsers,
@@ -326,7 +323,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateR
           <button
             type="submit"
             className="neu-submit"
-            disabled={!title.trim() || isPending}
+            disabled={isPending}
             data-testid="button-submit-room"
           >
             {isPending ? "Creating..." : "Create Room"}
