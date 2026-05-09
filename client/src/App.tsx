@@ -197,12 +197,26 @@ function PreRenderDismiss() {
   // base64 data URI (16 384 px²) — larger than any room-card text block and
   // always available at HTML-parse time (zero network cost) — so the browser
   // records LCP at ~200 ms instead of waiting for an external resource to load.
-  //
-  // Safety net: dismiss after 3 s if either fetch stalls or errors out so the
-  // skeleton never becomes a permanent blocker.
   const { data: rooms } = useQuery<unknown[]>({ queryKey: ["/api/rooms"] });
   const { data: announcements } = useQuery<unknown[]>({ queryKey: ["/api/announcements"] });
 
+  // Hard ceiling: runs ONCE on mount and is never cancelled by query state
+  // changes. This guarantees the overlay is always dismissed within 3 s even
+  // if both API calls error, stall, or the query state keeps toggling.
+  // Previously the fallback lived inside the data-driven effect, which meant
+  // every query state change (undefined→data or undefined→error) reset the
+  // timer — on a slow or broken API the overlay could stay indefinitely.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const el = document.getElementById("vx-pr");
+      if (el) el.style.display = "none";
+    }, 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Data-driven dismissal: as soon as both queries have settled (success or
+  // error their data moves from undefined to a value), dismiss via triple-rAF
+  // so deferredRooms has time to sync before the overlay is removed (CLS fix).
   useEffect(() => {
     const el = document.getElementById("vx-pr");
     if (!el || el.style.display === "none") return;
@@ -214,12 +228,6 @@ function PreRenderDismiss() {
       //            empty state — this is a low-priority transition that
       //            React schedules one frame after the urgent rooms update)
       //   Frame 3: browser composites the fully-stable lobby grid
-      //
-      // Using only two frames risked dismissing the overlay while
-      // deferredRooms was still [] (deferred lag), making the "No rooms
-      // found" placeholder briefly visible before the grid appeared —
-      // the position change counted as CLS ≈ 0.12. Three frames ensure
-      // deferredRooms has synced before the overlay is removed.
       let r2 = 0, r3 = 0;
       const r1 = requestAnimationFrame(() => {
         r2 = requestAnimationFrame(() => {
@@ -228,10 +236,6 @@ function PreRenderDismiss() {
       });
       return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); cancelAnimationFrame(r3); };
     }
-
-    // Fallback: clear the overlay after 3 s on very slow connections / errors.
-    const t = setTimeout(() => { el.style.display = "none"; }, 3000);
-    return () => clearTimeout(t);
   }, [rooms, announcements]);
 
   return null;

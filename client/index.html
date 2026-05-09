@@ -297,7 +297,8 @@
           var KEY = "vextorn_sw_recovered_v1";
           function recover(reason) {
             try { console.warn("[vextorn] self-heal:", reason); } catch (e) {}
-            if (sessionStorage.getItem(KEY)) return;
+            var last = parseInt(sessionStorage.getItem(KEY) || "0", 10);
+            if (Date.now() - last < 30000) return;
             sessionStorage.setItem(KEY, String(Date.now()));
             var done = function () {
               try { window.location.reload(); } catch (e) { window.location.href = "/"; }
