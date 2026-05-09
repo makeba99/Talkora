@@ -208,16 +208,25 @@ function PreRenderDismiss() {
     if (!el || el.style.display === "none") return;
 
     if (rooms !== undefined && announcements !== undefined) {
-      // Double-rAF: first frame queues just before the next paint, second
-      // frame fires after that paint has committed and the browser has
-      // composited the real lobby content onto the screen. Only then do we
-      // remove the overlay so the fully-rendered, stable lobby is revealed
-      // in one frame with no blank flash or layout shift.
-      let r2 = 0;
+      // Triple-rAF: three frames give React time to:
+      //   Frame 1: commit the lobby chunk (after lazy evaluation)
+      //   Frame 2: apply the useDeferredValue update (room grid replaces
+      //            empty state — this is a low-priority transition that
+      //            React schedules one frame after the urgent rooms update)
+      //   Frame 3: browser composites the fully-stable lobby grid
+      //
+      // Using only two frames risked dismissing the overlay while
+      // deferredRooms was still [] (deferred lag), making the "No rooms
+      // found" placeholder briefly visible before the grid appeared —
+      // the position change counted as CLS ≈ 0.12. Three frames ensure
+      // deferredRooms has synced before the overlay is removed.
+      let r2 = 0, r3 = 0;
       const r1 = requestAnimationFrame(() => {
-        r2 = requestAnimationFrame(() => { el.style.display = "none"; });
+        r2 = requestAnimationFrame(() => {
+          r3 = requestAnimationFrame(() => { el.style.display = "none"; });
+        });
       });
-      return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+      return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); cancelAnimationFrame(r3); };
     }
 
     // Fallback: clear the overlay after 3 s on very slow connections / errors.

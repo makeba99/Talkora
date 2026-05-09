@@ -2193,6 +2193,30 @@ export default function Lobby() {
                 </div>
               ))}
             </div>
+          ) : deferredRooms.length === 0 && fetchedRooms.length > 0 ? (
+            /* Deferred-value lag guard: fetchedRooms has data but useDeferredValue
+               hasn't propagated yet. Show the loading skeleton for one more frame
+               instead of flashing the "No rooms found" empty state. Without this
+               guard, the empty-state → grid transition was visible after the
+               pre-render overlay was dismissed, causing CLS ≈ 0.12. */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-4 lg:gap-y-5 xl:gap-y-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-3 p-5 rounded-md border" style={{ minHeight: 255 }}>
+                  <Skeleton className="h-6 w-3/4" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4].map((j) => <Skeleton key={j} className="w-10 h-10 rounded-full" />)}
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <Skeleton className="h-5 w-12" />
+                    <Skeleton className="h-9 w-28" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : deferredRooms.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-4">
               <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">

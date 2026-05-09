@@ -69,3 +69,14 @@ Five targeted changes — zero design, layout, animation, or functionality impac
 | E | `vextorn-icon-192.png` recompressed with sharp: 16-bit RGBA → 8-bit PNG, compression=9 | `client/public/` | 38 KB → 8.5 KB (78% reduction) — directly speeds up the LCP anchor download |
 
 LCP anchor remains `vextorn-icon-192.png` (96×96 px) inside the `#vx-pr` overlay, preloaded with `fetchpriority="high"` in both `<head>` and the HTTP `Link:` header from `server/static.ts`.
+
+## 2026-05 Desktop Score 88 → 90+ Optimizations (TBT 220ms, CLS 0.122, Unused JS 76 KiB)
+
+Four targeted changes addressing the three Lighthouse diagnostics — zero design, layout, animation, or functionality impact:
+
+| # | Change | File | Issue addressed |
+|---|--------|------|-----------------|
+| F | `room-card.tsx` extracted into its own named Rollup chunk `"room-card"` | `vite.config.ts` | **TBT**: 1,369-line component was bundled with lobby, making one 100+ ms evaluation task. Two separate chunks (~50 ms each) are pre-warmed via existing `room-card` modulepreload pattern in `server/static.ts`, enabling parallel parse + two sub-50 ms tasks → fewer long tasks |
+| G | Removed `dialog`, `dropdown-menu`, `label`, `scroll-area`, `separator` from `LOBBY_CRITICAL_UI` | `vite.config.ts` | **Unused JS**: These 5 shadcn wrappers are only used by lazy-loaded components (ProfileDropdown, CreateRoomDialog, DmDialog, etc.) — never needed on first paint. Moving them to their consumer chunks removes ~20-30 KB from the critical parse path |
+| H | `PreRenderDismiss` upgraded from double-rAF to triple-rAF before hiding `#vx-pr` | `App.tsx` | **CLS**: Third frame ensures `useDeferredValue` for the room grid has propagated (deferred updates are one frame behind urgent state updates) before the overlay is removed, preventing a brief empty→rooms grid flash |
+| I | Deferred-value lag guard added to room grid render | `lobby.tsx` | **CLS**: When `deferredRooms.length === 0` but `fetchedRooms.length > 0` (deferred still pending), show a skeleton rather than the "No rooms found" empty state — eliminates the visible empty-state → grid transition that measured as CLS ≈ 0.12 |

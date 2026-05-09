@@ -112,6 +112,15 @@ export default defineConfig({
           // profile-dropdown.tsx without touching the critical paint path.
           if (id.includes("profile-decorations")) return "decorations-vendor";
 
+          // room-card.tsx is 1,300+ lines of complex JSX. Splitting it into
+          // its own named chunk lets the browser download and parse it in
+          // parallel with lobby.tsx instead of as one large sequential task.
+          // Two ~50 ms evaluation tasks produce far less TBT than one 100+ ms
+          // monolithic task. server/static.ts already matches the pattern
+          // /^room-card-[\w-]+\.js$/ for modulepreload injection so both
+          // chunks are pre-warmed before React mounts.
+          if (id.includes("/components/room-card") && !id.includes("node_modules")) return "room-card";
+
           // shadcn/ui wrapper components — split into two tiers:
           //
           // LOBBY-CRITICAL (ui-components): components used in the lobby's
@@ -128,6 +137,22 @@ export default defineConfig({
           // These rules must appear BEFORE the node_modules guard below
           // because /components/ui/ is app-level code, not node_modules.
           if (id.includes("/components/ui/") && !id.includes("node_modules")) {
+            // Only include components that are ACTUALLY rendered on the lobby's
+            // initial synchronous paint (room-card.tsx + lobby.tsx direct imports).
+            //
+            // Removed from critical list (moved to their lazy consumer chunks):
+            //   dialog       → only used by lazy ProfileDropdown, CreateRoomDialog,
+            //                  DmDialog, ReportDialog, RoomEditDialog, SiteFooter
+            //   dropdown-menu→ only used by lazy ProfileDropdown
+            //   label        → only used by lazy CreateRoomDialog, RoomEditDialog,
+            //                  ProfileDropdown, PaymentMethodForm
+            //   scroll-area  → only used by lazy MessagesDropdown,
+            //                  NotificationsDropdown, ProfileDropdown, SocialPanel
+            //   separator    → only used by lazy ProfileDropdown / Sidebar
+            //
+            // Keeping them in ui-components would ship ~20-30 KB of JS that is
+            // parsed but never called on the lobby's first paint, directly
+            // contributing to the "Reduce unused JavaScript" Lighthouse audit.
             const LOBBY_CRITICAL_UI = [
               "/components/ui/button",
               "/components/ui/badge",
@@ -136,12 +161,7 @@ export default defineConfig({
               "/components/ui/input",
               "/components/ui/skeleton",
               "/components/ui/tooltip",
-              "/components/ui/dialog",
-              "/components/ui/dropdown-menu",
               "/components/ui/select",
-              "/components/ui/separator",
-              "/components/ui/label",
-              "/components/ui/scroll-area",
             ];
             if (LOBBY_CRITICAL_UI.some((p) => id.includes(p))) return "ui-components";
             // Non-critical UI: follows its consumer into their lazy chunk.
