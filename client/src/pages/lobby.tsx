@@ -1790,7 +1790,8 @@ export default function Lobby() {
             </div>
           )}
           {/* Search bar — sculpted neumorphic capsule with live suggestions */}
-          <div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
             <div
               ref={searchShellRef}
               role="search"
@@ -1964,11 +1965,35 @@ export default function Lobby() {
                 </div>
               )}
             </div>
+            </div>{/* end flex-1 min-w-0 */}
+
+            {/* Create Room — desktop only (≥640px): right of search bar. */}
+            <div className="hidden sm:flex flex-shrink-0" data-testid="container-create-room">
+              {user ? (
+                <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
+                  <CreateRoomDialog
+                    onCreateRoom={(data) => createRoomMutation.mutate(data)}
+                    isPending={createRoomMutation.isPending}
+                  />
+                </Suspense>
+              ) : (
+                <a
+                  href="/api/login"
+                  className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full inline-flex items-center"
+                  aria-label="Sign in to create a room"
+                  data-testid="button-create-room-guest"
+                >
+                  <span className="create-room-neu-icon">
+                    <Hammer className="sparkle-icon w-[14px] h-[14px]" />
+                  </span>
+                  <span className="create-room-neu-label">Create Room</span>
+                </a>
+              )}
+            </div>
           </div>
 
           {/* Filter strip: each chip has its own colour family so Rooms,
-              Speakers, Famous and Languages stay easy to tell apart.
-              Create Room button sits at the far right of this row. */}
+              Speakers, Famous and Languages stay easy to tell apart. */}
           <div className="filter-strip" data-testid="filters-discovery-search">
             <div role="group" aria-label="View filter" className="filter-strip-group">
               {([
@@ -2028,11 +2053,10 @@ export default function Lobby() {
               )}
             </div>
 
-            {/* Create Room — desktop only (≥640px): right end of filter row.
-                Always rendered so guests can see and click it (→ login). */}
-            <div className="hidden sm:flex ml-auto flex-shrink-0" data-testid="container-create-room">
+            {/* Create Room — mobile only (<640px): compact icon button at far right of filter strip */}
+            <div className="sm:hidden ml-auto flex-shrink-0" data-testid="container-create-room-mobile">
               {user ? (
-                <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
+                <Suspense fallback={<Skeleton className="h-[34px] w-[34px] rounded-full" />}>
                   <CreateRoomDialog
                     onCreateRoom={(data) => createRoomMutation.mutate(data)}
                     isPending={createRoomMutation.isPending}
@@ -2043,7 +2067,7 @@ export default function Lobby() {
                   href="/api/login"
                   className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full inline-flex items-center"
                   aria-label="Sign in to create a room"
-                  data-testid="button-create-room-guest"
+                  data-testid="button-create-room-guest-mobile"
                 >
                   <span className="create-room-neu-icon">
                     <Hammer className="sparkle-icon w-[14px] h-[14px]" />
@@ -2052,31 +2076,6 @@ export default function Lobby() {
                 </a>
               )}
             </div>
-          </div>
-
-          {/* Create Room — mobile only (<640px): own compact row, right-aligned.
-              Always rendered so guests can see and click it (→ login). */}
-          <div className="flex sm:hidden justify-end" data-testid="container-create-room-mobile">
-            {user ? (
-              <Suspense fallback={<Skeleton className="h-[34px] w-[34px] rounded-full" />}>
-                <CreateRoomDialog
-                  onCreateRoom={(data) => createRoomMutation.mutate(data)}
-                  isPending={createRoomMutation.isPending}
-                />
-              </Suspense>
-            ) : (
-              <a
-                href="/api/login"
-                className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full inline-flex items-center"
-                aria-label="Sign in to create a room"
-                data-testid="button-create-room-guest-mobile"
-              >
-                <span className="create-room-neu-icon">
-                  <Hammer className="sparkle-icon w-[14px] h-[14px]" />
-                </span>
-                <span className="create-room-neu-label">Create Room</span>
-              </a>
-            )}
           </div>
 
           {activeDiscovery === "rooms" && showLanguageFilters && (
