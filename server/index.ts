@@ -142,13 +142,45 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  await runMigrations();
-  await setupAuth(app);
-  registerAuthRoutes(app);
+// Health check endpoint — registered before any DB-dependent middleware so
+// Railway's healthcheckPath (/api/health) always responds even if the DB is
+// not yet ready. Returns 200 once the HTTP server is up, which is all Railway
+// needs to know the process is alive.
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok", ts: Date.now() });
+});
 
-  await registerRoutes(httpServer, app);
-  startCleanupScheduler();
+(async () => {
+  // ── Resilient startup ─────────────────────────────────────────────────────
+  // Each step is wrapped in its own try-catch so that a failure in one step
+  // (most commonly: DB not yet available on Railway during cold start) does NOT
+  // crash the process before httpServer.listen() is called.  Without this,
+  // runMigrations() throwing would leave the port unbound, Railway's health
+  // check would time out, and the deploy would be marked as failed — even
+  // though the static frontend could still be served perfectly well.
+  //
+  // A degraded startup (DB unavailable) means API endpoints return 500, but
+  // the React SPA still loads from dist/public and the user sees the lobby
+  // skeleton rather than a blank connection-refused page.
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error("[startup] DB migrations failed — continuing without migrations:", (err as Error)?.message || err);
+  }
+
+  try {
+    await setupAuth(app);
+    registerAuthRoutes(app);
+  } catch (err) {
+    console.error("[startup] Auth setup failed — auth endpoints may be unavailable:", (err as Error)?.message || err);
+  }
+
+  try {
+    await registerRoutes(httpServer, app);
+    startCleanupScheduler();
+  } catch (err) {
+    console.error("[startup] Route registration failed:", (err as Error)?.message || err);
+  }
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
