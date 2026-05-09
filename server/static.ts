@@ -180,7 +180,7 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // header slot that could go to a font or script chunk.
   const FONT_PRELOAD = `</fonts/space-grotesk-latin.woff2>; rel=preload; as=font; type=font/woff2; crossorigin`;
   const headerEntries: string[] = [API_ROOMS, API_AUTH, FONT_PRELOAD];
-  for (const h of [...scriptHrefs].slice(0, 6)) {
+  for (const h of [...scriptHrefs].slice(0, 8)) {
     headerEntries.push(`<${h}>; rel=modulepreload; crossorigin`);
   }
   for (const h of [...styleHrefs].slice(0, 1)) {

@@ -161,7 +161,8 @@ export default defineConfig({
               "/components/ui/input",
               "/components/ui/skeleton",
               "/components/ui/tooltip",
-              "/components/ui/select",
+              // select removed: neither lobby.tsx nor room-card.tsx import it;
+              // it only appears in lazy CreateRoomDialog / RoomEditDialog / admin.
             ];
             if (LOBBY_CRITICAL_UI.some((p) => id.includes(p))) return "ui-components";
             // Non-critical UI: follows its consumer into their lazy chunk.
@@ -190,26 +191,45 @@ export default defineConfig({
           // eliminating any possibility of the forwardRef race.
           //
           // Lobby-critical Radix (stay in react-vendor):
-          //   slot → Button; avatar → RoomCard; popover → lobby language filter;
-          //   tooltip → App.tsx TooltipProvider; dialog → login-screen;
-          //   dropdown-menu → profile/settings; select → lobby filters;
-          //   separator, label, scroll-area → various eager lobby surfaces;
+          //   slot → Button (every lobby render); avatar → RoomCard avatars;
+          //   popover → lobby search suggestions + language filter;
+          //   tooltip → App.tsx TooltipProvider (wraps entire app);
           //   collapsible → language tag expand/collapse in lobby.
+          //   (dialog, dropdown-menu, select, separator, label, scroll-area
+          //    are all deferred — see RADIX_DEFERRED list below.)
           //
           // Non-critical Radix (→ "radix-deferred", loaded lazily):
           //   accordion, alert-dialog, aspect-ratio, checkbox, context-menu,
-          //   hover-card, menubar, navigation-menu, radio-group, slider,
-          //   switch, toast, toggle, toggle-group — only used in lazy routes.
+          //   dialog, dropdown-menu, hover-card, label, menubar,
+          //   navigation-menu, radio-group, scroll-area, select, separator,
+          //   slider, switch, toast, toggle, toggle-group — only used in
+          //   lazy routes (never needed during lobby first paint).
           const RADIX_DEFERRED = [
             "@radix-ui/react-accordion",
             "@radix-ui/react-alert-dialog",
             "@radix-ui/react-aspect-ratio",
             "@radix-ui/react-checkbox",
             "@radix-ui/react-context-menu",
+            // dialog → only used by lazy CreateRoomDialog, CommentThreadDialog,
+            //   DmDialog, NeuParticipantSlider, RoomEditDialog, SiteFooter, etc.
+            //   LoginScreen uses Card/Button/Input only (no Dialog).
+            "@radix-ui/react-dialog",
+            // dropdown-menu → only used by lazy ProfileDropdown
+            "@radix-ui/react-dropdown-menu",
             "@radix-ui/react-hover-card",
+            // label → only used by lazy CreateRoomDialog, RoomEditDialog, forms
+            "@radix-ui/react-label",
             "@radix-ui/react-menubar",
             "@radix-ui/react-navigation-menu",
             "@radix-ui/react-radio-group",
+            // scroll-area → only used by lazy MessagesDropdown,
+            //   NotificationsDropdown, ProfileDropdown, SocialPanel
+            "@radix-ui/react-scroll-area",
+            // select → only used by lazy CreateRoomDialog, RoomEditDialog, admin;
+            //   not imported by lobby.tsx or room-card.tsx at all.
+            "@radix-ui/react-select",
+            // separator → only used by lazy ProfileDropdown, admin sidebar
+            "@radix-ui/react-separator",
             "@radix-ui/react-slider",
             "@radix-ui/react-switch",
             "@radix-ui/react-toast",
@@ -292,9 +312,13 @@ export default defineConfig({
               "/components/room-card",
               "/components/user-badge-pips",
               "/components/vextorn-logo",
-              "/components/login-screen",
-              "/components/update-available-toast",
-              "/components/pwa-install-banner",
+              // login-screen: not imported anywhere eagerly — icons go to its
+              // own lazy chunk, never forced into icons-vendor.
+              // update-available-toast: lazy (DeferredToasts, 4 s delay) —
+              //   RefreshCw must NOT be forced into the critical icons-vendor.
+              // pwa-install-banner: lazy (DeferredOverlays, 8 s delay) —
+              //   Share, PlusSquare, MoreVertical, Download, X must stay out
+              //   of the critical icons-vendor chunk.
               "/components/ui/", // shadcn UI primitives used eagerly
               "/App.tsx",
             ];
