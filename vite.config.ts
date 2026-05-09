@@ -233,6 +233,30 @@ export default defineConfig({
             return "router-vendor";
           }
 
+          // ── @floating-ui split ───────────────────────────────────────────
+          // @floating-ui/core, /dom, and /utils are pure positioning-math
+          // libraries — they have zero React dependency and call no React APIs
+          // at module-evaluation time. Splitting them into their own chunk:
+          //
+          //  1. Lets the browser download and parse them in parallel with
+          //     react-vendor (which imports them via @floating-ui/react).
+          //  2. Reduces react-vendor's size by ~20 KB, cutting its parse/eval
+          //     time (fewer long tasks → lower TBT).
+          //  3. The ES-module linker guarantees floating-vendor evaluates
+          //     BEFORE react-vendor because react-vendor statically imports it
+          //     via @floating-ui/react → @floating-ui/core — no runtime race.
+          //
+          // @floating-ui/react and @floating-ui/react-dom DO call
+          // React.createContext / React.useLayoutEffect at module-eval time,
+          // so they MUST remain in react-vendor alongside React itself.
+          if (
+            id.includes("@floating-ui/core") ||
+            id.includes("@floating-ui/dom") ||
+            id.includes("@floating-ui/utils")
+          ) {
+            return "floating-vendor";
+          }
+
           if (
             id.includes("react-dom") ||
             id.includes("/react/") ||

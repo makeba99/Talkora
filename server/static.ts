@@ -62,6 +62,17 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // Each pattern is tagged with its rank; we sort matches by rank so the
   // most critical chunks always appear first regardless of filesystem order.
   const criticalScriptPatterns: Array<{ re: RegExp; rank: number; label: string }> = [
+    // Entry module must be rank -2 so it is the very first item in the Link
+    // header. The browser discovers the Vite entry <script type="module"> only
+    // after parsing the HTML body — that adds one full RTT of sequential
+    // latency (602 ms on throttled 4G). Preloading it in the Link header means
+    // the browser starts fetching it alongside HTML, eliminating the chain.
+    { re: /^index-[\w-]+\.js$/,          rank: -2, label: "vite entry module" },
+    // floating-vendor is a dep of react-vendor: @floating-ui/core, /dom, and
+    // /utils are pure positioning-math libs (no React). They must evaluate
+    // BEFORE react-vendor (which imports them via @floating-ui/react), so they
+    // must be preloaded at an even earlier rank than react-vendor.
+    { re: /^floating-vendor-[\w-]+\.js$/, rank: -1, label: "@floating-ui core/dom/utils" },
     { re: /^react-vendor-[\w-]+\.js$/,   rank: 0, label: "react + react-dom + radix-ui" },
     { re: /^query-vendor-[\w-]+\.js$/,   rank: 1, label: "react-query + query-core" },
     { re: /^router-vendor-[\w-]+\.js$/,  rank: 2, label: "wouter router" },
@@ -180,7 +191,7 @@ function precomputeIndexHtml(distPath: string): { html: string; linkHeader: stri
   // header slot that could go to a font or script chunk.
   const FONT_PRELOAD = `</fonts/space-grotesk-latin.woff2>; rel=preload; as=font; type=font/woff2; crossorigin`;
   const headerEntries: string[] = [API_ROOMS, API_AUTH, FONT_PRELOAD];
-  for (const h of [...scriptHrefs].slice(0, 8)) {
+  for (const h of [...scriptHrefs].slice(0, 10)) {
     headerEntries.push(`<${h}>; rel=modulepreload; crossorigin`);
   }
   for (const h of [...styleHrefs].slice(0, 1)) {
