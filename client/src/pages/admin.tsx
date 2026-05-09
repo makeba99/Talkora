@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,6 +172,10 @@ type AnalyticsData = {
   totalRoomJoins: number;
   uniqueRoomJoiners: number;
   dailyJoins: { date: string; joins: number }[];
+  todayViews: number;
+  todayUniqueVisitors: number;
+  todayRoomJoins: number;
+  todayUniqueJoiners: number;
 };
 
 function AnalyticsTab() {
@@ -223,6 +227,39 @@ function AnalyticsTab() {
           <Button size="sm" variant="ghost" onClick={() => refetch()} data-testid="button-analytics-refresh">
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>
+        </div>
+      </div>
+
+      {/* TODAY summary row */}
+      <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-amber-300 mb-3 flex items-center gap-1.5">
+          <CalendarDays className="w-3.5 h-3.5" /> Today
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Page Views</p>
+            {isLoading ? <Skeleton className="h-6 w-14 mt-1" /> : (
+              <p className="text-xl font-bold text-amber-300 mt-0.5" data-testid="text-today-views">{(data?.todayViews ?? 0).toLocaleString()}</p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3" /> Unique Visitors</p>
+            {isLoading ? <Skeleton className="h-6 w-14 mt-1" /> : (
+              <p className="text-xl font-bold text-amber-300 mt-0.5" data-testid="text-today-unique">{(data?.todayUniqueVisitors ?? 0).toLocaleString()}</p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><DoorOpen className="w-3 h-3" /> Room Joins</p>
+            {isLoading ? <Skeleton className="h-6 w-14 mt-1" /> : (
+              <p className="text-xl font-bold text-amber-300 mt-0.5" data-testid="text-today-joins">{(data?.todayRoomJoins ?? 0).toLocaleString()}</p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><UserCheck className="w-3 h-3" /> Unique Joiners</p>
+            {isLoading ? <Skeleton className="h-6 w-14 mt-1" /> : (
+              <p className="text-xl font-bold text-amber-300 mt-0.5" data-testid="text-today-joiners">{(data?.todayUniqueJoiners ?? 0).toLocaleString()}</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1066,6 +1103,261 @@ function formatRelative(ts: number): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
+function OutreachTab({ users }: { users: { id: string; email: string | null; displayName: string | null; firstName: string | null }[] }) {
+  const { toast } = useToast();
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [emailRecipientType, setEmailRecipientType] = useState<"all_registered" | "custom">("all_registered");
+  const [customEmails, setCustomEmails] = useState("");
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifMessage, setNotifMessage] = useState("");
+  const [notifTarget, setNotifTarget] = useState<"all_online" | "all_registered" | "specific_user">("all_online");
+  const [notifUserId, setNotifUserId] = useState("");
+  const [userSearch, setUserSearchLocal] = useState("");
+
+  const registeredWithEmail = users.filter((u) => u.email);
+  const filteredForPicker = userSearch
+    ? users.filter((u) => {
+        const name = (u.displayName || u.firstName || "").toLowerCase();
+        const email = (u.email || "").toLowerCase();
+        return name.includes(userSearch.toLowerCase()) || email.includes(userSearch.toLowerCase());
+      })
+    : users;
+
+  const emailMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/outreach/email", {
+        subject: emailSubject,
+        body: emailBody,
+        recipientType: emailRecipientType,
+        customEmails,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      toast({ title: "Emails sent!", description: `Delivered to ${data.sent} recipient${data.sent !== 1 ? "s" : ""}.` });
+      setEmailSubject("");
+      setEmailBody("");
+      setCustomEmails("");
+    },
+    onError: (err: any) => toast({ title: "Failed to send email", description: err.message, variant: "destructive" }),
+  });
+
+  const notifMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/outreach/notification", {
+        title: notifTitle,
+        message: notifMessage,
+        targetType: notifTarget,
+        userId: notifTarget === "specific_user" ? notifUserId : undefined,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      toast({ title: "Notification sent!", description: `Delivered to ${data.delivered} user${data.delivered !== 1 ? "s" : ""}.` });
+      setNotifTitle("");
+      setNotifMessage("");
+      setNotifUserId("");
+    },
+    onError: (err: any) => toast({ title: "Failed to send notification", description: err.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-6" data-testid="tab-content-outreach">
+      <div>
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <BellRing className="w-5 h-5 text-primary" />
+          Outreach Center
+        </h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Send emails or in-app notifications to your users</p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Email Panel */}
+        <Card className="bg-card/75 border-blue-400/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-blue-300">
+              <Mail className="w-4 h-4" /> Email Broadcast
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Recipients</Label>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant={emailRecipientType === "all_registered" ? "default" : "outline"}
+                  onClick={() => setEmailRecipientType("all_registered")}
+                  className="text-xs"
+                  data-testid="button-email-all-registered"
+                >
+                  All Registered ({registeredWithEmail.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={emailRecipientType === "custom" ? "default" : "outline"}
+                  onClick={() => setEmailRecipientType("custom")}
+                  className="text-xs"
+                  data-testid="button-email-custom"
+                >
+                  Custom List
+                </Button>
+              </div>
+            </div>
+
+            {emailRecipientType === "custom" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Email addresses (comma, semicolon, or line separated)</Label>
+                <Textarea
+                  value={customEmails}
+                  onChange={(e) => setCustomEmails(e.target.value)}
+                  placeholder={"user1@example.com\nuser2@example.com"}
+                  rows={4}
+                  className="text-xs font-mono resize-none"
+                  data-testid="input-custom-emails"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Subject</Label>
+              <Input
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Important update from Vextorn..."
+                data-testid="input-email-subject"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Message body</Label>
+              <Textarea
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                placeholder="Write your message here..."
+                rows={6}
+                className="resize-none"
+                data-testid="input-email-body"
+              />
+            </div>
+
+            <div className="rounded-lg bg-blue-500/10 border border-blue-400/20 p-3 text-xs text-blue-300">
+              Emails are sent via your configured SMTP account. Requires <code className="font-mono">SMTP_USER</code> and <code className="font-mono">SMTP_PASS</code> secrets.
+            </div>
+
+            <Button
+              className="w-full"
+              onClick={() => emailMutation.mutate()}
+              disabled={emailMutation.isPending || !emailSubject.trim() || !emailBody.trim()}
+              data-testid="button-send-email"
+            >
+              {emailMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+              {emailMutation.isPending ? "Sending..." : "Send Email"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Push Notification Panel */}
+        <Card className="bg-card/75 border-violet-400/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-violet-300">
+              <Bell className="w-4 h-4" /> Push Notification
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Target audience</Label>
+              <div className="flex flex-wrap gap-2">
+                {(["all_online", "all_registered", "specific_user"] as const).map((t) => (
+                  <Button
+                    key={t}
+                    size="sm"
+                    variant={notifTarget === t ? "default" : "outline"}
+                    onClick={() => { setNotifTarget(t); setNotifUserId(""); }}
+                    className="text-xs"
+                    data-testid={`button-notif-target-${t}`}
+                  >
+                    {t === "all_online" ? "All Online" : t === "all_registered" ? "All Users" : "Specific User"}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {notifTarget === "specific_user" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Find user</Label>
+                <Input
+                  value={userSearch}
+                  onChange={(e) => setUserSearchLocal(e.target.value)}
+                  placeholder="Search by name or email..."
+                  data-testid="input-notif-user-search"
+                />
+                {userSearch && filteredForPicker.length > 0 && (
+                  <div className="rounded-lg border border-border/50 bg-card max-h-40 overflow-y-auto">
+                    {filteredForPicker.slice(0, 8).map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => { setNotifUserId(u.id); setUserSearchLocal(u.displayName || u.firstName || u.email || u.id); }}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-muted/50 transition-colors ${notifUserId === u.id ? "bg-primary/10 text-primary" : ""}`}
+                        data-testid={`button-notif-user-${u.id}`}
+                      >
+                        <span className="font-medium">{u.displayName || u.firstName || "User"}</span>
+                        {u.email && <span className="ml-2 text-muted-foreground">{u.email}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {notifUserId && (
+                  <p className="text-xs text-primary flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> User selected
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Notification title</Label>
+              <Input
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+                placeholder="Platform Update"
+                data-testid="input-notif-title"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Message</Label>
+              <Textarea
+                value={notifMessage}
+                onChange={(e) => setNotifMessage(e.target.value)}
+                placeholder="Your message to users..."
+                rows={4}
+                className="resize-none"
+                data-testid="input-notif-message"
+              />
+            </div>
+
+            <div className="rounded-lg bg-violet-500/10 border border-violet-400/20 p-3 text-xs text-violet-300">
+              "All Online" delivers instantly via live connection. "All Users" also stores a persistent in-app notification for offline users.
+            </div>
+
+            <Button
+              className="w-full bg-violet-600 hover:bg-violet-500"
+              onClick={() => notifMutation.mutate()}
+              disabled={notifMutation.isPending || !notifTitle.trim() || !notifMessage.trim() || (notifTarget === "specific_user" && !notifUserId)}
+              data-testid="button-send-notification"
+            >
+              {notifMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
+              {notifMutation.isPending ? "Sending..." : "Send Notification"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 function StorageTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const { toast } = useToast();
   const { data: stats, isLoading } = useQuery<CleanupStats>({
@@ -1753,7 +2045,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[90rem] grid-cols-11" : "max-w-5xl grid-cols-8"} bg-card/80 backdrop-blur`}>
+          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[90rem] grid-cols-12" : "max-w-5xl grid-cols-8"} bg-card/80 backdrop-blur`}>
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -1808,6 +2100,12 @@ export default function AdminPage() {
               <BarChart2 className="w-4 h-4 mr-2" />
               Analytics
             </TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="outreach" data-testid="tab-admin-outreach">
+                <BellRing className="w-4 h-4 mr-2" />
+                Outreach
+              </TabsTrigger>
+            )}
             {isSuperAdmin && (
               <TabsTrigger value="maintenance" data-testid="tab-admin-maintenance">
                 <Wrench className="w-4 h-4 mr-2" />
@@ -2473,6 +2771,16 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isSuperAdmin && (
+            <TabsContent value="outreach">
+              <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+                <CardContent className="p-5">
+                  <OutreachTab users={users} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           {isSuperAdmin && (
             <TabsContent value="ai-tutor">

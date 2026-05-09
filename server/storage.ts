@@ -1119,7 +1119,7 @@ export class DatabaseStorage implements IStorage {
   }> {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const [dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw, joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw] = await Promise.all([
+    const [dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw, joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw] = await Promise.all([
       db.execute(sql`
         SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
                COUNT(*)::int AS views
@@ -1184,11 +1184,25 @@ export class DatabaseStorage implements IStorage {
         GROUP BY date
         ORDER BY date ASC
       `),
+      db.execute(sql`
+        SELECT COUNT(*)::int AS today_views,
+               COUNT(DISTINCT session_hash)::int AS today_unique
+        FROM page_views
+        WHERE created_at >= CURRENT_DATE
+      `),
+      db.execute(sql`
+        SELECT COUNT(*)::int AS today_joins,
+               COUNT(DISTINCT user_id)::int AS today_joiners
+        FROM room_joins
+        WHERE created_at >= CURRENT_DATE
+      `),
     ]);
 
     const totals = (totalsRaw.rows[0] ?? {}) as any;
     const redirect = (redirectRaw.rows[0] ?? {}) as any;
     const joinTotals = (joinTotalsRaw.rows[0] ?? {}) as any;
+    const todayViews = (todayViewsRaw.rows[0] ?? {}) as any;
+    const todayJoins = (todayJoinsRaw.rows[0] ?? {}) as any;
 
     return {
       dailyViews: (dailyRaw.rows as any[]).map((r) => ({ date: r.date as string, views: Number(r.views) })),
@@ -1201,6 +1215,10 @@ export class DatabaseStorage implements IStorage {
       totalRoomJoins: Number(joinTotals.total_joins ?? 0),
       uniqueRoomJoiners: Number(joinTotals.unique_joiners ?? 0),
       dailyJoins: (dailyJoinsRaw.rows as any[]).map((r) => ({ date: r.date as string, joins: Number(r.joins) })),
+      todayViews: Number(todayViews.today_views ?? 0),
+      todayUniqueVisitors: Number(todayViews.today_unique ?? 0),
+      todayRoomJoins: Number(todayJoins.today_joins ?? 0),
+      todayUniqueJoiners: Number(todayJoins.today_joiners ?? 0),
     };
   }
 }

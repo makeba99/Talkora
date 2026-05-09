@@ -2835,6 +2835,114 @@ export async function registerRoutes(
     }
   });
 
+  // ── Outreach: email broadcast ──────────────────────────────────────────────
+  app.post("/api/admin/outreach/email", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { subject, body, recipientType, customEmails } = req.body;
+      if (!subject?.trim() || !body?.trim()) {
+        return res.status(400).json({ message: "Subject and body are required." });
+      }
+
+      const smtpUser = process.env.SMTP_USER;
+      const smtpPass = process.env.SMTP_PASS;
+      if (!smtpUser || !smtpPass) {
+        return res.status(503).json({ message: "SMTP is not configured. Set SMTP_USER and SMTP_PASS in your environment secrets." });
+      }
+
+      let recipients: string[] = [];
+
+      if (recipientType === "all_registered") {
+        const allUsers = await storage.getAllUsers();
+        recipients = allUsers.map((u) => u.email).filter(Boolean) as string[];
+      } else if (recipientType === "custom") {
+        const raw = (customEmails || "") as string;
+        recipients = raw
+          .split(/[\n,;]+/)
+          .map((e: string) => e.trim())
+          .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+      }
+
+      if (recipients.length === 0) {
+        return res.status(400).json({ message: "No valid recipient email addresses found." });
+      }
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+
+      const chunkSize = 50;
+      let sent = 0;
+      for (let i = 0; i < recipients.length; i += chunkSize) {
+        const chunk = recipients.slice(i, i + chunkSize);
+        await transporter.sendMail({
+          from: `"Vextorn Platform" <${smtpUser}>`,
+          bcc: chunk,
+          subject,
+          html: `<div style="font-family:sans-serif;max-width:600px;margin:auto">${body.replace(/\n/g, "<br>")}</div>`,
+          text: body,
+        });
+        sent += chunk.length;
+      }
+
+      res.json({ success: true, sent, total: recipients.length });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Outreach: in-app push notification broadcast ───────────────────────────
+  app.post("/api/admin/outreach/notification", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { title, message, targetType, userId } = req.body;
+      if (!title?.trim() || !message?.trim()) {
+        return res.status(400).json({ message: "Title and message are required." });
+      }
+
+      let delivered = 0;
+
+      if (targetType === "all_online") {
+        io.emit("admin:broadcast_notification", { title, message });
+        delivered = io.sockets.sockets.size;
+      } else if (targetType === "all_registered") {
+        const adminId = (req.user as any).id;
+        const allUsers = await storage.getAllUsers();
+        for (const u of allUsers) {
+          try {
+            await storage.createNotification({
+              userId: u.id,
+              type: `platform_broadcast:${title}`,
+              fromUserId: adminId,
+            });
+          } catch {}
+        }
+        io.emit("admin:broadcast_notification", { title, message });
+        delivered = allUsers.length;
+      } else if (targetType === "specific_user" && userId) {
+        const adminId = (req.user as any).id;
+        const sockets = await io.fetchSockets();
+        for (const s of sockets) {
+          if ((s as any).data?.userId === userId) {
+            s.emit("admin:broadcast_notification", { title, message });
+            delivered++;
+          }
+        }
+        try {
+          await storage.createNotification({
+            userId,
+            type: `platform_broadcast:${title}`,
+            fromUserId: adminId,
+          });
+        } catch {}
+        if (delivered === 0) delivered = 1;
+      }
+
+      res.json({ success: true, delivered });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/admin/cleanup/stats", isAuthenticated, isAdmin, async (_req, res) => {
     try {
       res.json(getCleanupStats());

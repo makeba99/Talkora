@@ -96,12 +96,22 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
       });
     };
 
+    const handleBroadcastNotification = (event: { title: string; message: string }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      toast({
+        title: event.title || "Platform Notification",
+        description: event.message,
+      });
+    };
+
     socket.on("admin:notification", refreshNotifications);
     socket.on("admin:warning", handleWarning);
+    socket.on("admin:broadcast_notification", handleBroadcastNotification);
 
     return () => {
       socket.off("admin:notification", refreshNotifications);
       socket.off("admin:warning", handleWarning);
+      socket.off("admin:broadcast_notification", handleBroadcastNotification);
     };
   }, [socket, toast]);
 
@@ -134,6 +144,10 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
     if (notif.type === "security_rate_limited") return "Your account hit a request rate limit. If this wasn't you, consider changing your password.";
     if (notif.type === "security_account_alert") return "A security alert has been logged on your account. Contact support if you need help.";
     if (notif.type.startsWith("join_request:")) return `🚪 ${getUserDisplayName(fromUser)} is knocking — they want to join your room!`;
+    if (notif.type.startsWith("platform_broadcast:")) {
+      const title = notif.type.split(":").slice(1).join(":");
+      return `📢 ${title}`;
+    }
     return notif.type;
   };
 
