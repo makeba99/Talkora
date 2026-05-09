@@ -11830,6 +11830,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     nameColor="rgba(160,235,255,0.97)"
                     accentColor="rgba(0,225,255,0.95)"
                   />
+
+                  {/* Flex — Street-smart, hype, high energy */}
+                  <NeumorphicPersonaCard
+                    testId="button-persona-flex"
+                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Flex"); }}
+                    avatar={<NeumorphicAvatarRing glowRgb="255,180,0" content={<span className="text-2xl font-black leading-none" style={{ color: "rgba(255,210,80,0.98)", textShadow: "0 0 12px rgba(255,180,0,0.70)" }}>F</span>} />}
+                    name="Flex"
+                    badge="🔥"
+                    description="Street-smart · hype · high energy"
+                    nameColor="rgba(255,210,80,0.97)"
+                    accentColor="rgba(255,180,0,0.90)"
+                  />
                 </div>
 
                 <p className="text-[10px] mt-6" style={{ color: "rgba(170,180,200,0.45)" }}>
