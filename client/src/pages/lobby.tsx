@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { showHintOnce } from "@/lib/hints";
@@ -2028,30 +2028,56 @@ export default function Lobby() {
               )}
             </div>
 
-            {/* Create Room — desktop only (≥640px): right end of filter row */}
-            {user && (
-              <div className="hidden sm:flex ml-auto flex-shrink-0" data-testid="container-create-room">
+            {/* Create Room — desktop only (≥640px): right end of filter row.
+                Always rendered so guests can see and click it (→ login). */}
+            <div className="hidden sm:flex ml-auto flex-shrink-0" data-testid="container-create-room">
+              {user ? (
                 <Suspense fallback={<Skeleton className="h-[36px] w-[36px] rounded-full" />}>
                   <CreateRoomDialog
                     onCreateRoom={(data) => createRoomMutation.mutate(data)}
                     isPending={createRoomMutation.isPending}
                   />
                 </Suspense>
-              </div>
-            )}
+              ) : (
+                <a
+                  href="/api/login"
+                  className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full inline-flex items-center"
+                  aria-label="Sign in to create a room"
+                  data-testid="button-create-room-guest"
+                >
+                  <span className="create-room-neu-icon">
+                    <Hammer className="sparkle-icon w-[14px] h-[14px]" />
+                  </span>
+                  <span className="create-room-neu-label">Create Room</span>
+                </a>
+              )}
+            </div>
           </div>
 
-          {/* Create Room — mobile only (<640px): own compact row, right-aligned */}
-          {user && (
-            <div className="flex sm:hidden justify-end" data-testid="container-create-room-mobile">
+          {/* Create Room — mobile only (<640px): own compact row, right-aligned.
+              Always rendered so guests can see and click it (→ login). */}
+          <div className="flex sm:hidden justify-end" data-testid="container-create-room-mobile">
+            {user ? (
               <Suspense fallback={<Skeleton className="h-[34px] w-[34px] rounded-full" />}>
                 <CreateRoomDialog
                   onCreateRoom={(data) => createRoomMutation.mutate(data)}
                   isPending={createRoomMutation.isPending}
                 />
               </Suspense>
-            </div>
-          )}
+            ) : (
+              <a
+                href="/api/login"
+                className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full inline-flex items-center"
+                aria-label="Sign in to create a room"
+                data-testid="button-create-room-guest-mobile"
+              >
+                <span className="create-room-neu-icon">
+                  <Hammer className="sparkle-icon w-[14px] h-[14px]" />
+                </span>
+                <span className="create-room-neu-label">Create Room</span>
+              </a>
+            )}
+          </div>
 
           {activeDiscovery === "rooms" && showLanguageFilters && (
           <div className="flex gap-2 flex-wrap items-center" data-testid="row-language-filters">
