@@ -111,17 +111,67 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab }: CreateR
             <span>Create Room</span>
           </button>
         ) : (
-          <Button
+          <button
+            type="button"
             data-testid="button-create-room"
-            className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full"
+            className="hammer-btn"
             aria-label="Create Room"
             title="Create Room"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "9px",
+              height: "36px",
+              padding: "4px 16px 4px 5px",
+              border: "none",
+              borderRadius: "999px",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              background: "linear-gradient(175deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 22%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.38) 100%), linear-gradient(180deg, hsl(230 18% 9%) 0%, hsl(230 18% 3%) 100%)",
+              boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.32), inset 1px 0 0 rgba(255,255,255,0.06), inset -1px 0 0 rgba(255,255,255,0.04), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.09), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.85), 0 20px 40px -14px rgba(0,0,0,0.60)",
+              color: "rgba(255,255,255,0.95)",
+              textShadow: "0 1px 3px rgba(0,0,0,0.85)",
+              transition: "transform 200ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 260ms cubic-bezier(0.2,0.8,0.2,1)",
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "inset 0 1.5px 0 rgba(255,255,255,0.40), inset 1px 0 0 rgba(255,255,255,0.08), inset -1px 0 0 rgba(255,255,255,0.05), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.12), 0 3px 8px rgba(0,0,0,0.70), 0 14px 32px -6px rgba(0,0,0,0.90), 0 0 20px -4px rgba(255,255,255,0.10)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "inset 0 1.5px 0 rgba(255,255,255,0.32), inset 1px 0 0 rgba(255,255,255,0.06), inset -1px 0 0 rgba(255,255,255,0.04), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.09), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.85), 0 20px 40px -14px rgba(0,0,0,0.60)";
+            }}
+            onMouseDown={e => {
+              (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0) scale(0.985)";
+            }}
+            onMouseUp={e => {
+              (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+            }}
           >
-            <span className="create-room-neu-icon">
+            <span style={{
+              flexShrink: 0,
+              width: "26px",
+              height: "26px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "999px",
+              background: "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 52%), linear-gradient(180deg, hsl(230 18% 22%) 0%, hsl(230 18% 11%) 100%)",
+              boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.38), inset 0 -1px 0 rgba(0,0,0,0.72), inset 0 0 0 1px rgba(255,255,255,0.10), 0 0 0 1px rgba(0,0,0,0.65), 0 3px 8px rgba(0,0,0,0.70)",
+              color: "rgba(255,255,255,0.92)",
+            }}>
               <Hammer className="sparkle-icon w-[14px] h-[14px]" />
             </span>
-            <span className="create-room-neu-label">Create Room</span>
-          </Button>
+            <span style={{
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.95)",
+              letterSpacing: "0.02em",
+              textShadow: "0 1px 3px rgba(0,0,0,0.85)",
+            }}>Create Room</span>
+          </button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>

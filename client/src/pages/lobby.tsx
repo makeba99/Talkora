@@ -1966,14 +1966,40 @@ export default function Lobby() {
               ) : (
                 <a
                   href="/api/login"
-                  className="create-room-neu hammer-btn font-semibold whitespace-nowrap flex-shrink-0 rounded-full inline-flex items-center"
+                  className="hammer-btn"
                   aria-label="Sign in to create a room"
                   data-testid="button-create-room-guest"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "9px",
+                    height: "36px",
+                    padding: "4px 16px 4px 5px",
+                    borderRadius: "999px",
+                    textDecoration: "none",
+                    flexShrink: 0,
+                    whiteSpace: "nowrap",
+                    cursor: "pointer",
+                    background: "linear-gradient(175deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 22%, rgba(255,255,255,0) 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.38) 100%), linear-gradient(180deg, hsl(230, 18%, 9%) 0%, hsl(230, 18%, 3%) 100%)",
+                    boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.32), inset 1px 0 0 rgba(255,255,255,0.06), inset -1px 0 0 rgba(255,255,255,0.04), inset 0 -1.5px 0 rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.09), 0 2px 4px rgba(0,0,0,0.65), 0 8px 24px -6px rgba(0,0,0,0.85)",
+                    color: "rgba(255,255,255,0.95)",
+                  }}
                 >
-                  <span className="create-room-neu-icon">
+                  <span style={{
+                    flexShrink: 0,
+                    width: "26px",
+                    height: "26px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "999px",
+                    background: "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 52%), linear-gradient(180deg, hsl(230, 18%, 22%) 0%, hsl(230, 18%, 11%) 100%)",
+                    boxShadow: "inset 0 1.5px 0 rgba(255,255,255,0.38), inset 0 -1px 0 rgba(0,0,0,0.72), 0 0 0 1px rgba(0,0,0,0.65), 0 3px 8px rgba(0,0,0,0.70)",
+                    color: "rgba(255,255,255,0.92)",
+                  }}>
                     <Hammer className="sparkle-icon w-[14px] h-[14px]" />
                   </span>
-                  <span className="create-room-neu-label">Create Room</span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.02em", textShadow: "0 1px 3px rgba(0,0,0,0.85)" }}>Create Room</span>
                 </a>
               )}
             </div>
