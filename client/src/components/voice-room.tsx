@@ -34,7 +34,6 @@ import { playMoodSound } from "@/lib/mood-sounds";
 import {
   VoiceProcessor,
   VOICE_PRESETS,
-  PRESET_CATEGORIES,
   getSavedVoicePresetId,
   saveVoicePresetId,
   previewVoicePreset,
@@ -2451,6 +2450,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     saveVoicePresetId(presetId);
     setVoicePickerOpen(false);
 
+    // Auto-preview the character sound when selected (non-blocking)
+    if (presetId !== "natural") {
+      const ctx = (() => {
+        if (!audioContextRef.current) {
+          const AC = window.AudioContext || (window as any).webkitAudioContext;
+          if (AC) audioContextRef.current = new AC();
+        }
+        return audioContextRef.current;
+      })();
+      if (ctx) {
+        setPreviewingPresetId(presetId);
+        previewVoicePreset(ctx, presetId)
+          .catch(() => {})
+          .finally(() => setPreviewingPresetId(null));
+      }
+    }
+
     const rawStream = rawMicStreamRef.current;
     if (!rawStream) return;
 
@@ -4852,60 +4868,66 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   </div>
 
-                  {/* ── Preset grid grouped by category ──────────────────── */}
+                  {/* ── Characters grid ──────────────────────────────────── */}
                   <div className="p-2.5 space-y-2.5">
-                    {PRESET_CATEGORIES.map((cat) => {
-                      const presetsInCat = VOICE_PRESETS.filter((p) => p.category === cat.id);
-                      if (presetsInCat.length === 0) return null;
-                      return (
-                        <div key={cat.id}>
-                          <p className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-1.5 px-0.5">{cat.label}</p>
-                          <div className="grid grid-cols-4 gap-1">
-                            {presetsInCat.map((preset) => {
-                              const isActive = selectedVoicePresetId === preset.id;
-                              const isPreviewing = previewingPresetId === preset.id;
-                              return (
-                                <div key={preset.id} className="relative group">
-                                  <button
-                                    data-testid={`voice-preset-${preset.id}`}
-                                    onClick={() => handleVoicePresetChange(preset.id)}
-                                    className="w-full flex flex-col items-center gap-0.5 px-1.5 py-2 rounded-xl border transition-all duration-150 text-center"
-                                    style={isActive
-                                      ? { background: "rgba(99,102,241,0.28)", borderColor: "rgba(99,102,241,0.65)", color: "rgba(199,210,254,1)", boxShadow: "0 0 0 1px rgba(99,102,241,0.35) inset" }
-                                      : { background: "rgba(255,255,255,0.035)", borderColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.7)" }
-                                    }
-                                  >
-                                    <span className="text-lg leading-none">{preset.emoji}</span>
-                                    <span className="text-[10.5px] font-semibold leading-tight">{preset.label}</span>
-                                    <span className="text-[9px] leading-tight opacity-50 line-clamp-1">{preset.description}</span>
-                                  </button>
-                                  {/* Tone preview button — auditions the effect with a synthetic tone */}
-                                  <button
-                                    data-testid={`button-preview-${preset.id}`}
-                                    title={`Preview ${preset.label} tone`}
-                                    onClick={(e) => { e.stopPropagation(); handleVoicePreview(preset.id); }}
-                                    disabled={previewingPresetId !== null}
-                                    className="absolute top-1 right-1 w-4 h-4 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity disabled:opacity-30"
-                                    style={{ background: "rgba(99,102,241,0.3)", color: "rgba(199,210,254,0.9)" }}
-                                  >
-                                    {isPreviewing
-                                      ? <span className="w-2 h-2 rounded-full bg-indigo-300 animate-ping" />
-                                      : <Volume1 className="w-2.5 h-2.5" />
-                                    }
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {/* Natural */}
+                    <div>
+                      <p className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-1.5 px-0.5">Original</p>
+                      <div className="grid grid-cols-4 gap-1">
+                        {VOICE_PRESETS.filter(p => p.category === "natural").map((preset) => {
+                          const isActive = selectedVoicePresetId === preset.id;
+                          return (
+                            <button
+                              key={preset.id}
+                              data-testid={`voice-preset-${preset.id}`}
+                              onClick={() => handleVoicePresetChange(preset.id)}
+                              className="w-full flex flex-col items-center gap-0.5 px-1.5 py-2 rounded-xl border transition-all duration-150 text-center"
+                              style={isActive
+                                ? { background: "rgba(99,102,241,0.28)", borderColor: "rgba(99,102,241,0.65)", color: "rgba(199,210,254,1)", boxShadow: "0 0 0 1px rgba(99,102,241,0.35) inset" }
+                                : { background: "rgba(255,255,255,0.035)", borderColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.7)" }
+                              }
+                            >
+                              <span className="text-lg leading-none">{preset.emoji}</span>
+                              <span className="text-[10.5px] font-semibold leading-tight">{preset.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* Characters */}
+                    <div>
+                      <p className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-1.5 px-0.5">Characters</p>
+                      <div className="grid grid-cols-4 gap-1">
+                        {VOICE_PRESETS.filter(p => p.category === "character").map((preset) => {
+                          const isActive = selectedVoicePresetId === preset.id;
+                          const isPreviewing = previewingPresetId === preset.id;
+                          return (
+                            <button
+                              key={preset.id}
+                              data-testid={`voice-preset-${preset.id}`}
+                              onClick={() => handleVoicePresetChange(preset.id)}
+                              className="w-full flex flex-col items-center gap-0.5 px-1.5 py-2 rounded-xl border transition-all duration-150 text-center relative"
+                              style={isActive
+                                ? { background: "rgba(99,102,241,0.28)", borderColor: "rgba(99,102,241,0.65)", color: "rgba(199,210,254,1)", boxShadow: "0 0 0 1px rgba(99,102,241,0.35) inset" }
+                                : { background: "rgba(255,255,255,0.035)", borderColor: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.7)" }
+                              }
+                            >
+                              {isPreviewing && (
+                                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-300 animate-ping" />
+                              )}
+                              <span className="text-lg leading-none">{preset.emoji}</span>
+                              <span className="text-[10.5px] font-semibold leading-tight">{preset.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Footer hint */}
                   <div className="px-3.5 pb-2.5 pt-0.5">
                     <p className="text-[9px] text-white/20 text-center">
-                      EQ · compressor · limiter · noise gate · real-time effects
+                      Click a character to apply · preview plays on select
                     </p>
                   </div>
                 </div>

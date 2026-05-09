@@ -178,17 +178,29 @@ function makeDistortionCurve(drive: number): Float32Array {
 export type VoicePresetId =
   | "natural"
   | "chipmunk"
-  | "alien"
-  | "demon"
+  | "baby"
+  | "elf"
+  | "fairy"
+  | "witch"
   | "giant"
+  | "ogre"
+  | "troll"
+  | "demon"
+  | "devil"
+  | "monster"
   | "robot"
-  | "radio"
-  | "underwater"
-  | "deep"
-  | "bright"
-  | "stage";
+  | "cyborg"
+  | "android"
+  | "alien"
+  | "ghost"
+  | "phantom"
+  | "wizard"
+  | "villain"
+  | "pirate"
+  | "squirrel"
+  | "vampire";
 
-export type VoicePresetCategory = "natural" | "fun" | "effect" | "tone";
+export type VoicePresetCategory = "natural" | "character";
 
 interface FilterConfig {
   type: BiquadFilterType;
@@ -205,7 +217,6 @@ interface DistortionConfig {
 export interface VoicePreset {
   id: VoicePresetId;
   label: string;
-  description: string;
   emoji: string;
   category: VoicePresetCategory;
   pitch?: number;
@@ -217,123 +228,206 @@ export interface VoicePreset {
 // ── Presets ───────────────────────────────────────────────────────────────────
 
 export const VOICE_PRESETS: VoicePreset[] = [
-  // ── Original ──────────────────────────────────────────────────────────────
   {
     id: "natural",
     label: "Natural",
-    description: "Your real voice",
     emoji: "🎙️",
     category: "natural",
   },
-
-  // ── Fun ───────────────────────────────────────────────────────────────────
   {
     id: "chipmunk",
     label: "Chipmunk",
-    description: "High & squeaky",
     emoji: "🐿️",
-    category: "fun",
+    category: "character",
     pitch: 1.8,
+  },
+  {
+    id: "squirrel",
+    label: "Squirrel",
+    emoji: "🦔",
+    category: "character",
+    pitch: 2.1,
+  },
+  {
+    id: "baby",
+    label: "Baby",
+    emoji: "👶",
+    category: "character",
+    pitch: 2.0,
+    filters: [
+      { type: "highshelf", frequency: 3500, gain: 5 },
+    ],
+  },
+  {
+    id: "elf",
+    label: "Elf",
+    emoji: "🧝",
+    category: "character",
+    pitch: 1.55,
+    filters: [
+      { type: "highshelf", frequency: 4000, gain: 5 },
+    ],
+  },
+  {
+    id: "fairy",
+    label: "Fairy",
+    emoji: "🧚",
+    category: "character",
+    pitch: 1.7,
+    filters: [
+      { type: "highshelf", frequency: 5000, gain: 6 },
+    ],
+  },
+  {
+    id: "witch",
+    label: "Witch",
+    emoji: "🧙‍♀️",
+    category: "character",
+    pitch: 1.25,
+    ringmod: 40,
   },
   {
     id: "giant",
     label: "Giant",
-    description: "Big & booming",
     emoji: "🗿",
-    category: "fun",
+    category: "character",
     pitch: 0.58,
+  },
+  {
+    id: "ogre",
+    label: "Ogre",
+    emoji: "👾",
+    category: "character",
+    pitch: 0.52,
+    filters: [
+      { type: "lowshelf", frequency: 200, gain: 8 },
+    ],
+  },
+  {
+    id: "troll",
+    label: "Troll",
+    emoji: "🧟",
+    category: "character",
+    pitch: 0.65,
+    distortion: { drive: 15, lowpass: 3000 },
   },
   {
     id: "demon",
     label: "Demon",
-    description: "Dark & gritty",
     emoji: "👹",
-    category: "fun",
+    category: "character",
     pitch: 0.68,
     distortion: { drive: 28, lowpass: 2200 },
   },
-
-  // ── Effects ───────────────────────────────────────────────────────────────
+  {
+    id: "devil",
+    label: "Devil",
+    emoji: "😈",
+    category: "character",
+    pitch: 0.72,
+    ringmod: 45,
+  },
+  {
+    id: "vampire",
+    label: "Vampire",
+    emoji: "🧛",
+    category: "character",
+    pitch: 0.78,
+    filters: [
+      { type: "peaking", frequency: 700, gain: 5, Q: 1.2 },
+      { type: "lowshelf", frequency: 180, gain: 4 },
+    ],
+  },
+  {
+    id: "monster",
+    label: "Monster",
+    emoji: "👻",
+    category: "character",
+    pitch: 0.45,
+    distortion: { drive: 40, lowpass: 1800 },
+  },
   {
     id: "robot",
     label: "Robot",
-    description: "Robotic buzz",
     emoji: "🤖",
-    category: "effect",
+    category: "character",
     ringmod: 65,
+  },
+  {
+    id: "cyborg",
+    label: "Cyborg",
+    emoji: "🦾",
+    category: "character",
+    pitch: 1.1,
+    ringmod: 80,
+  },
+  {
+    id: "android",
+    label: "Android",
+    emoji: "🔩",
+    category: "character",
+    pitch: 0.95,
+    filters: [
+      { type: "bandpass", frequency: 2000, gain: 0, Q: 0.7 },
+    ],
   },
   {
     id: "alien",
     label: "Alien",
-    description: "Alien chatter",
     emoji: "👽",
-    category: "effect",
+    category: "character",
     pitch: 1.35,
     ringmod: 130,
   },
   {
-    id: "radio",
-    label: "Radio",
-    description: "AM radio crackle",
-    emoji: "📻",
-    category: "effect",
-    distortion: { drive: 12, lowpass: 4000 },
-    filters: [
-      { type: "bandpass", frequency: 1900, gain: 0, Q: 0.75 },
-    ],
-  },
-  {
-    id: "underwater",
-    label: "Underwater",
-    description: "Muffled & warped",
-    emoji: "🌊",
-    category: "effect",
+    id: "ghost",
+    label: "Ghost",
+    emoji: "👁️",
+    category: "character",
     pitch: 0.88,
     filters: [
-      { type: "lowpass", frequency: 700, gain: 0, Q: 1.4 },
-    ],
-  },
-
-  // ── Tone ──────────────────────────────────────────────────────────────────
-  {
-    id: "deep",
-    label: "Deep",
-    description: "Smooth bass boost",
-    emoji: "🎤",
-    category: "tone",
-    pitch: 0.85,
-    filters: [
-      { type: "lowshelf", frequency: 220, gain: 9 },
+      { type: "lowpass", frequency: 900, gain: 0, Q: 1.2 },
     ],
   },
   {
-    id: "bright",
-    label: "Bright",
-    description: "Crisp & clear",
-    emoji: "✨",
-    category: "tone",
+    id: "phantom",
+    label: "Phantom",
+    emoji: "🌫️",
+    category: "character",
+    pitch: 0.78,
     filters: [
-      { type: "highshelf", frequency: 3000, gain: 7 },
+      { type: "lowpass", frequency: 600, gain: 0, Q: 1.6 },
     ],
   },
   {
-    id: "stage",
-    label: "Stage",
-    description: "Concert hall",
-    emoji: "🎭",
-    category: "tone",
+    id: "wizard",
+    label: "Wizard",
+    emoji: "🧙",
+    category: "character",
+    pitch: 0.78,
     filters: [
-      { type: "peaking", frequency: 900, gain: 4, Q: 1.2 },
-      { type: "highshelf", frequency: 5000, gain: 3 },
+      { type: "peaking", frequency: 800, gain: 5, Q: 1.3 },
     ],
   },
-];
-
-export const PRESET_CATEGORIES: { id: VoicePresetCategory; label: string }[] = [
-  { id: "natural", label: "Original" },
-  { id: "fun",     label: "Fun" },
-  { id: "effect",  label: "Effects" },
-  { id: "tone",    label: "Tone" },
+  {
+    id: "villain",
+    label: "Villain",
+    emoji: "🦹",
+    category: "character",
+    pitch: 0.75,
+    distortion: { drive: 18, lowpass: 3500 },
+  },
+  {
+    id: "pirate",
+    label: "Pirate",
+    emoji: "🏴‍☠️",
+    category: "character",
+    pitch: 0.82,
+    filters: [
+      { type: "bandpass", frequency: 1500, gain: 0, Q: 0.8 },
+      { type: "highshelf", frequency: 4000, gain: 3 },
+    ],
+  },
 ];
 
 // ── Persistence ───────────────────────────────────────────────────────────────
