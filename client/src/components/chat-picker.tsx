@@ -372,14 +372,27 @@ function RoomLinkPreview({ roomId, url }: { roomId: string; url: string }) {
 
   if (loading) {
     return (
-      <div className="mt-2 rounded-xl overflow-hidden animate-pulse" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", maxWidth: 300, padding: "10px 12px" }}>
-        <div className="h-3 rounded w-3/4 mb-2" style={{ background: "rgba(255,255,255,0.08)" }} />
+      <div className="mt-2 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", maxWidth: 300, padding: "10px 12px" }}>
+        <div className="h-2.5 rounded w-1/3 mb-2" style={{ background: "rgba(167,139,250,0.18)" }} />
+        <div className="h-3.5 rounded w-3/4 mb-1.5" style={{ background: "rgba(255,255,255,0.10)" }} />
         <div className="h-2 rounded w-1/2" style={{ background: "rgba(255,255,255,0.06)" }} />
       </div>
     );
   }
 
-  if (!room) return null;
+  if (!room) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 inline-flex items-center gap-1.5 text-primary underline underline-offset-2 text-[12px] hover:opacity-80 transition-opacity"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {url}
+      </a>
+    );
+  }
 
   const displayParticipants = participants.slice(0, 5);
   const extraCount = participants.length - displayParticipants.length;

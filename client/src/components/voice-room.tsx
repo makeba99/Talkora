@@ -1467,7 +1467,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [uploadingWelcomeMedia, setUploadingWelcomeMedia] = useState(false);
   const [dmUserId, setDmUserId] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [grammarEnabled, setGrammarEnabled] = useState(() => localStorage.getItem("vx-grammar-enabled") !== "false");
   const [grammarSuggestion, setGrammarSuggestion] = useState<GrammarSuggestion | null>(null);
   const [grammarDismissed, setGrammarDismissed] = useState(false);
   const grammarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -6598,9 +6597,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } else {
       setMentionQuery(null);
     }
-    // Real-time grammar check — fires immediately on each keystroke (only when enabled)
+    // Real-time grammar check — always on, fires 400ms after typing stops
     if (grammarTimerRef.current) clearTimeout(grammarTimerRef.current);
-    if (grammarEnabled && val.trim().length >= 3) {
+    if (val.trim().length >= 3) {
       grammarTimerRef.current = setTimeout(() => {
         const suggestion = checkGrammar(val);
         setGrammarSuggestion(suggestion);
@@ -6608,6 +6607,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }, 400);
     } else {
       setGrammarSuggestion(null);
+      setGrammarDismissed(false);
     }
     // Emit typing signal — throttled to at most once per 2 s while typing,
     // immediately stopped when the input is cleared.
@@ -7962,22 +7962,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   setReplyingTo(null);
                 }
               }} />
-              {/* Grammar toggle */}
-              <button
-                type="button"
-                title={grammarEnabled ? "Grammar check on — click to turn off" : "Grammar check off — click to turn on"}
-                data-testid="button-grammar-toggle"
-                data-active={grammarEnabled}
-                className="room-tool-btn"
-                onClick={() => {
-                  const next = !grammarEnabled;
-                  setGrammarEnabled(next);
-                  localStorage.setItem("vx-grammar-enabled", String(next));
-                  if (!next) setGrammarSuggestion(null);
-                }}
-              >
-                <Wand2 className="w-3.5 h-3.5" style={grammarEnabled ? { color: "rgba(167,139,250,0.9)" } : undefined} />
-              </button>
             </div>
             <button
               type="submit"
