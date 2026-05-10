@@ -6995,11 +6995,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         <button onClick={() => setSidePanelTab("read")} data-testid="tab-read" title="Read" className="room-tab-btn" data-accent="read" data-active={sidePanelTab === "read"}>
           <BookOpen className="w-[20px] h-[20px]" />
         </button>
-        <button onClick={() => setSidePanelTab("chess")} data-testid="tab-chess" title="Chess" className="room-tab-btn" data-accent="chess" data-active={sidePanelTab === "chess"}>
+        <button onClick={() => setSidePanelTab("chess")} data-testid="tab-chess" title="Games" className="room-tab-btn" data-accent="chess" data-active={sidePanelTab === "chess"}>
           <Gamepad2 className="w-[20px] h-[20px]" />
-        </button>
-        <button onClick={() => setSidePanelTab("games")} data-testid="tab-games" title="Group Games" className="room-tab-btn" data-accent="games" data-active={sidePanelTab === "games"}>
-          <Dices className="w-[20px] h-[20px]" />
         </button>
         <button onClick={() => setSidePanelTab("golive")} data-testid="tab-golive" title="Go Live" className="room-tab-btn" data-accent="golive" data-active={sidePanelTab === "golive"}>
           <Radio className="w-[20px] h-[20px]" />
@@ -8987,20 +8984,57 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         )}
       </div>
 
+      {/* ── Unified Games tab: Chess + Group Games sub-tabs ─────────────── */}
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chess" ? "flex" : "none" }}>
-        {user?.id && socket && (
-          <Suspense fallback={null}>
-            <ChessPanel socket={socket} roomId={room.id} userId={user.id} participants={participants} />
-          </Suspense>
-        )}
-      </div>
-
-      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "games" ? "flex" : "none" }}>
-        {user?.id && (
-          <Suspense fallback={null}>
-            <GroupGamesPanel participants={participants} userId={user.id} />
-          </Suspense>
-        )}
+        {(() => {
+          const GamesTabInner = () => {
+            const [gamesSubTab, setGamesSubTab] = useState<"chess" | "group">("chess");
+            return (
+              <div className="flex flex-col h-full overflow-hidden">
+                {/* Sub-tab bar */}
+                <div className="flex-shrink-0 flex border-b border-white/8">
+                  <button
+                    onClick={() => setGamesSubTab("chess")}
+                    className="flex-1 py-1.5 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors"
+                    style={gamesSubTab === "chess"
+                      ? { color: "rgb(129,140,248)", borderBottom: "2px solid rgb(129,140,248)" }
+                      : { color: "rgba(255,255,255,0.35)" }}
+                    data-testid="games-subtab-chess"
+                  >
+                    <Gamepad2 className="w-3 h-3" /> Chess
+                  </button>
+                  <button
+                    onClick={() => setGamesSubTab("group")}
+                    className="flex-1 py-1.5 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors"
+                    style={gamesSubTab === "group"
+                      ? { color: "rgb(167,139,250)", borderBottom: "2px solid rgb(167,139,250)" }
+                      : { color: "rgba(255,255,255,0.35)" }}
+                    data-testid="games-subtab-group"
+                  >
+                    <Dices className="w-3 h-3" /> Group Games
+                  </button>
+                </div>
+                {/* Chess panel */}
+                <div className="flex-1 overflow-hidden" style={{ display: gamesSubTab === "chess" ? "flex" : "none", flexDirection: "column" }}>
+                  {user?.id && socket && (
+                    <Suspense fallback={null}>
+                      <ChessPanel socket={socket} roomId={room.id} userId={user.id} participants={participants} />
+                    </Suspense>
+                  )}
+                </div>
+                {/* Group games panel */}
+                <div className="flex-1 overflow-hidden" style={{ display: gamesSubTab === "group" ? "flex" : "none", flexDirection: "column" }}>
+                  {user?.id && (
+                    <Suspense fallback={null}>
+                      <GroupGamesPanel participants={participants} userId={user.id} />
+                    </Suspense>
+                  )}
+                </div>
+              </div>
+            );
+          };
+          return <GamesTabInner />;
+        })()}
       </div>
 
       {false && (<div className="hidden">
