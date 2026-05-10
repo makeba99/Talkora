@@ -15,6 +15,13 @@
       "when": 1777837900000,
       "tag": "0001_safe_add_missing_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778433900000,
+      "tag": "0002_fix_analytics_constraints",
+      "breakpoints": true
     }
   ]
 }

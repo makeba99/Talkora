@@ -180,14 +180,18 @@ type AnalyticsData = {
 
 function AnalyticsTab() {
   const [days, setDays] = useState(30);
-  const { data, isLoading, refetch } = useQuery<AnalyticsData>({
+  const { data, isLoading, isError, error, refetch } = useQuery<AnalyticsData>({
     queryKey: ["/api/admin/analytics", days],
     queryFn: async () => {
       const res = await fetch(`/api/admin/analytics?days=${days}`, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch analytics");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || `Analytics API error ${res.status}`);
+      }
       return res.json();
     },
     refetchInterval: 60_000,
+    retry: 1,
   });
 
   const chartColor = "hsl(var(--primary))";
@@ -200,6 +204,21 @@ function AnalyticsTab() {
     fontSize: "12px",
     color: "hsl(var(--foreground))",
   };
+
+  if (isError) {
+    return (
+      <div className="space-y-6" data-testid="tab-content-analytics">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center">
+          <ShieldAlert className="w-8 h-8 text-red-400 mx-auto mb-2" />
+          <p className="text-sm font-semibold text-red-300">Analytics unavailable</p>
+          <p className="text-xs text-muted-foreground mt-1">{(error as Error)?.message || "Could not load analytics data."}</p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={() => refetch()} data-testid="button-analytics-retry">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" data-testid="tab-content-analytics">

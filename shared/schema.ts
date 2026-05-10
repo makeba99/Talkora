@@ -479,8 +479,8 @@ export const pageViews = pgTable("page_views", {
 
 export const roomJoins = pgTable("room_joins", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  roomId: varchar("room_id", { length: 36 }).notNull(),
-  userId: varchar("user_id", { length: 36 }).notNull(),
+  roomId: text("room_id").notNull(),
+  userId: text("user_id").notNull(),
   country: varchar("country", { length: 2 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({

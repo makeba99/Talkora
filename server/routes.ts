@@ -4555,7 +4555,9 @@ export async function registerRoutes(
             welcomeAccentColor: room.welcomeAccentColor || "#8B5CF6",
           });
         }
-        void storage.recordRoomJoin({ roomId, userId, country: socketCountries.get(socket.id) }).catch(() => {});
+        void storage.recordRoomJoin({ roomId, userId, country: socketCountries.get(socket.id) }).catch((err) => {
+          console.error("[analytics] recordRoomJoin failed:", err?.message || err);
+        });
       }
       io.emit("room:participants-update", { roomId, participants });
 
