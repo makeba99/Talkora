@@ -20,10 +20,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff, Linkedin } from "lucide-react";
 import { isSoundEnabled, setSoundEnabled, onSoundEnabledChange, sfxToggle } from "@/lib/sound-fx";
 import { isBoostMode, setBoostMode, onBoostModeChange } from "@/lib/perf-bus";
-import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
+import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket-context";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -884,7 +884,7 @@ export function ProfileDropdown({
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <SiLinkedin className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <Linkedin className="w-4 h-4 text-blue-600 flex-shrink-0" />
                     <Input
                       value={linkedinUrl}
                       onChange={(e) => setLinkedinUrl(e.target.value)}

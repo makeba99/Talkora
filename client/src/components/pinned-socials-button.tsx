@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Share2, X, GripVertical } from "lucide-react";
-import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
+import { Share2, X, GripVertical, Linkedin } from "lucide-react";
+import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
 
 const POS_STORAGE_KEY = "vextorn:pinned-socials:pos:v2";
@@ -225,7 +225,7 @@ export function PinnedSocialsButton() {
             data-testid="pinned-socials-linkedin"
             onClick={() => setOpen(false)}
           >
-            <SiLinkedin className="w-5 h-5" />
+            <Linkedin className="w-5 h-5" />
           </a>
         )}
         {facebook && (
