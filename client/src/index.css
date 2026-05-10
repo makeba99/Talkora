@@ -11046,7 +11046,7 @@ html.boost-mode .glass-panel {
 
   /* Inflated organic shape — receiver: flat top-left (near avatar) */
   border-radius: 6px 26px 26px 26px;
-  padding: 11px 14px 10px;
+  padding: 13px 16px 13px;
 
   /* Glass edges — cerulean micro-border */
   border: 1px solid rgba(100, 136, 255, 0.15);
@@ -11720,16 +11720,16 @@ html.boost-mode .glass-panel {
 /* ---- Chat bubble typography -------------------------------------------- */
 /* Sender name — shown ABOVE the bubble, outside it */
 .chat-msg-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: rgba(245, 242, 255, 0.90);
+  color: rgba(245, 242, 255, 0.92);
   letter-spacing: -0.01em;
   line-height: 1.3;
 }
 /* Timestamp — beside name */
 .chat-msg-time {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.48);
   font-weight: 400;
   letter-spacing: 0.02em;
   flex-shrink: 0;
@@ -11737,9 +11737,9 @@ html.boost-mode .glass-panel {
 /* Message body inside bubble */
 .chat-msg-card .chat-msg-body {
   color: rgba(225, 228, 248, 1.0);
-  font-size: 14px;
-  line-height: 1.55;
-  letter-spacing: 0.004em;
+  font-size: 15.5px;
+  line-height: 1.6;
+  letter-spacing: 0.003em;
 }
 /* Own bubble body — bright white on indigo */
 .chat-msg-card[data-own="true"] .chat-msg-body {
@@ -11834,13 +11834,13 @@ html.boost-mode .glass-panel {
   line-height: 1.3;
 }
 .chat-reply-block-body {
-  font-size: 11px;
-  color: rgba(210, 205, 235, 0.58);
-  line-height: 1.4;
+  font-size: 12.5px;
+  color: rgba(210, 205, 235, 0.70);
+  line-height: 1.45;
   word-break: break-word;
   overflow-wrap: anywhere;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -11898,46 +11898,42 @@ html.boost-mode .glass-panel {
   overflow: hidden;
 }
 
-/* ── Reply button embedded inside bubble ────────────────────────────────── */
-.chat-reply-inline-btn {
+/* ── Action row buttons — below bubble, shown on group-hover ─────────────── */
+.chat-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(180, 160, 255, 0.65);
-  background: rgba(120, 100, 255, 0.10);
-  border: 1px solid rgba(140, 120, 255, 0.18);
-  border-radius: 999px;
-  /* Larger tap target — comfortable for touch */
-  padding: 4px 11px;
+  padding: 4px 10px;
   min-height: 28px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(200, 195, 255, 0.70);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   cursor: pointer;
-  /* Always visible at 35% — touch users can see and tap without hover */
-  opacity: 0.35;
-  transition: color 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease, transform 120ms ease;
-  line-height: 1.4;
   white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  line-height: 1.4;
 }
-.chat-reply-inline-btn:hover {
-  opacity: 1;
-  color: rgba(200, 185, 255, 0.95);
-  background: rgba(120, 100, 255, 0.22);
-  border-color: rgba(160, 140, 255, 0.38);
+.chat-action-btn:hover {
+  color: rgba(220, 215, 255, 0.95);
+  background: rgba(120, 100, 255, 0.20);
+  border-color: rgba(160, 140, 255, 0.35);
   transform: scale(1.04);
 }
-.chat-reply-inline-btn:active {
+.chat-action-btn:active {
   transform: scale(0.96);
 }
-.chat-msg-card[data-own="true"] .chat-reply-inline-btn {
-  color: rgba(200, 195, 255, 0.60);
-  background: rgba(160, 150, 255, 0.08);
-  border-color: rgba(200, 190, 255, 0.15);
+.chat-action-btn--edit:hover {
+  color: rgba(147, 197, 253, 0.95);
+  background: rgba(59, 130, 246, 0.16);
+  border-color: rgba(147, 197, 253, 0.30);
 }
-.chat-msg-card[data-own="true"] .chat-reply-inline-btn:hover {
-  color: rgba(220, 215, 255, 0.92);
-  background: rgba(160, 150, 255, 0.20);
-  border-color: rgba(200, 190, 255, 0.35);
+.chat-action-btn--delete:hover {
+  color: rgba(252, 165, 165, 0.95);
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(252, 165, 165, 0.30);
 }
 
 /* ── Seen receipts — tiny avatar bubbles under last-seen message ─────────── */
