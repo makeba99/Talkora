@@ -25,6 +25,7 @@ import {
 } from "./seo-meta";
 import { getPrecomputedHtml } from "./static";
 import { registerImageProxy } from "./image-proxy";
+import { detectCountry } from "./geo";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -157,6 +158,7 @@ const userCurrentRoom = new Map<string, string>();
 const roomKnockGrants = new Map<string, Set<string>>();
 const roomDeleteTimers = new Map<string, NodeJS.Timeout>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
+const socketCountries = new Map<string, string>();
 const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
 const roomPinnedMessages = new Map<string, { message: any; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null>();
 // AI Tutor room state: one active session per room
@@ -2853,16 +2855,14 @@ export async function registerRoutes(
       if (referrer) {
         try { referrerDomain = new URL(referrer).hostname.replace(/^www\./, ""); } catch {}
       }
-      const country = (
-        (req.headers["cf-ipcountry"] as string) ||
-        (req.headers["x-vercel-ip-country"] as string) ||
-        (req.headers["x-country-code"] as string) ||
-        ""
-      ).slice(0, 2).toUpperCase() || undefined;
+      // Only store referrer if it's genuinely external (different origin than app)
+      const origin = `${req.protocol}://${req.get("host")}`;
+      const isExternalReferrer = referrer && !referrer.startsWith(origin);
+      const country = await detectCountry(req.headers);
       await storage.recordPageView({
         path: pvPath.slice(0, 255),
-        referrer: typeof referrer === "string" ? referrer.slice(0, 500) : undefined,
-        referrerDomain: referrerDomain.slice(0, 120) || undefined,
+        referrer: isExternalReferrer && typeof referrer === "string" ? referrer.slice(0, 500) : undefined,
+        referrerDomain: isExternalReferrer && referrerDomain ? referrerDomain.slice(0, 120) : undefined,
         country,
         sessionHash,
       });
@@ -4391,6 +4391,12 @@ export async function registerRoutes(
   io.on("connection", (socket) => {
     let currentUserId: string | null = null;
 
+    // Detect and cache the connecting client's country from the HTTP handshake
+    // headers so it's available when room:join fires (which has no req object).
+    void detectCountry(socket.handshake.headers as Record<string, any>).then((code) => {
+      if (code) socketCountries.set(socket.id, code);
+    });
+
     socket.on("user:online", async (userId: string) => {
       currentUserId = userId;
 
@@ -4549,7 +4555,7 @@ export async function registerRoutes(
             welcomeAccentColor: room.welcomeAccentColor || "#8B5CF6",
           });
         }
-        void storage.recordRoomJoin({ roomId, userId }).catch(() => {});
+        void storage.recordRoomJoin({ roomId, userId, country: socketCountries.get(socket.id) }).catch(() => {});
       }
       io.emit("room:participants-update", { roomId, participants });
 
@@ -6134,6 +6140,7 @@ export async function registerRoutes(
     });
 
     socket.on("disconnect", async () => {
+      socketCountries.delete(socket.id);
       if (currentUserId) {
         const disconnectingUserId = currentUserId;
         const timerId = `${disconnectingUserId}-disconnect`;

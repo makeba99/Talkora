@@ -9,6 +9,7 @@ import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { startCleanupScheduler } from "./cleanup";
 import { applySecurityMiddleware } from "./security";
 import { runMigrations } from "./db";
+import { detectCountry } from "./geo";
 
 const app = express();
 const httpServer = createServer(app);
@@ -96,19 +97,17 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
       if (referrer) {
         try { referrerDomain = new URL(referrer).hostname.replace(/^www\./, ""); } catch {}
       }
-      const country = (
-        (req.headers["cf-ipcountry"] as string) ||
-        (req.headers["x-vercel-ip-country"] as string) ||
-        (req.headers["x-country-code"] as string) ||
-        ""
-      ).slice(0, 2).toUpperCase() || undefined;
+      const country = await detectCountry(req.headers as Record<string, any>);
       const ip = ((req.headers["x-forwarded-for"] as string) || (req.headers["x-real-ip"] as string) || "").split(",")[0].trim();
       const ua = (req.headers["user-agent"] || "").slice(0, 200);
       const sessionHash = createHash("sha256").update(`${ip}::${ua}`).digest("hex").slice(0, 32);
+      // Only store referrer if it's from a different origin (not the app itself)
+      const origin = `${req.protocol}://${req.get("host")}`;
+      const isExternalReferrer = referrer && !referrer.startsWith(origin);
       await s.recordPageView({
         path: req.path.slice(0, 255),
-        referrer: referrer.slice(0, 500) || undefined,
-        referrerDomain: referrerDomain.slice(0, 120) || undefined,
+        referrer: isExternalReferrer ? referrer.slice(0, 500) : undefined,
+        referrerDomain: isExternalReferrer ? referrerDomain.slice(0, 120) || undefined : undefined,
         country,
         sessionHash,
       });

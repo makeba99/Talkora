@@ -80,17 +80,46 @@ function LobbyShell() {
 function RouteTracker() {
   const [location] = useLocation();
   const prevLocation = useRef<string | null>(null);
+  // Real external referrer captured once on first load and persisted for the
+  // session so internal SPA navigations don't overwrite it with the app's own
+  // origin (which previously polluted the referrer_domain column with noise).
+  const externalReferrer = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    // Capture and persist the genuine external referrer on first mount only.
+    const stored = sessionStorage.getItem("vx_ref");
+    if (stored !== null) {
+      externalReferrer.current = stored || undefined;
+    } else {
+      const ref = document.referrer || "";
+      try {
+        // Only treat it as external if it comes from a different origin.
+        if (ref && new URL(ref).origin !== window.location.origin) {
+          externalReferrer.current = ref;
+          sessionStorage.setItem("vx_ref", ref);
+        } else {
+          sessionStorage.setItem("vx_ref", "");
+        }
+      } catch {
+        sessionStorage.setItem("vx_ref", "");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (prevLocation.current === location) return;
-    const prev = prevLocation.current;
+    const isFirstLoad = prevLocation.current === null;
     prevLocation.current = location;
     fetch("/api/analytics/pageview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         path: location,
-        referrer: prev ? window.location.origin + prev : document.referrer || undefined,
+        // First load: send the real external referrer (e.g. google.com, twitter.com).
+        // Subsequent SPA navigations: no referrer — internal navigation has no
+        // meaningful external source and sending window.location.origin + prev
+        // was polluting referrer_domain with the app's own hostname.
+        referrer: isFirstLoad ? externalReferrer.current : undefined,
       }),
       credentials: "include",
     }).catch(() => {});
