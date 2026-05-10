@@ -11949,6 +11949,88 @@ html.boost-mode .glass-panel {
   transform: scale(1.2);
 }
 
+/* ── Grammar: word alternatives chip row ─────────────────────────────────── */
+.grammar-alt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: rgba(129, 140, 248, 0.07);
+  border: 1px solid rgba(129, 140, 248, 0.20);
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.grammar-alt-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(165, 180, 252, 0.75);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.grammar-alt-chips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
+}
+.grammar-alt-chips::-webkit-scrollbar { display: none; }
+.grammar-alt-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  background: rgba(129, 140, 248, 0.15);
+  border: 1px solid rgba(129, 140, 248, 0.30);
+  color: rgba(199, 210, 254, 0.90);
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+.grammar-alt-chip:hover {
+  background: rgba(129, 140, 248, 0.28);
+  border-color: rgba(129, 140, 248, 0.55);
+  transform: translateY(-1px);
+}
+.grammar-alt-chip:active {
+  transform: translateY(0);
+}
+
+/* ── Grammar: Apply All button ───────────────────────────────────────────── */
+.grammar-apply-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  padding: 4px 10px;
+  border-radius: 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  color: rgba(110, 231, 183, 0.90);
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+.grammar-apply-all:hover {
+  background: rgba(52, 211, 153, 0.22);
+  border-color: rgba(52, 211, 153, 0.48);
+}
+.grammar-apply-all:active {
+  transform: scale(0.98);
+}
+
 /* Honour reduced-motion users — kill all decorative animations. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -63,7 +63,7 @@ import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
-import { checkGrammarAll, type GrammarSuggestion, CATEGORY_META, SEVERITY_META } from "@/lib/grammar-check";
+import { checkGrammarAll, applyAllSuggestions, getWordAlternatives, applyWordAlternative, type GrammarSuggestion, CATEGORY_META, SEVERITY_META } from "@/lib/grammar-check";
 import type { Room, User, Follow } from "@shared/schema";
 import evaAvatarUrl from "@/assets/eva-avatar.webp";
 
@@ -1475,6 +1475,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [grammarDismissedIds, setGrammarDismissedIds] = useState<Set<string>>(new Set());
   const [grammarUndo, setGrammarUndo] = useState<string | null>(null);
   const grammarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [wordAltInfo, setWordAltInfo] = useState<{ word: string; alternatives: string[]; wordStart: number; wordEnd: number } | null>(null);
+  const chatTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [reportTargetUserId, setReportTargetUserId] = useState<string | null>(null);
   const [blockDialogUserId, setBlockDialogUserId] = useState<string | null>(null);
   const [blockDialogStep, setBlockDialogStep] = useState<"choose" | "forever-confirm">("choose");
@@ -6618,7 +6620,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } else {
       setMentionQuery(null);
     }
-    // Real-time grammar check — debounced 350ms, returns all ranked suggestions
+    // Word alternatives — instant, on every keystroke, based on cursor position
+    const cursorPos = (e.target as HTMLTextAreaElement)?.selectionStart ?? val.length;
+    const altInfo = val.trim().length >= 2 ? getWordAlternatives(val, cursorPos) : null;
+    setWordAltInfo(altInfo);
+    // Real-time grammar check — debounced 800ms, returns all ranked suggestions
     if (grammarTimerRef.current) clearTimeout(grammarTimerRef.current);
     if (val.trim().length >= 3) {
       grammarTimerRef.current = setTimeout(() => {
@@ -7840,12 +7846,40 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </button>
           </div>
 
+          {/* ── Word alternatives chips — instant, per word ──────────────── */}
+          {wordAltInfo && wordAltInfo.alternatives.length > 0 && (
+            <div className="grammar-alt-row" data-testid="grammar-word-alternatives">
+              <span className="grammar-alt-label">
+                <Wand2 className="w-2.5 h-2.5" />
+                &ldquo;{wordAltInfo.word}&rdquo;
+              </span>
+              <div className="grammar-alt-chips">
+                {wordAltInfo.alternatives.slice(0, 5).map((alt) => (
+                  <button
+                    key={alt}
+                    type="button"
+                    className="grammar-alt-chip"
+                    data-testid={`button-word-alt-${alt}`}
+                    onClick={() => {
+                      const next = applyWordAlternative(chatText, wordAltInfo.wordStart, wordAltInfo.wordEnd, alt);
+                      setGrammarUndo(chatText);
+                      setChatText(next);
+                      setWordAltInfo(null);
+                    }}
+                  >
+                    {alt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ── Grammar suggestion panel ───────────────────────────────── */}
           {(() => {
             const visible = grammarSuggestions.filter(
               s => !grammarDismissedIds.has(s.id) && s.corrected !== chatText.trim()
             );
-            const shown = visible.slice(0, 3);
+            const shown = visible.slice(0, 4);
             const extra = visible.length - shown.length;
             if (visible.length === 0 && !grammarUndo) return null;
             return (
@@ -7860,7 +7894,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <span className="text-[10px] text-emerald-300 font-medium flex-1">Correction applied</span>
                     <button
                       type="button"
-                      onClick={() => { setChatText(grammarUndo); setGrammarUndo(null); }}
+                      onClick={() => { setChatText(grammarUndo!); setGrammarUndo(null); }}
                       className="text-[10px] font-semibold px-1.5 py-0.5 rounded transition-colors"
                       style={{ background: "rgba(52,211,153,0.18)", color: "rgba(110,231,183,0.95)" }}
                       data-testid="button-grammar-undo"
@@ -7877,6 +7911,24 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </button>
                   </div>
                 )}
+                {/* Apply All — only when 2+ suggestions visible */}
+                {visible.length >= 2 && (
+                  <button
+                    type="button"
+                    className="grammar-apply-all"
+                    data-testid="button-grammar-apply-all"
+                    onClick={() => {
+                      const fixed = applyAllSuggestions(chatText);
+                      setGrammarUndo(chatText);
+                      setChatText(fixed);
+                      setGrammarSuggestions([]);
+                      setGrammarDismissedIds(new Set());
+                    }}
+                  >
+                    <Wand2 className="w-3 h-3" />
+                    Fix all {visible.length} suggestion{visible.length > 1 ? "s" : ""}
+                  </button>
+                )}
                 {/* Suggestion rows */}
                 {shown.map((s) => {
                   const catMeta = CATEGORY_META[s.category];
@@ -7884,16 +7936,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   return (
                     <div
                       key={s.id}
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+                      className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg"
                       style={{ background: catMeta.bg, border: `1px solid ${catMeta.color}30` }}
                       data-testid={`grammar-suggestion-${s.id}`}
                     >
-                      <Wand2 className="w-3 h-3 flex-shrink-0 mt-px" style={{ color: catMeta.color }} />
+                      <Wand2 className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: catMeta.color }} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* Severity dot */}
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sevMeta.dot}`} />
-                          {/* Category badge */}
                           <span
                             className="text-[9px] font-bold uppercase tracking-wide px-1 py-0.5 rounded"
                             style={{ background: `${catMeta.color}22`, color: catMeta.color }}
@@ -7904,12 +7954,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             {s.message}
                           </span>
                         </div>
-                        {/* Corrected preview */}
-                        <div className="text-[11px] text-white/55 truncate mt-0.5 font-mono">
-                          → {s.corrected}
+                        {/* Diff preview — show corrected text */}
+                        <div className="text-[11px] text-white/60 truncate mt-0.5 font-mono leading-snug">
+                          <span className="text-white/30">→ </span>
+                          <span style={{ color: `${catMeta.color}cc` }}>{s.corrected}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -7937,7 +7988,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   );
                 })}
-                {/* "X more" overflow badge */}
                 {extra > 0 && (
                   <div className="text-[10px] text-white/35 text-center py-0.5" data-testid="grammar-extra-count">
                     +{extra} more suggestion{extra > 1 ? "s" : ""}
