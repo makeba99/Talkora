@@ -23,7 +23,7 @@ import {
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, Share2, CheckCheck, Wand2, Dices, SendHorizontal,
-  Linkedin
+  Linkedin, Pin
 } from "lucide-react";
 import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -1486,6 +1486,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [reactPopoverMsgId, setReactPopoverMsgId] = useState<string | null>(null);
+  const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
 
   const [seenByMap, setSeenByMap] = useState<Record<string, { userId: string; userName: string; profileImageUrl?: string | null }[]>>({});
   const lastSeenEmittedRef = useRef<string | null>(null);
@@ -6637,6 +6638,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
   }, []);
 
+  const scrollToMessage = useCallback((msgId: string) => {
+    const viewport = chatScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
+    const target = chatScrollRef.current?.querySelector(`[data-testid="room-chat-${msgId}"]`) as HTMLElement | null;
+    if (!viewport || !target) return;
+    const targetOffsetTop = target.offsetTop - viewport.offsetTop;
+    const centerOffset = targetOffsetTop - viewport.clientHeight / 2 + target.clientHeight / 2;
+    viewport.scrollTo({ top: Math.max(0, centerOffset), behavior: 'smooth' });
+    setHighlightedMsgId(msgId);
+    setTimeout(() => setHighlightedMsgId(null), 2200);
+  }, []);
+
   const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const val = e.target.value;
     setChatText(val);
@@ -7417,6 +7429,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     className={`group chat-msg-row${isOwn ? " flex-row-reverse" : ""}`}
                     data-own={isOwn ? "true" : undefined}
                     data-new={isNew ? "true" : undefined}
+                    data-highlighted={highlightedMsgId === msg.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                   >
                     {/* Per-user coloured avatar ring — marginTop offsets it to align with
@@ -7489,7 +7502,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {/* The actual bubble */}
                       <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
                         {msg.replyTo && (
-                          <div className="chat-reply-block" data-testid={`reply-chip-${msg.id}`}>
+                          <div
+                            className="chat-reply-block chat-reply-block--jumpable"
+                            data-testid={`reply-chip-${msg.id}`}
+                            onClick={() => scrollToMessage(msg.replyTo!.id)}
+                            title="Click to jump to original message"
+                          >
                             <span className="chat-reply-block-name">↩ {msg.replyTo.userName}</span>
                             <div className="chat-reply-block-body">{renderReplyPreview(msg.replyTo.text)}</div>
                           </div>
@@ -7583,7 +7601,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                       {/* ── Action row — absolutely positioned below bubble, no layout impact ─── */}
                       {msg.type !== "deleted" && (msg as any).type !== "system" && (
-                        <div className={`absolute top-full mt-0.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-20 ${isOwn ? "right-0 flex-row-reverse" : "left-0"}`}>
+                        <div className={`absolute top-full mt-1 chat-action-panel opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-20 ${isOwn ? "right-0" : "left-0"}`}>
                           {/* React button → opens emoji popover */}
                           <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
                             <PopoverTrigger asChild>
@@ -7619,6 +7637,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             </PopoverContent>
                           </Popover>
 
+                          <div className="chat-action-panel-sep" />
+
                           {/* Reply button */}
                           <button
                             onClick={() => {
@@ -7640,31 +7660,35 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                           {/* Pin — host / co-owner only */}
                           {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
-                            <button
-                              onClick={() => {
-                                if (pinnedMessage?.message?.id === msg.id) {
-                                  socket?.emit("room:unpin-message", { roomId: room.id });
-                                } else {
-                                  socket?.emit("room:pin-message", {
-                                    roomId: room.id,
-                                    message: msg,
-                                    pinnedBy: user?.id,
-                                    pinnedByName: getUserDisplayName(user) || "Host",
-                                  });
-                                }
-                              }}
-                              className="chat-action-btn"
-                              style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.90)", background: "rgba(251,191,36,.12)", borderColor: "rgba(251,191,36,.28)" } : {}}
-                              title={pinnedMessage?.message?.id === msg.id ? "Unpin message" : "Pin message"}
-                              data-testid={`button-pin-${msg.id}`}
-                            >
-                              📌
-                            </button>
+                            <>
+                              <div className="chat-action-panel-sep" />
+                              <button
+                                onClick={() => {
+                                  if (pinnedMessage?.message?.id === msg.id) {
+                                    socket?.emit("room:unpin-message", { roomId: room.id });
+                                  } else {
+                                    socket?.emit("room:pin-message", {
+                                      roomId: room.id,
+                                      message: msg,
+                                      pinnedBy: user?.id,
+                                      pinnedByName: getUserDisplayName(user) || "Host",
+                                    });
+                                  }
+                                }}
+                                className="chat-action-btn"
+                                style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.90)", background: "rgba(251,191,36,.14)" } : {}}
+                                title={pinnedMessage?.message?.id === msg.id ? "Unpin message" : "Pin message"}
+                                data-testid={`button-pin-${msg.id}`}
+                              >
+                                <Pin className="w-3.5 h-3.5" />
+                              </button>
+                            </>
                           )}
 
                           {/* Own-message actions */}
                           {isOwn && (
                             <>
+                              <div className="chat-action-panel-sep" />
                               <button
                                 onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
                                 className="chat-action-btn chat-action-btn--edit"
@@ -7672,7 +7696,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 data-testid={`button-edit-${msg.id}`}
                               >
                                 <Pencil className="w-3.5 h-3.5" />
-                                <span>Edit</span>
                               </button>
                               <button
                                 onClick={() => {
@@ -7684,7 +7707,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 data-testid={`button-delete-${msg.id}`}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                                <span>Delete</span>
                               </button>
                             </>
                           )}

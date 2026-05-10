@@ -1,0 +1,148 @@
+Create an ultra-premium futuristic dark-mode chat UI inspired by elite product design from Discord concept redesigns, VisionOS depth systems, Linear, Arc Browser, and next-generation neumorphism.
+
+The interface must feel cinematic, immersive, luxurious, hyper-clean, and professionally engineered — not generic glowing cyberpunk.
+
+STYLE DIRECTION:
+
+* Deep matte black and dark violet surfaces
+* Refined purple neon ambient lighting
+* Soft glassmorphism mixed with high-end neumorphism
+* Controlled glow only around important interactive elements
+* Directional lighting from top-left
+* Layered shadows for realistic depth
+* Subtle monochrome micro-noise texture
+* Extremely polished spacing and alignment
+* Premium OLED aesthetic
+* Elegant futuristic gaming/social platform feel
+
+MAIN CHAT AREA:
+
+* Right-aligned chat bubbles
+* Compact vertical spacing
+* Smaller and cleaner usernames above messages
+* Username font should be subtle, thin semi-bold, elegant
+* Timestamp tiny and low-opacity
+* Messages should have perfect visual hierarchy
+* Bubble corners smooth but tighter, not overly rounded
+* Bubble design should feel dense, expensive, and precision-crafted
+* Add soft internal highlights and subtle inner bevels
+* Add layered glass depth inside bubbles
+* Purple edge glow must be highly controlled and localized
+* No oversized blur or cheap neon effect
+
+MESSAGE BUBBLES:
+
+* Premium translucent dark-violet glass material
+* Thin luminous edge lighting
+* Inner shadow depth
+* Floating effect with cinematic shadow layering
+* Strong readability with balanced contrast
+* Different states:
+
+  * active message glow
+  * hover elevation
+  * reply state
+  * reaction state
+* Slight asymmetry for more natural silhouette
+* Modern premium bubble proportions
+
+REACTION + ACTION PANEL:
+
+* Floating action panel directly UNDER selected message
+* Compact horizontal glass panel
+* Fully embedded into message system visually
+* Tiny separator lines between actions
+* Small elegant icons
+* Buttons:
+
+  * Reply
+  * React
+  * Edit
+  * Pin
+* Emoji reaction row above action row
+* Emoji buttons should feel tactile and premium
+* Micro-hover lighting
+* Frosted translucent glass effect
+* More compact and cleaner than Discord
+* Perfect alignment and spacing
+* Small pointer/anchor visually connecting panel to selected message bubble
+
+EMOJIS:
+
+* Use expressive emotional emojis
+* Sad, angry, shocked, heartbreak reactions
+* Emojis should feel naturally integrated
+* Tiny ambient glow around selected reaction only
+
+AVATARS:
+
+* Circular avatars with premium metallic ring
+* Thin gold-purple ring lighting
+* Slight overlap with message bubble
+* Shared ambient shadow between avatar and bubble
+* Avatar lighting should match interface depth system
+
+INPUT AREA:
+
+* Input bar fully embedded into bottom container
+* Send button INSIDE the input field on the right side
+* Send button integrated seamlessly into surface
+* No floating detached button
+* Input should use same material language as bubbles
+* Soft internal lighting
+* Glass depth + neumorphic inset shadows
+* Placeholder text subtle and premium
+
+BOTTOM TOOLBAR:
+
+* Minimal futuristic toolbar
+* Tiny elegant icons
+* Balanced spacing
+* Soft active-state glow only
+* Refined separators
+* No visual clutter
+
+LIGHTING:
+
+* Use cinematic lighting hierarchy
+* Most UI should remain matte and dark
+* Glow reserved only for important focus areas
+* Add volumetric ambient purple haze in background
+* Add realistic shadow falloff
+* Use advanced layered lighting and reflections
+
+MOTION FEEL:
+
+* UI should feel alive and physics-based
+* Hover = subtle elevation and glow expansion
+* Selected message = ambient pulse
+* Button press = tactile compression feel
+
+OVERALL:
+This should look like a billion-dollar next-generation social platform UI concept created by elite senior product designers at Apple, Discord, Linear, and Nothing combined.
+
+The design must feel:
+
+* sophisticated
+* immersive
+* futuristic
+* luxurious
+* emotionally atmospheric
+* highly polished
+* minimal but cinematic
+* next-level premium
+
+Absolutely avoid:
+
+* cheap neon cyberpunk
+* oversaturated purple glow
+* oversized blur
+* cartoonish spacing
+* generic gaming UI
+* flat design
+* cluttered layout
+* thick borders
+* exaggerated rounded corners
+* low-end glassmorphism
+
+Make it feel like the future of premium real-time communication UI.
