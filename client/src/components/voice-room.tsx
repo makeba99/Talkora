@@ -6621,8 +6621,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setMentionQuery(null);
     }
     // Word alternatives — instant, on every keystroke, based on cursor position
-    const cursorPos = (e.target as HTMLTextAreaElement)?.selectionStart ?? val.length;
-    const altInfo = val.trim().length >= 2 ? getWordAlternatives(val, cursorPos) : null;
+    const altCursorPos = (e.target as HTMLTextAreaElement)?.selectionStart ?? val.length;
+    const altInfo = val.trim().length >= 2 ? getWordAlternatives(val, altCursorPos) : null;
     setWordAltInfo(altInfo);
     // Real-time grammar check — debounced 800ms, returns all ranked suggestions
     if (grammarTimerRef.current) clearTimeout(grammarTimerRef.current);
