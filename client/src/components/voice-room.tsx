@@ -1384,6 +1384,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const historyLoadedRef = useRef(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, { name: string; avatar: string | null }>>({});
   const typingEmitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wordAltTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingExpireTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const aiInputRef = useRef<HTMLInputElement>(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -6620,10 +6621,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } else {
       setMentionQuery(null);
     }
-    // Word alternatives — instant, on every keystroke, based on cursor position
+    // Word alternatives — debounced 150ms so it never blocks the keystroke render loop
     const altCursorPos = (e.target as HTMLTextAreaElement)?.selectionStart ?? val.length;
-    const altInfo = val.trim().length >= 2 ? getWordAlternatives(val, altCursorPos) : null;
-    setWordAltInfo(altInfo);
+    if (wordAltTimerRef.current) clearTimeout(wordAltTimerRef.current);
+    if (val.trim().length >= 2) {
+      wordAltTimerRef.current = setTimeout(() => {
+        const altInfo = getWordAlternatives(val, altCursorPos);
+        setWordAltInfo(altInfo);
+      }, 150);
+    } else {
+      setWordAltInfo(null);
+    }
     // Real-time grammar check — debounced 800ms, returns all ranked suggestions
     if (grammarTimerRef.current) clearTimeout(grammarTimerRef.current);
     if (val.trim().length >= 3) {
@@ -7599,7 +7607,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 });
                                 chatInputRef.current?.focus();
                               }}
-                              className="chat-reply-inline-btn opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                              className="chat-reply-inline-btn group-hover:opacity-100"
                               data-testid={`button-reply-${msg.id}`}
                             >
                               ↩ Reply
@@ -7814,7 +7822,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               rows={2}
               data-testid="input-room-chat"
               maxLength={isTroll ? TROLL_MAX_CHARS : undefined}
-              style={{ paddingRight: "2.6rem" }}
+              style={{ paddingRight: "3.2rem" }}
             />
             {isTroll && (
               <div
@@ -7830,7 +7838,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               disabled={!chatText.trim() || pasteUploading || isChatBlocked}
               data-testid="button-send-chat"
               aria-label="Send message"
-              className="absolute bottom-2 right-2 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="absolute bottom-1.5 right-1.5 flex items-center justify-center w-9 h-9 rounded-full transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
               style={{
                 background: chatText.trim() && !isChatBlocked
                   ? "linear-gradient(135deg, rgba(110,88,245,0.92) 0%, rgba(80,60,200,0.85) 100%)"
@@ -7843,7 +7851,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   : "none",
               }}
             >
-              <SendHorizontal className="w-3.5 h-3.5 text-white" />
+              <SendHorizontal className="w-4 h-4 text-white" />
             </button>
           </div>
 
