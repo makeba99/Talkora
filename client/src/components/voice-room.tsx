@@ -60,7 +60,7 @@ import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
-import { checkGrammar, type GrammarSuggestion } from "@/lib/grammar-check";
+import { checkGrammarAll, type GrammarSuggestion, CATEGORY_META, SEVERITY_META } from "@/lib/grammar-check";
 import type { Room, User, Follow } from "@shared/schema";
 import evaAvatarUrl from "@/assets/eva-avatar.webp";
 
@@ -1467,8 +1467,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [uploadingWelcomeMedia, setUploadingWelcomeMedia] = useState(false);
   const [dmUserId, setDmUserId] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [grammarSuggestion, setGrammarSuggestion] = useState<GrammarSuggestion | null>(null);
-  const [grammarDismissed, setGrammarDismissed] = useState(false);
+  const [grammarSuggestions, setGrammarSuggestions] = useState<GrammarSuggestion[]>([]);
+  const [grammarDismissedIds, setGrammarDismissedIds] = useState<Set<string>>(new Set());
+  const [grammarUndo, setGrammarUndo] = useState<string | null>(null);
   const grammarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reportTargetUserId, setReportTargetUserId] = useState<string | null>(null);
   const [blockDialogUserId, setBlockDialogUserId] = useState<string | null>(null);
@@ -6597,17 +6598,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } else {
       setMentionQuery(null);
     }
-    // Real-time grammar check — always on, fires 400ms after typing stops
+    // Real-time grammar check — debounced 350ms, returns all ranked suggestions
     if (grammarTimerRef.current) clearTimeout(grammarTimerRef.current);
     if (val.trim().length >= 3) {
       grammarTimerRef.current = setTimeout(() => {
-        const suggestion = checkGrammar(val);
-        setGrammarSuggestion(suggestion);
-        if (suggestion) setGrammarDismissed(false);
-      }, 400);
+        const suggestions = checkGrammarAll(val);
+        setGrammarSuggestions(suggestions);
+        if (suggestions.length > 0) setGrammarDismissedIds(new Set());
+      }, 350);
     } else {
-      setGrammarSuggestion(null);
-      setGrammarDismissed(false);
+      setGrammarSuggestions([]);
+      setGrammarDismissedIds(new Set());
     }
     // Emit typing signal — throttled to at most once per 2 s while typing,
     // immediately stopped when the input is cleared.
@@ -7799,38 +7800,112 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             )}
           </div>
 
-          {grammarDismissed === false && grammarSuggestion && grammarSuggestion.corrected !== chatText.trim() && (
-            <div
-              className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg animate-in fade-in slide-in-from-bottom-1"
-              style={{ background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.25)" }}
-              data-testid="grammar-suggestion-bar"
-            >
-              <Wand2 className="w-3 h-3 text-violet-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <span className="text-[10px] text-violet-300 font-medium">{grammarSuggestion.message}</span>
-                <div className="text-[11px] text-white/60 truncate mt-0.5">{grammarSuggestion.corrected}</div>
+          {/* ── Grammar suggestion panel ───────────────────────────────── */}
+          {(() => {
+            const visible = grammarSuggestions.filter(
+              s => !grammarDismissedIds.has(s.id) && s.corrected !== chatText.trim()
+            );
+            const shown = visible.slice(0, 3);
+            const extra = visible.length - shown.length;
+            if (visible.length === 0 && !grammarUndo) return null;
+            return (
+              <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-1" data-testid="grammar-suggestion-panel">
+                {/* Undo bar */}
+                {grammarUndo && (
+                  <div
+                    className="flex items-center gap-2 px-2.5 py-1 rounded-lg"
+                    style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.22)" }}
+                    data-testid="grammar-undo-bar"
+                  >
+                    <span className="text-[10px] text-emerald-300 font-medium flex-1">Correction applied</span>
+                    <button
+                      type="button"
+                      onClick={() => { setChatText(grammarUndo); setGrammarUndo(null); }}
+                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded transition-colors"
+                      style={{ background: "rgba(52,211,153,0.18)", color: "rgba(110,231,183,0.95)" }}
+                      data-testid="button-grammar-undo"
+                    >
+                      Undo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGrammarUndo(null)}
+                      className="text-white/30 hover:text-white/60 transition-colors p-0.5"
+                      aria-label="Dismiss undo"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                {/* Suggestion rows */}
+                {shown.map((s) => {
+                  const catMeta = CATEGORY_META[s.category];
+                  const sevMeta = SEVERITY_META[s.severity];
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+                      style={{ background: catMeta.bg, border: `1px solid ${catMeta.color}30` }}
+                      data-testid={`grammar-suggestion-${s.id}`}
+                    >
+                      <Wand2 className="w-3 h-3 flex-shrink-0 mt-px" style={{ color: catMeta.color }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* Severity dot */}
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sevMeta.dot}`} />
+                          {/* Category badge */}
+                          <span
+                            className="text-[9px] font-bold uppercase tracking-wide px-1 py-0.5 rounded"
+                            style={{ background: `${catMeta.color}22`, color: catMeta.color }}
+                          >
+                            {catMeta.label}
+                          </span>
+                          <span className="text-[10px] font-medium leading-tight" style={{ color: catMeta.color }}>
+                            {s.message}
+                          </span>
+                        </div>
+                        {/* Corrected preview */}
+                        <div className="text-[11px] text-white/55 truncate mt-0.5 font-mono">
+                          → {s.corrected}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGrammarUndo(chatText);
+                            setChatText(s.corrected);
+                            setGrammarSuggestions([]);
+                            setGrammarDismissedIds(new Set());
+                          }}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded transition-colors hover:opacity-90"
+                          style={{ background: `${catMeta.color}28`, color: catMeta.color }}
+                          data-testid={`button-grammar-apply-${s.id}`}
+                        >
+                          Apply
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGrammarDismissedIds(prev => new Set([...Array.from(prev), s.id]))}
+                          className="text-white/30 hover:text-white/60 transition-colors p-0.5"
+                          aria-label="Dismiss suggestion"
+                          data-testid={`button-grammar-dismiss-${s.id}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* "X more" overflow badge */}
+                {extra > 0 && (
+                  <div className="text-[10px] text-white/35 text-center py-0.5" data-testid="grammar-extra-count">
+                    +{extra} more suggestion{extra > 1 ? "s" : ""}
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => { setChatText(grammarSuggestion.corrected); setGrammarSuggestion(null); }}
-                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded transition-colors"
-                  style={{ background: "rgba(167,139,250,0.22)", color: "rgba(216,180,254,0.9)" }}
-                  data-testid="button-grammar-apply"
-                >
-                  Apply
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGrammarDismissed(true)}
-                  className="text-white/30 hover:text-white/60 transition-colors p-0.5"
-                  data-testid="button-grammar-close"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           <div className="chat-toolbar-slab">
             <div className="chat-tools-group">
