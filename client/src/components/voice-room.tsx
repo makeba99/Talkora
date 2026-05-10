@@ -7581,9 +7581,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
                       </div>
 
-                      {/* ── Action row — appears below bubble on hover ─── */}
+                      {/* ── Action row — absolutely positioned below bubble, no layout impact ─── */}
                       {msg.type !== "deleted" && (msg as any).type !== "system" && (
-                        <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-150 ${isOwn ? "flex-row-reverse" : ""}`}>
+                        <div className={`absolute top-full mt-0.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-20 ${isOwn ? "right-0 flex-row-reverse" : "left-0"}`}>
                           {/* React button → opens emoji popover */}
                           <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
                             <PopoverTrigger asChild>

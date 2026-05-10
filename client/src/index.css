@@ -10986,7 +10986,7 @@ html.boost-mode .glass-panel {
   position: relative;
   width: 100%;
   min-width: 0;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 /* Only animate newly-arrived messages (data-new set by JS) */
