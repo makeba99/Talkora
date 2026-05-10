@@ -225,14 +225,6 @@ export default defineConfig({
             return "query-vendor";
           }
 
-          // ── wouter split ─────────────────────────────────────────────────
-          // wouter is ~3 KB gzipped and only uses React hooks at call time
-          // (not createContext at module-eval time). Moving it to its own
-          // chunk reduces react-vendor parse cost and allows parallel fetch.
-          if (id.includes("wouter")) {
-            return "router-vendor";
-          }
-
           // ── @floating-ui split ───────────────────────────────────────────
           // @floating-ui/core, /dom, and /utils are pure positioning-math
           // libraries — they have zero React dependency and call no React APIs
