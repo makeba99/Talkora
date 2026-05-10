@@ -7610,7 +7610,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 data-testid={`button-react-open-${msg.id}`}
                                 title="Add reaction"
                               >
-                                <Smile className="w-3.5 h-3.5" />
+                                <Smile className="w-3 h-3" />
                                 <span>React</span>
                               </button>
                             </PopoverTrigger>
@@ -7654,7 +7654,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             data-testid={`button-reply-${msg.id}`}
                             title="Reply"
                           >
-                            <CornerUpLeft className="w-3.5 h-3.5" />
+                            <CornerUpLeft className="w-3 h-3" />
                             <span>Reply</span>
                           </button>
 
@@ -7680,7 +7680,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 title={pinnedMessage?.message?.id === msg.id ? "Unpin message" : "Pin message"}
                                 data-testid={`button-pin-${msg.id}`}
                               >
-                                <Pin className="w-3.5 h-3.5" />
+                                <Pin className="w-3 h-3" />
                               </button>
                             </>
                           )}
@@ -7695,7 +7695,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 title="Edit message"
                                 data-testid={`button-edit-${msg.id}`}
                               >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil className="w-3 h-3" />
                               </button>
                               <button
                                 onClick={() => {
@@ -7706,7 +7706,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 title="Delete message"
                                 data-testid={`button-delete-${msg.id}`}
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3 h-3" />
                               </button>
                             </>
                           )}

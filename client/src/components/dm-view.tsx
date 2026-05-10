@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -52,7 +51,6 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
 
   useEffect(() => {
     if (!socket || !user) return;
-
     const handleNewMessage = (msg: Message) => {
       if (
         (msg.fromId === otherUserId && msg.toId === user.id) ||
@@ -63,11 +61,8 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         });
       }
     };
-
     socket.on("dm:new", handleNewMessage);
-    return () => {
-      socket.off("dm:new", handleNewMessage);
-    };
+    return () => { socket.off("dm:new", handleNewMessage); };
   }, [socket, user, otherUserId]);
 
   useEffect(() => {
@@ -94,9 +89,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         const { scrollTop, scrollHeight, clientHeight } = viewport;
         const atBottom = scrollHeight - scrollTop <= clientHeight + 50;
         setIsAtBottom(atBottom);
-        if (atBottom) {
-          setUnreadCount(0);
-        }
+        if (atBottom) setUnreadCount(0);
       }
     }
   };
@@ -104,14 +97,10 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   useEffect(() => {
     if (isAtBottom && messages.length > 0) {
       const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-      if (viewport) {
-        viewport.scrollTop = viewport.scrollHeight;
-      }
+      if (viewport) viewport.scrollTop = viewport.scrollHeight;
     } else if (!isAtBottom && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
-      if (lastMsg.fromId !== user?.id) {
-        setUnreadCount(prev => prev + 1);
-      }
+      if (lastMsg.fromId !== user?.id) setUnreadCount(prev => prev + 1);
     }
   }, [messages, isAtBottom, user?.id]);
 
@@ -124,69 +113,58 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     }
   };
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSend = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!text.trim()) return;
     sendMutation.mutate(text.trim());
     setText("");
   };
 
   const formatTime = (date: string | Date) => {
-    return new Date(date).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="border-b p-3 flex items-center gap-3">
-        <Button
-          size="icon"
-          variant="ghost"
+      {/* Header */}
+      <div className="dm-header">
+        <button
+          type="button"
           onClick={onBack}
+          className="dm-back-btn"
           data-testid="button-dm-back"
           aria-label="Go back"
         >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-        </Button>
-        <Avatar className="w-8 h-8">
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
+        <Avatar className="w-7 h-7 flex-shrink-0">
           <AvatarImage src={otherUser?.profileImageUrl || undefined} alt={getUserDisplayName(otherUser)} />
-          <AvatarFallback className="text-sm bg-primary/10 text-primary">
+          <AvatarFallback className="text-xs" style={{ background: "rgba(120,100,255,0.18)", color: "rgba(180,170,255,0.90)" }}>
             {getUserInitials(otherUser)}
           </AvatarFallback>
         </Avatar>
-        <div className="min-w-0">
-          <p className="text-sm font-medium truncate" data-testid="text-dm-username">
-            {getUserDisplayName(otherUser)}
-          </p>
-        </div>
+        <p className="text-xs font-semibold truncate tracking-tight" style={{ color: "rgba(220,215,255,0.90)" }} data-testid="text-dm-username">
+          {getUserDisplayName(otherUser)}
+        </p>
       </div>
 
+      {/* Messages */}
       <ScrollArea className="flex-1" ref={scrollRef} onScroll={handleScroll}>
-        <div className="p-4 space-y-3">
+        <div className="p-3 space-y-2.5">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Loading messages...
-            </p>
+            <p className="text-xs text-center py-8" style={{ color: "rgba(160,155,210,0.45)" }}>Loading…</p>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 space-y-3">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                <Send className="w-6 h-6 text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center py-14 space-y-2.5">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(100,85,210,0.12)", border: "1px solid rgba(120,100,255,0.16)" }}>
+                <Send className="w-4 h-4" style={{ color: "rgba(160,148,255,0.45)" }} />
               </div>
-              <p className="text-sm text-muted-foreground">
-                No messages yet. Say hello!
-              </p>
+              <p className="text-xs" style={{ color: "rgba(160,155,210,0.45)" }}>No messages yet. Say hello!</p>
             </div>
           ) : (
             messages.map((msg) => {
               const isMe = msg.fromId === user?.id;
               return (
-                <div
-                  key={msg.id}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-                  data-testid={`message-${msg.id}`}
-                >
+                <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`} data-testid={`message-${msg.id}`}>
                   <div className={`dm-bubble ${isMe ? "dm-bubble-own" : "dm-bubble-other"}`}>
                     <div className="dm-bubble-text break-words">{renderMessageContent(msg.text)}</div>
                     <p className="dm-bubble-time">{formatTime(msg.createdAt)}</p>
@@ -198,52 +176,55 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         </div>
       </ScrollArea>
 
-      <form onSubmit={handleSend} className="border-t p-3 flex items-center gap-1">
-        <EmojiPickerButton onEmojiSelect={(emoji) => setText((prev) => prev + emoji)} />
-        <GifPickerButton onGifSelect={(gifUrl) => {
-          sendMutation.mutate(`[gif:${gifUrl}]`);
-        }} />
-        <ImageUploadButton onImageSelect={(imgUrl) => {
-          sendMutation.mutate(`[img:${imgUrl}]`);
-        }} />
-        <Input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          aria-label="Type a message"
-          onPaste={async (e) => {
-            const items = Array.from(e.clipboardData.items);
-            const imageItem = items.find(item => item.type.startsWith("image/"));
-            if (imageItem) {
-              e.preventDefault();
-              const file = imageItem.getAsFile();
-              if (!file) return;
-              setPasteUploading(true);
-              try {
-                const imgUrl = await uploadChatImage(file);
-                sendMutation.mutate(`[img:${imgUrl}]`);
-              } catch (err) {
-                console.error("Paste image upload failed:", err);
-              } finally {
-                setPasteUploading(false);
+      {/* Input area — unified dock with embedded send */}
+      <form onSubmit={handleSend} className="dm-input-dock">
+        {/* Attachment tools row */}
+        <div className="dm-tools-row">
+          <EmojiPickerButton onEmojiSelect={(emoji) => setText((prev) => prev + emoji)} />
+          <GifPickerButton onGifSelect={(gifUrl) => { sendMutation.mutate(`[gif:${gifUrl}]`); }} />
+          <ImageUploadButton onImageSelect={(imgUrl) => { sendMutation.mutate(`[img:${imgUrl}]`); }} />
+        </div>
+
+        {/* Input with send inside */}
+        <div className="dm-input-wrap">
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            aria-label="Type a message"
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(); }}
+            onPaste={async (e) => {
+              const items = Array.from(e.clipboardData.items);
+              const imageItem = items.find(item => item.type.startsWith("image/"));
+              if (imageItem) {
+                e.preventDefault();
+                const file = imageItem.getAsFile();
+                if (!file) return;
+                setPasteUploading(true);
+                try {
+                  const imgUrl = await uploadChatImage(file);
+                  sendMutation.mutate(`[img:${imgUrl}]`);
+                } catch {}
+                finally { setPasteUploading(false); }
               }
-            }
-          }}
-          placeholder={pasteUploading ? "Uploading image..." : "Type a message..."}
-          disabled={pasteUploading}
-          className="flex-1"
-          data-testid="input-dm-message"
-        />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!text.trim() || sendMutation.isPending}
-          data-testid="button-send-dm"
-          aria-label="Send message"
-        >
-          <Send className="w-4 h-4" aria-hidden="true" />
-        </Button>
+            }}
+            placeholder={pasteUploading ? "Uploading…" : "Message…"}
+            disabled={pasteUploading}
+            className="dm-input"
+            data-testid="input-dm-message"
+          />
+          <button
+            type="submit"
+            disabled={!text.trim() || sendMutation.isPending}
+            className="dm-send-btn"
+            data-testid="button-send-dm"
+            aria-label="Send message"
+          >
+            <Send className="w-3 h-3" aria-hidden="true" />
+          </button>
+        </div>
       </form>
 
+      {/* Scroll-to-bottom pill */}
       {!isAtBottom && (
         <button
           type="button"
@@ -256,11 +237,11 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
           <ChevronDown className="w-4 h-4" />
           {unreadCount > 0 && (
             <span
-              className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none animate-pulse-badge"
+              className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none"
               style={{
-                background: "linear-gradient(145deg, hsl(0 90% 58%) 0%, hsl(0 78% 44%) 100%)",
+                background: "linear-gradient(145deg, #e85555 0%, #c01818 100%)",
                 border: "1.5px solid hsl(228 18% 8%)",
-                boxShadow: "0 0 10px rgba(239,68,68,0.7), 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
+                boxShadow: "0 0 6px rgba(220,50,50,0.5), 0 1px 4px rgba(0,0,0,0.4)",
               }}
               data-testid="badge-dm-scroll-unread"
             >
