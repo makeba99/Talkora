@@ -12341,3 +12341,61 @@ html.boost-mode .glass-panel {
   cursor: default;
   opacity: 0.5;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Inline action bar — embedded at bubble bottom, revealed on hover
+   Order: Reply · React · Pin · Edit · Del
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.chat-action-inline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  width: 100%;
+  min-height: 0;
+}
+
+.chat-action-inline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  min-height: 22px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(180, 172, 240, 0.48);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  transition: color 100ms ease, background 100ms ease;
+  line-height: 1;
+}
+.chat-action-inline-btn:hover {
+  color: rgba(210, 205, 255, 0.88);
+  background: rgba(100, 85, 210, 0.12);
+}
+.chat-action-inline-btn:active {
+  transform: scale(0.96);
+}
+.chat-action-inline-btn--edit:hover {
+  color: rgba(130, 185, 250, 0.90);
+  background: rgba(50, 115, 235, 0.12);
+}
+.chat-action-inline-btn--delete:hover {
+  color: rgba(245, 150, 150, 0.90);
+  background: rgba(220, 60, 60, 0.12);
+}
+
+.chat-action-inline-sep {
+  width: 1px;
+  height: 10px;
+  background: rgba(150, 140, 230, 0.14);
+  flex-shrink: 0;
+  margin: 0 1px;
+}

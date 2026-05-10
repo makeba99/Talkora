@@ -7390,7 +7390,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 const gradient = getAvatarGradient(pIndex >= 0 ? pIndex : 0);
                 const reactions = msg.reactions || {};
                 const hasReactions = Object.keys(reactions).some((e) => reactions[e].length > 0);
-                const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "👏"];
+                const QUICK_EMOJIS = ["👍", "❤️", "😢", "😠", "💔", "😂", "😮", "👏"];
                 const isOwn = msg.userId === user?.id;
 
                 /* Per-user ring colour palette — 8 distinct hues */
@@ -7588,130 +7588,124 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                       <span className="font-medium">{uids.length}</span>
                                     </button>
                                   </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs max-w-[200px] text-center">
-                                    <p className="font-medium mb-0.5">{tooltip.heading}</p>
-                                    <p className="text-muted-foreground">{tooltip.names}</p>
+                                  <TooltipContent side="top" sideOffset={8} avoidCollisions className="text-xs max-w-[260px] text-center z-[9999]">
+                                    <p className="font-semibold mb-0.5">{tooltip.heading}</p>
+                                    <p className="opacity-70">{tooltip.names}</p>
                                   </TooltipContent>
                                 </Tooltip>
                               );
                             })}
                           </div>
                         )}
-                      </div>
-
-                      {/* ── Action row — absolutely positioned below bubble, no layout impact ─── */}
-                      {msg.type !== "deleted" && (msg as any).type !== "system" && (
-                        <div className={`absolute top-full mt-1 chat-action-panel opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150 z-20 ${isOwn ? "right-0" : "left-0"}`}>
-                          {/* React button → opens emoji popover */}
-                          <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
-                            <PopoverTrigger asChild>
-                              <button
-                                className="chat-action-btn"
-                                data-testid={`button-react-open-${msg.id}`}
-                                title="Add reaction"
-                              >
-                                <Smile className="w-3 h-3" />
-                                <span>React</span>
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="p-1.5 w-auto"
-                              side="top"
-                              align={isOwn ? "end" : "start"}
-                              sideOffset={6}
+                        {/* ── Inline action bar — embedded inside bubble, revealed on hover ── */}
+                        {msg.type !== "deleted" && (msg as any).type !== "system" && (
+                          <div className={`chat-action-inline opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-150 ${isOwn ? "justify-end" : "justify-start"}`}>
+                            {/* Reply — always first */}
+                            <button
+                              onClick={() => {
+                                setReplyingTo({
+                                  id: msg.id,
+                                  userId: msg.userId,
+                                  userName: getUserDisplayName(msgUser) || "Unknown",
+                                  text: msg.text,
+                                });
+                                chatInputRef.current?.focus();
+                              }}
+                              className="chat-action-inline-btn"
+                              data-testid={`button-reply-${msg.id}`}
                             >
-                              <div className="flex items-center gap-1">
-                                {QUICK_EMOJIS.map((emoji) => (
-                                  <button
-                                    key={emoji}
-                                    onClick={() => { handleReact(msg.id, emoji); setReactPopoverMsgId(null); }}
-                                    className="text-xl hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-lg hover:bg-white/10"
-                                    style={{ minWidth: "38px", minHeight: "38px", lineHeight: 1 }}
-                                    data-testid={`quick-react-${msg.id}-${emoji}`}
-                                    title={`React with ${emoji}`}
-                                  >
-                                    {emoji}
-                                  </button>
-                                ))}
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                              <CornerUpLeft className="w-3 h-3" />
+                              <span>Reply</span>
+                            </button>
 
-                          <div className="chat-action-panel-sep" />
+                            <div className="chat-action-inline-sep" />
 
-                          {/* Reply button */}
-                          <button
-                            onClick={() => {
-                              setReplyingTo({
-                                id: msg.id,
-                                userId: msg.userId,
-                                userName: getUserDisplayName(msgUser) || "Unknown",
-                                text: msg.text,
-                              });
-                              chatInputRef.current?.focus();
-                            }}
-                            className="chat-action-btn"
-                            data-testid={`button-reply-${msg.id}`}
-                            title="Reply"
-                          >
-                            <CornerUpLeft className="w-3 h-3" />
-                            <span>Reply</span>
-                          </button>
+                            {/* React — emoji popover */}
+                            <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
+                              <PopoverTrigger asChild>
+                                <button
+                                  className="chat-action-inline-btn"
+                                  data-testid={`button-react-open-${msg.id}`}
+                                >
+                                  <Smile className="w-3 h-3" />
+                                  <span>React</span>
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="p-2 w-auto" side="top" align={isOwn ? "end" : "start"} sideOffset={8}>
+                                <div className="flex items-center gap-0.5 flex-wrap" style={{ maxWidth: "196px" }}>
+                                  {QUICK_EMOJIS.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => { handleReact(msg.id, emoji); setReactPopoverMsgId(null); }}
+                                      className="text-lg hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-lg hover:bg-white/10"
+                                      style={{ minWidth: "34px", minHeight: "34px", lineHeight: 1 }}
+                                      data-testid={`quick-react-${msg.id}-${emoji}`}
+                                      title={`React with ${emoji}`}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
 
-                          {/* Pin — host / co-owner only */}
-                          {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
-                            <>
-                              <div className="chat-action-panel-sep" />
-                              <button
-                                onClick={() => {
-                                  if (pinnedMessage?.message?.id === msg.id) {
-                                    socket?.emit("room:unpin-message", { roomId: room.id });
-                                  } else {
-                                    socket?.emit("room:pin-message", {
-                                      roomId: room.id,
-                                      message: msg,
-                                      pinnedBy: user?.id,
-                                      pinnedByName: getUserDisplayName(user) || "Host",
-                                    });
-                                  }
-                                }}
-                                className="chat-action-btn"
-                                style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.90)", background: "rgba(251,191,36,.14)" } : {}}
-                                title={pinnedMessage?.message?.id === msg.id ? "Unpin message" : "Pin message"}
-                                data-testid={`button-pin-${msg.id}`}
-                              >
-                                <Pin className="w-3 h-3" />
-                              </button>
-                            </>
-                          )}
+                            {/* Pin — host / co-owner only */}
+                            {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
+                              <>
+                                <div className="chat-action-inline-sep" />
+                                <button
+                                  onClick={() => {
+                                    if (pinnedMessage?.message?.id === msg.id) {
+                                      socket?.emit("room:unpin-message", { roomId: room.id });
+                                    } else {
+                                      socket?.emit("room:pin-message", {
+                                        roomId: room.id,
+                                        message: msg,
+                                        pinnedBy: user?.id,
+                                        pinnedByName: getUserDisplayName(user) || "Host",
+                                      });
+                                    }
+                                  }}
+                                  className="chat-action-inline-btn"
+                                  style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.85)" } : {}}
+                                  title={pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
+                                  data-testid={`button-pin-${msg.id}`}
+                                >
+                                  <Pin className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
 
-                          {/* Own-message actions */}
-                          {isOwn && (
-                            <>
-                              <div className="chat-action-panel-sep" />
-                              <button
-                                onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
-                                className="chat-action-btn chat-action-btn--edit"
-                                title="Edit message"
-                                data-testid={`button-edit-${msg.id}`}
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                                  setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
-                                }}
-                                className="chat-action-btn chat-action-btn--delete"
-                                title="Delete message"
-                                data-testid={`button-delete-${msg.id}`}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
+                            {/* Own-message: Edit + Delete */}
+                            {isOwn && (
+                              <>
+                                <div className="chat-action-inline-sep" />
+                                <button
+                                  onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
+                                  className="chat-action-inline-btn chat-action-inline-btn--edit"
+                                  title="Edit"
+                                  data-testid={`button-edit-${msg.id}`}
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                  }}
+                                  className="chat-action-inline-btn chat-action-inline-btn--delete"
+                                  title="Delete"
+                                  data-testid={`button-delete-${msg.id}`}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>Del</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Seen avatars — show who has seen up to this message */}
                       {seenByMap[msg.id] && seenByMap[msg.id].length > 0 && (
@@ -13290,7 +13284,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       {lightboxMedia && (() => {
         const lbMsg = chatMessages.find(m => m.id === lightboxMedia.msgId);
         const lbUser = lbMsg ? (lbMsg.user || participants.find(p => p.id === lbMsg.userId)) : null;
-        const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "👏"];
+        const QUICK_EMOJIS = ["👍", "❤️", "😢", "😠", "💔", "😂", "😮", "👏"];
         return (
           <div
             className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm"
