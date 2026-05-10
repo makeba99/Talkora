@@ -535,7 +535,9 @@ export function ProfileDropdown({
                 <span className="orbit-sat-bubble">
                   <MessageCircle className="w-[18px] h-[18px]" />
                   {unreadMessages > 0 && (
-                    <span className="orbit-sat-dot" aria-hidden="true" />
+                    <span className="orbit-sat-badge" aria-label={`${unreadMessages} unread`}>
+                      {unreadMessages > 99 ? "99+" : unreadMessages}
+                    </span>
                   )}
                 </span>
                 <span className="orbit-sat-label">Messages</span>
@@ -579,7 +581,9 @@ export function ProfileDropdown({
                 <span className="orbit-sat-bubble">
                   <Bell className="w-[18px] h-[18px]" />
                   {unreadNotifications > 0 && (
-                    <span className="orbit-sat-dot" aria-hidden="true" />
+                    <span className="orbit-sat-badge" aria-label={`${unreadNotifications} unread`}>
+                      {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                    </span>
                   )}
                 </span>
                 <span className="orbit-sat-label">Notifications</span>

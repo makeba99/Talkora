@@ -118,6 +118,7 @@ function CornerPinFab({
   testId,
   icon,
   showDot,
+  count,
   onClick,
   onUnpin,
 }: {
@@ -125,6 +126,7 @@ function CornerPinFab({
   testId: string;
   icon: React.ReactNode;
   showDot?: boolean;
+  count?: number;
   onClick: () => void;
   onUnpin: () => void;
 }) {
@@ -139,7 +141,13 @@ function CornerPinFab({
         onClick={onClick}
       >
         <span className="corner-pin-fab-icon">{icon}</span>
-        {showDot && <span className="corner-pin-fab-dot" aria-hidden="true" />}
+        {count != null && count > 0 ? (
+          <span className="corner-pin-fab-count" aria-label={`${count} unread`}>
+            {count > 99 ? "99+" : count}
+          </span>
+        ) : showDot ? (
+          <span className="corner-pin-fab-dot" aria-hidden="true" />
+        ) : null}
         <span className="corner-pin-fab-badge" aria-hidden="true">
           <Anchor className="w-2.5 h-2.5" />
         </span>
@@ -1526,7 +1534,11 @@ export default function Lobby() {
                     title="Messages"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    {unreadMessages > 0 && <span className="header-pin-dot" aria-hidden="true" />}
+                    {unreadMessages > 0 && (
+                      <span className="header-pin-badge" aria-label={`${unreadMessages} unread`}>
+                        {unreadMessages > 9 ? "9+" : unreadMessages}
+                      </span>
+                    )}
                     <span
                       role="button"
                       tabIndex={0}
@@ -1551,7 +1563,11 @@ export default function Lobby() {
                     title="Notifications"
                   >
                     <Bell className="w-4 h-4" />
-                    {unreadNotifications > 0 && <span className="header-pin-dot" aria-hidden="true" />}
+                    {unreadNotifications > 0 && (
+                      <span className="header-pin-badge" aria-label={`${unreadNotifications} unread`}>
+                        {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                      </span>
+                    )}
                     <span
                       role="button"
                       tabIndex={0}
@@ -1645,7 +1661,9 @@ export default function Lobby() {
                       >
                         <LayoutGrid className="w-4 h-4" />
                         {(unreadMessages + unreadNotifications) > 0 && (
-                          <span className="header-pin-dot" aria-hidden="true" />
+                          <span className="header-pin-badge" aria-label={`${unreadMessages + unreadNotifications} unread`}>
+                            {(unreadMessages + unreadNotifications) > 9 ? "9+" : (unreadMessages + unreadNotifications)}
+                          </span>
                         )}
                         <span
                           role="button"
@@ -2477,7 +2495,7 @@ export default function Lobby() {
               label="Messages"
               testId="corner-fab-messages"
               icon={<MessageCircle className="w-5 h-5" />}
-              showDot={unreadMessages > 0}
+              count={unreadMessages}
               onClick={() => setMessagesOpen(true)}
               onUnpin={() => toggleCornerPin("messages")}
             />
@@ -2487,7 +2505,7 @@ export default function Lobby() {
               label="Notifications"
               testId="corner-fab-notifications"
               icon={<Bell className="w-5 h-5" />}
-              showDot={unreadNotifications > 0}
+              count={unreadNotifications}
               onClick={() => setNotificationsOpen(true)}
               onUnpin={() => toggleCornerPin("notifications")}
             />

@@ -1,0 +1,194 @@
+Create an ultra-premium next-generation dark-mode messaging UI with cinematic futuristic realism, inspired by VisionOS, Linear, Arc Browser, high-end Discord concepts, Nothing OS, and elite Apple-level interaction design.
+
+The interface must feel:
+
+* elegant
+* immersive
+* emotionally atmospheric
+* natural to use
+* visually expensive
+* clean and modern
+* deeply polished
+* production-ready
+
+NOT flashy cyberpunk.
+
+The entire UI should feel like one connected material system with unified depth, lighting, spacing, and motion physics.
+
+COLOR + MATERIAL SYSTEM:
+
+* Deep matte black background
+* Dark violet and soft indigo surfaces
+* Refined ambient purple lighting
+* Very subtle neon accents only
+* Premium OLED contrast
+* Soft frosted glassmorphism mixed with luxury neumorphism
+* Cinematic directional lighting from top-left
+* Layered shadows with realistic falloff
+* Tiny monochrome grain/noise texture for realism
+* Avoid oversaturated purple glow
+
+OVERALL LAYOUT:
+
+* Spacious but compact
+* Extremely balanced alignment
+* Strong visual hierarchy
+* Minimal clutter
+* More negative space between message groups
+* Smooth edge-to-edge layout
+* Seamless bottom input integration
+
+MESSAGE DESIGN:
+
+* Chat bubbles should feel dense, refined, and tactile
+* Smaller bubble radius for premium look
+* Modern asymmetrical proportions
+* Matte translucent violet-black glass material
+* Very subtle luminous edge
+* Inner shadow depth
+* Soft internal top highlight
+* Realistic layered shadows
+* Controlled ambient glow only near active messages
+* No oversized blurry glow
+
+USERNAME + TIMESTAMP:
+
+* Much smaller usernames
+* Elegant thin semi-bold typography
+* Lower contrast than message text
+* Tiny timestamp with low opacity
+* Cleaner spacing above messages
+* More natural alignment
+
+REACTION PANEL (IMPORTANT):
+The reaction/action panel must be redesigned completely to feel more professional, natural, and integrated.
+
+Current issue:
+
+* too large
+* too detached
+* too glowy
+* visually heavy
+
+Improve with:
+
+* much smaller height
+* compact spacing
+* tighter emoji sizing
+* subtle frosted glass background
+* embedded under selected message naturally
+* same material as message bubbles
+* no huge blur or glow
+* cleaner shadows
+* tiny separators only
+* elegant hover states
+* reduced opacity
+* slimmer overall silhouette
+
+EMOJI REACTION ROW:
+
+* Tiny premium emoji pills
+* More subtle and refined
+* Smaller padding
+* Softer shadows
+* Gentle ambient lighting
+* Floating but visually connected to bubble
+* Tiny anchor pointer from message to panel
+* Emotion-focused emojis:
+
+  * sad
+  * heartbreak
+  * shocked
+  * angry
+  * laughing
+
+ACTION BUTTONS:
+
+* Reply
+* React
+* Edit
+* Pin
+* Delete
+
+Design:
+
+* Smaller icons
+* Cleaner typography
+* More minimal spacing
+* Elegant separators
+* Frosted translucent buttons
+* Less visual weight
+* More native feeling
+* No exaggerated glow
+
+INPUT AREA:
+
+* Remove duplicate send button completely
+* Only ONE send button allowed
+* Send button must be embedded INSIDE the input field on the right side
+* Input field should feel integrated into bottom dock
+* Soft inset neumorphism
+* Matte glass texture
+* Subtle inner lighting
+* Premium shadow layering
+* Placeholder text low contrast and elegant
+
+BOTTOM TOOLBAR:
+
+* Cleaner and more minimal
+* Reduce icon size slightly
+* Better spacing consistency
+* More premium alignment
+* Softer active glow
+* Toolbar should visually blend into bottom surface
+* Avoid floating disconnected feeling
+
+AVATARS:
+
+* Premium metallic gold-purple ring
+* Softer integrated glow
+* Slight overlap with message bubbles
+* Shared shadow between avatar and message
+* More natural positioning
+
+LIGHTING:
+
+* Most UI remains matte and dark
+* Glow reserved only for active/focused interactions
+* Add subtle volumetric ambient haze
+* Cinematic reflections
+* Realistic edge lighting
+* Physically believable depth
+
+MOTION + FEEL:
+
+* Hover = tiny elevation
+* Message select = soft pulse
+* Buttons = tactile compression
+* Reaction panel = smooth fade + slight upward motion
+* Everything should feel responsive and alive
+
+IMPORTANT:
+The redesign should feel:
+
+* more mature
+* more natural
+* more usable
+* more luxurious
+* more emotionally immersive
+* less flashy
+* less cluttered
+* more cohesive
+
+Avoid:
+
+* oversized reaction menus
+* thick borders
+* excessive neon
+* detached floating elements
+* duplicate controls
+* too many glows
+* cartoonish spacing
+* generic gaming UI
+
+This should look like the future of premium real-time communication software designed by elite senior product designers.
