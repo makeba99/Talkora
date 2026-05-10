@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense, Fragment, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AiTutorFace } from "@/components/ai-tutor-face";
 import { VextornMark } from "@/components/vextorn-logo";
@@ -22,7 +22,7 @@ import {
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
-  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, Share2, CheckCheck, Wand2, Dices
+  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, Share2, CheckCheck, Wand2, Dices, SendHorizontal
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -6625,7 +6625,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         const suggestions = checkGrammarAll(val);
         setGrammarSuggestions(suggestions);
         if (suggestions.length > 0) setGrammarDismissedIds(new Set());
-      }, 350);
+      }, 800);
     } else {
       setGrammarSuggestions([]);
       setGrammarDismissedIds(new Set());
@@ -7125,7 +7125,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </p>
               </div>
             ) : (
-              displayedMessages.map((msg) => {
+              displayedMessages.map((msg, msgIdx) => {
                 if (msg.type === "announcement" && !showMentionsOnly) {
                   const kindColors: Record<string, { border: string; bg: string; accent: string; pill: string }> = {
                     platform:    { border: "border-orange-500/40", bg: "bg-orange-950/40", accent: "text-orange-200",  pill: "bg-orange-500/20 text-orange-200 border-orange-500/40" },
@@ -7352,15 +7352,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 const rc = ringPalette[(pIndex >= 0 ? pIndex : 0) % ringPalette.length];
 
                 const isNew = historyLoadedRef.current && !seenMsgIdsRef.current.has(String(msg.id));
+                const msgDate = new Date(msg.createdAt);
+                const prevMsg = displayedMessages[msgIdx - 1];
+                const prevMsgDate = prevMsg ? new Date(prevMsg.createdAt) : null;
+                const showDateSep = !prevMsgDate || prevMsgDate.toDateString() !== msgDate.toDateString();
+                const _today = new Date();
+                const _yesterday = new Date(_today); _yesterday.setDate(_today.getDate() - 1);
+                const dateSepLabel = msgDate.toDateString() === _today.toDateString() ? "Today"
+                  : msgDate.toDateString() === _yesterday.toDateString() ? "Yesterday"
+                  : msgDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: msgDate.getFullYear() !== _today.getFullYear() ? "numeric" : undefined });
                 return (
+                  <Fragment key={msg.id}>
+                    {showDateSep && (
+                      <div className="chat-date-sep">
+                        <div className="chat-date-sep-line" />
+                        <span className="chat-date-sep-label">{dateSepLabel}</span>
+                        <div className="chat-date-sep-line" />
+                      </div>
+                    )}
                   <div
-                    key={msg.id}
                     className={`group chat-msg-row${isOwn ? " flex-row-reverse" : ""}`}
                     data-own={isOwn ? "true" : undefined}
                     data-new={isNew ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
-                    onMouseEnter={() => setHoveredMsgId(msg.id)}
-                    onMouseLeave={() => setHoveredMsgId(null)}
                   >
                     {/* Per-user coloured avatar ring — marginTop offsets it to align with
                         the bubble's flat corner, which sits below the name header (~19px) */}
@@ -7414,12 +7428,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
 
                     {/* Bubble column — name above, bubble below */}
-                    <div className={`flex flex-col gap-[3px] max-w-[72%] min-w-0 ${isOwn ? "items-end" : "items-start"}`}>
+                    <div className={`relative flex flex-col gap-[3px] max-w-[72%] min-w-0 ${isOwn ? "items-end" : "items-start"}`}>
 
                       {/* Name + time header — outside the bubble */}
                       <div className={`flex items-baseline gap-1.5 flex-wrap px-1 ${isOwn ? "flex-row-reverse" : ""}`}>
                         <span className="chat-msg-name">{getUserDisplayName(msgUser)}</span>
-                        <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
+                        <span className="chat-msg-time ml-auto">{formatTime(msg.createdAt)}</span>
                         {msg.isPrivate && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
                             <LockKeyhole className="w-2.5 h-2.5 mr-1" />
@@ -7428,10 +7442,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
                       </div>
 
-                      {/* Hover toolbar — emoji reactions + host/own actions only, no Reply */}
-                      {hoveredMsgId === msg.id && (
+                      {/* Hover toolbar — emoji reactions + host/own actions, CSS-driven */}
                         <div
-                          className="flex items-center gap-0.5 max-w-full flex-wrap"
+                          className="flex items-center gap-0.5 max-w-full flex-wrap opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                           style={{ background:"rgba(8,9,15,.92)", backdropFilter:"blur(14px)", border:"1px solid rgba(255,255,255,.09)", borderRadius:"10px", boxShadow:"0 4px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)", padding:"3px 5px", alignSelf: isOwn ? "flex-end" : "flex-start" }}
                         >
                           {QUICK_EMOJIS.map((emoji) => (
@@ -7498,14 +7511,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             </>
                           )}
                         </div>
-                      )}
 
                       {/* The actual bubble */}
                       <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
                         {msg.replyTo && (
-                          <div className="chat-reply-chip" data-testid={`reply-chip-${msg.id}`}>
-                            <span className="chat-reply-chip-arrow">↩</span>
-                            <span className="chat-reply-chip-name">{msg.replyTo.userName}</span>
+                          <div className="chat-reply-block" data-testid={`reply-chip-${msg.id}`}>
+                            <span className="chat-reply-block-name">↩ {msg.replyTo.userName}</span>
+                            <div className="chat-reply-block-body">{renderReplyPreview(msg.replyTo.text)}</div>
                           </div>
                         )}
                         {editingMsgId === msg.id ? (
@@ -7567,8 +7579,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             )}
                           </div>
                         )}
-                        {/* Reply button — embedded at the bottom of the bubble, visible on hover */}
-                        {hoveredMsgId === msg.id && msg.type !== "deleted" && (msg as any).type !== "system" && (
+                        {/* Reply button — embedded at the bottom of the bubble, visible on hover via CSS */}
+                        {msg.type !== "deleted" && (msg as any).type !== "system" && (
                           <div className={`flex mt-1.5 ${isOwn ? "justify-start" : "justify-end"}`}>
                             <button
                               onClick={() => {
@@ -7580,7 +7592,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 });
                                 chatInputRef.current?.focus();
                               }}
-                              className="chat-reply-inline-btn"
+                              className="chat-reply-inline-btn opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                               data-testid={`button-reply-${msg.id}`}
                             >
                               ↩ Reply
@@ -7614,21 +7626,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           </div>
                         )}
                       </div>
-                      {/* Reply hover panel — full quoted text, shown on hover */}
-                      {msg.replyTo && hoveredMsgId === msg.id && (
-                        <div
-                          className={`chat-reply-hover-panel ${isOwn ? "items-end" : "items-start"}`}
-                          data-own={isOwn ? "true" : undefined}
-                          data-testid={`reply-hover-panel-${msg.id}`}
-                        >
-                          <div className="chat-reply-hover-inner">
-                            <span className="chat-reply-hover-name">↩ {msg.replyTo.userName}</span>
-                            <div className="chat-reply-hover-body" data-testid={`reply-hover-text-${msg.id}`}>
-                              {renderReplyPreview(msg.replyTo.text)}
-                            </div>
-                          </div>
-                        </div>
-                      )}
 
                       {/* Seen avatars — show who has seen up to this message */}
                       {seenByMap[msg.id] && seenByMap[msg.id].length > 0 && (
@@ -7662,6 +7659,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
 
                   </div>
+                  </Fragment>
                 );
               })
             );
@@ -7809,6 +7807,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               rows={2}
               data-testid="input-room-chat"
               maxLength={isTroll ? TROLL_MAX_CHARS : undefined}
+              style={{ paddingRight: "2.6rem" }}
             />
             {isTroll && (
               <div
@@ -7818,6 +7817,27 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 {chatText.length}/{TROLL_MAX_CHARS}
               </div>
             )}
+            {/* Send button — always visible, no Enter-only UX trap */}
+            <button
+              type="submit"
+              disabled={!chatText.trim() || pasteUploading || isChatBlocked}
+              data-testid="button-send-chat"
+              aria-label="Send message"
+              className="absolute bottom-2 right-2 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{
+                background: chatText.trim() && !isChatBlocked
+                  ? "linear-gradient(135deg, rgba(110,88,245,0.92) 0%, rgba(80,60,200,0.85) 100%)"
+                  : "rgba(255,255,255,0.06)",
+                border: chatText.trim() && !isChatBlocked
+                  ? "1px solid rgba(140,120,255,0.45)"
+                  : "1px solid rgba(255,255,255,0.08)",
+                boxShadow: chatText.trim() && !isChatBlocked
+                  ? "0 2px 10px rgba(100,80,240,0.35), inset 0 1px 0 rgba(255,255,255,0.18)"
+                  : "none",
+              }}
+            >
+              <SendHorizontal className="w-3.5 h-3.5 text-white" />
+            </button>
           </div>
 
           {/* ── Grammar suggestion panel ───────────────────────────────── */}
