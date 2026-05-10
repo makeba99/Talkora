@@ -1484,6 +1484,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [blockDialogName, setBlockDialogName] = useState<string>("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [confirmDeleteMsgId, setConfirmDeleteMsgId] = useState<string | null>(null);
+  const confirmDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [seenByMap, setSeenByMap] = useState<Record<string, { userId: string; userName: string; profileImageUrl?: string | null }[]>>({});
   const lastSeenEmittedRef = useRef<string | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
@@ -7484,14 +7486,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                       {/* Hover toolbar — emoji reactions + host/own actions, CSS-driven */}
                         <div
-                          className="flex items-center gap-0.5 max-w-full flex-wrap opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                          style={{ background:"rgba(8,9,15,.92)", backdropFilter:"blur(14px)", border:"1px solid rgba(255,255,255,.09)", borderRadius:"10px", boxShadow:"0 4px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)", padding:"3px 5px", alignSelf: isOwn ? "flex-end" : "flex-start" }}
+                          className="flex items-center gap-0.5 max-w-full flex-wrap opacity-20 group-hover:opacity-100 transition-opacity duration-150"
+                          style={{ background:"rgba(8,9,15,.92)", backdropFilter:"blur(14px)", border:"1px solid rgba(255,255,255,.09)", borderRadius:"10px", boxShadow:"0 4px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)", padding:"4px 6px", alignSelf: isOwn ? "flex-end" : "flex-start" }}
                         >
                           {QUICK_EMOJIS.map((emoji) => (
                             <button
                               key={emoji}
                               onClick={() => handleReact(msg.id, emoji)}
-                              className="text-sm hover:scale-125 transition-transform px-0.5 leading-none"
+                              className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center"
+                              style={{ minWidth: "30px", minHeight: "30px", lineHeight: 1 }}
                               data-testid={`quick-react-${msg.id}-${emoji}`}
                               title={`React with ${emoji}`}
                             >
@@ -7531,23 +7534,43 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                   setEditingText(msg.text);
                                   setHoveredMsgId(null);
                                 }}
-                                className="ml-0.5 text-[10px] text-blue-300 hover:text-white px-1 py-0.5 rounded hover:bg-blue-500/20 transition-colors flex items-center gap-1"
+                                className="ml-1 text-[11px] text-blue-300 hover:text-white flex items-center justify-center gap-1 transition-colors rounded-md hover:bg-blue-500/20"
+                                style={{ minWidth: "30px", minHeight: "30px", padding: "0 8px" }}
                                 title="Edit"
                                 data-testid={`button-edit-${msg.id}`}
                               >
-                                <Pencil className="w-3 h-3" /> Edit
+                                <Pencil className="w-3.5 h-3.5" /> Edit
                               </button>
-                              <button
-                                onClick={() => {
-                                  socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                                  setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
-                                }}
-                                className="ml-0.5 text-[10px] text-destructive hover:text-white px-1 py-0.5 rounded hover:bg-destructive transition-colors flex items-center gap-1"
-                                title="Delete"
-                                data-testid={`button-delete-${msg.id}`}
-                              >
-                                <Trash2 className="w-3 h-3" /> Del
-                              </button>
+                              {confirmDeleteMsgId === msg.id ? (
+                                <button
+                                  onClick={() => {
+                                    if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
+                                    setConfirmDeleteMsgId(null);
+                                    socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                  }}
+                                  className="ml-1 text-[11px] font-bold text-white flex items-center justify-center gap-1 rounded-md animate-pulse"
+                                  style={{ minWidth: "30px", minHeight: "30px", padding: "0 8px", background: "rgba(239,68,68,0.85)", border: "1px solid rgba(239,68,68,0.6)" }}
+                                  title="Confirm delete"
+                                  data-testid={`button-confirm-delete-${msg.id}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Sure?
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setConfirmDeleteMsgId(msg.id);
+                                    if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
+                                    confirmDeleteTimerRef.current = setTimeout(() => setConfirmDeleteMsgId(null), 3000);
+                                  }}
+                                  className="ml-1 text-[11px] text-red-400 hover:text-white flex items-center justify-center gap-1 transition-colors rounded-md hover:bg-red-500/20"
+                                  style={{ minWidth: "30px", minHeight: "30px", padding: "0 8px" }}
+                                  title="Delete message"
+                                  data-testid={`button-delete-${msg.id}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Del
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
@@ -7619,9 +7642,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             )}
                           </div>
                         )}
-                        {/* Reply button — embedded at the bottom of the bubble, visible on hover via CSS */}
+                        {/* Reply button — embedded at the bottom of the bubble, always visible at 35% */}
                         {msg.type !== "deleted" && (msg as any).type !== "system" && (
-                          <div className={`flex mt-1.5 ${isOwn ? "justify-start" : "justify-end"}`}>
+                          <div className={`flex mt-2 ${isOwn ? "justify-start" : "justify-end"}`}>
                             <button
                               onClick={() => {
                                 setReplyingTo({
@@ -7632,10 +7655,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 });
                                 chatInputRef.current?.focus();
                               }}
-                              className="chat-reply-inline-btn group-hover:opacity-100"
+                              className="chat-reply-inline-btn"
                               data-testid={`button-reply-${msg.id}`}
                             >
-                              ↩ Reply
+                              <CornerUpLeft className="w-3 h-3" />
+                              Reply
                             </button>
                           </div>
                         )}

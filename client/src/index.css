@@ -11902,25 +11902,32 @@ html.boost-mode .glass-panel {
 .chat-reply-inline-btn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 10px;
+  gap: 4px;
+  font-size: 11px;
   font-weight: 600;
   color: rgba(180, 160, 255, 0.65);
   background: rgba(120, 100, 255, 0.10);
   border: 1px solid rgba(140, 120, 255, 0.18);
   border-radius: 999px;
-  padding: 2px 8px;
+  /* Larger tap target — comfortable for touch */
+  padding: 4px 11px;
+  min-height: 28px;
   cursor: pointer;
-  /* Always visible at 30% — touch users can see and tap without hover */
-  opacity: 0.30;
-  transition: color 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  /* Always visible at 35% — touch users can see and tap without hover */
+  opacity: 0.35;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease, transform 120ms ease;
   line-height: 1.4;
   white-space: nowrap;
 }
 .chat-reply-inline-btn:hover {
+  opacity: 1;
   color: rgba(200, 185, 255, 0.95);
   background: rgba(120, 100, 255, 0.22);
   border-color: rgba(160, 140, 255, 0.38);
+  transform: scale(1.04);
+}
+.chat-reply-inline-btn:active {
+  transform: scale(0.96);
 }
 .chat-msg-card[data-own="true"] .chat-reply-inline-btn {
   color: rgba(200, 195, 255, 0.60);
