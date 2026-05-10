@@ -2455,6 +2455,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [selectedVoicePresetId]);
 
   const handleVoicePresetChange = useCallback(async (presetId: VoicePresetId) => {
+    // ── CRITICAL: resume AudioContext SYNCHRONOUSLY within the user-gesture
+    // activation window.  If we await anything first, Chrome's transient
+    // activation expires and ctx.resume() silently fails — leaving the context
+    // suspended so all worklets produce silence (real voice heard by peers).
+    if (!audioContextRef.current) {
+      const AC = window.AudioContext || (window as any).webkitAudioContext;
+      if (AC) audioContextRef.current = new AC();
+    }
+    if (audioContextRef.current?.state === "suspended") {
+      // Fire-and-forget — we do NOT await so the gesture window is not consumed.
+      audioContextRef.current.resume().catch(() => {});
+    }
+
     setSelectedVoicePresetId(presetId);
     selectedVoicePresetIdRef.current = presetId;
     saveVoicePresetId(presetId);
@@ -2462,13 +2475,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
     // Auto-preview the character sound when selected (non-blocking)
     if (presetId !== "natural") {
-      const ctx = (() => {
-        if (!audioContextRef.current) {
-          const AC = window.AudioContext || (window as any).webkitAudioContext;
-          if (AC) audioContextRef.current = new AC();
-        }
-        return audioContextRef.current;
-      })();
+      const ctx = audioContextRef.current;
       if (ctx) {
         setPreviewingPresetId(presetId);
         previewVoicePreset(ctx, presetId)
@@ -2480,17 +2487,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const rawStream = rawMicStreamRef.current;
     if (!rawStream) return;
 
-    if (!audioContextRef.current) {
-      const AC = window.AudioContext || (window as any).webkitAudioContext;
-      if (AC) audioContextRef.current = new AC();
-    }
-    if (!audioContextRef.current) return;
     if (!voiceProcessorRef.current) {
-      voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
+      voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current!);
     }
     voiceProcessorRef.current.onLevelMeter = (rms, peak) => setMicLevel({ rms, peak });
-    // CRITICAL: await process() so AudioContext is resumed before the graph is
-    // wired — without this the filter chain is silently inactive.
     const processedStream = await voiceProcessorRef.current.process(
       rawStream, presetId,
       enhancementEnabledRef.current,
@@ -2519,6 +2519,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     enh: boolean,
     denoise: boolean,
   ) => {
+    // Resume synchronously within any user-gesture that calls this
+    if (audioContextRef.current?.state === "suspended") {
+      audioContextRef.current.resume().catch(() => {});
+    }
     const rawStream = rawMicStreamRef.current;
     if (!rawStream || !audioContextRef.current) return;
     if (!voiceProcessorRef.current) {
@@ -4273,6 +4277,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Mic locked", description: talkLockReason || "Talking is disabled in this room.", variant: "destructive" });
       return;
     }
+    // Unmuting is a user gesture — resume AudioContext synchronously here so
+    // the worklet effect chain activates before the first audio frame is sent.
+    if (audioContextRef.current?.state === "suspended") {
+      audioContextRef.current.resume().catch(() => {});
+    }
     const newMuted = !isMuted;
     if (localStream.current) {
       localStream.current.getAudioTracks().forEach((track) => {
@@ -4724,7 +4733,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               />
             )}
             <button
-              onClick={() => setVoicePickerOpen((v) => !v)}
+              onClick={() => {
+                // Opening the picker is a user gesture — resume AudioContext now
+                // so worklets are ready by the time the user picks a preset.
+                if (audioContextRef.current?.state === "suspended") {
+                  audioContextRef.current.resume().catch(() => {});
+                }
+                setVoicePickerOpen((v) => !v);
+              }}
               data-testid="button-toggle-voice"
               title={voicePickerOpen ? "Close voice effects" : "Voice effects"}
               className={btnBase}
