@@ -22,7 +22,7 @@ import {
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
-  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, Share2, CheckCheck, Wand2
+  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, Share2, CheckCheck, Wand2, Dices
 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -52,6 +52,9 @@ const ChessPanel = lazy(() =>
 );
 const CenterChessOverlay = lazy(() =>
   import("@/components/center-chess-overlay").then((m) => ({ default: m.CenterChessOverlay }))
+);
+const GroupGamesPanel = lazy(() =>
+  import("@/components/group-games-panel").then((m) => ({ default: m.GroupGamesPanel }))
 );
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
@@ -6995,6 +6998,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         <button onClick={() => setSidePanelTab("chess")} data-testid="tab-chess" title="Chess" className="room-tab-btn" data-accent="chess" data-active={sidePanelTab === "chess"}>
           <Gamepad2 className="w-[20px] h-[20px]" />
         </button>
+        <button onClick={() => setSidePanelTab("games")} data-testid="tab-games" title="Group Games" className="room-tab-btn" data-accent="games" data-active={sidePanelTab === "games"}>
+          <Dices className="w-[20px] h-[20px]" />
+        </button>
         <button onClick={() => setSidePanelTab("golive")} data-testid="tab-golive" title="Go Live" className="room-tab-btn" data-accent="golive" data-active={sidePanelTab === "golive"}>
           <Radio className="w-[20px] h-[20px]" />
         </button>
@@ -8988,6 +8994,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </Suspense>
         )}
       </div>
+
+      <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "games" ? "flex" : "none" }}>
+        {user?.id && (
+          <Suspense fallback={null}>
+            <GroupGamesPanel participants={participants} userId={user.id} />
+          </Suspense>
+        )}
+      </div>
+
       {false && (<div className="hidden">
         <div className="p-3 pb-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
