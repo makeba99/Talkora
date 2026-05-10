@@ -6630,7 +6630,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       grammarTimerRef.current = setTimeout(() => {
         const suggestions = checkGrammarAll(val);
         setGrammarSuggestions(suggestions);
-        if (suggestions.length > 0) setGrammarDismissedIds(new Set());
+    
+    if (suggestions.length > 0) setGrammarDismissedIds(new Set());
       }, 800);
     } else {
       setGrammarSuggestions([]);
