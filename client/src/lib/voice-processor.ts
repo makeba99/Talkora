@@ -522,7 +522,14 @@ async function buildEffectChain(
 
 export class AudioEngine {
   private ctx: AudioContext;
-  private destination: MediaStreamAudioDestinationNode;
+  // NOTE: destination is intentionally re-created on every process() call.
+  // A fresh MediaStreamAudioDestinationNode produces a fresh MediaStreamTrack.
+  // This guarantees that RTCRtpSender.replaceTrack() is always a genuine swap
+  // (not a no-op), so the WebRTC encoder immediately transmits audio from the
+  // new effect graph.  Keeping a single stable destination caused replaceTrack()
+  // to receive the same track object it was already sending, which the browser
+  // silently ignored — leaving the old voice effect in place for remote peers.
+  private destination!: MediaStreamAudioDestinationNode;
   private source: MediaStreamAudioSourceNode | null = null;
   private extraNodes: AudioNode[] = [];
   private meterNode: AudioWorkletNode | null = null;
@@ -532,12 +539,11 @@ export class AudioEngine {
 
   constructor(audioContext: AudioContext) {
     this.ctx = audioContext;
-    this.destination = this.ctx.createMediaStreamDestination();
   }
 
   /**
-   * Build / rebuild the full audio pipeline.
-   * Returns the stable destination stream — pass it to WebRTC replaceTrack() once.
+   * Build / rebuild the full audio pipeline with a fresh destination node.
+   * Returns a NEW MediaStream on every call — always pass it to replaceTrack().
    *
    * CRITICAL: async — awaits AudioContext.resume() before wiring nodes.
    */
@@ -568,6 +574,11 @@ export class AudioEngine {
     try { await ensureWorklets(this.ctx); } catch (e) {
       console.warn("[AudioEngine] worklet registration failed:", e);
     }
+
+    // ── Fresh destination = fresh MediaStreamTrack ───────────────────────────
+    // Creating a new node here is the critical fix: every call produces a
+    // distinct track, so RTCRtpSender.replaceTrack() is never a no-op.
+    this.destination = this.ctx.createMediaStreamDestination();
 
     this.source = this.ctx.createMediaStreamSource(rawStream);
     let current: AudioNode = this.source;
