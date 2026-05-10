@@ -6598,13 +6598,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } else {
       setMentionQuery(null);
     }
-    // Debounced grammar check — fires 1.2s after typing stops (only when enabled)
-    setGrammarDismissed(false);
+    // Real-time grammar check — fires immediately on each keystroke (only when enabled)
     if (grammarTimerRef.current) clearTimeout(grammarTimerRef.current);
-    if (grammarEnabled && val.trim().length > 6) {
+    if (grammarEnabled && val.trim().length >= 3) {
       grammarTimerRef.current = setTimeout(() => {
-        setGrammarSuggestion(checkGrammar(val));
-      }, 1200);
+        const suggestion = checkGrammar(val);
+        setGrammarSuggestion(suggestion);
+        if (suggestion) setGrammarDismissed(false);
+      }, 400);
     } else {
       setGrammarSuggestion(null);
     }

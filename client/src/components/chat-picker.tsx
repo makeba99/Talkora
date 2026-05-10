@@ -337,6 +337,109 @@ export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
 
 const URL_REGEX = /https?:\/\/[^\s<>"']+/gi;
 const DIRECT_IMAGE_REGEX = /\.(gif|webp|png|jpe?g|avif)(\?.*)?$/i;
+const ROOM_URL_REGEX = /\/room\/([a-zA-Z0-9_-]+)/;
+
+function isRoomUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const match = parsed.pathname.match(ROOM_URL_REGEX);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+function RoomLinkPreview({ roomId, url }: { roomId: string; url: string }) {
+  const [room, setRoom] = useState<any>(null);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      fetch(`/api/rooms/${roomId}`, { credentials: "include" }).then(r => r.ok ? r.json() : null),
+      fetch(`/api/rooms/${roomId}/participants`, { credentials: "include" }).then(r => r.ok ? r.json() : []),
+    ]).then(([roomData, participantsData]) => {
+      if (!cancelled) {
+        setRoom(roomData);
+        setParticipants(Array.isArray(participantsData) ? participantsData : []);
+        setLoading(false);
+      }
+    }).catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [roomId]);
+
+  if (loading) {
+    return (
+      <div className="mt-2 rounded-xl overflow-hidden animate-pulse" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", maxWidth: 300, padding: "10px 12px" }}>
+        <div className="h-3 rounded w-3/4 mb-2" style={{ background: "rgba(255,255,255,0.08)" }} />
+        <div className="h-2 rounded w-1/2" style={{ background: "rgba(255,255,255,0.06)" }} />
+      </div>
+    );
+  }
+
+  if (!room) return null;
+
+  const displayParticipants = participants.slice(0, 5);
+  const extraCount = participants.length - displayParticipants.length;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-2 block hover:opacity-90 transition-opacity"
+      style={{ maxWidth: 300, textDecoration: "none" }}
+      onClick={(e) => e.stopPropagation()}
+      data-testid={`room-link-card-${roomId}`}
+    >
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}
+      >
+        {/* Header bar */}
+        <div className="px-3 pt-2.5 pb-1.5">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "rgba(167,139,250,0.8)" }}>Vextorn Room</span>
+          </div>
+          <p className="text-[13px] font-semibold text-white leading-tight truncate">{room.title}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+            {room.language} · {room.level}
+            {participants.length > 0 && <span style={{ color: "rgba(52,211,153,0.85)" }}> · {participants.length} inside</span>}
+          </p>
+        </div>
+
+        {/* Participants row */}
+        {displayParticipants.length > 0 && (
+          <div className="flex items-center gap-1 px-3 pb-2.5">
+            {displayParticipants.map((p: any) => (
+              <div
+                key={p.id}
+                className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}
+                title={p.firstName || p.username || ""}
+              >
+                {p.profileImageUrl ? (
+                  <img src={p.profileImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] font-bold" style={{ color: "rgba(255,255,255,0.4)" }}>
+                    {(p.firstName?.[0] || p.username?.[0] || "?").toUpperCase()}
+                  </div>
+                )}
+              </div>
+            ))}
+            {extraCount > 0 && (
+              <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-[10px] font-semibold" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>
+                +{extraCount}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </a>
+  );
+}
 
 function trimUrl(url: string) {
   const trailing = url.match(/[),.!?;:]+$/)?.[0] || "";
@@ -450,19 +553,26 @@ function renderTextWithMentions(text: string, onImageClick?: (url: string) => vo
     }
 
     const { cleanUrl, trailing } = trimUrl(match[0]);
+    const roomId = isRoomUrl(cleanUrl);
     parts.push(
       <span key={`url-${match.index}`} className="inline-flex flex-col max-w-full align-top">
-        <a
-          href={cleanUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary underline underline-offset-2 break-words [overflow-wrap:anywhere] hover:text-primary/80"
-          data-testid="message-clickable-link"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {cleanUrl}
-        </a>
-        <GifOrImagePreview url={cleanUrl} onImageClick={onImageClick} />
+        {roomId ? (
+          <RoomLinkPreview roomId={roomId} url={cleanUrl} />
+        ) : (
+          <>
+            <a
+              href={cleanUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2 break-words [overflow-wrap:anywhere] hover:text-primary/80"
+              data-testid="message-clickable-link"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {cleanUrl}
+            </a>
+            <GifOrImagePreview url={cleanUrl} onImageClick={onImageClick} />
+          </>
+        )}
       </span>
     );
 
