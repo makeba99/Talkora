@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,13 +22,13 @@ interface Props {
 const POS_KEY_PREFIX = "c2t-chess-overlay-pos:";
 const THEME_KEY = "c2t-chess-overlay-theme";
 
-type BoardTheme = { id: string; name: string; light: string; dark: string; highlight: string; check: string };
+type BoardTheme = { id: string; name: string; light: string; dark: string; highlight: string; check: string; moveHint: string };
 
 const BOARD_THEMES: BoardTheme[] = [
-  { id: "classic",  name: "Classic Green", light: "#eeeed2", dark: "#769656", highlight: "rgba(255,235,59,0.55)",  check: "rgba(255,80,80,0.55)"  },
-  { id: "ocean",    name: "Ocean Blue",    light: "#dee3e6", dark: "#8ca2ad", highlight: "rgba(100,200,255,0.55)", check: "rgba(255,80,80,0.55)"  },
-  { id: "walnut",   name: "Walnut Wood",   light: "#f0d9b5", dark: "#b58863", highlight: "rgba(255,200,80,0.55)",  check: "rgba(255,80,80,0.6)"   },
-  { id: "midnight", name: "Midnight",      light: "#9aa3b8", dark: "#3b3f54", highlight: "rgba(180,140,255,0.6)", check: "rgba(255,90,90,0.6)"   },
+  { id: "classic",  name: "Classic Green", light: "#eeeed2", dark: "#769656", highlight: "rgba(255,235,59,0.60)",  check: "rgba(255,80,80,0.60)",  moveHint: "rgba(20,160,70,0.60)"  },
+  { id: "ocean",    name: "Ocean Blue",    light: "#dee3e6", dark: "#8ca2ad", highlight: "rgba(100,200,255,0.60)", check: "rgba(255,80,80,0.60)",  moveHint: "rgba(20,160,220,0.60)" },
+  { id: "walnut",   name: "Walnut Wood",   light: "#f0d9b5", dark: "#b58863", highlight: "rgba(255,200,80,0.60)",  check: "rgba(255,80,80,0.65)",  moveHint: "rgba(20,170,80,0.60)"  },
+  { id: "midnight", name: "Midnight",      light: "#9aa3b8", dark: "#3b3f54", highlight: "rgba(180,140,255,0.65)", check: "rgba(255,90,90,0.65)",  moveHint: "rgba(140,100,255,0.65)" },
 ];
 
 function formatClock(ms: number): string {
@@ -53,6 +53,9 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
   const theme = useMemo(() => BOARD_THEMES.find(t => t.id === themeId) || BOARD_THEMES[0], [themeId]);
   useEffect(() => { try { localStorage.setItem(THEME_KEY, themeId); } catch {} }, [themeId]);
 
+  // Per-player dismiss: each player can independently close after game ends
+  const [dismissed, setDismissed] = useState(false);
+
   const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
     if (typeof window === "undefined") return null;
     try { const raw = localStorage.getItem(POS_KEY_PREFIX + roomId); return raw ? JSON.parse(raw) : null; } catch { return null; }
@@ -61,12 +64,35 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
     active: false, startX: 0, startY: 0, baseX: 0, baseY: 0,
   });
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const boardContainerRef = useRef<HTMLDivElement | null>(null);
   const lastStatusRef = useRef<string | null>(null);
   const chessRef = useRef<Chess>(new Chess());
+
+  // Click-to-move state with legal move highlighting
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const [legalTargets, setLegalTargets] = useState<string[]>([]);
 
   // Live clocks
   const [liveClocks, setLiveClocks] = useState<{ white: number; black: number } | null>(null);
   const clockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Responsive board size
+  const [boardWidth, setBoardWidth] = useState<number>(380);
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (fullscreen) {
+        const side = Math.min(window.innerWidth, window.innerHeight) - 200;
+        setBoardWidth(Math.max(320, side));
+      } else {
+        const w = Math.min(480, Math.max(320, window.innerWidth - 80));
+        setBoardWidth(w);
+      }
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize, { passive: true });
+    return () => window.removeEventListener("resize", updateSize);
+  }, [fullscreen]);
 
   useEffect(() => {
     if (clockIntervalRef.current) clearInterval(clockIntervalRef.current);
@@ -110,18 +136,101 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
           reason: s.endReason || "game over",
         });
       }
-      if (s && s.status === "playing") setMinimized(false);
+      // When a new game starts, clear dismissed state so the overlay shows again
+      if (s && s.status === "playing" && prev !== "playing") {
+        setDismissed(false);
+        setMinimized(false);
+      }
+      // Clear selection on state change
+      setSelectedSquare(null);
+      setLegalTargets([]);
     };
     socket.on("room:chess-state", onState);
     socket.emit("room:chess-sync-request", { roomId });
     return () => { socket.off("room:chess-state", onState); };
   }, [socket, roomId]);
 
+  const myColor: "white" | "black" | null = useMemo(() => {
+    if (state?.white?.userId === userId) return "white";
+    if (state?.black?.userId === userId) return "black";
+    return null;
+  }, [state, userId]);
+
+  const isMyTurn = state?.status === "playing" &&
+    ((myColor === "white" && state.turn === "w") || (myColor === "black" && state.turn === "b"));
+
+  const submitMove = useCallback((sourceSquare: string, targetSquare: string): boolean => {
+    if (!state || state.status !== "playing" || !isMyTurn || !socket) return false;
+    const game = new Chess(state.fen);
+    let move;
+    try { move = game.move({ from: sourceSquare, to: targetSquare, promotion: "q" }); } catch { return false; }
+    if (!move) return false;
+    let status: "playing" | "ended" = "playing";
+    let winner: "white" | "black" | "draw" | null = null;
+    let endReason: string | null = null;
+    if (game.isCheckmate()) { status = "ended"; winner = game.turn() === "w" ? "black" : "white"; endReason = "checkmate"; }
+    else if (game.isStalemate()) { status = "ended"; winner = "draw"; endReason = "stalemate"; }
+    else if (game.isDraw() || game.isInsufficientMaterial() || game.isThreefoldRepetition()) { status = "ended"; winner = "draw"; endReason = "draw"; }
+    socket.emit("room:chess-move", {
+      roomId, fen: game.fen(), pgn: game.pgn(), turn: game.turn(),
+      lastMove: { from: sourceSquare, to: targetSquare, san: move.san },
+      status, winner, endReason,
+    });
+    setSelectedSquare(null);
+    setLegalTargets([]);
+    return true;
+  }, [state, isMyTurn, socket, roomId]);
+
+  const onPieceDrop = useCallback((sourceSquare: string, targetSquare: string): boolean => {
+    return submitMove(sourceSquare, targetSquare);
+  }, [submitMove]);
+
+  const onSquareClick = useCallback((square: string) => {
+    if (!state || state.status !== "playing" || !isMyTurn) return;
+    const game = new Chess(state.fen);
+    const piece = game.get(square as any);
+
+    // If a square is already selected, try to move there
+    if (selectedSquare && selectedSquare !== square) {
+      const moved = submitMove(selectedSquare, square);
+      if (moved) return;
+      // If move failed and clicking own piece, switch selection
+      if (piece && piece.color === state.turn) {
+        setSelectedSquare(square);
+        try {
+          const moves = game.moves({ square: square as any, verbose: true }) as any[];
+          setLegalTargets(moves.map((m) => m.to));
+        } catch { setLegalTargets([]); }
+        return;
+      }
+      // Deselect
+      setSelectedSquare(null);
+      setLegalTargets([]);
+      return;
+    }
+
+    // Select the clicked piece if it's the current player's
+    if (piece && piece.color === state.turn) {
+      setSelectedSquare(square);
+      try {
+        const moves = game.moves({ square: square as any, verbose: true }) as any[];
+        setLegalTargets(moves.map((m) => m.to));
+      } catch { setLegalTargets([]); }
+    } else {
+      setSelectedSquare(null);
+      setLegalTargets([]);
+    }
+  }, [state, isMyTurn, selectedSquare, submitMove]);
+
   const customSquareStyles = useMemo(() => {
     const styles: Record<string, React.CSSProperties> = {};
+
+    // Last move highlight
     const last = state?.lastMove;
-    if (last?.from) styles[last.from] = { background: theme.highlight, boxShadow: `inset 0 0 0 3px ${theme.highlight}` };
-    if (last?.to)   styles[last.to]   = { background: theme.highlight, boxShadow: `inset 0 0 0 3px ${theme.highlight}` };
+    if (last?.from) styles[last.from] = { background: theme.highlight };
+    if (last?.to)   styles[last.to]   = { background: theme.highlight };
+
+    // Check highlight (king in check)
     try {
       const g = chessRef.current;
       if (g.inCheck()) {
@@ -139,51 +248,41 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
         }
       }
     } catch {}
+
+    // Selected square highlight
+    if (selectedSquare) {
+      styles[selectedSquare] = {
+        background: "rgba(255,217,0,0.55)",
+        boxShadow: "inset 0 0 0 3px rgba(255,217,0,0.85)",
+      };
+    }
+
+    // Legal move targets — larger dots for better visibility
+    for (const t of legalTargets) {
+      const hasPiece = (() => { try { return !!chessRef.current.get(t as any); } catch { return false; } })();
+      if (hasPiece) {
+        // Capture target: ring around the square
+        styles[t] = {
+          background: `radial-gradient(circle, transparent 58%, ${theme.moveHint} 60%, ${theme.moveHint} 75%, transparent 77%)`,
+          boxShadow: `inset 0 0 0 2px ${theme.moveHint}`,
+        };
+      } else {
+        // Empty target: filled dot
+        styles[t] = {
+          background: `radial-gradient(circle, ${theme.moveHint} 28%, transparent 30%)`,
+        };
+      }
+    }
+
     return styles;
-  }, [state?.lastMove, state?.fen, theme]);
-
-  const myColor: "white" | "black" | null = useMemo(() => {
-    if (state?.white?.userId === userId) return "white";
-    if (state?.black?.userId === userId) return "black";
-    return null;
-  }, [state, userId]);
-
-  const isMyTurn = state?.status === "playing" &&
-    ((myColor === "white" && state.turn === "w") || (myColor === "black" && state.turn === "b"));
-
-  // Board orientation: player sees their color at bottom; spectator can follow a player
-  const boardOrientation: "white" | "black" = useMemo(() => {
-    if (myColor) return myColor;
-    if (followColor) return followColor;
-    return "white";
-  }, [myColor, followColor]);
-
-  const onPieceDrop = (sourceSquare: string, targetSquare: string): boolean => {
-    if (!state || state.status !== "playing" || !isMyTurn || !socket) return false;
-    const game = new Chess(state.fen);
-    let move;
-    try { move = game.move({ from: sourceSquare, to: targetSquare, promotion: "q" }); } catch { return false; }
-    if (!move) return false;
-    let status: "playing" | "ended" = "playing";
-    let winner: "white" | "black" | "draw" | null = null;
-    let endReason: string | null = null;
-    if (game.isCheckmate()) { status = "ended"; winner = game.turn() === "w" ? "black" : "white"; endReason = "checkmate"; }
-    else if (game.isStalemate()) { status = "ended"; winner = "draw"; endReason = "stalemate"; }
-    else if (game.isDraw() || game.isInsufficientMaterial() || game.isThreefoldRepetition()) { status = "ended"; winner = "draw"; endReason = "draw"; }
-    socket.emit("room:chess-move", {
-      roomId, fen: game.fen(), pgn: game.pgn(), turn: game.turn(),
-      lastMove: { from: sourceSquare, to: targetSquare, san: move.san },
-      status, winner, endReason,
-    });
-    return true;
-  };
+  }, [state?.lastMove, state?.fen, theme, selectedSquare, legalTargets]);
 
   const resign = () => { if (!confirm("Resign this game?")) return; socket?.emit("room:chess-resign", { roomId }); };
   const newGame = () => socket?.emit("room:chess-new-game", { roomId });
   const rematch = () => socket?.emit("room:chess-rematch", { roomId });
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (fullscreen) return; // no dragging in fullscreen
+    if (fullscreen) return;
     if (!wrapperRef.current) return;
     const rect = wrapperRef.current.getBoundingClientRect();
     dragRef.current = { active: true, startX: e.clientX, startY: e.clientY, baseX: rect.left, baseY: rect.top };
@@ -206,16 +305,14 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
 
   const isSeatedPlayer = myColor !== null;
   const gameLive = !!state && (state.status === "playing" || state.status === "ended");
-  const showOverlay = gameLive && (isSeatedPlayer || !!forceOpen);
+  const showOverlay = gameLive && (isSeatedPlayer || !!forceOpen) && !dismissed;
 
-  // Compute board size based on fullscreen state
-  const boardWidth = useMemo(() => {
-    if (fullscreen) {
-      const side = Math.min(window.innerWidth, window.innerHeight) - 180;
-      return Math.max(280, side);
-    }
-    return Math.min(360, Math.max(260, window.innerWidth - 100));
-  }, [fullscreen]);
+  // Board orientation: player sees their color at bottom; spectator can follow a player
+  const boardOrientation: "white" | "black" = useMemo(() => {
+    if (myColor) return myColor;
+    if (followColor) return followColor;
+    return "white";
+  }, [myColor, followColor]);
 
   const ClockPill = ({ side }: { side: "white" | "black" }) => {
     if (!liveClocks || !state?.timeControl) return null;
@@ -359,19 +456,16 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                     <Minus className="w-3.5 h-3.5" />
                   </button>
                 )}
-                {!isSeatedPlayer && (
+                {/* Close — spectators always, players only after game ends (local dismiss only) */}
+                {(!isSeatedPlayer || state?.status === "ended") && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); onClose?.(); setFullscreen(false); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDismissed(true);
+                      setFullscreen(false);
+                      onClose?.();
+                    }}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="rounded p-1 text-amber-200/80 hover:bg-amber-200/10"
-                    data-testid="button-chess-close-spectator" title="Close"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                {isSeatedPlayer && state?.status === "ended" && (
-                  <button
-                    onClick={() => { newGame(); setFullscreen(false); }}
                     className="rounded p-1 text-amber-200/80 hover:bg-amber-200/10"
                     data-testid="button-chess-close" title="Close"
                   >
@@ -405,7 +499,7 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                     <span className="text-sm font-semibold text-zinc-200">{state?.black?.username || "—"}</span>
                   </div>
                   {state?.status === "playing" && state.turn === "b" && (
-                    <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/40">to move</span>
+                    <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/40 animate-pulse">to move</span>
                   )}
                   <div className="ml-auto">
                     <ClockPill side="black" />
@@ -413,10 +507,15 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                 </div>
 
                 {/* Board */}
-                <div className="relative rounded-lg overflow-hidden border border-amber-200/20" style={{ background: theme.dark }}>
+                <div
+                  ref={boardContainerRef}
+                  className="relative rounded-lg overflow-hidden border border-amber-200/20"
+                  style={{ background: theme.dark }}
+                >
                   <Chessboard
                     position={state?.fen || "start"}
                     onPieceDrop={onPieceDrop}
+                    onSquareClick={onSquareClick}
                     boardOrientation={boardOrientation}
                     arePiecesDraggable={!!isMyTurn}
                     customBoardStyle={{ borderRadius: "0px" }}
@@ -425,6 +524,12 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                     customSquareStyles={customSquareStyles}
                     boardWidth={boardWidth}
                   />
+                  {/* Move hint when it's your turn */}
+                  {isMyTurn && !selectedSquare && (
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur rounded-full px-3 py-0.5 text-[10px] text-amber-200/80 pointer-events-none whitespace-nowrap">
+                      Click or drag a piece to move
+                    </div>
+                  )}
                   {/* Theme picker dropdown */}
                   {themeOpen && (
                     <div
@@ -453,7 +558,7 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                     </div>
                   )}
 
-                  {/* Fullscreen hint */}
+                  {/* Fullscreen hint for spectators */}
                   {fullscreen && !isSeatedPlayer && !followColor && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur rounded-full px-3 py-1 text-[10px] text-white/60 pointer-events-none">
                       Click ⬜/⬛ in the header to follow a player's view
@@ -472,7 +577,7 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                     <span className="text-sm font-semibold text-zinc-200">{state?.white?.username || "—"}</span>
                   </div>
                   {state?.status === "playing" && state.turn === "w" && (
-                    <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/40">to move</span>
+                    <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/40 animate-pulse">to move</span>
                   )}
                   <div className="ml-auto">
                     <ClockPill side="white" />
@@ -504,8 +609,9 @@ export function CenterChessOverlay({ socket, roomId, userId, forceOpen, onClose,
                           <RotateCcw className="w-3.5 h-3.5 mr-1" /> Rematch
                         </Button>
                       )}
+                      {/* New game resets for everyone; dismiss (X in header) is local-only */}
                       <Button size="sm" variant="outline" className="flex-1 h-8 text-xs border-amber-200/40 text-amber-100 hover:bg-amber-200/10" onClick={newGame} data-testid="button-overlay-new-game">
-                        <X className="w-3 h-3 mr-1" /> End
+                        <RotateCcw className="w-3 h-3 mr-1" /> New Game
                       </Button>
                     </>
                   )}

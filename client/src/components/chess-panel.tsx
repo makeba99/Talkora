@@ -141,7 +141,7 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
 
   const chessRef = useRef<Chess>(new Chess());
   const boardWrapperRef = useRef<HTMLDivElement | null>(null);
-  const [boardSize, setBoardSize] = useState<number>(320);
+  const [boardSize, setBoardSize] = useState<number>(360);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalTargets, setLegalTargets] = useState<string[]>([]);
 
@@ -187,6 +187,8 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
     const onState = (s: ChessRoomState | null) => {
       setState(s);
       try { chessRef.current = new Chess(s?.fen || undefined); } catch { chessRef.current = new Chess(); }
+      setSelectedSquare(null);
+      setLegalTargets([]);
     };
     const onLichess = (l: LichessShare | null) => setLichess(l);
     const onChallenge = (c: IncomingChallenge) => setIncoming(c);
@@ -325,11 +327,34 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
     if (!state || state.status !== "playing" || !isMyTurn) return;
     const game = new Chess(state.fen);
     const piece = game.get(square as any);
+
+    // If a square is already selected, try to move there first
     if (selectedSquare && selectedSquare !== square) {
       const moved = submitMove(selectedSquare, square);
       if (moved) return;
+      // Move failed — if clicking own piece, switch selection instead of deselecting
+      if (piece && piece.color === state.turn) {
+        setSelectedSquare(square);
+        try {
+          const moves = game.moves({ square: square as any, verbose: true }) as any[];
+          setLegalTargets(moves.map((m) => m.to));
+        } catch { setLegalTargets([]); }
+        return;
+      }
+      // Clicked empty/opponent square that's not a legal target — deselect
+      setSelectedSquare(null);
+      setLegalTargets([]);
+      return;
     }
+
+    // Select the piece if it belongs to the current player
     if (piece && piece.color === state.turn) {
+      // Clicking the already-selected square deselects it
+      if (selectedSquare === square) {
+        setSelectedSquare(null);
+        setLegalTargets([]);
+        return;
+      }
       setSelectedSquare(square);
       try {
         const moves = game.moves({ square: square as any, verbose: true }) as any[];
@@ -343,12 +368,61 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
 
   const highlightSquares = useMemo(() => {
     const styles: Record<string, React.CSSProperties> = {};
-    if (selectedSquare) styles[selectedSquare] = { background: "rgba(255,217,0,0.45)" };
-    for (const t of legalTargets) {
-      styles[t] = { background: "radial-gradient(circle, rgba(20,180,80,0.55) 22%, transparent 24%)" };
+
+    // Last move highlight (light tint)
+    const last = state?.lastMove;
+    if (last?.from) styles[last.from] = { background: "rgba(255,235,59,0.38)" };
+    if (last?.to)   styles[last.to]   = { background: "rgba(255,235,59,0.38)" };
+
+    // Selected square — bright yellow ring + fill
+    if (selectedSquare) {
+      styles[selectedSquare] = {
+        background: "rgba(255,217,0,0.55)",
+        boxShadow: "inset 0 0 0 3px rgba(255,217,0,0.90)",
+      };
     }
+
+    // Legal move targets — larger dots for empty squares, ring for captures
+    for (const t of legalTargets) {
+      const hasPiece = (() => { try { return !!chessRef.current.get(t as any); } catch { return false; } })();
+      if (hasPiece) {
+        // Capture: ring around the square so the piece is still visible
+        styles[t] = {
+          background: "radial-gradient(circle, transparent 55%, rgba(20,190,80,0.70) 57%, rgba(20,190,80,0.70) 76%, transparent 78%)",
+          boxShadow: "inset 0 0 0 2px rgba(20,190,80,0.55)",
+        };
+      } else {
+        // Empty square: large filled dot (~32% of square width)
+        styles[t] = {
+          background: "radial-gradient(circle, rgba(20,190,80,0.72) 30%, transparent 32%)",
+        };
+      }
+    }
+
+    // Check — king square flashes red
+    try {
+      const g = chessRef.current;
+      if (g.inCheck()) {
+        const turn = g.turn();
+        const board = g.board();
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const sq = board[r][c];
+            if (sq && sq.type === "k" && sq.color === turn) {
+              const file = "abcdefgh"[c];
+              const rank = 8 - r;
+              styles[`${file}${rank}`] = {
+                background: "rgba(220,50,50,0.60)",
+                boxShadow: "inset 0 0 0 4px rgba(220,50,50,0.80)",
+              };
+            }
+          }
+        }
+      }
+    } catch {}
+
     return styles;
-  }, [selectedSquare, legalTargets]);
+  }, [selectedSquare, legalTargets, state?.lastMove, state?.fen]);
 
   const shareLichess = () => {
     setLichessError(null);
