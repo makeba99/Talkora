@@ -1484,8 +1484,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [blockDialogName, setBlockDialogName] = useState<string>("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
-  const [confirmDeleteMsgId, setConfirmDeleteMsgId] = useState<string | null>(null);
-  const confirmDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [seenByMap, setSeenByMap] = useState<Record<string, { userId: string; userName: string; profileImageUrl?: string | null }[]>>({});
   const lastSeenEmittedRef = useRef<string | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
@@ -7541,36 +7540,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                               >
                                 <Pencil className="w-3.5 h-3.5" /> Edit
                               </button>
-                              {confirmDeleteMsgId === msg.id ? (
-                                <button
-                                  onClick={() => {
-                                    if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
-                                    setConfirmDeleteMsgId(null);
-                                    socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
-                                  }}
-                                  className="ml-1 text-[11px] font-bold text-white flex items-center justify-center gap-1 rounded-md animate-pulse"
-                                  style={{ minWidth: "30px", minHeight: "30px", padding: "0 8px", background: "rgba(239,68,68,0.85)", border: "1px solid rgba(239,68,68,0.6)" }}
-                                  title="Confirm delete"
-                                  data-testid={`button-confirm-delete-${msg.id}`}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" /> Sure?
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setConfirmDeleteMsgId(msg.id);
-                                    if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
-                                    confirmDeleteTimerRef.current = setTimeout(() => setConfirmDeleteMsgId(null), 3000);
-                                  }}
-                                  className="ml-1 text-[11px] text-red-400 hover:text-white flex items-center justify-center gap-1 transition-colors rounded-md hover:bg-red-500/20"
-                                  style={{ minWidth: "30px", minHeight: "30px", padding: "0 8px" }}
-                                  title="Delete message"
-                                  data-testid={`button-delete-${msg.id}`}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" /> Del
-                                </button>
-                              )}
+                              <button
+                                onClick={() => {
+                                  socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                  setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                }}
+                                className="ml-1 text-[11px] text-red-400 hover:text-white flex items-center justify-center gap-1 transition-colors rounded-md hover:bg-red-500/20"
+                                style={{ minWidth: "30px", minHeight: "30px", padding: "0 8px" }}
+                                title="Delete message"
+                                data-testid={`button-delete-${msg.id}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> Del
+                              </button>
                             </>
                           )}
                         </div>
