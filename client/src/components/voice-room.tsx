@@ -1696,6 +1696,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const bookScrollRef = useRef<HTMLDivElement | null>(null);
   const lastScrollEmitRef = useRef(0);
   const [unreadChatBadge, setUnreadChatBadge] = useState(0);
+  const [tabUnreadCount, setTabUnreadCount] = useState(0);
   const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
   const sidePanelTabRef = useRef(sidePanelTab);
   const ytSyncTimeRef = useRef<number>(0);
@@ -3046,6 +3047,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (sidePanelTabRef.current !== "chat" && (msg as any).type !== "system" && msg.userId !== user?.id) {
         setUnreadChatBadge((prev) => prev + 1);
       }
+      // Increment browser-tab unread count when the tab is backgrounded
+      if (document.hidden && (msg as any).type !== "system" && msg.userId !== user?.id) {
+        setTabUnreadCount((prev) => prev + 1);
+      }
       // Clear typing indicator as soon as the message arrives
       if (msg.userId !== user?.id) {
         if (typingExpireTimers.current[msg.userId]) {
@@ -3728,6 +3733,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       profileImageUrl: user.profileImageUrl ?? null,
     });
   }, [chatMessages, sidePanelTab, socket, user, room.id]);
+
+  // Browser tab title — show unread count while tab is backgrounded
+  useEffect(() => {
+    const roomName = room?.name || "Room";
+    if (tabUnreadCount > 0) {
+      document.title = `(${tabUnreadCount}) ${roomName} — Vextorn`;
+    } else {
+      document.title = `${roomName} — Vextorn`;
+    }
+    return () => { document.title = "Vextorn"; };
+  }, [tabUnreadCount, room?.name]);
+
+  // Reset tab unread count as soon as the user returns to this tab
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden) setTabUnreadCount(0);
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
   useEffect(() => {
     if (!historyLoadedRef.current) {
