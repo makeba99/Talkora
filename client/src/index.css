@@ -11286,7 +11286,7 @@ html.boost-mode .glass-panel {
 .chat-actions-bar {
   position: absolute;
   top: -36px;
-  z-index: 20;
+  z-index: 120;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -11398,7 +11398,6 @@ html.boost-mode .glass-panel {
 /* ── Base bubble — others ───────────────────────────────────────────────── */
 .chat-msg-card {
   position: relative;
-  overflow: hidden;
 }
 
 /* Card-level micro-spring: only plays for genuinely new messages,

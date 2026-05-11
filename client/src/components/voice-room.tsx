@@ -7788,24 +7788,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                     Private
                                   </Badge>
                                 )}
-                                {/* DM whisper button — red neumorphic, visible on card hover */}
-                                {msg.userId !== "system" && user && msg.userId !== user.id && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        onClick={() => { setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId); chatInputRef.current?.focus(); }}
-                                        className={`chat-dm-whisper-btn opacity-0 group-hover:opacity-100 ${privateChatToId === msg.userId ? "chat-dm-whisper-btn--active" : ""}`}
-                                        data-testid={`button-dm-whisper-${msg.id}`}
-                                        title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
-                                      >
-                                        <MessageSquare className="w-2.5 h-2.5" />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
-                                      {privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
                               </div>
                             </div>
                           </div>
