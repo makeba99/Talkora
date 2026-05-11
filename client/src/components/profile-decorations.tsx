@@ -1348,6 +1348,58 @@ const ROOM_THEME_KEYFRAMES = `
     0%,100% { filter: blur(22px) brightness(1); transform: translateY(0); }
     50%     { filter: blur(28px) brightness(1.15); transform: translateY(-4px); }
   }
+  @keyframes rt-disco-beam {
+    0%   { transform: rotate(-40deg) scaleX(1);   opacity: 0.55; }
+    20%  { transform: rotate(30deg)  scaleX(1.3);  opacity: 0.9; }
+    40%  { transform: rotate(-20deg) scaleX(0.7);  opacity: 0.4; }
+    60%  { transform: rotate(55deg)  scaleX(1.15); opacity: 0.85; }
+    80%  { transform: rotate(-50deg) scaleX(0.85); opacity: 0.5; }
+    100% { transform: rotate(-40deg) scaleX(1);   opacity: 0.55; }
+  }
+  @keyframes rt-disco-beam2 {
+    0%   { transform: rotate(50deg)  scaleX(0.8);  opacity: 0.6; }
+    25%  { transform: rotate(-35deg) scaleX(1.2);  opacity: 0.9; }
+    50%  { transform: rotate(60deg)  scaleX(0.65); opacity: 0.35; }
+    75%  { transform: rotate(-25deg) scaleX(1.1);  opacity: 0.75; }
+    100% { transform: rotate(50deg)  scaleX(0.8);  opacity: 0.6; }
+  }
+  @keyframes rt-disco-glitter {
+    0%,100% { opacity: 0;   transform: scale(0.4) rotate(0deg);   }
+    12%     { opacity: 1;   transform: scale(1.8) rotate(72deg);  }
+    25%     { opacity: 0.1; transform: scale(0.6) rotate(144deg); }
+    50%     { opacity: 0.95; transform: scale(2.0) rotate(216deg); }
+    75%     { opacity: 0.05; transform: scale(0.5) rotate(288deg); }
+    88%     { opacity: 0.8; transform: scale(1.6) rotate(324deg); }
+  }
+  @keyframes rt-disco-sweep {
+    0%   { transform: translateX(-55%) skewX(-4deg); opacity: 0.25; }
+    50%  { transform: translateX(55%)  skewX(4deg);  opacity: 0.70; }
+    100% { transform: translateX(-55%) skewX(-4deg); opacity: 0.25; }
+  }
+  @keyframes rt-disco-sweep2 {
+    0%   { transform: translateX(50%)  skewX(3deg);  opacity: 0.55; }
+    50%  { transform: translateX(-50%) skewX(-3deg); opacity: 0.20; }
+    100% { transform: translateX(50%)  skewX(3deg);  opacity: 0.55; }
+  }
+  @keyframes rt-disco-color {
+    0%   { background: rgba(255,0,80,0.10);   }
+    16%  { background: rgba(255,200,0,0.10);  }
+    33%  { background: rgba(0,255,80,0.10);   }
+    50%  { background: rgba(0,200,255,0.10);  }
+    66%  { background: rgba(180,0,255,0.10);  }
+    83%  { background: rgba(255,60,0,0.10);   }
+    100% { background: rgba(255,0,80,0.10);   }
+  }
+  @keyframes rt-disco-flash {
+    0%,86%,89%,92%,96%,100% { opacity: 0; }
+    87%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    94%  { opacity: 0.8; }
+  }
+  @keyframes rt-disco-spin {
+    from { transform: rotate(0deg) scale(1); }
+    to   { transform: rotate(360deg) scale(1); }
+  }
 `;
 
 export function getChatPanelStyle(themeId: string | null | undefined): React.CSSProperties {
@@ -1378,6 +1430,8 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
       return { background: "rgba(4,8,18,0.78)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(40,80,200,0.22)" };
     case "volcanic":
       return { background: "rgba(14,2,0,0.76)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(200,40,0,0.22)" };
+    case "disco":
+      return { background: "rgba(4,0,8,0.80)", backdropFilter: "blur(16px) saturate(1.6)", WebkitBackdropFilter: "blur(16px) saturate(1.6)", borderColor: "rgba(255,0,160,0.30)" };
     default:
       // Default chat panel — matches the room's base dark violet-slate so the
       // panel reads as ONE unified surface with the room background.
@@ -1418,6 +1472,8 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
       return { background: "radial-gradient(ellipse at 50% 0%, #060c1c 0%, #030710 55%, #020510 100%)" };
     case "volcanic":
       return { background: "radial-gradient(ellipse at 50% 100%, #1c0400 0%, #0e0200 55%, #080100 100%)" };
+    case "disco":
+      return { background: "#030104" };
     default:
       // Default room background — a single, unified sculpted neumorphic panel.
       // Deep violet-slate base with a directional top-left light source and a
@@ -1872,6 +1928,119 @@ export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefin
               ["--ex" as any]:`${e.ex}px`,
               ["--ex2" as any]:`${e.ex2}px`,
               animation:`rt-ember-rise ${e.dur}s ease-out infinite ${e.del}s`,
+            }} />
+          ))}
+        </div>
+      );
+    }
+
+    case "disco": {
+      const DISCO_COLS = ["255,0,80","0,220,255","80,255,0","255,200,0","180,0,255","255,80,0","0,255,200","255,0,200"];
+      const beams = [
+        { col:"255,0,80",  left:12, dur:1.6, del:0,   kf:"rt-disco-beam"  },
+        { col:"0,220,255", left:26, dur:2.0, del:0.3,  kf:"rt-disco-beam2" },
+        { col:"80,255,0",  left:42, dur:1.4, del:0.7,  kf:"rt-disco-beam"  },
+        { col:"255,200,0", left:58, dur:1.9, del:1.1,  kf:"rt-disco-beam2" },
+        { col:"180,0,255", left:74, dur:1.5, del:0.5,  kf:"rt-disco-beam"  },
+        { col:"0,255,200", left:88, dur:2.2, del:1.4,  kf:"rt-disco-beam2" },
+        { col:"255,80,0",  left:34, dur:1.7, del:0.9,  kf:"rt-disco-beam"  },
+        { col:"255,0,200", left:66, dur:2.1, del:0.2,  kf:"rt-disco-beam2" },
+      ];
+      const floorWashes = [
+        { col:"255,0,80",   left:15, dur:2.0, del:0,   kf:"rt-disco-sweep"  },
+        { col:"0,200,255",  left:45, dur:1.6, del:0.5,  kf:"rt-disco-sweep2" },
+        { col:"180,0,255",  left:75, dur:2.3, del:1.0,  kf:"rt-disco-sweep"  },
+        { col:"0,255,120",  left:30, dur:1.8, del:1.4,  kf:"rt-disco-sweep2" },
+        { col:"255,160,0",  left:60, dur:2.1, del:0.8,  kf:"rt-disco-sweep"  },
+      ];
+      const glitters = Array.from({length:90}, (_,i) => ({
+        col: DISCO_COLS[i % DISCO_COLS.length],
+        top:  (i*13+7)%100,
+        left: (i*23+11)%100,
+        size: 1+(i%4),
+        dur:  0.28+(i%7)*0.10,
+        del:  (i*0.07)%2.5,
+      }));
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+
+          {/* spotlight beams sweeping from top — each has its own crazy rotation */}
+          {beams.map((b, i) => (
+            <div key={`beam-${i}`} style={{
+              position:"absolute", top:0, left:`${b.left}%`,
+              width:"7%", height:"100%",
+              transformOrigin:"top center",
+              background:`linear-gradient(to bottom, rgba(${b.col},0.55) 0%, rgba(${b.col},0.20) 35%, rgba(${b.col},0.06) 65%, transparent 100%)`,
+              filter:"blur(5px)",
+              animation:`${b.kf} ${b.dur}s ease-in-out infinite ${b.del}s`,
+            }} />
+          ))}
+
+          {/* disco ball spin indicator — tiny circular halo at top-center */}
+          <div style={{
+            position:"absolute", top:"3%", left:"50%",
+            width:28, height:28, borderRadius:"50%",
+            transform:"translateX(-50%)",
+            background:"radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(200,200,255,0.3) 50%, transparent 80%)",
+            boxShadow:"0 0 14px 6px rgba(255,255,255,0.25)",
+            animation:"rt-disco-spin 1.8s linear infinite",
+          }} />
+          {/* disco ball radial gleam lines */}
+          {Array.from({length:12}, (_,i) => (
+            <div key={`spoke-${i}`} style={{
+              position:"absolute", top:"3%", left:"50%",
+              width:"1px", height:`${18+((i*7)%14)}%`,
+              transformOrigin:"top center",
+              transform:`translateX(-50%) rotate(${i*30}deg)`,
+              background:`linear-gradient(to bottom, rgba(255,255,255,0.5), transparent)`,
+              animation:`rt-disco-spin ${1.8 + (i%3)*0.4}s linear infinite ${(i%4)*0.2}s`,
+            }} />
+          ))}
+
+          {/* floor wash lights sweeping left-right */}
+          {floorWashes.map((f, i) => (
+            <div key={`floor-${i}`} style={{
+              position:"absolute", bottom:"-8%",
+              left:`${f.left - 20}%`, width:"40%", height:"45%",
+              borderRadius:"50%",
+              background:`radial-gradient(ellipse at 50% 100%, rgba(${f.col},0.22) 0%, rgba(${f.col},0.08) 55%, transparent 85%)`,
+              filter:"blur(18px)",
+              animation:`${f.kf} ${f.dur}s ease-in-out infinite ${f.del}s`,
+            }} />
+          ))}
+
+          {/* color-cycling ambient center bloom */}
+          <div style={{
+            position:"absolute", top:"15%", left:"15%", right:"15%", bottom:"15%",
+            borderRadius:"50%",
+            background:"rgba(255,0,80,0.08)",
+            filter:"blur(55px)",
+            animation:"rt-disco-color 1.5s linear infinite",
+          }} />
+
+          {/* glitter particles — rapid multi-color sparkle */}
+          {glitters.map((g, i) => (
+            <div key={`gl-${i}`} style={{
+              position:"absolute", borderRadius:"50%",
+              width:g.size, height:g.size,
+              background:`rgba(${g.col},1)`,
+              top:`${g.top}%`, left:`${g.left}%`,
+              boxShadow:`0 0 ${g.size * 4}px rgba(${g.col},0.95)`,
+              animation:`rt-disco-glitter ${g.dur}s ease-in-out infinite ${g.del}s`,
+            }} />
+          ))}
+
+          {/* colored strobe flashes */}
+          {([
+            { col:"255,0,80",  dur:4.0, del:0   },
+            { col:"0,200,255", dur:5.5, del:1.2  },
+            { col:"180,0,255", dur:3.5, del:2.5  },
+          ] as {col:string; dur:number; del:number}[]).map((s, i) => (
+            <div key={`strobe-${i}`} style={{
+              position:"absolute", inset:0,
+              background:`rgba(${s.col},0.07)`,
+              animation:`rt-disco-flash ${s.dur}s step-end infinite ${s.del}s`,
             }} />
           ))}
         </div>

@@ -20,6 +20,7 @@ export const ROOM_THEMES = [
   { id: "matrix", label: "💻 Matrix", description: "Digital rain", bg: "matrix", preview: "from-green-900 via-green-700 to-green-500", img: "https://images.unsplash.com/photo-1526378722484-bd91ca387e72?w=160&h=90&fit=crop" },
   { id: "storm", label: "⛈️ Thunderstorm", description: "Rain & lightning", bg: "storm", preview: "from-slate-700 via-slate-600 to-blue-700", img: "https://images.unsplash.com/photo-1504370805625-d37c82b94a8e?w=160&h=90&fit=crop" },
   { id: "volcanic", label: "🌋 Volcanic", description: "Lava & embers", bg: "volcanic", preview: "from-red-700 via-orange-500 to-yellow-500", img: "https://images.unsplash.com/photo-1495953557-73f0ba4c50af?w=160&h=90&fit=crop" },
+  { id: "disco", label: "🪩 DJ Disco", description: "Crazy color lights & disco ball madness", bg: "disco", preview: "from-pink-500 via-yellow-400 to-cyan-400", img: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=160&h=90&fit=crop" },
 ] as const;
 
 export type RoomThemeId = typeof ROOM_THEMES[number]["id"];
@@ -40,6 +41,7 @@ export function getRoomThemeBorderClass(themeId: string | null | undefined): str
     case "matrix": return "from-green-400 to-green-700";
     case "storm": return "from-blue-500 to-slate-600";
     case "volcanic": return "from-red-500 to-orange-400";
+    case "disco": return "from-pink-500 via-yellow-400 to-cyan-400";
     default: return "from-cyan-500 to-purple-500";
   }
 }
