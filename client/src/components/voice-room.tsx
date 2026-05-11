@@ -7517,8 +7517,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {/* The bubble card */}
                       <div className="chat-msg-card" data-own={isOwn ? "true" : undefined} data-grouped={isGrouped ? "true" : undefined}>
 
-                        {/* Card header: avatar + name + roles — others, non-grouped */}
-                        {!isOwn && !isGrouped && (
+                        {/* Card header: avatar + name + roles — others, every message */}
+                        {!isOwn && (
                           <div className="chat-card-header">
                             <div className="relative flex-shrink-0 group/avatar">
                               <Avatar
@@ -7583,6 +7583,40 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                     <LockKeyhole className="w-2 h-2 mr-0.5" />
                                     Private
                                   </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Card header — own messages: avatar + name right-aligned */}
+                        {isOwn && (
+                          <div className="chat-card-header" style={{ flexDirection: "row-reverse" }}>
+                            <div className="relative flex-shrink-0">
+                              <Avatar
+                                className="w-[26px] h-[26px]"
+                                style={{
+                                  boxShadow: `0 2px 8px rgba(0,0,0,.70), 0 0 10px ${rc.glow}`,
+                                  border: "1.5px solid rgba(255,255,255,0.10)",
+                                }}
+                              >
+                                <AvatarImage src={user?.profileImageUrl || undefined} alt="" />
+                                <AvatarFallback className={`text-[9px] font-bold bg-gradient-to-br ${gradient} text-white`}>
+                                  {getUserInitials(user)}
+                                </AvatarFallback>
+                              </Avatar>
+                            </div>
+                            <div className="flex flex-col min-w-0 items-end">
+                              <div className="flex items-center gap-1 flex-row-reverse flex-wrap">
+                                <span className="chat-bubble-sender-name">{getUserDisplayName(user)}</span>
+                                {msg.userId === room.ownerId && (
+                                  <span className="chat-role-pill chat-role-pill--owner">Owner</span>
+                                )}
+                                {msg.userId !== room.ownerId && participantRoles[msg.userId] === "co-owner" && (
+                                  <span className="chat-role-pill chat-role-pill--coowner">Co-Owner</span>
+                                )}
+                                {user?.role === "admin" && (
+                                  <span className="chat-role-pill chat-role-pill--admin">Admin</span>
                                 )}
                               </div>
                             </div>

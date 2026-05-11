@@ -11224,25 +11224,24 @@ html.boost-mode .glass-panel {
 }
 
 /* ── Base bubble — others ───────────────────────────────────────────────── */
-/* Pure neumorphic: flat violet-charcoal surface, two-shadow raise.
-   Colors pulled from the app's --card 265 32% 9% token. */
+/* Premium neumorphic: deep violet-charcoal, sculpted raise + lit top rim */
 .chat-msg-card {
-  /* Slightly lighter than the dark panel surface (#0d0b18) */
-  background: #1c1830;
-
-  /* Others tail: bottom-left corner flat */
-  border-radius: 4px 16px 16px 16px;
-  padding: 10px 13px 9px;
+  background: linear-gradient(162deg, #1e1a34 0%, #18152a 55%, #120f22 100%);
+  border-radius: 6px 18px 18px 18px;
+  padding: 12px 16px 11px;
   max-width: 100%;
-  border: 1px solid rgba(130, 100, 220, 0.10);
+  border: 1px solid rgba(130, 100, 220, 0.14);
+  border-top-color: rgba(180, 155, 255, 0.22);
+  border-bottom-color: rgba(8, 6, 18, 0.55);
 
-  /* Classic neumorphic raise */
   box-shadow:
-    5px  5px 14px rgba(0,   0,   0,   0.70),
-    -2px -2px  7px rgba(255, 255, 255, 0.030),
-    inset 0 1px 0  rgba(200, 180, 255, 0.06);
+    0   6px 20px rgba(0,   0,   0,   0.72),
+    0   2px  6px rgba(0,   0,   0,   0.50),
+    -2px -2px  8px rgba(255, 255, 255, 0.032),
+    inset 0 1px 0  rgba(210, 190, 255, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
 
-  transition: box-shadow 160ms ease, background 160ms ease;
+  transition: box-shadow 180ms ease, background 180ms ease, transform 180ms ease;
 }
 
 /* No gloss pseudo-elements */
@@ -11251,27 +11250,33 @@ html.boost-mode .glass-panel {
   display: none;
 }
 
-/* Hover — subtle deepen */
+/* Hover — lift + deepen */
 .chat-msg-card:hover {
-  background: #201c36;
+  background: linear-gradient(162deg, #221e3a 0%, #1c192e 55%, #150f26 100%);
+  transform: translateY(-1px);
   box-shadow:
-    inset 2px  2px  7px rgba(0,   0,   0,   0.65),
-    inset -1px -1px 4px rgba(255, 255, 255, 0.025),
-    4px  4px 12px rgba(0,   0,   0,   0.55);
+    0  10px 28px rgba(0,   0,   0,   0.76),
+    0   3px  8px rgba(0,   0,   0,   0.52),
+    -2px -2px  8px rgba(255, 255, 255, 0.036),
+    inset 0 1px 0  rgba(218, 200, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.32);
 }
 
-/* ── Own messages — deeper violet to distinguish ────────────────────────── */
+/* ── Own messages — richer violet to distinguish ────────────────────────── */
 .chat-msg-card[data-own="true"] {
-  /* Richer violet hue — clearly yours, same material language */
-  background: #28194a;
-  /* Own tail: bottom-right corner flat */
-  border-radius: 16px 4px 16px 16px;
-  border: 1px solid rgba(150, 110, 255, 0.14);
+  background: linear-gradient(162deg, #2a1b50 0%, #1e1240 55%, #140c30 100%);
+  border-radius: 18px 6px 18px 18px;
+  border: 1px solid rgba(155, 115, 255, 0.20);
+  border-top-color: rgba(195, 165, 255, 0.34);
+  border-bottom-color: rgba(10, 6, 28, 0.60);
 
   box-shadow:
-    5px  5px 14px rgba(0,   0,   0,   0.70),
-    -2px -2px  7px rgba(140, 100, 255, 0.055),
-    inset 0 1px 0  rgba(200, 175, 255, 0.09);
+    0   6px 20px rgba(0,   0,   0,   0.72),
+    0   2px  6px rgba(0,   0,   0,   0.50),
+    -2px -2px  8px rgba(140, 100, 255, 0.06),
+    inset 0 1px 0  rgba(215, 195, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.30),
+    0 0 30px rgba(110, 80, 230, 0.10);
 }
 
 /* Own gloss/rim — stripped */
@@ -11282,21 +11287,23 @@ html.boost-mode .glass-panel {
 
 /* Hover — own */
 .chat-msg-card[data-own="true"]:hover {
-  background: #2e1f56;
+  background: linear-gradient(162deg, #32205e 0%, #241648 55%, #180e38 100%);
+  transform: translateY(-1px);
   box-shadow:
-    inset 2px  2px  7px rgba(0,   0,   0,   0.60),
-    inset -1px -1px 4px rgba(150, 100, 255, 0.05),
-    4px  4px 12px rgba(0,   0,   0,   0.55);
+    0  10px 28px rgba(0,   0,   0,   0.76),
+    0   3px  8px rgba(0,   0,   0,   0.52),
+    -2px -2px  8px rgba(150, 110, 255, 0.08),
+    inset 0 1px 0  rgba(220, 200, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.34),
+    0 0 42px rgba(120, 90, 240, 0.18);
 }
 
-/* Grouped continuation — full radius, no tail */
+/* Grouped continuation — same padding, just no tail radius change */
 .chat-msg-card[data-grouped="true"] {
-  border-radius: 12px;
-  padding-top: 7px;
-  padding-bottom: 7px;
+  border-radius: 12px 18px 18px 18px;
 }
 .chat-msg-card[data-grouped="true"][data-own="true"] {
-  border-radius: 12px;
+  border-radius: 18px 12px 18px 18px;
 }
 
 /* ── DM-view bubbles — same language, standalone context ────────────────── */
