@@ -181,15 +181,18 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         >
           <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
-        <Avatar className="w-7 h-7 flex-shrink-0">
+        <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
           <AvatarImage src={otherUser?.profileImageUrl || undefined} alt={getUserDisplayName(otherUser)} />
-          <AvatarFallback className="text-xs" style={{ background: "rgba(120,100,255,0.18)", color: "rgba(180,170,255,0.90)" }}>
-            {getUserInitials(otherUser)}
+          <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#4c3dcc,#7c5af0)", color: "#fff" }}>
+            {getUserInitials(otherUser) || "?"}
           </AvatarFallback>
         </Avatar>
-        <p className="text-xs font-semibold truncate tracking-tight" style={{ color: "rgba(220,215,255,0.90)" }} data-testid="text-dm-username">
-          {getUserDisplayName(otherUser)}
-        </p>
+        <div className="flex flex-col min-w-0">
+          <p className="dm-header-name truncate" data-testid="text-dm-username">
+            {getUserDisplayName(otherUser) || "Unknown"}
+          </p>
+          <p className="dm-header-sub">Private message</p>
+        </div>
       </div>
 
       {/* Messages */}
@@ -238,6 +241,13 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
 
                   {/* Bubble + reactions column */}
                   <div className={`dm-msg-content ${isMe ? "items-end" : "items-start"}`}>
+
+                    {/* Sender name — first message of each run */}
+                    {!grouped && (
+                      <p className={`dm-sender-name ${isMe ? "text-right" : ""}`}>
+                        {isMe ? (getUserDisplayName(user) || "You") : (getUserDisplayName(otherUser) || "Unknown")}
+                      </p>
+                    )}
 
                     {/* Bubble */}
                     <div className={`dm-bubble ${isMe ? "dm-bubble-own" : "dm-bubble-other"}`} data-testid={`bubble-${msg.id}`}>
