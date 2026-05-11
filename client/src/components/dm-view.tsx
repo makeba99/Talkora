@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Send, ChevronDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowLeft, Send, ChevronDown, Smile } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
@@ -10,6 +12,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, uploadChatImage } from "@/components/chat-picker";
 import type { Message, User } from "@shared/schema";
+
+const DM_QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "👏", "🎉"];
 
 interface DmViewProps {
   otherUserId: string;
@@ -22,6 +26,28 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   const [text, setText] = useState("");
   const [pasteUploading, setPasteUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  /* ── Reactions (client-side, per-session) ── */
+  const [reactions, setReactions] = useState<Record<string, Record<string, string[]>>>({});
+  const [reactPopoverMsgId, setReactPopoverMsgId] = useState<string | null>(null);
+  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+
+  const handleDmReact = (msgId: string, emoji: string) => {
+    if (!user) return;
+    setReactions(prev => {
+      const msgReactions = { ...(prev[msgId] || {}) };
+      const users = [...(msgReactions[emoji] || [])];
+      const idx = users.indexOf(user.id);
+      if (idx >= 0) {
+        users.splice(idx, 1);
+      } else {
+        users.push(user.id);
+      }
+      msgReactions[emoji] = users;
+      return { ...prev, [msgId]: msgReactions };
+    });
+    setReactPopoverMsgId(null);
+  };
 
   const { data: otherUser } = useQuery<User>({
     queryKey: ["/api/users", otherUserId],
@@ -124,6 +150,14 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     return new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  /* Group consecutive messages from same sender within 2 min */
+  const isGrouped = (msg: Message, idx: number) => {
+    if (idx === 0) return false;
+    const prev = messages[idx - 1];
+    if (prev.fromId !== msg.fromId) return false;
+    return new Date(msg.createdAt).getTime() - new Date(prev.createdAt).getTime() < 2 * 60 * 1000;
+  };
+
   return (
     <div className="flex flex-col h-full relative">
       {/* Header */}
@@ -150,7 +184,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
 
       {/* Messages */}
       <ScrollArea className="flex-1" ref={scrollRef} onScroll={handleScroll}>
-        <div className="p-3 space-y-2.5">
+        <div className="p-3 space-y-1">
           {isLoading ? (
             <p className="text-xs text-center py-8" style={{ color: "rgba(160,155,210,0.45)" }}>Loading…</p>
           ) : messages.length === 0 ? (
@@ -161,14 +195,120 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
               <p className="text-xs" style={{ color: "rgba(160,155,210,0.45)" }}>No messages yet. Say hello!</p>
             </div>
           ) : (
-            messages.map((msg) => {
+            messages.map((msg, idx) => {
               const isMe = msg.fromId === user?.id;
+              const grouped = isGrouped(msg, idx);
+              const msgReactions = reactions[msg.id] || {};
+              const hasReactions = Object.values(msgReactions).some(uids => uids.length > 0);
+
               return (
-                <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`} data-testid={`message-${msg.id}`}>
-                  <div className={`dm-bubble ${isMe ? "dm-bubble-own" : "dm-bubble-other"}`}>
-                    <div className="dm-bubble-text break-words">{renderMessageContent(msg.text)}</div>
-                    <p className="dm-bubble-time">{formatTime(msg.createdAt)}</p>
+                <div
+                  key={msg.id}
+                  className={`dm-msg-row ${isMe ? "dm-msg-row--own" : ""} ${grouped ? "dm-msg-row--grouped" : ""}`}
+                  onMouseEnter={() => setHoveredMsgId(msg.id)}
+                  onMouseLeave={() => setHoveredMsgId(null)}
+                  data-testid={`message-${msg.id}`}
+                >
+                  {/* Avatar — left side for other, right side for own */}
+                  {!isMe && (
+                    <div className="dm-msg-avatar-slot">
+                      {!grouped ? (
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          <AvatarImage src={otherUser?.profileImageUrl || undefined} alt={getUserDisplayName(otherUser)} />
+                          <AvatarFallback className="text-xs font-bold" style={{ background: "rgba(99,102,241,0.25)", color: "rgba(165,160,255,0.95)" }}>
+                            {getUserInitials(otherUser)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <div className="w-8 h-8 flex-shrink-0" />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Bubble + reactions column */}
+                  <div className={`dm-msg-content ${isMe ? "items-end" : "items-start"}`}>
+
+                    {/* Bubble */}
+                    <div className={`dm-bubble ${isMe ? "dm-bubble-own" : "dm-bubble-other"}`} data-testid={`bubble-${msg.id}`}>
+                      <div className="dm-bubble-text break-words">{renderMessageContent(msg.text)}</div>
+                      <p className={`dm-bubble-time ${isMe ? "text-right" : ""}`}>{formatTime(msg.createdAt)}</p>
+                    </div>
+
+                    {/* Reaction pills — outside bubble, doesn't change bubble size */}
+                    {hasReactions && (
+                      <div className={`dm-reaction-row ${isMe ? "flex-row-reverse" : ""}`} data-testid={`reactions-dm-${msg.id}`}>
+                        {Object.entries(msgReactions)
+                          .filter(([, uids]) => uids.length > 0)
+                          .map(([emoji, uids]) => (
+                            <Tooltip key={emoji}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => handleDmReact(msg.id, emoji)}
+                                  className="chat-reaction-pill"
+                                  data-self={uids.includes(user?.id || "") ? "true" : undefined}
+                                  data-testid={`dm-reaction-${msg.id}-${emoji}`}
+                                >
+                                  <span>{emoji}</span>
+                                  <span className="font-medium">{uids.length}</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
+                                {uids.length === 1 ? "1 reaction" : `${uids.length} reactions`}
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* Hover quick-react bar */}
+                    <div className={`dm-quick-react-bar ${hoveredMsgId === msg.id || reactPopoverMsgId === msg.id ? "dm-quick-react-bar--visible" : ""} ${isMe ? "self-end" : "self-start"}`}>
+                      <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
+                        <PopoverTrigger asChild>
+                          <button
+                            className="dm-react-trigger"
+                            data-testid={`button-dm-react-${msg.id}`}
+                            title="Add reaction"
+                            type="button"
+                          >
+                            <Smile className="w-3.5 h-3.5" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-1.5 w-auto" side={isMe ? "left" : "right"} sideOffset={6}>
+                          <div className="flex items-center gap-0.5 flex-wrap" style={{ maxWidth: "180px" }}>
+                            {DM_QUICK_EMOJIS.map(emoji => (
+                              <button
+                                key={emoji}
+                                onClick={() => handleDmReact(msg.id, emoji)}
+                                className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
+                                style={{ minWidth: "28px", minHeight: "28px", lineHeight: 1 }}
+                                data-testid={`dm-quick-react-${msg.id}-${emoji}`}
+                                title={`React with ${emoji}`}
+                                type="button"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
+
+                  {/* Own avatar — right side */}
+                  {isMe && (
+                    <div className="dm-msg-avatar-slot">
+                      {!grouped ? (
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          <AvatarImage src={user?.profileImageUrl || undefined} alt="You" />
+                          <AvatarFallback className="text-xs font-bold" style={{ background: "rgba(118,98,255,0.30)", color: "rgba(210,200,255,0.95)" }}>
+                            {getUserInitials(user)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <div className="w-8 h-8 flex-shrink-0" />
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -176,16 +316,13 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         </div>
       </ScrollArea>
 
-      {/* Input area — unified dock with embedded send */}
+      {/* Input area */}
       <form onSubmit={handleSend} className="dm-input-dock">
-        {/* Attachment tools row */}
         <div className="dm-tools-row">
           <EmojiPickerButton onEmojiSelect={(emoji) => setText((prev) => prev + emoji)} />
           <GifPickerButton onGifSelect={(gifUrl) => { sendMutation.mutate(`[gif:${gifUrl}]`); }} />
           <ImageUploadButton onImageSelect={(imgUrl) => { sendMutation.mutate(`[img:${imgUrl}]`); }} />
         </div>
-
-        {/* Input with send inside */}
         <div className="dm-input-wrap">
           <Input
             value={text}

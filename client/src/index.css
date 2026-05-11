@@ -12272,6 +12272,82 @@ html.boost-mode .glass-panel {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   DM View — message row layout with avatars + reactions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Message row — flex row holding avatar + bubble column */
+.dm-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 1px 0;
+  position: relative;
+}
+.dm-msg-row--own {
+  flex-direction: row-reverse;
+}
+.dm-msg-row--grouped {
+  margin-top: 1px;
+}
+
+/* Avatar slot — fixed width so bubbles align */
+.dm-msg-avatar-slot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Bubble + reactions + quick-react — stacked vertically */
+.dm-msg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  max-width: calc(100% - 48px);
+}
+
+/* Reaction pills row — sits below bubble, doesn't change bubble */
+.dm-reaction-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+
+/* Quick-react smiley button that shows on hover */
+.dm-quick-react-bar {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+.dm-quick-react-bar--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.dm-react-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(160, 148, 220, 0.55);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, transform 120ms ease;
+}
+.dm-react-trigger:hover {
+  background: rgba(120, 100, 255, 0.15);
+  border-color: rgba(120, 100, 255, 0.28);
+  color: rgba(190, 180, 255, 0.90);
+  transform: scale(1.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    DM View — unified dock & embedded-send input
    ═══════════════════════════════════════════════════════════════════════════ */
 
