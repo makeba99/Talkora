@@ -12289,23 +12289,24 @@ html.boost-mode .glass-panel {
 /* Message row — flex row holding avatar + bubble column */
 .dm-msg-row {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 1px 0;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 4px 0;
   position: relative;
 }
 .dm-msg-row--own {
   flex-direction: row-reverse;
 }
 .dm-msg-row--grouped {
-  margin-top: 1px;
+  margin-top: 0;
 }
 
-/* Avatar slot — fixed width so bubbles align */
+/* Avatar slot — aligns to top so it sits beside the name label */
 .dm-msg-avatar-slot {
   flex-shrink: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
+  padding-top: 2px;
 }
 
 /* Bubble + reactions + quick-react — stacked vertically */

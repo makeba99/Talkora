@@ -223,31 +223,25 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                   onMouseLeave={() => setHoveredMsgId(null)}
                   data-testid={`message-${msg.id}`}
                 >
-                  {/* Avatar — left side for other, right side for own */}
+                  {/* Avatar — left side for other */}
                   {!isMe && (
                     <div className="dm-msg-avatar-slot">
-                      {lastInRun ? (
-                        <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
-                          <AvatarImage src={otherUser?.profileImageUrl || undefined} alt={getUserDisplayName(otherUser)} />
-                          <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#4c3dcc,#7c5af0)", color: "#fff" }}>
-                            {getUserInitials(otherUser) || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                      ) : (
-                        <div className="w-8 h-8 flex-shrink-0" />
-                      )}
+                      <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
+                        <AvatarImage src={otherUser?.profileImageUrl || undefined} alt={getUserDisplayName(otherUser)} />
+                        <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#4c3dcc,#7c5af0)", color: "#fff" }}>
+                          {getUserInitials(otherUser) || "?"}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
                   )}
 
                   {/* Bubble + reactions column */}
                   <div className={`dm-msg-content ${isMe ? "items-end" : "items-start"}`}>
 
-                    {/* Sender name — first message of each run */}
-                    {!grouped && (
-                      <p className={`dm-sender-name ${isMe ? "text-right" : ""}`}>
-                        {isMe ? (getUserDisplayName(user) || "You") : (getUserDisplayName(otherUser) || "Unknown")}
-                      </p>
-                    )}
+                    {/* Sender name — always shown on every message */}
+                    <p className={`dm-sender-name ${isMe ? "text-right" : ""}`}>
+                      {isMe ? (getUserDisplayName(user) || "You") : (getUserDisplayName(otherUser) || "Unknown")}
+                    </p>
 
                     {/* Bubble */}
                     <div className={`dm-bubble ${isMe ? "dm-bubble-own" : "dm-bubble-other"}`} data-testid={`bubble-${msg.id}`}>
@@ -318,16 +312,12 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                   {/* Own avatar — right side */}
                   {isMe && (
                     <div className="dm-msg-avatar-slot">
-                      {lastInRun ? (
-                        <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
-                          <AvatarImage src={user?.profileImageUrl || undefined} alt="You" />
-                          <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#7c5af0,#a855f7)", color: "#fff" }}>
-                            {getUserInitials(user) || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                      ) : (
-                        <div className="w-8 h-8 flex-shrink-0" />
-                      )}
+                      <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
+                        <AvatarImage src={user?.profileImageUrl || undefined} alt="You" />
+                        <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#7c5af0,#a855f7)", color: "#fff" }}>
+                          {getUserInitials(user) || "?"}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
                   )}
                 </div>
