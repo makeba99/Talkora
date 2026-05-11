@@ -173,7 +173,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
       </PopoverTrigger>
       <PopoverContent
         className="w-[min(340px,90vw)] p-0 flex flex-col"
-        style={{ maxHeight: "min(380px,55svh)" }}
+        style={{ maxHeight: "min(680px,82svh)" }}
         side="top"
         align="start"
         sideOffset={8}

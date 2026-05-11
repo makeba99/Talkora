@@ -1670,7 +1670,7 @@ export async function registerRoutes(
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
       const response = await fetch(
-        `https://api.tenor.com/v1/search?key=${TENOR_KEY}&q=${encodeURIComponent(query)}&limit=20&contentfilter=low&media_filter=basic`
+        `https://api.tenor.com/v1/search?key=${TENOR_KEY}&q=${encodeURIComponent(query)}&limit=50&contentfilter=low&media_filter=basic`
       );
       if (!response.ok) throw new Error("Tenor API error");
       const data = await response.json();
@@ -1689,7 +1689,7 @@ export async function registerRoutes(
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
       const response = await fetch(
-        `https://api.tenor.com/v1/trending?key=${TENOR_KEY}&limit=20&contentfilter=low&media_filter=basic`
+        `https://api.tenor.com/v1/trending?key=${TENOR_KEY}&limit=50&contentfilter=low&media_filter=basic`
       );
       if (!response.ok) throw new Error("Tenor API error");
       const data = await response.json();
