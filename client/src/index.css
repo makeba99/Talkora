@@ -11077,12 +11077,23 @@ html.boost-mode .glass-panel {
   overflow: visible;
 }
 
-/* ── Bubble column — wraps sender name + bubble card + actions ─────────── */
+/* ── Bubble column — wraps bubble card + reactions + actions ───────────── */
 .chat-bubble-col {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  max-width: calc(100% - 42px);
+  /* Avatar is now inside the card — full width minus outer gutter only */
+  max-width: 82%;
+}
+
+/* ── Card header: avatar + name row inside the bubble ─────────────────── */
+.chat-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* ── Sender name above bubble ──────────────────────────────────────────── */
@@ -11132,38 +11143,37 @@ html.boost-mode .glass-panel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  color: rgba(255, 255, 255, 0.38);
-  background: #181928;
-  border: none;
-  /* Raised neumorphic tile */
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: rgba(200, 185, 255, 0.40);
+  /* Same family as bubble surface */
+  background: #1c1830;
+  border: 1px solid rgba(130, 100, 220, 0.10);
   box-shadow:
-    3px 3px 7px rgba(0, 0, 0, 0.60),
-    -2px -2px 5px rgba(255, 255, 255, 0.032);
+    3px 3px 8px rgba(0, 0, 0, 0.60),
+    -2px -2px 5px rgba(255, 255, 255, 0.028);
   cursor: pointer;
   flex-shrink: 0;
   transition: color 120ms ease, box-shadow 120ms ease, background 120ms ease;
 }
 .chat-quick-btn:hover {
-  color: rgba(200, 190, 255, 0.90);
-  background: #1e1f34;
-  /* Press-in on hover */
+  color: rgba(210, 195, 255, 0.92);
+  background: #211d3a;
   box-shadow:
-    inset 2px 2px 5px rgba(0, 0, 0, 0.55),
-    inset -1px -1px 3px rgba(255, 255, 255, 0.025);
+    inset 2px 2px 6px rgba(0, 0, 0, 0.60),
+    inset -1px -1px 3px rgba(200, 180, 255, 0.028);
 }
 .chat-quick-btn:active {
   box-shadow:
-    inset 3px 3px 7px rgba(0, 0, 0, 0.65),
-    inset -1px -1px 3px rgba(255, 255, 255, 0.02);
+    inset 3px 3px 8px rgba(0, 0, 0, 0.70),
+    inset -1px -1px 3px rgba(200, 180, 255, 0.02);
 }
 .chat-quick-btn--edit:hover {
-  color: rgba(130, 185, 250, 0.90);
+  color: rgba(130, 185, 250, 0.92);
 }
 .chat-quick-btn--emoji:hover {
-  color: rgba(255, 200, 60, 0.88);
+  color: rgba(255, 200, 60, 0.90);
 }
 
 /* Only animate newly-arrived messages (data-new set by JS) */
@@ -11210,25 +11220,23 @@ html.boost-mode .glass-panel {
 }
 
 /* ── Base bubble — others ───────────────────────────────────────────────── */
-/* Pure neumorphic: flat same-hue background + two-shadow raise.
-   No gradients, no gloss, no rim lights. */
+/* Pure neumorphic: flat violet-charcoal surface, two-shadow raise.
+   Colors pulled from the app's --card 265 32% 9% token. */
 .chat-msg-card {
-  /* Flat dark surface — same hue as the chat background */
-  background: #181928;
+  /* Slightly lighter than the dark panel surface (#0d0b18) */
+  background: #1c1830;
 
   /* Others tail: bottom-left corner flat */
-  border-radius: 16px 16px 16px 4px;
-  padding: 9px 13px 8px;
+  border-radius: 4px 16px 16px 16px;
+  padding: 10px 13px 9px;
   max-width: 100%;
-  border: none;
+  border: 1px solid rgba(130, 100, 220, 0.10);
 
-  /* Classic neumorphic raise:
-     dark shadow bottom-right  → depth
-     light shadow top-left     → highlight */
+  /* Classic neumorphic raise */
   box-shadow:
-    5px  5px 12px rgba(0,   0,   0,   0.65),
-    -3px -3px  8px rgba(255, 255, 255, 0.035),
-    inset 0 1px 0  rgba(255, 255, 255, 0.055);
+    5px  5px 14px rgba(0,   0,   0,   0.70),
+    -2px -2px  7px rgba(255, 255, 255, 0.030),
+    inset 0 1px 0  rgba(200, 180, 255, 0.06);
 
   transition: box-shadow 160ms ease, background 160ms ease;
 }
@@ -11239,27 +11247,27 @@ html.boost-mode .glass-panel {
   display: none;
 }
 
-/* Hover — press-in (inset neumorphic) */
+/* Hover — subtle deepen */
 .chat-msg-card:hover {
-  background: #1a1b2c;
+  background: #201c36;
   box-shadow:
-    inset 2px  2px  6px rgba(0,   0,   0,   0.60),
-    inset -1px -1px 4px rgba(255, 255, 255, 0.03),
-    5px  5px 14px rgba(0,   0,   0,   0.50);
+    inset 2px  2px  7px rgba(0,   0,   0,   0.65),
+    inset -1px -1px 4px rgba(255, 255, 255, 0.025),
+    4px  4px 12px rgba(0,   0,   0,   0.55);
 }
 
-/* ── Own messages — accent violet flat ──────────────────────────────────── */
+/* ── Own messages — deeper violet to distinguish ────────────────────────── */
 .chat-msg-card[data-own="true"] {
-  /* Slightly tinted flat violet — own messages stand out by hue, not gradient */
-  background: #221848;
+  /* Richer violet hue — clearly yours, same material language */
+  background: #28194a;
   /* Own tail: bottom-right corner flat */
-  border-radius: 16px 16px 4px 16px;
-  border: none;
+  border-radius: 16px 4px 16px 16px;
+  border: 1px solid rgba(150, 110, 255, 0.14);
 
   box-shadow:
-    5px  5px 12px rgba(0,   0,   0,   0.65),
-    -3px -3px  8px rgba(120, 90, 255, 0.06),
-    inset 0 1px 0  rgba(180, 160, 255, 0.10);
+    5px  5px 14px rgba(0,   0,   0,   0.70),
+    -2px -2px  7px rgba(140, 100, 255, 0.055),
+    inset 0 1px 0  rgba(200, 175, 255, 0.09);
 }
 
 /* Own gloss/rim — stripped */
@@ -11270,11 +11278,11 @@ html.boost-mode .glass-panel {
 
 /* Hover — own */
 .chat-msg-card[data-own="true"]:hover {
-  background: #251c52;
+  background: #2e1f56;
   box-shadow:
-    inset 2px  2px  6px rgba(0,   0,   0,   0.55),
-    inset -1px -1px 4px rgba(120, 90, 255, 0.05),
-    5px  5px 14px rgba(0,   0,   0,   0.50);
+    inset 2px  2px  7px rgba(0,   0,   0,   0.60),
+    inset -1px -1px 4px rgba(150, 100, 255, 0.05),
+    4px  4px 12px rgba(0,   0,   0,   0.55);
 }
 
 /* Grouped continuation — full radius, no tail */
