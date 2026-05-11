@@ -1374,7 +1374,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
   const [chatText, setChatText] = useState("");
-  const [chatMessageColor, setChatMessageColor] = useState(() => localStorage.getItem("connect2talk-chat-color") || "#e5e7eb");
+  const [chatMessageColor, setChatMessageColor] = useState(() => localStorage.getItem("connect2talk-chat-color") ?? "");
   const [privateChatToId, setPrivateChatToId] = useState<string>("public");
   const [pasteUploading, setPasteUploading] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -8277,27 +8277,52 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               <Popover>
                 <PopoverTrigger asChild>
                   <button type="button" className="room-tool-btn" data-testid="button-chat-color-picker" aria-label="Message color" title="Message color">
-                    <span className="w-3 h-3 rounded-full border border-white/30" style={{ backgroundColor: chatMessageColor, boxShadow: `0 0 6px ${chatMessageColor}55, inset 0 1px 0 rgba(255,255,255,0.4)` }} />
+                    {chatMessageColor
+                      ? <span className="w-3 h-3 rounded-full border border-white/30" style={{ backgroundColor: chatMessageColor, boxShadow: `0 0 6px ${chatMessageColor}55, inset 0 1px 0 rgba(255,255,255,0.4)` }} />
+                      : <span className="chat-color-none-dot" />
+                    }
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="chat-color-pop w-60 p-3" side="top" align="start">
+                <PopoverContent className="chat-color-pop w-64 p-3" side="top" align="start">
                   <div className="chat-color-pop-inner">
                     <div className="chat-color-pop-head">
                       <span className="chat-color-pop-title">Message color</span>
                       <span
                         className="chat-color-pop-preview"
-                        style={{
+                        style={chatMessageColor ? {
                           color: chatMessageColor,
-                          textShadow: `0 0 10px ${chatMessageColor}66`,
-                        }}
+                          textShadow: `0 0 12px ${chatMessageColor}88`,
+                        } : {}}
                         aria-hidden="true"
                       >
                         Aa
                       </span>
                     </div>
                     <div className="chat-color-grid" role="radiogroup" aria-label="Chat color">
-                      {["#e5e7eb", "#22d3ee", "#a78bfa", "#facc15", "#fb7185", "#4ade80", "#f97316", "#60a5fa", "#f0abfc", "#ffffff", "#c084fc", "#2dd4bf"].map((color) => {
+                      {/* "No color" swatch — clear / default */}
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={chatMessageColor === ""}
+                        onClick={() => setChatMessageColor("")}
+                        className={`chat-color-swatch chat-color-swatch--none ${chatMessageColor === "" ? "is-selected" : ""}`}
+                        data-testid="button-chat-color-none"
+                        aria-label="Default color"
+                        title="Default (no override)"
+                      >
+                        {chatMessageColor === "" && (
+                          <svg viewBox="0 0 12 12" className="chat-color-check" aria-hidden="true" style={{ color: "rgba(200,185,255,0.9)" }}>
+                            <path d="M2.5 6.2 L5 8.7 L9.5 4.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                      {[
+                        "#c4b5fd", "#a78bfa", "#22d3ee", "#34d399",
+                        "#facc15", "#fb923c", "#f87171", "#60a5fa",
+                        "#f0abfc", "#ffffff", "#94a3b8", "#2dd4bf",
+                      ].map((color) => {
                         const selected = chatMessageColor === color;
+                        const isDark = ["#facc15","#34d399","#22d3ee","#ffffff"].includes(color);
                         return (
                           <button
                             key={color}
@@ -8306,22 +8331,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             aria-checked={selected}
                             onClick={() => setChatMessageColor(color)}
                             className={`chat-color-swatch ${selected ? "is-selected" : ""}`}
-                            style={{
-                              ["--swatch" as any]: color,
-                              backgroundColor: color,
-                            }}
+                            style={{ ["--swatch" as any]: color, backgroundColor: color }}
                             data-testid={`button-chat-color-${color.replace("#", "")}`}
                             aria-label={`Set chat color ${color}`}
                           >
                             {selected && (
-                              <svg viewBox="0 0 12 12" className="chat-color-check" aria-hidden="true">
-                                <path d="M2.5 6.2 L5 8.7 L9.5 4.2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                              <svg viewBox="0 0 12 12" className="chat-color-check" aria-hidden="true" style={{ color: isDark ? "rgba(20,10,40,0.85)" : "rgba(255,255,255,0.9)" }}>
+                                <path d="M2.5 6.2 L5 8.7 L9.5 4.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>
                             )}
                           </button>
                         );
                       })}
                     </div>
+                    {chatMessageColor && (
+                      <button
+                        type="button"
+                        onClick={() => setChatMessageColor("")}
+                        className="chat-color-reset-btn"
+                        data-testid="button-chat-color-reset"
+                      >
+                        Reset to default
+                      </button>
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>

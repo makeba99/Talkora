@@ -10770,17 +10770,19 @@ html.neomorphic-light .pinned-socials-link {
    inset highlight, and an animated check mark on the chosen color.
    ============================================================================ */
 .chat-color-pop {
-  background: linear-gradient(180deg, hsl(232 35% 14% / 0.98), hsl(232 38% 9% / 0.98)) !important;
-  border: 1px solid hsl(232 30% 26% / 0.8) !important;
+  background: linear-gradient(170deg, hsl(248 40% 11% / 0.99), hsl(248 44% 7% / 0.99)) !important;
+  border: 1px solid hsl(248 35% 28% / 0.75) !important;
   box-shadow:
-    inset 0 1px 0 hsl(232 60% 70% / 0.08),
-    0 18px 38px hsl(232 50% 4% / 0.6) !important;
-  border-radius: 14px !important;
+    inset 0  1px 0 hsl(248 65% 72% / 0.10),
+    inset 0 -1px 0 hsl(248 50% 4%  / 0.50),
+    0 24px 48px hsl(248 55% 4% / 0.70),
+    0  8px 18px hsl(248 50% 4% / 0.50) !important;
+  border-radius: 18px !important;
 }
 .chat-color-pop-inner {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 .chat-color-pop-head {
   display: flex;
@@ -10789,77 +10791,173 @@ html.neomorphic-light .pinned-socials-link {
   gap: 8px;
 }
 .chat-color-pop-title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: hsl(220 15% 70%);
+  color: hsl(248 20% 62%);
 }
 .chat-color-pop-preview {
   font-family: "Space Grotesk", system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1;
-  padding: 4px 8px;
-  border-radius: 8px;
-  background: hsl(232 30% 11% / 0.85);
-  border: 1px solid hsl(232 30% 22% / 0.7);
+  padding: 5px 10px;
+  border-radius: 10px;
+  background: hsl(248 38% 9% / 0.90);
+  border: 1px solid hsl(248 35% 22% / 0.65);
+  box-shadow:
+    inset 0 1px 0 hsl(248 60% 70% / 0.07),
+    inset 0 -1px 0 rgba(0,0,0,0.25),
+    2px 2px 6px rgba(0,0,0,0.30);
   letter-spacing: -0.02em;
-  min-width: 36px;
+  min-width: 38px;
   text-align: center;
+  color: hsl(248 15% 72%);
 }
 .chat-color-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  padding: 4px;
-  border-radius: 12px;
-  background: hsl(232 30% 9% / 0.55);
-  border: 1px solid hsl(232 30% 18% / 0.6);
+  gap: 9px;
+  padding: 10px;
+  border-radius: 14px;
+  background: hsl(248 38% 7% / 0.70);
+  border: 1px solid hsl(248 32% 18% / 0.55);
+  box-shadow:
+    inset 2px 2px 6px rgba(0,0,0,0.32),
+    inset -1px -1px 3px hsl(248 60% 70% / 0.04);
 }
 .chat-color-swatch {
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
-  border: 1.5px solid hsl(232 30% 30% / 0.6);
+  border: 1.5px solid hsl(248 30% 32% / 0.55);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: hsl(232 60% 8%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -1px 1.5px rgba(0, 0, 0, 0.25);
-  transition: transform 140ms ease, box-shadow 200ms ease, border-color 160ms ease;
+    3px  3px  7px rgba(0,0,0,0.45),
+    -1px -1px  4px rgba(255,255,255,0.06),
+    inset 0 1px 0  rgba(255,255,255,0.32),
+    inset 0 -1px 2px rgba(0,0,0,0.28);
+  transition: transform 150ms ease, box-shadow 200ms ease, border-color 160ms ease;
 }
 .chat-color-swatch:hover {
-  transform: translateY(-1.5px) scale(1.06);
-  border-color: hsl(232 60% 60% / 0.8);
+  transform: translateY(-2px) scale(1.10);
+  border-color: rgba(255,255,255,0.55);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 1.5px rgba(0, 0, 0, 0.25),
-    0 6px 14px var(--swatch, hsl(232 60% 60% / 0.45));
+    4px  5px 12px rgba(0,0,0,0.55),
+    -1px -1px  4px rgba(255,255,255,0.08),
+    inset 0 1px 0  rgba(255,255,255,0.48),
+    inset 0 -1px 2px rgba(0,0,0,0.28),
+    0 8px 18px var(--swatch, rgba(150,100,255,0.50));
 }
 .chat-color-swatch.is-selected {
-  transform: scale(1.05);
-  border-color: rgba(255, 255, 255, 0.9);
+  transform: scale(1.12);
+  border-color: rgba(255,255,255,0.88);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 0 2px hsl(232 30% 9% / 0.95),
-    0 0 0 3.5px var(--swatch, hsl(232 60% 60%)),
-    0 6px 18px var(--swatch, hsl(232 60% 60% / 0.65));
-  animation: chat-color-pop-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    2px  2px  8px rgba(0,0,0,0.55),
+    -1px -1px  4px rgba(255,255,255,0.07),
+    inset 0 1px 0  rgba(255,255,255,0.52),
+    inset 0 -1px 2px rgba(0,0,0,0.30),
+    0 0 0 2.5px hsl(248 38% 9% / 0.95),
+    0 0 0 4px   var(--swatch, rgba(160,110,255,0.90)),
+    0 8px 22px  var(--swatch, rgba(150,100,255,0.70));
+  animation: chat-color-pop-in 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* "No color" swatch — transparent with diagonal slash */
+.chat-color-swatch--none {
+  background: linear-gradient(
+    135deg,
+    hsl(248 30% 18% / 0.90) 0%,
+    hsl(248 30% 14% / 0.90) 100%
+  );
+  --swatch: rgba(200, 180, 255, 0.6);
+  overflow: hidden;
+}
+.chat-color-swatch--none::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 130%;
+  height: 1.5px;
+  background: rgba(200, 170, 255, 0.45);
+  transform: translate(-50%, -50%) rotate(-40deg);
+  border-radius: 2px;
+}
+.chat-color-swatch--none.is-selected {
+  border-color: rgba(200, 180, 255, 0.75);
+  box-shadow:
+    2px  2px  8px rgba(0,0,0,0.55),
+    inset 0 1px 0  rgba(255,255,255,0.12),
+    0 0 0 2.5px hsl(248 38% 9% / 0.95),
+    0 0 0 4px   rgba(180, 150, 255, 0.75),
+    0 8px 18px rgba(150, 110, 255, 0.35);
 }
 .chat-color-check {
-  width: 14px;
-  height: 14px;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.55));
+  width: 13px;
+  height: 13px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.40));
+}
+/* Reset button */
+.chat-color-reset-btn {
+  width: 100%;
+  padding: 6px 0;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(248 20% 55%);
+  background: hsl(248 32% 9% / 0.70);
+  border: 1px solid hsl(248 30% 20% / 0.55);
+  box-shadow:
+    2px 2px 5px rgba(0,0,0,0.30),
+    -1px -1px 3px rgba(255,255,255,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+.chat-color-reset-btn:hover {
+  color: hsl(248 20% 75%);
+  background: hsl(248 32% 12% / 0.85);
+  box-shadow:
+    1px 1px 3px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+/* Trigger indicator dot for "no color" state */
+.chat-color-none-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, hsl(248 30% 22%), hsl(248 30% 15%));
+  border: 1.5px solid hsl(248 30% 35% / 0.70);
+  box-shadow:
+    1px 1px 3px rgba(0,0,0,0.40),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  position: relative;
+  overflow: hidden;
+}
+.chat-color-none-dot::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 140%;
+  height: 1.5px;
+  background: rgba(180, 155, 255, 0.50);
+  transform: translate(-50%, -50%) rotate(-40deg);
 }
 @keyframes chat-color-pop-in {
-  0%   { transform: scale(0.85); }
-  60%  { transform: scale(1.15); }
-  100% { transform: scale(1.05); }
+  0%   { transform: scale(0.80); }
+  60%  { transform: scale(1.18); }
+  100% { transform: scale(1.12); }
 }
 
 /* ============================================================================
@@ -11282,22 +11380,23 @@ html.boost-mode .glass-panel {
 /* ── Base bubble — others ───────────────────────────────────────────────── */
 /* Premium neumorphic: deep violet-charcoal, sculpted raise + lit top rim */
 .chat-msg-card {
-  background: linear-gradient(162deg, #1e1a34 0%, #18152a 55%, #120f22 100%);
+  background: linear-gradient(158deg, #252042 0%, #1d1836 52%, #16122c 100%);
   border-radius: 6px 18px 18px 18px;
   padding: 12px 16px 11px;
   max-width: 100%;
-  border: 1px solid rgba(130, 100, 220, 0.14);
-  border-top-color: rgba(180, 155, 255, 0.22);
-  border-bottom-color: rgba(8, 6, 18, 0.55);
+  border: 1px solid rgba(150, 115, 240, 0.18);
+  border-top-color: rgba(200, 175, 255, 0.28);
+  border-bottom-color: rgba(12, 8, 26, 0.65);
 
   box-shadow:
-    0   6px 20px rgba(0,   0,   0,   0.72),
-    0   2px  6px rgba(0,   0,   0,   0.50),
-    -2px -2px  8px rgba(255, 255, 255, 0.032),
-    inset 0 1px 0  rgba(210, 190, 255, 0.10),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+    0   8px 24px rgba(0,   0,   0,   0.68),
+    0   2px  7px rgba(0,   0,   0,   0.48),
+    3px  0  12px rgba(0,   0,   0,   0.28),
+    -3px 3px  8px rgba(255, 255, 255, 0.028),
+    inset 0  1px 0  rgba(220, 200, 255, 0.13),
+    inset 0 -1px 0  rgba(0,   0,   0,   0.32);
 
-  transition: box-shadow 180ms ease, background 180ms ease, transform 180ms ease;
+  transition: box-shadow 200ms ease, transform 200ms ease;
 }
 
 /* No gloss pseudo-elements */
@@ -11308,31 +11407,34 @@ html.boost-mode .glass-panel {
 
 /* Hover — lift + deepen */
 .chat-msg-card:hover {
-  background: linear-gradient(162deg, #221e3a 0%, #1c192e 55%, #150f26 100%);
-  transform: translateY(-1px);
+  background: linear-gradient(158deg, #2c2550 0%, #231e42 52%, #1a1536 100%);
+  transform: translateY(-1.5px);
   box-shadow:
-    0  10px 28px rgba(0,   0,   0,   0.76),
-    0   3px  8px rgba(0,   0,   0,   0.52),
-    -2px -2px  8px rgba(255, 255, 255, 0.036),
-    inset 0 1px 0  rgba(218, 200, 255, 0.14),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.32);
+    0  12px 32px rgba(0,   0,   0,   0.74),
+    0   3px  9px rgba(0,   0,   0,   0.52),
+    3px  0  14px rgba(0,   0,   0,   0.30),
+    -3px 3px  8px rgba(255, 255, 255, 0.032),
+    inset 0  1px 0  rgba(228, 210, 255, 0.18),
+    inset 0 -1px 0  rgba(0,   0,   0,   0.36),
+    0   0  20px rgba(140, 100, 255, 0.06);
 }
 
-/* ── Own messages — richer violet to distinguish ────────────────────────── */
+/* ── Own messages — distinctly richer violet ─────────────────────────────── */
 .chat-msg-card[data-own="true"] {
-  background: linear-gradient(162deg, #2a1b50 0%, #1e1240 55%, #140c30 100%);
+  background: linear-gradient(158deg, #30196a 0%, #231155 52%, #180d40 100%);
   border-radius: 18px 6px 18px 18px;
-  border: 1px solid rgba(155, 115, 255, 0.20);
-  border-top-color: rgba(195, 165, 255, 0.34);
-  border-bottom-color: rgba(10, 6, 28, 0.60);
+  border: 1px solid rgba(170, 130, 255, 0.24);
+  border-top-color: rgba(210, 185, 255, 0.42);
+  border-bottom-color: rgba(12, 6, 32, 0.70);
 
   box-shadow:
-    0   6px 20px rgba(0,   0,   0,   0.72),
-    0   2px  6px rgba(0,   0,   0,   0.50),
-    -2px -2px  8px rgba(140, 100, 255, 0.06),
-    inset 0 1px 0  rgba(215, 195, 255, 0.14),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.30),
-    0 0 30px rgba(110, 80, 230, 0.10);
+    0   8px 24px rgba(0,   0,   0,   0.70),
+    0   2px  7px rgba(0,   0,   0,   0.50),
+    -3px  0  12px rgba(0,   0,   0,   0.28),
+    3px  3px  8px rgba(255, 255, 255, 0.022),
+    inset 0  1px 0  rgba(225, 205, 255, 0.20),
+    inset 0 -1px 0  rgba(0,   0,   0,   0.38),
+    0   0  36px rgba(120, 80, 240, 0.14);
 }
 
 /* Own gloss/rim — stripped */
@@ -11343,15 +11445,16 @@ html.boost-mode .glass-panel {
 
 /* Hover — own */
 .chat-msg-card[data-own="true"]:hover {
-  background: linear-gradient(162deg, #32205e 0%, #241648 55%, #180e38 100%);
-  transform: translateY(-1px);
+  background: linear-gradient(158deg, #3a1e7c 0%, #2b1562 52%, #1f1050 100%);
+  transform: translateY(-1.5px);
   box-shadow:
-    0  10px 28px rgba(0,   0,   0,   0.76),
-    0   3px  8px rgba(0,   0,   0,   0.52),
-    -2px -2px  8px rgba(150, 110, 255, 0.08),
-    inset 0 1px 0  rgba(220, 200, 255, 0.18),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.34),
-    0 0 42px rgba(120, 90, 240, 0.18);
+    0  12px 32px rgba(0,   0,   0,   0.74),
+    0   3px  9px rgba(0,   0,   0,   0.52),
+    -3px  0  14px rgba(0,   0,   0,   0.30),
+    3px  3px  8px rgba(255, 255, 255, 0.026),
+    inset 0  1px 0  rgba(232, 215, 255, 0.26),
+    inset 0 -1px 0  rgba(0,   0,   0,   0.42),
+    0   0  48px rgba(140, 90, 255, 0.22);
 }
 
 /* Grouped continuation — same padding, just no tail radius change */
