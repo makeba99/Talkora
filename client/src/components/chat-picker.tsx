@@ -89,16 +89,24 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
   const [gifs, setGifs] = useState<GifResult[]>([]);
   const [gifLoading, setGifLoading] = useState(false);
   const [gifError, setGifError] = useState<string | null>(null);
+  const [nextPos, setNextPos] = useState<string>("");
+  const [loadingMore, setLoadingMore] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const currentQueryRef = useRef<string>("");
 
   const searchGifs = useCallback(async (query: string) => {
     if (!query.trim()) {
       setGifs([]);
       setGifError(null);
+      setNextPos("");
       return;
     }
+    currentQueryRef.current = query;
     setGifLoading(true);
     setGifError(null);
+    setNextPos("");
     try {
       const res = await fetch(`/api/gifs/search?q=${encodeURIComponent(query)}`);
       if (!res.ok) {
@@ -107,6 +115,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
       }
       const data = await res.json();
       setGifs(data.results || []);
+      setNextPos(data.next || "");
     } catch (err: any) {
       setGifError(err.message || "Failed to search GIFs");
       setGifs([]);
@@ -116,8 +125,10 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
   }, []);
 
   const loadTrending = useCallback(async () => {
+    currentQueryRef.current = "";
     setGifLoading(true);
     setGifError(null);
+    setNextPos("");
     try {
       const res = await fetch("/api/gifs/trending");
       if (!res.ok) {
@@ -126,6 +137,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
       }
       const data = await res.json();
       setGifs(data.results || []);
+      setNextPos(data.next || "");
     } catch (err: any) {
       setGifError(err.message || "GIF search unavailable");
       setGifs([]);
@@ -134,11 +146,52 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
     }
   }, []);
 
+  const loadMore = useCallback(async (pos: string, query: string) => {
+    if (!pos || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const url = query.trim()
+        ? `/api/gifs/search?q=${encodeURIComponent(query)}&pos=${encodeURIComponent(pos)}`
+        : `/api/gifs/trending?pos=${encodeURIComponent(pos)}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const newGifs: GifResult[] = data.results || [];
+      if (newGifs.length > 0) {
+        setGifs((prev) => {
+          const existingIds = new Set(prev.map((g) => g.id));
+          return [...prev, ...newGifs.filter((g) => !existingIds.has(g.id))];
+        });
+      }
+      setNextPos(data.next || "");
+    } catch {
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore]);
+
   useEffect(() => {
     if (open && gifs.length === 0 && !gifSearch) {
       loadTrending();
     }
   }, [open, loadTrending]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const scroller = scrollRef.current;
+    if (!sentinel || !scroller) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && nextPos && !loadingMore && !gifLoading) {
+          loadMore(nextPos, currentQueryRef.current);
+        }
+      },
+      { root: scroller, rootMargin: "120px", threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [nextPos, loadingMore, gifLoading, loadMore]);
 
   const handleGifSearchChange = (value: string) => {
     setGifSearch(value);
@@ -157,6 +210,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
     setOpen(false);
     setGifSearch("");
     setGifs([]);
+    setNextPos("");
   };
 
   return (
@@ -208,7 +262,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
             )}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto overscroll-contain min-h-0" onWheel={(e) => e.stopPropagation()}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain min-h-0" onWheel={(e) => e.stopPropagation()}>
           <div className="p-2">
             {gifLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -225,26 +279,34 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-1.5">
-                {gifs.map((gif) => (
-                  <button
-                    key={gif.id}
-                    onClick={() => handleGifClick(gif)}
-                    className="relative rounded-md overflow-hidden cursor-pointer group"
-                    data-testid={`gif-result-${gif.id}`}
-                  >
-                    <img
-                      src={gif.preview}
-                      alt={gif.title}
-                      className="w-full h-24 object-cover"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      decoding="async"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {gifs.map((gif) => (
+                    <button
+                      key={gif.id}
+                      onClick={() => handleGifClick(gif)}
+                      className="relative rounded-md overflow-hidden cursor-pointer group"
+                      data-testid={`gif-result-${gif.id}`}
+                    >
+                      <img
+                        src={gif.preview}
+                        alt={gif.title}
+                        className="w-full h-24 object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        decoding="async"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+                {loadingMore && (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+              </>
             )}
           </div>
         </div>

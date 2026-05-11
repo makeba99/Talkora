@@ -1663,18 +1663,19 @@ export async function registerRoutes(
   app.get("/api/gifs/search", isAuthenticated, async (req: any, res) => {
     try {
       const query = req.query.q as string;
+      const pos = req.query.pos as string | undefined;
       if (!query || query.trim().length === 0) {
-        return res.json({ results: [] });
+        return res.json({ results: [], next: "" });
       }
-      const cacheKey = `gif:search:${query.toLowerCase().trim()}`;
+      const cacheKey = `gif:search:${query.toLowerCase().trim()}${pos ? `:${pos}` : ""}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const response = await fetch(
-        `https://api.tenor.com/v1/search?key=${TENOR_KEY}&q=${encodeURIComponent(query)}&limit=50&contentfilter=low&media_filter=basic`
-      );
+      let url = `https://api.tenor.com/v1/search?key=${TENOR_KEY}&q=${encodeURIComponent(query)}&limit=50&contentfilter=low&media_filter=basic`;
+      if (pos) url += `&pos=${encodeURIComponent(pos)}`;
+      const response = await fetch(url);
       if (!response.ok) throw new Error("Tenor API error");
       const data = await response.json();
-      const result = { results: mapTenorResults(data.results || []) };
+      const result = { results: mapTenorResults(data.results || []), next: data.next || "" };
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
@@ -1683,17 +1684,18 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/gifs/trending", isAuthenticated, async (_req: any, res) => {
+  app.get("/api/gifs/trending", isAuthenticated, async (req: any, res) => {
     try {
-      const cacheKey = "gif:trending";
+      const pos = req.query.pos as string | undefined;
+      const cacheKey = `gif:trending${pos ? `:${pos}` : ""}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const response = await fetch(
-        `https://api.tenor.com/v1/trending?key=${TENOR_KEY}&limit=50&contentfilter=low&media_filter=basic`
-      );
+      let url = `https://api.tenor.com/v1/trending?key=${TENOR_KEY}&limit=50&contentfilter=low&media_filter=basic`;
+      if (pos) url += `&pos=${encodeURIComponent(pos)}`;
+      const response = await fetch(url);
       if (!response.ok) throw new Error("Tenor API error");
       const data = await response.json();
-      const result = { results: mapTenorResults(data.results || []) };
+      const result = { results: mapTenorResults(data.results || []), next: data.next || "" };
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
