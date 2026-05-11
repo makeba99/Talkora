@@ -11085,6 +11085,10 @@ html.boost-mode .glass-panel {
   /* Avatar is now inside the card — full width minus outer gutter only */
   max-width: 82%;
 }
+/* Own messages pushed flush to the right edge */
+.chat-msg-row[data-own="true"] > .chat-bubble-col {
+  margin-left: auto;
+}
 
 /* ── Card header: avatar + name row inside the bubble ─────────────────── */
 .chat-card-header {
@@ -11138,6 +11142,11 @@ html.boost-mode .glass-panel {
 .chat-msg-row:focus-within .chat-bubble-actions {
   opacity: 1;
   pointer-events: auto;
+}
+/* After adding a reaction, suppress button visibility even while hovered */
+.chat-msg-row[data-just-reacted="true"] .chat-bubble-actions {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .chat-quick-btn {

@@ -1486,6 +1486,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [reactPopoverMsgId, setReactPopoverMsgId] = useState<string | null>(null);
+  const [justReactedMsgId, setJustReactedMsgId] = useState<string | null>(null);
   const [morePopoverMsgId, setMorePopoverMsgId] = useState<string | null>(null);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
 
@@ -7201,7 +7202,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
         <div className="chat-scroll-well flex-1 min-h-0">
         <ScrollArea className="h-full" ref={chatScrollRef} onScroll={handleScroll}>
-          <div className="pl-2 pr-0.5 py-2 min-h-full flex flex-col justify-end">
+          <div className="pl-2 pr-0 py-2 min-h-full flex flex-col justify-end">
             {(() => {
               let displayedMessages = showMentionsOnly
                 ? chatMessages.filter(msg => msg.type !== "system" && (msg as any).type !== "deleted" && isMentionedInMessage(msg.text))
@@ -7485,6 +7486,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     data-new={isNew ? "true" : undefined}
                     data-grouped={isGrouped ? "true" : undefined}
                     data-highlighted={highlightedMsgId === msg.id ? "true" : undefined}
+                    data-just-reacted={justReactedMsgId === msg.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                   >
                     {/* Bubble layout — own=right, others=left */}
@@ -7689,6 +7691,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             <div className={`flex mt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
                               <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
                             </div>
+                            {/* ── Reaction pills — inside card, below timestamp ── */}
+                            {hasReactions && msg.type !== "deleted" && (msg as any).type !== "system" && (
+                              <div className={`flex items-center gap-1 mt-1.5 flex-wrap ${isOwn ? "flex-row-reverse" : ""}`} data-testid={`reactions-${msg.id}`}>
+                                {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
+                                  const tooltip = formatReactionTooltip(emoji, uids);
+                                  return (
+                                    <Tooltip key={emoji}>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          onClick={() => handleReact(msg.id, emoji)}
+                                          className="chat-reaction-pill"
+                                          data-self={uids.includes(user?.id || "") ? "true" : undefined}
+                                          data-testid={`reaction-${msg.id}-${emoji}`}
+                                        >
+                                          <span>{emoji}</span>
+                                          <span className="font-medium">{uids.length}</span>
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" sideOffset={8} avoidCollisions className="text-xs max-w-[260px] text-center z-[9999]">
+                                        <p className="font-semibold mb-0.5">{tooltip.heading}</p>
+                                        <p className="opacity-70">{tooltip.names}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  );
+                                })}
+                              </div>
+                            )}
                             {/* ── Action buttons — embedded inside card, reserve height always ── */}
                             {msg.type !== "deleted" && (msg as any).type !== "system" && (
                               <div
@@ -7741,7 +7770,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                       {QUICK_EMOJIS.map((emoji) => (
                                         <button
                                           key={emoji}
-                                          onClick={() => { handleReact(msg.id, emoji); setReactPopoverMsgId(null); }}
+                                          onClick={() => {
+                                            handleReact(msg.id, emoji);
+                                            setReactPopoverMsgId(null);
+                                            setJustReactedMsgId(msg.id);
+                                            setTimeout(() => setJustReactedMsgId(null), 1000);
+                                          }}
                                           className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
                                           style={{ minWidth: "28px", minHeight: "28px", lineHeight: 1 }}
                                           data-testid={`quick-react-${msg.id}-${emoji}`}
@@ -7804,34 +7838,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           </>
                         )}
                       </div>{/* close: bubble card */}
-
-                      {/* ── Reaction pills — ALWAYS VISIBLE (pinned stable) ── */}
-                      {hasReactions && msg.type !== "deleted" && (msg as any).type !== "system" && (
-                        <div className={`flex items-center gap-1 mt-1 flex-wrap ${isOwn ? "flex-row-reverse" : ""}`} data-testid={`reactions-${msg.id}`}>
-                          {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
-                            const tooltip = formatReactionTooltip(emoji, uids);
-                            return (
-                              <Tooltip key={emoji}>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => handleReact(msg.id, emoji)}
-                                    className="chat-reaction-pill"
-                                    data-self={uids.includes(user?.id || "") ? "true" : undefined}
-                                    data-testid={`reaction-${msg.id}-${emoji}`}
-                                  >
-                                    <span>{emoji}</span>
-                                    <span className="font-medium">{uids.length}</span>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={8} avoidCollisions className="text-xs max-w-[260px] text-center z-[9999]">
-                                  <p className="font-semibold mb-0.5">{tooltip.heading}</p>
-                                  <p className="opacity-70">{tooltip.names}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            );
-                          })}
-                        </div>
-                      )}
 
                     </div>{/* close: bubble-col */}
 
