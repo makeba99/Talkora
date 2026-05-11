@@ -11130,11 +11130,47 @@ html.boost-mode .glass-panel {
 .chat-role-pill--admin  { background: rgba(252,165,165,.15); color: rgba(252,165,165,.85); border: 1px solid rgba(252,165,165,.28); }
 .chat-role-pill--troll  { background: rgba(251,146,60,.12);  color: rgba(251,146,60,.80);  border: 1px solid rgba(251,146,60,.22); }
 
-/* ── Reaction pills container — always rendered, height always reserved ── */
-.chat-bubble-reactions {
-  min-height: 26px;
-  margin-top: 6px;
-  transition: opacity 150ms ease;
+/* ── Reaction pills — float below card, Telegram-style overlap ── */
+.chat-reactions-float {
+  margin-top: -7px;        /* overlap the card bottom edge slightly */
+  padding: 0 6px 0;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── DM whisper button — red neumorphic icon in card header ── */
+.chat-dm-whisper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  color: rgba(252, 100, 100, 0.85);
+  background: rgba(220, 38, 38, 0.12);
+  box-shadow:
+    2px 2px 4px rgba(0,0,0,0.35),
+    -1px -1px 3px rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(255,100,100,0.10);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 150ms ease 400ms, background 120ms ease, box-shadow 120ms ease, color 120ms ease;
+}
+.chat-dm-whisper-btn:hover {
+  background: rgba(220, 38, 38, 0.28);
+  color: rgba(255, 130, 130, 1);
+  box-shadow:
+    3px 3px 6px rgba(0,0,0,0.45),
+    -1px -1px 3px rgba(255,255,255,0.06),
+    inset 0 1px 0 rgba(255,120,120,0.18),
+    0 0 8px rgba(220,38,38,0.30);
+}
+.chat-dm-whisper-btn:active {
+  box-shadow:
+    1px 1px 2px rgba(0,0,0,0.45),
+    inset 1px 1px 3px rgba(0,0,0,0.30);
+  transform: scale(0.93);
 }
 
 /* ── Bubble quick-action buttons — embedded inside card, shown on row hover ── */

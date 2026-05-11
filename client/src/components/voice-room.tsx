@@ -7565,7 +7565,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 </button>
                               )}
                             </div>
-                            <div className="flex flex-col min-w-0">
+                            <div className="flex flex-col min-w-0 flex-1">
                               <div className="flex items-center gap-1 flex-wrap">
                                 <span className="chat-bubble-sender-name">{getUserDisplayName(msgUser)}</span>
                                 {msg.userId === room.ownerId && (
@@ -7585,6 +7585,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                     <LockKeyhole className="w-2 h-2 mr-0.5" />
                                     Private
                                   </Badge>
+                                )}
+                                {/* DM whisper button — red neumorphic, visible on card hover */}
+                                {msg.userId !== "system" && user && msg.userId !== user.id && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={() => setDmUserId(msg.userId)}
+                                        className="chat-dm-whisper-btn opacity-0 group-hover:opacity-100"
+                                        data-testid={`button-dm-whisper-${msg.id}`}
+                                      >
+                                        <MessageSquare className="w-2.5 h-2.5" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
+                                      DM {getUserDisplayName(msgUser)}
+                                    </TooltipContent>
+                                  </Tooltip>
                                 )}
                               </div>
                             </div>
@@ -7691,36 +7708,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             <div className={`flex mt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
                               <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
                             </div>
-                            {/* ── Reaction pills — always rendered to reserve height, hidden when empty ── */}
-                            {msg.type !== "deleted" && (msg as any).type !== "system" && (
-                              <div
-                                className={`chat-bubble-reactions flex items-center gap-1 flex-wrap ${isOwn ? "flex-row-reverse" : ""} ${!hasReactions ? "opacity-0 pointer-events-none" : ""}`}
-                                data-testid={`reactions-${msg.id}`}
-                              >
-                                {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
-                                  const tooltip = formatReactionTooltip(emoji, uids);
-                                  return (
-                                    <Tooltip key={emoji}>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          onClick={() => handleReact(msg.id, emoji)}
-                                          className="chat-reaction-pill"
-                                          data-self={uids.includes(user?.id || "") ? "true" : undefined}
-                                          data-testid={`reaction-${msg.id}-${emoji}`}
-                                        >
-                                          <span>{emoji}</span>
-                                          <span className="font-medium">{uids.length}</span>
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top" sideOffset={8} avoidCollisions className="text-xs max-w-[260px] text-center z-[9999]">
-                                        <p className="font-semibold mb-0.5">{tooltip.heading}</p>
-                                        <p className="opacity-70">{tooltip.names}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  );
-                                })}
-                              </div>
-                            )}
                             {/* ── Action buttons — embedded inside card, reserve height always ── */}
                             {msg.type !== "deleted" && (msg as any).type !== "system" && (
                               <div
@@ -7841,6 +7828,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           </>
                         )}
                       </div>{/* close: bubble card */}
+
+                      {/* ── Reactions: float below card, Telegram-style overlap ── */}
+                      {hasReactions && msg.type !== "deleted" && (msg as any).type !== "system" && (
+                        <div className={`chat-reactions-float flex items-center gap-1 flex-wrap ${isOwn ? "flex-row-reverse" : ""}`} data-testid={`reactions-${msg.id}`}>
+                          {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
+                            const tooltip = formatReactionTooltip(emoji, uids);
+                            return (
+                              <Tooltip key={emoji}>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => handleReact(msg.id, emoji)}
+                                    className="chat-reaction-pill"
+                                    data-self={uids.includes(user?.id || "") ? "true" : undefined}
+                                    data-testid={`reaction-${msg.id}-${emoji}`}
+                                  >
+                                    <span>{emoji}</span>
+                                    <span className="font-medium">{uids.length}</span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={8} avoidCollisions className="text-xs max-w-[260px] text-center z-[9999]">
+                                  <p className="font-semibold mb-0.5">{tooltip.heading}</p>
+                                  <p className="opacity-70">{tooltip.names}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      )}
 
                     </div>{/* close: bubble-col */}
 
