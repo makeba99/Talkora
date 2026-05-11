@@ -21,7 +21,7 @@ import {
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Minimize2, Palette,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile, MoreHorizontal,
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, Share2, CheckCheck, Wand2, Dices, SendHorizontal,
   Linkedin, Pin
 } from "lucide-react";
@@ -1486,6 +1486,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [reactPopoverMsgId, setReactPopoverMsgId] = useState<string | null>(null);
+  const [morePopoverMsgId, setMorePopoverMsgId] = useState<string | null>(null);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
 
   const [seenByMap, setSeenByMap] = useState<Record<string, { userId: string; userName: string; profileImageUrl?: string | null }[]>>({});
@@ -7432,61 +7433,69 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     data-highlighted={highlightedMsgId === msg.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                   >
-                    {/* Card — avatar inline with name, no separate header row */}
+                    {/* Card — large avatar left column, content right */}
                     <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
-                        {/* Single content column */}
+                      <div className="flex items-start gap-3">
+
+                        {/* Avatar — prominent left column */}
+                        <div className="relative flex-shrink-0 group/avatar">
+                          <div
+                            className="chat-msg-avatar-ring rounded-full"
+                            style={{
+                              padding: "2.5px",
+                              background: rc.bg,
+                              boxShadow: `-2px -2px 8px rgba(255,255,255,.07), 3px 3px 12px rgba(0,0,0,.80), 0 0 20px ${rc.glow}`,
+                            }}
+                          >
+                            <Avatar className="w-11 h-11" style={{ border: "1.5px solid rgba(0,0,0,.60)" }}>
+                              <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
+                              <AvatarFallback className={`text-sm bg-gradient-to-br ${gradient} text-white`}>
+                                {getUserInitials(msgUser)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <span
+                            className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 pointer-events-none"
+                            style={{ background: "#34d399", borderColor: "#0a0b1e" }}
+                          />
+                          {!isOwn && msg.userId !== "system" && (
+                            <button
+                              onClick={() => {
+                                setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
+                                chatInputRef.current?.focus();
+                              }}
+                              title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
+                              data-testid={`button-dm-avatar-${msg.id}`}
+                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-all duration-150 scale-90 group-hover/avatar:scale-100"
+                              style={{
+                                background: privateChatToId === msg.userId
+                                  ? "linear-gradient(135deg,rgba(251,191,36,.95),rgba(194,115,10,.85))"
+                                  : "linear-gradient(135deg,rgba(99,102,241,.92),rgba(67,56,202,.80))",
+                                border: privateChatToId === msg.userId
+                                  ? "1px solid rgba(251,191,36,.45)"
+                                  : "1px solid rgba(139,92,246,.40)",
+                                borderRadius: "999px",
+                                padding: "1px 6px",
+                                fontSize: "8px",
+                                fontWeight: 700,
+                                letterSpacing: "0.04em",
+                                color: "#fff",
+                                boxShadow: "0 2px 6px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18)",
+                                whiteSpace: "nowrap",
+                                lineHeight: "1.4",
+                                zIndex: 2,
+                              }}
+                            >
+                              {privateChatToId === msg.userId ? "✓ DM" : "DM"}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Content column */}
                         <div className="flex-1 min-w-0">
-                          {/* Name row: avatar · name · badges · time */}
+                          {/* Name row: name · badges · [right: time] */}
                           <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                            {/* Avatar — tiny, inline */}
-                            <div className="relative flex-shrink-0 group/avatar">
-                              <div
-                                className="chat-msg-avatar-ring rounded-full"
-                                style={{
-                                  padding: "1.5px",
-                                  background: rc.bg,
-                                  boxShadow: `-1px -1px 4px rgba(255,255,255,.06), 2px 2px 6px rgba(0,0,0,.75), 0 0 10px ${rc.glow}`,
-                                }}
-                              >
-                                <Avatar className="w-[26px] h-[26px]" style={{ border: "1px solid rgba(0,0,0,.55)" }}>
-                                  <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
-                                  <AvatarFallback className={`text-[10px] bg-gradient-to-br ${gradient} text-white`}>
-                                    {getUserInitials(msgUser)}
-                                  </AvatarFallback>
-                                </Avatar>
-                              </div>
-                              {!isOwn && msg.userId !== "system" && (
-                                <button
-                                  onClick={() => {
-                                    setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
-                                    chatInputRef.current?.focus();
-                                  }}
-                                  title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
-                                  data-testid={`button-dm-avatar-${msg.id}`}
-                                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-all duration-150 scale-90 group-hover/avatar:scale-100"
-                                  style={{
-                                    background: privateChatToId === msg.userId
-                                      ? "linear-gradient(135deg,rgba(251,191,36,.95),rgba(194,115,10,.85))"
-                                      : "linear-gradient(135deg,rgba(99,102,241,.92),rgba(67,56,202,.80))",
-                                    border: privateChatToId === msg.userId
-                                      ? "1px solid rgba(251,191,36,.45)"
-                                      : "1px solid rgba(139,92,246,.40)",
-                                    borderRadius: "999px",
-                                    padding: "1px 5px",
-                                    fontSize: "8px",
-                                    fontWeight: 700,
-                                    letterSpacing: "0.04em",
-                                    color: "#fff",
-                                    boxShadow: "0 2px 6px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18)",
-                                    whiteSpace: "nowrap",
-                                    lineHeight: "1.4",
-                                  }}
-                                >
-                                  {privateChatToId === msg.userId ? "✓ DM" : "DM"}
-                                </button>
-                              )}
-                            </div>
-                            <span className="text-[12.5px] font-semibold leading-tight" style={{ color: "rgba(235,230,255,0.92)" }}>{getUserDisplayName(msgUser)}</span>
+                            <span className="text-[13.5px] font-semibold leading-tight" style={{ color: "rgba(240,236,255,0.96)" }}>{getUserDisplayName(msgUser)}</span>
                             {msg.userId === room.ownerId && (
                               <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-amber-400/20 text-amber-300 border border-amber-400/30">Owner</span>
                             )}
@@ -7507,211 +7516,202 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             )}
                             <span className="chat-msg-time ml-auto">{formatTime(msg.createdAt)}</span>
                           </div>
-                        {msg.replyTo && (
-                          <div
-                            className="chat-reply-block chat-reply-block--jumpable"
-                            data-testid={`reply-chip-${msg.id}`}
-                            onClick={() => scrollToMessage(msg.replyTo!.id)}
-                            title="Click to jump to original message"
-                          >
-                            <span className="chat-reply-block-name">↩ {msg.replyTo.userName}</span>
-                            <div className="chat-reply-block-body">{renderReplyPreview(msg.replyTo.text)}</div>
-                          </div>
-                        )}
-                        {editingMsgId === msg.id ? (
-                          <div className="flex flex-col gap-1.5 mt-0.5">
-                            <textarea
-                              autoFocus
-                              value={editingText}
-                              onChange={(e) => setEditingText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                  e.preventDefault();
-                                  const trimmed = editingText.trim();
-                                  if (trimmed && trimmed !== msg.text) {
-                                    socket?.emit("room:chat-edit", { roomId: room.id, messageId: msg.id, newText: trimmed, editedBy: user!.id });
-                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: trimmed, edited: true } : m));
-                                  }
-                                  setEditingMsgId(null);
-                                  setEditingText("");
-                                } else if (e.key === "Escape") {
-                                  setEditingMsgId(null);
-                                  setEditingText("");
-                                }
-                              }}
-                              className="w-full rounded-lg px-2 py-1.5 text-[13px] resize-none bg-white/5 border border-white/15 text-white/90 focus:outline-none focus:border-blue-400/50 min-h-[52px]"
-                              rows={2}
-                              data-testid={`input-edit-msg-${msg.id}`}
-                            />
-                            <div className="flex items-center gap-1.5 text-[10px]">
-                              <button
-                                onClick={() => {
-                                  const trimmed = editingText.trim();
-                                  if (trimmed && trimmed !== msg.text) {
-                                    socket?.emit("room:chat-edit", { roomId: room.id, messageId: msg.id, newText: trimmed, editedBy: user!.id });
-                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: trimmed, edited: true } : m));
-                                  }
-                                  setEditingMsgId(null);
-                                  setEditingText("");
-                                }}
-                                className="px-2 py-0.5 rounded bg-blue-500/25 text-blue-300 hover:bg-blue-500/40 transition-colors font-medium"
-                                data-testid={`button-save-edit-${msg.id}`}
-                              >Save</button>
-                              <button
-                                onClick={() => { setEditingMsgId(null); setEditingText(""); }}
-                                className="px-2 py-0.5 rounded text-white/35 hover:text-white/60 transition-colors"
-                                data-testid={`button-cancel-edit-${msg.id}`}
-                              >Cancel</button>
-                              <span className="text-white/20">↵ Enter to save · Esc to cancel</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div
-                            className="chat-msg-body whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-w-full"
-                            style={{ color: msg.messageColor || undefined }}
-                            data-testid={`text-room-chat-${msg.id}`}
-                          >
-                            {renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}
-                            {(msg as any).edited && (
-                              <span className="text-[9px] text-white/25 ml-1 italic">(edited)</span>
-                            )}
-                          </div>
-                        )}
-                        {hasReactions && (
-                          <div className="flex flex-wrap gap-1 mt-1.5" data-testid={`reactions-${msg.id}`}>
-                            {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
-                              const tooltip = formatReactionTooltip(emoji, uids);
-                              return (
-                                <Tooltip key={emoji}>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      onClick={() => handleReact(msg.id, emoji)}
-                                      className="chat-reaction-pill"
-                                      data-self={uids.includes(user?.id || "") ? "true" : undefined}
-                                      data-testid={`reaction-${msg.id}-${emoji}`}
-                                    >
-                                      <span>{emoji}</span>
-                                      <span className="font-medium">{uids.length}</span>
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" sideOffset={8} avoidCollisions className="text-xs max-w-[260px] text-center z-[9999]">
-                                    <p className="font-semibold mb-0.5">{tooltip.heading}</p>
-                                    <p className="opacity-70">{tooltip.names}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {/* ── Inline action bar — embedded inside bubble, revealed on hover ── */}
-                        {msg.type !== "deleted" && (msg as any).type !== "system" && (
-                          <div className={`chat-action-inline opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-150 ${isOwn ? "justify-end" : "justify-start"}`}>
-                            {/* Reply — always first */}
-                            <button
-                              onClick={() => {
-                                setReplyingTo({
-                                  id: msg.id,
-                                  userId: msg.userId,
-                                  userName: getUserDisplayName(msgUser) || "Unknown",
-                                  text: msg.text,
-                                });
-                                chatInputRef.current?.focus();
-                              }}
-                              className="chat-action-inline-btn"
-                              data-testid={`button-reply-${msg.id}`}
+
+                          {/* Reply block */}
+                          {msg.replyTo && (
+                            <div
+                              className="chat-reply-block chat-reply-block--jumpable"
+                              data-testid={`reply-chip-${msg.id}`}
+                              onClick={() => scrollToMessage(msg.replyTo!.id)}
+                              title="Click to jump to original message"
                             >
-                              <CornerUpLeft className="w-3 h-3" />
-                              <span>Reply</span>
-                            </button>
+                              <span className="chat-reply-block-name">↩ {msg.replyTo.userName}</span>
+                              <div className="chat-reply-block-body">{renderReplyPreview(msg.replyTo.text)}</div>
+                            </div>
+                          )}
 
-                            <div className="chat-action-inline-sep" />
-
-                            {/* React — emoji popover */}
-                            <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
-                              <PopoverTrigger asChild>
-                                <button
-                                  className="chat-action-inline-btn"
-                                  data-testid={`button-react-open-${msg.id}`}
-                                >
-                                  <Smile className="w-3 h-3" />
-                                  <span>React</span>
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent className="p-2 w-auto" side="top" align={isOwn ? "end" : "start"} sideOffset={8}>
-                                <div className="flex items-center gap-0.5 flex-wrap" style={{ maxWidth: "196px" }}>
-                                  {QUICK_EMOJIS.map((emoji) => (
-                                    <button
-                                      key={emoji}
-                                      onClick={() => { handleReact(msg.id, emoji); setReactPopoverMsgId(null); }}
-                                      className="text-sm hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
-                                      style={{ minWidth: "26px", minHeight: "26px", lineHeight: 1 }}
-                                      data-testid={`quick-react-${msg.id}-${emoji}`}
-                                      title={`React with ${emoji}`}
-                                    >
-                                      {emoji}
-                                    </button>
-                                  ))}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-
-                            {/* Pin — host / co-owner only */}
-                            {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
-                              <>
-                                <div className="chat-action-inline-sep" />
-                                <button
-                                  onClick={() => {
-                                    if (pinnedMessage?.message?.id === msg.id) {
-                                      socket?.emit("room:unpin-message", { roomId: room.id });
-                                    } else {
-                                      socket?.emit("room:pin-message", {
-                                        roomId: room.id,
-                                        message: msg,
-                                        pinnedBy: user?.id,
-                                        pinnedByName: getUserDisplayName(user) || "Host",
-                                      });
+                          {/* Body / edit mode */}
+                          {editingMsgId === msg.id ? (
+                            <div className="flex flex-col gap-1.5 mt-0.5">
+                              <textarea
+                                autoFocus
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    const trimmed = editingText.trim();
+                                    if (trimmed && trimmed !== msg.text) {
+                                      socket?.emit("room:chat-edit", { roomId: room.id, messageId: msg.id, newText: trimmed, editedBy: user!.id });
+                                      setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: trimmed, edited: true } : m));
                                     }
-                                  }}
-                                  className="chat-action-inline-btn"
-                                  style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.85)" } : {}}
-                                  title={pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
-                                  data-testid={`button-pin-${msg.id}`}
-                                >
-                                  <Pin className="w-3 h-3" />
-                                </button>
-                              </>
-                            )}
-
-                            {/* Own-message: Edit + Delete */}
-                            {isOwn && (
-                              <>
-                                <div className="chat-action-inline-sep" />
-                                <button
-                                  onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
-                                  className="chat-action-inline-btn chat-action-inline-btn--edit"
-                                  title="Edit"
-                                  data-testid={`button-edit-${msg.id}`}
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                  <span>Edit</span>
-                                </button>
+                                    setEditingMsgId(null);
+                                    setEditingText("");
+                                  } else if (e.key === "Escape") {
+                                    setEditingMsgId(null);
+                                    setEditingText("");
+                                  }
+                                }}
+                                className="w-full rounded-lg px-2 py-1.5 text-[13px] resize-none bg-white/5 border border-white/15 text-white/90 focus:outline-none focus:border-blue-400/50 min-h-[52px]"
+                                rows={2}
+                                data-testid={`input-edit-msg-${msg.id}`}
+                              />
+                              <div className="flex items-center gap-1.5 text-[10px]">
                                 <button
                                   onClick={() => {
-                                    socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                    const trimmed = editingText.trim();
+                                    if (trimmed && trimmed !== msg.text) {
+                                      socket?.emit("room:chat-edit", { roomId: room.id, messageId: msg.id, newText: trimmed, editedBy: user!.id });
+                                      setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: trimmed, edited: true } : m));
+                                    }
+                                    setEditingMsgId(null);
+                                    setEditingText("");
                                   }}
-                                  className="chat-action-inline-btn chat-action-inline-btn--delete"
-                                  title="Delete"
-                                  data-testid={`button-delete-${msg.id}`}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                  <span>Del</span>
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
-                        </div>{/* close: flex-1 content */}
+                                  className="px-2 py-0.5 rounded bg-blue-500/25 text-blue-300 hover:bg-blue-500/40 transition-colors font-medium"
+                                  data-testid={`button-save-edit-${msg.id}`}
+                                >Save</button>
+                                <button
+                                  onClick={() => { setEditingMsgId(null); setEditingText(""); }}
+                                  className="px-2 py-0.5 rounded text-white/35 hover:text-white/60 transition-colors"
+                                  data-testid={`button-cancel-edit-${msg.id}`}
+                                >Cancel</button>
+                                <span className="text-white/20">↵ Enter · Esc cancel</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="chat-msg-body whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-w-full"
+                              style={{ color: msg.messageColor || undefined }}
+                              data-testid={`text-room-chat-${msg.id}`}
+                            >
+                              {renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}
+                              {(msg as any).edited && (
+                                <span className="text-[9px] text-white/25 ml-1 italic">(edited)</span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* ── Bottom row: reaction pills + ⊕ add + ··· more ── */}
+                          {msg.type !== "deleted" && (msg as any).type !== "system" && (
+                            <div className="flex items-center gap-1 mt-1.5 flex-wrap" data-testid={`reactions-${msg.id}`}>
+                              {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
+                                const tooltip = formatReactionTooltip(emoji, uids);
+                                return (
+                                  <Tooltip key={emoji}>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={() => handleReact(msg.id, emoji)}
+                                        className="chat-reaction-pill"
+                                        data-self={uids.includes(user?.id || "") ? "true" : undefined}
+                                        data-testid={`reaction-${msg.id}-${emoji}`}
+                                      >
+                                        <span>{emoji}</span>
+                                        <span className="font-medium">{uids.length}</span>
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={8} avoidCollisions className="text-xs max-w-[260px] text-center z-[9999]">
+                                      <p className="font-semibold mb-0.5">{tooltip.heading}</p>
+                                      <p className="opacity-70">{tooltip.names}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              })}
+
+                              {/* ⊕ Add reaction */}
+                              <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
+                                <PopoverTrigger asChild>
+                                  <button className="chat-react-add-btn" data-testid={`button-react-open-${msg.id}`} title="Add reaction">
+                                    <Smile className="w-3 h-3" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="p-2 w-auto" side="top" align="start" sideOffset={6}>
+                                  <div className="flex items-center gap-0.5 flex-wrap" style={{ maxWidth: "196px" }}>
+                                    {QUICK_EMOJIS.map((emoji) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => { handleReact(msg.id, emoji); setReactPopoverMsgId(null); }}
+                                        className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
+                                        style={{ minWidth: "28px", minHeight: "28px", lineHeight: 1 }}
+                                        data-testid={`quick-react-${msg.id}-${emoji}`}
+                                        title={`React with ${emoji}`}
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+
+                              {/* ··· More actions */}
+                              <Popover open={morePopoverMsgId === msg.id} onOpenChange={(open) => setMorePopoverMsgId(open ? msg.id : null)}>
+                                <PopoverTrigger asChild>
+                                  <button className="chat-more-btn ml-auto" data-testid={`button-more-${msg.id}`} title="More actions">
+                                    <MoreHorizontal className="w-3.5 h-3.5" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="p-1.5 w-auto min-w-[130px]" side="top" align="end" sideOffset={6}>
+                                  <div className="flex flex-col gap-0.5">
+                                    <button
+                                      onClick={() => {
+                                        setReplyingTo({ id: msg.id, userId: msg.userId, userName: getUserDisplayName(msgUser) || "Unknown", text: msg.text });
+                                        chatInputRef.current?.focus();
+                                        setMorePopoverMsgId(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-white/65 hover:text-white hover:bg-white/8 transition-colors w-full text-left"
+                                      data-testid={`button-reply-${msg.id}`}
+                                    >
+                                      <CornerUpLeft className="w-3 h-3" />
+                                      Reply
+                                    </button>
+                                    {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
+                                      <button
+                                        onClick={() => {
+                                          if (pinnedMessage?.message?.id === msg.id) {
+                                            socket?.emit("room:unpin-message", { roomId: room.id });
+                                          } else {
+                                            socket?.emit("room:pin-message", { roomId: room.id, message: msg, pinnedBy: user?.id, pinnedByName: getUserDisplayName(user) || "Host" });
+                                          }
+                                          setMorePopoverMsgId(null);
+                                        }}
+                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-white/65 hover:text-white hover:bg-white/8 transition-colors w-full text-left"
+                                        style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.80)" } : {}}
+                                        data-testid={`button-pin-${msg.id}`}
+                                      >
+                                        <Pin className="w-3 h-3" />
+                                        {pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
+                                      </button>
+                                    )}
+                                    {isOwn && (
+                                      <>
+                                        <button
+                                          onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); setMorePopoverMsgId(null); }}
+                                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-blue-300/65 hover:text-blue-300 hover:bg-blue-500/10 transition-colors w-full text-left"
+                                          data-testid={`button-edit-${msg.id}`}
+                                        >
+                                          <Pencil className="w-3 h-3" />
+                                          Edit
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                            setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                            setMorePopoverMsgId(null);
+                                          }}
+                                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-rose-300/65 hover:text-rose-300 hover:bg-rose-500/10 transition-colors w-full text-left"
+                                          data-testid={`button-delete-${msg.id}`}
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                          Delete
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          )}
+                        </div>{/* close: content column */}
+                      </div>{/* close: flex items-start */}
                     </div>{/* close: chat-msg-card */}
 
                     {/* Seen avatars — show who has seen up to this message */}
