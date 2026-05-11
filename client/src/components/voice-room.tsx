@@ -7603,9 +7603,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {/* Private whisper badge — own only, above bubble */}
                       {isOwn && msg.isPrivate && (
                         <div className="flex items-center justify-end mb-0.5">
-                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-purple-400/40 text-purple-300" data-testid={`badge-private-message-${msg.id}`}>
                             <LockKeyhole className="w-2 h-2 mr-0.5" />
-                            Private
+                            Whisper
                           </Badge>
                         </div>
                       )}
@@ -7771,35 +7771,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full border pointer-events-none"
                                 style={{ background: "#34d399", borderColor: "#0a0b1e", borderWidth: "1.5px" }}
                               />
-                              {msg.userId !== "system" && (
-                                <button
-                                  onClick={() => {
-                                    setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
-                                    chatInputRef.current?.focus();
-                                  }}
-                                  title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
-                                  data-testid={`button-dm-avatar-${msg.id}`}
-                                  className="absolute -top-5 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-all duration-150"
-                                  style={{
-                                    background: privateChatToId === msg.userId
-                                      ? "linear-gradient(135deg,rgba(251,191,36,.95),rgba(194,115,10,.85))"
-                                      : "linear-gradient(135deg,rgba(99,102,241,.92),rgba(67,56,202,.80))",
-                                    borderRadius: "999px",
-                                    padding: "1px 5px",
-                                    fontSize: "8px",
-                                    fontWeight: 700,
-                                    color: "#fff",
-                                    whiteSpace: "nowrap",
-                                    zIndex: 10,
-                                  }}
-                                >
-                                  {privateChatToId === msg.userId ? "✓ DM" : "DM"}
-                                </button>
-                              )}
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
                               <div className="flex items-center gap-1 flex-wrap">
                                 <span className="chat-bubble-sender-name">{getUserDisplayName(msgUser)}</span>
+                                {msg.userId !== "system" && (
+                                  <button
+                                    className={`chat-dm-whisper-btn${privateChatToId === msg.userId ? " chat-dm-whisper-btn--active" : ""}`}
+                                    onClick={() => {
+                                      setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
+                                      chatInputRef.current?.focus();
+                                    }}
+                                    title={privateChatToId === msg.userId ? "Stop whispering to " + getUserDisplayName(msgUser) : `Whisper to ${getUserDisplayName(msgUser)}`}
+                                    data-testid={`button-dm-name-${msg.id}`}
+                                  >
+                                    <MessageSquare className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
                                 {msg.userId === room.ownerId && (
                                   <span className="chat-role-pill chat-role-pill--owner">Owner</span>
                                 )}
@@ -7813,9 +7801,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                   <span className="chat-role-pill chat-role-pill--troll">🧌 Troll</span>
                                 )}
                                 {msg.isPrivate && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-purple-400/40 text-purple-300" data-testid={`badge-private-message-${msg.id}`}>
                                     <LockKeyhole className="w-2 h-2 mr-0.5" />
-                                    Private
+                                    Whisper
                                   </Badge>
                                 )}
                               </div>

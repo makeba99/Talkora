@@ -11236,49 +11236,51 @@ html.boost-mode .glass-panel {
   z-index: 2;
 }
 
-/* ── DM whisper button — red neumorphic icon in card header ── */
+/* ── DM whisper button — red neumorphic icon inline next to username ── */
 .chat-dm-whisper-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  color: rgba(252, 100, 100, 0.85);
-  background: rgba(220, 38, 38, 0.12);
-  box-shadow:
-    2px 2px 4px rgba(0,0,0,0.35),
-    -1px -1px 3px rgba(255,255,255,0.04),
-    inset 0 1px 0 rgba(255,100,100,0.10);
-  border: 1px solid rgba(220, 38, 38, 0.25);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity 150ms ease 400ms, background 120ms ease, box-shadow 120ms ease, color 120ms ease;
-}
-.chat-dm-whisper-btn:hover {
-  background: rgba(220, 38, 38, 0.28);
-  color: rgba(255, 130, 130, 1);
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  color: rgba(252, 100, 100, 0.90);
+  background:
+    linear-gradient(145deg, rgba(220, 38, 38, 0.18) 0%, rgba(160, 20, 20, 0.10) 100%);
   box-shadow:
     3px 3px 6px rgba(0,0,0,0.45),
-    -1px -1px 3px rgba(255,255,255,0.06),
-    inset 0 1px 0 rgba(255,120,120,0.18),
-    0 0 8px rgba(220,38,38,0.30);
+    -1px -1px 3px rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(255,100,100,0.14),
+    inset 0 -1px 0 rgba(0,0,0,0.20);
+  border: 1px solid rgba(220, 38, 38, 0.30);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 130ms ease, box-shadow 130ms ease, color 130ms ease, transform 100ms ease;
+}
+.chat-dm-whisper-btn:hover {
+  background: linear-gradient(145deg, rgba(220, 38, 38, 0.32) 0%, rgba(160, 20, 20, 0.22) 100%);
+  color: rgba(255, 140, 140, 1);
+  box-shadow:
+    4px 4px 8px rgba(0,0,0,0.50),
+    -1px -1px 4px rgba(255,255,255,0.07),
+    inset 0 1px 0 rgba(255,120,120,0.22),
+    0 0 10px rgba(220,38,38,0.35);
 }
 .chat-dm-whisper-btn--active {
-  opacity: 1 !important;
-  color: rgba(255, 140, 140, 1) !important;
-  background: rgba(220, 38, 38, 0.32) !important;
+  color: rgba(255, 150, 150, 1) !important;
+  background: linear-gradient(145deg, rgba(220, 38, 38, 0.40) 0%, rgba(160, 20, 20, 0.28) 100%) !important;
   box-shadow:
-    2px 2px 5px rgba(0,0,0,0.40),
-    -1px -1px 3px rgba(255,255,255,0.05),
-    inset 0 1px 0 rgba(255,120,120,0.20),
-    0 0 10px rgba(220,38,38,0.40) !important;
+    2px 2px 5px rgba(0,0,0,0.45),
+    -1px -1px 3px rgba(255,255,255,0.06),
+    inset 1px 1px 3px rgba(0,0,0,0.25),
+    0 0 12px rgba(220,38,38,0.45) !important;
+  border-color: rgba(220, 38, 38, 0.55) !important;
 }
 .chat-dm-whisper-btn:active {
   box-shadow:
-    1px 1px 2px rgba(0,0,0,0.45),
-    inset 1px 1px 3px rgba(0,0,0,0.30);
-  transform: scale(0.93);
+    1px 1px 2px rgba(0,0,0,0.50),
+    inset 2px 2px 4px rgba(0,0,0,0.35);
+  transform: scale(0.92);
 }
 
 /* ── Floating action bar — Discord-style pill hovering above the card ────── */
@@ -11503,48 +11505,50 @@ html.boost-mode .glass-panel {
   border-radius: 18px 12px 18px 18px;
 }
 
-/* ── Private / whisper messages — warm amber-gold dark ───────────────────── */
+/* ── Private / whisper messages — deep violet-rose "secret" palette ───────── */
 .chat-msg-card[data-private="true"] {
-  background: linear-gradient(158deg, #2d1e08 0%, #221508 52%, #180f05 100%);
-  border: 1px solid rgba(251, 191, 36, 0.26);
-  border-top-color: rgba(251, 191, 36, 0.44);
-  border-bottom-color: rgba(12, 8, 2, 0.65);
+  background: linear-gradient(158deg, #1e1030 0%, #160b24 52%, #0e0717 100%);
+  border: 1px solid rgba(167, 100, 220, 0.28);
+  border-top-color: rgba(192, 120, 240, 0.46);
+  border-bottom-color: rgba(8, 4, 14, 0.65);
+  border-left: 2px solid rgba(192, 100, 230, 0.60);
   box-shadow:
     0   8px 24px rgba(0,   0,   0,   0.68),
     0   2px  7px rgba(0,   0,   0,   0.48),
     3px  0  12px rgba(0,   0,   0,   0.28),
-    inset 0  1px 0  rgba(251, 191, 36, 0.20),
+    inset 0  1px 0  rgba(200, 130, 255, 0.18),
     inset 0 -1px 0  rgba(0,   0,   0,   0.32),
-    0   0  28px rgba(251, 140,  0,  0.12);
+    0   0  28px rgba(160,  80, 220,  0.14);
 }
 .chat-msg-card[data-private="true"]:hover {
-  background: linear-gradient(158deg, #3a250a 0%, #2b1c09 52%, #1e1206 100%);
+  background: linear-gradient(158deg, #271440 0%, #1c0e30 52%, #130820 100%);
   box-shadow:
     0  12px 32px rgba(0,   0,   0,   0.74),
     0   3px  9px rgba(0,   0,   0,   0.52),
-    inset 0  1px 0  rgba(251, 191, 36, 0.28),
-    0   0  36px rgba(251, 140,  0,  0.18);
+    inset 0  1px 0  rgba(200, 130, 255, 0.26),
+    0   0  38px rgba(160,  80, 220,  0.22);
 }
 .chat-msg-card[data-private="true"][data-own="true"] {
-  background: linear-gradient(158deg, #3a2208 0%, #2c1906 52%, #1e1204 100%);
-  border: 1px solid rgba(251, 191, 36, 0.34);
-  border-top-color: rgba(251, 191, 36, 0.54);
-  border-bottom-color: rgba(12, 8, 2, 0.70);
+  background: linear-gradient(158deg, #221238 0%, #190d28 52%, #100818 100%);
+  border: 1px solid rgba(192, 120, 240, 0.34);
+  border-top-color: rgba(210, 140, 255, 0.54);
+  border-bottom-color: rgba(8, 4, 14, 0.70);
+  border-right: 2px solid rgba(192, 100, 230, 0.60);
   box-shadow:
     0   8px 24px rgba(0,   0,   0,   0.70),
     0   2px  7px rgba(0,   0,   0,   0.50),
     -3px  0  12px rgba(0,   0,   0,   0.28),
-    inset 0  1px 0  rgba(251, 191, 36, 0.28),
+    inset 0  1px 0  rgba(210, 140, 255, 0.22),
     inset 0 -1px 0  rgba(0,   0,   0,   0.38),
-    0   0  40px rgba(251, 140,  0,  0.18);
+    0   0  42px rgba(160,  80, 220,  0.20);
 }
 .chat-msg-card[data-private="true"][data-own="true"]:hover {
-  background: linear-gradient(158deg, #472a09 0%, #361f07 52%, #261605 100%);
+  background: linear-gradient(158deg, #2c1848 0%, #201138 52%, #160c26 100%);
   box-shadow:
     0  12px 32px rgba(0,   0,   0,   0.74),
     0   3px  9px rgba(0,   0,   0,   0.52),
-    inset 0  1px 0  rgba(251, 191, 36, 0.36),
-    0   0  52px rgba(251, 140,  0,  0.24);
+    inset 0  1px 0  rgba(210, 140, 255, 0.32),
+    0   0  54px rgba(160,  80, 220,  0.28);
 }
 
 /* ── DM-view bubbles — same language, standalone context ────────────────── */
