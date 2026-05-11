@@ -7691,9 +7691,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             <div className={`flex mt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
                               <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
                             </div>
-                            {/* ── Reaction pills — inside card, below timestamp ── */}
-                            {hasReactions && msg.type !== "deleted" && (msg as any).type !== "system" && (
-                              <div className={`flex items-center gap-1 mt-1.5 flex-wrap ${isOwn ? "flex-row-reverse" : ""}`} data-testid={`reactions-${msg.id}`}>
+                            {/* ── Reaction pills — always rendered to reserve height, hidden when empty ── */}
+                            {msg.type !== "deleted" && (msg as any).type !== "system" && (
+                              <div
+                                className={`chat-bubble-reactions flex items-center gap-1 flex-wrap ${isOwn ? "flex-row-reverse" : ""} ${!hasReactions ? "opacity-0 pointer-events-none" : ""}`}
+                                data-testid={`reactions-${msg.id}`}
+                              >
                                 {Object.entries(reactions).filter(([, uids]) => uids.length > 0).map(([emoji, uids]) => {
                                   const tooltip = formatReactionTooltip(emoji, uids);
                                   return (
@@ -7774,7 +7777,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                             handleReact(msg.id, emoji);
                                             setReactPopoverMsgId(null);
                                             setJustReactedMsgId(msg.id);
-                                            setTimeout(() => setJustReactedMsgId(null), 1000);
+                                            setTimeout(() => setJustReactedMsgId(null), 2500);
                                           }}
                                           className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
                                           style={{ minWidth: "28px", minHeight: "28px", lineHeight: 1 }}
