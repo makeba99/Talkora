@@ -3757,6 +3757,76 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return () => { document.title = "Vextorn"; };
   }, [tabUnreadCount, room?.name]);
 
+  // Dynamic favicon badge — red with count when unread, green dot when clear
+  useEffect(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.src = "/vextorn-icon-192.png";
+    img.onload = () => {
+      ctx.clearRect(0, 0, 32, 32);
+      // Draw base icon rounded
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 32, 32, 6);
+      ctx.clip();
+      ctx.drawImage(img, 0, 0, 32, 32);
+      ctx.restore();
+
+      if (tabUnreadCount > 0) {
+        // Red badge — top-right corner
+        const label = tabUnreadCount > 99 ? "99+" : String(tabUnreadCount);
+        const badgeR = label.length > 1 ? 8 : 7;
+        const cx = 32 - badgeR - 1;
+        const cy = badgeR + 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, badgeR + 1, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
+        ctx.fillStyle = "#ef4444";
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `bold ${label.length > 1 ? 8 : 10}px system-ui,sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, cx, cy + 0.5);
+      } else {
+        // Green online dot — bottom-right
+        ctx.beginPath();
+        ctx.arc(25.5, 25.5, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(25.5, 25.5, 5, 0, Math.PI * 2);
+        ctx.fillStyle = "#22c55e";
+        ctx.fill();
+      }
+
+      const dataUrl = canvas.toDataURL("image/png");
+      let link = document.querySelector<HTMLLinkElement>("link[rel='icon'][type='image/png']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        link.type = "image/png";
+        link.setAttribute("sizes", "32x32");
+        document.head.appendChild(link);
+      }
+      link.href = dataUrl;
+    };
+    img.onerror = () => {};
+
+    return () => {
+      const link = document.querySelector<HTMLLinkElement>("link[rel='icon'][type='image/png']");
+      if (link) link.href = "/vextorn-icon-192.png";
+    };
+  }, [tabUnreadCount]);
+
   // Reset tab unread count as soon as the user returns to this tab
   useEffect(() => {
     const handleVisibility = () => {
