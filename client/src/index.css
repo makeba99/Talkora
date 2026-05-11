@@ -11175,6 +11175,10 @@ html.boost-mode .glass-panel {
 .chat-quick-btn--emoji:hover {
   color: rgba(255, 200, 60, 0.90);
 }
+.chat-quick-btn--delete:hover {
+  color: rgba(248, 113, 113, 0.92);
+  background: rgba(220, 40, 40, 0.10);
+}
 
 /* Only animate newly-arrived messages (data-new set by JS) */
 .chat-msg-row[data-new="true"] {
@@ -11299,12 +11303,9 @@ html.boost-mode .glass-panel {
 /* Shared entrance + base reset */
 .dm-bubble {
   position: relative;
-  overflow: hidden;
   animation: bubble-emerge 360ms cubic-bezier(0.34, 1.22, 0.64, 1) both;
   padding: 11px 15px 10px;
-  max-width: 80%;
-  backdrop-filter: blur(8px) saturate(1.20);
-  -webkit-backdrop-filter: blur(8px) saturate(1.20);
+  max-width: 82%;
   transition:
     border-color 200ms ease,
     box-shadow   200ms ease,

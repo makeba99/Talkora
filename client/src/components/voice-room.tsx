@@ -7750,72 +7750,51 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             </PopoverContent>
                           </Popover>
 
-                          {/* ··· More */}
-                          <Popover open={morePopoverMsgId === msg.id} onOpenChange={(open) => setMorePopoverMsgId(open ? msg.id : null)}>
-                            <PopoverTrigger asChild>
-                              <button className="chat-quick-btn" data-testid={`button-more-${msg.id}`} title="More actions">
-                                <MoreHorizontal className="w-3.5 h-3.5" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-1.5 w-auto min-w-[130px]" side="top" align="end" sideOffset={6}>
-                              <div className="flex flex-col gap-0.5">
+                          {/* 📌 Pin — host / co-owner */}
+                          {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
                                 <button
+                                  type="button"
                                   onClick={() => {
-                                    setReplyingTo({ id: msg.id, userId: msg.userId, userName: getUserDisplayName(msgUser) || "Unknown", text: msg.text });
-                                    chatInputRef.current?.focus();
-                                    setMorePopoverMsgId(null);
-                                    }}
-                                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-white/65 hover:text-white hover:bg-white/8 transition-colors w-full text-left"
-                                    data-testid={`button-reply-${msg.id}`}
-                                  >
-                                    <CornerUpLeft className="w-3 h-3" />
-                                    Reply
-                                  </button>
-                                  {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
-                                    <button
-                                      onClick={() => {
-                                        if (pinnedMessage?.message?.id === msg.id) {
-                                          socket?.emit("room:unpin-message", { roomId: room.id });
-                                        } else {
-                                          socket?.emit("room:pin-message", { roomId: room.id, message: msg, pinnedBy: user?.id, pinnedByName: getUserDisplayName(user) || "Host" });
-                                        }
-                                        setMorePopoverMsgId(null);
-                                      }}
-                                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-white/65 hover:text-white hover:bg-white/8 transition-colors w-full text-left"
-                                      style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.80)" } : {}}
-                                      data-testid={`button-pin-${msg.id}`}
-                                    >
-                                      <Pin className="w-3 h-3" />
-                                      {pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
-                                    </button>
-                                  )}
-                                  {isOwn && (
-                                    <>
-                                      <button
-                                        onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); setMorePopoverMsgId(null); }}
-                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-blue-300/65 hover:text-blue-300 hover:bg-blue-500/10 transition-colors w-full text-left"
-                                        data-testid={`button-edit-${msg.id}`}
-                                      >
-                                        <Pencil className="w-3 h-3" />
-                                        Edit
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                                          setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
-                                          setMorePopoverMsgId(null);
-                                        }}
-                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-rose-300/65 hover:text-rose-300 hover:bg-rose-500/10 transition-colors w-full text-left"
-                                        data-testid={`button-delete-${msg.id}`}
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                        Delete
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
+                                    if (pinnedMessage?.message?.id === msg.id) {
+                                      socket?.emit("room:unpin-message", { roomId: room.id });
+                                    } else {
+                                      socket?.emit("room:pin-message", { roomId: room.id, message: msg, pinnedBy: user?.id, pinnedByName: getUserDisplayName(user) || "Host" });
+                                    }
+                                  }}
+                                  className="chat-quick-btn"
+                                  style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.90)" } : {}}
+                                  data-testid={`button-pin-${msg.id}`}
+                                >
+                                  <Pin className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
+                                {pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+
+                          {/* 🗑 Delete — own messages */}
+                          {isOwn && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                  }}
+                                  className="chat-quick-btn chat-quick-btn--delete"
+                                  data-testid={`button-delete-${msg.id}`}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Delete</TooltipContent>
+                            </Tooltip>
+                          )}
                           </div>
                         )}
                     </div>{/* close: bubble-col */}

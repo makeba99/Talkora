@@ -213,10 +213,10 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                   {!isMe && (
                     <div className="dm-msg-avatar-slot">
                       {!grouped ? (
-                        <Avatar className="w-8 h-8 flex-shrink-0">
+                        <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
                           <AvatarImage src={otherUser?.profileImageUrl || undefined} alt={getUserDisplayName(otherUser)} />
-                          <AvatarFallback className="text-xs font-bold" style={{ background: "rgba(99,102,241,0.25)", color: "rgba(165,160,255,0.95)" }}>
-                            {getUserInitials(otherUser)}
+                          <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#4c3dcc,#7c5af0)", color: "#fff" }}>
+                            {getUserInitials(otherUser) || "?"}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
@@ -298,10 +298,10 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                   {isMe && (
                     <div className="dm-msg-avatar-slot">
                       {!grouped ? (
-                        <Avatar className="w-8 h-8 flex-shrink-0">
+                        <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
                           <AvatarImage src={user?.profileImageUrl || undefined} alt="You" />
-                          <AvatarFallback className="text-xs font-bold" style={{ background: "rgba(118,98,255,0.30)", color: "rgba(210,200,255,0.95)" }}>
-                            {getUserInitials(user)}
+                          <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#7c5af0,#a855f7)", color: "#fff" }}>
+                            {getUserInitials(user) || "?"}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
