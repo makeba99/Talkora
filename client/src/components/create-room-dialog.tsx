@@ -305,6 +305,8 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
               <div className="flex-1 grid grid-cols-2 gap-2">
                 <GifPickerButton
                   onGifSelect={(url) => { setMediaUrl(url); setMediaKind("gif"); }}
+                  side="bottom"
+                  align="start"
                 />
                 <button
                   type="button"

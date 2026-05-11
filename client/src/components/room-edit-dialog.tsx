@@ -245,6 +245,8 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
                   <Suspense fallback={<div className="h-9 rounded-md bg-muted/30 animate-pulse" />}>
                     <GifPickerButton
                       onGifSelect={(url) => { setEditHologramUrl(url); setEditHologramKind("gif"); }}
+                      side="bottom"
+                      align="start"
                     />
                   </Suspense>
                   <button

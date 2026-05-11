@@ -16,6 +16,8 @@ interface EmojiPickerButtonProps {
 
 interface GifPickerButtonProps {
   onGifSelect: (gifUrl: string) => void;
+  side?: "top" | "bottom" | "left" | "right";
+  align?: "start" | "center" | "end";
 }
 
 interface ImageUploadButtonProps {
@@ -83,7 +85,7 @@ export function EmojiPickerButton({ onEmojiSelect }: EmojiPickerButtonProps) {
   );
 }
 
-export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
+export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: GifPickerButtonProps) {
   const [open, setOpen] = useState(false);
   const [gifSearch, setGifSearch] = useState("");
   const [gifs, setGifs] = useState<GifResult[]>([]);
@@ -177,6 +179,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
   }, [open, loadTrending]);
 
   useEffect(() => {
+    if (!open) return;
     const sentinel = sentinelRef.current;
     const scroller = scrollRef.current;
     if (!sentinel || !scroller) return;
@@ -187,11 +190,11 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
           loadMore(nextPos, currentQueryRef.current);
         }
       },
-      { root: scroller, rootMargin: "120px", threshold: 0 }
+      { root: scroller, rootMargin: "200px", threshold: 0 }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [nextPos, loadingMore, gifLoading, loadMore]);
+  }, [open, nextPos, loadingMore, gifLoading, loadMore, gifs.length]);
 
   const handleGifSearchChange = (value: string) => {
     setGifSearch(value);
@@ -226,24 +229,31 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[min(340px,90vw)] p-0 flex flex-col"
-        style={{ maxHeight: "min(680px,82svh)" }}
-        side="top"
-        align="start"
+        className="w-[min(340px,90vw)] p-0 overflow-hidden"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "min(520px,75svh)",
+          minHeight: "320px",
+        }}
+        side={side}
+        align={align}
         sideOffset={8}
         avoidCollisions
-        collisionPadding={12}
+        collisionPadding={16}
       >
-        <div className="flex-shrink-0 p-2 border-b">
+        {/* Fixed search bar — never scrolls away */}
+        <div className="flex-shrink-0 p-2 border-b border-border/60">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             <Input
               value={gifSearch}
               onChange={(e) => handleGifSearchChange(e.target.value)}
               placeholder="Search GIFs..."
-              className="pl-8 text-sm"
+              className="pl-8 pr-8 text-sm h-9"
               aria-label="Search GIFs"
               data-testid="input-gif-search"
+              autoComplete="off"
             />
             {gifSearch && (
               <Button
@@ -262,7 +272,13 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
             )}
           </div>
         </div>
-        <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain min-h-0" onWheel={(e) => e.stopPropagation()}>
+        {/* Scrollable GIF grid — fills remaining space */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto overscroll-contain"
+          style={{ minHeight: 0 }}
+          onWheel={(e) => e.stopPropagation()}
+        >
           <div className="p-2">
             {gifLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -305,7 +321,7 @@ export function GifPickerButton({ onGifSelect }: GifPickerButtonProps) {
                     <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                   </div>
                 )}
-                <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+                <div ref={sentinelRef} className="h-8" aria-hidden="true" />
               </>
             )}
           </div>
