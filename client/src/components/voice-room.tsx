@@ -216,6 +216,7 @@ interface ChatMessage {
   reactions?: Record<string, string[]>;
   replyTo?: { id: string; userId: string; userName: string; text: string } | null;
   messageColor?: string;
+  cardColor?: string;
   privateToId?: string | null;
   privateToName?: string;
   isPrivate?: boolean;
@@ -1375,6 +1376,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
   const [chatText, setChatText] = useState("");
   const [chatMessageColor, setChatMessageColor] = useState(() => localStorage.getItem("connect2talk-chat-color") ?? "");
+  const [chatCardColor, setChatCardColor] = useState(() => localStorage.getItem("connect2talk-chat-card-color") ?? "");
   const [privateChatToId, setPrivateChatToId] = useState<string>("public");
   const [pasteUploading, setPasteUploading] = useState(false);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -1896,6 +1898,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   useEffect(() => {
     localStorage.setItem("connect2talk-chat-color", chatMessageColor);
   }, [chatMessageColor]);
+
+  useEffect(() => {
+    localStorage.setItem("connect2talk-chat-card-color", chatCardColor);
+  }, [chatCardColor]);
 
   useEffect(() => {
     youtubeStartedByRef.current = youtubeStartedBy;
@@ -6786,6 +6792,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       userId: user.id,
       text: chatText.trim(),
       messageColor: chatMessageColor,
+      cardColor: chatCardColor,
       privateToId: privateChatToId === "public" ? null : privateChatToId,
       replyTo: replyingTo || undefined,
     });
@@ -7516,8 +7523,126 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         </div>
                       )}
 
-                      {/* The bubble card */}
-                      <div className="chat-msg-card" data-own={isOwn ? "true" : undefined} data-grouped={isGrouped ? "true" : undefined}>
+                      {/* Wrapper — relative anchor for floating action bar */}
+                      <div style={{ position: "relative" }}>
+                        {/* Floating action bar — Discord-style, no size impact */}
+                        {editingMsgId !== msg.id && msg.type !== "deleted" && (msg as any).type !== "system" && (
+                          <div className={`chat-actions-bar ${isOwn ? "chat-actions-bar--own" : "chat-actions-bar--other"}`}>
+                            {/* ↩ Reply */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyingTo({ id: msg.id, userId: msg.userId, userName: getUserDisplayName(msgUser) || "Unknown", text: msg.text });
+                                    chatInputRef.current?.focus();
+                                  }}
+                                  className="chat-quick-btn"
+                                  data-testid={`button-reply-inline-${msg.id}`}
+                                >
+                                  <CornerUpLeft className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Reply</TooltipContent>
+                            </Tooltip>
+                            {/* ✎ Edit — own only */}
+                            {isOwn && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
+                                    className="chat-quick-btn chat-quick-btn--edit"
+                                    data-testid={`button-edit-inline-${msg.id}`}
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Edit</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {/* 😊 React */}
+                            <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
+                              <PopoverTrigger asChild>
+                                <button className="chat-quick-btn chat-quick-btn--emoji" data-testid={`button-react-open-${msg.id}`} title="React">
+                                  <Smile className="w-3 h-3" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="p-2 w-auto" side="top" align="start" sideOffset={6}>
+                                <div className="flex items-center gap-0.5 flex-wrap" style={{ maxWidth: "196px" }}>
+                                  {QUICK_EMOJIS.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => {
+                                        handleReact(msg.id, emoji);
+                                        setReactPopoverMsgId(null);
+                                        setJustReactedMsgId(msg.id);
+                                        setTimeout(() => setJustReactedMsgId(null), 2500);
+                                      }}
+                                      className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
+                                      style={{ minWidth: "28px", minHeight: "28px", lineHeight: 1 }}
+                                      data-testid={`quick-react-${msg.id}-${emoji}`}
+                                      title={`React with ${emoji}`}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                            {/* 📌 Pin — host / co-owner */}
+                            {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (pinnedMessage?.message?.id === msg.id) {
+                                        socket?.emit("room:unpin-message", { roomId: room.id });
+                                      } else {
+                                        socket?.emit("room:pin-message", { roomId: room.id, message: msg, pinnedBy: user?.id, pinnedByName: getUserDisplayName(user) || "Host" });
+                                      }
+                                    }}
+                                    className="chat-quick-btn"
+                                    style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.90)" } : {}}
+                                    data-testid={`button-pin-${msg.id}`}
+                                  >
+                                    <Pin className="w-3 h-3" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
+                                  {pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {/* 🗑 Delete — own */}
+                            {isOwn && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                      setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                    }}
+                                    className="chat-quick-btn chat-quick-btn--delete"
+                                    data-testid={`button-delete-${msg.id}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Delete</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        )}
+
+                        {/* The bubble card */}
+                        <div className="chat-msg-card" data-own={isOwn ? "true" : undefined} data-grouped={isGrouped ? "true" : undefined}>
+                          {/* Card color tint overlay */}
+                          {msg.cardColor && (
+                            <div className="chat-card-tint" style={{ '--tint': msg.cardColor } as React.CSSProperties} />
+                          )}
 
                         {/* Card header: avatar + name + roles — others, every message */}
                         {!isOwn && (
@@ -7591,15 +7716,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <button
-                                        onClick={() => setDmUserId(msg.userId)}
-                                        className="chat-dm-whisper-btn opacity-0 group-hover:opacity-100"
+                                        onClick={() => { setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId); chatInputRef.current?.focus(); }}
+                                        className={`chat-dm-whisper-btn opacity-0 group-hover:opacity-100 ${privateChatToId === msg.userId ? "chat-dm-whisper-btn--active" : ""}`}
                                         data-testid={`button-dm-whisper-${msg.id}`}
+                                        title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
                                       >
                                         <MessageSquare className="w-2.5 h-2.5" />
                                       </button>
                                     </TooltipTrigger>
                                     <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
-                                      DM {getUserDisplayName(msgUser)}
+                                      {privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
                                     </TooltipContent>
                                   </Tooltip>
                                 )}
@@ -7702,132 +7828,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             )}
                           </div>
                         )}
-                        {/* Timestamp + inline action bar inside bubble */}
+                        {/* Timestamp — at end of card, no action bar here */}
                         {editingMsgId !== msg.id && (
-                          <>
-                            <div className={`flex mt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
-                              <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
-                            </div>
-                            {/* ── Action buttons — embedded inside card, reserve height always ── */}
-                            {msg.type !== "deleted" && (msg as any).type !== "system" && (
-                              <div
-                                className={`chat-bubble-actions flex items-center gap-1 mt-1 ${isOwn ? "flex-row-reverse" : ""}`}
-                              >
-                                {/* ↩ Reply */}
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setReplyingTo({ id: msg.id, userId: msg.userId, userName: getUserDisplayName(msgUser) || "Unknown", text: msg.text });
-                                        chatInputRef.current?.focus();
-                                      }}
-                                      className="chat-quick-btn"
-                                      data-testid={`button-reply-inline-${msg.id}`}
-                                    >
-                                      <CornerUpLeft className="w-3 h-3" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Reply</TooltipContent>
-                                </Tooltip>
-
-                                {/* ✎ Edit — own only */}
-                                {isOwn && editingMsgId !== msg.id && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        type="button"
-                                        onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
-                                        className="chat-quick-btn chat-quick-btn--edit"
-                                        data-testid={`button-edit-inline-${msg.id}`}
-                                      >
-                                        <Pencil className="w-3 h-3" />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Edit</TooltipContent>
-                                  </Tooltip>
-                                )}
-
-                                {/* 😊 Emoji react */}
-                                <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
-                                  <PopoverTrigger asChild>
-                                    <button className="chat-quick-btn chat-quick-btn--emoji" data-testid={`button-react-open-${msg.id}`} title="React">
-                                      <Smile className="w-3 h-3" />
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="p-2 w-auto" side="top" align="start" sideOffset={6}>
-                                    <div className="flex items-center gap-0.5 flex-wrap" style={{ maxWidth: "196px" }}>
-                                      {QUICK_EMOJIS.map((emoji) => (
-                                        <button
-                                          key={emoji}
-                                          onClick={() => {
-                                            handleReact(msg.id, emoji);
-                                            setReactPopoverMsgId(null);
-                                            setJustReactedMsgId(msg.id);
-                                            setTimeout(() => setJustReactedMsgId(null), 2500);
-                                          }}
-                                          className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
-                                          style={{ minWidth: "28px", minHeight: "28px", lineHeight: 1 }}
-                                          data-testid={`quick-react-${msg.id}-${emoji}`}
-                                          title={`React with ${emoji}`}
-                                        >
-                                          {emoji}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </PopoverContent>
-                                </Popover>
-
-                                {/* 📌 Pin — host / co-owner */}
-                                {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          if (pinnedMessage?.message?.id === msg.id) {
-                                            socket?.emit("room:unpin-message", { roomId: room.id });
-                                          } else {
-                                            socket?.emit("room:pin-message", { roomId: room.id, message: msg, pinnedBy: user?.id, pinnedByName: getUserDisplayName(user) || "Host" });
-                                          }
-                                        }}
-                                        className="chat-quick-btn"
-                                        style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.90)" } : {}}
-                                        data-testid={`button-pin-${msg.id}`}
-                                      >
-                                        <Pin className="w-3 h-3" />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
-                                      {pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
-
-                                {/* 🗑 Delete — own messages */}
-                                {isOwn && (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                                          setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
-                                        }}
-                                        className="chat-quick-btn chat-quick-btn--delete"
-                                        data-testid={`button-delete-${msg.id}`}
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Delete</TooltipContent>
-                                  </Tooltip>
-                                )}
-                              </div>
-                            )}
-                          </>
+                          <div className={`flex mt-1.5 ${isOwn ? "justify-end" : "justify-start"}`}>
+                            <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
+                          </div>
                         )}
-                      </div>{/* close: bubble card */}
+                        </div>{/* close: bubble card */}
+                      </div>{/* close: wrapper */}
 
                       {/* ── Reactions: float below card, Telegram-style overlap ── */}
                       {hasReactions && msg.type !== "deleted" && (msg as any).type !== "system" && (
@@ -8351,7 +8359,77 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         className="chat-color-reset-btn"
                         data-testid="button-chat-color-reset"
                       >
-                        Reset to default
+                        Reset text color
+                      </button>
+                    )}
+
+                    {/* ── Card background color section ── */}
+                    <div style={{ height: "1px", background: "rgba(180,160,255,0.09)", margin: "0 -2px" }} />
+                    <div className="chat-color-pop-head">
+                      <span className="chat-color-pop-title">Card color</span>
+                      <span
+                        className="chat-color-pop-preview"
+                        style={chatCardColor ? {
+                          background: `linear-gradient(135deg, ${chatCardColor}40, ${chatCardColor}25)`,
+                          borderColor: `${chatCardColor}55`,
+                        } : {}}
+                        aria-hidden="true"
+                      >
+                        ▭
+                      </span>
+                    </div>
+                    <div className="chat-color-grid" role="radiogroup" aria-label="Card background color">
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={chatCardColor === ""}
+                        onClick={() => setChatCardColor("")}
+                        className={`chat-color-swatch chat-color-swatch--none ${chatCardColor === "" ? "is-selected" : ""}`}
+                        data-testid="button-card-color-none"
+                        aria-label="Default card color"
+                        title="Default (no tint)"
+                      >
+                        {chatCardColor === "" && (
+                          <svg viewBox="0 0 12 12" className="chat-color-check" aria-hidden="true" style={{ color: "rgba(200,185,255,0.9)" }}>
+                            <path d="M2.5 6.2 L5 8.7 L9.5 4.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </button>
+                      {[
+                        "#7c3aed", "#1d4ed8", "#0e7490", "#047857",
+                        "#b45309", "#b91c1c", "#be185d", "#4338ca",
+                        "#9333ea", "#0f766e", "#92400e", "#1e3a5f",
+                      ].map((color) => {
+                        const selected = chatCardColor === color;
+                        return (
+                          <button
+                            key={color}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            onClick={() => setChatCardColor(color)}
+                            className={`chat-color-swatch ${selected ? "is-selected" : ""}`}
+                            style={{ ["--swatch" as any]: color, backgroundColor: color }}
+                            data-testid={`button-card-color-${color.replace("#", "")}`}
+                            aria-label={`Set card color ${color}`}
+                          >
+                            {selected && (
+                              <svg viewBox="0 0 12 12" className="chat-color-check" aria-hidden="true" style={{ color: "rgba(255,255,255,0.90)" }}>
+                                <path d="M2.5 6.2 L5 8.7 L9.5 4.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {chatCardColor && (
+                      <button
+                        type="button"
+                        onClick={() => setChatCardColor("")}
+                        className="chat-color-reset-btn"
+                        data-testid="button-card-color-reset"
+                      >
+                        Reset card color
                       </button>
                     )}
                   </div>
@@ -8365,6 +8443,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     userId: user.id,
                     text: `[gif:${gifUrl}]`,
                     messageColor: chatMessageColor,
+                    cardColor: chatCardColor,
                     privateToId: privateChatToId === "public" ? null : privateChatToId,
                     replyTo: replyingTo || undefined,
                   });
@@ -8378,6 +8457,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     userId: user.id,
                     text: `[img:${imgUrl}]`,
                     messageColor: chatMessageColor,
+                    cardColor: chatCardColor,
                     privateToId: privateChatToId === "public" ? null : privateChatToId,
                     replyTo: replyingTo || undefined,
                   });
