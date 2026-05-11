@@ -7209,7 +7209,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
         <div className="chat-scroll-well flex-1 min-h-0">
         <ScrollArea className="h-full" ref={chatScrollRef} onScroll={handleScroll}>
-          <div className="pl-2 pr-0 py-2 min-h-full flex flex-col justify-end">
+          <div className="pl-2 pr-3 py-2 min-h-full flex flex-col justify-end">
             {(() => {
               let displayedMessages = showMentionsOnly
                 ? chatMessages.filter(msg => msg.type !== "system" && (msg as any).type !== "deleted" && isMentionedInMessage(msg.text))
