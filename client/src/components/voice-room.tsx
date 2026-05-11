@@ -7432,75 +7432,61 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     data-highlighted={highlightedMsgId === msg.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                   >
-                    {/* Header: time left · name right */}
-                    <div className="flex items-center gap-1.5 px-0.5 mb-0.5">
-                      <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
-                      {msg.isPrivate && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
-                          <LockKeyhole className="w-2.5 h-2.5 mr-1" />
-                          Private to {msg.privateToId === user?.id ? "you" : msg.privateToName}
-                        </Badge>
-                      )}
-                      <span className="chat-msg-name ml-auto">{getUserDisplayName(msgUser)}</span>
-                    </div>
-
-                    {/* Card — avatar lives INSIDE, to the left of content */}
+                    {/* Card — avatar inline with name, no separate header row */}
                     <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
-                      <div className="flex items-start gap-2.5">
-
-                        {/* Avatar inside card */}
-                        <div className="relative flex-shrink-0 group/avatar mt-0.5">
-                          <div
-                            className="chat-msg-avatar-ring rounded-full"
-                            style={{
-                              padding: "2px",
-                              background: rc.bg,
-                              boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 14px ${rc.glow}`,
-                            }}
-                          >
-                            <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,.55)" }}>
-                              <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
-                              <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
-                                {getUserInitials(msgUser)}
-                              </AvatarFallback>
-                            </Avatar>
-                          </div>
-                          {!isOwn && msg.userId !== "system" && (
-                            <button
-                              onClick={() => {
-                                setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
-                                chatInputRef.current?.focus();
-                              }}
-                              title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
-                              data-testid={`button-dm-avatar-${msg.id}`}
-                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-all duration-150 scale-90 group-hover/avatar:scale-100"
-                              style={{
-                                background: privateChatToId === msg.userId
-                                  ? "linear-gradient(135deg,rgba(251,191,36,.95),rgba(194,115,10,.85))"
-                                  : "linear-gradient(135deg,rgba(99,102,241,.92),rgba(67,56,202,.80))",
-                                border: privateChatToId === msg.userId
-                                  ? "1px solid rgba(251,191,36,.45)"
-                                  : "1px solid rgba(139,92,246,.40)",
-                                borderRadius: "999px",
-                                padding: "1px 5px",
-                                fontSize: "8px",
-                                fontWeight: 700,
-                                letterSpacing: "0.04em",
-                                color: "#fff",
-                                boxShadow: "0 2px 6px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18)",
-                                whiteSpace: "nowrap",
-                                lineHeight: "1.4",
-                              }}
-                            >
-                              {privateChatToId === msg.userId ? "✓ DM" : "DM"}
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Message content — name/badge + body + reactions + actions */}
+                        {/* Single content column */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="text-[12.5px] font-semibold leading-tight" style={{ color: "rgba(235,230,255,0.90)" }}>{getUserDisplayName(msgUser)}</span>
+                          {/* Name row: avatar · name · badges · time */}
+                          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                            {/* Avatar — tiny, inline */}
+                            <div className="relative flex-shrink-0 group/avatar">
+                              <div
+                                className="chat-msg-avatar-ring rounded-full"
+                                style={{
+                                  padding: "1.5px",
+                                  background: rc.bg,
+                                  boxShadow: `-1px -1px 4px rgba(255,255,255,.06), 2px 2px 6px rgba(0,0,0,.75), 0 0 10px ${rc.glow}`,
+                                }}
+                              >
+                                <Avatar className="w-[26px] h-[26px]" style={{ border: "1px solid rgba(0,0,0,.55)" }}>
+                                  <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
+                                  <AvatarFallback className={`text-[10px] bg-gradient-to-br ${gradient} text-white`}>
+                                    {getUserInitials(msgUser)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </div>
+                              {!isOwn && msg.userId !== "system" && (
+                                <button
+                                  onClick={() => {
+                                    setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
+                                    chatInputRef.current?.focus();
+                                  }}
+                                  title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
+                                  data-testid={`button-dm-avatar-${msg.id}`}
+                                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-all duration-150 scale-90 group-hover/avatar:scale-100"
+                                  style={{
+                                    background: privateChatToId === msg.userId
+                                      ? "linear-gradient(135deg,rgba(251,191,36,.95),rgba(194,115,10,.85))"
+                                      : "linear-gradient(135deg,rgba(99,102,241,.92),rgba(67,56,202,.80))",
+                                    border: privateChatToId === msg.userId
+                                      ? "1px solid rgba(251,191,36,.45)"
+                                      : "1px solid rgba(139,92,246,.40)",
+                                    borderRadius: "999px",
+                                    padding: "1px 5px",
+                                    fontSize: "8px",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.04em",
+                                    color: "#fff",
+                                    boxShadow: "0 2px 6px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18)",
+                                    whiteSpace: "nowrap",
+                                    lineHeight: "1.4",
+                                  }}
+                                >
+                                  {privateChatToId === msg.userId ? "✓ DM" : "DM"}
+                                </button>
+                              )}
+                            </div>
+                            <span className="text-[12.5px] font-semibold leading-tight" style={{ color: "rgba(235,230,255,0.92)" }}>{getUserDisplayName(msgUser)}</span>
                             {msg.userId === room.ownerId && (
                               <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-amber-400/20 text-amber-300 border border-amber-400/30">Owner</span>
                             )}
@@ -7513,6 +7499,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             {msg.userId !== room.ownerId && participantRoles[msg.userId] === "troll" && (
                               <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-orange-500/15 text-orange-400 border border-orange-500/25">🧌 Troll</span>
                             )}
+                            {msg.isPrivate && (
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
+                                <LockKeyhole className="w-2 h-2 mr-0.5" />
+                                Private
+                              </Badge>
+                            )}
+                            <span className="chat-msg-time ml-auto">{formatTime(msg.createdAt)}</span>
                           </div>
                         {msg.replyTo && (
                           <div
@@ -7650,8 +7643,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                     <button
                                       key={emoji}
                                       onClick={() => { handleReact(msg.id, emoji); setReactPopoverMsgId(null); }}
-                                      className="text-lg hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-lg hover:bg-white/10"
-                                      style={{ minWidth: "34px", minHeight: "34px", lineHeight: 1 }}
+                                      className="text-sm hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
+                                      style={{ minWidth: "26px", minHeight: "26px", lineHeight: 1 }}
                                       data-testid={`quick-react-${msg.id}-${emoji}`}
                                       title={`React with ${emoji}`}
                                     >
@@ -7719,7 +7712,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           </div>
                         )}
                         </div>{/* close: flex-1 content */}
-                      </div>{/* close: flex items-start gap-2.5 */}
                     </div>{/* close: chat-msg-card */}
 
                     {/* Seen avatars — show who has seen up to this message */}
