@@ -4464,9 +4464,11 @@ export async function registerRoutes(
           io.to(previousSocketId).emit("room:joined-another-room", { oldRoomId: existingRoomId, newRoomId: roomId });
         }
         await leaveRoomState(existingRoomId, userId, previousSocketId === socket.id ? socket : previousSocket);
-      } else if (existingRoomId === roomId && previousSocketId && previousSocketId !== socket.id) {
-        // User opened the SAME room in a new tab — reject the new tab and keep
-        // the existing session alive. Tell the new socket to redirect back.
+      } else if (existingRoomId === roomId && previousSocketId && previousSocketId !== socket.id && previousSocket?.connected) {
+        // User opened the SAME room in a SECOND tab — the old socket is still
+        // alive and connected. Reject the new tab and keep the existing session.
+        // Note: if previousSocket is NOT connected, this is a normal socket.io
+        // reconnection (network glitch / tab sleep), NOT a duplicate tab — let it through.
         socket.emit("room:duplicate-tab", { roomId });
         return;
       }
@@ -4544,8 +4546,14 @@ export async function registerRoutes(
         socket.emit("room:avatar-gifs-snapshot", Object.fromEntries(gifSnapshot));
       }
 
+      // Always broadcast updated participant list to existing room members so
+      // they see the joining/rejoining user. On a true rejoin (socket.io
+      // reconnect after a network glitch), skipping this broadcast left the
+      // rejoining user invisible to everyone already in the room.
+      socket.to(roomId).emit("room:user-joined", { user, participants: participantsWithStatus });
+
       if (!isRejoin) {
-        socket.to(roomId).emit("room:user-joined", { user, participants: participantsWithStatus });
+        // First-time join only: send welcome message and record analytics.
         if (room.welcomeMessage && room.ownerId !== userId) {
           const joinerName = user.displayName || user.firstName || user.email?.split("@")[0] || "there";
           const personalizedMsg = room.welcomeMessage.replace(/@username/gi, `@${joinerName}`);
@@ -6184,6 +6192,12 @@ export async function registerRoutes(
             userCurrentRoom.delete(disconnectingUserId);
             await storage.updateUserStatus(disconnectingUserId, "offline");
             io.emit("presence:update", { userId: disconnectingUserId, status: "offline" });
+
+            // Re-check after the async await: if the user sent room:join while
+            // we were awaiting updateUserStatus, userCurrentRoom was repopulated.
+            // Aborting here prevents the race where the timer deletes a user who
+            // has already successfully rejoined, making them invisible to others.
+            if (userCurrentRoom.has(disconnectingUserId)) return;
 
             for (const [roomId, participants] of Array.from(roomParticipants.entries())) {
               if (participants.has(disconnectingUserId)) {
