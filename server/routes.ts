@@ -4753,12 +4753,15 @@ export async function registerRoutes(
       if (data.targetUserId === room.ownerId) return;
       if (!["co-owner", "member", "guest", "troll"].includes(data.role)) return;
 
+      const previousRole = roles.get(data.targetUserId);
       roles.set(data.targetUserId, data.role);
       io.to(data.roomId).emit("room:roles-update", {
         userId: data.targetUserId,
         role: data.role,
         roles: Object.fromEntries(roles),
       });
+
+      if (previousRole === data.role) return;
 
       const [targetUser, assignerUser] = await Promise.all([
         storage.getUser(data.targetUserId),

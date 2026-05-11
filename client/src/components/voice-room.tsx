@@ -3055,7 +3055,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
     socket.on("room:chat-message", (msg: ChatMessage) => {
       if (msg.userId !== user?.id && (blockedIdsRef.current.has(msg.userId) || foreverBlockedIdsRef.current.has(msg.userId))) return;
-      setChatMessages((prev) => [...prev, { ...msg, reactions: msg.reactions || {} }]);
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, { ...msg, reactions: msg.reactions || {} }];
+      });
       if (sidePanelTabRef.current !== "chat" && (msg as any).type !== "system" && msg.userId !== user?.id) {
         setUnreadChatBadge((prev) => prev + 1);
       }
