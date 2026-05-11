@@ -14166,10 +14166,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   );
 }
 
-function ShareRoomLinkButton({ roomId }: { roomId: string }) {
+function ShareRoomLinkButton({ roomId: _roomId }: { roomId: string }) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const url = `${window.location.origin}/room/${roomId}`;
+  const url = `${window.location.origin}${window.location.pathname}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(url).then(() => {
