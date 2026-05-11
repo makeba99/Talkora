@@ -11064,13 +11064,13 @@ html.boost-mode .glass-panel {
   }
 }
 
-/* Bubble row — transparent wrapper, handles left/right layout.
+/* Bubble row — vertical stack: header then card.
    Animates only when data-new="true" so initial history renders silently. */
 .chat-msg-row {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 10px;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
   position: relative;
   width: 100%;
   min-width: 0;
@@ -11132,9 +11132,9 @@ html.boost-mode .glass-panel {
   backdrop-filter: blur(8px) saturate(1.20);
   -webkit-backdrop-filter: blur(8px) saturate(1.20);
 
-  /* Premium tight shape — receiver: flat top-left (near avatar) */
-  border-radius: 4px 16px 16px 16px;
-  padding: 10px 14px 11px;
+  /* Uniform rounded corners — avatar is inside now */
+  border-radius: 14px;
+  padding: 10px 12px 10px;
 
   /* Glass edges — cerulean micro-border */
   border: 1px solid rgba(100, 136, 255, 0.15);
@@ -11227,8 +11227,8 @@ html.boost-mode .glass-panel {
     rgba(14, 10, 42, 0.93) 50%,
     rgba(9,   7, 28, 0.96) 100%
   );
-  /* Avatar always left — flat top-left corner matches others */
-  border-radius: 4px 16px 16px 16px;
+  /* Uniform rounded corners for own too */
+  border-radius: 14px;
 
   border-color:        rgba(118, 98,  255, 0.28);
   border-top-color:    rgba(158, 142, 255, 0.52);

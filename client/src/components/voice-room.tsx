@@ -7432,89 +7432,88 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     data-highlighted={highlightedMsgId === msg.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                   >
-                    {/* Avatar — always on left for consistent, clutter-free layout */}
-                    <div className="relative flex-shrink-0 group/avatar" style={{ marginTop: "20px" }}>
-                      <div
-                        className="chat-msg-avatar-ring rounded-full"
-                        style={{
-                          padding: "2.5px",
-                          background: rc.bg,
-                          boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 16px ${rc.glow}`,
-                        }}
-                      >
-                        <Avatar className="w-9 h-9" style={{ border: "1.5px solid rgba(0,0,0,.55)" }}>
-                          <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
-                          <AvatarFallback className={`text-sm bg-gradient-to-br ${gradient} text-white`}>
-                            {getUserInitials(msgUser)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                      {/* DM quick-action badge — only for other people's messages */}
-                      {!isOwn && msg.userId !== "system" && (
-                        <button
-                          onClick={() => {
-                            setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
-                            chatInputRef.current?.focus();
-                          }}
-                          title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
-                          data-testid={`button-dm-avatar-${msg.id}`}
-                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-all duration-150 scale-90 group-hover/avatar:scale-100"
-                          style={{
-                            background: privateChatToId === msg.userId
-                              ? "linear-gradient(135deg,rgba(251,191,36,.95),rgba(194,115,10,.85))"
-                              : "linear-gradient(135deg,rgba(99,102,241,.92),rgba(67,56,202,.80))",
-                            border: privateChatToId === msg.userId
-                              ? "1px solid rgba(251,191,36,.45)"
-                              : "1px solid rgba(139,92,246,.40)",
-                            borderRadius: "999px",
-                            padding: "1px 5px",
-                            fontSize: "8px",
-                            fontWeight: 700,
-                            letterSpacing: "0.04em",
-                            color: "#fff",
-                            boxShadow: "0 2px 6px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18)",
-                            whiteSpace: "nowrap",
-                            lineHeight: "1.4",
-                          }}
-                        >
-                          {privateChatToId === msg.userId ? "✓ DM" : "DM"}
-                        </button>
+                    {/* Header: time left · name right */}
+                    <div className="flex items-center gap-1.5 px-0.5 mb-0.5">
+                      <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
+                      {msg.isPrivate && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
+                          <LockKeyhole className="w-2.5 h-2.5 mr-1" />
+                          Private to {msg.privateToId === user?.id ? "you" : msg.privateToName}
+                        </Badge>
                       )}
+                      <span className="chat-msg-name ml-auto">{getUserDisplayName(msgUser)}</span>
                     </div>
 
-                    {/* Bubble column — takes all remaining width */}
-                    <div className="relative flex flex-col gap-[3px] flex-1 min-w-0">
+                    {/* Card — avatar lives INSIDE, to the left of content */}
+                    <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
+                      <div className="flex items-start gap-2.5">
 
-                      {/* Name + time header — outside the bubble, time left / name right */}
-                      <div className="flex items-center gap-1.5 flex-wrap px-1">
-                        <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
-                        {msg.isPrivate && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
-                            <LockKeyhole className="w-2.5 h-2.5 mr-1" />
-                            Private to {msg.privateToId === user?.id ? "you" : msg.privateToName}
-                          </Badge>
-                        )}
-                        <span className="chat-msg-name ml-auto">{getUserDisplayName(msgUser)}</span>
-                      </div>
-
-                      {/* The actual bubble */}
-                      <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
-                        {/* Name + role badge row — top of card, Discord-style */}
-                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                          <span className="text-[12px] font-semibold leading-tight" style={{ color: "rgba(235,230,255,0.82)" }}>{getUserDisplayName(msgUser)}</span>
-                          {msg.userId === room.ownerId && (
-                            <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-amber-400/20 text-amber-300 border border-amber-400/30">Owner</span>
-                          )}
-                          {msg.userId !== room.ownerId && participantRoles[msg.userId] === "co-owner" && (
-                            <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-violet-500/20 text-violet-300 border border-violet-500/30">Co-Owner</span>
-                          )}
-                          {msgUser?.role === "admin" && (
-                            <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-rose-500/20 text-rose-300 border border-rose-500/30">Admin</span>
-                          )}
-                          {msg.userId !== room.ownerId && participantRoles[msg.userId] === "troll" && (
-                            <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-orange-500/15 text-orange-400 border border-orange-500/25">🧌 Troll</span>
+                        {/* Avatar inside card */}
+                        <div className="relative flex-shrink-0 group/avatar mt-0.5">
+                          <div
+                            className="chat-msg-avatar-ring rounded-full"
+                            style={{
+                              padding: "2px",
+                              background: rc.bg,
+                              boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 14px ${rc.glow}`,
+                            }}
+                          >
+                            <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,.55)" }}>
+                              <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
+                              <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
+                                {getUserInitials(msgUser)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                          {!isOwn && msg.userId !== "system" && (
+                            <button
+                              onClick={() => {
+                                setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
+                                chatInputRef.current?.focus();
+                              }}
+                              title={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
+                              data-testid={`button-dm-avatar-${msg.id}`}
+                              className="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-all duration-150 scale-90 group-hover/avatar:scale-100"
+                              style={{
+                                background: privateChatToId === msg.userId
+                                  ? "linear-gradient(135deg,rgba(251,191,36,.95),rgba(194,115,10,.85))"
+                                  : "linear-gradient(135deg,rgba(99,102,241,.92),rgba(67,56,202,.80))",
+                                border: privateChatToId === msg.userId
+                                  ? "1px solid rgba(251,191,36,.45)"
+                                  : "1px solid rgba(139,92,246,.40)",
+                                borderRadius: "999px",
+                                padding: "1px 5px",
+                                fontSize: "8px",
+                                fontWeight: 700,
+                                letterSpacing: "0.04em",
+                                color: "#fff",
+                                boxShadow: "0 2px 6px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18)",
+                                whiteSpace: "nowrap",
+                                lineHeight: "1.4",
+                              }}
+                            >
+                              {privateChatToId === msg.userId ? "✓ DM" : "DM"}
+                            </button>
                           )}
                         </div>
+
+                        {/* Message content — name/badge + body + reactions + actions */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="text-[12.5px] font-semibold leading-tight" style={{ color: "rgba(235,230,255,0.90)" }}>{getUserDisplayName(msgUser)}</span>
+                            {msg.userId === room.ownerId && (
+                              <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-amber-400/20 text-amber-300 border border-amber-400/30">Owner</span>
+                            )}
+                            {msg.userId !== room.ownerId && participantRoles[msg.userId] === "co-owner" && (
+                              <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-violet-500/20 text-violet-300 border border-violet-500/30">Co-Owner</span>
+                            )}
+                            {msgUser?.role === "admin" && (
+                              <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-rose-500/20 text-rose-300 border border-rose-500/30">Admin</span>
+                            )}
+                            {msg.userId !== room.ownerId && participantRoles[msg.userId] === "troll" && (
+                              <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-orange-500/15 text-orange-400 border border-orange-500/25">🧌 Troll</span>
+                            )}
+                          </div>
                         {msg.replyTo && (
                           <div
                             className="chat-reply-block chat-reply-block--jumpable"
@@ -7719,38 +7718,39 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             )}
                           </div>
                         )}
-                      </div>
+                        </div>{/* close: flex-1 content */}
+                      </div>{/* close: flex items-start gap-2.5 */}
+                    </div>{/* close: chat-msg-card */}
 
-                      {/* Seen avatars — show who has seen up to this message */}
-                      {seenByMap[msg.id] && seenByMap[msg.id].length > 0 && (
-                        <div className={`flex items-center gap-0.5 mt-0.5 flex-wrap ${isOwn ? "justify-end" : "justify-start"}`}>
-                          {seenByMap[msg.id].slice(0, 6).map(seenUser => (
-                            <Tooltip key={seenUser.userId}>
-                              <TooltipTrigger asChild>
-                                <div
-                                  className="chat-seen-avatar"
-                                  data-testid={`seen-avatar-${msg.id}-${seenUser.userId}`}
-                                >
-                                  {seenUser.profileImageUrl ? (
-                                    <img src={seenUser.profileImageUrl} alt={seenUser.userName} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span className="text-[7px] font-bold text-white/80 leading-none">
-                                      {seenUser.userName.slice(0, 1).toUpperCase()}
-                                    </span>
-                                  )}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-[10px] px-2 py-1">
-                                {seenUser.userName} saw this
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                          {seenByMap[msg.id].length > 6 && (
-                            <span className="text-[9px] text-white/30 ml-0.5">+{seenByMap[msg.id].length - 6}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    {/* Seen avatars — show who has seen up to this message */}
+                    {seenByMap[msg.id] && seenByMap[msg.id].length > 0 && (
+                      <div className={`flex items-center gap-0.5 mt-0.5 flex-wrap ${isOwn ? "justify-end" : "justify-start"}`}>
+                        {seenByMap[msg.id].slice(0, 6).map(seenUser => (
+                          <Tooltip key={seenUser.userId}>
+                            <TooltipTrigger asChild>
+                              <div
+                                className="chat-seen-avatar"
+                                data-testid={`seen-avatar-${msg.id}-${seenUser.userId}`}
+                              >
+                                {seenUser.profileImageUrl ? (
+                                  <img src={seenUser.profileImageUrl} alt={seenUser.userName} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-[7px] font-bold text-white/80 leading-none">
+                                    {seenUser.userName.slice(0, 1).toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-[10px] px-2 py-1">
+                              {seenUser.userName} saw this
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
+                        {seenByMap[msg.id].length > 6 && (
+                          <span className="text-[9px] text-white/30 ml-0.5">+{seenByMap[msg.id].length - 6}</span>
+                        )}
+                      </div>
+                    )}
 
                   </div>
                   </Fragment>
