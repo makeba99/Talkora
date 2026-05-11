@@ -47,6 +47,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
       return { ...prev, [msgId]: msgReactions };
     });
     setReactPopoverMsgId(null);
+    setHoveredMsgId(null);
   };
 
   const { data: otherUser } = useQuery<User>({
@@ -150,7 +151,16 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     return new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  /* Group consecutive messages from same sender within 2 min */
+  /* Returns true if this is the LAST message in a consecutive same-sender run.
+     Avatar is shown only on the last message (Telegram / iMessage style). */
+  const isLastInRun = (msg: Message, idx: number) => {
+    if (idx === messages.length - 1) return true;
+    const next = messages[idx + 1];
+    if (next.fromId !== msg.fromId) return true;
+    return new Date(next.createdAt).getTime() - new Date(msg.createdAt).getTime() >= 2 * 60 * 1000;
+  };
+
+  /* Returns true if this message continues a same-sender run (used for spacing) */
   const isGrouped = (msg: Message, idx: number) => {
     if (idx === 0) return false;
     const prev = messages[idx - 1];
@@ -198,6 +208,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
             messages.map((msg, idx) => {
               const isMe = msg.fromId === user?.id;
               const grouped = isGrouped(msg, idx);
+              const lastInRun = isLastInRun(msg, idx);
               const msgReactions = reactions[msg.id] || {};
               const hasReactions = Object.values(msgReactions).some(uids => uids.length > 0);
 
@@ -212,7 +223,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                   {/* Avatar — left side for other, right side for own */}
                   {!isMe && (
                     <div className="dm-msg-avatar-slot">
-                      {!grouped ? (
+                      {lastInRun ? (
                         <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
                           <AvatarImage src={otherUser?.profileImageUrl || undefined} alt={getUserDisplayName(otherUser)} />
                           <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#4c3dcc,#7c5af0)", color: "#fff" }}>
@@ -297,7 +308,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                   {/* Own avatar — right side */}
                   {isMe && (
                     <div className="dm-msg-avatar-slot">
-                      {!grouped ? (
+                      {lastInRun ? (
                         <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/10">
                           <AvatarImage src={user?.profileImageUrl || undefined} alt="You" />
                           <AvatarFallback className="text-xs font-bold" style={{ background: "linear-gradient(135deg,#7c5af0,#a855f7)", color: "#fff" }}>
