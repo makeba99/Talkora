@@ -11504,6 +11504,50 @@ html.boost-mode .glass-panel {
   border-radius: 18px 12px 18px 18px;
 }
 
+/* ── Private / whisper messages — warm amber-gold dark ───────────────────── */
+.chat-msg-card[data-private="true"] {
+  background: linear-gradient(158deg, #2d1e08 0%, #221508 52%, #180f05 100%);
+  border: 1px solid rgba(251, 191, 36, 0.26);
+  border-top-color: rgba(251, 191, 36, 0.44);
+  border-bottom-color: rgba(12, 8, 2, 0.65);
+  box-shadow:
+    0   8px 24px rgba(0,   0,   0,   0.68),
+    0   2px  7px rgba(0,   0,   0,   0.48),
+    3px  0  12px rgba(0,   0,   0,   0.28),
+    inset 0  1px 0  rgba(251, 191, 36, 0.20),
+    inset 0 -1px 0  rgba(0,   0,   0,   0.32),
+    0   0  28px rgba(251, 140,  0,  0.12);
+}
+.chat-msg-card[data-private="true"]:hover {
+  background: linear-gradient(158deg, #3a250a 0%, #2b1c09 52%, #1e1206 100%);
+  box-shadow:
+    0  12px 32px rgba(0,   0,   0,   0.74),
+    0   3px  9px rgba(0,   0,   0,   0.52),
+    inset 0  1px 0  rgba(251, 191, 36, 0.28),
+    0   0  36px rgba(251, 140,  0,  0.18);
+}
+.chat-msg-card[data-private="true"][data-own="true"] {
+  background: linear-gradient(158deg, #3a2208 0%, #2c1906 52%, #1e1204 100%);
+  border: 1px solid rgba(251, 191, 36, 0.34);
+  border-top-color: rgba(251, 191, 36, 0.54);
+  border-bottom-color: rgba(12, 8, 2, 0.70);
+  box-shadow:
+    0   8px 24px rgba(0,   0,   0,   0.70),
+    0   2px  7px rgba(0,   0,   0,   0.50),
+    -3px  0  12px rgba(0,   0,   0,   0.28),
+    inset 0  1px 0  rgba(251, 191, 36, 0.28),
+    inset 0 -1px 0  rgba(0,   0,   0,   0.38),
+    0   0  40px rgba(251, 140,  0,  0.18);
+}
+.chat-msg-card[data-private="true"][data-own="true"]:hover {
+  background: linear-gradient(158deg, #472a09 0%, #361f07 52%, #261605 100%);
+  box-shadow:
+    0  12px 32px rgba(0,   0,   0,   0.74),
+    0   3px  9px rgba(0,   0,   0,   0.52),
+    inset 0  1px 0  rgba(251, 191, 36, 0.36),
+    0   0  52px rgba(251, 140,  0,  0.24);
+}
+
 /* ── DM-view bubbles — same language, standalone context ────────────────── */
 /* Shared entrance + base reset */
 .dm-bubble {

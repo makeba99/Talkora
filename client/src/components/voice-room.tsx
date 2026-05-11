@@ -7638,11 +7638,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
 
                         {/* The bubble card */}
-                        <div className="chat-msg-card" data-own={isOwn ? "true" : undefined} data-grouped={isGrouped ? "true" : undefined}>
-                          {/* Card color tint overlay */}
-                          {msg.cardColor && (
-                            <div className="chat-card-tint" style={{ '--tint': msg.cardColor } as React.CSSProperties} />
-                          )}
+                        <div
+                          className="chat-msg-card"
+                          data-own={isOwn ? "true" : undefined}
+                          data-grouped={isGrouped ? "true" : undefined}
+                          data-private={msg.isPrivate ? "true" : undefined}
+                          style={msg.cardColor ? {
+                            background: `linear-gradient(158deg, ${msg.cardColor}72 0%, ${msg.cardColor}52 52%, ${msg.cardColor}38 100%)`,
+                            borderColor: `${msg.cardColor}55`,
+                            borderTopColor: `${msg.cardColor}88`,
+                            boxShadow: `0 8px 24px rgba(0,0,0,0.68), 0 2px 7px rgba(0,0,0,0.48), inset 0 1px 0 ${msg.cardColor}44, 0 0 28px ${msg.cardColor}22`,
+                          } : undefined}
+                        >
 
                         {/* Card header: avatar + name + roles — others, every message */}
                         {!isOwn && (
