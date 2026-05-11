@@ -11069,8 +11069,8 @@ html.boost-mode .glass-panel {
 .chat-msg-row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 10px;
   position: relative;
   width: 100%;
   min-width: 0;
@@ -11227,8 +11227,8 @@ html.boost-mode .glass-panel {
     rgba(14, 10, 42, 0.93) 50%,
     rgba(9,   7, 28, 0.96) 100%
   );
-  /* Sender: flat top-right corner (tail side) */
-  border-radius: 16px 4px 16px 16px;
+  /* Avatar always left — flat top-left corner matches others */
+  border-radius: 4px 16px 16px 16px;
 
   border-color:        rgba(118, 98,  255, 0.28);
   border-top-color:    rgba(158, 142, 255, 0.52);
@@ -12356,6 +12356,11 @@ html.boost-mode .glass-panel {
   border-top: 1px solid rgba(255, 255, 255, 0.055);
   width: 100%;
   min-height: 0;
+  flex-wrap: wrap;
+}
+/* Own messages — push action buttons to the right */
+.chat-msg-card[data-own="true"] .chat-action-inline {
+  justify-content: flex-end;
 }
 
 .chat-action-inline-btn {

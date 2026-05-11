@@ -7162,7 +7162,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
         <div className="chat-scroll-well flex-1 min-h-0">
         <ScrollArea className="h-full" ref={chatScrollRef} onScroll={handleScroll}>
-          <div className="px-3 py-3 space-y-1 min-h-full flex flex-col justify-end">
+          <div className="px-2 py-3 space-y-1 min-h-full flex flex-col justify-end">
             {(() => {
               const displayedMessages = showMentionsOnly
                 ? chatMessages.filter(msg => msg.type !== "system" && (msg as any).type !== "deleted" && isMentionedInMessage(msg.text))
@@ -7426,26 +7426,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       </div>
                     )}
                   <div
-                    className={`group chat-msg-row${isOwn ? " flex-row-reverse" : ""}`}
+                    className="group chat-msg-row"
                     data-own={isOwn ? "true" : undefined}
                     data-new={isNew ? "true" : undefined}
                     data-highlighted={highlightedMsgId === msg.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                   >
-                    {/* Per-user coloured avatar ring — marginTop offsets it to align with
-                        the bubble's flat corner, which sits below the name header (~19px) */}
-                    <div className="relative flex-shrink-0 group/avatar" style={{ marginTop: "19px" }}>
+                    {/* Avatar — always on left for consistent, clutter-free layout */}
+                    <div className="relative flex-shrink-0 group/avatar" style={{ marginTop: "20px" }}>
                       <div
                         className="chat-msg-avatar-ring rounded-full"
                         style={{
                           padding: "2.5px",
                           background: rc.bg,
-                          boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 14px ${rc.glow}`,
+                          boxShadow: `-2px -2px 6px rgba(255,255,255,.06), 3px 3px 10px rgba(0,0,0,.75), 0 0 16px ${rc.glow}`,
                         }}
                       >
-                        <Avatar className="w-8 h-8" style={{ border: "1.5px solid rgba(0,0,0,.55)" }}>
+                        <Avatar className="w-9 h-9" style={{ border: "1.5px solid rgba(0,0,0,.55)" }}>
                           <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
-                          <AvatarFallback className={`text-xs bg-gradient-to-br ${gradient} text-white`}>
+                          <AvatarFallback className={`text-sm bg-gradient-to-br ${gradient} text-white`}>
                             {getUserInitials(msgUser)}
                           </AvatarFallback>
                         </Avatar>
@@ -7483,24 +7482,39 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       )}
                     </div>
 
-                    {/* Bubble column — name above, bubble below */}
-                    <div className={`relative flex flex-col gap-[3px] max-w-[72%] min-w-0 ${isOwn ? "items-end" : "items-start"}`}>
+                    {/* Bubble column — takes all remaining width */}
+                    <div className="relative flex flex-col gap-[3px] flex-1 min-w-0">
 
-                      {/* Name + time header — outside the bubble */}
-                      <div className={`flex items-baseline gap-1.5 flex-wrap px-1 ${isOwn ? "flex-row-reverse" : ""}`}>
-                        <span className="chat-msg-name">{getUserDisplayName(msgUser)}</span>
-                        <span className="chat-msg-time ml-auto">{formatTime(msg.createdAt)}</span>
+                      {/* Name + time header — outside the bubble, time left / name right */}
+                      <div className="flex items-center gap-1.5 flex-wrap px-1">
+                        <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
                         {msg.isPrivate && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-400/40 text-amber-300" data-testid={`badge-private-message-${msg.id}`}>
                             <LockKeyhole className="w-2.5 h-2.5 mr-1" />
                             Private to {msg.privateToId === user?.id ? "you" : msg.privateToName}
                           </Badge>
                         )}
+                        <span className="chat-msg-name ml-auto">{getUserDisplayName(msgUser)}</span>
                       </div>
-
 
                       {/* The actual bubble */}
                       <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
+                        {/* Name + role badge row — top of card, Discord-style */}
+                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                          <span className="text-[12px] font-semibold leading-tight" style={{ color: "rgba(235,230,255,0.82)" }}>{getUserDisplayName(msgUser)}</span>
+                          {msg.userId === room.ownerId && (
+                            <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-amber-400/20 text-amber-300 border border-amber-400/30">Owner</span>
+                          )}
+                          {msg.userId !== room.ownerId && participantRoles[msg.userId] === "co-owner" && (
+                            <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-violet-500/20 text-violet-300 border border-violet-500/30">Co-Owner</span>
+                          )}
+                          {msgUser?.role === "admin" && (
+                            <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-rose-500/20 text-rose-300 border border-rose-500/30">Admin</span>
+                          )}
+                          {msg.userId !== room.ownerId && participantRoles[msg.userId] === "troll" && (
+                            <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-orange-500/15 text-orange-400 border border-orange-500/25">🧌 Troll</span>
+                          )}
+                        </div>
                         {msg.replyTo && (
                           <div
                             className="chat-reply-block chat-reply-block--jumpable"
@@ -8202,16 +8216,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 }
               }} />
             </div>
-            <button
-              type="submit"
-              disabled={!chatText.trim()}
-              data-testid="button-send-room-chat"
-              data-ready={chatText.trim() ? "true" : undefined}
-              className="room-send-btn"
-            >
-              <Send className="w-3.5 h-3.5" />
-              Send
-            </button>
           </div>
         </form>
       </div>
