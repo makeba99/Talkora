@@ -6575,6 +6575,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [isAtBottom, setIsAtBottom] = useState(true);
   const isAtBottomRef = useRef(true);
   const [showMentionsOnly, setShowMentionsOnly] = useState(false);
+  const [chatSearch, setChatSearch] = useState("");
+  const [showChatSearch, setShowChatSearch] = useState(false);
 
   const isMentionedInMessage = useCallback((text: string) => {
     if (!user) return false;
@@ -7080,7 +7082,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       </div>
 
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chat" ? "flex" : "none" }}>
-        {/* ── Filter row — All / @Mentions / Welcome ────────────────────── */}
+        {/* ── Filter row — All / @Mentions / Welcome / Search ─────────── */}
         <div className="chat-header-filters">
           <button
             onClick={() => setShowMentionsOnly(false)}
@@ -7110,7 +7112,42 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               <span>{welcomeText ? "Welcome" : "Add Welcome"}</span>
             </button>
           )}
+          <button
+            onClick={() => { setShowChatSearch(s => !s); if (showChatSearch) setChatSearch(""); }}
+            className="room-filter-pill"
+            data-active={showChatSearch}
+            data-testid="button-chat-search-toggle"
+            title="Search messages"
+            style={{ marginLeft: isHost ? "0" : "auto" }}
+          >
+            <Search className="w-2.5 h-2.5" />
+          </button>
         </div>
+        {showChatSearch && (
+          <div className="chat-search-bar" data-testid="chat-search-bar">
+            <Search className="w-3 h-3 chat-search-icon" />
+            <input
+              autoFocus
+              type="text"
+              value={chatSearch}
+              onChange={e => setChatSearch(e.target.value)}
+              placeholder="Search messages…"
+              className="chat-search-input"
+              data-testid="input-chat-search"
+            />
+            {chatSearch && (
+              <button
+                type="button"
+                onClick={() => setChatSearch("")}
+                className="chat-search-clear"
+                aria-label="Clear search"
+                data-testid="button-chat-search-clear"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
         {/* ── Pinned message banner ─────────────────────────────────────── */}
         {pinnedMessage && (() => {
           const pinAuthorObj = pinnedMessage.message.user || participantById.get(pinnedMessage.message.userId);
@@ -7161,13 +7198,53 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           );
         })()}
 
+        {/* ── Active participants strip ─────────────────────────────────── */}
+        {participants.length > 0 && (
+          <div className="chat-participants-strip" data-testid="chat-participants-strip">
+            <span className="chat-participants-label">{participants.length} online</span>
+            <div className="chat-participants-avatars">
+              {participants.slice(0, 10).map((p, i) => {
+                const pGrad = getAvatarGradient(i);
+                return (
+                  <Tooltip key={p.id}>
+                    <TooltipTrigger asChild>
+                      <div className="chat-participant-chip" data-testid={`chip-participant-${p.id}`}>
+                        <Avatar className="w-5 h-5">
+                          <AvatarImage src={p.profileImageUrl || undefined} alt="" />
+                          <AvatarFallback className={`text-[8px] bg-gradient-to-br ${pGrad} text-white`}>
+                            {getUserInitials(p)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="chat-participant-dot" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-[11px] px-2 py-1">
+                      {getUserDisplayName(p)}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+              {participants.length > 10 && (
+                <span className="chat-participants-overflow">+{participants.length - 10}</span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="chat-scroll-well flex-1 min-h-0">
         <ScrollArea className="h-full" ref={chatScrollRef} onScroll={handleScroll}>
           <div className="px-2 py-3 space-y-1 min-h-full flex flex-col justify-end">
             {(() => {
-              const displayedMessages = showMentionsOnly
+              let displayedMessages = showMentionsOnly
                 ? chatMessages.filter(msg => msg.type !== "system" && (msg as any).type !== "deleted" && isMentionedInMessage(msg.text))
                 : chatMessages;
+              if (chatSearch.trim()) {
+                const q = chatSearch.trim().toLowerCase();
+                displayedMessages = displayedMessages.filter(msg =>
+                  msg.type !== "system" && (msg as any).type !== "deleted" &&
+                  msg.text?.toLowerCase().includes(q)
+                );
+              }
               return displayedMessages.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12 mt-auto">
                 <div className="w-11 h-11 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center">
@@ -7412,6 +7489,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 const prevMsg = displayedMessages[msgIdx - 1];
                 const prevMsgDate = prevMsg ? new Date(prevMsg.createdAt) : null;
                 const showDateSep = !prevMsgDate || prevMsgDate.toDateString() !== msgDate.toDateString();
+                const isGrouped = !showDateSep &&
+                  !!prevMsg &&
+                  prevMsg.type !== "system" &&
+                  (prevMsg as any).type !== "deleted" &&
+                  prevMsg.type !== "announcement" &&
+                  prevMsg.type !== "badge" &&
+                  prevMsg.userId === msg.userId &&
+                  (msgDate.getTime() - prevMsgDate!.getTime()) < 2 * 60 * 1000;
                 const _today = new Date();
                 const _yesterday = new Date(_today); _yesterday.setDate(_today.getDate() - 1);
                 const dateSepLabel = msgDate.toDateString() === _today.toDateString() ? "Today"
@@ -7430,14 +7515,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     className="group chat-msg-row"
                     data-own={isOwn ? "true" : undefined}
                     data-new={isNew ? "true" : undefined}
+                    data-grouped={isGrouped ? "true" : undefined}
                     data-highlighted={highlightedMsgId === msg.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
                   >
                     {/* Card — large avatar left column, content right */}
-                    <div className="chat-msg-card" data-own={isOwn ? "true" : undefined}>
+                    <div className="chat-msg-card" data-own={isOwn ? "true" : undefined} data-grouped={isGrouped ? "true" : undefined}>
                       <div className="flex items-start gap-3">
 
-                        {/* Avatar — prominent left column */}
+                        {/* Avatar — full ring on first message, thread bar on grouped continuations */}
+                        {isGrouped ? (
+                          <div className="chat-group-thread-col flex-shrink-0" style={{ width: "44px" }}>
+                            <div
+                              className="chat-group-thread-bar"
+                              style={{ background: rc.bg }}
+                            />
+                          </div>
+                        ) : (
                         <div className="relative flex-shrink-0 group/avatar">
                           <div
                             className="chat-msg-avatar-ring rounded-full"
@@ -7490,11 +7584,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             </button>
                           )}
                         </div>
+                        )}
 
                         {/* Content column */}
                         <div className="flex-1 min-w-0">
-                          {/* Name row: name · badges · [right: time] */}
-                          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                          {/* Name row: name · badges · [right: time] — hidden on grouped continuations */}
+                          {!isGrouped && <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                             <span className="text-[13.5px] font-semibold leading-tight" style={{ color: "rgba(240,236,255,0.96)" }}>{getUserDisplayName(msgUser)}</span>
                             {msg.userId === room.ownerId && (
                               <span className="inline-flex items-center px-1.5 py-px rounded-full text-[9px] font-bold tracking-wide bg-amber-400/20 text-amber-300 border border-amber-400/30">Owner</span>
@@ -7515,7 +7610,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                               </Badge>
                             )}
                             <span className="chat-msg-time ml-auto">{formatTime(msg.createdAt)}</span>
-                          </div>
+                          </div>}
 
                           {/* Reply block */}
                           {msg.replyTo && (
@@ -7616,6 +7711,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                   </Tooltip>
                                 );
                               })}
+
+                              {/* ↩ Reply inline — visible on group:hover so it surfaces the most common action */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReplyingTo({ id: msg.id, userId: msg.userId, userName: getUserDisplayName(msgUser) || "Unknown", text: msg.text });
+                                  chatInputRef.current?.focus();
+                                }}
+                                className="chat-inline-quick-btn opacity-0 group-hover:opacity-100"
+                                title="Reply"
+                                data-testid={`button-reply-inline-${msg.id}`}
+                              >
+                                <CornerUpLeft className="w-3 h-3" />
+                              </button>
+
+                              {/* ✎ Edit inline — own messages only, visible on hover */}
+                              {isOwn && editingMsgId !== msg.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
+                                  className="chat-inline-quick-btn chat-inline-quick-btn--edit opacity-0 group-hover:opacity-100"
+                                  title="Edit"
+                                  data-testid={`button-edit-inline-${msg.id}`}
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              )}
 
                               {/* ⊕ Add reaction */}
                               <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
