@@ -7201,7 +7201,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
         <div className="chat-scroll-well flex-1 min-h-0">
         <ScrollArea className="h-full" ref={chatScrollRef} onScroll={handleScroll}>
-          <div className="px-2 py-3 space-y-1 min-h-full flex flex-col justify-end">
+          <div className="pl-2 pr-0.5 py-2 min-h-full flex flex-col justify-end">
             {(() => {
               let displayedMessages = showMentionsOnly
                 ? chatMessages.filter(msg => msg.type !== "system" && (msg as any).type !== "deleted" && isMentionedInMessage(msg.text))
@@ -7683,11 +7683,125 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             )}
                           </div>
                         )}
-                        {/* Timestamp inside bubble */}
+                        {/* Timestamp + inline action bar inside bubble */}
                         {editingMsgId !== msg.id && (
-                          <div className={`flex mt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
-                            <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
-                          </div>
+                          <>
+                            <div className={`flex mt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
+                              <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
+                            </div>
+                            {/* ── Action buttons — embedded inside card, reserve height always ── */}
+                            {msg.type !== "deleted" && (msg as any).type !== "system" && (
+                              <div
+                                className={`chat-bubble-actions flex items-center gap-1 mt-1 ${isOwn ? "flex-row-reverse" : ""}`}
+                              >
+                                {/* ↩ Reply */}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setReplyingTo({ id: msg.id, userId: msg.userId, userName: getUserDisplayName(msgUser) || "Unknown", text: msg.text });
+                                        chatInputRef.current?.focus();
+                                      }}
+                                      className="chat-quick-btn"
+                                      data-testid={`button-reply-inline-${msg.id}`}
+                                    >
+                                      <CornerUpLeft className="w-3 h-3" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Reply</TooltipContent>
+                                </Tooltip>
+
+                                {/* ✎ Edit — own only */}
+                                {isOwn && editingMsgId !== msg.id && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
+                                        className="chat-quick-btn chat-quick-btn--edit"
+                                        data-testid={`button-edit-inline-${msg.id}`}
+                                      >
+                                        <Pencil className="w-3 h-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Edit</TooltipContent>
+                                  </Tooltip>
+                                )}
+
+                                {/* 😊 Emoji react */}
+                                <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
+                                  <PopoverTrigger asChild>
+                                    <button className="chat-quick-btn chat-quick-btn--emoji" data-testid={`button-react-open-${msg.id}`} title="React">
+                                      <Smile className="w-3 h-3" />
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="p-2 w-auto" side="top" align="start" sideOffset={6}>
+                                    <div className="flex items-center gap-0.5 flex-wrap" style={{ maxWidth: "196px" }}>
+                                      {QUICK_EMOJIS.map((emoji) => (
+                                        <button
+                                          key={emoji}
+                                          onClick={() => { handleReact(msg.id, emoji); setReactPopoverMsgId(null); }}
+                                          className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
+                                          style={{ minWidth: "28px", minHeight: "28px", lineHeight: 1 }}
+                                          data-testid={`quick-react-${msg.id}-${emoji}`}
+                                          title={`React with ${emoji}`}
+                                        >
+                                          {emoji}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+
+                                {/* 📌 Pin — host / co-owner */}
+                                {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (pinnedMessage?.message?.id === msg.id) {
+                                            socket?.emit("room:unpin-message", { roomId: room.id });
+                                          } else {
+                                            socket?.emit("room:pin-message", { roomId: room.id, message: msg, pinnedBy: user?.id, pinnedByName: getUserDisplayName(user) || "Host" });
+                                          }
+                                        }}
+                                        className="chat-quick-btn"
+                                        style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.90)" } : {}}
+                                        data-testid={`button-pin-${msg.id}`}
+                                      >
+                                        <Pin className="w-3 h-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
+                                      {pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+
+                                {/* 🗑 Delete — own messages */}
+                                {isOwn && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                          setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                                        }}
+                                        className="chat-quick-btn chat-quick-btn--delete"
+                                        data-testid={`button-delete-${msg.id}`}
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Delete</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>{/* close: bubble card */}
 
@@ -7719,118 +7833,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         </div>
                       )}
 
-                      {/* ── Action buttons — hover only: reply · edit · emoji · more ── */}
-                      {msg.type !== "deleted" && (msg as any).type !== "system" && (
-                        <div
-                          className={`chat-bubble-actions flex items-center gap-1 mt-0.5 ${isOwn ? "flex-row-reverse" : ""}`}
-                        >
-                          {/* ↩ Reply */}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setReplyingTo({ id: msg.id, userId: msg.userId, userName: getUserDisplayName(msgUser) || "Unknown", text: msg.text });
-                                  chatInputRef.current?.focus();
-                                }}
-                                className="chat-quick-btn"
-                                data-testid={`button-reply-inline-${msg.id}`}
-                              >
-                                <CornerUpLeft className="w-3 h-3" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Reply</TooltipContent>
-                          </Tooltip>
-
-                          {/* ✎ Edit — own only */}
-                          {isOwn && editingMsgId !== msg.id && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={() => { setEditingMsgId(msg.id); setEditingText(msg.text); }}
-                                  className="chat-quick-btn chat-quick-btn--edit"
-                                  data-testid={`button-edit-inline-${msg.id}`}
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Edit</TooltipContent>
-                            </Tooltip>
-                          )}
-
-                          {/* 😊 Emoji react */}
-                          <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
-                            <PopoverTrigger asChild>
-                              <button className="chat-quick-btn chat-quick-btn--emoji" data-testid={`button-react-open-${msg.id}`} title="React">
-                                <Smile className="w-3 h-3" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-2 w-auto" side="top" align="start" sideOffset={6}>
-                              <div className="flex items-center gap-0.5 flex-wrap" style={{ maxWidth: "196px" }}>
-                                {QUICK_EMOJIS.map((emoji) => (
-                                  <button
-                                    key={emoji}
-                                    onClick={() => { handleReact(msg.id, emoji); setReactPopoverMsgId(null); }}
-                                    className="text-base hover:scale-125 active:scale-95 transition-transform flex items-center justify-center rounded-md hover:bg-white/10"
-                                    style={{ minWidth: "28px", minHeight: "28px", lineHeight: 1 }}
-                                    data-testid={`quick-react-${msg.id}-${emoji}`}
-                                    title={`React with ${emoji}`}
-                                  >
-                                    {emoji}
-                                  </button>
-                                ))}
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-
-                          {/* 📌 Pin — host / co-owner */}
-                          {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (pinnedMessage?.message?.id === msg.id) {
-                                      socket?.emit("room:unpin-message", { roomId: room.id });
-                                    } else {
-                                      socket?.emit("room:pin-message", { roomId: room.id, message: msg, pinnedBy: user?.id, pinnedByName: getUserDisplayName(user) || "Host" });
-                                    }
-                                  }}
-                                  className="chat-quick-btn"
-                                  style={pinnedMessage?.message?.id === msg.id ? { color: "rgba(251,191,36,.90)" } : {}}
-                                  data-testid={`button-pin-${msg.id}`}
-                                >
-                                  <Pin className="w-3 h-3" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
-                                {pinnedMessage?.message?.id === msg.id ? "Unpin" : "Pin"}
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-
-                          {/* 🗑 Delete — own messages */}
-                          {isOwn && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
-                                    setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
-                                  }}
-                                  className="chat-quick-btn chat-quick-btn--delete"
-                                  data-testid={`button-delete-${msg.id}`}
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Delete</TooltipContent>
-                            </Tooltip>
-                          )}
-                          </div>
-                        )}
                     </div>{/* close: bubble-col */}
 
                     {/* Seen avatars — show who has seen up to this message */}
