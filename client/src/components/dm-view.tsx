@@ -32,6 +32,15 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   const [reactPopoverMsgId, setReactPopoverMsgId] = useState<string | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
 
+  /* Prevent hover re-triggering immediately after an action (mouse stays inside row) */
+  const suppressHoverRef = useRef(false);
+  const dismissHover = () => {
+    setReactPopoverMsgId(null);
+    setHoveredMsgId(null);
+    suppressHoverRef.current = true;
+    setTimeout(() => { suppressHoverRef.current = false; }, 700);
+  };
+
   const handleDmReact = (msgId: string, emoji: string) => {
     if (!user) return;
     setReactions(prev => {
@@ -46,8 +55,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
       msgReactions[emoji] = users;
       return { ...prev, [msgId]: msgReactions };
     });
-    setReactPopoverMsgId(null);
-    setHoveredMsgId(null);
+    dismissHover();
   };
 
   const { data: otherUser } = useQuery<User>({
@@ -219,7 +227,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                 <div
                   key={msg.id}
                   className={`dm-msg-row ${isMe ? "dm-msg-row--own" : ""} ${grouped ? "dm-msg-row--grouped" : ""}`}
-                  onMouseEnter={() => setHoveredMsgId(msg.id)}
+                  onMouseEnter={() => { if (!suppressHoverRef.current) setHoveredMsgId(msg.id); }}
                   onMouseLeave={() => setHoveredMsgId(null)}
                   data-testid={`message-${msg.id}`}
                 >
@@ -277,7 +285,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
 
                     {/* Hover quick-react bar */}
                     <div className={`dm-quick-react-bar ${hoveredMsgId === msg.id || reactPopoverMsgId === msg.id ? "dm-quick-react-bar--visible" : ""} ${isMe ? "self-end" : "self-start"}`}>
-                      <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => setReactPopoverMsgId(open ? msg.id : null)}>
+                      <Popover open={reactPopoverMsgId === msg.id} onOpenChange={(open) => { if (open) setReactPopoverMsgId(msg.id); else dismissHover(); }}>
                         <PopoverTrigger asChild>
                           <button
                             className="dm-react-trigger"
