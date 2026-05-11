@@ -11115,9 +11115,17 @@ html.boost-mode .glass-panel {
 .chat-role-pill--admin  { background: rgba(252,165,165,.15); color: rgba(252,165,165,.85); border: 1px solid rgba(252,165,165,.28); }
 .chat-role-pill--troll  { background: rgba(251,146,60,.12);  color: rgba(251,146,60,.80);  border: 1px solid rgba(251,146,60,.22); }
 
-/* ── Bubble quick-action buttons — always visible below bubble ─────────── */
+/* ── Bubble quick-action buttons — hidden until message row is hovered ──── */
 .chat-bubble-actions {
   padding: 2px 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+.chat-msg-row:hover .chat-bubble-actions,
+.chat-msg-row:focus-within .chat-bubble-actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .chat-quick-btn {
