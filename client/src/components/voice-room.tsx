@@ -3751,16 +3751,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   // Browser tab title — show unread count while tab is backgrounded
   useEffect(() => {
-    const roomName = room?.name || "Room";
+    const roomName = room?.title || "Room";
     if (tabUnreadCount > 0) {
       document.title = `(${tabUnreadCount}) ${roomName} — Vextorn`;
     } else {
       document.title = `${roomName} — Vextorn`;
     }
     return () => { document.title = "Vextorn"; };
-  }, [tabUnreadCount, room?.name]);
+  }, [tabUnreadCount, room?.title]);
 
-  // Dynamic favicon badge — red with count when unread, green dot when clear
+  // Dynamic favicon badge — red circle with count when unread, green dot when clear.
+  // We must update ALL favicon <link> elements (SVG + PNG) because browsers prefer
+  // the SVG type and will ignore the PNG update if the SVG link still points to the
+  // original file. We replace every icon link with the canvas data-URL while the
+  // room tab is active, then restore the original hrefs on cleanup.
   useEffect(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 32;
@@ -3768,11 +3772,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Collect original hrefs so we can restore them on cleanup
+    const allIconLinks = Array.from(
+      document.querySelectorAll<HTMLLinkElement>("link[rel='icon'], link[rel='shortcut icon']")
+    );
+    const origHrefs = allIconLinks.map((l) => l.href);
+
     const img = new Image();
     img.src = "/vextorn-icon-192.png";
     img.onload = () => {
       ctx.clearRect(0, 0, 32, 32);
-      // Draw base icon rounded
+
+      // Draw base icon with rounded corners
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(0, 0, 32, 32, 6);
@@ -3781,29 +3792,32 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       ctx.restore();
 
       if (tabUnreadCount > 0) {
-        // Red badge — top-right corner
+        // Red badge — top-right corner with white count
         const label = tabUnreadCount > 99 ? "99+" : String(tabUnreadCount);
-        const badgeR = label.length > 1 ? 8 : 7;
+        const badgeR = label.length > 2 ? 9 : label.length > 1 ? 8 : 7;
         const cx = 32 - badgeR - 1;
         const cy = badgeR + 1;
+        // Dark halo for contrast on any background
         ctx.beginPath();
-        ctx.arc(cx, cy, badgeR + 1, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.arc(cx, cy, badgeR + 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fill();
+        // Red circle
         ctx.beginPath();
         ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
         ctx.fillStyle = "#ef4444";
         ctx.fill();
+        // White count number
         ctx.fillStyle = "#ffffff";
-        ctx.font = `bold ${label.length > 1 ? 8 : 10}px system-ui,sans-serif`;
+        ctx.font = `bold ${label.length > 1 ? 8 : 11}px system-ui,sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(label, cx, cy + 0.5);
       } else {
-        // Green online dot — bottom-right
+        // Green online dot — bottom-right corner
         ctx.beginPath();
-        ctx.arc(25.5, 25.5, 6, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        ctx.arc(25.5, 25.5, 6.5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.fill();
         ctx.beginPath();
         ctx.arc(25.5, 25.5, 5, 0, Math.PI * 2);
@@ -3812,21 +3826,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
 
       const dataUrl = canvas.toDataURL("image/png");
-      let link = document.querySelector<HTMLLinkElement>("link[rel='icon'][type='image/png']");
-      if (!link) {
-        link = document.createElement("link");
+
+      // Replace every favicon link with the canvas PNG — this overrides the SVG
+      // favicon which would otherwise take precedence in modern browsers.
+      if (allIconLinks.length > 0) {
+        allIconLinks.forEach((link) => {
+          link.type = "image/png";
+          link.href = dataUrl;
+        });
+      } else {
+        // Fallback: create a new link if none exist
+        const link = document.createElement("link");
         link.rel = "icon";
         link.type = "image/png";
         link.setAttribute("sizes", "32x32");
+        link.href = dataUrl;
         document.head.appendChild(link);
       }
-      link.href = dataUrl;
     };
     img.onerror = () => {};
 
     return () => {
-      const link = document.querySelector<HTMLLinkElement>("link[rel='icon'][type='image/png']");
-      if (link) link.href = "/vextorn-icon-192.png";
+      // Restore all original favicon links
+      allIconLinks.forEach((link, i) => {
+        link.href = origHrefs[i];
+        // Restore original type attribute
+        if (origHrefs[i]?.endsWith(".svg")) link.type = "image/svg+xml";
+        else link.type = "image/png";
+      });
     };
   }, [tabUnreadCount]);
 
