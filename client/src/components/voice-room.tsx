@@ -8523,13 +8523,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
                       </button>
                       {[
-                        "#c4b5fd", "#a78bfa", "#22d3ee", "#34d399",
-                        "#facc15", "#fb923c", "#f87171", "#60a5fa",
-                        "#f0abfc", "#e879f9", "#ffffff", "#94a3b8",
-                        "#2dd4bf", "#fbbf24",
+                        "#c4b5fd", "#a78bfa", "#60a5fa",
+                        "#22d3ee", "#34d399", "#facc15",
+                        "#fb923c", "#f87171", "#e879f9",
+                        "#ffffff",
                       ].map((color) => {
                         const selected = chatMessageColor === color;
-                        const isDark = ["#facc15","#34d399","#22d3ee","#ffffff","#fbbf24"].includes(color);
+                        const isDark = ["#facc15","#34d399","#22d3ee","#ffffff"].includes(color);
                         return (
                           <button
                             key={color}
@@ -8601,10 +8601,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
                       </button>
                       {[
-                        "#8b5cf6", "#2563eb", "#0891b2", "#059669",
-                        "#d97706", "#dc2626", "#db2777", "#4f46e5",
-                        "#7c3aed", "#0d9488", "#ea580c", "#1e40af",
-                        "#065f46", "#7e1d3f",
+                        "#8b5cf6", "#4f46e5", "#2563eb",
+                        "#0891b2", "#059669", "#d97706",
+                        "#dc2626", "#db2777", "#7c3aed",
+                        "#0d9488",
                       ].map((color) => {
                         const selected = chatCardColor === color;
                         return (

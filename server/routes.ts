@@ -5023,9 +5023,11 @@ export async function registerRoutes(
       });
     });
 
-    socket.on("room:chat", async (data: { roomId: string; userId: string; text: string; messageColor?: string; privateToId?: string | null; replyTo?: { id: string; userId: string; userName: string; text: string } }) => {
+    socket.on("room:chat", async (data: { roomId: string; userId: string; text: string; messageColor?: string; cardColor?: string; privateToId?: string | null; replyTo?: { id: string; userId: string; userName: string; text: string } }) => {
       try {
-        const safeColor = /^#[0-9a-fA-F]{6}$/.test(data.messageColor || "") ? data.messageColor : undefined;
+        const HEX6 = /^#[0-9a-fA-F]{6}$/;
+        const safeColor = HEX6.test(data.messageColor || "") ? data.messageColor : undefined;
+        const safeCardColor = HEX6.test(data.cardColor || "") ? data.cardColor : undefined;
         const user = await storage.getUser(data.userId);
         if (!user) return;
         if (isUserRestricted(user)) {
@@ -5086,6 +5088,7 @@ export async function registerRoutes(
             createdAt: new Date().toISOString(),
             user,
             messageColor: safeColor,
+            cardColor: safeCardColor,
             privateToId: data.privateToId,
             privateToName: targetUser ? getDisplayName(targetUser) : "User",
             isPrivate: true,
@@ -5105,7 +5108,7 @@ export async function registerRoutes(
           userId: data.userId,
           text: data.text,
         });
-        io.to(data.roomId).emit("room:chat-message", { ...msg, user, messageColor: safeColor, replyTo: data.replyTo || null });
+        io.to(data.roomId).emit("room:chat-message", { ...msg, user, messageColor: safeColor, cardColor: safeCardColor, replyTo: data.replyTo || null });
       } catch (err) {
         console.error("Error creating room message:", err);
       }
