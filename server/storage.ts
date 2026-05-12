@@ -152,6 +152,8 @@ export interface IStorage {
   getUserBadges(userId: string): Promise<UserBadge[]>;
   getBadgesForUsers(userIds: string[]): Promise<Record<string, UserBadge[]>>;
   removeBadge(badgeId: string): Promise<void>;
+  hasUserBadge(userId: string, badgeType: string): Promise<boolean>;
+  getUserJoinStreak(userId: string): Promise<number>;
   createBadgeApplication(data: InsertBadgeApplication): Promise<BadgeApplication>;
   getBadgeApplicationByUserAndType(userId: string, badgeType: string): Promise<BadgeApplication | undefined>;
   getBadgeApplications(userId?: string): Promise<BadgeApplication[]>;
@@ -841,6 +843,43 @@ export class DatabaseStorage implements IStorage {
 
   async removeBadge(badgeId: string): Promise<void> {
     await db.delete(userBadges).where(eq(userBadges.id, badgeId));
+  }
+
+  async hasUserBadge(userId: string, badgeType: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: userBadges.id })
+      .from(userBadges)
+      .where(and(eq(userBadges.userId, userId), eq(userBadges.badgeType, badgeType)))
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  async getUserJoinStreak(userId: string): Promise<number> {
+    const result = await db.execute(sql`
+      SELECT DISTINCT DATE(created_at AT TIME ZONE 'UTC') AS join_date
+      FROM room_joins
+      WHERE user_id = ${userId}
+      ORDER BY join_date DESC
+    `);
+    const dates = (result.rows as any[]).map((r) => {
+      const d = new Date(r.join_date as string);
+      d.setUTCHours(0, 0, 0, 0);
+      return d;
+    });
+    if (dates.length === 0) return 0;
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const daysSinceLast = Math.round((today.getTime() - dates[0].getTime()) / 86_400_000);
+    if (daysSinceLast > 1) return 0;
+
+    let streak = 1;
+    for (let i = 1; i < dates.length; i++) {
+      const gap = Math.round((dates[i - 1].getTime() - dates[i].getTime()) / 86_400_000);
+      if (gap === 1) streak++;
+      else break;
+    }
+    return streak;
   }
 
   async createBadgeApplication(data: InsertBadgeApplication): Promise<BadgeApplication> {

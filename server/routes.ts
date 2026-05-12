@@ -4175,6 +4175,64 @@ export async function registerRoutes(
     }
   };
 
+  const STREAK_MILESTONES: Array<{ days: number; badgeType: string }> = [
+    { days: 3,  badgeType: "streak_3"  },
+    { days: 7,  badgeType: "streak_7"  },
+    { days: 14, badgeType: "streak_14" },
+    { days: 30, badgeType: "streak_30" },
+  ];
+
+  async function checkAndAwardStreakBadge(userId: string) {
+    try {
+      const streak = await storage.getUserJoinStreak(userId);
+      if (streak === 0) return;
+
+      for (const { days, badgeType } of STREAK_MILESTONES) {
+        if (streak < days) continue;
+        const already = await storage.hasUserBadge(userId, badgeType);
+        if (already) continue;
+
+        const user = await storage.getUser(userId);
+        if (!user) continue;
+
+        const badge = await storage.awardBadge({ userId, badgeType, awardedById: "system" });
+        const badgeDef = BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES];
+        const userName = user.displayName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "A user";
+
+        const badgeAwardPayload = {
+          badge,
+          badgeDef,
+          userName,
+          userAvatar: user.profileImageUrl,
+          userId: user.id,
+          quote: badgeDef.quote,
+        };
+        io.emit("badge:awarded", badgeAwardPayload);
+        emitBadgeChatToAllActiveRooms({
+          badgeUserId: user.id,
+          badgeUserName: userName,
+          badgeUserAvatar: user.profileImageUrl,
+          badgeEmoji: badgeDef.emoji,
+          badgeLabel: badgeDef.label,
+          badgeColor: badgeDef.color,
+          badgeQuote: badgeDef.quote,
+        });
+
+        try {
+          await storage.createNotification({ userId, fromUserId: "system", type: `badge_awarded:${badgeType}` });
+          const userSocketId = userSockets.get(userId);
+          if (userSocketId) {
+            io.to(userSocketId).emit("admin:notification", { type: "badge_awarded", badge: badgeAwardPayload });
+          }
+        } catch (_) {}
+
+        console.log(`[streak] Awarded ${badgeType} to user ${userId} (streak=${streak})`);
+      }
+    } catch (err: any) {
+      console.error("[streak] checkAndAwardStreakBadge failed:", err?.message || err);
+    }
+  }
+
   const emitBadgeChatToAllActiveRooms = (payload: {
     badgeUserId: string;
     badgeUserName: string;
@@ -4811,6 +4869,7 @@ export async function registerRoutes(
         void storage.recordRoomJoin({ roomId, userId, country: socketCountries.get(socket.id) }).catch((err) => {
           console.error("[analytics] recordRoomJoin failed:", err?.message || err);
         });
+        void checkAndAwardStreakBadge(userId);
       }
       io.emit("room:participants-update", { roomId, participants });
 

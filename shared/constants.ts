@@ -79,6 +79,34 @@ export const BADGE_TYPES = {
     color: "#f59e0b",
     quote: "A real one. Born on this platform, built with this platform.",
   },
+  streak_3: {
+    id: "streak_3",
+    label: "3-Day Streak",
+    emoji: "🔥",
+    color: "#f97316",
+    quote: "Three days in a row! You're building a powerful habit.",
+  },
+  streak_7: {
+    id: "streak_7",
+    label: "7-Day Streak",
+    emoji: "🔥",
+    color: "#ef4444",
+    quote: "A full week of dedication! Your consistency is inspiring.",
+  },
+  streak_14: {
+    id: "streak_14",
+    label: "14-Day Streak",
+    emoji: "⚡",
+    color: "#8b5cf6",
+    quote: "Two weeks strong! You're an unstoppable force of learning.",
+  },
+  streak_30: {
+    id: "streak_30",
+    label: "30-Day Streak",
+    emoji: "💎",
+    color: "#06b6d4",
+    quote: "A month of mastery! You're a true language learning legend.",
+  },
 } as const;
 
 export type BadgeType = keyof typeof BADGE_TYPES;
