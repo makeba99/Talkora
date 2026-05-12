@@ -12638,7 +12638,7 @@ html.boost-mode .glass-panel {
   position: relative;
 }
 .dm-msg-row--own {
-  flex-direction: row-reverse;
+  justify-content: flex-end;
 }
 .dm-msg-row--grouped {
   padding: 0;
