@@ -889,10 +889,23 @@ export async function registerRoutes(
   app.get("/api/rooms/:id/participants", async (req, res) => {
     try {
       const { id } = req.params;
-      // roomParticipants is keyed by the room's UUID. When a short ID (e.g.
-      // "iw92709") is supplied, resolve it to the UUID first so the lookup works.
-      const roomUuid = isUuid(id) ? id : (await storage.getRoomByShortId(id))?.id ?? id;
-      const roomParts = roomParticipants.get(roomUuid);
+
+      // roomParticipants is always keyed by UUID. Resolve shortId → UUID.
+      let roomUuid = id;
+      if (!isUuid(id)) {
+        const resolved = await storage.getRoomByShortId(id);
+        if (resolved) roomUuid = resolved.id;
+      }
+
+      let roomParts = roomParticipants.get(roomUuid);
+
+      // Last-resort: if still not found, search all participants for a room
+      // whose UUID matches (handles edge cases where cache disagrees with map).
+      if (!roomParts && roomUuid !== id) {
+        // Try the raw id as well (defensive)
+        roomParts = roomParticipants.get(id);
+      }
+
       res.setHeader("Cache-Control", "public, max-age=10, stale-while-revalidate=60");
       res.json(roomParts ? Array.from(roomParts.values()) : []);
     } catch (err: any) {

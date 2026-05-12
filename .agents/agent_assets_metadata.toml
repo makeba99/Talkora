@@ -53,3 +53,9 @@ id = "910HYx320f-5-_ZvatgMO"
 uri = "file://client/public/og-live-preview.png"
 type = "image"
 title = "Share thumbnail — participant avatars now showing"
+
+[[outputs]]
+id = "E1CSAOH7bUPEqHWqJdZMS"
+uri = "file://client/public/og-final-preview.png"
+type = "image"
+title = "Share thumbnail — both participant avatars now showing"

@@ -434,16 +434,23 @@ function RoomLinkPreview({ roomId, url }: { roomId: string; url: string }) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.all([
-      fetch(`/api/rooms/${roomId}`, { credentials: "include" }).then(r => r.ok ? r.json() : null),
-      fetch(`/api/rooms/${roomId}/participants`, { credentials: "include" }).then(r => r.ok ? r.json() : []),
-    ]).then(([roomData, participantsData]) => {
-      if (!cancelled) {
+    // Fetch room first to get the UUID (roomParticipants is keyed by UUID,
+    // not shortId). Then use that UUID for the participants lookup.
+    fetch(`/api/rooms/${roomId}`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(async (roomData) => {
+        if (cancelled) return;
         setRoom(roomData);
-        setParticipants(Array.isArray(participantsData) ? participantsData : []);
-        setLoading(false);
-      }
-    }).catch(() => { if (!cancelled) setLoading(false); });
+        if (!roomData?.id) { setLoading(false); return; }
+        const parts = await fetch(`/api/rooms/${roomData.id}/participants`, { credentials: "include" })
+          .then(r => r.ok ? r.json() : [])
+          .catch(() => []);
+        if (!cancelled) {
+          setParticipants(Array.isArray(parts) ? parts : []);
+          setLoading(false);
+        }
+      })
+      .catch(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [roomId]);
 
