@@ -2719,6 +2719,11 @@ export async function registerRoutes(
     try {
       const userId = (req.user as any).id;
       await storage.markConversationRead(userId, req.params.otherUserId);
+      // Notify the original sender (otherUserId) that their messages have been seen
+      const senderSocketId = userSockets.get(req.params.otherUserId);
+      if (senderSocketId) {
+        io.to(senderSocketId).emit("dm:read", { readerId: userId });
+      }
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });

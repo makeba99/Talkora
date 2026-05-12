@@ -96,8 +96,20 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         });
       }
     };
+    const handleRead = (data: { readerId: string }) => {
+      // The other user read our messages — refresh to update read flags
+      if (data.readerId === otherUserId) {
+        queryClient.invalidateQueries({
+          queryKey: ["/api/messages", user.id, otherUserId],
+        });
+      }
+    };
     socket.on("dm:new", handleNewMessage);
-    return () => { socket.off("dm:new", handleNewMessage); };
+    socket.on("dm:read", handleRead);
+    return () => {
+      socket.off("dm:new", handleNewMessage);
+      socket.off("dm:read", handleRead);
+    };
   }, [socket, user, otherUserId]);
 
   useEffect(() => {
@@ -260,7 +272,25 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
                     {/* Bubble */}
                     <div className={`dm-bubble ${isMe ? "dm-bubble-own" : "dm-bubble-other"}`} data-testid={`bubble-${msg.id}`}>
                       <div className="dm-bubble-text break-words">{renderMessageContent(msg.text)}</div>
-                      <p className={`dm-bubble-time ${isMe ? "text-right" : ""}`}>{formatTime(msg.createdAt)}</p>
+                      {isMe ? (
+                        <div className="dm-bubble-meta">
+                          <span className="dm-bubble-time">{formatTime(msg.createdAt)}</span>
+                          <span className={msg.read ? "dm-tick dm-tick--seen" : "dm-tick dm-tick--sent"} data-testid={`tick-${msg.id}`} aria-label={msg.read ? "Seen" : "Sent"}>
+                            {msg.read ? (
+                              <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true">
+                                <path d="M1 5.5L4.5 9L11 1.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M6 5.5L9.5 9L16 1.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            ) : (
+                              <svg width="12" height="10" viewBox="0 0 12 10" fill="none" aria-hidden="true">
+                                <path d="M1 5.5L4.5 9L11 1.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="dm-bubble-time">{formatTime(msg.createdAt)}</p>
+                      )}
                     </div>
 
                     {/* Reaction pills — outside bubble, doesn't change bubble size */}
