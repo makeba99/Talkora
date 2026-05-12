@@ -2348,7 +2348,8 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[90rem] grid-cols-13" : "max-w-5xl grid-cols-9"} bg-card/80 backdrop-blur`}>
+          <TabsList className="flex flex-wrap w-full h-auto gap-1 p-1 bg-card/80 backdrop-blur justify-start">
+
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer, Tag } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { VextornMark } from "@/components/vextorn-logo";
@@ -1495,16 +1495,6 @@ export default function Lobby() {
                     <Anchor className="w-2.5 h-2.5" />
                   </span>
                 </span>
-                <button
-                  onClick={() => navigate("/pricing")}
-                  className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
-                  data-testid="button-pricing-nav"
-                  title="Pricing plans"
-                  aria-label="View pricing plans"
-                >
-                  <Tag className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
-                  <span className="hidden sm:inline">Pricing</span>
-                </button>
                 {isAdminUser && (
                   <button
                     onClick={() => navigate("/admin")}
