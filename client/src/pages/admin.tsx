@@ -59,6 +59,18 @@ const OPENAI_VOICES = [
   { value: "shimmer", label: "Shimmer (gentle)" },
 ];
 
+// Popular ElevenLabs voices for quick picking
+const ELEVENLABS_POPULAR_VOICES = [
+  { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte", desc: "Female, warm (default Eva)" },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella", desc: "Female, soft" },
+  { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli", desc: "Female, young" },
+  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", desc: "Female, calm" },
+  { id: "AZnzlk1XvdvUeBnXmlld", name: "Domi", desc: "Female, strong" },
+  { id: "2EiwWnXFnvU5JabPnv8n", name: "Clyde", desc: "Male, war veteran" },
+  { id: "pNInz6obpgDQGcFmaJgB", name: "Adam", desc: "Male, deep" },
+  { id: "onwK4e9ZLuTAKqWW03F9", name: "Daniel", desc: "Male, British" },
+];
+
 function ProviderCard({
   provider,
   current,
@@ -692,11 +704,37 @@ function AiTutorTab() {
     },
   });
 
+  // Client-side browser TTS test (no server round-trip needed)
+  const testBrowserTts = () => {
+    if (!("speechSynthesis" in window)) {
+      toast({ title: "Not supported", description: "Your browser does not support the Web Speech API.", variant: "destructive" });
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance("Hello! Eva here. The AI Tutor voice is working perfectly.");
+    utt.rate = 1.0;
+    utt.pitch = 1.1;
+    setTestPlaying(true);
+    utt.onend = () => setTestPlaying(false);
+    utt.onerror = () => setTestPlaying(false);
+    window.speechSynthesis.speak(utt);
+  };
+
   const testMutation = useMutation({
     mutationFn: async () => {
+      // Send current (possibly unsaved) form state so the admin can test before saving
       const res = await fetch("/api/admin/ai-config/test", {
         method: "POST",
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          config: {
+            provider,
+            elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, modelId: elModelId },
+            openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice },
+            huggingface: { apiKey: hfKey, model: hfModel },
+          },
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -725,13 +763,16 @@ function AiTutorTab() {
         setTestPlaying(false);
         URL.revokeObjectURL(data.url);
       };
-      audio.onerror = () => setTestPlaying(false);
+      audio.onerror = () => { setTestPlaying(false); };
       audio.play().catch(() => setTestPlaying(false));
     },
     onError: (err: any) => {
       toast({ title: "Test failed", description: err?.message, variant: "destructive" });
     },
   });
+
+  // Warn when the ElevenLabs voice ID looks like an API key
+  const elVoiceIdLooksLikeKey = /^sk_[A-Za-z0-9]{10,}/.test(elVoiceId);
 
   const hasKey = data?.hasKeys;
 
@@ -844,12 +885,39 @@ function AiTutorTab() {
                       value={elVoiceId}
                       onChange={(e) => setElVoiceId(e.target.value)}
                       placeholder="XB0fDUnXU5powFXDhCwa"
-                      className="font-mono text-xs"
+                      className={`font-mono text-xs ${elVoiceIdLooksLikeKey ? "border-red-500/60 focus-visible:ring-red-500/40" : ""}`}
                       data-testid="input-elevenlabs-voice-id"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Default is Charlotte (Eva). Find voice IDs in your ElevenLabs dashboard.
-                    </p>
+                    {elVoiceIdLooksLikeKey && (
+                      <p className="text-xs text-red-400 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 shrink-0" />
+                        This looks like an API key, not a voice ID. Put the API key above and enter a voice ID here (e.g. XB0fDUnXU5powFXDhCwa).
+                      </p>
+                    )}
+                    {!elVoiceIdLooksLikeKey && (
+                      <p className="text-xs text-muted-foreground">
+                        Default is Charlotte (Eva). Pick a popular voice below or find IDs in your ElevenLabs dashboard.
+                      </p>
+                    )}
+                    {/* Popular voices quick-picker */}
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {ELEVENLABS_POPULAR_VOICES.map((v) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setElVoiceId(v.id)}
+                          title={`${v.desc}\n${v.id}`}
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                            elVoiceId === v.id
+                              ? "border-cyan-500/60 bg-cyan-500/15 text-cyan-300"
+                              : "border-border/50 bg-background/40 text-muted-foreground hover:border-cyan-500/40 hover:text-foreground"
+                          }`}
+                          data-testid={`button-el-voice-${v.id}`}
+                        >
+                          {v.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="el-model">Model</Label>
@@ -1003,8 +1071,8 @@ function AiTutorTab() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => testMutation.mutate()}
-            disabled={testMutation.isPending || testPlaying || provider === "browser"}
+            onClick={() => provider === "browser" ? testBrowserTts() : testMutation.mutate()}
+            disabled={testMutation.isPending || testPlaying}
             className="gap-2"
             data-testid="button-test-ai-config"
           >
@@ -1025,11 +1093,11 @@ function AiTutorTab() {
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          {provider === "browser" && (
-            <p className="text-xs text-muted-foreground">
-              Browser TTS test runs client-side — use Test in a room instead.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            {provider === "browser"
+              ? "Browser TTS plays directly in your browser — no API key needed."
+              : "Tests your current settings (no need to save first)."}
+          </p>
         </div>
       )}
     </div>

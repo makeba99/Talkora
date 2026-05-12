@@ -3879,13 +3879,19 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/ai-config/test", isAuthenticated, isSuperAdmin, async (_req, res) => {
+  app.post("/api/admin/ai-config/test", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
-      const cfg = await getAiTutorConfig();
-      const testText = "Hello! The AI tutor voice is working correctly.";
+      // Accept an optional live config from the request body so the admin can
+      // test unsaved settings. Falls back to the persisted config if not provided.
+      const incoming = req.body?.config as Partial<AiTutorConfig> | undefined;
+      const saved = await getAiTutorConfig();
+      // Merge incoming over saved so masked keys are preserved from the DB.
+      const cfg = incoming ? mergeIncoming(saved, incoming) : saved;
+
+      const testText = "Hello! Eva here. The AI Tutor voice is working perfectly.";
 
       if (cfg.provider === "browser") {
-        return res.json({ ok: true, provider: "browser", message: "Browser TTS uses Web Speech API — no server test needed." });
+        return res.json({ ok: true, provider: "browser", message: "Browser TTS is active — no server-side test needed. Eva will speak using the browser's built-in speech synthesis." });
       }
 
       let result: { ok: boolean; status: number; contentType: string; body?: ArrayBuffer; error?: string };
@@ -3893,11 +3899,16 @@ export async function registerRoutes(
       if (cfg.provider === "elevenlabs") {
         const dbKeys = cfg.elevenlabs.apiKeys.trim();
         if (!dbKeys && !isElevenLabsConfigured()) {
-          return res.status(501).json({ ok: false, error: "No ElevenLabs API keys configured." });
+          return res.status(501).json({ ok: false, error: "No ElevenLabs API keys configured. Add an API key in the ElevenLabs Settings section above." });
+        }
+        const voiceId = cfg.elevenlabs.voiceId || "XB0fDUnXU5powFXDhCwa";
+        // Guard: voice IDs are never API keys — they look like "XB0fDUnXU5powFXDhCwa"
+        // ElevenLabs keys start with "sk_" and are long. Warn admins if they mixed them up.
+        if (/^sk_[A-Za-z0-9]{20,}/.test(voiceId)) {
+          return res.status(400).json({ ok: false, error: "The Voice ID field contains what looks like an API key (starts with sk_). Please enter a voice ID (e.g. XB0fDUnXU5powFXDhCwa) in the Voice ID field and put your API key in the API Keys field." });
         }
         if (dbKeys) {
           const key = dbKeys.split(",")[0].trim();
-          const voiceId = cfg.elevenlabs.voiceId || "XB0fDUnXU5powFXDhCwa";
           const modelId = cfg.elevenlabs.modelId || "eleven_multilingual_v2";
           const controller = new AbortController();
           const t = setTimeout(() => controller.abort(), 15_000);
@@ -3905,7 +3916,7 @@ export async function registerRoutes(
             const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
               method: "POST",
               headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
-              body: JSON.stringify({ text: testText, model_id: modelId, voice_settings: { stability: 0.22, similarity_boost: 0.85 } }),
+              body: JSON.stringify({ text: testText, model_id: modelId, voice_settings: { stability: 0.4, similarity_boost: 0.85 } }),
               signal: controller.signal,
             });
             result = r.ok
@@ -3916,15 +3927,21 @@ export async function registerRoutes(
           result = await elevenLabsSynthesize({ text: testText, voice: "Eva", speed: 1.0, language: "en" });
         }
       } else if (cfg.provider === "openai") {
+        if (!cfg.openai.apiKey) {
+          return res.status(501).json({ ok: false, error: "No OpenAI API key configured. Add your key in the OpenAI TTS Settings section above." });
+        }
         result = await openAiSynthesize(testText, cfg.openai.voice, cfg.openai.model, cfg.openai.apiKey);
       } else if (cfg.provider === "huggingface") {
+        if (!cfg.huggingface.apiKey) {
+          return res.status(501).json({ ok: false, error: "No Hugging Face API token configured. Add your HF token in the Hugging Face Settings section above." });
+        }
         result = await huggingFaceSynthesize(testText, cfg.huggingface.model, cfg.huggingface.apiKey);
       } else {
-        return res.status(400).json({ ok: false, error: "Unknown provider" });
+        return res.status(400).json({ ok: false, error: "Unknown TTS provider" });
       }
 
       if (!result.ok || !result.body) {
-        return res.status(result.status >= 500 ? 502 : result.status).json({ ok: false, error: result.error });
+        return res.status(result.status >= 500 ? 502 : result.status || 400).json({ ok: false, error: result.error });
       }
 
       res.setHeader("Content-Type", result.contentType || "audio/mpeg");
