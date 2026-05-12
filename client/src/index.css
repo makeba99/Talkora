@@ -13163,3 +13163,67 @@ html.boost-mode .glass-panel {
   0%,8%,100% { opacity: 0; transform: scale(1); }
   3%         { opacity: 0.80; transform: scale(1.18); }
 }
+
+/* ============================================================================
+   MOBILE PERFORMANCE & TOUCH OPTIMIZATIONS
+   Suppress sticky hover-lift animations on touch devices, add momentum
+   scrolling to horizontal scroll containers, and tighten small-screen layouts.
+   ============================================================================ */
+
+/* Momentum scrolling for horizontal scroll containers on iOS */
+.filter-strip-group,
+.app-scrollbar {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* People-discovery horizontal scroll: momentum + snap so cards land cleanly */
+[data-testid="list-people-discovery"] {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scroll-padding: 0 16px;
+}
+[data-testid="list-people-discovery"] > * {
+  scroll-snap-align: start;
+}
+
+/* Touch devices have no persistent cursor so hover-lift effects get "stuck"
+   after a tap. Disable translateY transforms for all interactive cards and
+   buttons on touch-primary devices. Active/press states (translateY(0) or
+   scale) are kept so taps still feel responsive. */
+@media (hover: none) {
+  .filter-chip:hover                { transform: none; }
+  .neu-people-card:hover            { transform: none; box-shadow: -6px -6px 14px rgba(255,235,215,0.045), 8px 8px 18px rgba(0,0,0,0.55), inset 1px 1px 1px rgba(255,235,215,0.06), inset -1px -1px 1px rgba(0,0,0,0.35); }
+  .corner-pin-fab:hover             { transform: none; }
+  .header-pro-btn:hover             { transform: none; }
+  .neu-pill:hover                   { transform: none; }
+  .room-card-shell:hover            { transform: none; box-shadow: 0 1px 3px hsl(var(--neo-shadow-dark) / 0.50), 0 6px 16px hsl(var(--neo-shadow-dark) / 0.42), 0 20px 44px hsl(var(--neo-shadow-dark) / 0.28), 0 40px 80px hsl(var(--neo-shadow-dark) / 0.14), inset 0 1px 0 rgba(255,235,215,0.09), inset 0 -1px 0 rgba(0,0,0,0.48) !important; }
+
+  /* Neomorphic button hover in the global rule */
+  html.neomorphic-dark button:not([data-neo-skip]):hover:not(:disabled),
+  html.neomorphic-light button:not([data-neo-skip]):hover:not(:disabled) {
+    box-shadow: -5px -5px 12px hsl(var(--neo-shadow-light) / 0.6), 5px 5px 12px hsl(var(--neo-shadow-dark) / 0.7);
+    transform: none;
+  }
+}
+
+/* Knock notification: full-width on very small screens so it never clips */
+@media (max-width: 380px) {
+  .fixed.bottom-6.right-6 [class*="min-w-\[280px\]"],
+  .fixed.bottom-6.right-6 > div {
+    min-width: 0 !important;
+    max-width: calc(100vw - 24px) !important;
+    width: calc(100vw - 24px);
+  }
+}
+
+/* On very small screens tighten the corner FAB stack so it doesn't obscure content */
+@media (max-width: 380px) {
+  .corner-pin-stack {
+    right: 8px;
+    gap: 8px;
+  }
+  .corner-pin-fab {
+    width: 44px;
+    height: 44px;
+  }
+}

@@ -65,6 +65,7 @@ const ThemePicker = lazy(() =>
   import("@/components/theme-picker").then((m) => ({ default: m.ThemePicker }))
 );
 import { useLowBandwidthHint } from "@/hooks/use-low-bandwidth-hint";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket-context";
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
@@ -409,6 +410,7 @@ export default function Lobby() {
   const { socket } = useSocket();
   const { toast } = useToast();
   useLowBandwidthHint();
+  const isMobileScreen = useIsMobile();
   const [, navigate] = useLocation();
   const isAdminUser = user?.role === "admin" || user?.role === "superadmin" || user?.email === "dj55jggg@gmail.com";
   const [selectedLanguage, setSelectedLanguage] = useState("All");
@@ -1837,10 +1839,10 @@ export default function Lobby() {
                 }
                 placeholder={
                   activeDiscovery === "rooms"
-                    ? window.innerWidth < 640 ? "Search…" : "Search rooms, languages, people…"
+                    ? isMobileScreen ? "Search…" : "Search rooms, languages, people…"
                     : activeDiscovery === "top-speakers"
-                      ? window.innerWidth < 640 ? "Top speakers…" : "Search top speakers…"
-                      : window.innerWidth < 640 ? "Famous users…" : "Search famous users…"
+                      ? isMobileScreen ? "Top speakers…" : "Search top speakers…"
+                      : isMobileScreen ? "Famous users…" : "Search famous users…"
                 }
                 value={searchQuery}
                 onChange={(e) => {
