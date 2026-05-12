@@ -3799,23 +3799,27 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     });
   }, [chatMessages, sidePanelTab, socket, user, room.id]);
 
-  // Browser tab title — show room name only (unread indicated via favicon badge)
+  // Dynamic favicon badge — redesigned for maximum visibility.
+  //
+  // Key design decisions:
+  //   • 128×128 canvas — 2× previous resolution so badge details survive
+  //     browser downscaling to 16 or 32 px actual display pixels.
+  //   • Badge radius=38 on 128px canvas → ~19 px diameter at 32 px display,
+  //     ~9.5 px diameter at 16 px display. Both are impossible to miss.
+  //   • 5 px pure-white border ring gives maximum contrast against dark
+  //     Chrome tabs AND light Safari/Edge tab bars.
+  //   • Icon drawn at 80×80 in the bottom-left so badge occupies its own
+  //     unobstructed top-right quadrant.
+  //   • Title "(N) Room — Vextorn" as a text fallback for browsers that
+  //     do not re-render canvas favicons mid-session.
+  //
+  // We must update ALL favicon <link> elements (SVG + PNG) because browsers
+  // prefer SVG and will ignore a PNG data-URL update when an SVG link exists.
   useEffect(() => {
-    const roomName = room?.title || "Room";
-    document.title = `${roomName} — Vextorn`;
-    return () => { document.title = "Vextorn"; };
-  }, [room?.title]);
-
-  // Dynamic favicon badge — red circle with count when unread, green dot when clear.
-  // We must update ALL favicon <link> elements (SVG + PNG) because browsers prefer
-  // the SVG type and will ignore the PNG update if the SVG link still points to the
-  // original file. We replace every icon link with the canvas data-URL while the
-  // room tab is active, then restore the original hrefs on cleanup.
-  useEffect(() => {
+    const S = 128; // canvas size
     const canvas = document.createElement("canvas");
-    // Use 64×64 for sharper rendering — browsers scale it down to 16/32px
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = S;
+    canvas.height = S;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -3824,117 +3828,152 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       document.querySelectorAll<HTMLLinkElement>("link[rel='icon'], link[rel='shortcut icon']")
     );
     const origHrefs = allIconLinks.map((l) => l.href);
+    const origTypes = allIconLinks.map((l) => l.type);
 
-    const img = new Image();
-    img.src = "/vextorn-icon-192.png";
-    img.onload = () => {
-      ctx.clearRect(0, 0, 64, 64);
+    // Update the document title as a text-fallback for browsers that cache
+    // the canvas favicon between renders.
+    const roomName = room?.title || "Room";
+    if (tabUnreadCount > 0) {
+      document.title = `(${tabUnreadCount}) ${roomName} — Vextorn`;
+    } else {
+      document.title = `${roomName} — Vextorn`;
+    }
 
-      if (tabUnreadCount > 0) {
-        // Base icon slightly smaller (inset) to give badge room — top-left 42×42
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(0, 4, 44, 44, 9);
-        ctx.clip();
-        ctx.drawImage(img, 0, 4, 44, 44);
-        ctx.restore();
-
-        // Red badge — top-right, big & bold with count
-        const label = tabUnreadCount > 99 ? "99+" : String(tabUnreadCount);
-        const isWide = label.length > 1;
-        const badgeR = 17;
-        const cx = 64 - badgeR - 1;
-        const cy = badgeR + 1;
-
-        // Dark shadow halo
-        ctx.beginPath();
-        ctx.arc(cx, cy, badgeR + 3, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.45)";
-        ctx.fill();
-
-        // Dark outer ring
-        ctx.beginPath();
-        ctx.arc(cx, cy, badgeR + 1, 0, Math.PI * 2);
-        ctx.fillStyle = "#9b1515";
-        ctx.fill();
-
-        // Bright red fill
-        ctx.beginPath();
-        ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
-        const grad = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, badgeR);
-        grad.addColorStop(0, "#ff6b6b");
-        grad.addColorStop(1, "#dc2626");
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        // White count number
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `bold ${isWide ? 18 : 22}px system-ui,sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.shadowColor = "rgba(0,0,0,0.4)";
-        ctx.shadowBlur = 2;
-        ctx.fillText(label, cx, cy + 1);
-        ctx.shadowBlur = 0;
-      } else {
-        // No unread — full-size icon with small green dot
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(0, 0, 64, 64, 12);
-        ctx.clip();
-        ctx.drawImage(img, 0, 0, 64, 64);
-        ctx.restore();
-
-        // Green presence dot — bottom-right
-        const cx = 50, cy = 50, r = 12;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r + 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx, cy, r + 1, 0, Math.PI * 2);
-        ctx.fillStyle = "#15803d";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        const gGrad = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, r);
-        gGrad.addColorStop(0, "#4ade80");
-        gGrad.addColorStop(1, "#16a34a");
-        ctx.fillStyle = gGrad;
-        ctx.fill();
-      }
-
-      const dataUrl = canvas.toDataURL("image/png");
-
-      // Replace every favicon link with the canvas PNG — this overrides the SVG
-      // favicon which would otherwise take precedence in modern browsers.
+    const applyFavicon = (dataUrl: string) => {
       if (allIconLinks.length > 0) {
         allIconLinks.forEach((link) => {
           link.type = "image/png";
           link.href = dataUrl;
         });
       } else {
-        // Fallback: create a new link if none exist
         const link = document.createElement("link");
         link.rel = "icon";
         link.type = "image/png";
-        link.setAttribute("sizes", "32x32");
+        link.setAttribute("sizes", "128x128");
         link.href = dataUrl;
         document.head.appendChild(link);
       }
     };
-    img.onerror = () => {};
+
+    const drawBadge = (img: HTMLImageElement | null) => {
+      ctx.clearRect(0, 0, S, S);
+
+      if (tabUnreadCount > 0) {
+        // ── Icon: 80×80 anchored to bottom-left, with rounded clip ──────
+        if (img) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(0, S - 80, 80, 80, 14);
+          ctx.clip();
+          ctx.drawImage(img, 0, S - 80, 80, 80);
+          ctx.restore();
+        }
+
+        // ── Badge: top-right quadrant, radius=38 ─────────────────────────
+        const label = tabUnreadCount > 99 ? "99+" : String(tabUnreadCount);
+        const badgeR = 38;
+        const cx = S - badgeR - 2; // 88
+        const cy = badgeR + 2;     // 40
+
+        // Layer 1: subtle drop shadow (dark transparent ring)
+        ctx.beginPath();
+        ctx.arc(cx, cy, badgeR + 7, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.28)";
+        ctx.fill();
+
+        // Layer 2: thick pure-white border — contrast against any tab bar
+        ctx.beginPath();
+        ctx.arc(cx, cy, badgeR + 3, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+
+        // Layer 3: dark-red ring (separation from white border)
+        ctx.beginPath();
+        ctx.arc(cx, cy, badgeR + 1, 0, Math.PI * 2);
+        ctx.fillStyle = "#a30010";
+        ctx.fill();
+
+        // Layer 4: vivid red fill — Material Red A400 (#ff1744) to #e00020
+        ctx.beginPath();
+        ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(cx - 8, cy - 8, 4, cx, cy, badgeR);
+        grad.addColorStop(0, "#ff4d63");
+        grad.addColorStop(0.55, "#ff1744");
+        grad.addColorStop(1, "#c8001a");
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Layer 5: white count number
+        const digits = label.length;
+        const fontSize = digits === 1 ? 42 : digits === 2 ? 32 : 24;
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `900 ${fontSize}px system-ui,Arial,sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,0.55)";
+        ctx.shadowBlur = 3;
+        ctx.fillText(label, cx, cy + 2);
+        ctx.shadowBlur = 0;
+      } else {
+        // ── No unread — full icon + green "in-room" presence dot ─────────
+        if (img) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(0, 0, S, S, 22);
+          ctx.clip();
+          ctx.drawImage(img, 0, 0, S, S);
+          ctx.restore();
+        }
+
+        // Green dot: bottom-right, radius=20
+        const cx = S - 22, cy = S - 22, r = 20;
+
+        // Shadow
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.fill();
+
+        // White border
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 3, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+
+        // Dark green ring
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 1, 0, Math.PI * 2);
+        ctx.fillStyle = "#15803d";
+        ctx.fill();
+
+        // Bright green fill
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        const gGrad = ctx.createRadialGradient(cx - 5, cy - 5, 2, cx, cy, r);
+        gGrad.addColorStop(0, "#4ade80");
+        gGrad.addColorStop(1, "#16a34a");
+        ctx.fillStyle = gGrad;
+        ctx.fill();
+      }
+
+      applyFavicon(canvas.toDataURL("image/png"));
+    };
+
+    // Load the base icon; if it fails, still draw badge without background
+    const img = new Image();
+    img.src = "/vextorn-icon-192.png";
+    img.onload = () => drawBadge(img);
+    img.onerror = () => drawBadge(null);
 
     return () => {
-      // Restore all original favicon links
+      // Restore all original favicon links and title
       allIconLinks.forEach((link, i) => {
         link.href = origHrefs[i];
-        // Restore original type attribute
-        if (origHrefs[i]?.endsWith(".svg")) link.type = "image/svg+xml";
-        else link.type = "image/png";
+        link.type = origTypes[i] || (origHrefs[i]?.endsWith(".svg") ? "image/svg+xml" : "image/png");
       });
+      document.title = `${roomName} — Vextorn`;
     };
-  }, [tabUnreadCount]);
+  }, [tabUnreadCount, room?.title]);
 
   // Reset tab unread count as soon as the user returns to this tab
   useEffect(() => {
