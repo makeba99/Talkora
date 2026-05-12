@@ -454,7 +454,7 @@ function ParticipantCard({
           <Settings className="w-4 h-4 text-white/80 drop-shadow-md hover:text-white" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0 bg-card border-border text-card-foreground shadow-xl" align="end" avoidCollisions onClick={(e) => e.stopPropagation()}>
+      <PopoverContent className="w-72 p-0 bg-card border-border text-card-foreground shadow-xl" align="end" avoidCollisions onClick={(e) => e.stopPropagation()} onInteractOutside={(e) => { const target = e.target as HTMLElement; if (target?.closest('[data-radix-popper-content-wrapper]')) e.preventDefault(); }}>
         <div className="flex flex-col p-3 gap-3">
           <div className="flex gap-3 items-start">
              <Avatar className="w-16 h-16 rounded-md border border-border flex-shrink-0">
@@ -3751,16 +3751,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     });
   }, [chatMessages, sidePanelTab, socket, user, room.id]);
 
-  // Browser tab title — show unread count while tab is backgrounded
+  // Browser tab title — show room name only (unread indicated via favicon badge)
   useEffect(() => {
     const roomName = room?.title || "Room";
-    if (tabUnreadCount > 0) {
-      document.title = `(${tabUnreadCount}) ${roomName} — Vextorn`;
-    } else {
-      document.title = `${roomName} — Vextorn`;
-    }
+    document.title = `${roomName} — Vextorn`;
     return () => { document.title = "Vextorn"; };
-  }, [tabUnreadCount, room?.title]);
+  }, [room?.title]);
 
   // Dynamic favicon badge — red circle with count when unread, green dot when clear.
   // We must update ALL favicon <link> elements (SVG + PNG) because browsers prefer
@@ -3794,35 +3790,40 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       ctx.restore();
 
       if (tabUnreadCount > 0) {
-        // Red badge — top-right corner with white count
-        const label = tabUnreadCount > 99 ? "99+" : String(tabUnreadCount);
-        const badgeR = label.length > 2 ? 9 : label.length > 1 ? 8 : 7;
-        const cx = 32 - badgeR - 1;
-        const cy = badgeR + 1;
+        // Red dot — top-right corner, no numbers, bigger & cleaner
+        const cx = 24;
+        const cy = 8;
+        const r = 9;
         // Dark halo for contrast on any background
         ctx.beginPath();
-        ctx.arc(cx, cy, badgeR + 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
         ctx.fill();
-        // Red circle
+        // Outer red ring for crispness
         ctx.beginPath();
-        ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r + 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#c41e1e";
+        ctx.fill();
+        // Inner bright red fill
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
         ctx.fillStyle = "#ef4444";
         ctx.fill();
-        // White count number
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `bold ${label.length > 1 ? 8 : 11}px system-ui,sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(label, cx, cy + 0.5);
       } else {
-        // Green online dot — bottom-right corner
+        // Green dot — bottom-right corner, bigger & cleaner
+        const cx = 24;
+        const cy = 24;
+        const r = 9;
         ctx.beginPath();
-        ctx.arc(25.5, 25.5, 6.5, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(25.5, 25.5, 5, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r + 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#16803c";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
         ctx.fillStyle = "#22c55e";
         ctx.fill();
       }
