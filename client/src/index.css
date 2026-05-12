@@ -11236,6 +11236,31 @@ html.boost-mode .glass-panel {
   z-index: 2;
 }
 
+/* ── GIF picker popover — responsive to available space ── */
+/* Radix sets --radix-popover-content-available-height on the element itself,
+   so we can rely on it to clamp the panel to whatever space is actually free. */
+.gif-picker-popover {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: var(--radix-popover-content-available-height, 75svh) !important;
+  overflow: hidden !important;
+}
+.gif-picker-popover > :first-child {
+  /* Search bar row — never shrinks, never scrolls away */
+  flex-shrink: 0 !important;
+  min-height: 52px;
+}
+.gif-picker-popover > :nth-child(2) {
+  /* Scrollable GIF grid — gets all remaining space */
+  flex: 1 1 0 !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+.gif-picker-popover > :last-child {
+  /* GIPHY footer — never shrinks */
+  flex-shrink: 0 !important;
+}
+
 /* ── DM whisper button — red neumorphic icon inline next to username ── */
 .chat-dm-whisper-btn {
   display: inline-flex;

@@ -549,6 +549,8 @@ function ParticipantCard({
                       )}
                       <GifPickerButton
                         onGifSelect={(url) => onSetAvatarGif && onSetAvatarGif(url)}
+                        side="bottom"
+                        align="start"
                       />
                     </div>
                     <p className="text-[10px] text-muted-foreground leading-snug">Shows as your card background in this room.</p>
@@ -10471,6 +10473,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   <GifPickerButton
                     onGifSelect={(url) => { setEditHologramUrl(url); setEditHologramKind("gif"); }}
+                    side="bottom"
+                    align="start"
                   />
                   <button
                     type="button"
@@ -10748,6 +10752,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     setWelcomeMediaUrlsState(prev => [...prev, gifUrl]);
                     setWelcomeMediaTypesState(prev => [...prev, "gif"]);
                   }}
+                  side="bottom"
+                  align="start"
                 />
               </div>
             </div>

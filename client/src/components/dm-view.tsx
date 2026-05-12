@@ -339,7 +339,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
       <form onSubmit={handleSend} className="dm-input-dock">
         <div className="dm-tools-row">
           <EmojiPickerButton onEmojiSelect={(emoji) => setText((prev) => prev + emoji)} />
-          <GifPickerButton onGifSelect={(gifUrl) => { sendMutation.mutate(`[gif:${gifUrl}]`); }} />
+          <GifPickerButton onGifSelect={(gifUrl) => { sendMutation.mutate(`[gif:${gifUrl}]`); }} side="top" align="start" />
           <ImageUploadButton onImageSelect={(imgUrl) => { sendMutation.mutate(`[img:${imgUrl}]`); }} />
         </div>
         <div className="dm-input-wrap">

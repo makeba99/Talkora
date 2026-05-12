@@ -229,21 +229,21 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[min(340px,90vw)] p-0 overflow-hidden"
+        className="w-[min(340px,92vw)] p-0 overflow-hidden gif-picker-popover"
         style={{
           display: "flex",
           flexDirection: "column",
-          height: "min(520px,75svh)",
-          minHeight: "320px",
+          maxHeight: "var(--radix-popover-content-available-height, 75svh)",
+          height: "min(480px, calc(var(--radix-popover-content-available-height, 75svh) - 8px))",
         }}
         side={side}
         align={align}
-        sideOffset={8}
+        sideOffset={6}
         avoidCollisions
-        collisionPadding={16}
+        collisionPadding={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        {/* Fixed search bar — never scrolls away */}
-        <div className="flex-shrink-0 p-2 border-b border-border/60">
+        {/* Pinned search bar — always visible, never scrolls */}
+        <div className="flex-shrink-0 px-2 pt-2 pb-1.5 border-b border-border/60">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             <Input
