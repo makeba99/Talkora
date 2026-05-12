@@ -1261,6 +1261,17 @@ function getDjSlingStyle(index: number): React.CSSProperties {
   return { animation: `${ANIMS[v]} ${DURS[v]}s cubic-bezier(0.34,1.56,0.64,1) infinite ${DELS[v]}s` };
 }
 
+const DJ_SPOT_COLS = [
+  "255,0,200",   // magenta
+  "0,220,255",   // cyan
+  "255,200,0",   // gold
+  "80,255,0",    // neon green
+  "180,0,255",   // purple
+  "255,80,0",    // orange
+  "0,255,180",   // teal
+  "255,0,80",    // hot pink
+];
+
 export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomProps) {
   const { socket } = useSocket();
   const { user } = useAuth();
@@ -1279,6 +1290,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [participantAvatarGifs, setParticipantAvatarGifs] = useState<Record<string, string>>({});
   const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({}); 
   const [djModeActive, setDjModeActive] = useState(false);
+  const [djSpotlightIdx, setDjSpotlightIdx] = useState(-1);
   const moodTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // Mood picker open/closed state (for the new emoji bar that replaced the
   // raise-hand button in the bottom control row).
@@ -3531,6 +3543,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // ── DJ Mode — host toggles disco sling animations for all participants ──
     socket.on("room:dj-mode", (data: { active: boolean }) => {
       setDjModeActive(!!data?.active);
+      if (!data?.active) setDjSpotlightIdx(-1);
     });
     socket.on("room:dj-skip", () => {
       window.dispatchEvent(new Event("vx-dj-skip"));
@@ -3677,6 +3690,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       audioElements.current.clear();
     };
   }, [socket, user, room.id, createPeerConnection, cleanupPeer, flushPendingCandidates, addSystemMessage, playNotificationSound, getAudioConstraints, applyLocalAudioStream, refreshAudioInputDevices, updateMicPermissionStatus]);
+
+  // ── DJ Spotlight cycling — illuminates one participant at a time every 1.8s ─
+  useEffect(() => {
+    if (!djModeActive || (room as any).roomTheme !== "disco") {
+      setDjSpotlightIdx(-1);
+      return;
+    }
+    let cur = 0;
+    setDjSpotlightIdx(cur);
+    const id = setInterval(() => {
+      cur = (cur + 1) % 20;
+      setDjSpotlightIdx(cur);
+    }, 1800);
+    return () => clearInterval(id);
+  }, [djModeActive, (room as any).roomTheme]);
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -12054,8 +12082,38 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     key={p.id}
                     className="flex flex-col items-center gap-2 group relative"
                     data-testid={`card-participant-${p.id}`}
-                    style={djModeActive && currentTheme === "disco" ? getDjSlingStyle(index) : undefined}
+                    style={{
+                      ...(djModeActive && currentTheme === "disco" && !isRoomOwner ? getDjSlingStyle(index) : {}),
+                      ...(djModeActive && currentTheme === "disco" && djSpotlightIdx === index
+                        ? { filter: `drop-shadow(0 0 18px rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.95)) drop-shadow(0 0 36px rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.55))` }
+                        : {}),
+                    }}
                   >
+                    {/* DJ spotlight beam from above */}
+                    {djModeActive && currentTheme === "disco" && djSpotlightIdx === index && (
+                      <>
+                        <div style={{
+                          position:"absolute", bottom:"100%", left:"50%",
+                          transform:"translateX(-50%)",
+                          width:70, height:220,
+                          background:`linear-gradient(to bottom, transparent 0%, rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.55) 80%, rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.85) 100%)`,
+                          clipPath:"polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%)",
+                          filter:"blur(5px)",
+                          pointerEvents:"none",
+                          zIndex:20,
+                          animation:"rt-disco-bass-slam 1.8s ease-out infinite",
+                        }} />
+                        <div style={{
+                          position:"absolute", inset:-6,
+                          borderRadius:16,
+                          border:`2px solid rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.90)`,
+                          boxShadow:`0 0 16px 4px rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.60), 0 0 40px 10px rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.28)`,
+                          pointerEvents:"none",
+                          zIndex:20,
+                          animation:"rt-disco-participant-glow 0.9s ease-in-out infinite",
+                        }} />
+                      </>
+                    )}
                     {/* Screen-share watcher pills — same look as YouTube watchers */}
                     {(remoteScreenShareUserId === p.id || (isMe && isScreenSharing)) && screenWatchers.size > 0 && (
                       <div className="flex flex-col items-center gap-0.5 mb-1" data-testid={`screen-watchers-card-${p.id}`}>
@@ -12287,6 +12345,24 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             )}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* 🎧 Headphones crown on host avatar when DJ mode active */}
+                    {djModeActive && currentTheme === "disco" && isRoomOwner && (
+                      <div style={{
+                        position:"absolute",
+                        top: 28,
+                        left:"50%",
+                        transform:"translateX(-50%)",
+                        zIndex:30,
+                        fontSize:22,
+                        lineHeight:1,
+                        pointerEvents:"none",
+                        filter:"drop-shadow(0 0 8px rgba(255,0,200,0.95)) drop-shadow(0 0 18px rgba(255,0,200,0.60))",
+                        animation:"dj-crown-spin 1.6s ease-in-out infinite",
+                      }}>
+                        🎧
                       </div>
                     )}
 
