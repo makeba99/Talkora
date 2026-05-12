@@ -21,8 +21,10 @@ import { startStream, writeChunk, stopStream, getStreamInfo, stopAllStreamsForUs
 import {
   renderIndexHtml,
   getOrigin,
+  escapeHtml,
   type BreadcrumbItem,
 } from "./seo-meta";
+import sharp from "sharp";
 import { getPrecomputedHtml } from "./static";
 import { registerImageProxy } from "./image-proxy";
 import { detectCountry } from "./geo";
@@ -225,6 +227,55 @@ function normalizeProfileImageUrl(value: unknown): string | null | undefined {
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+/** Fetch a remote image URL and return it as a Buffer (2-second timeout). */
+async function fetchImageBuffer(url: string): Promise<Buffer | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2000);
+    const resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!resp.ok) return null;
+    return Buffer.from(await resp.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+/** Return a circular-masked avatar PNG buffer for the given user. Falls back to a coloured initial circle. */
+async function makeAvatarCircle(user: User, size: number): Promise<Buffer> {
+  const half = size / 2;
+  const mask = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${half}" cy="${half}" r="${half}" fill="white"/></svg>`
+  );
+  const url = user.profileImageUrl;
+  if (url) {
+    const raw = await fetchImageBuffer(url.startsWith("http") ? url : `https://vextorn.com${url}`);
+    if (raw) {
+      try {
+        return await sharp(raw)
+          .resize(size, size, { fit: "cover", position: "center" })
+          .composite([{ input: mask, blend: "dest-in" }])
+          .png()
+          .toBuffer();
+      } catch { /* fall through to initials */ }
+    }
+  }
+  const PALETTE = ["#7c3aed", "#2563eb", "#0891b2", "#059669", "#d97706", "#dc2626", "#c026d3"];
+  const color = PALETTE[(user.id.charCodeAt(0) || 0) % PALETTE.length];
+  const initials = escapeHtml(
+    ((user as any).firstName?.[0] || (user as any).username?.[0] || "?").toUpperCase()
+  );
+  return await sharp(
+    Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+        <circle cx="${half}" cy="${half}" r="${half}" fill="${color}"/>
+        <text x="${half}" y="${half + size * 0.14}" text-anchor="middle" font-family="sans-serif"
+              font-size="${Math.round(size * 0.38)}px" font-weight="700" fill="white">${initials}</text>
+      </svg>`
+    )
+  ).png().toBuffer();
 }
 
 function roomPublicPayload(room: any, includeAccessKey = false) {
@@ -488,21 +539,11 @@ export async function registerRoutes(
       const title = `${room.title} — Live ${room.language} (${room.level}) voice room | Vextorn`;
       const description = `Join "${room.title}", a live ${room.language} (${room.level}) voice room on Vextorn. ${room.activeUsers} talking now${room.maxUsers ? ` · ${room.maxUsers} max` : ""}.`;
 
-      // Pick the OG image. Prefer the room's hologram art when it's an image;
-      // for YouTube hologram URLs use the high-res YouTube thumbnail; fall
-      // back to the brand icon so the card never breaks.
-      let ogImage: string | undefined;
-      const holo = room.hologramVideoUrl || "";
-      if (holo) {
-        if (/\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(holo)) {
-          ogImage = holo;
-        } else {
-          const yt = holo.match(
-            /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/,
-          );
-          if (yt) ogImage = `https://img.youtube.com/vi/${yt[1]}/maxresdefault.jpg`;
-        }
-      }
+      // Dynamic OG image: always use the live-participant thumbnail endpoint
+      // so the social card shows whoever is in the room right now.
+      // Crawlers that follow this URL will get a 1200×630 PNG generated
+      // on-the-fly by /api/rooms/:id/og-image.
+      const ogImage = `${origin}/api/rooms/${room.shortId || room.id}/og-image`;
 
       // Breadcrumb: Home > Rooms > {Room Title}. We point "Rooms" at /
       // because the lobby IS the rooms index — keeping the trail honest.
@@ -522,9 +563,8 @@ export async function registerRoutes(
       if (!html) return next();
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      // Short cache so updates to a room (rename, new hologram) propagate
-      // quickly to social-card refreshes, but crawlers still get a cached
-      // hit for repeat fetches in the same session.
+      // Short cache: the og:image URL itself is stable (endpoint is always the
+      // same) — crawlers re-fetch it on demand; the HTML can cache a bit longer.
       res.setHeader("Cache-Control", "public, max-age=300, s-maxage=300");
       res.send(html);
     } catch {
@@ -854,6 +894,156 @@ export async function registerRoutes(
       res.json(roomParts ? Array.from(roomParts.values()) : []);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
+    }
+  });
+
+  /* ──────────────────────────────────────────────────────────────────
+   * Dynamic OG social-share thumbnail for a room.
+   *
+   * GET /api/rooms/:id/og-image
+   *   → 1200×630 PNG showing the room name, language/level, and the
+   *     avatars + display-names of everyone currently in the room.
+   *
+   * Used as the og:image / twitter:image for /room/:id so that when
+   * someone pastes a room link into Discord, Slack, iMessage, X, etc.
+   * the preview card shows who is live right now.
+   *
+   * No-cache headers: participant list changes with every join/leave, so
+   * stale cards would be misleading. Crawlers re-fetch on every visit.
+   * ────────────────────────────────────────────────────────────────── */
+  app.get("/api/rooms/:id/og-image", async (req, res) => {
+    try {
+      const roomParam = req.params.id;
+      const room = isUuid(roomParam)
+        ? await storage.getRoom(roomParam)
+        : await storage.getRoomByShortId(roomParam);
+      if (!room) return res.status(404).end();
+
+      const parts = Array.from(roomParticipants.get(room.id)?.values() || []);
+      const displayParts = parts.slice(0, 5);
+      const count = parts.length;
+
+      const W = 1200, H = 630;
+      const AVG = 120;   // avatar diameter
+      const GAP = 20;    // gap between avatars
+      const AVATAR_Y = 370;
+
+      const totalAvatarW = displayParts.length * AVG + Math.max(0, displayParts.length - 1) * GAP;
+      const avatarStartX = Math.round((W - totalAvatarW) / 2);
+
+      const safeTitle = escapeHtml(room.title.length > 32 ? room.title.slice(0, 29) + "…" : room.title);
+      const safeLang  = escapeHtml(`${room.language} · ${room.level}`);
+      const inRoomLbl = `IN THE ROOM NOW · ${count}`;
+
+      // ── SVG background layer ──────────────────────────────────────
+      const bgSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#13102a"/>
+      <stop offset="55%"  stop-color="#0e0c1e"/>
+      <stop offset="100%" stop-color="#090716"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="18%" cy="30%" r="55%">
+      <stop offset="0%"   stop-color="#7c3aed" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="85%" cy="75%" r="45%">
+      <stop offset="0%"   stop-color="#2563eb" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- background fill -->
+  <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  <!-- ambient glows -->
+  <rect width="${W}" height="${H}" fill="url(#glow)"/>
+  <rect width="${W}" height="${H}" fill="url(#glow2)"/>
+  <!-- top accent bar -->
+  <rect width="${W}" height="4" fill="#7c3aed" opacity="0.9"/>
+
+  <!-- brand name -->
+  <text x="60" y="74" font-family="sans-serif" font-size="22" font-weight="700"
+        fill="#8b5cf6" letter-spacing="3">VEXTORN</text>
+  <text x="60" y="96" font-family="sans-serif" font-size="11" font-weight="400"
+        fill="#6b5fa0" letter-spacing="2">TALK · SHARE · BELONG</text>
+  <rect x="60" y="112" width="120" height="1" fill="#8b5cf6" opacity="0.3"/>
+
+  <!-- room title -->
+  <text x="60" y="210" font-family="sans-serif" font-size="58" font-weight="800"
+        fill="white">${safeTitle}</text>
+
+  <!-- language · level · N in room -->
+  <text x="60" y="264" font-family="sans-serif" font-size="26" font-weight="500" fill="#a78bfa">${safeLang}</text>
+  <text x="60" y="264" dx="${safeLang.length * 14 + 30}" font-family="sans-serif" font-size="26"
+        font-weight="600" fill="#4ade80">· ${count} in room</text>
+
+  <!-- "IN THE ROOM NOW · N" label -->
+  <text x="60" y="340" font-family="sans-serif" font-size="13" font-weight="700"
+        fill="#6b5fa0" letter-spacing="2">${inRoomLbl}</text>
+
+  <!-- avatar ring placeholders (behind composited circles) -->
+  ${displayParts.map((_, i) => {
+    const cx = avatarStartX + i * (AVG + GAP) + AVG / 2;
+    const cy = AVATAR_Y + AVG / 2;
+    return `<circle cx="${cx}" cy="${cy}" r="${AVG / 2 + 4}" fill="#251e4a"/>`;
+  }).join("\n  ")}
+
+  <!-- bottom watermark -->
+  <text x="${W - 54}" y="${H - 28}" text-anchor="end" font-family="sans-serif"
+        font-size="14" fill="rgba(107,95,160,0.55)">vextorn.com</text>
+</svg>`;
+
+      // ── Composite avatar circles ──────────────────────────────────
+      type Composite = { input: Buffer; top: number; left: number };
+      const avatarComposites: Composite[] = [];
+
+      await Promise.all(
+        displayParts.map(async (participant, i) => {
+          try {
+            const buf = await makeAvatarCircle(participant, AVG);
+            avatarComposites.push({
+              input: buf,
+              top: AVATAR_Y,
+              left: avatarStartX + i * (AVG + GAP),
+            });
+          } catch { /* skip broken avatar */ }
+        })
+      );
+
+      // ── Names below avatars as SVG overlay ────────────────────────
+      const getDisplayName = (u: User) =>
+        ((u as any).firstName && (u as any).lastName
+          ? `${(u as any).firstName} ${(u as any).lastName}`.trim()
+          : (u as any).firstName || (u as any).username || "User"
+        ).slice(0, 14);
+
+      const namesSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+  ${displayParts.map((p, i) => {
+    const cx = avatarStartX + i * (AVG + GAP) + AVG / 2;
+    return `<text x="${cx}" y="${AVATAR_Y + AVG + 28}" text-anchor="middle"
+      font-family="sans-serif" font-size="15" font-weight="600"
+      fill="rgba(220,215,255,0.82)">${escapeHtml(getDisplayName(p))}</text>`;
+  }).join("\n  ")}
+</svg>`;
+
+      // ── Render final image ────────────────────────────────────────
+      const image = await sharp(Buffer.from(bgSvg))
+        .composite([
+          ...avatarComposites,
+          { input: Buffer.from(namesSvg), top: 0, left: 0 },
+        ])
+        .png({ compressionLevel: 8 })
+        .toBuffer();
+
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "no-cache, must-revalidate, max-age=0");
+      res.setHeader("X-Room-Participants", String(count));
+      res.send(image);
+    } catch (err: any) {
+      console.error("[og-image]", err?.message || err);
+      res.status(500).end();
     }
   });
 

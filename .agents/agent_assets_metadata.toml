@@ -41,3 +41,9 @@ id = "dIqKfiAdwuanrSUyFEo4C"
 uri = "file://attached_assets/brand/vextorn-mark.svg"
 type = "image"
 title = "Vextorn — Icon / App Mark"
+
+[[outputs]]
+id = "-l1x4DjmifTdMRi8Tz8bg"
+uri = "file://client/public/og-test-preview.png"
+type = "image"
+title = "Room share thumbnail (OG image preview)"
