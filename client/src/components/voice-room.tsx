@@ -1609,6 +1609,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [popularMoviesLoading, setPopularMoviesLoading] = useState(false);
   const dailyModernMovieRef = useRef<{ dayKey: string; movieId: string | null }>({ dayKey: "", movieId: null });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editTab, setEditTab] = useState<"basics" | "appearance" | "permissions">("basics");
   const [deleteRoomOpen, setDeleteRoomOpen] = useState(false);
   const [editTitle, setEditTitle] = useState(roomProp.title);
   const [editLanguage, setEditLanguage] = useState(roomProp.language);
@@ -10649,335 +10650,318 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setDeleteRoomOpen(false); }}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Edit Room Settings</DialogTitle>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) { setDeleteRoomOpen(false); setEditTab("basics"); } }}>
+        <DialogContent
+          className="sm:max-w-lg flex flex-col gap-0 p-0"
+          style={{ maxHeight: "min(92svh, 600px)" }}
+          aria-describedby={undefined}
+        >
+          {/* Sticky header */}
+          <DialogHeader className="flex-shrink-0 px-5 pt-5 pb-3 border-b border-border/40">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Settings className="w-4 h-4 text-primary/70" />
+              Edit Room Settings
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleEditRoomSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-room-title">Room Name</Label>
-              <Input
-                id="edit-room-title"
-                data-testid="input-edit-room-title"
-                placeholder="e.g. English Beginners Chat"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                maxLength={50}
-              />
-            </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Language</Label>
-                <Select value={editLanguage} onValueChange={setEditLanguage}>
-                  <SelectTrigger data-testid="select-edit-language">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Level</Label>
-                <Select value={editLevel} onValueChange={setEditLevel}>
-                  <SelectTrigger data-testid="select-edit-level">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LEVELS.map((lvl) => (
-                      <SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Max Participants</Label>
-              <NeuParticipantSlider
-                value={editMaxUsers}
-                onChange={setEditMaxUsers}
-                testId="slider-edit-max-users"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Card Theme</Label>
-                <span className="text-xs text-muted-foreground" data-testid="text-edit-theme-selected">
-                  {ROOM_THEMES.find((t) => t.id === editRoomTheme)?.label || "Default"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
+          {/* Tab bar */}
+          <div className="flex-shrink-0 flex gap-1 px-5 pt-3 pb-1">
+            {(["basics", "appearance", "permissions"] as const).map((tab) => {
+              const labels: Record<string, string> = { basics: "Room Info", appearance: "Appearance", permissions: "Permissions" };
+              return (
                 <button
+                  key={tab}
                   type="button"
-                  onClick={() => setEditThemeOffset((o) => Math.max(0, o - 4))}
-                  disabled={editThemeOffset === 0}
-                  className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  data-testid="button-edit-theme-prev"
+                  onClick={() => setEditTab(tab)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    editTab === tab
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                  }`}
+                  data-testid={`button-edit-tab-${tab}`}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  {labels[tab]}
                 </button>
-                <div className="flex-1 grid grid-cols-4 gap-2">
-                  {ROOM_THEMES.slice(editThemeOffset, editThemeOffset + 4).map((theme) => (
-                    <button
-                      key={theme.id}
-                      type="button"
-                      onClick={() => setEditRoomTheme(theme.id)}
-                      className={`relative rounded-lg overflow-hidden transition-all border-2 ${editRoomTheme === theme.id ? "border-white shadow-lg" : "border-transparent opacity-70 hover:opacity-100"}`}
-                      title={theme.label}
-                      data-testid={`button-edit-theme-${theme.id}`}
-                    >
-                      <img
-                        src={theme.img}
-                        alt={theme.label}
-                        width={120}
-                        height={52}
-                        className="w-full h-[52px] object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = "none";
-                          const fallback = e.currentTarget.nextSibling as HTMLElement;
-                          if (fallback) fallback.style.display = "flex";
-                        }}
-                      />
-                      <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-0.5 truncate">
-                        {theme.label}
+              );
+            })}
+          </div>
+
+          <form onSubmit={handleEditRoomSubmit} className="flex flex-col flex-1 min-h-0">
+            {/* Scrollable tab content */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-3 min-h-0">
+
+              {/* ── Tab: Room Info ── */}
+              {editTab === "basics" && (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-room-title" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Room Name</Label>
+                    <Input
+                      id="edit-room-title"
+                      data-testid="input-edit-room-title"
+                      placeholder="e.g. English Beginners Chat"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      maxLength={50}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Language</Label>
+                      <Select value={editLanguage} onValueChange={setEditLanguage}>
+                        <SelectTrigger data-testid="select-edit-language"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {languages.map((lang) => (
+                            <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Level</Label>
+                      <Select value={editLevel} onValueChange={setEditLevel}>
+                        <SelectTrigger data-testid="select-edit-level"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {LEVELS.map((lvl) => (
+                            <SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Max Participants</Label>
+                    <NeuParticipantSlider value={editMaxUsers} onChange={setEditMaxUsers} testId="slider-edit-max-users" />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/20 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium leading-none">Public Room</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Anyone can find and join</p>
+                    </div>
+                    <Switch
+                      id="edit-public-toggle"
+                      data-testid="switch-edit-public"
+                      checked={editIsPublic}
+                      onCheckedChange={setEditIsPublic}
+                      className="neu-switch"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ── Tab: Appearance ── */}
+              {editTab === "appearance" && (
+                <div className="space-y-4">
+                  {/* Card Theme */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Card Theme</Label>
+                      <span className="text-xs text-primary font-medium" data-testid="text-edit-theme-selected">
+                        {ROOM_THEMES.find((t) => t.id === editRoomTheme)?.label || "Default"}
                       </span>
-                      {editRoomTheme === theme.id && (
-                        <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white flex items-center justify-center">
-                          <svg className="w-1.5 h-1.5" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M2 6l3 3 5-5" />
-                          </svg>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditThemeOffset((o) => Math.max(0, o - 4))}
+                        disabled={editThemeOffset === 0}
+                        className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        data-testid="button-edit-theme-prev"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <div className="flex-1 grid grid-cols-4 gap-2">
+                        {ROOM_THEMES.slice(editThemeOffset, editThemeOffset + 4).map((theme) => (
+                          <button
+                            key={theme.id}
+                            type="button"
+                            onClick={() => setEditRoomTheme(theme.id)}
+                            className={`relative rounded-lg overflow-hidden transition-all border-2 ${editRoomTheme === theme.id ? "border-white shadow-lg" : "border-transparent opacity-70 hover:opacity-100"}`}
+                            title={theme.label}
+                            data-testid={`button-edit-theme-${theme.id}`}
+                          >
+                            <img
+                              src={theme.img}
+                              alt={theme.label}
+                              width={120}
+                              height={52}
+                              className="w-full h-[52px] object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = "none";
+                                const fallback = e.currentTarget.nextSibling as HTMLElement;
+                                if (fallback) fallback.style.display = "flex";
+                              }}
+                            />
+                            <div className={`w-full h-[52px] bg-gradient-to-br ${theme.preview} hidden items-center justify-center`} />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                            <span className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-semibold text-white leading-none px-0.5 truncate">{theme.label}</span>
+                            {editRoomTheme === theme.id && (
+                              <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white flex items-center justify-center">
+                                <svg className="w-1.5 h-1.5" viewBox="0 0 12 12" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M2 6l3 3 5-5" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditThemeOffset((o) => Math.min(Math.max(0, ROOM_THEMES.length - 4), o + 4))}
+                        disabled={editThemeOffset + 4 >= ROOM_THEMES.length}
+                        className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        data-testid="button-edit-theme-next"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex justify-center gap-1">
+                      {Array.from({ length: Math.ceil(ROOM_THEMES.length / 4) }).map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setEditThemeOffset(i * 4)}
+                          className={`w-1.5 h-1.5 rounded-full transition-colors ${editThemeOffset === i * 4 ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
+                          data-testid={`button-edit-theme-page-${i}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card Media */}
+                  <div className="space-y-2 rounded-lg border border-border/40 bg-muted/10 p-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                        <Sparkles className="w-3.5 h-3.5 text-primary/80" />
+                        Card Media
+                        <span className="text-[10px] font-normal text-muted-foreground normal-case">(optional)</span>
+                      </Label>
+                      {editHologramUrl && !editHologramUploading && (
+                        <button
+                          type="button"
+                          onClick={() => { setEditHologramUrl(null); setEditHologramKind("gif"); }}
+                          className="text-[11px] text-destructive hover:underline flex items-center gap-1"
+                          data-testid="button-clear-edit-card-media"
+                        >
+                          <X className="w-3 h-3" /> Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {editHologramUrl ? (
+                        editHologramKind === "video" ? (
+                          <video src={editHologramUrl} autoPlay loop muted playsInline className="w-14 h-14 rounded-md object-cover border-2 border-primary/60 flex-shrink-0" data-testid="video-edit-card-media-preview" />
+                        ) : (
+                          <img src={editHologramUrl} alt="Selected media" width={56} height={56} className="w-14 h-14 rounded-md object-cover border-2 border-primary/60 flex-shrink-0" data-testid="img-edit-card-media-preview" />
+                        )
+                      ) : (
+                        <div className="w-14 h-14 rounded-md border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-[10px] text-muted-foreground font-medium flex-shrink-0">
+                          {editHologramUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Empty"}
                         </div>
                       )}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditThemeOffset((o) => Math.min(Math.max(0, ROOM_THEMES.length - 4), o + 4))}
-                  disabled={editThemeOffset + 4 >= ROOM_THEMES.length}
-                  className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  data-testid="button-edit-theme-next"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex justify-center gap-1">
-                {Array.from({ length: Math.ceil(ROOM_THEMES.length / 4) }).map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setEditThemeOffset(i * 4)}
-                    className={`w-1.5 h-1.5 rounded-full transition-colors ${editThemeOffset === i * 4 ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
-                    data-testid={`button-edit-theme-page-${i}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="edit-public-toggle">Public Room</Label>
-              <Switch
-                id="edit-public-toggle"
-                data-testid="switch-edit-public"
-                checked={editIsPublic}
-                onCheckedChange={setEditIsPublic}
-                className="neu-switch"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-primary/80" />
-                  Card Media
-                  <span className="text-[11px] font-normal text-muted-foreground">(optional)</span>
-                </Label>
-                {editHologramUrl && !editHologramUploading && (
-                  <button
-                    type="button"
-                    onClick={() => { setEditHologramUrl(null); setEditHologramKind("gif"); }}
-                    className="text-[11px] text-destructive hover:underline flex items-center gap-1"
-                    data-testid="button-clear-edit-card-media"
-                  >
-                    <X className="w-3 h-3" /> Clear
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                {editHologramUrl ? (
-                  editHologramKind === "video" ? (
-                    <video
-                      src={editHologramUrl}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
-                      data-testid="video-edit-card-media-preview"
-                    />
-                  ) : (
-                    <img
-                      src={editHologramUrl}
-                      alt="Selected media"
-                      width={56}
-                      height={56}
-                      className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
-                      data-testid="img-edit-card-media-preview"
-                    />
-                  )
-                ) : (
-                  <div className="w-14 h-14 rounded-md border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-[10px] text-muted-foreground font-medium">
-                    {editHologramUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Empty"}
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <GifPickerButton onGifSelect={(url) => { setEditHologramUrl(url); setEditHologramKind("gif"); }} side="bottom" align="start" />
+                        <button
+                          type="button"
+                          onClick={() => editHologramFileRef.current?.click()}
+                          disabled={editHologramUploading}
+                          className="neu-upload-btn flex items-center justify-center gap-1.5 text-sm font-medium disabled:opacity-50"
+                          data-testid="button-upload-edit-card-media"
+                        >
+                          {editHologramUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                          {editHologramUploading ? "Uploading..." : "Upload"}
+                        </button>
+                        <input
+                          ref={editHologramFileRef}
+                          type="file"
+                          accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
+                          className="hidden"
+                          onChange={handleEditHologramFilePick}
+                          data-testid="input-edit-card-media-file"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Pick a GIF, upload your own picture / short video, or tap Clear to remove the current card background.
+                    </p>
                   </div>
-                )}
-                <div className="flex-1 grid grid-cols-2 gap-2">
-                  <GifPickerButton
-                    onGifSelect={(url) => { setEditHologramUrl(url); setEditHologramKind("gif"); }}
-                    side="bottom"
-                    align="start"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => editHologramFileRef.current?.click()}
-                    disabled={editHologramUploading}
-                    className="neu-upload-btn flex items-center justify-center gap-1.5 text-sm font-medium disabled:opacity-50"
-                    data-testid="button-upload-edit-card-media"
-                  >
-                    {editHologramUploading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Upload className="w-4 h-4" />
-                    )}
-                    {editHologramUploading ? "Uploading..." : "Upload"}
-                  </button>
-                  <input
-                    ref={editHologramFileRef}
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/gif,image/webp"
-                    className="hidden"
-                    onChange={handleEditHologramFilePick}
-                    data-testid="input-edit-card-media-file"
-                  />
                 </div>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                Pick a GIF, upload your own picture / short video, or tap Clear to remove the current card background (including any YouTube link).
-              </p>
+              )}
+
+              {/* ── Tab: Permissions ── */}
+              {editTab === "permissions" && (
+                <div className="space-y-3">
+                  <p className="text-[12px] text-muted-foreground leading-snug">
+                    Tap a tile to cycle through permission levels. Changes are announced in room chat.
+                  </p>
+                  <div className="host-perm-section">
+                    <div className="host-perm-grid">
+                      <PermTile label="Mic" Icon={Mic} value={editTalkPermission} onChange={(v) => setEditTalkPermission(v as any)} withMuted testId="tile-perm-talk" />
+                      <PermTile label="Camera" Icon={Video} value={editCameraPermission} onChange={(v) => setEditCameraPermission(v as any)} testId="tile-perm-camera" />
+                      <PermTile label="Screen" Icon={MonitorPlay} value={editScreenPermission} onChange={(v) => setEditScreenPermission(v as any)} testId="tile-perm-screen" />
+                      <PermTile label="YouTube" Icon={Youtube} value={editYoutubePermission} onChange={(v) => setEditYoutubePermission(v as any)} testId="tile-perm-youtube" />
+                      <PermTile label="Chat" Icon={MessageSquare} value={editChatPermission} onChange={(v) => setEditChatPermission(v as any)} testId="tile-perm-chat" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Smart neumorphic Host Controls panel — one tap cycles each tile */}
-            <div className="host-perm-section">
-              <div className="host-perm-section-head">
-                <span className="host-perm-section-title">
-                  <span className="host-perm-section-icon"><Shield className="w-3.5 h-3.5" /></span>
-                  <span>Host Controls</span>
-                </span>
-                <span className="host-perm-section-hint">Tap a tile to change</span>
-              </div>
-              <div className="host-perm-grid">
-                <PermTile
-                  label="Mic"
-                  Icon={Mic}
-                  value={editTalkPermission}
-                  onChange={(v) => setEditTalkPermission(v as any)}
-                  withMuted
-                  testId="tile-perm-talk"
-                />
-                <PermTile
-                  label="Camera"
-                  Icon={Video}
-                  value={editCameraPermission}
-                  onChange={(v) => setEditCameraPermission(v as any)}
-                  testId="tile-perm-camera"
-                />
-                <PermTile
-                  label="Screen"
-                  Icon={MonitorPlay}
-                  value={editScreenPermission}
-                  onChange={(v) => setEditScreenPermission(v as any)}
-                  testId="tile-perm-screen"
-                />
-                <PermTile
-                  label="YouTube"
-                  Icon={Youtube}
-                  value={editYoutubePermission}
-                  onChange={(v) => setEditYoutubePermission(v as any)}
-                  testId="tile-perm-youtube"
-                />
-                <PermTile
-                  label="Chat"
-                  Icon={MessageSquare}
-                  value={editChatPermission}
-                  onChange={(v) => setEditChatPermission(v as any)}
-                  testId="tile-perm-chat"
-                />
-              </div>
-              <div className="host-perm-section-foot">
-                <Megaphone className="w-3.5 h-3.5 host-perm-section-foot-icon" />
-                <span>Each change is announced in the room chat so everyone sees the new rules.</span>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={updateRoomMutation.isPending}
-              data-testid="button-submit-edit-room"
-            >
-              {updateRoomMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
-
-          <div className="mt-4 pt-4 border-t border-destructive/20">
-            {!deleteRoomOpen ? (
+            {/* Pinned footer — always visible */}
+            <div className="flex-shrink-0 px-5 py-3 border-t border-border/40 space-y-2">
               <Button
-                type="button"
-                variant="ghost"
-                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 text-[13px]"
-                onClick={() => setDeleteRoomOpen(true)}
-                data-testid="button-delete-room-start"
+                type="submit"
+                className="w-full"
+                disabled={updateRoomMutation.isPending}
+                data-testid="button-submit-edit-room"
               >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                Delete Room
+                {updateRoomMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-[12px] text-destructive text-center">This will permanently close the room for everyone. Are you sure?</p>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 text-[12px]"
-                    onClick={() => setDeleteRoomOpen(false)}
-                    disabled={deleteRoomMutation.isPending}
-                    data-testid="button-delete-room-cancel"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="flex-1 text-[12px]"
-                    onClick={() => deleteRoomMutation.mutate()}
-                    disabled={deleteRoomMutation.isPending}
-                    data-testid="button-delete-room-confirm"
-                  >
-                    {deleteRoomMutation.isPending ? "Deleting..." : "Yes, Delete"}
-                  </Button>
+
+              {!deleteRoomOpen ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 text-[13px]"
+                  onClick={() => setDeleteRoomOpen(true)}
+                  data-testid="button-delete-room-start"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  Delete Room
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[12px] text-destructive text-center">This will permanently close the room for everyone. Are you sure?</p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-[12px]"
+                      onClick={() => setDeleteRoomOpen(false)}
+                      disabled={deleteRoomMutation.isPending}
+                      data-testid="button-delete-room-cancel"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1 text-[12px]"
+                      onClick={() => deleteRoomMutation.mutate()}
+                      disabled={deleteRoomMutation.isPending}
+                      data-testid="button-delete-room-confirm"
+                    >
+                      {deleteRoomMutation.isPending ? "Deleting..." : "Yes, Delete"}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
