@@ -1,3 +1,5 @@
+import { useState, useEffect, useRef } from "react";
+
 // Profile decorations come in three tiers:
 //   • "professional" — restrained, premium-feeling animations suitable for
 //     work-like contexts (verified accounts, teachers, executives). Subtle
@@ -1400,6 +1402,57 @@ const ROOM_THEME_KEYFRAMES = `
     from { transform: rotate(0deg) scale(1); }
     to   { transform: rotate(360deg) scale(1); }
   }
+  @keyframes rt-disco-laser {
+    0%   { transform: rotate(-70deg) scaleX(0.3); opacity: 0; }
+    8%   { opacity: 0.95; }
+    48%  { transform: rotate(70deg) scaleX(0.3); opacity: 0.95; }
+    56%  { opacity: 0; }
+    100% { transform: rotate(-70deg) scaleX(0.3); opacity: 0; }
+  }
+  @keyframes rt-disco-laser2 {
+    0%   { transform: rotate(65deg) scaleX(0.3); opacity: 0; }
+    8%   { opacity: 0.88; }
+    48%  { transform: rotate(-65deg) scaleX(0.3); opacity: 0.88; }
+    56%  { opacity: 0; }
+    100% { transform: rotate(65deg) scaleX(0.3); opacity: 0; }
+  }
+  @keyframes rt-disco-pulse {
+    0%,100% { transform: scale(1);    opacity: 0.12; }
+    50%     { transform: scale(1.22); opacity: 0.32; }
+  }
+  @keyframes rt-disco-rain-fall {
+    0%   { transform: translateY(-5vh);  opacity: 0; }
+    8%   { opacity: 0.85; }
+    90%  { opacity: 0.55; }
+    100% { transform: translateY(108vh); opacity: 0; }
+  }
+  @keyframes rt-disco-wave {
+    0%   { transform: translateY(0) scaleX(1);      opacity: 0.65; }
+    50%  { transform: translateY(-28%) scaleX(1.2); opacity: 0.28; }
+    100% { transform: translateY(0) scaleX(1);      opacity: 0.65; }
+  }
+  @keyframes rt-disco-gold-beam {
+    0%   { transform: rotate(-22deg) scaleX(1);    opacity: 0.50; }
+    28%  { transform: rotate(18deg)  scaleX(1.45); opacity: 0.95; }
+    72%  { transform: rotate(-12deg) scaleX(0.8);  opacity: 0.40; }
+    100% { transform: rotate(-22deg) scaleX(1);    opacity: 0.50; }
+  }
+  @keyframes rt-disco-strobe-hard {
+    0%   { opacity: 0; }
+    1%   { opacity: 1; }
+    8%   { opacity: 0; }
+    16%  { opacity: 1; }
+    24%  { opacity: 0; }
+    32%  { opacity: 1; }
+    40%  { opacity: 0; }
+    100% { opacity: 0; }
+  }
+  @keyframes rt-disco-name-show {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    18%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    72%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+  }
 `;
 
 export function getChatPanelStyle(themeId: string | null | undefined): React.CSSProperties {
@@ -1490,6 +1543,272 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
           "linear-gradient(160deg, hsl(232 16% 19%) 0%, hsl(230 18% 14%) 45%, hsl(228 20% 10%) 100%)",
       };
   }
+}
+
+// ── Cinematic Disco Theme — 7 auto-cycling light show scenes ─────────────────
+const DISCO_SCENES = [
+  { id: 0, name: "Rainbow Rave",    emoji: "🌈" },
+  { id: 1, name: "Red Alert",       emoji: "🔴" },
+  { id: 2, name: "Ocean Club",      emoji: "🌊" },
+  { id: 3, name: "Purple Rain",     emoji: "💜" },
+  { id: 4, name: "Golden Fever",    emoji: "✨" },
+  { id: 5, name: "Blackout Strobe", emoji: "⚡" },
+  { id: 6, name: "Shadow Dancer",   emoji: "💃" },
+] as const;
+
+function renderDiscoScene(idx: number): React.ReactNode {
+  switch (idx) {
+    case 0: {
+      // 🌈 Rainbow Rave — all colors, maximum chaos
+      const COLS = ["255,0,80","0,220,255","80,255,0","255,200,0","180,0,255","255,80,0","0,255,200","255,0,200"];
+      const beams = [
+        {col:"255,0,80",  left:12, dur:1.6, del:0,   kf:"rt-disco-beam"},
+        {col:"0,220,255", left:26, dur:2.0, del:0.3,  kf:"rt-disco-beam2"},
+        {col:"80,255,0",  left:42, dur:1.4, del:0.7,  kf:"rt-disco-beam"},
+        {col:"255,200,0", left:58, dur:1.9, del:1.1,  kf:"rt-disco-beam2"},
+        {col:"180,0,255", left:74, dur:1.5, del:0.5,  kf:"rt-disco-beam"},
+        {col:"0,255,200", left:88, dur:2.2, del:1.4,  kf:"rt-disco-beam2"},
+        {col:"255,80,0",  left:34, dur:1.7, del:0.9,  kf:"rt-disco-beam"},
+        {col:"255,0,200", left:66, dur:2.1, del:0.2,  kf:"rt-disco-beam2"},
+      ];
+      const floorWashes = [
+        {col:"255,0,80",  left:15, dur:2.0, del:0,   kf:"rt-disco-sweep"},
+        {col:"0,200,255", left:45, dur:1.6, del:0.5,  kf:"rt-disco-sweep2"},
+        {col:"180,0,255", left:75, dur:2.3, del:1.0,  kf:"rt-disco-sweep"},
+        {col:"0,255,120", left:30, dur:1.8, del:1.4,  kf:"rt-disco-sweep2"},
+        {col:"255,160,0", left:60, dur:2.1, del:0.8,  kf:"rt-disco-sweep"},
+      ];
+      const glitters = Array.from({length:90}, (_,i) => ({
+        col: COLS[i % COLS.length], top:(i*13+7)%100, left:(i*23+11)%100,
+        size:1+(i%4), dur:0.28+(i%7)*0.10, del:(i*0.07)%2.5,
+      }));
+      return (
+        <>
+          {beams.map((b,i) => (
+            <div key={`rb-${i}`} style={{ position:"absolute", top:0, left:`${b.left}%`, width:"7%", height:"100%", transformOrigin:"top center", background:`linear-gradient(to bottom, rgba(${b.col},0.55) 0%, rgba(${b.col},0.20) 35%, rgba(${b.col},0.06) 65%, transparent 100%)`, filter:"blur(5px)", animation:`${b.kf} ${b.dur}s ease-in-out infinite ${b.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", top:"3%", left:"50%", width:28, height:28, borderRadius:"50%", transform:"translateX(-50%)", background:"radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(200,200,255,0.3) 50%, transparent 80%)", boxShadow:"0 0 14px 6px rgba(255,255,255,0.25)", animation:"rt-disco-spin 1.8s linear infinite" }} />
+          {Array.from({length:12}, (_,i) => (
+            <div key={`sp-${i}`} style={{ position:"absolute", top:"3%", left:"50%", width:"1px", height:`${18+((i*7)%14)}%`, transformOrigin:"top center", transform:`translateX(-50%) rotate(${i*30}deg)`, background:"linear-gradient(to bottom, rgba(255,255,255,0.5), transparent)", animation:`rt-disco-spin ${1.8+(i%3)*0.4}s linear infinite ${(i%4)*0.2}s` }} />
+          ))}
+          {floorWashes.map((f,i) => (
+            <div key={`fw-${i}`} style={{ position:"absolute", bottom:"-8%", left:`${f.left-20}%`, width:"40%", height:"45%", borderRadius:"50%", background:`radial-gradient(ellipse at 50% 100%, rgba(${f.col},0.22) 0%, rgba(${f.col},0.08) 55%, transparent 85%)`, filter:"blur(18px)", animation:`${f.kf} ${f.dur}s ease-in-out infinite ${f.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", top:"15%", left:"15%", right:"15%", bottom:"15%", borderRadius:"50%", background:"rgba(255,0,80,0.08)", filter:"blur(55px)", animation:"rt-disco-color 1.5s linear infinite" }} />
+          {glitters.map((g,i) => (
+            <div key={`gl-${i}`} style={{ position:"absolute", borderRadius:"50%", width:g.size, height:g.size, background:`rgba(${g.col},1)`, top:`${g.top}%`, left:`${g.left}%`, boxShadow:`0 0 ${g.size*4}px rgba(${g.col},0.95)`, animation:`rt-disco-glitter ${g.dur}s ease-in-out infinite ${g.del}s` }} />
+          ))}
+          {([{col:"255,0,80",dur:4.0,del:0},{col:"0,200,255",dur:5.5,del:1.2},{col:"180,0,255",dur:3.5,del:2.5}] as {col:string;dur:number;del:number}[]).map((s,i) => (
+            <div key={`st-${i}`} style={{ position:"absolute", inset:0, background:`rgba(${s.col},0.07)`, animation:`rt-disco-flash ${s.dur}s step-end infinite ${s.del}s` }} />
+          ))}
+        </>
+      );
+    }
+
+    case 1: {
+      // 🔴 Red Alert — deep crimson emergency
+      return (
+        <>
+          {[{left:10,dur:3.2,del:0},{left:25,dur:4.0,del:0.6},{left:50,dur:2.8,del:1.2},{left:72,dur:3.6,del:0.4},{left:88,dur:3.0,del:1.8}].map((b,i) => (
+            <div key={`rb-${i}`} style={{ position:"absolute", top:0, left:`${b.left}%`, width:"14%", height:"100%", transformOrigin:"top center", background:"linear-gradient(to bottom, rgba(255,10,0,0.65) 0%, rgba(200,0,20,0.28) 40%, rgba(180,0,0,0.07) 72%, transparent 100%)", filter:"blur(7px)", animation:`rt-disco-beam ${b.dur}s ease-in-out infinite ${b.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", top:"18%", left:"18%", right:"18%", bottom:"18%", borderRadius:"50%", background:"radial-gradient(circle, rgba(255,0,30,0.24) 0%, rgba(200,0,0,0.08) 55%, transparent 80%)", filter:"blur(52px)", animation:"rt-disco-pulse 2.4s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", bottom:"-10%", left:"-5%", width:"55%", height:"58%", borderRadius:"50%", background:"radial-gradient(ellipse at 50% 100%, rgba(255,0,30,0.30) 0%, rgba(200,0,0,0.10) 55%, transparent 85%)", filter:"blur(26px)", animation:"rt-disco-sweep 3.8s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", bottom:"-10%", right:"-5%", width:"55%", height:"58%", borderRadius:"50%", background:"radial-gradient(ellipse at 50% 100%, rgba(220,40,0,0.26) 0%, rgba(180,0,20,0.08) 55%, transparent 85%)", filter:"blur(26px)", animation:"rt-disco-sweep2 4.2s ease-in-out infinite 0.8s" }} />
+          <div style={{ position:"absolute", top:"3%", left:"50%", width:30, height:30, borderRadius:"50%", transform:"translateX(-50%)", background:"radial-gradient(circle, rgba(255,80,60,0.95) 0%, rgba(255,0,30,0.5) 50%, transparent 80%)", boxShadow:"0 0 18px 8px rgba(255,0,30,0.40)", animation:"rt-disco-spin 2.2s linear infinite" }} />
+          <div style={{ position:"absolute", inset:0, background:"rgba(255,0,30,0.10)", animation:"rt-disco-flash 2.8s step-end infinite" }} />
+          {Array.from({length:30}, (_,i) => (
+            <div key={`rg-${i}`} style={{ position:"absolute", borderRadius:"50%", width:1+(i%3), height:1+(i%3), background:`rgba(${i%2===0?"255,30,0":"255,80,60"},1)`, top:`${(i*17+5)%100}%`, left:`${(i*29+13)%100}%`, boxShadow:`0 0 ${(1+(i%3))*4}px rgba(255,10,0,0.9)`, animation:`rt-disco-glitter ${0.35+(i%5)*0.12}s ease-in-out infinite ${(i*0.09)%2}s` }} />
+          ))}
+        </>
+      );
+    }
+
+    case 2: {
+      // 🌊 Ocean Club — cool blue/cyan/teal dreamscape
+      const cols4 = ["0,200,255","0,180,220","50,220,200","100,180,255"];
+      return (
+        <>
+          {[{col:"0,180,255",left:15,dur:5.0,del:0},{col:"0,220,200",left:40,dur:6.5,del:1.5},{col:"50,100,255",left:65,dur:4.5,del:0.8},{col:"0,200,255",left:85,dur:5.8,del:2.2}].map((b,i) => (
+            <div key={`ob-${i}`} style={{ position:"absolute", top:0, left:`${b.left}%`, width:"10%", height:"100%", transformOrigin:"top center", background:`linear-gradient(to bottom, rgba(${b.col},0.45) 0%, rgba(${b.col},0.18) 40%, rgba(${b.col},0.05) 70%, transparent 100%)`, filter:"blur(8px)", animation:`rt-disco-beam ${b.dur}s ease-in-out infinite ${b.del}s` }} />
+          ))}
+          {[{col:"0,150,255",left:-5,dur:4.5,del:0},{col:"0,200,220",left:20,dur:5.2,del:0.8},{col:"0,220,255",left:45,dur:3.8,del:1.6},{col:"0,180,200",left:65,dur:4.8,del:2.4},{col:"50,150,255",left:85,dur:5.5,del:1.2}].map((f,i) => (
+            <div key={`wf-${i}`} style={{ position:"absolute", bottom:"-15%", left:`${f.left}%`, width:"50%", height:"62%", borderRadius:"50%", background:`radial-gradient(ellipse at 50% 100%, rgba(${f.col},0.26) 0%, rgba(${f.col},0.08) 55%, transparent 85%)`, filter:"blur(24px)", animation:`rt-disco-wave ${f.dur}s ease-in-out infinite ${f.del}s` }} />
+          ))}
+          {[{col:"0,200,255",top:-10,left:-10,w:55,dur:12,del:0},{col:"0,150,220",top:20,left:60,w:45,dur:16,del:3},{col:"50,220,200",top:50,left:20,w:40,dur:14,del:6}].map((o,i) => (
+            <div key={`oo-${i}`} style={{ position:"absolute", top:`${o.top}%`, left:`${o.left}%`, width:`${o.w}%`, height:`${o.w}%`, borderRadius:"50%", background:`radial-gradient(circle, rgba(${o.col},0.12) 0%, transparent 65%)`, filter:"blur(28px)", animation:`rt-orb-drift ${o.dur}s ease-in-out infinite ${o.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", top:"3%", left:"50%", width:28, height:28, borderRadius:"50%", transform:"translateX(-50%)", background:"radial-gradient(circle, rgba(100,220,255,0.95) 0%, rgba(0,180,255,0.4) 50%, transparent 80%)", boxShadow:"0 0 16px 7px rgba(0,200,255,0.30)", animation:"rt-disco-spin 3.5s linear infinite" }} />
+          {Array.from({length:45}, (_,i) => (
+            <div key={`cg-${i}`} style={{ position:"absolute", borderRadius:"50%", width:1+(i%3), height:1+(i%3), background:`rgba(${cols4[i%4]},1)`, top:`${(i*17+9)%100}%`, left:`${(i*31+7)%100}%`, boxShadow:`0 0 ${(1+(i%3))*3}px rgba(0,200,255,0.9)`, animation:`rt-disco-glitter ${0.4+(i%6)*0.15}s ease-in-out infinite ${(i*0.11)%3}s` }} />
+          ))}
+        </>
+      );
+    }
+
+    case 3: {
+      // 💜 Purple Rain — violet falling streaks + mystical orbs
+      const purpCols = ["200,0,255","150,0,200","255,0,200","180,50,255"];
+      const rainDrops = Array.from({length:38}, (_,i) => ({
+        left:(i*37+11)%100, dur:1.6+(i%7)*0.35, del:(i*0.18)%4,
+        h:12+(i%4)*8, col:i%3===0?"200,0,255":i%3===1?"150,0,200":"255,0,200",
+      }));
+      return (
+        <>
+          {rainDrops.map((r,i) => (
+            <div key={`pr-${i}`} style={{ position:"absolute", left:`${r.left}%`, width:"2px", height:`${r.h}%`, background:`linear-gradient(to bottom, transparent, rgba(${r.col},0.80), rgba(${r.col},0.30), transparent)`, filter:"blur(1.5px)", animation:`rt-disco-rain-fall ${r.dur}s linear infinite ${r.del}s` }} />
+          ))}
+          {[{col:"180,0,255",left:20,dur:5.5,del:0},{col:"120,0,200",left:50,dur:7.0,del:1.8},{col:"255,0,180",left:80,dur:6.0,del:3.2}].map((b,i) => (
+            <div key={`pb-${i}`} style={{ position:"absolute", top:0, left:`${b.left}%`, width:"8%", height:"100%", transformOrigin:"top center", background:`linear-gradient(to bottom, rgba(${b.col},0.42) 0%, rgba(${b.col},0.16) 40%, rgba(${b.col},0.04) 72%, transparent 100%)`, filter:"blur(7px)", animation:`rt-disco-beam2 ${b.dur}s ease-in-out infinite ${b.del}s` }} />
+          ))}
+          {[{col:"180,0,255",top:10,left:10,w:50,dur:14,del:0},{col:"120,0,200",top:30,left:50,w:42,dur:18,del:4},{col:"220,0,180",top:58,left:25,w:36,dur:12,del:7}].map((o,i) => (
+            <div key={`po-${i}`} style={{ position:"absolute", top:`${o.top}%`, left:`${o.left}%`, width:`${o.w}%`, height:`${o.w}%`, borderRadius:"50%", background:`radial-gradient(circle, rgba(${o.col},0.15) 0%, transparent 65%)`, filter:"blur(32px)", animation:`rt-orb-drift ${o.dur}s ease-in-out infinite ${o.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", bottom:"-5%", left:"5%", right:"5%", height:"42%", background:"radial-gradient(ellipse at 50% 100%, rgba(120,0,200,0.22) 0%, rgba(180,0,255,0.08) 55%, transparent 85%)", filter:"blur(32px)", animation:"rt-disco-pulse 4.5s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", top:"3%", left:"50%", width:26, height:26, borderRadius:"50%", transform:"translateX(-50%)", background:"radial-gradient(circle, rgba(220,120,255,0.95) 0%, rgba(180,0,255,0.5) 50%, transparent 80%)", boxShadow:"0 0 16px 7px rgba(180,0,255,0.35)", animation:"rt-disco-spin 2.8s linear infinite" }} />
+          {Array.from({length:42}, (_,i) => (
+            <div key={`pg-${i}`} style={{ position:"absolute", borderRadius:"50%", width:1+(i%3), height:1+(i%3), background:`rgba(${purpCols[i%4]},1)`, top:`${(i*19+3)%100}%`, left:`${(i*27+17)%100}%`, boxShadow:`0 0 ${(1+(i%3))*4}px rgba(180,0,255,0.9)`, animation:`rt-disco-glitter ${0.5+(i%5)*0.18}s ease-in-out infinite ${(i*0.13)%3.5}s` }} />
+          ))}
+        </>
+      );
+    }
+
+    case 4: {
+      // ✨ Golden Fever — warm amber/gold classic disco
+      const goldGlitters = Array.from({length:80}, (_,i) => ({
+        col:i%3===0?"255,210,60":i%3===1?"255,180,0":"255,255,200",
+        top:(i*11+5)%100, left:(i*29+3)%100, size:1+(i%4), dur:0.4+(i%6)*0.12, del:(i*0.08)%2.5,
+      }));
+      return (
+        <>
+          {[{col:"255,180,0",left:10,dur:3.8,del:0},{col:"255,140,0",left:25,dur:4.5,del:0.7},{col:"255,210,60",left:45,dur:3.2,del:1.4},{col:"255,160,20",left:62,dur:4.2,del:0.3},{col:"255,200,80",left:78,dur:3.6,del:2.0},{col:"240,180,0",left:90,dur:4.8,del:1.1}].map((b,i) => (
+            <div key={`gb-${i}`} style={{ position:"absolute", top:0, left:`${b.left}%`, width:"9%", height:"100%", transformOrigin:"top center", background:`linear-gradient(to bottom, rgba(${b.col},0.58) 0%, rgba(${b.col},0.22) 40%, rgba(${b.col},0.06) 70%, transparent 100%)`, filter:"blur(6px)", animation:`rt-disco-gold-beam ${b.dur}s ease-in-out infinite ${b.del}s` }} />
+          ))}
+          {[{col:"255,160,0",left:5,dur:4.5,del:0},{col:"255,120,0",left:35,dur:5.2,del:1},{col:"255,200,60",left:65,dur:3.8,del:2}].map((f,i) => (
+            <div key={`gf-${i}`} style={{ position:"absolute", bottom:"-8%", left:`${f.left}%`, width:"45%", height:"52%", borderRadius:"50%", background:`radial-gradient(ellipse at 50% 100%, rgba(${f.col},0.26) 0%, rgba(${f.col},0.08) 55%, transparent 85%)`, filter:"blur(22px)", animation:`rt-disco-sweep ${f.dur}s ease-in-out infinite ${f.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", top:"20%", left:"20%", right:"20%", bottom:"20%", borderRadius:"50%", background:"radial-gradient(circle, rgba(255,180,0,0.14) 0%, rgba(255,120,0,0.06) 55%, transparent 80%)", filter:"blur(52px)", animation:"rt-disco-pulse 3.0s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", top:"3%", left:"50%", width:34, height:34, borderRadius:"50%", transform:"translateX(-50%)", background:"radial-gradient(circle, rgba(255,240,120,0.98) 0%, rgba(255,180,0,0.55) 50%, transparent 80%)", boxShadow:"0 0 20px 9px rgba(255,200,0,0.40), 0 0 45px 18px rgba(255,140,0,0.15)", animation:"rt-disco-spin 2.5s linear infinite" }} />
+          {Array.from({length:10}, (_,i) => (
+            <div key={`gsp-${i}`} style={{ position:"absolute", top:"3%", left:"50%", width:"1px", height:`${20+((i*9)%12)}%`, transformOrigin:"top center", transform:`translateX(-50%) rotate(${i*36}deg)`, background:"linear-gradient(to bottom, rgba(255,220,80,0.65), transparent)", animation:`rt-disco-spin ${2.5+(i%4)*0.28}s linear infinite ${(i%5)*0.18}s` }} />
+          ))}
+          {goldGlitters.map((g,i) => (
+            <div key={`gg-${i}`} style={{ position:"absolute", borderRadius:"50%", width:g.size, height:g.size, background:`rgba(${g.col},1)`, top:`${g.top}%`, left:`${g.left}%`, boxShadow:`0 0 ${g.size*4}px rgba(255,200,0,0.90)`, animation:`rt-disco-glitter ${g.dur}s ease-in-out infinite ${g.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", inset:0, background:"rgba(255,200,60,0.06)", animation:"rt-disco-flash 5.5s step-end infinite" }} />
+        </>
+      );
+    }
+
+    case 5: {
+      // ⚡ Blackout Strobe — near dark, high-contrast white + cyan lasers
+      return (
+        <>
+          <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.55)" }} />
+          {[{col:"255,255,255",left:20,dur:4.5,del:0,kf:"rt-disco-laser"},{col:"0,240,255",left:50,dur:3.8,del:1.2,kf:"rt-disco-laser2"},{col:"255,255,255",left:80,dur:5.0,del:2.4,kf:"rt-disco-laser"}].map((b,i) => (
+            <div key={`lb-${i}`} style={{ position:"absolute", top:0, left:`${b.left}%`, width:"3%", height:"100%", transformOrigin:"top center", background:`linear-gradient(to bottom, rgba(${b.col},0.90) 0%, rgba(${b.col},0.55) 30%, rgba(${b.col},0.15) 65%, transparent 100%)`, filter:"blur(2px)", animation:`${b.kf} ${b.dur}s ease-in-out infinite ${b.del}s` }} />
+          ))}
+          {[{col:"255,255,255",left:15,dur:6.0,del:1.5,kf:"rt-disco-laser2"},{col:"0,240,255",left:70,dur:5.5,del:3.0,kf:"rt-disco-laser"}].map((b,i) => (
+            <div key={`lb2-${i}`} style={{ position:"absolute", top:0, left:`${b.left}%`, width:"2px", height:"100%", transformOrigin:"top center", background:`linear-gradient(to bottom, rgba(${b.col},0.98) 0%, rgba(${b.col},0.70) 40%, rgba(${b.col},0.20) 70%, transparent 100%)`, filter:"blur(0.5px)", animation:`${b.kf} ${b.dur}s ease-in-out infinite ${b.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", inset:0, background:"rgba(255,255,255,0.20)", animation:"rt-disco-strobe-hard 0.75s step-end infinite" }} />
+          <div style={{ position:"absolute", inset:0, background:"rgba(0,240,255,0.14)", animation:"rt-disco-strobe-hard 1.2s step-end infinite 0.28s" }} />
+          {Array.from({length:22}, (_,i) => (
+            <div key={`wg-${i}`} style={{ position:"absolute", borderRadius:"50%", width:2, height:2, background:"rgba(255,255,255,1)", top:`${(i*23+7)%100}%`, left:`${(i*37+11)%100}%`, boxShadow:"0 0 6px rgba(255,255,255,0.9)", animation:`rt-disco-glitter ${0.18+(i%4)*0.07}s ease-in-out infinite ${(i*0.05)%1}s` }} />
+          ))}
+        </>
+      );
+    }
+
+    case 6: {
+      // 💃 Shadow Dancer — neon green techno lasers
+      const greenCols = ["0,255,80","80,255,0","0,255,160","0,200,100"];
+      return (
+        <>
+          <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse at 50% 100%, rgba(0,80,30,0.28) 0%, transparent 65%)" }} />
+          {[{col:"0,255,80",left:15,dur:2.8,del:0,kf:"rt-disco-laser"},{col:"0,200,100",left:35,dur:3.5,del:0.6,kf:"rt-disco-laser2"},{col:"80,255,0",left:60,dur:2.5,del:1.4,kf:"rt-disco-laser"},{col:"0,255,160",left:80,dur:3.2,del:0.9,kf:"rt-disco-laser2"}].map((b,i) => (
+            <div key={`sd-${i}`} style={{ position:"absolute", top:0, left:`${b.left}%`, width:"4%", height:"100%", transformOrigin:"top center", background:`linear-gradient(to bottom, rgba(${b.col},0.92) 0%, rgba(${b.col},0.58) 30%, rgba(${b.col},0.14) 65%, transparent 100%)`, filter:"blur(2.5px)", animation:`${b.kf} ${b.dur}s ease-in-out infinite ${b.del}s` }} />
+          ))}
+          {[{col:"0,255,80",left:10,dur:5.5,del:0},{col:"0,200,120",left:45,dur:4.8,del:1.2}].map((f,i) => (
+            <div key={`sdf-${i}`} style={{ position:"absolute", bottom:"-8%", left:`${f.left}%`, width:"55%", height:"50%", borderRadius:"50%", background:`radial-gradient(ellipse at 50% 100%, rgba(${f.col},0.20) 0%, rgba(${f.col},0.06) 55%, transparent 85%)`, filter:"blur(22px)", animation:`rt-disco-wave ${f.dur}s ease-in-out infinite ${f.del}s` }} />
+          ))}
+          <div style={{ position:"absolute", top:"3%", left:"50%", width:26, height:26, borderRadius:"50%", transform:"translateX(-50%)", background:"radial-gradient(circle, rgba(100,255,120,0.95) 0%, rgba(0,255,80,0.45) 50%, transparent 80%)", boxShadow:"0 0 16px 7px rgba(0,255,80,0.38)", animation:"rt-disco-spin 1.6s linear infinite" }} />
+          {Array.from({length:10}, (_,i) => (
+            <div key={`gsp-${i}`} style={{ position:"absolute", top:"3%", left:"50%", width:"1px", height:`${16+((i*11)%14)}%`, transformOrigin:"top center", transform:`translateX(-50%) rotate(${i*36}deg)`, background:"linear-gradient(to bottom, rgba(0,255,80,0.7), transparent)", animation:`rt-disco-spin ${1.6+(i%3)*0.3}s linear infinite ${i*0.15}s` }} />
+          ))}
+          <div style={{ position:"absolute", inset:0, background:"rgba(0,255,80,0.08)", animation:"rt-disco-flash 2.2s step-end infinite" }} />
+          {Array.from({length:58}, (_,i) => (
+            <div key={`sdg-${i}`} style={{ position:"absolute", borderRadius:"50%", width:1+(i%3), height:1+(i%3), background:`rgba(${greenCols[i%4]},1)`, top:`${(i*13+9)%100}%`, left:`${(i*31+5)%100}%`, boxShadow:`0 0 ${(1+(i%3))*4}px rgba(0,255,80,0.95)`, animation:`rt-disco-glitter ${0.22+(i%6)*0.09}s ease-in-out infinite ${(i*0.07)%2}s` }} />
+          ))}
+        </>
+      );
+    }
+
+    default:
+      return null;
+  }
+}
+
+function DiscoThemeOverlay({ base }: { base: React.CSSProperties }) {
+  const [sceneIdx, setSceneIdx] = useState(() => Math.floor(Math.random() * 7));
+  const [opacity, setOpacity]   = useState(1);
+  const [showLabel, setShowLabel] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
+    const schedule = () => {
+      // Random interval: 2.3 – 3.5 minutes
+      const delay = (138 + Math.random() * 72) * 1000;
+      timerRef.current = window.setTimeout(() => {
+        // 1. Fade out
+        setOpacity(0);
+        timerRef.current = window.setTimeout(() => {
+          // 2. Switch scene while dark
+          setSceneIdx(prev => (prev + 1) % 7);
+          setShowLabel(true);
+          // 3. Fade back in
+          timerRef.current = window.setTimeout(() => {
+            setOpacity(1);
+            // 4. Hide label after 3.5s
+            timerRef.current = window.setTimeout(() => {
+              setShowLabel(false);
+              schedule();
+            }, 3500);
+          }, 80);
+        }, 2700);
+      }, delay);
+    };
+    schedule();
+    return clear;
+  }, []);
+
+  const scene = DISCO_SCENES[sceneIdx];
+
+  return (
+    <div style={base}>
+      <style>{ROOM_THEME_KEYFRAMES}</style>
+      {/* Scene content — smooth crossfade */}
+      <div style={{ position:"absolute", inset:0, transition:"opacity 2.7s cubic-bezier(0.4,0,0.2,1)", opacity }}>
+        {renderDiscoScene(sceneIdx)}
+      </div>
+      {/* Scene name flash — appears briefly on every scene change */}
+      {showLabel && (
+        <div style={{
+          position:"absolute", top:"10%", left:"50%",
+          background:"rgba(0,0,0,0.70)", backdropFilter:"blur(10px)",
+          border:"1px solid rgba(255,255,255,0.18)",
+          borderRadius:999, padding:"5px 20px",
+          color:"rgba(255,255,255,0.92)", fontSize:12, fontWeight:700,
+          letterSpacing:"0.10em", whiteSpace:"nowrap", textTransform:"uppercase",
+          animation:"rt-disco-name-show 3.5s ease forwards",
+          zIndex:10, pointerEvents:"none",
+        }}>
+          {scene.emoji} {scene.name}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefined }) {
@@ -1934,118 +2253,8 @@ export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefin
       );
     }
 
-    case "disco": {
-      const DISCO_COLS = ["255,0,80","0,220,255","80,255,0","255,200,0","180,0,255","255,80,0","0,255,200","255,0,200"];
-      const beams = [
-        { col:"255,0,80",  left:12, dur:1.6, del:0,   kf:"rt-disco-beam"  },
-        { col:"0,220,255", left:26, dur:2.0, del:0.3,  kf:"rt-disco-beam2" },
-        { col:"80,255,0",  left:42, dur:1.4, del:0.7,  kf:"rt-disco-beam"  },
-        { col:"255,200,0", left:58, dur:1.9, del:1.1,  kf:"rt-disco-beam2" },
-        { col:"180,0,255", left:74, dur:1.5, del:0.5,  kf:"rt-disco-beam"  },
-        { col:"0,255,200", left:88, dur:2.2, del:1.4,  kf:"rt-disco-beam2" },
-        { col:"255,80,0",  left:34, dur:1.7, del:0.9,  kf:"rt-disco-beam"  },
-        { col:"255,0,200", left:66, dur:2.1, del:0.2,  kf:"rt-disco-beam2" },
-      ];
-      const floorWashes = [
-        { col:"255,0,80",   left:15, dur:2.0, del:0,   kf:"rt-disco-sweep"  },
-        { col:"0,200,255",  left:45, dur:1.6, del:0.5,  kf:"rt-disco-sweep2" },
-        { col:"180,0,255",  left:75, dur:2.3, del:1.0,  kf:"rt-disco-sweep"  },
-        { col:"0,255,120",  left:30, dur:1.8, del:1.4,  kf:"rt-disco-sweep2" },
-        { col:"255,160,0",  left:60, dur:2.1, del:0.8,  kf:"rt-disco-sweep"  },
-      ];
-      const glitters = Array.from({length:90}, (_,i) => ({
-        col: DISCO_COLS[i % DISCO_COLS.length],
-        top:  (i*13+7)%100,
-        left: (i*23+11)%100,
-        size: 1+(i%4),
-        dur:  0.28+(i%7)*0.10,
-        del:  (i*0.07)%2.5,
-      }));
-      return (
-        <div style={base}>
-          <style>{ROOM_THEME_KEYFRAMES}</style>
-
-          {/* spotlight beams sweeping from top — each has its own crazy rotation */}
-          {beams.map((b, i) => (
-            <div key={`beam-${i}`} style={{
-              position:"absolute", top:0, left:`${b.left}%`,
-              width:"7%", height:"100%",
-              transformOrigin:"top center",
-              background:`linear-gradient(to bottom, rgba(${b.col},0.55) 0%, rgba(${b.col},0.20) 35%, rgba(${b.col},0.06) 65%, transparent 100%)`,
-              filter:"blur(5px)",
-              animation:`${b.kf} ${b.dur}s ease-in-out infinite ${b.del}s`,
-            }} />
-          ))}
-
-          {/* disco ball spin indicator — tiny circular halo at top-center */}
-          <div style={{
-            position:"absolute", top:"3%", left:"50%",
-            width:28, height:28, borderRadius:"50%",
-            transform:"translateX(-50%)",
-            background:"radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(200,200,255,0.3) 50%, transparent 80%)",
-            boxShadow:"0 0 14px 6px rgba(255,255,255,0.25)",
-            animation:"rt-disco-spin 1.8s linear infinite",
-          }} />
-          {/* disco ball radial gleam lines */}
-          {Array.from({length:12}, (_,i) => (
-            <div key={`spoke-${i}`} style={{
-              position:"absolute", top:"3%", left:"50%",
-              width:"1px", height:`${18+((i*7)%14)}%`,
-              transformOrigin:"top center",
-              transform:`translateX(-50%) rotate(${i*30}deg)`,
-              background:`linear-gradient(to bottom, rgba(255,255,255,0.5), transparent)`,
-              animation:`rt-disco-spin ${1.8 + (i%3)*0.4}s linear infinite ${(i%4)*0.2}s`,
-            }} />
-          ))}
-
-          {/* floor wash lights sweeping left-right */}
-          {floorWashes.map((f, i) => (
-            <div key={`floor-${i}`} style={{
-              position:"absolute", bottom:"-8%",
-              left:`${f.left - 20}%`, width:"40%", height:"45%",
-              borderRadius:"50%",
-              background:`radial-gradient(ellipse at 50% 100%, rgba(${f.col},0.22) 0%, rgba(${f.col},0.08) 55%, transparent 85%)`,
-              filter:"blur(18px)",
-              animation:`${f.kf} ${f.dur}s ease-in-out infinite ${f.del}s`,
-            }} />
-          ))}
-
-          {/* color-cycling ambient center bloom */}
-          <div style={{
-            position:"absolute", top:"15%", left:"15%", right:"15%", bottom:"15%",
-            borderRadius:"50%",
-            background:"rgba(255,0,80,0.08)",
-            filter:"blur(55px)",
-            animation:"rt-disco-color 1.5s linear infinite",
-          }} />
-
-          {/* glitter particles — rapid multi-color sparkle */}
-          {glitters.map((g, i) => (
-            <div key={`gl-${i}`} style={{
-              position:"absolute", borderRadius:"50%",
-              width:g.size, height:g.size,
-              background:`rgba(${g.col},1)`,
-              top:`${g.top}%`, left:`${g.left}%`,
-              boxShadow:`0 0 ${g.size * 4}px rgba(${g.col},0.95)`,
-              animation:`rt-disco-glitter ${g.dur}s ease-in-out infinite ${g.del}s`,
-            }} />
-          ))}
-
-          {/* colored strobe flashes */}
-          {([
-            { col:"255,0,80",  dur:4.0, del:0   },
-            { col:"0,200,255", dur:5.5, del:1.2  },
-            { col:"180,0,255", dur:3.5, del:2.5  },
-          ] as {col:string; dur:number; del:number}[]).map((s, i) => (
-            <div key={`strobe-${i}`} style={{
-              position:"absolute", inset:0,
-              background:`rgba(${s.col},0.07)`,
-              animation:`rt-disco-flash ${s.dur}s step-end infinite ${s.del}s`,
-            }} />
-          ))}
-        </div>
-      );
-    }
+    case "disco":
+      return <DiscoThemeOverlay base={base} />;
 
     default:
       return null;
