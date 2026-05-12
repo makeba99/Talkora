@@ -4774,7 +4774,10 @@ export async function registerRoutes(
       // they see the joining/rejoining user. On a true rejoin (socket.io
       // reconnect after a network glitch), skipping this broadcast left the
       // rejoining user invisible to everyone already in the room.
-      socket.to(roomId).emit("room:user-joined", { user, participants: participantsWithStatus });
+      // `isRejoin` is forwarded so the client can suppress the "X joined the room"
+      // system message for reconnects — preventing the doubled-message bug where
+      // a brief network blip caused the join announcement to appear twice.
+      socket.to(roomId).emit("room:user-joined", { user, participants: participantsWithStatus, isRejoin });
 
       if (!isRejoin) {
         // First-time join only: send welcome message and record analytics.

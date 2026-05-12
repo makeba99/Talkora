@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vextorn-v14";
+const CACHE_VERSION = "vextorn-v15";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const ASSET_CACHE  = `${CACHE_VERSION}-assets`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
@@ -38,17 +38,20 @@ const STATIC_ASSETS = [
 // Lobby-critical API endpoints that are safe to serve stale on repeat visits.
 // These are all public GET endpoints whose data is acceptable to show from
 // cache for a few seconds while a fresh copy is fetched in the background.
-//   - /api/rooms            — public room list, changes infrequently
-//   - /api/rooms/participants — live participant counts (short stale window)
+//   - /api/rooms            — public room list (SSE stream corrects it in ms)
 //   - /api/announcements    — platform announcements, rarely change
 //   - /api/maintenance      — maintenance flag, changes extremely rarely
+//
+// /api/rooms/participants is intentionally EXCLUDED: participants change every
+// time a user joins or leaves a room. Serving stale participant data causes
+// ghost users to appear on lobby cards after refresh. Socket events and the
+// 30 s HTTP recovery poll handle freshness — no SW cache needed here.
 //
 // /api/auth/user is intentionally excluded: it's private (Cookie-gated),
 // changes on login/logout, and must never be served stale to avoid showing
 // a logged-in shell to a user who signed out.
 const SWR_PATHS = [
   "/api/rooms",
-  "/api/rooms/participants",
   "/api/announcements",
   "/api/maintenance",
 ];

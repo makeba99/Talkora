@@ -2757,10 +2757,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       participantsRef.current = data;
     });
 
-    socket.on("room:user-joined", (data: { user: Participant; participants: Participant[] }) => {
+    socket.on("room:user-joined", (data: { user: Participant; participants: Participant[]; isRejoin?: boolean }) => {
       setParticipants(data.participants);
       participantsRef.current = data.participants;
-      if (data.user.id !== user.id) {
+      // Suppress the join announcement and notification sound for socket
+      // reconnects (isRejoin=true). A reconnect means the user had a brief
+      // network blip and is still in the room — not a new arrival. Without
+      // this check the message appeared twice: once on first join, once on
+      // every reconnect, causing the doubled "X joined the room" bug.
+      if (data.user.id !== user.id && !data.isRejoin) {
         const name = getUserDisplayName(data.user);
         addSystemMessage(`${name} joined the room`);
         playNotificationSound("join");
