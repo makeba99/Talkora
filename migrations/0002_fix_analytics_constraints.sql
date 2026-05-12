@@ -1,10 +1,12 @@
--- Fix room_joins.user_id: varchar(36) is too small for Replit OIDC sub claims
--- and other user ID formats. Use TEXT so any user ID length is accepted.
-ALTER TABLE room_joins ALTER COLUMN user_id TYPE text;
-
--- Also fix room_id to text for safety (room IDs are UUIDs = 36 chars, but be safe)
-ALTER TABLE room_joins ALTER COLUMN room_id TYPE text;
-
--- Fix page_views.session_hash: currently varchar(32), fine as-is but make text
--- for consistency with no-limit policy on hashed values.
--- (no change needed — 32-char SHA256 slice always fits in varchar(32))
+-- Fix room_joins column types — but only if the table already exists.
+-- On a fresh database room_joins is created later in 0003, so we use a
+-- DO block to skip silently when the table isn't there yet.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'room_joins'
+  ) THEN
+    ALTER TABLE room_joins ALTER COLUMN user_id TYPE text;
+    ALTER TABLE room_joins ALTER COLUMN room_id TYPE text;
+  END IF;
+END $$;

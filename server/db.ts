@@ -110,6 +110,7 @@ export async function runMigrations(): Promise<void> {
 
     // Run each statement individually so a single failure doesn't roll back
     // the whole migration, and log which ones we skip (already-exist errors).
+    let migrationFailed = false;
     for (const stmt of statements) {
       try {
         await pool.query(stmt);
@@ -119,10 +120,18 @@ export async function runMigrations(): Promise<void> {
           // Object already exists — safe to ignore after our IF NOT EXISTS patch.
           console.warn(`[db] Skipping already-existing object in ${entry.tag}: ${err.message.split("\n")[0]}`);
         } else {
-          console.error(`[db] Statement failed in ${entry.tag}:`, err.message);
-          throw err;
+          // Log but do NOT throw — continue to the next migration so a single
+          // broken migration never blocks the ones that follow it.
+          console.error(`[db] Statement failed in ${entry.tag} (continuing):`, err.message);
+          migrationFailed = true;
         }
       }
+    }
+
+    if (migrationFailed) {
+      console.warn(`[db] Migration ${entry.tag} had failures — will retry on next startup`);
+      // Do NOT insert into __vxt_migrations so it retries next deploy.
+      continue;
     }
 
     await pool.query(
