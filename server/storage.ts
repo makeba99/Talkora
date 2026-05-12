@@ -1176,6 +1176,13 @@ export class DatabaseStorage implements IStorage {
     uniqueRoomJoiners: number;
     dailyJoins: { date: string; joins: number }[];
   }> {
+    const empty = {
+      dailyViews: [], topReferrers: [], topCountries: [], topJoinCountries: [],
+      totalViews: 0, uniqueSessions: 0, redirectViews: 0,
+      totalRoomJoins: 0, uniqueRoomJoiners: 0, dailyJoins: [],
+      todayViews: 0, todayUniqueVisitors: 0, todayRoomJoins: 0, todayUniqueJoiners: 0,
+    };
+    try {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const [dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw, joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw] = await Promise.all([
@@ -1279,6 +1286,10 @@ export class DatabaseStorage implements IStorage {
       todayRoomJoins: Number(todayJoins.today_joins ?? 0),
       todayUniqueJoiners: Number(todayJoins.today_joiners ?? 0),
     };
+    } catch (err: any) {
+      console.warn("[analytics] query failed, returning empty data:", err?.message);
+      return empty;
+    }
   }
 
   async createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign> {

@@ -12632,33 +12632,37 @@ html.boost-mode .glass-panel {
 /* Message row — flex row holding avatar + bubble column */
 .dm-msg-row {
   display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 4px 0;
+  align-items: flex-end;
+  gap: 7px;
+  padding: 1px 0;
   position: relative;
 }
 .dm-msg-row--own {
   flex-direction: row-reverse;
 }
 .dm-msg-row--grouped {
-  margin-top: 0;
+  padding: 0;
+}
+/* Visual gap when a new sender starts */
+.dm-msg-row:not(.dm-msg-row--grouped) {
+  margin-top: 8px;
 }
 
-/* Avatar slot — aligns to top so it sits beside the name label */
+/* Avatar slot — aligns to bottom so avatar sits beside the last bubble in a run */
 .dm-msg-avatar-slot {
   flex-shrink: 0;
   display: flex;
-  align-items: flex-start;
-  padding-top: 2px;
+  align-items: flex-end;
+  padding-bottom: 0;
 }
 
 /* Bubble + reactions + quick-react — stacked vertically */
 .dm-msg-content {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
-  max-width: calc(100% - 48px);
+  max-width: calc(100% - 44px);
 }
 
 /* Reaction pills row — sits below bubble, doesn't change bubble */
