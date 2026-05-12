@@ -889,7 +889,10 @@ export async function registerRoutes(
   app.get("/api/rooms/:id/participants", async (req, res) => {
     try {
       const { id } = req.params;
-      const roomParts = roomParticipants.get(id);
+      // roomParticipants is keyed by the room's UUID. When a short ID (e.g.
+      // "iw92709") is supplied, resolve it to the UUID first so the lookup works.
+      const roomUuid = isUuid(id) ? id : (await storage.getRoomByShortId(id))?.id ?? id;
+      const roomParts = roomParticipants.get(roomUuid);
       res.setHeader("Cache-Control", "public, max-age=10, stale-while-revalidate=60");
       res.json(roomParts ? Array.from(roomParts.values()) : []);
     } catch (err: any) {

@@ -47,3 +47,9 @@ id = "-l1x4DjmifTdMRi8Tz8bg"
 uri = "file://client/public/og-test-preview.png"
 type = "image"
 title = "Room share thumbnail (OG image preview)"
+
+[[outputs]]
+id = "910HYx320f-5-_ZvatgMO"
+uri = "file://client/public/og-live-preview.png"
+type = "image"
+title = "Share thumbnail — participant avatars now showing"
