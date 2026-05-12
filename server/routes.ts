@@ -163,6 +163,13 @@ const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const socketCountries = new Map<string, string>();
 const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
 const roomPinnedMessages = new Map<string, { message: any; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null>();
+// DJ scene system — tracks which scene index each room is on so skip broadcasts are in sync
+const roomDjSceneIdx = new Map<string, number>();
+const DJ_SCENE_LIST = ["spotlight","namestorm","disco","kiss","cocktails","boomer"];
+// Join deduplication — prevents doubled "X joined" system messages caused by the race
+// between initMedia() emitting room:join and the socket "connect" listener (handleReconnect)
+// both firing almost simultaneously on first page load.
+const joiningNow = new Set<string>();
 // AI Tutor room state: one active session per room
 const roomAiTutorState = new Map<string, { userId: string; username: string; speaking: boolean; avatarId?: string | null; voice?: "Female" | "Male" | null; voiceId?: string | null } | null>();
 // SSE clients subscribed to real-time room list updates.
@@ -4658,6 +4665,15 @@ export async function registerRoutes(
     socket.on("room:join", async (data: { roomId: string; userId: string }) => {
       const { roomId, userId } = data;
 
+      // Deduplicate concurrent room:join events that arrive in rapid succession
+      // (race between initMedia() and the "connect" socket listener both emitting
+      // room:join on first page load). Without this, both events see isRejoin=false
+      // and broadcast duplicate "X joined the room" system messages.
+      const _joinKey = `${roomId}:${userId}`;
+      if (joiningNow.has(_joinKey)) return;
+      joiningNow.add(_joinKey);
+      setTimeout(() => joiningNow.delete(_joinKey), 2000);
+
       const timerId = `${userId}-disconnect`;
       const existingTimer = disconnectTimers.get(timerId);
       if (existingTimer) {
@@ -4913,15 +4929,29 @@ export async function registerRoutes(
     });
 
     // ── DJ Mode — host toggles disco sling-animations for all in the room ──
-    socket.on("room:dj-mode", (data: { roomId: string; active: boolean }) => {
+    socket.on("room:dj-mode", (data: { roomId: string; active: boolean; moveStyle?: string }) => {
       if (!data?.roomId) return;
-      io.to(data.roomId).emit("room:dj-mode", { active: !!data.active });
+      if (data.active) {
+        roomDjSceneIdx.set(data.roomId, 0);
+      } else {
+        roomDjSceneIdx.delete(data.roomId);
+      }
+      io.to(data.roomId).emit("room:dj-mode", { active: !!data.active, scene: "spotlight", moveStyle: data.moveStyle || "sling" });
     });
 
-    // ── DJ Skip — host manually advances the disco scene ──
+    // ── DJ Skip — advances to next scene, broadcast scene name to all participants ──
     socket.on("room:dj-skip", (data: { roomId: string }) => {
       if (!data?.roomId) return;
-      io.to(data.roomId).emit("room:dj-skip");
+      const cur = roomDjSceneIdx.get(data.roomId) ?? 0;
+      const next = (cur + 1) % DJ_SCENE_LIST.length;
+      roomDjSceneIdx.set(data.roomId, next);
+      io.to(data.roomId).emit("room:dj-skip", { scene: DJ_SCENE_LIST[next] });
+    });
+
+    // ── DJ Move — host changes participant card movement style for all ──
+    socket.on("room:dj-move", (data: { roomId: string; moveStyle: string }) => {
+      if (!data?.roomId) return;
+      io.to(data.roomId).emit("room:dj-move", { moveStyle: data.moveStyle });
     });
 
     // "Say Bye" — user waves goodbye to the room before leaving. Server

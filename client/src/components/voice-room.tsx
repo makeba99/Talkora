@@ -1261,6 +1261,160 @@ function getDjSlingStyle(index: number): React.CSSProperties {
   return { animation: `${ANIMS[v]} ${DURS[v]}s cubic-bezier(0.34,1.56,0.64,1) infinite ${DELS[v]}s` };
 }
 
+// ── DJ Movement styles helper ────────────────────────────────────────────────
+function getDjMoveStyle(index: number, style: string): React.CSSProperties {
+  if (style === "sling") return getDjSlingStyle(index);
+  if (style === "bounce") {
+    const durs = [1.0, 1.2, 0.9, 1.1, 0.8, 1.3];
+    const dels = [0, 0.2, 0.4, 0.1, 0.3, 0.5];
+    return { animation: `dj-bounce ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
+  }
+  if (style === "spin") {
+    const spds = [2.0, 2.5, 1.8, 2.2, 3.0, 2.7];
+    return { animation: `dj-spin ${spds[index % 6]}s linear infinite` };
+  }
+  if (style === "float") {
+    const durs = [2.5, 3.0, 2.2, 2.8, 3.5, 2.4];
+    const dels = [0, 0.5, 1.0, 0.3, 0.8, 0.2];
+    return { animation: `dj-float ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
+  }
+  return {};
+}
+
+// ── DJ Scene Overlay — full-screen effects driven by scene name ──────────────
+function DjSceneOverlay({ scene, participants, active }: {
+  scene: string;
+  participants: Array<{ id: string; displayName?: string | null; firstName?: string | null }>;
+  active: boolean;
+}) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!active || scene === "spotlight") { setTick(0); return; }
+    const id = setInterval(() => setTick(t => t + 1), 120);
+    return () => clearInterval(id);
+  }, [active, scene]);
+
+  if (!active || scene === "spotlight") return null;
+  const names = participants.map(p => p.displayName || p.firstName || "?").filter(Boolean);
+  if (names.length === 0) return null;
+
+  if (scene === "namestorm") {
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden" }}>
+        {names.map((name, i) => {
+          const x = 50 + Math.sin(tick * 0.07 + i * 2.1) * 38;
+          const y = 50 + Math.cos(tick * 0.06 + i * 1.8) * 32;
+          const rot = Math.sin(tick * 0.04 + i) * 28;
+          const sc = 0.75 + Math.abs(Math.sin(tick * 0.09 + i * 0.7)) * 0.7;
+          const col = `hsl(${(i * 55 + tick * 2) % 360},100%,65%)`;
+          return (
+            <div key={i} style={{
+              position:"absolute", left:`${x}%`, top:`${y}%`,
+              transform:`translate(-50%,-50%) rotate(${rot}deg) scale(${sc})`,
+              color:col, fontSize:`${14 + (i % 3) * 9}px`,
+              fontWeight:900, letterSpacing:"0.06em", textTransform:"uppercase",
+              textShadow:`0 0 14px ${col}`,
+              opacity:0.65 + Math.abs(Math.sin(tick * 0.08 + i)) * 0.35,
+              whiteSpace:"nowrap",
+            }}>{name}</div>
+          );
+        })}
+      </div>
+    );
+  }
+  if (scene === "disco") {
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden" }}>
+        {[0,45,90,135,180,225,270,315].map((deg, i) => (
+          <div key={i} style={{
+            position:"absolute", top:"50%", left:"50%",
+            width:3, height:"65vh",
+            background:`linear-gradient(to bottom,transparent 0%,hsl(${(i*45+tick*4)%360},100%,60%) 60%,transparent 100%)`,
+            transformOrigin:"0% 0%",
+            transform:`rotate(${deg + tick * 1.5}deg)`,
+            opacity:0.30,
+          }} />
+        ))}
+        <div style={{
+          position:"absolute", top:"50%", left:"50%",
+          transform:"translate(-50%,-50%)",
+          width:55, height:55, borderRadius:"50%",
+          background:"radial-gradient(circle,rgba(255,255,255,0.9) 0%,rgba(255,255,255,0) 70%)",
+          boxShadow:"0 0 40px 20px rgba(255,255,255,0.25)",
+          opacity:tick % 6 < 3 ? 0.85 : 0.35,
+        }} />
+      </div>
+    );
+  }
+  if (scene === "kiss") {
+    const hearts = ["💋","❤️","💗","💖","💕","😘","💓","💝"];
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden" }}>
+        {Array.from({length:14}).map((_, i) => {
+          const progress = ((tick * 0.6 + i * 22) % 110) / 100;
+          return (
+            <div key={i} style={{
+              position:"absolute",
+              left:`${8 + ((i * 7 + tick * 0.3) % 84)}%`,
+              bottom:`${progress * 105 - 5}%`,
+              fontSize:`${16 + (i % 4) * 8}px`,
+              opacity:Math.max(0, 1 - progress * 1.1),
+              transform:`rotate(${Math.sin(tick * 0.04 + i) * 22}deg) scale(${0.7 + progress * 0.5})`,
+            }}>{hearts[i % hearts.length]}</div>
+          );
+        })}
+      </div>
+    );
+  }
+  if (scene === "cocktails") {
+    const items = ["🍹","🥂","🎉","🍸","✨","🎊","🍾","🥳","🎈","🎆"];
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden" }}>
+        {Array.from({length:18}).map((_, i) => (
+          <div key={i} style={{
+            position:"absolute",
+            left:`${(i * 5.5 + tick * 0.35) % 100}%`,
+            top:`${(tick * 0.45 + i * 18) % 115 - 10}%`,
+            fontSize:`${14 + (i % 4) * 7}px`, opacity:0.85,
+            transform:`rotate(${tick * 1.8 + i * 22}deg)`,
+          }}>{items[i % items.length]}</div>
+        ))}
+        {Array.from({length:22}).map((_, i) => (
+          <div key={`cf${i}`} style={{
+            position:"absolute",
+            left:`${(i * 4.5 + tick * 0.55) % 100}%`,
+            top:`${(tick * 0.5 + i * 14) % 110 - 5}%`,
+            width:7, height:3, borderRadius:2,
+            background:`hsl(${(i * 17 + tick) % 360},100%,60%)`,
+            opacity:0.7, transform:`rotate(${tick * 3 + i * 15}deg)`,
+          }} />
+        ))}
+      </div>
+    );
+  }
+  if (scene === "boomer") {
+    const words = names.length > 0 ? names : ["OK BOOMER"];
+    const idx = Math.floor(tick / 14) % words.length;
+    const phase = tick % 14;
+    const sc = phase < 7 ? 0.3 + phase * 0.25 : 2.05 - (phase - 7) * 0.25;
+    const op = phase < 2 ? phase / 2 : phase > 12 ? (14 - phase) / 2 : 1;
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{
+          fontSize:"clamp(32px,10vw,90px)", fontWeight:900,
+          fontFamily:"'Impact','Arial Black',sans-serif",
+          letterSpacing:"0.03em", textTransform:"uppercase",
+          color:`hsl(${(idx * 70 + tick * 2) % 360},100%,55%)`,
+          textShadow:"3px 3px 0 rgba(0,0,0,0.6), 0 0 40px currentColor",
+          transform:`scale(${sc}) rotate(${Math.sin(tick * 0.15) * 6}deg)`,
+          opacity:op, whiteSpace:"nowrap",
+        }}>{words[idx]}</div>
+      </div>
+    );
+  }
+  return null;
+}
+
 const DJ_SPOT_COLS = [
   "255,0,200",   // magenta
   "0,220,255",   // cyan
@@ -1291,6 +1445,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({}); 
   const [djModeActive, setDjModeActive] = useState(false);
   const [djSpotlightIdx, setDjSpotlightIdx] = useState(-1);
+  const [djCurrentScene, setDjCurrentScene] = useState<string>("spotlight");
+  const [djAutoAdvance, setDjAutoAdvance] = useState(false);
+  const [djMoveStyle, setDjMoveStyle] = useState<string>("sling");
+  // Client-side dedup: suppress "X joined" messages that arrive within 3s of a
+  // previous join for the same user (catches the server-side race before the
+  // joiningNow fix takes effect, and handles edge cases like StrictMode mounts).
+  const recentJoinsRef = useRef<Map<string, number>>(new Map());
   const moodTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // Mood picker open/closed state (for the new emoji bar that replaced the
   // raise-hand button in the bottom control row).
@@ -2766,12 +2927,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       // this check the message appeared twice: once on first join, once on
       // every reconnect, causing the doubled "X joined the room" bug.
       if (data.user.id !== user.id && !data.isRejoin) {
-        const name = getUserDisplayName(data.user);
-        addSystemMessage(`${name} joined the room`);
-        playNotificationSound("join");
-        // Afi K personality: only the AI session owner triggers the welcome so it broadcasts once
-        if (aiTutorActiveRef.current && /afi\s*k|afik/i.test(aiPersonaNameRef.current)) {
-          welcomeUserRef.current?.(name);
+        // Client-side dedup: if we already showed a join for this user within
+        // the last 3s, swallow the duplicate (race condition safety net).
+        const now = Date.now();
+        const lastJoin = recentJoinsRef.current.get(data.user.id);
+        if (!lastJoin || now - lastJoin > 3000) {
+          recentJoinsRef.current.set(data.user.id, now);
+          setTimeout(() => recentJoinsRef.current.delete(data.user.id), 3000);
+          const name = getUserDisplayName(data.user);
+          addSystemMessage(`${name} joined the room`);
+          playNotificationSound("join");
+          // Afi K personality: only the AI session owner triggers the welcome so it broadcasts once
+          if (aiTutorActiveRef.current && /afi\s*k|afik/i.test(aiPersonaNameRef.current)) {
+            welcomeUserRef.current?.(name);
+          }
         }
       }
     });
@@ -3546,12 +3715,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     });
 
     // ── DJ Mode — host toggles disco sling animations for all participants ──
-    socket.on("room:dj-mode", (data: { active: boolean }) => {
+    socket.on("room:dj-mode", (data: { active: boolean; scene?: string; moveStyle?: string }) => {
       setDjModeActive(!!data?.active);
-      if (!data?.active) setDjSpotlightIdx(-1);
+      if (data?.active) {
+        setDjCurrentScene(data.scene || "spotlight");
+        if (data.moveStyle) setDjMoveStyle(data.moveStyle);
+      } else {
+        setDjSpotlightIdx(-1);
+        setDjCurrentScene("spotlight");
+      }
     });
-    socket.on("room:dj-skip", () => {
-      window.dispatchEvent(new Event("vx-dj-skip"));
+    // ── DJ Skip — server sends the next scene name, all clients sync together ──
+    socket.on("room:dj-skip", (data?: { scene?: string }) => {
+      if (data?.scene) setDjCurrentScene(data.scene);
+    });
+    // ── DJ Move — host changes movement style for all participant cards ──
+    socket.on("room:dj-move", (data: { moveStyle: string }) => {
+      if (data?.moveStyle) setDjMoveStyle(data.moveStyle);
     });
 
     socket.on("room:updated", (updatedRoom: any) => {
@@ -3634,6 +3814,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:avatar-gifs-snapshot");
       socket.off("room:dj-mode");
       socket.off("room:dj-skip");
+      socket.off("room:dj-move");
       // Cancel any in-flight mood-clear timers so they don't fire after unmount.
       Object.values(moodTimersRef.current).forEach((t) => clearTimeout(t));
       moodTimersRef.current = {};
@@ -3698,7 +3879,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   // ── DJ Spotlight cycling — illuminates one participant at a time every 1.8s ─
   useEffect(() => {
-    if (!djModeActive || (room as any).roomTheme !== "disco") {
+    if (!djModeActive || djCurrentScene !== "spotlight") {
       setDjSpotlightIdx(-1);
       return;
     }
@@ -3709,7 +3890,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setDjSpotlightIdx(cur);
     }, 1800);
     return () => clearInterval(id);
-  }, [djModeActive, (room as any).roomTheme]);
+  }, [djModeActive, djCurrentScene]);
+
+  // ── DJ Auto-advance — host automatically cycles scenes every 20s ────────────
+  useEffect(() => {
+    if (!djModeActive || !djAutoAdvance || !isHost) return;
+    const id = setInterval(() => {
+      socket?.emit("room:dj-skip", { roomId: room.id });
+    }, 20000);
+    return () => clearInterval(id);
+  }, [djModeActive, djAutoAdvance, isHost, socket, room.id]);
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -12152,6 +12342,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
+          {/* ── DJ Scene full-screen overlay (position:fixed, covers whole viewport) ── */}
+          <DjSceneOverlay scene={djCurrentScene} participants={participants} active={djModeActive} />
+
           {(() => {
             const visibleCount = participants.filter(p => !foreverBlockedIds.has(p.id)).length;
             const cardPx =
@@ -12184,14 +12377,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     className="flex flex-col items-center gap-2 group relative"
                     data-testid={`card-participant-${p.id}`}
                     style={{
-                      ...(djModeActive && currentTheme === "disco" && !isRoomOwner ? getDjSlingStyle(index) : {}),
-                      ...(djModeActive && currentTheme === "disco" && djSpotlightIdx === index
+                      ...(djModeActive && !isRoomOwner ? getDjMoveStyle(index, djMoveStyle) : {}),
+                      ...(djModeActive && djCurrentScene === "spotlight" && djSpotlightIdx === index
                         ? { filter: `drop-shadow(0 0 18px rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.95)) drop-shadow(0 0 36px rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.55))` }
                         : {}),
                     }}
                   >
                     {/* DJ spotlight beam from above */}
-                    {djModeActive && currentTheme === "disco" && djSpotlightIdx === index && (
+                    {djModeActive && djCurrentScene === "spotlight" && djSpotlightIdx === index && (
                       <>
                         <div style={{
                           position:"absolute", bottom:"100%", left:"50%",
@@ -12394,15 +12587,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             🎧 DJ MODE
                           </div>
                         )}
-                        {/* Host-only controls */}
+                        {/* Host-only DJ controls */}
                         {isMe && (
                           <div className="flex flex-col items-center gap-1">
+                            {/* DJ Mode toggle */}
                             <button
                               data-testid="button-dj-mode-toggle"
                               onClick={() => {
                                 const next = !djModeActive;
                                 setDjModeActive(next);
-                                socket?.emit("room:dj-mode", { roomId: room.id, active: next });
+                                if (next) { setDjCurrentScene("spotlight"); setDjAutoAdvance(false); }
+                                socket?.emit("room:dj-mode", { roomId: room.id, active: next, moveStyle: djMoveStyle });
                               }}
                               style={{
                                 display:"flex", alignItems:"center", gap:5,
@@ -12423,26 +12618,53 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                               🎧 {djModeActive ? "DJ ON" : "DJ MODE"}
                             </button>
                             {djModeActive && (
-                              <button
-                                data-testid="button-dj-skip"
-                                onClick={() => {
-                                  socket?.emit("room:dj-skip", { roomId: room.id });
-                                  window.dispatchEvent(new Event("vx-dj-skip"));
-                                }}
-                                style={{
-                                  display:"flex", alignItems:"center", gap:4,
-                                  padding:"3px 10px", borderRadius:999,
-                                  background:"rgba(0,220,255,0.18)",
-                                  border:"1px solid rgba(0,220,255,0.50)",
-                                  color:"rgba(100,240,255,0.95)",
-                                  fontSize:9, fontWeight:800, letterSpacing:"0.06em",
-                                  cursor:"pointer", whiteSpace:"nowrap",
-                                  animation:"dj-skip-ripple 1.5s ease-out infinite",
-                                  transition:"all 0.15s",
-                                }}
-                              >
-                                ⏭ SKIP SCENE
-                              </button>
+                              <>
+                                {/* Current scene label + skip */}
+                                <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                                  <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.06em", color:"rgba(200,180,255,0.75)", textTransform:"uppercase", whiteSpace:"nowrap" }}>
+                                    {djCurrentScene === "spotlight" ? "🔦" : djCurrentScene === "namestorm" ? "🌪" : djCurrentScene === "disco" ? "🪩" : djCurrentScene === "kiss" ? "💋" : djCurrentScene === "cocktails" ? "🍹" : "💥"} {djCurrentScene}
+                                  </span>
+                                  <button
+                                    data-testid="button-dj-skip"
+                                    onClick={() => { socket?.emit("room:dj-skip", { roomId: room.id }); }}
+                                    style={{
+                                      display:"flex", alignItems:"center", gap:3,
+                                      padding:"2px 8px", borderRadius:999,
+                                      background:"rgba(0,220,255,0.18)", border:"1px solid rgba(0,220,255,0.50)",
+                                      color:"rgba(100,240,255,0.95)", fontSize:8, fontWeight:800,
+                                      letterSpacing:"0.06em", cursor:"pointer", whiteSpace:"nowrap",
+                                      animation:"dj-skip-ripple 1.5s ease-out infinite",
+                                    }}
+                                  >⏭ SKIP</button>
+                                </div>
+                                {/* Auto-advance toggle */}
+                                <button
+                                  data-testid="button-dj-auto"
+                                  onClick={() => setDjAutoAdvance(a => !a)}
+                                  style={{
+                                    padding:"2px 8px", borderRadius:999,
+                                    background: djAutoAdvance ? "rgba(34,197,94,0.22)" : "rgba(255,255,255,0.07)",
+                                    border: djAutoAdvance ? "1px solid rgba(34,197,94,0.55)" : "1px solid rgba(255,255,255,0.15)",
+                                    color: djAutoAdvance ? "rgba(134,239,172,0.95)" : "rgba(255,255,255,0.45)",
+                                    fontSize:8, fontWeight:700, letterSpacing:"0.08em",
+                                    cursor:"pointer", whiteSpace:"nowrap",
+                                  }}
+                                >{djAutoAdvance ? "⏱ AUTO ON" : "⏱ AUTO"}</button>
+                                {/* Movement style picker */}
+                                <div style={{ display:"flex", gap:3, flexWrap:"wrap", justifyContent:"center", maxWidth:130 }}>
+                                  {(["sling","bounce","spin","float","static"] as const).map(s => (
+                                    <button key={s} data-testid={`button-dj-move-${s}`}
+                                      onClick={() => { setDjMoveStyle(s); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: s }); }}
+                                      style={{
+                                        padding:"1px 5px", borderRadius:999, fontSize:7, fontWeight:700,
+                                        letterSpacing:"0.05em", cursor:"pointer", textTransform:"uppercase",
+                                        background: djMoveStyle === s ? "rgba(255,200,0,0.28)" : "rgba(255,255,255,0.06)",
+                                        border: djMoveStyle === s ? "1px solid rgba(255,200,0,0.65)" : "1px solid rgba(255,255,255,0.12)",
+                                        color: djMoveStyle === s ? "rgba(255,230,100,0.95)" : "rgba(255,255,255,0.38)",
+                                      }}>{s}</button>
+                                  ))}
+                                </div>
+                              </>
                             )}
                           </div>
                         )}
@@ -12450,7 +12672,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     )}
 
                     {/* 🎧 Headphones crown on host avatar when DJ mode active */}
-                    {djModeActive && currentTheme === "disco" && isRoomOwner && (
+                    {djModeActive && isRoomOwner && (
                       <div style={{
                         position:"absolute",
                         top: 28,
