@@ -3859,31 +3859,31 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       ctx.clearRect(0, 0, S, S);
 
       if (tabUnreadCount > 0) {
-        // ── Icon: 80×80 anchored to bottom-left, with rounded clip ──────
+        // ── Icon: 68×68 anchored to bottom-left, with rounded clip ──────
         if (img) {
           ctx.save();
           ctx.beginPath();
-          ctx.roundRect(0, S - 80, 80, 80, 14);
+          ctx.roundRect(0, S - 68, 68, 68, 12);
           ctx.clip();
-          ctx.drawImage(img, 0, S - 80, 80, 80);
+          ctx.drawImage(img, 0, S - 68, 68, 68);
           ctx.restore();
         }
 
-        // ── Badge: top-right quadrant, radius=38 ─────────────────────────
+        // ── Badge: top-right quadrant, radius=48 ─────────────────────────
         const label = tabUnreadCount > 99 ? "99+" : String(tabUnreadCount);
-        const badgeR = 38;
-        const cx = S - badgeR - 2; // 88
-        const cy = badgeR + 2;     // 40
+        const badgeR = 48;
+        const cx = S - badgeR - 2; // 78
+        const cy = badgeR + 2;     // 50
 
         // Layer 1: subtle drop shadow (dark transparent ring)
         ctx.beginPath();
-        ctx.arc(cx, cy, badgeR + 7, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.28)";
+        ctx.arc(cx, cy, badgeR + 8, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.30)";
         ctx.fill();
 
         // Layer 2: thick pure-white border — contrast against any tab bar
         ctx.beginPath();
-        ctx.arc(cx, cy, badgeR + 3, 0, Math.PI * 2);
+        ctx.arc(cx, cy, badgeR + 4, 0, Math.PI * 2);
         ctx.fillStyle = "#ffffff";
         ctx.fill();
 
@@ -3896,7 +3896,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         // Layer 4: vivid red fill — Material Red A400 (#ff1744) to #e00020
         ctx.beginPath();
         ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
-        const grad = ctx.createRadialGradient(cx - 8, cy - 8, 4, cx, cy, badgeR);
+        const grad = ctx.createRadialGradient(cx - 10, cy - 10, 5, cx, cy, badgeR);
         grad.addColorStop(0, "#ff4d63");
         grad.addColorStop(0.55, "#ff1744");
         grad.addColorStop(1, "#c8001a");
@@ -3905,13 +3905,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
         // Layer 5: white count number
         const digits = label.length;
-        const fontSize = digits === 1 ? 42 : digits === 2 ? 32 : 24;
+        const fontSize = digits === 1 ? 54 : digits === 2 ? 40 : 30;
         ctx.fillStyle = "#ffffff";
         ctx.font = `900 ${fontSize}px system-ui,Arial,sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.shadowColor = "rgba(0,0,0,0.55)";
-        ctx.shadowBlur = 3;
+        ctx.shadowColor = "rgba(0,0,0,0.60)";
+        ctx.shadowBlur = 4;
         ctx.fillText(label, cx, cy + 2);
         ctx.shadowBlur = 0;
       } else {
