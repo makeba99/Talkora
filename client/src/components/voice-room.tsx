@@ -15,15 +15,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  Mic, MicOff, PhoneOff, Hand, Globe, AlertCircle, MessageSquare,
+  Mic, MicOff, PhoneOff, Globe, AlertCircle, MessageSquare,
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
   Video, VideoOff, LogIn, LogOut, Search, Play, Pause, Loader2, Pencil, Shield, Crown,
-  Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Minimize2, Palette,
+  Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Minimize2,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile, MoreHorizontal,
-  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, Share2, CheckCheck, Wand2, Dices, SendHorizontal,
-  Linkedin, Pin
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
+  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, Dices, SendHorizontal,
+  Pin
 } from "lucide-react";
 import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";

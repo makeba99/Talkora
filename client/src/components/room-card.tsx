@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Users, Settings, Lock, Globe, Ban, UserPlus, UserCheck, MessageSquare, Heart, ChevronUp, ChevronLeft, ChevronRight, Instagram, Linkedin, Facebook, Image as ImageIcon, X, Search, Youtube, Loader2, Link, Copy, Bell, Mic, MonitorPlay, Flame, Plus, Footprints, Hand } from "lucide-react";
+import { Users, Settings, Lock, Globe, UserPlus, UserCheck, MessageSquare, Heart, Instagram, Linkedin, Facebook, X, Copy, Bell, Mic, Flame, Plus, Hand } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { getRoomThemeBorderClass, ROOM_THEMES } from "@/lib/room-theme-utils";

@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, Sparkles, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, GraduationCap, LayoutGrid, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff, Linkedin } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, LayoutGrid, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff, Linkedin } from "lucide-react";
 import { isSoundEnabled, setSoundEnabled, onSoundEnabledChange, sfxToggle } from "@/lib/sound-fx";
 import { isBoostMode, setBoostMode, onBoostModeChange } from "@/lib/perf-bus";
 import { SiInstagram, SiFacebook } from "react-icons/si";
