@@ -3765,8 +3765,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // room tab is active, then restore the original hrefs on cleanup.
   useEffect(() => {
     const canvas = document.createElement("canvas");
-    canvas.width = 32;
-    canvas.height = 32;
+    // Use 64×64 for sharper rendering — browsers scale it down to 16/32px
+    canvas.width = 64;
+    canvas.height = 64;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -3779,52 +3780,79 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const img = new Image();
     img.src = "/vextorn-icon-192.png";
     img.onload = () => {
-      ctx.clearRect(0, 0, 32, 32);
-
-      // Draw base icon with rounded corners
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(0, 0, 32, 32, 6);
-      ctx.clip();
-      ctx.drawImage(img, 0, 0, 32, 32);
-      ctx.restore();
+      ctx.clearRect(0, 0, 64, 64);
 
       if (tabUnreadCount > 0) {
-        // Red dot — top-right corner, no numbers, bigger & cleaner
-        const cx = 24;
-        const cy = 8;
-        const r = 9;
-        // Dark halo for contrast on any background
+        // Base icon slightly smaller (inset) to give badge room — top-left 42×42
+        ctx.save();
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        ctx.fill();
-        // Outer red ring for crispness
+        ctx.roundRect(0, 4, 44, 44, 9);
+        ctx.clip();
+        ctx.drawImage(img, 0, 4, 44, 44);
+        ctx.restore();
+
+        // Red badge — top-right, big & bold with count
+        const label = tabUnreadCount > 99 ? "99+" : String(tabUnreadCount);
+        const isWide = label.length > 1;
+        const badgeR = 17;
+        const cx = 64 - badgeR - 1;
+        const cy = badgeR + 1;
+
+        // Dark shadow halo
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = "#c41e1e";
+        ctx.arc(cx, cy, badgeR + 3, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
         ctx.fill();
-        // Inner bright red fill
+
+        // Dark outer ring
         ctx.beginPath();
-        ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
-        ctx.fillStyle = "#ef4444";
+        ctx.arc(cx, cy, badgeR + 1, 0, Math.PI * 2);
+        ctx.fillStyle = "#9b1515";
         ctx.fill();
+
+        // Bright red fill
+        ctx.beginPath();
+        ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, badgeR);
+        grad.addColorStop(0, "#ff6b6b");
+        grad.addColorStop(1, "#dc2626");
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // White count number
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `bold ${isWide ? 18 : 22}px system-ui,sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "rgba(0,0,0,0.4)";
+        ctx.shadowBlur = 2;
+        ctx.fillText(label, cx, cy + 1);
+        ctx.shadowBlur = 0;
       } else {
-        // Green dot — bottom-right corner, bigger & cleaner
-        const cx = 24;
-        const cy = 24;
-        const r = 9;
+        // No unread — full-size icon with small green dot
+        ctx.save();
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.roundRect(0, 0, 64, 64, 12);
+        ctx.clip();
+        ctx.drawImage(img, 0, 0, 64, 64);
+        ctx.restore();
+
+        // Green presence dot — bottom-right
+        const cx = 50, cy = 50, r = 12;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = "#16803c";
+        ctx.arc(cx, cy, r + 1, 0, Math.PI * 2);
+        ctx.fillStyle = "#15803d";
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
-        ctx.fillStyle = "#22c55e";
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        const gGrad = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, r);
+        gGrad.addColorStop(0, "#4ade80");
+        gGrad.addColorStop(1, "#16a34a");
+        ctx.fillStyle = gGrad;
         ctx.fill();
       }
 
