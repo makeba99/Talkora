@@ -10771,18 +10771,18 @@ html.neomorphic-light .pinned-socials-link {
    ============================================================================ */
 .chat-color-pop {
   background: linear-gradient(170deg, hsl(248 40% 11% / 0.99), hsl(248 44% 7% / 0.99)) !important;
-  border: 1px solid hsl(248 35% 28% / 0.75) !important;
+  border: 1px solid hsl(248 35% 30% / 0.80) !important;
   box-shadow:
-    inset 0  1px 0 hsl(248 65% 72% / 0.10),
-    inset 0 -1px 0 hsl(248 50% 4%  / 0.50),
-    0 24px 48px hsl(248 55% 4% / 0.70),
-    0  8px 18px hsl(248 50% 4% / 0.50) !important;
-  border-radius: 18px !important;
+    inset 0  1px 0 hsl(248 65% 72% / 0.12),
+    inset 0 -1px 0 hsl(248 50% 4%  / 0.55),
+    0 28px 56px hsl(248 55% 4% / 0.75),
+    0  10px 22px hsl(248 50% 4% / 0.55) !important;
+  border-radius: 20px !important;
 }
 .chat-color-pop-inner {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .chat-color-pop-head {
   display: flex;
@@ -10792,10 +10792,10 @@ html.neomorphic-light .pinned-socials-link {
 }
 .chat-color-pop-title {
   font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-weight: 900;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: hsl(248 20% 62%);
+  color: hsl(248 18% 68%);
 }
 .chat-color-pop-preview {
   font-family: "Space Grotesk", system-ui, sans-serif;
@@ -10811,26 +10811,37 @@ html.neomorphic-light .pinned-socials-link {
     inset 0 -1px 0 rgba(0,0,0,0.25),
     2px 2px 6px rgba(0,0,0,0.30);
   letter-spacing: -0.02em;
-  min-width: 38px;
+  min-width: 40px;
   text-align: center;
-  color: hsl(248 15% 72%);
+  color: hsl(248 15% 58%);
+  transition: color 200ms ease, text-shadow 200ms ease, background 200ms ease, border-color 200ms ease;
 }
+/* Card preview icon pill */
+.chat-color-pop-preview--card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(248 20% 52%);
+  transition: color 200ms ease, background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+/* Color grid — inset trough */
 .chat-color-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 9px;
-  padding: 10px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 11px;
   border-radius: 14px;
-  background: hsl(248 38% 7% / 0.70);
+  background: hsl(248 38% 6% / 0.75);
   border: 1px solid hsl(248 32% 18% / 0.55);
   box-shadow:
-    inset 2px 2px 6px rgba(0,0,0,0.32),
+    inset 2px 2px 8px rgba(0,0,0,0.38),
     inset -1px -1px 3px hsl(248 60% 70% / 0.04);
 }
+/* Individual swatch */
 .chat-color-swatch {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   border: 1.5px solid hsl(248 30% 32% / 0.55);
   cursor: pointer;
@@ -10838,24 +10849,24 @@ html.neomorphic-light .pinned-socials-link {
   align-items: center;
   justify-content: center;
   box-shadow:
-    3px  3px  7px rgba(0,0,0,0.45),
+    3px  3px  8px rgba(0,0,0,0.48),
     -1px -1px  4px rgba(255,255,255,0.06),
-    inset 0 1px 0  rgba(255,255,255,0.32),
-    inset 0 -1px 2px rgba(0,0,0,0.28);
+    inset 0 1px 0  rgba(255,255,255,0.34),
+    inset 0 -1px 2px rgba(0,0,0,0.30);
   transition: transform 150ms ease, box-shadow 200ms ease, border-color 160ms ease;
 }
 .chat-color-swatch:hover {
   transform: translateY(-2px) scale(1.10);
-  border-color: rgba(255,255,255,0.55);
+  border-color: rgba(255,255,255,0.60);
   box-shadow:
-    4px  5px 12px rgba(0,0,0,0.55),
+    4px  6px 14px rgba(0,0,0,0.58),
     -1px -1px  4px rgba(255,255,255,0.08),
-    inset 0 1px 0  rgba(255,255,255,0.48),
-    inset 0 -1px 2px rgba(0,0,0,0.28),
-    0 8px 18px var(--swatch, rgba(150,100,255,0.50));
+    inset 0 1px 0  rgba(255,255,255,0.50),
+    inset 0 -1px 2px rgba(0,0,0,0.30),
+    0 10px 22px var(--swatch, rgba(150,100,255,0.52));
 }
 .chat-color-swatch.is-selected {
-  transform: scale(1.12);
+  transform: scale(1.14);
   border-color: rgba(255,255,255,0.88);
   box-shadow:
     2px  2px  8px rgba(0,0,0,0.55),
@@ -10864,10 +10875,10 @@ html.neomorphic-light .pinned-socials-link {
     inset 0 -1px 2px rgba(0,0,0,0.30),
     0 0 0 2.5px hsl(248 38% 9% / 0.95),
     0 0 0 4px   var(--swatch, rgba(160,110,255,0.90)),
-    0 8px 22px  var(--swatch, rgba(150,100,255,0.70));
+    0 8px 24px  var(--swatch, rgba(150,100,255,0.70));
   animation: chat-color-pop-in 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-/* "No color" swatch — transparent with diagonal slash */
+/* "No color" swatch — dark base with diagonal slash */
 .chat-color-swatch--none {
   background: linear-gradient(
     135deg,
@@ -10897,6 +10908,7 @@ html.neomorphic-light .pinned-socials-link {
     0 0 0 4px   rgba(180, 150, 255, 0.75),
     0 8px 18px rgba(150, 110, 255, 0.35);
 }
+/* Check mark inside selected swatch */
 .chat-color-check {
   width: 13px;
   height: 13px;
@@ -10904,31 +10916,48 @@ html.neomorphic-light .pinned-socials-link {
   z-index: 1;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.40));
 }
-/* Reset button */
+/* Section divider between message & card sections */
+.chat-color-section-divider {
+  height: 1px;
+  margin: 2px -2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(248 40% 35% / 0.30) 20%,
+    hsl(248 55% 55% / 0.18) 50%,
+    hsl(248 40% 35% / 0.30) 80%,
+    transparent 100%
+  );
+}
+/* Reset button — always rendered; disabled = ghosted */
 .chat-color-reset-btn {
   width: 100%;
-  padding: 6px 0;
+  padding: 7px 0;
   border-radius: 10px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: hsl(248 20% 55%);
+  color: hsl(248 22% 60%);
   background: hsl(248 32% 9% / 0.70);
-  border: 1px solid hsl(248 30% 20% / 0.55);
+  border: 1px solid hsl(248 30% 22% / 0.60);
   box-shadow:
     2px 2px 5px rgba(0,0,0,0.30),
     -1px -1px 3px rgba(255,255,255,0.03),
     inset 0 1px 0 rgba(255,255,255,0.04);
   cursor: pointer;
-  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
 }
-.chat-color-reset-btn:hover {
-  color: hsl(248 20% 75%);
-  background: hsl(248 32% 12% / 0.85);
+.chat-color-reset-btn:hover:not(:disabled) {
+  color: hsl(248 20% 80%);
+  background: hsl(248 32% 13% / 0.90);
   box-shadow:
-    1px 1px 3px rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+    1px 1px 3px rgba(0,0,0,0.38),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+}
+.chat-color-reset-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 /* Trigger indicator dot for "no color" state */
 .chat-color-none-dot {
@@ -10954,10 +10983,42 @@ html.neomorphic-light .pinned-socials-link {
   background: rgba(180, 155, 255, 0.50);
   transform: translate(-50%, -50%) rotate(-40deg);
 }
+/* Live next-message preview */
+.chat-color-live-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+.chat-color-live-preview-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: hsl(248 18% 48%);
+}
+.chat-color-live-preview-bubble {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: hsl(248 32% 11% / 0.80);
+  border: 1px solid hsl(248 28% 20% / 0.55);
+  border-top-color: hsl(248 28% 28% / 0.40);
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.40),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+.chat-color-live-preview-text {
+  font-size: 11.5px;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  line-height: 1.45;
+  color: hsl(248 12% 72%);
+  transition: color 180ms ease;
+}
 @keyframes chat-color-pop-in {
-  0%   { transform: scale(0.80); }
-  60%  { transform: scale(1.18); }
-  100% { transform: scale(1.12); }
+  0%   { transform: scale(0.78); }
+  60%  { transform: scale(1.20); }
+  100% { transform: scale(1.14); }
 }
 
 /* ============================================================================

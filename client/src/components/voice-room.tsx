@@ -8486,23 +8486,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     }
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="chat-color-pop w-64 p-3" side="top" align="start">
+                <PopoverContent className="chat-color-pop w-[17.5rem] p-3" side="top" align="start">
                   <div className="chat-color-pop-inner">
+
+                    {/* ── Message color section ── */}
                     <div className="chat-color-pop-head">
-                      <span className="chat-color-pop-title">Message color</span>
+                      <span className="chat-color-pop-title">MESSAGE COLOR</span>
                       <span
-                        className="chat-color-pop-preview"
+                        className="chat-color-pop-preview chat-color-pop-preview--text"
                         style={chatMessageColor ? {
                           color: chatMessageColor,
-                          textShadow: `0 0 12px ${chatMessageColor}88`,
+                          textShadow: `0 0 14px ${chatMessageColor}99`,
+                          borderColor: `${chatMessageColor}44`,
+                          background: `radial-gradient(ellipse at 60% 30%, ${chatMessageColor}18, hsl(248 38% 9% / 0.95))`,
                         } : {}}
                         aria-hidden="true"
                       >
                         Aa
                       </span>
                     </div>
-                    <div className="chat-color-grid" role="radiogroup" aria-label="Chat color">
-                      {/* "No color" swatch — clear / default */}
+                    <div className="chat-color-grid" role="radiogroup" aria-label="Chat message color">
                       <button
                         type="button"
                         role="radio"
@@ -8522,10 +8525,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {[
                         "#c4b5fd", "#a78bfa", "#22d3ee", "#34d399",
                         "#facc15", "#fb923c", "#f87171", "#60a5fa",
-                        "#f0abfc", "#ffffff", "#94a3b8", "#2dd4bf",
+                        "#f0abfc", "#e879f9", "#ffffff", "#94a3b8",
+                        "#2dd4bf", "#fbbf24",
                       ].map((color) => {
                         const selected = chatMessageColor === color;
-                        const isDark = ["#facc15","#34d399","#22d3ee","#ffffff"].includes(color);
+                        const isDark = ["#facc15","#34d399","#22d3ee","#ffffff","#fbbf24"].includes(color);
                         return (
                           <button
                             key={color}
@@ -8547,30 +8551,36 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         );
                       })}
                     </div>
-                    {chatMessageColor && (
-                      <button
-                        type="button"
-                        onClick={() => setChatMessageColor("")}
-                        className="chat-color-reset-btn"
-                        data-testid="button-chat-color-reset"
-                      >
-                        Reset text color
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setChatMessageColor("")}
+                      className="chat-color-reset-btn"
+                      disabled={!chatMessageColor}
+                      data-testid="button-chat-color-reset"
+                    >
+                      RESET TEXT COLOR
+                    </button>
+
+                    {/* ── Section divider ── */}
+                    <div className="chat-color-section-divider" />
 
                     {/* ── Card background color section ── */}
-                    <div style={{ height: "1px", background: "rgba(180,160,255,0.09)", margin: "0 -2px" }} />
                     <div className="chat-color-pop-head">
-                      <span className="chat-color-pop-title">Card color</span>
+                      <span className="chat-color-pop-title">CARD COLOR</span>
                       <span
-                        className="chat-color-pop-preview"
+                        className="chat-color-pop-preview chat-color-pop-preview--card"
                         style={chatCardColor ? {
-                          background: `linear-gradient(135deg, ${chatCardColor}40, ${chatCardColor}25)`,
-                          borderColor: `${chatCardColor}55`,
+                          background: `linear-gradient(135deg, ${chatCardColor}55 0%, ${chatCardColor}35 100%)`,
+                          borderColor: `${chatCardColor}66`,
+                          boxShadow: `inset 0 1px 0 ${chatCardColor}44, 0 0 10px ${chatCardColor}30`,
                         } : {}}
                         aria-hidden="true"
                       >
-                        ▭
+                        <svg viewBox="0 0 16 12" fill="none" width="14" height="10" aria-hidden="true">
+                          <rect x="0.75" y="0.75" width="14.5" height="10.5" rx="2.5" stroke="currentColor" strokeWidth="1.4" fill={chatCardColor ? `${chatCardColor}55` : "none"} />
+                          <line x1="3" y1="4" x2="13" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
+                          <line x1="3" y1="6.5" x2="10" y2="6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.35" />
+                        </svg>
                       </span>
                     </div>
                     <div className="chat-color-grid" role="radiogroup" aria-label="Card background color">
@@ -8591,9 +8601,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         )}
                       </button>
                       {[
-                        "#7c3aed", "#1d4ed8", "#0e7490", "#047857",
-                        "#b45309", "#b91c1c", "#be185d", "#4338ca",
-                        "#9333ea", "#0f766e", "#92400e", "#1e3a5f",
+                        "#8b5cf6", "#2563eb", "#0891b2", "#059669",
+                        "#d97706", "#dc2626", "#db2777", "#4f46e5",
+                        "#7c3aed", "#0d9488", "#ea580c", "#1e40af",
+                        "#065f46", "#7e1d3f",
                       ].map((color) => {
                         const selected = chatCardColor === color;
                         return (
@@ -8617,15 +8628,37 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         );
                       })}
                     </div>
-                    {chatCardColor && (
-                      <button
-                        type="button"
-                        onClick={() => setChatCardColor("")}
-                        className="chat-color-reset-btn"
-                        data-testid="button-card-color-reset"
-                      >
-                        Reset card color
-                      </button>
+                    <button
+                      type="button"
+                      onClick={() => setChatCardColor("")}
+                      className="chat-color-reset-btn"
+                      disabled={!chatCardColor}
+                      data-testid="button-card-color-reset"
+                    >
+                      RESET CARD COLOR
+                    </button>
+
+                    {/* ── Live preview of next message ── */}
+                    {(chatMessageColor || chatCardColor) && (
+                      <div className="chat-color-live-preview">
+                        <div className="chat-color-live-preview-label">PREVIEW</div>
+                        <div
+                          className="chat-color-live-preview-bubble"
+                          style={chatCardColor ? {
+                            background: `linear-gradient(158deg, ${chatCardColor}72 0%, ${chatCardColor}52 52%, ${chatCardColor}38 100%)`,
+                            borderColor: `${chatCardColor}55`,
+                            borderTopColor: `${chatCardColor}88`,
+                            boxShadow: `0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 ${chatCardColor}44`,
+                          } : {}}
+                        >
+                          <span
+                            className="chat-color-live-preview-text"
+                            style={{ color: chatMessageColor || undefined }}
+                          >
+                            Hello! Your next message will look like this.
+                          </span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </PopoverContent>
