@@ -577,6 +577,10 @@ export default function Lobby() {
     if (orbitAutoCloseTimerRef.current) clearTimeout(orbitAutoCloseTimerRef.current);
   }, []);
   const viewedAnnouncementIdsRef = useRef<Set<string>>(new Set());
+  // Stable ref so the SSE effect can read the current user id without a stale
+  // closure (the SSE effect runs once with [] deps to avoid re-subscribing).
+  const userIdRef = useRef<string | undefined>(user?.id);
+  useEffect(() => { userIdRef.current = user?.id; }, [user?.id]);
   const [liveVoteCounts, setLiveVoteCounts] = useState<Record<string, number>>({ ...BASE_SAMPLE_VOTE_COUNTS });
   const [liveParticipants, setLiveParticipants] = useState<Record<string, User[]>>({ ...BASE_SAMPLE_PARTICIPANTS });
   // Memoize the merged participants map so re-renders from socket presence events
@@ -667,8 +671,16 @@ export default function Lobby() {
         queryClient.setQueryData<any[]>(["/api/rooms"], (old) => {
           if (!old || old.length === 0) return incoming;
           const incomingMap = new Map(incoming.map((r: any) => [r.id, r]));
-          // Update rooms that appear in the SSE payload (they have active users).
-          const updated = old.map((r: any) =>
+          const currentUserId = userIdRef.current;
+          // Prune rooms no longer in the SSE active list — these have become
+          // empty (activeUsers=0) and should disappear from the lobby. Exception:
+          // the owner's own rooms are kept so they remain visible even at 0
+          // participants (the /api/rooms/mine query manages them separately).
+          const pruned = (old as any[]).filter(
+            (r: any) => incomingMap.has(r.id) || (currentUserId && r.ownerId === currentUserId)
+          );
+          // Update fields for rooms that appeared in the SSE payload.
+          const updated = pruned.map((r: any) =>
             incomingMap.has(r.id) ? { ...r, ...incomingMap.get(r.id) } : r
           );
           // Append any brand-new rooms from SSE that weren't in the old cache.
@@ -678,15 +690,23 @@ export default function Lobby() {
       } catch {}
     });
 
+    // EventSource reconnects automatically; log errors silently to avoid
+    // console noise on transient network blips.
+    es.onerror = () => {};
+
     return () => { es.close(); };
   }, []);
 
   const { data: fetchedRooms = [], isLoading: roomsLoading } = useQuery<Room[]>({
     queryKey: ["/api/rooms"],
-    // SSE keeps this cache up-to-date in real time. Keep a long safety-net
+    // SSE keeps this cache up-to-date in real time. Keep a safety-net
     // refetch interval in case EventSource fails to reconnect after a drop.
     refetchInterval: 5 * 60 * 1000,
-    staleTime: 60_000,
+    // staleTime: 0 ensures a fresh fetch on every page mount/refresh.
+    // Previously 60_000 meant a hard-refresh served the cached (possibly stale)
+    // room list for up to 60 s, hiding rooms that had become empty or showing
+    // ghost rooms from before a server restart.
+    staleTime: 0,
   });
 
   // Always fetch the owner's own rooms directly from the DB, bypassing the

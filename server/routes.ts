@@ -877,9 +877,10 @@ export async function registerRoutes(
       for (const [roomId, participants] of Array.from(roomParticipants.entries())) {
         allParticipants[roomId] = Array.from(participants.values());
       }
-      // Participants change frequently (users join/leave), so we use a short
-      // max-age but still allow stale-while-revalidate for instant repeat loads.
-      res.setHeader("Cache-Control", "public, max-age=15, stale-while-revalidate=3600");
+      // Participants change every time a user joins/leaves, so we must never
+      // serve stale data from the browser cache. no-store forces a real round-
+      // trip on every call; socket events handle real-time updates between polls.
+      res.setHeader("Cache-Control", "no-store");
       res.json(allParticipants);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -2299,12 +2300,12 @@ export async function registerRoutes(
       // 25-second grace period before deletion or truly abandoned. Either way
       // there's no value showing them in the lobby.
       const nonEmptyRooms = allRooms.filter((room) => (room.activeUsers ?? 0) > 0);
-      // Public data — safe to cache. max-age=60 keeps it fresh for 60 s;
-      // stale-while-revalidate=86400 lets the browser/SW serve the stale
-      // response instantly on repeat visits while fetching a fresh copy in
-      // the background. This satisfies Lighthouse "Use efficient cache
-      // lifetimes" without ever showing data older than 24 h.
-      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
+      // SSE stream (/api/rooms/stream) is the authoritative real-time source.
+      // The HTTP endpoint is only hit on cold load and as a safety-net fallback.
+      // stale-while-revalidate removed: serving a 24 h old list on refresh was
+      // the primary cause of ghost rooms persisting in the lobby after a server
+      // restart or after rooms become empty.
+      res.setHeader("Cache-Control", "no-cache");
       res.json(nonEmptyRooms.map((room) => roomPublicPayload(room)));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -4578,6 +4579,7 @@ export async function registerRoutes(
   (async () => {
     try {
       const allRooms = await storage.getAllRooms();
+      let resetCount = 0;
       for (const room of allRooms) {
         const participants = roomParticipants.get(room.id);
         if (!participants || participants.size === 0) {
@@ -4585,12 +4587,28 @@ export async function registerRoutes(
           // reconnect and re-emit `room:join` after a server restart.
           // Without this, every redeploy nukes rooms while users are inside.
           startRoomDeleteTimer(room.id, ROOM_STARTUP_GRACE_MS);
+
+          // Immediately reset activeUsers to 0 in the DB because the in-memory
+          // participants map is empty after a restart. Without this, the lobby
+          // shows rooms with stale activeUsers counts (e.g. 3 participants) even
+          // though nobody is actually connected — ghost rooms. When users
+          // reconnect and emit room:join the count is restored correctly.
+          if ((room.activeUsers ?? 0) > 0) {
+            await storage.updateRoomActiveUsers(room.id, 0);
+            resetCount++;
+          }
         }
       }
-      console.log(`Startup cleanup: scheduled ${allRooms.filter(r => {
+      const scheduledCount = allRooms.filter(r => {
         const p = roomParticipants.get(r.id);
         return !p || p.size === 0;
-      }).length} empty rooms for deletion (grace=${Math.round(ROOM_STARTUP_GRACE_MS / 1000)}s)`);
+      }).length;
+      console.log(`Startup cleanup: scheduled ${scheduledCount} empty rooms for deletion (grace=${Math.round(ROOM_STARTUP_GRACE_MS / 1000)}s), reset activeUsers=0 for ${resetCount} rooms`);
+      // Broadcast the corrected (ghost-free) room list immediately so any
+      // SSE clients that connected before this cleanup runs get fresh data.
+      if (resetCount > 0) {
+        broadcastRooms().catch(() => {});
+      }
     } catch (err) {
       console.error("Startup room cleanup error:", err);
     }
@@ -6493,7 +6511,7 @@ export async function registerRoutes(
                 }
               }
             }
-          }, 8000);
+          }, 25000);
           disconnectTimers.set(timerId, timer);
         }
       }
