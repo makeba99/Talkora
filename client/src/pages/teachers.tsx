@@ -52,6 +52,11 @@ import {
   Award,
   Wallet,
   Lock,
+  Smartphone,
+  Building2,
+  AlertCircle,
+  Copy,
+  CheckCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { PaymentMethodForm, SavedCardItem, type CardFormData } from "@/components/payment-method-form";
@@ -526,6 +531,8 @@ function BookingDialog({
   const [notes, setNotes] = useState("");
   const [selectedPmId, setSelectedPmId] = useState<string | null>(null);
   const [showNewCard, setShowNewCard] = useState(false);
+  const [paymentType, setPaymentType] = useState<"card" | "idram" | "cash">("card");
+  const [idramCopied, setIdramCopied] = useState(false);
 
   const totalPrice = Math.round((teacher.hourlyRate * Number(duration)) / 60);
 
@@ -560,12 +567,28 @@ function BookingDialog({
         durationMinutes: Number(duration),
         sessionType,
         notes: notes.trim() || null,
+        paymentMethod: paymentType,
+        paymentMethodId: paymentType === "card" ? selectedPmId : null,
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings/my"] });
-      toast({ title: "Session booked!", description: `Your session with ${teacher.name} is confirmed.` });
+      if (paymentType === "idram" && data?.idramOrderId) {
+        toast({
+          title: "Session booked — Idram pending",
+          description: `Transfer $${totalPrice} via Idram. Order ID: ${data.idramOrderId}`,
+          duration: 8000,
+        });
+      } else if (paymentType === "cash") {
+        toast({
+          title: "Session booked — payment pending",
+          description: "Transfer the amount via bank. Admin will confirm within 24h.",
+          duration: 8000,
+        });
+      } else {
+        toast({ title: "Session booked!", description: `Your session with ${teacher.name} is confirmed.` });
+      }
       handleClose();
     },
     onError: (err: any) => {
@@ -579,6 +602,8 @@ function BookingDialog({
     setDate(""); setTime(""); setNotes("");
     setSelectedPmId(null);
     setShowNewCard(false);
+    setPaymentType("card");
+    setIdramCopied(false);
   }
 
   function handleNextStep() {
@@ -587,6 +612,9 @@ function BookingDialog({
     if (!selectedPmId && defaultPm) setSelectedPmId(defaultPm.id);
     setStep(2);
   }
+
+  const AMD_RATE = 395;
+  const totalAmd = Math.round(parseFloat(totalPrice) * AMD_RATE);
 
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
@@ -798,66 +826,156 @@ function BookingDialog({
                 <div className="total-amount" style={{ fontSize: 18 }}>${totalPrice}</div>
               </div>
 
-              {paymentMethods.length > 0 && !showNewCard && (
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45 flex items-center gap-1.5">
-                    <CreditCard className="w-3 h-3 text-violet-400" />
-                    Choose a card
-                  </Label>
-                  <div className="space-y-2">
-                    {paymentMethods.map((pm) => (
-                      <SavedCardItem
-                        key={pm.id}
-                        {...pm}
-                        selected={selectedPmId === pm.id}
-                        onSelect={() => setSelectedPmId(pm.id)}
-                      />
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewCard(true)}
-                    className="w-full text-[12px] font-semibold py-2.5 rounded-xl transition-colors"
-                    style={{
-                      color: "hsl(var(--neu-orange-hi))",
-                      background: "linear-gradient(155deg, hsl(228 18% 10%) 0%, hsl(228 16% 13%) 100%)",
-                      border: "1px dashed hsl(var(--neu-orange-hi) / 0.35)",
-                      boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.45), inset -1px -1px 3px rgba(255,255,255,0.025)",
-                    }}
-                    data-testid="button-add-new-card"
-                  >
-                    + Add a new card
-                  </button>
-                </div>
-              )}
-
-              {(paymentMethods.length === 0 || showNewCard) && (
-                <div className="space-y-3">
-                  {showNewCard && (
+              {/* Payment method selector */}
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45">
+                  Payment method
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { id: "card", label: "Card", Icon: CreditCard, sub: "Visa / Mastercard" },
+                    { id: "idram", label: "Idram", Icon: Smartphone, sub: "Armenian wallet" },
+                    { id: "cash", label: "Bank", Icon: Building2, sub: "AMD transfer" },
+                  ] as const).map(({ id, label, Icon, sub }) => (
                     <button
+                      key={id}
                       type="button"
-                      onClick={() => setShowNewCard(false)}
-                      className="text-[12px] text-white/45 hover:text-violet-300 transition-colors flex items-center gap-1"
-                      data-testid="button-back-to-cards"
+                      onClick={() => { setPaymentType(id); setShowNewCard(false); }}
+                      data-testid={`button-pay-method-${id}`}
+                      className="flex flex-col items-center gap-1 rounded-xl py-3 px-2 transition-all"
+                      style={{
+                        background: paymentType === id
+                          ? "linear-gradient(155deg, hsl(228 18% 14%) 0%, hsl(228 20% 11%) 100%)"
+                          : "linear-gradient(155deg, hsl(228 16% 10%) 0%, hsl(228 16% 8%) 100%)",
+                        border: paymentType === id
+                          ? "1px solid rgba(251,191,36,0.45)"
+                          : "1px solid rgba(255,255,255,0.07)",
+                        boxShadow: paymentType === id ? "0 0 12px rgba(251,191,36,0.1)" : "none",
+                      }}
                     >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                      Back to saved cards
+                      <Icon className="w-4 h-4" style={{ color: paymentType === id ? "hsl(38 95% 72%)" : "rgba(255,255,255,0.4)" }} />
+                      <span className="text-[11px] font-bold" style={{ color: paymentType === id ? "hsl(38 95% 72%)" : "rgba(255,255,255,0.6)" }}>{label}</span>
+                      <span className="text-[9px] text-white/30">{sub}</span>
                     </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Card payment */}
+              {paymentType === "card" && (
+                <>
+                  {paymentMethods.length > 0 && !showNewCard && (
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold tracking-widest uppercase text-white/45 flex items-center gap-1.5">
+                        <CreditCard className="w-3 h-3 text-violet-400" />
+                        Choose a card
+                      </Label>
+                      <div className="space-y-2">
+                        {paymentMethods.map((pm) => (
+                          <SavedCardItem
+                            key={pm.id}
+                            {...pm}
+                            selected={selectedPmId === pm.id}
+                            onSelect={() => setSelectedPmId(pm.id)}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewCard(true)}
+                        className="w-full text-[12px] font-semibold py-2.5 rounded-xl transition-colors"
+                        style={{
+                          color: "hsl(var(--neu-orange-hi))",
+                          background: "linear-gradient(155deg, hsl(228 18% 10%) 0%, hsl(228 16% 13%) 100%)",
+                          border: "1px dashed hsl(var(--neu-orange-hi) / 0.35)",
+                          boxShadow: "inset 2px 2px 5px rgba(0,0,0,0.45), inset -1px -1px 3px rgba(255,255,255,0.025)",
+                        }}
+                        data-testid="button-add-new-card"
+                      >
+                        + Add a new card
+                      </button>
+                    </div>
                   )}
-                  {paymentMethods.length === 0 && (
-                    <p className="text-[12px] text-white/45 text-center py-1 italic">
-                      No saved cards yet — add one to continue
-                    </p>
+                  {(paymentMethods.length === 0 || showNewCard) && (
+                    <div className="space-y-3">
+                      {showNewCard && (
+                        <button type="button" onClick={() => setShowNewCard(false)}
+                          className="text-[12px] text-white/45 hover:text-violet-300 transition-colors flex items-center gap-1"
+                          data-testid="button-back-to-cards">
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Back to saved cards
+                        </button>
+                      )}
+                      {paymentMethods.length === 0 && (
+                        <p className="text-[12px] text-white/45 text-center py-1 italic">No saved cards yet — add one to continue</p>
+                      )}
+                      <PaymentMethodForm
+                        onSubmit={(data) => addPmMutation.mutate(data)}
+                        isPending={addPmMutation.isPending}
+                        submitLabel="Save Card & Continue"
+                      />
+                    </div>
                   )}
-                  <PaymentMethodForm
-                    onSubmit={(data) => addPmMutation.mutate(data)}
-                    isPending={addPmMutation.isPending}
-                    submitLabel="Save Card & Continue"
-                  />
+                </>
+              )}
+
+              {/* Idram payment */}
+              {paymentType === "idram" && (
+                <div className="rounded-xl p-4 space-y-3"
+                  style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.2)" }}>
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <p className="text-[12px] font-semibold text-amber-300">Pay with Idram</p>
+                  </div>
+                  <div className="space-y-2 text-[11px] text-white/65">
+                    <div className="flex justify-between items-center">
+                      <span>Amount (AMD ~{AMD_RATE})</span>
+                      <span className="font-bold text-amber-300">{totalAmd.toLocaleString()} ֏</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Idram account</span>
+                      <button
+                        type="button"
+                        onClick={() => { navigator.clipboard.writeText("+374-99-000-000"); setIdramCopied(true); setTimeout(() => setIdramCopied(false), 2000); }}
+                        className="flex items-center gap-1 font-mono font-bold text-amber-300 hover:text-amber-200 transition-colors"
+                        data-testid="button-copy-idram">
+                        +374-99-000-000
+                        {idramCopied ? <CheckCircle className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="rounded-lg p-2.5 flex gap-2"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-white/50">After booking, include your order ID as the transfer note. Your session will be confirmed within a few hours.</p>
+                  </div>
                 </div>
               )}
 
-              {paymentMethods.length > 0 && !showNewCard && (
+              {/* Cash / Bank transfer */}
+              {paymentType === "cash" && (
+                <div className="rounded-xl p-4 space-y-3"
+                  style={{ background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                    <p className="text-[12px] font-semibold text-indigo-300">AMD Bank Transfer</p>
+                  </div>
+                  <div className="space-y-2 text-[11px] text-white/65">
+                    <div className="flex justify-between"><span>Amount</span><span className="font-bold text-indigo-300">{totalAmd.toLocaleString()} ֏ (~${totalPrice})</span></div>
+                    <div className="flex justify-between"><span>Bank</span><span className="font-semibold text-white/80">Ameriabank</span></div>
+                    <div className="flex justify-between"><span>Account name</span><span className="font-semibold text-white/80">Vextorn LLC</span></div>
+                    <div className="flex justify-between"><span>Account number</span><span className="font-mono font-bold text-white/80">1234 5678 9012</span></div>
+                  </div>
+                  <div className="rounded-lg p-2.5 flex gap-2"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <AlertCircle className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-white/50">After booking, include your name as the transfer reference. An admin will confirm your payment within 24 hours.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              {(paymentType !== "card" || (paymentMethods.length > 0 && !showNewCard)) && (
                 <div className="flex gap-2 pt-1">
                   <Button
                     variant="ghost"
@@ -870,13 +988,13 @@ function BookingDialog({
                   </Button>
                   <button
                     type="button"
-                    className={`flex-1 neu-book-button h-10 justify-center ${(!selectedPmId || bookMutation.isPending) ? "is-disabled" : ""}`}
+                    className={`flex-1 neu-book-button h-10 justify-center ${(paymentType === "card" && !selectedPmId) || bookMutation.isPending ? "is-disabled" : ""}`}
                     onClick={() => bookMutation.mutate()}
-                    disabled={!selectedPmId || bookMutation.isPending}
+                    disabled={(paymentType === "card" && !selectedPmId) || bookMutation.isPending}
                     data-testid="button-booking-confirm"
                   >
                     <Lock className="w-3.5 h-3.5" />
-                    {bookMutation.isPending ? "Booking…" : `Confirm & Pay $${totalPrice}`}
+                    {bookMutation.isPending ? "Booking…" : paymentType === "card" ? `Confirm & Pay $${totalPrice}` : `Book & Pay ${paymentType === "idram" ? "via Idram" : "via Bank"}`}
                   </button>
                 </div>
               )}

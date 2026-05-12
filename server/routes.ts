@@ -4350,7 +4350,7 @@ export async function registerRoutes(
   app.post("/api/bookings", isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).id;
-      const { teacherId, scheduledAt, durationMinutes, sessionType, notes } = req.body;
+      const { teacherId, scheduledAt, durationMinutes, sessionType, notes, paymentMethod, paymentMethodId } = req.body;
       if (!teacherId || !scheduledAt || !durationMinutes || !sessionType) {
         return res.status(400).json({ message: "Missing required booking fields" });
       }
@@ -4365,7 +4365,36 @@ export async function registerRoutes(
         sessionType,
         notes: notes || null,
       });
-      res.json(booking);
+
+      // Create a transaction record for every booking
+      const amountUsd = Math.round((teacher.hourlyRate * durationMinutes) / 60);
+      const amountCents = amountUsd * 100;
+      const PLATFORM_FEE_PCT = 0.15;
+      const platformFee = Math.round(amountCents * PLATFORM_FEE_PCT);
+      const teacherAmount = amountCents - platformFee;
+      const method = paymentMethod || "card";
+      // card payments are treated as immediately completed (simulated); idram/cash are pending
+      const txStatus = method === "card" ? "completed" : method === "idram" ? "pending" : "pending_cash";
+      const idramOrderId = method === "idram"
+        ? `VX-${Date.now().toString(36).toUpperCase()}-${booking.id.slice(0, 6).toUpperCase()}`
+        : null;
+
+      await storage.createTransaction({
+        bookingId: booking.id,
+        userId,
+        teacherId,
+        amount: amountCents,
+        currency: "USD",
+        platformFee,
+        teacherAmount,
+        paymentMethod: method,
+        paymentMethodId: paymentMethodId || null,
+        status: txStatus,
+        description: `Session with ${teacher.name} · ${durationMinutes} min · ${sessionType}`,
+        idramOrderId,
+      });
+
+      res.json({ ...booking, idramOrderId });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -4425,6 +4454,40 @@ export async function registerRoutes(
       const userId = (req.user as any).id || (req.user as any).claims?.sub;
       await storage.setDefaultPaymentMethod(req.params.id, userId);
       res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Transactions ─────────────────────────────────────────────────────────────
+  app.get("/api/transactions/my", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const txs = await storage.getTransactionsByUser(userId);
+      res.json(txs);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/transactions", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const [txs, stats] = await Promise.all([
+        storage.getAllTransactions(300),
+        storage.getTransactionStats(),
+      ]);
+      res.json({ transactions: txs, stats });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/transactions/:id/confirm", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const adminId = (req.user as any).id;
+      const tx = await storage.updateTransactionStatus(req.params.id, "completed", adminId);
+      if (!tx) return res.status(404).json({ message: "Transaction not found" });
+      res.json(tx);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

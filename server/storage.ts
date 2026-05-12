@@ -60,6 +60,9 @@ import {
   roomJoins,
   emailCampaigns,
   type EmailCampaign,
+  transactions,
+  type Transaction,
+  type InsertTransaction,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -209,6 +212,12 @@ export interface IStorage {
   getEmailCampaigns(): Promise<EmailCampaign[]>;
   incrementCampaignOpens(id: string): Promise<void>;
   incrementCampaignClicks(id: string): Promise<void>;
+
+  createTransaction(data: InsertTransaction): Promise<Transaction>;
+  getTransactionsByUser(userId: string): Promise<Transaction[]>;
+  getAllTransactions(limit?: number): Promise<Transaction[]>;
+  updateTransactionStatus(id: string, status: string, confirmedById?: string): Promise<Transaction | undefined>;
+  getTransactionStats(): Promise<{ totalRevenue: number; pendingCash: number; completedCount: number; pendingCount: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1287,6 +1296,55 @@ export class DatabaseStorage implements IStorage {
 
   async incrementCampaignClicks(id: string): Promise<void> {
     await db.execute(sql`UPDATE email_campaigns SET click_count = click_count + 1 WHERE id = ${id}`);
+  }
+
+  async createTransaction(data: InsertTransaction): Promise<Transaction> {
+    const [tx] = await db.insert(transactions).values(data).returning();
+    return tx;
+  }
+
+  async getTransactionsByUser(userId: string): Promise<Transaction[]> {
+    return db.select().from(transactions)
+      .where(eq(transactions.userId, userId))
+      .orderBy(desc(transactions.createdAt))
+      .limit(100);
+  }
+
+  async getAllTransactions(limit = 200): Promise<Transaction[]> {
+    return db.select().from(transactions)
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit);
+  }
+
+  async updateTransactionStatus(id: string, status: string, confirmedById?: string): Promise<Transaction | undefined> {
+    const [updated] = await db.update(transactions)
+      .set({
+        status,
+        confirmedById: confirmedById ?? null,
+        confirmedAt: confirmedById ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(transactions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getTransactionStats(): Promise<{ totalRevenue: number; pendingCash: number; completedCount: number; pendingCount: number }> {
+    const [stats] = await db.execute(sql`
+      SELECT
+        COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0)::int AS total_revenue,
+        COUNT(CASE WHEN status = 'pending_cash' THEN 1 END)::int AS pending_cash,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END)::int AS completed_count,
+        COUNT(CASE WHEN status IN ('pending', 'pending_cash') THEN 1 END)::int AS pending_count
+      FROM transactions
+    `);
+    const r = (stats as any) ?? {};
+    return {
+      totalRevenue: Number(r.total_revenue ?? 0),
+      pendingCash: Number(r.pending_cash ?? 0),
+      completedCount: Number(r.completed_count ?? 0),
+      pendingCount: Number(r.pending_count ?? 0),
+    };
   }
 }
 

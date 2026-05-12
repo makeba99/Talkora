@@ -491,6 +491,35 @@ export const roomJoins = pgTable("room_joins", {
 }));
 export type RoomJoin = typeof roomJoins.$inferSelect;
 
+export const transactions = pgTable("transactions", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  bookingId: varchar("booking_id", { length: 36 }),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  teacherId: varchar("teacher_id", { length: 36 }),
+  amount: integer("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+  platformFee: integer("platform_fee").notNull().default(0),
+  teacherAmount: integer("teacher_amount").notNull().default(0),
+  paymentMethod: varchar("payment_method", { length: 20 }).notNull(),
+  paymentMethodId: varchar("payment_method_id", { length: 36 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  description: text("description"),
+  idramOrderId: varchar("idram_order_id", { length: 100 }),
+  confirmedById: varchar("confirmed_by_id", { length: 36 }),
+  confirmedAt: timestamp("confirmed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  transactionsUserIdx: index("transactions_user_id_idx").on(table.userId),
+  transactionsTeacherIdx: index("transactions_teacher_id_idx").on(table.teacherId),
+  transactionsStatusIdx: index("transactions_status_idx").on(table.status),
+  transactionsCreatedAtIdx: index("transactions_created_at_idx").on(table.createdAt),
+}));
+
+export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, createdAt: true, updatedAt: true, confirmedAt: true });
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type Transaction = typeof transactions.$inferSelect;
+
 export const emailCampaigns = pgTable("email_campaigns", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   subject: text("subject").notNull(),

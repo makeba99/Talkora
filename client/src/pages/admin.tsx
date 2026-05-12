@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -551,6 +551,135 @@ function AnalyticsTab() {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+type TxData = {
+  transactions: Array<{
+    id: string; bookingId?: string | null; userId: string; teacherId?: string | null;
+    amount: number; currency: string; platformFee: number; teacherAmount: number;
+    paymentMethod: string; status: string; description?: string | null;
+    idramOrderId?: string | null; confirmedById?: string | null; confirmedAt?: string | null;
+    createdAt: string;
+  }>;
+  stats: { totalRevenue: number; pendingCash: number; completedCount: number; pendingCount: number };
+};
+
+function TransactionsTab() {
+  const { toast } = useToast();
+  const { data, isLoading } = useQuery<TxData>({ queryKey: ["/api/admin/transactions"] });
+
+  const confirmMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("PATCH", `/api/admin/transactions/${id}/confirm`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/transactions"] });
+      toast({ title: "Payment confirmed", description: "Transaction marked as completed." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const METHOD_ICONS: Record<string, React.ReactNode> = {
+    card: <CreditCard className="w-3.5 h-3.5 text-violet-400" />,
+    idram: <Smartphone className="w-3.5 h-3.5 text-amber-400" />,
+    cash: <Building2 className="w-3.5 h-3.5 text-indigo-400" />,
+  };
+
+  const STATUS_COLORS: Record<string, string> = {
+    completed: "bg-green-500/20 text-green-300 border-green-500/30",
+    pending: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    pending_cash: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+    failed: "bg-red-500/20 text-red-300 border-red-500/30",
+    refunded: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+  };
+
+  const stats = data?.stats;
+  const txs = data?.transactions ?? [];
+
+  return (
+    <div className="space-y-5">
+      {/* Stats row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: "Total Revenue", value: stats ? `$${(stats.totalRevenue / 100).toFixed(2)}` : "—", icon: <DollarSign className="w-4 h-4 text-green-400" />, color: "text-green-300" },
+          { label: "Completed", value: stats?.completedCount ?? "—", icon: <BadgeCheck className="w-4 h-4 text-emerald-400" />, color: "text-emerald-300" },
+          { label: "Pending", value: stats?.pendingCount ?? "—", icon: <Clock className="w-4 h-4 text-amber-400" />, color: "text-amber-300" },
+          { label: "Cash Awaiting", value: stats?.pendingCash ?? "—", icon: <Building2 className="w-4 h-4 text-indigo-400" />, color: "text-indigo-300" },
+        ].map(({ label, value, icon, color }) => (
+          <Card key={label} className="bg-card/75 backdrop-blur-xl border-primary/15">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                {icon}
+                <span className="text-xs text-muted-foreground">{label}</span>
+              </div>
+              <p className={`text-2xl font-bold ${color}`}>{value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-violet-300" />
+            All Transactions
+            <span className="ml-auto text-xs text-muted-foreground font-normal">{txs.length} records</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+            </div>
+          ) : txs.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-12">No transactions yet.</p>
+          ) : (
+            <div className="space-y-2 max-h-[600px] overflow-auto admin-scrollbar pr-1">
+              {txs.map((tx) => (
+                <div key={tx.id}
+                  className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-background/50 px-4 py-3"
+                  data-testid={`row-transaction-${tx.id}`}>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {METHOD_ICONS[tx.paymentMethod] ?? <CreditCard className="w-3.5 h-3.5 text-white/30" />}
+                    <span className="text-[11px] font-semibold capitalize text-white/70">{tx.paymentMethod}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-white/90 truncate">{tx.description ?? "—"}</p>
+                    <p className="text-[10px] text-white/40 font-mono">{tx.id.slice(0, 8)}… · {new Date(tx.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[14px] font-bold text-white">${(tx.amount / 100).toFixed(2)}</p>
+                    <p className="text-[10px] text-white/35">Fee ${(tx.platformFee / 100).toFixed(2)}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_COLORS[tx.status] ?? "bg-gray-500/20 text-gray-300 border-gray-500/30"}`}>
+                    {tx.status.replace("_", " ")}
+                  </span>
+                  {tx.status === "pending_cash" && (
+                    <Button
+                      size="sm"
+                      onClick={() => confirmMutation.mutate(tx.id)}
+                      disabled={confirmMutation.isPending}
+                      className="h-7 text-[11px] bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
+                      data-testid={`button-confirm-tx-${tx.id}`}
+                    >
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Confirm
+                    </Button>
+                  )}
+                  {tx.idramOrderId && (
+                    <span className="text-[9px] font-mono text-white/30 break-all">{tx.idramOrderId}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -2219,7 +2348,7 @@ export default function AdminPage() {
         </header>
 
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[90rem] grid-cols-12" : "max-w-5xl grid-cols-8"} bg-card/80 backdrop-blur`}>
+          <TabsList className={`grid w-full ${isSuperAdmin ? "max-w-[90rem] grid-cols-13" : "max-w-5xl grid-cols-9"} bg-card/80 backdrop-blur`}>
             <TabsTrigger value="reports" data-testid="tab-admin-reports">
               <FileWarning className="w-4 h-4 mr-2" />
               Reports
@@ -2278,6 +2407,12 @@ export default function AdminPage() {
               <TabsTrigger value="outreach" data-testid="tab-admin-outreach">
                 <BellRing className="w-4 h-4 mr-2" />
                 Outreach
+              </TabsTrigger>
+            )}
+            {isSuperAdmin && (
+              <TabsTrigger value="transactions" data-testid="tab-admin-transactions">
+                <Receipt className="w-4 h-4 mr-2" />
+                Payments
               </TabsTrigger>
             )}
             {isSuperAdmin && (
@@ -3267,6 +3402,12 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+          )}
+
+          {isSuperAdmin && (
+            <TabsContent value="transactions">
+              <TransactionsTab />
             </TabsContent>
           )}
 
