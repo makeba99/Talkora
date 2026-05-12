@@ -365,7 +365,7 @@ export function useAiTutor(deps: AiTutorDeps) {
             sentences.forEach(s => ttsRef.current?.enqueue(s));
           },
           onMeta: event => {
-            if (event === "switching_to_backup") addDebug("warn", "NVIDIA unavailable — switching to backup AI.");
+            if (event === "switching_to_backup") addDebug("warn", "Primary AI unavailable — switching to backup.");
           },
           onDone: (model, latencyMs) => {
             addDebug("info", `Stream complete in ${latencyMs}ms · model: ${model}`);

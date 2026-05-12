@@ -1279,38 +1279,16 @@ export async function registerRoutes(
   });
 
   // ── AI Tutor model routing ─────────────────────────────────────────────────
-  // Priority: NVIDIA Nemotron → gpt-4o → gpt-4o-mini → context-aware fallback
-  const rawNvidiaApiKey = process.env.NVIDIA_API_KEY?.trim();
-  const invalidNvidiaApiKey = rawNvidiaApiKey && /^(postgresql|postgres|mysql|mongodb|redis):\/\//i.test(rawNvidiaApiKey);
-  if (invalidNvidiaApiKey) {
-    console.warn("[AI Tutor] Ignoring NVIDIA_API_KEY because it looks like a database connection string.");
-  }
-  const NVIDIA_API_KEY = invalidNvidiaApiKey ? undefined : rawNvidiaApiKey;
+  // Uses OpenAI (gpt-4o) when configured; falls back to context-aware canned replies.
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-  function routeAiModel(messageLen: number, isRepetitive: boolean): { provider: string; model: string; baseUrl: string; key: string | undefined } {
-    if (NVIDIA_API_KEY) {
-      // Nemotron Nano is fast and free-tier; use Super-49B for repetitive/complex inputs
-      const model = (messageLen > 200 || isRepetitive)
-        ? 'nvidia/llama-3.3-nemotron-super-49b-v1'
-        : 'nvidia/llama-3.1-nemotron-nano-8b-v1';
-      return { provider: 'nvidia', model, baseUrl: 'https://integrate.api.nvidia.com/v1', key: NVIDIA_API_KEY };
-    }
-    if (OPENAI_API_KEY) {
-      // Use gpt-4o for better conversation quality; mini only as last resort
-      return { provider: 'openai', model: 'gpt-4o', baseUrl: 'https://api.openai.com/v1', key: OPENAI_API_KEY };
-    }
-    return { provider: 'none', model: 'fallback', baseUrl: '', key: undefined };
-  }
-
   async function callAiModel(
-    route: ReturnType<typeof routeAiModel>,
     systemPrompt: string,
     history: any[],
     message: string,
     temperature: number
   ): Promise<{ raw: string; ok: boolean; status?: number }> {
-    if (!route.key) return { raw: '', ok: false };
+    if (!OPENAI_API_KEY) return { raw: '', ok: false };
     const messages = [
       { role: 'system', content: systemPrompt },
       ...history.slice(-10).map((m: any) => ({
@@ -1319,19 +1297,16 @@ export async function registerRoutes(
       })),
       { role: 'user', content: message },
     ];
-    const body: any = {
-      model: route.model,
+    const body = {
+      model: 'gpt-4o',
       messages,
       max_tokens: 160,
       temperature,
+      response_format: { type: 'json_object' },
     };
-    // JSON mode: OpenAI supports response_format; NVIDIA models need prompt-level enforcement
-    if (route.provider === 'openai') {
-      body.response_format = { type: 'json_object' };
-    }
-    const r = await fetch(`${route.baseUrl}/chat/completions`, {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${route.key}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const text = await r.text();
@@ -1339,13 +1314,11 @@ export async function registerRoutes(
   }
 
   function parseAiResponse(raw: string): { reply: string; correction: string | null; correctionFixed: string | null } {
-    // Try direct JSON parse first
     try {
       const j = JSON.parse(raw);
       const data = j.choices?.[0]?.message?.content ? JSON.parse(j.choices[0].message.content) : j;
       if (data.reply) return { reply: data.reply, correction: data.correction || null, correctionFixed: data.correctionFixed || null };
     } catch {}
-    // Try extracting JSON block from markdown/text (for models that don't follow JSON mode)
     try {
       const jsonMatch = raw.match(/\{[\s\S]*?"reply"[\s\S]*?\}/);
       if (jsonMatch) {
@@ -1353,7 +1326,6 @@ export async function registerRoutes(
         if (parsed.reply) return { reply: parsed.reply, correction: parsed.correction || null, correctionFixed: parsed.correctionFixed || null };
       }
     } catch {}
-    // Try extracting the choices content as plain text
     try {
       const parsed = JSON.parse(raw);
       const content = parsed.choices?.[0]?.message?.content || '';
@@ -1399,8 +1371,6 @@ export async function registerRoutes(
       if (isRepetitive) warnings.push('repetitive_responses_detected');
       if (youtubeActive) warnings.push('youtube_active_during_session');
 
-      // Route to the best available model
-      const route = routeAiModel(message.length, isRepetitive);
       const temperature = isRepetitive ? 0.82 : 0.62;
 
       // Build system prompt — engaging, voice-first AI personality
@@ -1412,9 +1382,7 @@ export async function registerRoutes(
         ? `CRITICAL: Repetition detected. Completely rephrase — pick up a specific detail from what the user just said, share a quick personal-sounding example, or pivot to a genuinely new angle. Do NOT reuse any phrasing from previous turns.`
         : '';
 
-      const jsonInstruction = route.provider === 'nvidia'
-        ? `You MUST reply with ONLY a raw JSON object — no markdown, no explanation, no code fences. Example: {"reply":"You mean the video froze, right? Try refreshing the room first.","correction":null,"correctionFixed":null}`
-        : `Reply ONLY in JSON: {"reply":"...","correction":"..."|null,"correctionFixed":"..."|null}`;
+      const jsonInstruction = `Reply ONLY in JSON: {"reply":"...","correction":"..."|null,"correctionFixed":"..."|null}`;
 
       const afiKPersonalityLine = isAfiK ? [
         `YOU ARE "Afi K" (pronounced "Afi Key") — a funny, friendly, openly flirty character with a warm, attractive accented voice.`,
@@ -1457,67 +1425,32 @@ export async function registerRoutes(
         jsonInstruction,
       ].filter(Boolean).join(' ');
 
-      // Try primary model
-      if (route.provider !== 'none') {
+      // Try OpenAI
+      if (OPENAI_API_KEY) {
         try {
-          const { raw, ok, status } = await callAiModel(route, systemPrompt, history, message, temperature);
+          const { raw, ok, status } = await callAiModel(systemPrompt, history, message, temperature);
           if (ok) {
             const parsed = parseAiResponse(raw);
             const latencyMs = Date.now() - startTime;
             if (parsed.reply) {
-              console.log(`[AI Tutor] ${route.provider}/${route.model} → ${latencyMs}ms`);
+              console.log(`[AI Tutor] openai/gpt-4o → ${latencyMs}ms`);
               return res.json({
                 reply: parsed.reply,
                 correction: parsed.correction,
                 correctionFixed: parsed.correctionFixed,
-                debug: { source: route.provider, model: route.model, latencyMs, warnings, temperature, historyUsed: Math.min(history.length, 10) },
+                debug: { source: 'openai', model: 'gpt-4o', latencyMs, warnings, temperature, historyUsed: Math.min(history.length, 10) },
               });
             }
           } else {
-            console.error(`[AI Tutor] ${route.provider} error ${status}: ${raw.slice(0, 200)}`);
-            warnings.push(`${route.provider}_error_${status}`);
-            // Retry once with gpt-4o-mini if primary was NVIDIA
-            if (route.provider === 'nvidia' && OPENAI_API_KEY) {
-              warnings.push('nvidia_failed_retrying_openai');
-              const fallbackRoute = { provider: 'openai', model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1', key: OPENAI_API_KEY };
-              const fallbackBody = {
-                model: 'gpt-4o-mini',
-                messages: [
-                  { role: 'system', content: systemPrompt },
-                  ...history.slice(-10).map((m: any) => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
-                  { role: 'user', content: message },
-                ],
-                max_tokens: 120,
-                temperature,
-                response_format: { type: 'json_object' },
-              };
-              const fbRes = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(fallbackBody),
-              });
-              if (fbRes.ok) {
-                const fbRaw = await fbRes.text();
-                const fbParsed = parseAiResponse(fbRaw);
-                const latencyMs = Date.now() - startTime;
-                if (fbParsed.reply) {
-                  return res.json({
-                    reply: fbParsed.reply,
-                    correction: fbParsed.correction,
-                    correctionFixed: fbParsed.correctionFixed,
-                    debug: { source: 'openai-fallback', model: 'gpt-4o-mini', latencyMs, warnings },
-                  });
-                }
-              }
-            }
+            console.error(`[AI Tutor] openai error ${status}: ${raw.slice(0, 200)}`);
+            warnings.push(`openai_error_${status}`);
           }
         } catch (err) {
           console.error('[AI Tutor] Model call failed:', err);
           warnings.push('model_call_exception');
         }
       } else {
-        if (!NVIDIA_API_KEY) warnings.push('no_nvidia_key');
-        if (!OPENAI_API_KEY) warnings.push('no_openai_key');
+        warnings.push('no_openai_key');
       }
 
       // Context-aware fallback — echoes back the user's words so it never feels generic
@@ -1670,8 +1603,8 @@ export async function registerRoutes(
   });
 
   // ── AI Tutor Streaming (SSE) ─────────────────────────────────────────────
-  // Streams tokens from NVIDIA Nemotron → client for real-time TTS playback.
-  // Falls back to OpenAI streaming, then buffered fallback.
+  // Streams tokens from OpenAI → client for real-time TTS playback.
+  // Falls back to a context-aware canned reply.
   app.post("/api/ai-tutor/stream", isAuthenticated, async (req: any, res) => {
     const startTime = Date.now();
     // Disable compression so SSE tokens flush immediately
@@ -1771,14 +1704,14 @@ export async function registerRoutes(
 
       const streamTokens = async (provider: string, model: string, baseUrl: string, key: string): Promise<boolean> => {
         try {
-          const nvidiaRes = await fetch(`${baseUrl}/chat/completions`, {
+          const apiRes = await fetch(`${baseUrl}/chat/completions`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ model, messages, max_tokens: 160, temperature, stream: true }),
           });
-          if (!nvidiaRes.ok || !nvidiaRes.body) return false;
+          if (!apiRes.ok || !apiRes.body) return false;
 
-          const reader = nvidiaRes.body.getReader();
+          const reader = apiRes.body.getReader();
           const decoder = new TextDecoder();
           let sseBuffer = '';
           let firstToken = true;
@@ -1814,22 +1747,12 @@ export async function registerRoutes(
       };
 
       let streamed = false;
-      const nvidiaModel = (message.length > 200 || isRepetitive)
-        ? 'nvidia/llama-3.3-nemotron-super-49b-v1'
-        : 'nvidia/llama-3.1-nemotron-nano-8b-v1';
 
-      if (NVIDIA_API_KEY) {
-        streamed = await streamTokens('nvidia', nvidiaModel, 'https://integrate.api.nvidia.com/v1', NVIDIA_API_KEY);
-        if (!streamed && OPENAI_API_KEY) {
-          console.warn('[AI Stream] NVIDIA failed — retrying with OpenAI gpt-4o-mini');
-          sendEvent({ meta: 'switching_to_backup' });
-          streamed = await streamTokens('openai', 'gpt-4o-mini', 'https://api.openai.com/v1', OPENAI_API_KEY);
-        }
-      } else if (OPENAI_API_KEY) {
+      if (OPENAI_API_KEY) {
         streamed = await streamTokens('openai', 'gpt-4o', 'https://api.openai.com/v1', OPENAI_API_KEY);
       }
 
-      const model = NVIDIA_API_KEY ? nvidiaModel : 'gpt-4o';
+      const model = 'gpt-4o';
       if (streamed) {
         sendEvent({ done: true, model, latencyMs: Date.now() - startTime });
       } else {
