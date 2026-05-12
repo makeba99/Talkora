@@ -233,8 +233,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
         style={{
           display: "flex",
           flexDirection: "column",
-          maxHeight: "var(--radix-popover-content-available-height, 75svh)",
-          height: "min(480px, calc(var(--radix-popover-content-available-height, 75svh) - 8px))",
+          height: "min(480px, 75svh)",
         }}
         side={side}
         align={align}
