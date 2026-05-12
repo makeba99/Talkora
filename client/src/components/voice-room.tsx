@@ -3855,7 +3855,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     };
 
-    const drawBadge = (img: HTMLImageElement | null) => {
+    const drawBadge = (img: HTMLImageElement | null, badgeOpacity = 1) => {
       ctx.clearRect(0, 0, S, S);
 
       if (tabUnreadCount > 0) {
@@ -3874,6 +3874,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         const badgeR = 48;
         const cx = S - badgeR - 2; // 78
         const cy = badgeR + 2;     // 50
+
+        // All badge layers share the same pulsed opacity
+        ctx.save();
+        ctx.globalAlpha = badgeOpacity;
 
         // Layer 1: subtle drop shadow (dark transparent ring)
         ctx.beginPath();
@@ -3914,6 +3918,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         ctx.shadowBlur = 4;
         ctx.fillText(label, cx, cy + 2);
         ctx.shadowBlur = 0;
+
+        ctx.restore(); // end badge opacity group
       } else {
         // ── No unread — full icon + green "in-room" presence dot ─────────
         if (img) {
@@ -3962,10 +3968,28 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // Load the base icon; if it fails, still draw badge without background
     const img = new Image();
     img.src = "/vextorn-icon-192.png";
-    img.onload = () => drawBadge(img);
-    img.onerror = () => drawBadge(null);
+
+    // Pulse interval — only active while there are unread messages.
+    // Alternates between full (1.0) and dimmed (0.38) badge opacity on a
+    // 700 ms cycle so the tab catches the eye even when it isn't focused.
+    let pulseInterval: ReturnType<typeof setInterval> | null = null;
+
+    const startPulse = (loadedImg: HTMLImageElement | null) => {
+      drawBadge(loadedImg, 1);
+      if (tabUnreadCount > 0) {
+        let bright = false;
+        pulseInterval = setInterval(() => {
+          bright = !bright;
+          drawBadge(loadedImg, bright ? 1 : 0.38);
+        }, 700);
+      }
+    };
+
+    img.onload = () => startPulse(img);
+    img.onerror = () => startPulse(null);
 
     return () => {
+      if (pulseInterval !== null) clearInterval(pulseInterval);
       // Restore all original favicon links and title
       allIconLinks.forEach((link, i) => {
         link.href = origHrefs[i];
