@@ -1252,6 +1252,15 @@ function YtVideoCard({ video, canPlay, onPlay, onQueue }: {
   );
 }
 
+// ── DJ Mode sling-animation helper ───────────────────────────────────────────
+function getDjSlingStyle(index: number): React.CSSProperties {
+  const ANIMS = ["dj-sling-a","dj-sling-b","dj-sling-c","dj-sling-d","dj-sling-e","dj-sling-f"];
+  const DURS  = [1.4, 1.7, 1.2, 1.9, 1.5, 1.3];
+  const DELS  = [0, 0.25, 0.5, 0.1, 0.38, 0.62];
+  const v = index % 6;
+  return { animation: `${ANIMS[v]} ${DURS[v]}s cubic-bezier(0.34,1.56,0.64,1) infinite ${DELS[v]}s` };
+}
+
 export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomProps) {
   const { socket } = useSocket();
   const { user } = useAuth();
@@ -1268,7 +1277,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // row still re-triggers the animation. Entries are auto-cleared after the
   // animation duration so the card returns to its normal state.
   const [participantAvatarGifs, setParticipantAvatarGifs] = useState<Record<string, string>>({});
-  const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({});
+  const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({}); 
+  const [djModeActive, setDjModeActive] = useState(false);
   const moodTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // Mood picker open/closed state (for the new emoji bar that replaced the
   // raise-hand button in the bottom control row).
@@ -3518,6 +3528,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       });
     });
 
+    // ── DJ Mode — host toggles disco sling animations for all participants ──
+    socket.on("room:dj-mode", (data: { active: boolean }) => {
+      setDjModeActive(!!data?.active);
+    });
+    socket.on("room:dj-skip", () => {
+      window.dispatchEvent(new Event("vx-dj-skip"));
+    });
+
     socket.on("room:updated", (updatedRoom: any) => {
       if (updatedRoom && updatedRoom.id === room.id) {
         setRoomData((prev: any) => ({ ...prev, ...updatedRoom }));
@@ -3596,6 +3614,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:moods-snapshot");
       socket.off("room:mood-update");
       socket.off("room:avatar-gifs-snapshot");
+      socket.off("room:dj-mode");
+      socket.off("room:dj-skip");
       // Cancel any in-flight mood-clear timers so they don't fire after unmount.
       Object.values(moodTimersRef.current).forEach((t) => clearTimeout(t));
       moodTimersRef.current = {};
@@ -12034,6 +12054,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     key={p.id}
                     className="flex flex-col items-center gap-2 group relative"
                     data-testid={`card-participant-${p.id}`}
+                    style={djModeActive && currentTheme === "disco" ? getDjSlingStyle(index) : undefined}
                   >
                     {/* Screen-share watcher pills — same look as YouTube watchers */}
                     {(remoteScreenShareUserId === p.id || (isMe && isScreenSharing)) && screenWatchers.size > 0 && (
@@ -12192,6 +12213,78 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           <div className="flex items-center gap-0.5 bg-amber-900/60 border border-amber-700/50 rounded-full px-1.5 py-0.5">
                             <BookOpen className="w-2.5 h-2.5 text-amber-400" />
                             <span className="text-[8px] text-amber-300 font-medium">reading</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── DJ Mode controls (host card, disco theme only) ──────── */}
+                    {currentTheme === "disco" && isRoomOwner && (
+                      <div className="flex flex-col items-center gap-1 mb-1 relative z-30">
+                        {/* Badge visible to everyone when DJ mode is on */}
+                        {djModeActive && !isMe && (
+                          <div style={{
+                            display:"flex", alignItems:"center", gap:4,
+                            background:"rgba(255,0,200,0.18)", border:"1px solid rgba(255,0,200,0.50)",
+                            borderRadius:999, padding:"2px 8px",
+                            color:"rgba(255,160,255,0.95)", fontSize:9, fontWeight:800,
+                            letterSpacing:"0.08em", textTransform:"uppercase",
+                            animation:"dj-badge-pulse 1.2s ease-in-out infinite",
+                            pointerEvents:"none",
+                          }}>
+                            🎧 DJ MODE
+                          </div>
+                        )}
+                        {/* Host-only controls */}
+                        {isMe && (
+                          <div className="flex flex-col items-center gap-1">
+                            <button
+                              data-testid="button-dj-mode-toggle"
+                              onClick={() => {
+                                const next = !djModeActive;
+                                setDjModeActive(next);
+                                socket?.emit("room:dj-mode", { roomId: room.id, active: next });
+                              }}
+                              style={{
+                                display:"flex", alignItems:"center", gap:5,
+                                padding:"4px 12px", borderRadius:999,
+                                background: djModeActive
+                                  ? "linear-gradient(135deg,rgba(255,0,200,0.45),rgba(120,0,255,0.45))"
+                                  : "rgba(255,0,200,0.14)",
+                                border: djModeActive
+                                  ? "1px solid rgba(255,0,200,0.75)"
+                                  : "1px solid rgba(255,0,200,0.35)",
+                                color: djModeActive ? "rgba(255,180,255,1)" : "rgba(255,120,255,0.80)",
+                                fontSize:10, fontWeight:800, letterSpacing:"0.08em",
+                                cursor:"pointer", whiteSpace:"nowrap",
+                                animation: djModeActive ? "dj-btn-glow 1.0s ease-in-out infinite" : "none",
+                                transition:"all 0.2s",
+                              }}
+                            >
+                              🎧 {djModeActive ? "DJ ON" : "DJ MODE"}
+                            </button>
+                            {djModeActive && (
+                              <button
+                                data-testid="button-dj-skip"
+                                onClick={() => {
+                                  socket?.emit("room:dj-skip", { roomId: room.id });
+                                  window.dispatchEvent(new Event("vx-dj-skip"));
+                                }}
+                                style={{
+                                  display:"flex", alignItems:"center", gap:4,
+                                  padding:"3px 10px", borderRadius:999,
+                                  background:"rgba(0,220,255,0.18)",
+                                  border:"1px solid rgba(0,220,255,0.50)",
+                                  color:"rgba(100,240,255,0.95)",
+                                  fontSize:9, fontWeight:800, letterSpacing:"0.06em",
+                                  cursor:"pointer", whiteSpace:"nowrap",
+                                  animation:"dj-skip-ripple 1.5s ease-out infinite",
+                                  transition:"all 0.15s",
+                                }}
+                              >
+                                ⏭ SKIP SCENE
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>

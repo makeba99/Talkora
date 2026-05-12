@@ -4685,6 +4685,18 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:avatar-gif", { userId: data.userId, gifUrl });
     });
 
+    // ── DJ Mode — host toggles disco sling-animations for all in the room ──
+    socket.on("room:dj-mode", (data: { roomId: string; active: boolean }) => {
+      if (!data?.roomId) return;
+      io.to(data.roomId).emit("room:dj-mode", { active: !!data.active });
+    });
+
+    // ── DJ Skip — host manually advances the disco scene ──
+    socket.on("room:dj-skip", (data: { roomId: string }) => {
+      if (!data?.roomId) return;
+      io.to(data.roomId).emit("room:dj-skip");
+    });
+
     // "Say Bye" — user waves goodbye to the room before leaving. Server
     // broadcasts to everyone (including sender) so they all hear the sound
     // and see the farewell toast, then the client handles the leave itself.

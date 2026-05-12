@@ -1755,6 +1755,24 @@ function DiscoThemeOverlay({ base }: { base: React.CSSProperties }) {
   const [showLabel, setShowLabel] = useState(false);
   const timerRef = useRef<number | null>(null);
 
+  // Manual scene-skip triggered by the host's DJ Mode button
+  useEffect(() => {
+    const onSkip = () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+      setOpacity(0);
+      timerRef.current = window.setTimeout(() => {
+        setSceneIdx(prev => (prev + 1) % 7);
+        setShowLabel(true);
+        timerRef.current = window.setTimeout(() => {
+          setOpacity(1);
+          timerRef.current = window.setTimeout(() => setShowLabel(false), 3500);
+        }, 80);
+      }, 400);
+    };
+    window.addEventListener("vx-dj-skip", onSkip);
+    return () => window.removeEventListener("vx-dj-skip", onSkip);
+  }, []);
+
   useEffect(() => {
     const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
     const schedule = () => {
