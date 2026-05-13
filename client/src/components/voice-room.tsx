@@ -1739,6 +1739,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const pendingCandidates = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const youtubePlayerRef = useRef<any>(null);
   const ytContainerRef = useRef<HTMLDivElement | null>(null);
+  const ytIframeDirectRef = useRef<HTMLIFrameElement | null>(null);
   const ytPlayheadRef = useRef<{ time: number; wallMs: number }>({ time: 0, wallMs: 0 });
   const ytRemoteAction = useRef(false);
   const ytLastSyncVideoTime = useRef<number>(-999); // last video-time we broadcast a "play" sync
@@ -1759,6 +1760,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [participantVolumes, setParticipantVolumes] = useState<Record<string, number>>({});
   const [miniPlayerMode, setMiniPlayerMode] = useState(false);
   const [miniPlayerPos, setMiniPlayerPos] = useState({ x: 16, y: 80 });
+  const [fullPlayerDragOffset, setFullPlayerDragOffset] = useState({ x: 0, y: 0 });
+  const isFullDraggingRef = useRef(false);
+  const fullDragStartRef = useRef({ mouseX: 0, mouseY: 0, offsetX: 0, offsetY: 0 });
   const [moviePlayerHeight, setMoviePlayerHeight] = useState<number | null>(null);
   const [ytPlayerHeight, setYtPlayerHeight] = useState<number | null>(null);
   // Reset to full-height (flex-1) whenever a new video/movie starts so the
@@ -4728,14 +4732,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDraggingRef.current) return;
-      const dx = e.clientX - dragStartRef.current.mouseX;
-      const dy = e.clientY - dragStartRef.current.mouseY;
-      const newX = Math.max(0, Math.min(window.innerWidth - 220, dragStartRef.current.playerX + dx));
-      const newY = Math.max(0, Math.min(window.innerHeight - 130, dragStartRef.current.playerY + dy));
-      setMiniPlayerPos({ x: newX, y: newY });
+      if (isDraggingRef.current) {
+        const dx = e.clientX - dragStartRef.current.mouseX;
+        const dy = e.clientY - dragStartRef.current.mouseY;
+        const newX = Math.max(0, Math.min(window.innerWidth - 220, dragStartRef.current.playerX + dx));
+        const newY = Math.max(0, Math.min(window.innerHeight - 130, dragStartRef.current.playerY + dy));
+        setMiniPlayerPos({ x: newX, y: newY });
+      }
+      if (isFullDraggingRef.current) {
+        const dx = e.clientX - fullDragStartRef.current.mouseX;
+        const dy = e.clientY - fullDragStartRef.current.mouseY;
+        setFullPlayerDragOffset({ x: fullDragStartRef.current.offsetX + dx, y: fullDragStartRef.current.offsetY + dy });
+      }
     };
-    const handleMouseUp = () => { isDraggingRef.current = false; };
+    const handleMouseUp = () => {
+      isDraggingRef.current = false;
+      isFullDraggingRef.current = false;
+    };
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
     return () => {
@@ -4748,6 +4761,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     e.preventDefault();
     isDraggingRef.current = true;
     dragStartRef.current = { mouseX: e.clientX, mouseY: e.clientY, playerX: miniPlayerPos.x, playerY: miniPlayerPos.y };
+  };
+
+  const handleFullPlayerMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isFullDraggingRef.current = true;
+    fullDragStartRef.current = { mouseX: e.clientX, mouseY: e.clientY, offsetX: fullPlayerDragOffset.x, offsetY: fullPlayerDragOffset.y };
   };
 
   const toggleMute = () => {
@@ -6746,7 +6765,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       try { (player as any)[funcName]?.(...args); } catch (_) {}
     }
     // Channel 2 — direct postMessage to the YouTube iframe
-    const iframe = ytContainerRef.current?.querySelector("iframe") as HTMLIFrameElement | null;
+    const iframe = ytIframeDirectRef.current ?? (ytContainerRef.current?.querySelector("iframe") as HTMLIFrameElement | null);
     if (iframe?.contentWindow) {
       try {
         iframe.contentWindow.postMessage(
@@ -14255,7 +14274,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           ? { left: -9999, top: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }
           : isMini
             ? { left: miniPlayerPos.x, top: miniPlayerPos.y, width: 220, height: 130 }
-            : { left: ytSlotRect!.left, top: ytSlotRect!.top, width: ytSlotRect!.width, height: ytSlotRect!.height };
+            : { left: ytSlotRect!.left + fullPlayerDragOffset.x, top: ytSlotRect!.top + fullPlayerDragOffset.y, width: ytSlotRect!.width, height: ytSlotRect!.height };
         return (
           <div
             className="fixed select-none"
@@ -14263,15 +14282,32 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             data-testid={isMini ? "youtube-mini-player" : "youtube-persistent-player"}
           >
             <div
-              className={`relative w-full h-full overflow-hidden bg-black ${isMini ? "rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing group" : ""}`}
+              className={`relative w-full h-full overflow-hidden bg-black ${isMini ? "rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing group" : "rounded-lg shadow-2xl border border-white/10"}`}
               onMouseDown={isMini && !showAsHidden ? handleMiniPlayerMouseDown : undefined}
             >
-              <div
-                ref={ytContainerRef}
-                className="w-full h-full border-0 transition-opacity duration-300"
-                style={{ opacity: ytPlayerReady ? 1 : 0 }}
+              {/* Drag handle — full player only */}
+              {!isMini && !showAsHidden && (
+                <div
+                  className="absolute top-0 left-0 right-0 h-7 z-20 flex items-center justify-center cursor-grab active:cursor-grabbing bg-black/70 backdrop-blur-sm border-b border-white/10 select-none"
+                  onMouseDown={handleFullPlayerMouseDown}
+                  title="Drag to reposition"
+                >
+                  <div className="w-10 h-1 rounded-full bg-white/30" />
+                </div>
+              )}
+              <iframe
+                ref={ytIframeDirectRef}
+                key={activeYoutubeId}
+                src={`https://www.youtube.com/embed/${activeYoutubeId}?autoplay=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full border-0"
+                style={{ height: "100%", marginTop: (!isMini && !showAsHidden) ? "28px" : "0", display: "block" }}
                 data-testid="iframe-youtube-player"
+                onLoad={() => { setYtPlayerReady(true); setYtPlayerLoading(false); setYtPlayerError(null); }}
               />
+              {/* Keep old container ref alive so existing YT API code doesn't throw */}
+              <div ref={ytContainerRef} style={{ display: "none" }} />
               {ytPlayerLoading && !ytPlayerReady && !ytPlayerError && !showAsHidden && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-black pointer-events-none" data-testid="youtube-loading-overlay">
                   <div className="flex flex-col items-center gap-2">
