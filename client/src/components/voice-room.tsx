@@ -14248,7 +14248,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           ? { left: -9999, top: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }
           : isMini
             ? { left: miniPlayerPos.x, top: miniPlayerPos.y, width: 220, height: 130 }
-            : { left: ytSlotRect!.left, top: ytSlotRect!.top, width: ytSlotRect!.width, height: ytSlotRect!.height };
+            : { left: ytSlotRect!.left, top: ytSlotRect!.top, width: ytSlotRect!.width, height: ytSlotRect!.height, pointerEvents: "none" };
         return (
           <div
             className="fixed select-none"
@@ -14274,7 +14274,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               )}
               {ytPlayerError && !showAsHidden && (
-                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/95 px-4" data-testid="youtube-error-overlay">
+                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/95 px-4" style={{ pointerEvents: "auto" }} data-testid="youtube-error-overlay">
                   <div className="flex flex-col items-center gap-3 text-center max-w-sm">
                     <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
                       <X className="w-5 h-5 text-red-400" />
