@@ -1902,6 +1902,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [ytCurrentTime, setYtCurrentTime] = useState(0);
   const [ytDuration, setYtDuration] = useState(0);
   const [ytVolume, setYtVolume] = useState(100);
+  const [ytSeekDragging, setYtSeekDragging] = useState(false);
+  const [ytSeekLocal, setYtSeekLocal] = useState(0);
 
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ mouseX: 0, mouseY: 0, playerX: 0, playerY: 0 });
@@ -6753,6 +6755,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     try {
       player.seekTo(seconds, true);
       setYtCurrentTime(seconds);
+      setYtSeekDragging(false);
     } catch (_) {}
   }, []);
 
@@ -11742,16 +11745,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
 
                 {/* ── Always-visible control bar — never disappears, no hover required ── */}
-                {/* z-[10] ensures this bar is above the position:fixed iframe (z-index:5) */}
+                {/* z-[20] ensures this bar is above the position:fixed iframe (z-index:5) */}
                 <div
-                  className="relative z-[10] flex-shrink-0 flex items-center gap-2 px-3 py-2.5 bg-[#0a0a0a] border-t border-white/[0.07]"
+                  className="relative z-[20] flex-shrink-0 flex items-center gap-2 px-3 py-2.5 bg-[#0a0a0a] border-t border-white/[0.07]"
                   data-testid="youtube-host-controls"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Play / Pause — prominent, easy to hit */}
                   <button
                     onClick={handleYtPlayPause}
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/15 hover:bg-white/28 border border-white/20 flex items-center justify-center transition-colors shadow-sm"
+                    disabled={!ytPlayerReady}
+                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/15 hover:bg-white/28 border border-white/20 flex items-center justify-center transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                     data-testid="button-yt-playpause"
                     aria-label={ytIsPlaying ? "Pause" : "Play"}
                   >
@@ -11773,7 +11777,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         setTimeout(() => setActiveYoutubeId(id), 60);
                       } catch (_) {}
                     }}
-                    className="w-9 h-9 flex-shrink-0 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors"
+                    className="w-9 h-9 flex-shrink-0 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     title="Reload (fixes frozen frame)"
                     data-testid="button-yt-reload"
                   >
@@ -11784,7 +11788,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   {user?.id !== youtubeStartedBy && youtubeStartedBy && (
                     <button
                       onClick={handleYtSyncToStarter}
-                      className="h-9 px-3 flex-shrink-0 rounded-full bg-white/8 hover:bg-purple-500/50 border border-white/12 flex items-center gap-1.5 transition-colors"
+                      disabled={!ytPlayerReady}
+                      className="h-9 px-3 flex-shrink-0 rounded-full bg-white/8 hover:bg-purple-500/50 border border-white/12 flex items-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       title="Jump to where the starter is watching"
                       data-testid="button-yt-sync"
                     >
@@ -11805,22 +11810,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </button>
                   )}
 
-                  {/* Seek bar — taller for easier dragging */}
+                  {/* Seek bar — drag locally, only seek on release */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                     <input
                       type="range"
                       min={0}
                       max={ytDuration || 100}
                       step={1}
-                      value={ytCurrentTime}
-                      onChange={(e) => handleYtSeek(Number(e.target.value))}
-                      className="w-full h-2 cursor-pointer rounded-full appearance-none"
+                      value={ytSeekDragging ? ytSeekLocal : ytCurrentTime}
+                      disabled={!ytPlayerReady}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        setYtSeekLocal(v);
+                        setYtSeekDragging(true);
+                      }}
+                      onMouseUp={(e) => {
+                        if (ytSeekDragging) handleYtSeek(Number((e.target as HTMLInputElement).value));
+                      }}
+                      onTouchEnd={(e) => {
+                        if (ytSeekDragging) handleYtSeek(Number((e.target as HTMLInputElement).value));
+                      }}
+                      className="w-full h-2 cursor-pointer rounded-full appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ accentColor: "#ef4444" }}
                       data-testid="input-yt-seek"
                       aria-label="Video seek"
                     />
                     <span className="text-white/40 text-[10px] font-mono tabular-nums text-right leading-none" data-testid="text-yt-time">
-                      {formatYtTime(ytCurrentTime)} / {formatYtTime(ytDuration)}
+                      {formatYtTime(ytSeekDragging ? ytSeekLocal : ytCurrentTime)} / {formatYtTime(ytDuration)}
                     </span>
                   </div>
 
@@ -11832,8 +11848,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       max={100}
                       step={1}
                       value={ytVolume}
+                      disabled={!ytPlayerReady}
                       onChange={(e) => handleYtVolume(Number(e.target.value))}
-                      className="w-20 h-2 cursor-pointer rounded-full appearance-none"
+                      className="w-20 h-2 cursor-pointer rounded-full appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ accentColor: "#ffffff" }}
                       data-testid="input-yt-volume"
                       aria-label="YouTube volume"

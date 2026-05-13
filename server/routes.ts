@@ -5815,7 +5815,7 @@ export async function registerRoutes(
       if (!currentUserId) return;
       const participants = roomParticipants.get(data.roomId);
       if (!participants || !participants.has(currentUserId)) return;
-      const allowed = ["❤️", "👍", "😂", "🔥", "👏", "😮"];
+      const allowed = ["❤️", "👍", "😂", "🔥", "👏", "😮", "🤯"];
       if (!allowed.includes(data.emoji)) return;
       io.to(data.roomId).emit("room:youtube-reaction", {
         userId: currentUserId,
