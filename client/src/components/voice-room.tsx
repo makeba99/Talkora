@@ -14255,7 +14255,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           ? { left: -9999, top: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }
           : isMini
             ? { left: miniPlayerPos.x, top: miniPlayerPos.y, width: 220, height: 130 }
-            : { left: ytSlotRect!.left, top: ytSlotRect!.top, width: ytSlotRect!.width, height: ytSlotRect!.height, pointerEvents: "none" };
+            : { left: ytSlotRect!.left, top: ytSlotRect!.top, width: ytSlotRect!.width, height: ytSlotRect!.height };
         return (
           <div
             className="fixed select-none"
