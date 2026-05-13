@@ -6738,10 +6738,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // YouTube player. Nothing is broadcast to other participants, so each user has
   // full local control without affecting anyone else.
   const handleYtPlayPause = useCallback(() => {
+    const willPause = ytIsPlaying;
+    setYtIsPlaying(!willPause);
     const player = youtubePlayerRef.current;
     if (!player) return;
     try {
-      if (ytIsPlaying) {
+      if (willPause) {
         player.pauseVideo();
       } else {
         player.playVideo();
@@ -6750,16 +6752,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [ytIsPlaying]);
 
   const handleYtSeek = useCallback((seconds: number) => {
+    setYtCurrentTime(seconds);
+    setYtSeekDragging(false);
     const player = youtubePlayerRef.current;
     if (!player) return;
     try {
       player.seekTo(seconds, true);
-      setYtCurrentTime(seconds);
-      setYtSeekDragging(false);
     } catch (_) {}
   }, []);
 
   const handleYtVolume = useCallback((vol: number) => {
+    setYtVolume(vol);
     const player = youtubePlayerRef.current;
     if (!player) return;
     try {
@@ -6769,7 +6772,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         player.unMute();
         player.setVolume(vol);
       }
-      setYtVolume(vol);
     } catch (_) {}
   }, []);
 
@@ -11754,8 +11756,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   {/* Play / Pause — prominent, easy to hit */}
                   <button
                     onClick={handleYtPlayPause}
-                    disabled={!ytPlayerReady}
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/15 hover:bg-white/28 border border-white/20 flex items-center justify-center transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/15 hover:bg-white/28 border border-white/20 flex items-center justify-center transition-colors shadow-sm"
                     data-testid="button-yt-playpause"
                     aria-label={ytIsPlaying ? "Pause" : "Play"}
                   >
@@ -11767,17 +11768,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   {/* Reload */}
                   <button
                     onClick={() => {
-                      const player = youtubePlayerRef.current;
-                      if (!player) return;
                       try {
-                        const t = player.getCurrentTime?.() || 0;
+                        const t = youtubePlayerRef.current?.getCurrentTime?.() || 0;
                         ytSyncTimeRef.current = Math.max(0, t);
                         const id = activeYoutubeId;
                         setActiveYoutubeId(null);
                         setTimeout(() => setActiveYoutubeId(id), 60);
                       } catch (_) {}
                     }}
-                    className="w-9 h-9 flex-shrink-0 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-9 h-9 flex-shrink-0 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors"
                     title="Reload (fixes frozen frame)"
                     data-testid="button-yt-reload"
                   >
@@ -11788,8 +11787,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   {user?.id !== youtubeStartedBy && youtubeStartedBy && (
                     <button
                       onClick={handleYtSyncToStarter}
-                      disabled={!ytPlayerReady}
-                      className="h-9 px-3 flex-shrink-0 rounded-full bg-white/8 hover:bg-purple-500/50 border border-white/12 flex items-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="h-9 px-3 flex-shrink-0 rounded-full bg-white/8 hover:bg-purple-500/50 border border-white/12 flex items-center gap-1.5 transition-colors"
                       title="Jump to where the starter is watching"
                       data-testid="button-yt-sync"
                     >
@@ -11818,7 +11816,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       max={ytDuration || 100}
                       step={1}
                       value={ytSeekDragging ? ytSeekLocal : ytCurrentTime}
-                      disabled={!ytPlayerReady}
                       onChange={(e) => {
                         const v = Number(e.target.value);
                         setYtSeekLocal(v);
@@ -11830,7 +11827,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onTouchEnd={(e) => {
                         handleYtSeek(Number((e.target as HTMLInputElement).value));
                       }}
-                      className="w-full h-3 cursor-pointer rounded-full appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full h-3 cursor-pointer rounded-full appearance-none"
                       style={{ accentColor: "#ef4444" }}
                       data-testid="input-yt-seek"
                       aria-label="Video seek"
@@ -11845,8 +11842,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <button
                       type="button"
                       onClick={() => handleYtVolume(ytVolume > 0 ? 0 : 80)}
-                      disabled={!ytPlayerReady}
-                      className="flex-shrink-0 w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-shrink-0 w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors"
                       title={ytVolume === 0 ? "Unmute" : "Mute"}
                       data-testid="button-yt-volume-toggle"
                     >
@@ -11862,9 +11858,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       max={100}
                       step={1}
                       value={ytVolume}
-                      disabled={!ytPlayerReady}
                       onChange={(e) => handleYtVolume(Number(e.target.value))}
-                      className="w-20 h-3 cursor-pointer rounded-full appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-20 h-3 cursor-pointer rounded-full appearance-none"
                       style={{ accentColor: "#ffffff" }}
                       data-testid="input-yt-volume"
                       aria-label="YouTube volume"
