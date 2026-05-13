@@ -11810,7 +11810,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </button>
                   )}
 
-                  {/* Seek bar — drag locally, only seek on release */}
+                  {/* Seek bar — drag locally, always seek on release (mouseUp reads target value directly, avoiding stale React state) */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                     <input
                       type="range"
@@ -11825,12 +11825,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         setYtSeekDragging(true);
                       }}
                       onMouseUp={(e) => {
-                        if (ytSeekDragging) handleYtSeek(Number((e.target as HTMLInputElement).value));
+                        handleYtSeek(Number((e.target as HTMLInputElement).value));
                       }}
                       onTouchEnd={(e) => {
-                        if (ytSeekDragging) handleYtSeek(Number((e.target as HTMLInputElement).value));
+                        handleYtSeek(Number((e.target as HTMLInputElement).value));
                       }}
-                      className="w-full h-2 cursor-pointer rounded-full appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full h-3 cursor-pointer rounded-full appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ accentColor: "#ef4444" }}
                       data-testid="input-yt-seek"
                       aria-label="Video seek"
@@ -11840,8 +11840,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </span>
                   </div>
 
-                  {/* Volume slider — inline after seek */}
+                  {/* Volume — mute-toggle icon + slider */}
                   <div className="flex-shrink-0 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleYtVolume(ytVolume > 0 ? 0 : 80)}
+                      disabled={!ytPlayerReady}
+                      className="flex-shrink-0 w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={ytVolume === 0 ? "Unmute" : "Mute"}
+                      data-testid="button-yt-volume-toggle"
+                    >
+                      {ytVolume === 0
+                        ? <VolumeX className="w-3.5 h-3.5 text-white/70" />
+                        : ytVolume < 50
+                          ? <Volume1 className="w-3.5 h-3.5 text-white/70" />
+                          : <Volume2 className="w-3.5 h-3.5 text-white/70" />}
+                    </button>
                     <input
                       type="range"
                       min={0}
@@ -11850,7 +11864,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       value={ytVolume}
                       disabled={!ytPlayerReady}
                       onChange={(e) => handleYtVolume(Number(e.target.value))}
-                      className="w-20 h-2 cursor-pointer rounded-full appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-20 h-3 cursor-pointer rounded-full appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ accentColor: "#ffffff" }}
                       data-testid="input-yt-volume"
                       aria-label="YouTube volume"
