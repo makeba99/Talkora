@@ -60,6 +60,8 @@ import {
   roomJoins,
   emailCampaigns,
   type EmailCampaign,
+  pushSubscriptions,
+  type PushSubscription,
   transactions,
   type Transaction,
   type InsertTransaction,
@@ -226,6 +228,12 @@ export interface IStorage {
   getEmailCampaigns(): Promise<EmailCampaign[]>;
   incrementCampaignOpens(id: string): Promise<void>;
   incrementCampaignClicks(id: string): Promise<void>;
+
+  savePushSubscription(userId: string, sub: { endpoint: string; p256dh: string; auth: string }): Promise<void>;
+  deletePushSubscription(endpoint: string): Promise<void>;
+  getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]>;
+  getAllPushSubscriptions(): Promise<PushSubscription[]>;
+  getPushSubscriberCount(): Promise<number>;
 
   createTransaction(data: InsertTransaction): Promise<Transaction>;
   getTransactionsByUser(userId: string): Promise<Transaction[]>;
@@ -1647,6 +1655,29 @@ export class DatabaseStorage implements IStorage {
 
   async incrementCampaignClicks(id: string): Promise<void> {
     await db.execute(sql`UPDATE email_campaigns SET click_count = click_count + 1 WHERE id = ${id}`);
+  }
+
+  async savePushSubscription(userId: string, sub: { endpoint: string; p256dh: string; auth: string }): Promise<void> {
+    await db.insert(pushSubscriptions)
+      .values({ userId, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth })
+      .onConflictDoNothing();
+  }
+
+  async deletePushSubscription(endpoint: string): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  }
+
+  async getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]> {
+    return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async getAllPushSubscriptions(): Promise<PushSubscription[]> {
+    return db.select().from(pushSubscriptions);
+  }
+
+  async getPushSubscriberCount(): Promise<number> {
+    const res = await db.execute(sql`SELECT COUNT(*)::int AS cnt FROM push_subscriptions`);
+    return Number((res.rows[0] as any)?.cnt ?? 0);
   }
 
   async createTransaction(data: InsertTransaction): Promise<Transaction> {

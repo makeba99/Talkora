@@ -523,6 +523,19 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({ i
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  psUserIdx: index("push_subscriptions_user_id_idx").on(table.userId),
+  psEndpointIdx: uniqueIndex("push_subscriptions_endpoint_idx").on(table.endpoint),
+}));
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+
 export const emailCampaigns = pgTable("email_campaigns", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   subject: text("subject").notNull(),

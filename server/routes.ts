@@ -10,6 +10,7 @@ import multer, { type StorageEngine } from "multer";
 import path from "path";
 import fs from "fs";
 import nodemailer from "nodemailer";
+import webpush from "web-push";
 import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
@@ -3028,6 +3029,92 @@ export async function registerRoutes(
     }
   });
 
+  // ── Web Push: VAPID public key ─────────────────────────────────────────────
+  app.get("/api/push/vapid-public-key", (_req, res) => {
+    const publicKey = process.env.VAPID_PUBLIC_KEY;
+    if (!publicKey) return res.status(503).json({ publicKey: null });
+    res.json({ publicKey });
+  });
+
+  // ── Web Push: subscribe ────────────────────────────────────────────────────
+  app.post("/api/push/subscribe", isAuthenticated, async (req: any, res) => {
+    try {
+      const { endpoint, p256dh, auth } = req.body;
+      if (!endpoint || !p256dh || !auth) {
+        return res.status(400).json({ message: "endpoint, p256dh, and auth are required." });
+      }
+      await storage.savePushSubscription((req.user as any).id, { endpoint, p256dh, auth });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Web Push: unsubscribe ──────────────────────────────────────────────────
+  app.delete("/api/push/unsubscribe", isAuthenticated, async (req: any, res) => {
+    try {
+      const { endpoint } = req.body;
+      if (!endpoint) return res.status(400).json({ message: "endpoint is required." });
+      await storage.deletePushSubscription(endpoint);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Web Push: subscriber count (admin) ────────────────────────────────────
+  app.get("/api/admin/push/subscriber-count", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const count = await storage.getPushSubscriberCount();
+      res.json({ count });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Web Push: admin broadcast ─────────────────────────────────────────────
+  app.post("/api/admin/push/send", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { title, body, url } = req.body;
+      if (!title?.trim() || !body?.trim()) {
+        return res.status(400).json({ message: "title and body are required." });
+      }
+      const vapidPublic = process.env.VAPID_PUBLIC_KEY;
+      const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+      if (!vapidPublic || !vapidPrivate) {
+        return res.status(503).json({ message: "VAPID keys not configured. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in secrets." });
+      }
+      webpush.setVapidDetails("mailto:vextornweb@gmail.com", vapidPublic, vapidPrivate);
+
+      const subs = await storage.getAllPushSubscriptions();
+      let sent = 0;
+      let failed = 0;
+      const payload = JSON.stringify({ title, body, url: url || "/" });
+
+      await Promise.allSettled(
+        subs.map(async (sub) => {
+          try {
+            await webpush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+              payload
+            );
+            sent++;
+          } catch (err: any) {
+            failed++;
+            // 410 Gone = subscription expired/removed; clean it up
+            if (err.statusCode === 410) {
+              await storage.deletePushSubscription(sub.endpoint).catch(() => {});
+            }
+          }
+        })
+      );
+
+      res.json({ success: true, sent, failed, total: subs.length });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // ── Outreach: email broadcast ──────────────────────────────────────────────
   app.post("/api/admin/outreach/email", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
@@ -3036,10 +3123,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Subject and body are required." });
       }
 
-      const smtpUser = process.env.SMTP_USER;
+      const smtpUser = process.env.SMTP_USER || "vextornweb@gmail.com";
       const smtpPass = process.env.SMTP_PASS;
-      if (!smtpUser || !smtpPass) {
-        return res.status(503).json({ message: "SMTP is not configured. Set SMTP_USER and SMTP_PASS in your environment secrets." });
+      if (!smtpPass) {
+        return res.status(503).json({ message: "Gmail App Password not configured. Set SMTP_PASS in your environment secrets." });
       }
 
       let recipients: string[] = [];

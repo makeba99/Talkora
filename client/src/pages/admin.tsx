@@ -2023,6 +2023,8 @@ function formatRelative(ts: number): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
+type WebPushResult = { success: boolean; sent: number; failed: number; total: number };
+
 type EmailCampaign = {
   id: string;
   subject: string;
@@ -2044,6 +2046,9 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   const [notifTarget, setNotifTarget] = useState<"all_online" | "all_registered" | "specific_user">("all_online");
   const [notifUserId, setNotifUserId] = useState("");
   const [userSearch, setUserSearchLocal] = useState("");
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushBody, setPushBody] = useState("");
+  const [pushUrl, setPushUrl] = useState("/");
 
   const registeredWithEmail = users.filter((u) => u.email);
   const filteredForPicker = userSearch
@@ -2057,6 +2062,11 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   const { data: campaigns = [], refetch: refetchCampaigns } = useQuery<EmailCampaign[]>({
     queryKey: ["/api/admin/outreach/campaigns"],
     refetchInterval: 30000,
+  });
+
+  const { data: pushSubCount } = useQuery<{ count: number }>({
+    queryKey: ["/api/admin/push/subscriber-count"],
+    refetchInterval: 60000,
   });
 
   const emailMutation = useMutation({
@@ -2096,6 +2106,27 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
       setNotifUserId("");
     },
     onError: (err: any) => toast({ title: "Failed to send notification", description: err.message, variant: "destructive" }),
+  });
+
+  const webPushMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/push/send", {
+        title: pushTitle,
+        body: pushBody,
+        url: pushUrl || "/",
+      });
+      return res.json() as Promise<WebPushResult>;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Web push sent!",
+        description: `Delivered to ${data.sent} of ${data.total} subscriber${data.total !== 1 ? "s" : ""}${data.failed > 0 ? ` (${data.failed} failed)` : ""}.`,
+      });
+      setPushTitle("");
+      setPushBody("");
+      setPushUrl("/");
+    },
+    onError: (err: any) => toast({ title: "Failed to send web push", description: err.message, variant: "destructive" }),
   });
 
   return (
@@ -2177,8 +2208,20 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
               />
             </div>
 
-            <div className="rounded-lg bg-blue-500/10 border border-blue-400/20 p-3 text-xs text-blue-300">
-              Emails are sent via your configured SMTP account. Requires <code className="font-mono">SMTP_USER</code> and <code className="font-mono">SMTP_PASS</code> secrets.
+            <div className="rounded-lg bg-blue-500/10 border border-blue-400/20 p-3 text-xs text-blue-300 space-y-1.5">
+              <p className="font-semibold flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 shrink-0" /> Sent from <span className="font-mono">vextornweb@gmail.com</span>
+              </p>
+              <p className="text-blue-300/80">Requires a Gmail App Password stored as the <code className="font-mono">SMTP_PASS</code> secret.</p>
+              <details className="cursor-pointer">
+                <summary className="text-blue-400 hover:text-blue-300 transition-colors font-medium">How to get a Gmail App Password →</summary>
+                <ol className="mt-2 space-y-1 text-blue-300/80 list-decimal list-inside">
+                  <li>Go to <span className="font-mono">myaccount.google.com/security</span></li>
+                  <li>Enable 2-Step Verification if not already on</li>
+                  <li>Search "App passwords" → create one named "Vextorn"</li>
+                  <li>Copy the 16-character code → paste it as the <code className="font-mono">SMTP_PASS</code> secret in Replit</li>
+                </ol>
+              </details>
             </div>
 
             <Button
@@ -2285,11 +2328,84 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
               data-testid="button-send-notification"
             >
               {notifMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
-              {notifMutation.isPending ? "Sending..." : "Send Notification"}
+              {notifMutation.isPending ? "Sending..." : "Send In-App Notification"}
             </Button>
           </CardContent>
         </Card>
       </div>
+
+      {/* Web Push Panel */}
+      <Card className="bg-card/75 border-emerald-400/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 text-emerald-300">
+            <Smartphone className="w-4 h-4" /> Web Push Broadcast
+            <Badge variant="outline" className="ml-auto text-[10px] border-emerald-400/40 text-emerald-300">
+              {pushSubCount?.count ?? "—"} subscriber{pushSubCount?.count !== 1 ? "s" : ""}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-emerald-500/10 border border-emerald-400/20 p-3 text-xs text-emerald-300 space-y-1.5">
+            <p className="font-semibold flex items-center gap-1.5">
+              <Smartphone className="w-3.5 h-3.5 shrink-0" /> Real device &amp; browser notifications
+            </p>
+            <p className="text-emerald-300/80">
+              Web Push sends native OS notifications to users who've clicked "Enable notifications" — they appear even when the browser tab is closed.
+            </p>
+            <details className="cursor-pointer">
+              <summary className="text-emerald-400 hover:text-emerald-300 transition-colors font-medium">Setup required →</summary>
+              <ol className="mt-2 space-y-1 text-emerald-300/80 list-decimal list-inside">
+                <li>Add secret <code className="font-mono">VAPID_PUBLIC_KEY</code> = <code className="font-mono text-[10px] break-all">BPt6IdOwBjMG3RA3x4H5KNgvdHEIxdI-tcXDj0IQDvU56kZQPDTtQ8oq5WTPb5HJ6MNWHukaQjZNHkN1sUXQGkU</code></li>
+                <li>Add secret <code className="font-mono">VAPID_PRIVATE_KEY</code> = (the private key you were given)</li>
+                <li>Restart the server after adding secrets</li>
+                <li>Users must click "Enable Notifications" (bell icon in their profile menu)</li>
+              </ol>
+            </details>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Notification title</Label>
+            <Input
+              value={pushTitle}
+              onChange={(e) => setPushTitle(e.target.value)}
+              placeholder="New feature on Vextorn!"
+              data-testid="input-push-title"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Message body</Label>
+            <Textarea
+              value={pushBody}
+              onChange={(e) => setPushBody(e.target.value)}
+              placeholder="Check out what's new..."
+              rows={3}
+              className="resize-none"
+              data-testid="input-push-body"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Click destination URL (optional)</Label>
+            <Input
+              value={pushUrl}
+              onChange={(e) => setPushUrl(e.target.value)}
+              placeholder="/"
+              data-testid="input-push-url"
+            />
+          </div>
+
+          <Button
+            className="w-full bg-emerald-700 hover:bg-emerald-600"
+            onClick={() => webPushMutation.mutate()}
+            disabled={webPushMutation.isPending || !pushTitle.trim() || !pushBody.trim() || (pushSubCount?.count ?? 0) === 0}
+            data-testid="button-send-web-push"
+          >
+            {webPushMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Smartphone className="w-4 h-4 mr-2" />}
+            {webPushMutation.isPending ? "Sending..." : `Send to ${pushSubCount?.count ?? 0} device${pushSubCount?.count !== 1 ? "s" : ""}`}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Campaign History */}
       <Card className="bg-card/75 border-primary/15">

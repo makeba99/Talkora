@@ -49,3 +49,5 @@ stack = "FULLSTACK_JS"
 [userenv]
 
 [userenv.shared]
+SMTP_USER = "vextornweb@gmail.com"
+VAPID_PUBLIC_KEY = "BPt6IdOwBjMG3RA3x4H5KNgvdHEIxdI-tcXDj0IQDvU56kZQPDTtQ8oq5WTPb5HJ6MNWHukaQjZNHkN1sUXQGkU"
