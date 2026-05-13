@@ -2041,6 +2041,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   const [emailBody, setEmailBody] = useState("");
   const [emailRecipientType, setEmailRecipientType] = useState<"all_registered" | "custom">("all_registered");
   const [customEmails, setCustomEmails] = useState("");
+  const [emailImageUrl, setEmailImageUrl] = useState("");
   const [notifTitle, setNotifTitle] = useState("");
   const [notifMessage, setNotifMessage] = useState("");
   const [notifTarget, setNotifTarget] = useState<"all_online" | "all_registered" | "specific_user">("all_online");
@@ -2049,6 +2050,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   const [pushTitle, setPushTitle] = useState("");
   const [pushBody, setPushBody] = useState("");
   const [pushUrl, setPushUrl] = useState("/");
+  const [pushImageUrl, setPushImageUrl] = useState("");
 
   const registeredWithEmail = users.filter((u) => u.email);
   const filteredForPicker = userSearch
@@ -2076,6 +2078,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
         body: emailBody,
         recipientType: emailRecipientType,
         customEmails,
+        imageUrl: emailImageUrl || undefined,
       });
       return res.json();
     },
@@ -2083,6 +2086,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
       toast({ title: "Emails sent!", description: `Delivered to ${data.sent} recipient${data.sent !== 1 ? "s" : ""}.` });
       setEmailSubject("");
       setEmailBody("");
+      setEmailImageUrl("");
       setCustomEmails("");
       refetchCampaigns();
     },
@@ -2114,6 +2118,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
         title: pushTitle,
         body: pushBody,
         url: pushUrl || "/",
+        imageUrl: pushImageUrl || undefined,
       });
       return res.json() as Promise<WebPushResult>;
     },
@@ -2125,6 +2130,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
       setPushTitle("");
       setPushBody("");
       setPushUrl("/");
+      setPushImageUrl("");
     },
     onError: (err: any) => toast({ title: "Failed to send web push", description: err.message, variant: "destructive" }),
   });
@@ -2208,9 +2214,32 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
               />
             </div>
 
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" /> Image URL <span className="text-muted-foreground/50 font-normal">(optional — shown below message)</span>
+              </Label>
+              <Input
+                value={emailImageUrl}
+                onChange={(e) => setEmailImageUrl(e.target.value)}
+                placeholder="https://example.com/image.png"
+                data-testid="input-email-image-url"
+              />
+              {emailImageUrl.trim() && (
+                <div className="rounded-lg overflow-hidden border border-blue-400/20 bg-black/20 max-h-40">
+                  <img
+                    src={emailImageUrl.trim()}
+                    alt="Email image preview"
+                    className="w-full object-cover max-h-40"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    onLoad={(e) => { (e.target as HTMLImageElement).style.display = "block"; }}
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="rounded-lg bg-blue-500/10 border border-blue-400/20 p-3 text-xs text-blue-300 space-y-1.5">
               <p className="font-semibold flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 shrink-0" /> Sent from <span className="font-mono">vextornweb@gmail.com</span>
+                <Mail className="w-3.5 h-3.5 shrink-0" /> Sent via <span className="font-mono">vextornweb@gmail.com</span> · displayed as <span className="font-mono">hello@vextorn.app</span>
               </p>
               <p className="text-blue-300/80">Requires a Gmail App Password stored as the <code className="font-mono">SMTP_PASS</code> secret.</p>
               <details className="cursor-pointer">
@@ -2393,6 +2422,29 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
               placeholder="/"
               data-testid="input-push-url"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" /> Image URL <span className="text-muted-foreground/50 font-normal">(optional — shown in notification)</span>
+            </Label>
+            <Input
+              value={pushImageUrl}
+              onChange={(e) => setPushImageUrl(e.target.value)}
+              placeholder="https://example.com/banner.png"
+              data-testid="input-push-image-url"
+            />
+            {pushImageUrl.trim() && (
+              <div className="rounded-lg overflow-hidden border border-emerald-400/20 bg-black/20 max-h-32">
+                <img
+                  src={pushImageUrl.trim()}
+                  alt="Push image preview"
+                  className="w-full object-cover max-h-32"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  onLoad={(e) => { (e.target as HTMLImageElement).style.display = "block"; }}
+                />
+              </div>
+            )}
           </div>
 
           <Button

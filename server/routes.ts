@@ -3075,7 +3075,7 @@ export async function registerRoutes(
   // ── Web Push: admin broadcast ─────────────────────────────────────────────
   app.post("/api/admin/push/send", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
-      const { title, body, url } = req.body;
+      const { title, body, url, imageUrl: pushImageUrl } = req.body;
       if (!title?.trim() || !body?.trim()) {
         return res.status(400).json({ message: "title and body are required." });
       }
@@ -3084,12 +3084,12 @@ export async function registerRoutes(
       if (!vapidPublic || !vapidPrivate) {
         return res.status(503).json({ message: "VAPID keys not configured. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in secrets." });
       }
-      webpush.setVapidDetails("mailto:vextornweb@gmail.com", vapidPublic, vapidPrivate);
+      webpush.setVapidDetails("mailto:hello@vextorn.app", vapidPublic, vapidPrivate);
 
       const subs = await storage.getAllPushSubscriptions();
       let sent = 0;
       let failed = 0;
-      const payload = JSON.stringify({ title, body, url: url || "/" });
+      const payload = JSON.stringify({ title, body, url: url || "/", image: pushImageUrl?.trim() || undefined });
 
       await Promise.allSettled(
         subs.map(async (sub) => {
@@ -3118,7 +3118,7 @@ export async function registerRoutes(
   // ── Outreach: email broadcast ──────────────────────────────────────────────
   app.post("/api/admin/outreach/email", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
-      const { subject, body, recipientType, customEmails } = req.body;
+      const { subject, body, recipientType, customEmails, imageUrl } = req.body;
       if (!subject?.trim() || !body?.trim()) {
         return res.status(400).json({ message: "Subject and body are required." });
       }
@@ -3170,7 +3170,10 @@ export async function registerRoutes(
       }
 
       const trackedBody = wrapLinksForTracking(body.replace(/\n/g, "<br>"), campaign.id, baseUrl);
-      const htmlBody = `<div style="font-family:sans-serif;max-width:600px;margin:auto">${trackedBody}${trackingPixel}</div>`;
+      const imageBlock = imageUrl?.trim()
+        ? `<img src="${imageUrl.trim()}" alt="" style="display:block;width:100%;max-width:600px;border-radius:8px;margin:16px 0" />`
+        : "";
+      const htmlBody = `<div style="font-family:sans-serif;max-width:600px;margin:auto">${trackedBody}${imageBlock}${trackingPixel}</div>`;
       const textBody = body;
 
       const chunkSize = 50;
@@ -3178,7 +3181,8 @@ export async function registerRoutes(
       for (let i = 0; i < recipients.length; i += chunkSize) {
         const chunk = recipients.slice(i, i + chunkSize);
         await transporter.sendMail({
-          from: `"Vextorn Platform" <${smtpUser}>`,
+          from: `"Vextorn" <${smtpUser}>`,
+          replyTo: "hello@vextorn.app",
           bcc: chunk,
           subject,
           html: htmlBody,

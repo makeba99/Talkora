@@ -186,14 +186,17 @@ self.addEventListener("message", (event) => {
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   const data = event.data.json();
+  const options = {
+    body:    data.body || "",
+    icon:    "/vextorn-icon-192.png",
+    badge:   "/vextorn-icon-192.png",
+    data:    { url: data.url || "/" },
+    vibrate: [200, 100, 200],
+  };
+  if (data.image) options.image = data.image;
+  if (data.actions) options.actions = data.actions;
   event.waitUntil(
-    self.registration.showNotification(data.title || "Vextorn", {
-      body:   data.body || "",
-      icon:   "/vextorn-icon-192.png",
-      badge:  "/vextorn-icon-192.png",
-      data:   data.url ? { url: data.url } : undefined,
-      vibrate: [200, 100, 200],
-    })
+    self.registration.showNotification(data.title || "Vextorn", options)
   );
 });
 
