@@ -4,6 +4,7 @@ import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { saveKnockCooldown } from "@/lib/knock-cooldown";
 
 const BadgeAnnouncement = lazy(() =>
   import("@/components/badge-announcement").then((m) => ({ default: m.BadgeAnnouncement }))
@@ -54,17 +55,41 @@ function GlobalSocketEvents() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/security-events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/security-events/count"] });
     };
+    const handleKnockDenied = (event: any) => {
+      const { roomTitle, cooldownUntil, cooldownMinutes, denialCount, banned, roomId } = event ?? {};
+      // Persist cooldown so the knock button in the lobby can reflect it immediately.
+      if (roomId) saveKnockCooldown(roomId, { cooldownUntil: cooldownUntil ?? 0, denialCount: denialCount ?? 1, banned: !!banned });
+      if (banned) {
+        toast({
+          title: "🚫 Knock rejected — permanently",
+          description: `You've been denied ${denialCount} times and can no longer knock on "${roomTitle}".`,
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        const mins = cooldownMinutes ?? 5;
+        toast({
+          title: "🚪 Knock denied",
+          description: `You can try again in ${mins} minute${mins !== 1 ? "s" : ""}.`,
+          variant: "destructive",
+          duration: 6000,
+        });
+      }
+    };
+
     socket.on("badge:awarded", handleBadgeAwarded);
     socket.on("admin:announcement", handleAnnouncement);
     socket.on("admin:restricted", handleRestricted);
     socket.on("admin:restriction-lifted", handleRestrictionLifted);
     socket.on("security:admin_alert", handleSecurityAdminAlert);
+    socket.on("room:knock-denied", handleKnockDenied);
     return () => {
       socket.off("badge:awarded", handleBadgeAwarded);
       socket.off("admin:announcement", handleAnnouncement);
       socket.off("admin:restricted", handleRestricted);
       socket.off("admin:restriction-lifted", handleRestrictionLifted);
       socket.off("security:admin_alert", handleSecurityAdminAlert);
+      socket.off("room:knock-denied", handleKnockDenied);
     };
   }, [socket, toast, isAdmin]);
 

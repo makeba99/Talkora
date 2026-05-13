@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, memo, lazy, Suspense } from "react";
+import { loadKnockCooldown, saveKnockCooldown } from "@/lib/knock-cooldown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -610,25 +611,83 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
    * for a short cooldown after success/error, so rapid repeats can't slip
    * past and trigger the API rate limiter. */
   const knockInFlightRef = useRef(false);
+
+  // Progressive knock cooldown state — loaded from localStorage on first render
+  // and updated whenever the server returns a 429 (cooldown) or socket delivers
+  // a room:knock-denied event (handled globally in socket-layer → saves to LS).
+  const [knockCd, setKnockCd] = useState<{ cooldownUntil: number; denialCount: number; banned: boolean } | null>(() => loadKnockCooldown(room.id));
+  // Seconds remaining in the current cooldown, ticking down every second.
+  const [knockSecsLeft, setKnockSecsLeft] = useState<number>(0);
+
+  // Re-sync from localStorage whenever cooldown info may have been written by the
+  // global socket handler (room:knock-denied arrives outside this component).
+  useEffect(() => {
+    const cd = loadKnockCooldown(room.id);
+    setKnockCd(cd);
+  }, [room.id]);
+
+  // Tick-down the cooldown display every second.
+  useEffect(() => {
+    if (!knockCd || knockCd.banned) { setKnockSecsLeft(0); return; }
+    const tick = () => {
+      const secs = Math.max(0, Math.ceil((knockCd.cooldownUntil - Date.now()) / 1000));
+      setKnockSecsLeft(secs);
+    };
+    tick();
+    if (knockCd.cooldownUntil <= Date.now()) return;
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [knockCd]);
+
   const knockMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", `/api/rooms/${room.id}/knock`);
+      const res = await fetch(`/api/rooms/${room.id}/knock`, { method: "POST", credentials: "include" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const err: any = new Error(body.message || "Knock failed");
+        err.status = res.status;
+        err.body = body;
+        throw err;
+      }
     },
     onSuccess: () => {
       import("@/lib/sound-fx").then((m) => m.sfxKnock()).catch(() => {});
       toast({ title: "🚪 Knock sent!", description: "The host will see your knock inside the room." });
       setTimeout(() => { knockInFlightRef.current = false; }, 1500);
     },
-    onError: () => {
-      toast({ title: "Couldn't send knock", description: "Please try again.", variant: "destructive" });
-      setTimeout(() => { knockInFlightRef.current = false; }, 1500);
+    onError: (err: any) => {
+      knockInFlightRef.current = false;
+      if (err?.status === 429 && err?.body) {
+        const { cooldownUntil, denialCount, banned } = err.body;
+        const cd = { cooldownUntil: cooldownUntil ?? 0, denialCount: denialCount ?? 1, banned: !!banned };
+        saveKnockCooldown(room.id, cd);
+        setKnockCd(cd);
+        if (banned) {
+          toast({ title: "🚫 You can't knock here", description: "You've been rejected too many times.", variant: "destructive" });
+        } else {
+          const mins = Math.ceil(((cooldownUntil ?? Date.now()) - Date.now()) / 60000);
+          toast({ title: "🚪 Please wait", description: `Try again in ${mins} minute${mins !== 1 ? "s" : ""}.`, variant: "destructive" });
+        }
+      } else {
+        toast({ title: "Couldn't send knock", description: "Please try again.", variant: "destructive" });
+      }
     },
   });
+
+  const knockBlocked = !!(knockCd?.banned || (knockCd && knockSecsLeft > 0));
+
   const safeKnock = () => {
-    if (knockInFlightRef.current || knockMutation.isPending) return;
+    if (knockInFlightRef.current || knockMutation.isPending || knockBlocked) return;
     knockInFlightRef.current = true;
     knockMutation.mutate();
   };
+
+  // Friendly countdown label for the button: "5:00", "1:23", etc.
+  const knockCdLabel = knockCd?.banned
+    ? "Blocked"
+    : knockSecsLeft > 0
+      ? `${Math.floor(knockSecsLeft / 60)}:${String(knockSecsLeft % 60).padStart(2, "0")}`
+      : null;
   const participantIds = participants.map((p) => p.id);
 
   const { data: fetchedFollowerCounts = {} } = useQuery<Record<string, number>>({
@@ -1293,14 +1352,23 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             }
             if (isClosed) {
               return (
-                <div className={`door-3d-wrap ${stateClass}`} style={wrapStyle}
-                  role="button" tabIndex={0}
-                  aria-disabled={knockMutation.isPending || undefined}
-                  aria-label={knockMutation.isPending ? `Knocking on ${room.title}…` : `Knock to request entry to ${room.title}`}
-                  onClick={(e) => { e.stopPropagation(); safeKnock(); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); safeKnock(); } }}
-                  data-testid={`button-knock-room-${room.id}`}>
-                  {doorBody}
+                <div style={{ position: "absolute", bottom: 8, right: 10, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div className={`door-3d-wrap ${knockBlocked ? "door-3d-wrap--locked" : stateClass}`}
+                    style={{ position: "relative", opacity: knockBlocked ? 0.5 : 1, cursor: knockBlocked ? "not-allowed" : "pointer" }}
+                    role="button" tabIndex={knockBlocked ? -1 : 0}
+                    aria-disabled={knockMutation.isPending || knockBlocked || undefined}
+                    aria-label={knockBlocked ? (knockCd?.banned ? "Permanently blocked from knocking" : `Knock available in ${knockCdLabel}`) : knockMutation.isPending ? `Knocking on ${room.title}…` : `Knock to request entry to ${room.title}`}
+                    onClick={(e) => { e.stopPropagation(); safeKnock(); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); safeKnock(); } }}
+                    data-testid={`button-knock-room-${room.id}`}>
+                    {doorBody}
+                  </div>
+                  {knockCdLabel && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: knockCd?.banned ? "#ef4444" : "#f59e0b", background: "rgba(0,0,0,0.7)", borderRadius: 6, padding: "1px 5px", lineHeight: 1.4, letterSpacing: "0.02em", whiteSpace: "nowrap" }}
+                      data-testid={`text-knock-cooldown-${room.id}`}>
+                      {knockCd?.banned ? "🚫 Blocked" : `⏳ ${knockCdLabel}`}
+                    </span>
+                  )}
                 </div>
               );
             }

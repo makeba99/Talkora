@@ -159,6 +159,12 @@ const userCurrentRoom = new Map<string, string>();
 // these users get to bypass the capacity check on their next room:join, then
 // the grant is consumed.
 const roomKnockGrants = new Map<string, Set<string>>();
+// Knock denial history — tracks progressive cooldowns per room+user.
+// key: `${roomId}:${userId}` → { count: denials so far, cooldownUntil: ms timestamp }
+// Cooldown ladder (minutes): 5 → 10 → 20 → 40 → permanently banned after 5 denials.
+const KNOCK_COOLDOWN_MINUTES = [5, 10, 20, 40, 80];
+const MAX_KNOCK_DENIALS = 5; // 5th denial = permanently banned
+const knockDenials = new Map<string, { count: number; cooldownUntil: number }>();
 const roomDeleteTimers = new Map<string, NodeJS.Timeout>();
 const disconnectTimers = new Map<string, NodeJS.Timeout>();
 const socketCountries = new Map<string, string>();
@@ -2644,6 +2650,18 @@ export async function registerRoutes(
       const room = await storage.getRoom(roomId);
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId === requesterId) return res.status(400).json({ message: "You own this room" });
+
+      // Progressive cooldown gate: check denial history before allowing another knock.
+      const denialKey = `${roomId}:${requesterId}`;
+      const history = knockDenials.get(denialKey);
+      if (history) {
+        if (history.count >= MAX_KNOCK_DENIALS) {
+          return res.status(429).json({ message: "You have been permanently blocked from knocking on this room.", banned: true, denialCount: history.count });
+        }
+        if (Date.now() < history.cooldownUntil) {
+          return res.status(429).json({ message: "You must wait before knocking again.", cooldownUntil: history.cooldownUntil, denialCount: history.count, banned: false });
+        }
+      }
 
       // Knocks are IN-ROOM only — no persistent notification, no global toast.
       // The host sees the Allow / Deny prompt while they are inside the room
@@ -6574,11 +6592,25 @@ export async function registerRoutes(
         if (!currentUserId || !data?.roomId || !data?.userId) return;
         const room = await storage.getRoom(data.roomId);
         if (!room || room.ownerId !== currentUserId) return; // only host
+
+        // Record denial and compute next cooldown.
+        const denialKey = `${data.roomId}:${data.userId}`;
+        const existing = knockDenials.get(denialKey);
+        const newCount = (existing?.count ?? 0) + 1;
+        const banned = newCount >= MAX_KNOCK_DENIALS;
+        const cooldownMinutes = banned ? 0 : (KNOCK_COOLDOWN_MINUTES[newCount - 1] ?? KNOCK_COOLDOWN_MINUTES[KNOCK_COOLDOWN_MINUTES.length - 1]);
+        const cooldownUntil = banned ? 0 : Date.now() + cooldownMinutes * 60 * 1000;
+        knockDenials.set(denialKey, { count: newCount, cooldownUntil });
+
         const knockerSocketId = userSockets.get(data.userId);
         if (knockerSocketId) {
           io.to(knockerSocketId).emit("room:knock-denied", {
             roomId: data.roomId,
             roomTitle: room.title,
+            cooldownUntil,
+            cooldownMinutes,
+            denialCount: newCount,
+            banned,
           });
         }
       } catch (err) {
