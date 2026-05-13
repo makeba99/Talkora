@@ -189,8 +189,8 @@ export interface IStorage {
   getSetting(key: string): Promise<string | null>;
   setSetting(key: string, value: string): Promise<void>;
 
-  recordPageView(data: { path: string; referrer?: string; referrerDomain?: string; country?: string; sessionHash?: string }): Promise<void>;
-  recordRoomJoin(data: { roomId: string; userId: string; country?: string }): Promise<void>;
+  recordPageView(data: { path: string; referrer?: string; referrerDomain?: string; country?: string; sessionHash?: string; userId?: string }): Promise<void>;
+  recordRoomJoin(data: { roomId: string; userId: string; country?: string; roomName?: string }): Promise<void>;
   getAnalytics(days?: number): Promise<{
     dailyViews: { date: string; views: number }[];
     topReferrers: { domain: string; count: number }[];
@@ -206,6 +206,12 @@ export interface IStorage {
     todayUniqueVisitors: number;
     todayRoomJoins: number;
     todayUniqueJoiners: number;
+    recentJoiners: { userId: string; displayName: string; avatarUrl: string | null; roomId: string; roomName: string; country: string | null; joinedAt: string }[];
+    topRooms: { roomId: string; roomName: string; joins: number }[];
+    topActiveUsers: { userId: string; displayName: string; avatarUrl: string | null; joins: number; country: string | null }[];
+    hourlyActivity: { hour: number; joins: number; views: number }[];
+    topPages: { path: string; count: number }[];
+    newUsersPerDay: { date: string; count: number }[];
   }>;
 
   createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign>;
@@ -1146,21 +1152,23 @@ export class DatabaseStorage implements IStorage {
       });
   }
 
-  async recordPageView(data: { path: string; referrer?: string; referrerDomain?: string; country?: string; sessionHash?: string }): Promise<void> {
+  async recordPageView(data: { path: string; referrer?: string; referrerDomain?: string; country?: string; sessionHash?: string; userId?: string }): Promise<void> {
     await db.insert(pageViews).values({
       path: data.path,
       referrer: data.referrer ?? null,
       referrerDomain: data.referrerDomain ?? null,
       country: data.country ?? null,
       sessionHash: data.sessionHash ?? null,
+      userId: data.userId ?? null,
     });
   }
 
-  async recordRoomJoin(data: { roomId: string; userId: string; country?: string }): Promise<void> {
+  async recordRoomJoin(data: { roomId: string; userId: string; country?: string; roomName?: string }): Promise<void> {
     await db.insert(roomJoins).values({
       roomId: data.roomId,
       userId: data.userId,
       country: data.country ?? null,
+      roomName: data.roomName ? data.roomName.slice(0, 120) : null,
     });
   }
 
@@ -1175,17 +1183,33 @@ export class DatabaseStorage implements IStorage {
     totalRoomJoins: number;
     uniqueRoomJoiners: number;
     dailyJoins: { date: string; joins: number }[];
+    todayViews: number;
+    todayUniqueVisitors: number;
+    todayRoomJoins: number;
+    todayUniqueJoiners: number;
+    recentJoiners: { userId: string; displayName: string; avatarUrl: string | null; roomId: string; roomName: string; country: string | null; joinedAt: string }[];
+    topRooms: { roomId: string; roomName: string; joins: number }[];
+    topActiveUsers: { userId: string; displayName: string; avatarUrl: string | null; joins: number; country: string | null }[];
+    hourlyActivity: { hour: number; joins: number; views: number }[];
+    topPages: { path: string; count: number }[];
+    newUsersPerDay: { date: string; count: number }[];
   }> {
     const empty = {
       dailyViews: [], topReferrers: [], topCountries: [], topJoinCountries: [],
       totalViews: 0, uniqueSessions: 0, redirectViews: 0,
       totalRoomJoins: 0, uniqueRoomJoiners: 0, dailyJoins: [],
       todayViews: 0, todayUniqueVisitors: 0, todayRoomJoins: 0, todayUniqueJoiners: 0,
+      recentJoiners: [], topRooms: [], topActiveUsers: [], hourlyActivity: [], topPages: [], newUsersPerDay: [],
     };
     try {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const [dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw, joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw] = await Promise.all([
+    const [
+      dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw,
+      joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw,
+      recentJoinersRaw, topRoomsRaw, topActiveUsersRaw, hourlyJoinsRaw, hourlyViewsRaw,
+      topPagesRaw, newUsersRaw,
+    ] = await Promise.all([
       db.execute(sql`
         SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
                COUNT(*)::int AS views
@@ -1262,6 +1286,84 @@ export class DatabaseStorage implements IStorage {
         FROM room_joins
         WHERE created_at >= CURRENT_DATE
       `),
+      // Recent 40 room joiners with user info (JOIN users table)
+      db.execute(sql`
+        SELECT rj.user_id, rj.room_id,
+               COALESCE(rj.room_name, rj.room_id) AS room_name,
+               rj.country,
+               to_char(rj.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS joined_at,
+               COALESCE(u.display_name, u.first_name, u.email, rj.user_id) AS display_name,
+               u.profile_image_url AS avatar_url
+        FROM room_joins rj
+        LEFT JOIN users u ON u.id = rj.user_id
+        WHERE rj.created_at >= ${since}
+        ORDER BY rj.created_at DESC
+        LIMIT 40
+      `),
+      // Top rooms by join count
+      db.execute(sql`
+        SELECT room_id,
+               COALESCE(MAX(room_name), room_id) AS room_name,
+               COUNT(*)::int AS joins
+        FROM room_joins
+        WHERE created_at >= ${since}
+          AND room_name IS NOT NULL
+          AND room_name != ''
+        GROUP BY room_id
+        ORDER BY joins DESC
+        LIMIT 10
+      `),
+      // Top active users by join count
+      db.execute(sql`
+        SELECT rj.user_id,
+               COUNT(*)::int AS joins,
+               MAX(rj.country) AS country,
+               COALESCE(MAX(u.display_name), MAX(u.first_name), MAX(u.email), rj.user_id) AS display_name,
+               MAX(u.profile_image_url) AS avatar_url
+        FROM room_joins rj
+        LEFT JOIN users u ON u.id = rj.user_id
+        WHERE rj.created_at >= ${since}
+        GROUP BY rj.user_id
+        ORDER BY joins DESC
+        LIMIT 10
+      `),
+      // Hourly activity — room joins grouped by hour of day (0–23)
+      db.execute(sql`
+        SELECT EXTRACT(HOUR FROM created_at AT TIME ZONE 'UTC')::int AS hour,
+               COUNT(*)::int AS joins
+        FROM room_joins
+        WHERE created_at >= ${since}
+        GROUP BY hour
+        ORDER BY hour ASC
+      `),
+      // Hourly activity — page views grouped by hour of day
+      db.execute(sql`
+        SELECT EXTRACT(HOUR FROM created_at AT TIME ZONE 'UTC')::int AS hour,
+               COUNT(*)::int AS views
+        FROM page_views
+        WHERE created_at >= ${since}
+        GROUP BY hour
+        ORDER BY hour ASC
+      `),
+      // Top pages by view count (exclude API paths)
+      db.execute(sql`
+        SELECT path, COUNT(*)::int AS count
+        FROM page_views
+        WHERE created_at >= ${since}
+          AND path NOT LIKE '/api/%'
+        GROUP BY path
+        ORDER BY count DESC
+        LIMIT 10
+      `),
+      // New users registered per day
+      db.execute(sql`
+        SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
+               COUNT(*)::int AS count
+        FROM users
+        WHERE created_at >= ${since}
+        GROUP BY date
+        ORDER BY date ASC
+      `),
     ]);
 
     const totals = (totalsRaw.rows[0] ?? {}) as any;
@@ -1269,6 +1371,17 @@ export class DatabaseStorage implements IStorage {
     const joinTotals = (joinTotalsRaw.rows[0] ?? {}) as any;
     const todayViews = (todayViewsRaw.rows[0] ?? {}) as any;
     const todayJoins = (todayJoinsRaw.rows[0] ?? {}) as any;
+
+    // Merge hourly joins + views into a single array (hours 0–23)
+    const joinsMap = new Map<number, number>();
+    for (const r of hourlyJoinsRaw.rows as any[]) joinsMap.set(Number(r.hour), Number(r.joins));
+    const viewsMap = new Map<number, number>();
+    for (const r of hourlyViewsRaw.rows as any[]) viewsMap.set(Number(r.hour), Number(r.views));
+    const hourlyActivity = Array.from({ length: 24 }, (_, h) => ({
+      hour: h,
+      joins: joinsMap.get(h) ?? 0,
+      views: viewsMap.get(h) ?? 0,
+    }));
 
     return {
       dailyViews: (dailyRaw.rows as any[]).map((r) => ({ date: r.date as string, views: Number(r.views) })),
@@ -1285,6 +1398,30 @@ export class DatabaseStorage implements IStorage {
       todayUniqueVisitors: Number(todayViews.today_unique ?? 0),
       todayRoomJoins: Number(todayJoins.today_joins ?? 0),
       todayUniqueJoiners: Number(todayJoins.today_joiners ?? 0),
+      recentJoiners: (recentJoinersRaw.rows as any[]).map((r) => ({
+        userId: r.user_id as string,
+        displayName: r.display_name as string,
+        avatarUrl: (r.avatar_url as string | null) ?? null,
+        roomId: r.room_id as string,
+        roomName: r.room_name as string,
+        country: (r.country as string | null) ?? null,
+        joinedAt: r.joined_at as string,
+      })),
+      topRooms: (topRoomsRaw.rows as any[]).map((r) => ({
+        roomId: r.room_id as string,
+        roomName: r.room_name as string,
+        joins: Number(r.joins),
+      })),
+      topActiveUsers: (topActiveUsersRaw.rows as any[]).map((r) => ({
+        userId: r.user_id as string,
+        displayName: r.display_name as string,
+        avatarUrl: (r.avatar_url as string | null) ?? null,
+        joins: Number(r.joins),
+        country: (r.country as string | null) ?? null,
+      })),
+      hourlyActivity,
+      topPages: (topPagesRaw.rows as any[]).map((r) => ({ path: r.path as string, count: Number(r.count) })),
+      newUsersPerDay: (newUsersRaw.rows as any[]).map((r) => ({ date: r.date as string, count: Number(r.count) })),
     };
     } catch (err: any) {
       console.warn("[analytics] query failed, returning empty data:", err?.message);

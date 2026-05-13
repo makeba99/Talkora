@@ -3003,12 +3003,14 @@ export async function registerRoutes(
       const origin = `${req.protocol}://${req.get("host")}`;
       const isExternalReferrer = referrer && !referrer.startsWith(origin);
       const country = await detectCountry(req.headers);
+      const pageViewUserId = req.isAuthenticated?.() ? (req as any).user?.id : undefined;
       await storage.recordPageView({
         path: pvPath.slice(0, 255),
         referrer: isExternalReferrer && typeof referrer === "string" ? referrer.slice(0, 500) : undefined,
         referrerDomain: isExternalReferrer && referrerDomain ? referrerDomain.slice(0, 120) : undefined,
         country,
         sessionHash,
+        userId: pageViewUserId ?? undefined,
       });
       res.json({ ok: true });
     } catch (err: any) {
@@ -4874,7 +4876,7 @@ export async function registerRoutes(
             welcomeAccentColor: room.welcomeAccentColor || "#8B5CF6",
           });
         }
-        void storage.recordRoomJoin({ roomId, userId, country: socketCountries.get(socket.id) }).catch((err) => {
+        void storage.recordRoomJoin({ roomId, userId, country: socketCountries.get(socket.id), roomName: room.name }).catch((err) => {
           console.error("[analytics] recordRoomJoin failed:", err?.message || err);
         });
         void checkAndAwardStreakBadge(userId);

@@ -188,6 +188,12 @@ type AnalyticsData = {
   todayUniqueVisitors: number;
   todayRoomJoins: number;
   todayUniqueJoiners: number;
+  recentJoiners: { userId: string; displayName: string; avatarUrl: string | null; roomId: string; roomName: string; country: string | null; joinedAt: string }[];
+  topRooms: { roomId: string; roomName: string; joins: number }[];
+  topActiveUsers: { userId: string; displayName: string; avatarUrl: string | null; joins: number; country: string | null }[];
+  hourlyActivity: { hour: number; joins: number; views: number }[];
+  topPages: { path: string; count: number }[];
+  newUsersPerDay: { date: string; count: number }[];
 };
 
 function AnalyticsTab() {
@@ -551,6 +557,245 @@ function AnalyticsTab() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── NEW: Activity by hour heatmap ───────────────────────────────── */}
+      <Card className="bg-card/75 border-primary/15">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-amber-400" /> Activity by Hour (UTC)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-36 w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={data?.hourlyActivity ?? []} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis dataKey="hour" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(h) => `${h}h`} interval={2} />
+                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                <Tooltip contentStyle={CustomTooltipStyle} labelFormatter={(h) => `Hour ${h}:00 UTC`} />
+                <Bar dataKey="views" name="Page Views" fill={chartColor} radius={[2, 2, 0, 0]} stackId="a" />
+                <Bar dataKey="joins" name="Room Joins" fill="hsl(160 60% 55%)" radius={[2, 2, 0, 0]} stackId="b" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── NEW: Top pages + new users side-by-side ──────────────────────── */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        {/* Top pages */}
+        <Card className="bg-card/75 border-primary/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5" /> Top Pages
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : !data?.topPages.length ? (
+              <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">No page data yet.</div>
+            ) : (
+              <div className="space-y-1.5">
+                {data.topPages.map((p, i) => {
+                  const max = data.topPages[0]?.count ?? 1;
+                  const pct = Math.round((p.count / max) * 100);
+                  return (
+                    <div key={p.path} className="flex items-center gap-2" data-testid={`row-page-${i}`}>
+                      <span className="text-[10px] text-muted-foreground w-3 text-right shrink-0">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-xs font-mono text-foreground truncate">{p.path || "/"}</span>
+                          <span className="text-xs text-muted-foreground ml-2 shrink-0">{p.count.toLocaleString()}</span>
+                        </div>
+                        <div className="h-1 bg-muted/40 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-primary/70" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* New users per day */}
+        <Card className="bg-card/75 border-violet-400/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <UserPlus className="w-3.5 h-3.5 text-violet-400" /> New Registrations / Day
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : !data?.newUsersPerDay.length ? (
+              <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">No registration data yet.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={data.newUsersPerDay} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => v.slice(5)} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+                  <Tooltip contentStyle={CustomTooltipStyle} labelFormatter={(v) => `Date: ${v}`} />
+                  <Bar dataKey="count" name="New Users" fill="hsl(270 70% 65%)" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── NEW: Top rooms + most active users side-by-side ─────────────── */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        {/* Top rooms */}
+        <Card className="bg-card/75 border-emerald-400/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <DoorOpen className="w-3.5 h-3.5 text-emerald-400" /> Most Joined Rooms
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : !data?.topRooms.length ? (
+              <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">No room data yet.</div>
+            ) : (
+              <div className="space-y-1.5">
+                {data.topRooms.map((r, i) => {
+                  const max = data.topRooms[0]?.joins ?? 1;
+                  const pct = Math.round((r.joins / max) * 100);
+                  return (
+                    <div key={r.roomId} className="flex items-center gap-2" data-testid={`row-room-${i}`}>
+                      <span className="text-[10px] text-muted-foreground w-3 text-right shrink-0">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-xs font-medium truncate">{r.roomName}</span>
+                          <span className="text-xs text-emerald-400 ml-2 shrink-0">{r.joins.toLocaleString()} joins</span>
+                        </div>
+                        <div className="h-1 bg-muted/40 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-emerald-500/60" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Most active users */}
+        <Card className="bg-card/75 border-cyan-400/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5 text-cyan-400" /> Most Active Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : !data?.topActiveUsers.length ? (
+              <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">No activity data yet.</div>
+            ) : (
+              <div className="space-y-1.5">
+                {data.topActiveUsers.map((u, i) => (
+                  <div key={u.userId} className="flex items-center gap-2" data-testid={`row-active-user-${i}`}>
+                    <span className="text-[10px] text-muted-foreground w-3 text-right shrink-0">{i + 1}</span>
+                    <Avatar className="w-5 h-5 shrink-0">
+                      <AvatarImage src={u.avatarUrl ?? undefined} />
+                      <AvatarFallback className="text-[8px]">{u.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium truncate">{u.displayName}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {u.country && (
+                          <img
+                            src={`https://flagcdn.com/16x12/${u.country.toLowerCase()}.png`}
+                            alt={u.country}
+                            className="w-4 h-3 rounded-[2px] object-cover"
+                            loading="lazy"
+                          />
+                        )}
+                        <span className="text-xs text-cyan-400">{u.joins} joins</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── NEW: Recent room joiners table ───────────────────────────────── */}
+      <Card className="bg-card/75 border-primary/15">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5" /> Recent Room Joiners
+            <span className="ml-auto text-[10px] font-normal text-muted-foreground">last 40 events in window</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-4"><Skeleton className="h-48 w-full" /></div>
+          ) : !data?.recentJoiners.length ? (
+            <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">No join events yet.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border/40">
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">User</th>
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Room</th>
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Country</th>
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Time (UTC)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recentJoiners.map((j, i) => (
+                    <tr key={`${j.userId}-${j.joinedAt}-${i}`} className="border-b border-border/20 hover:bg-muted/10 transition-colors" data-testid={`row-joiner-${i}`}>
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-5 h-5 shrink-0">
+                            <AvatarImage src={j.avatarUrl ?? undefined} />
+                            <AvatarFallback className="text-[8px]">{j.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium truncate max-w-[120px]">{j.displayName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="truncate max-w-[100px] block text-emerald-300">{j.roomName}</span>
+                      </td>
+                      <td className="px-4 py-2">
+                        {j.country ? (
+                          <div className="flex items-center gap-1.5">
+                            <img
+                              src={`https://flagcdn.com/16x12/${j.country.toLowerCase()}.png`}
+                              alt={j.country}
+                              className="w-4 h-3 rounded-[2px] object-cover"
+                              loading="lazy"
+                            />
+                            <span className="text-muted-foreground">{j.country}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                        {j.joinedAt.replace("T", " ").replace("Z", "")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

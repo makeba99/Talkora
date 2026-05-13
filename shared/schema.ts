@@ -470,17 +470,20 @@ export const pageViews = pgTable("page_views", {
   referrerDomain: varchar("referrer_domain", { length: 120 }),
   country: varchar("country", { length: 2 }),
   sessionHash: varchar("session_hash", { length: 32 }),
+  userId: text("user_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   pvCreatedAtIdx: index("page_views_created_at_idx").on(table.createdAt),
   pvReferrerIdx: index("page_views_referrer_domain_idx").on(table.referrerDomain),
   pvCountryIdx: index("page_views_country_idx").on(table.country),
+  pvUserIdx: index("page_views_user_id_idx").on(table.userId),
 }));
 
 export const roomJoins = pgTable("room_joins", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   roomId: text("room_id").notNull(),
   userId: text("user_id").notNull(),
+  roomName: varchar("room_name", { length: 120 }),
   country: varchar("country", { length: 2 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
