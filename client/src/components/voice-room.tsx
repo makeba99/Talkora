@@ -11741,7 +11741,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     {ytQualityState === "slow" ? "Slow" : "Good"}
                   </div>
 
-                  {/* Top-right cluster: volume + close — z-[30] clears the iframe (z-5) */}
+                  {/* Inline iframe — rendered directly in the slot, no fixed-position overlay needed */}
+                  <iframe
+                    ref={ytIframeDirectRef}
+                    key={activeYoutubeId}
+                    src={`https://www.youtube-nocookie.com/embed/${activeYoutubeId}?autoplay=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="absolute inset-0 w-full h-full border-0 z-[1]"
+                    data-testid="iframe-youtube-player"
+                    onLoad={() => { setYtPlayerReady(true); setYtPlayerLoading(false); setYtPlayerError(null); }}
+                  />
+
+                  {/* Top-right cluster: volume + close — z-[30] clears the iframe (z-[1]) */}
                   <div className="absolute top-3 right-3 z-[30] flex items-center gap-2">
                     {/* Volume mute toggle — large button for easy access */}
                     <button
@@ -14269,122 +14281,59 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             - showYoutube + slot rect available  → matches the slot's bounding rect
             - miniPlayerMode (or no slot rect)   → small floating mini player
             - neither                            → 1×1 hidden but still playing audio */}
-      {activeYoutubeId && (() => {
-        const isMini = !showYoutube || miniPlayerMode || !ytSlotRect;
-        const isYoutubeHost = !!user?.id;
-        const showAsHidden = !showYoutube && !miniPlayerMode;
-        const wrapperStyle: React.CSSProperties = showAsHidden
-          ? { left: -9999, top: 0, width: 1, height: 1, opacity: 0, pointerEvents: "none" }
-          : isMini
-            ? { left: miniPlayerPos.x, top: miniPlayerPos.y, width: 220, height: 130 }
-            : { left: ytSlotRect!.left + fullPlayerDragOffset.x, top: ytSlotRect!.top + fullPlayerDragOffset.y, width: ytSlotRect!.width, height: ytSlotRect!.height };
+      {activeYoutubeId && miniPlayerMode && (() => {
+        // Mini-player only — the full player is now rendered inline inside ytSlotRef.
+        // This floating fixed-position block only appears when the user minimises the watch view.
         return (
           <div
             className="fixed select-none"
-            style={{ ...wrapperStyle, zIndex: isMini ? 50 : 5 }}
-            data-testid={isMini ? "youtube-mini-player" : "youtube-persistent-player"}
+            style={{ left: miniPlayerPos.x, top: miniPlayerPos.y, width: 220, height: 130, zIndex: 50 }}
+            data-testid="youtube-mini-player"
           >
             <div
-              className={`relative w-full h-full overflow-hidden bg-black ${isMini ? "rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing group" : "rounded-lg shadow-2xl border border-white/10"}`}
-              onMouseDown={isMini && !showAsHidden ? handleMiniPlayerMouseDown : undefined}
+              className="relative w-full h-full overflow-hidden bg-black rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing group"
+              onMouseDown={handleMiniPlayerMouseDown}
             >
-              {/* Drag handle — full player only */}
-              {!isMini && !showAsHidden && (
-                <div
-                  className="absolute top-0 left-0 right-0 h-7 z-20 flex items-center justify-center cursor-grab active:cursor-grabbing bg-black/70 backdrop-blur-sm border-b border-white/10 select-none"
-                  onMouseDown={handleFullPlayerMouseDown}
-                  title="Drag to reposition"
-                >
-                  <div className="w-10 h-1 rounded-full bg-white/30" />
-                </div>
-              )}
               <iframe
-                ref={ytIframeDirectRef}
-                key={activeYoutubeId}
                 src={`https://www.youtube-nocookie.com/embed/${activeYoutubeId}?autoplay=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
-                className="w-full border-0"
-                style={{ height: (!isMini && !showAsHidden) ? "calc(100% - 28px)" : "100%", marginTop: (!isMini && !showAsHidden) ? "28px" : "0", display: "block" }}
-                data-testid="iframe-youtube-player"
-                onLoad={() => { setYtPlayerReady(true); setYtPlayerLoading(false); setYtPlayerError(null); }}
+                className="w-full h-full border-0"
+                data-testid="iframe-youtube-mini-player"
               />
-              {ytPlayerLoading && !ytPlayerReady && !ytPlayerError && !showAsHidden && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black pointer-events-none" data-testid="youtube-loading-overlay">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span className="text-[11px] text-white/70">Loading video…</span>
-                  </div>
-                </div>
-              )}
-              {ytPlayerError && !showAsHidden && (
-                <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/95 px-4" style={{ pointerEvents: "auto" }} data-testid="youtube-error-overlay">
-                  <div className="flex flex-col items-center gap-3 text-center max-w-sm">
-                    <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-                      <X className="w-5 h-5 text-red-400" />
-                    </div>
-                    <div className="text-sm text-white/90 leading-snug">{ytPlayerError.message}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <button
-                        className="px-3 py-1.5 text-[12px] font-semibold bg-blue-500 hover:bg-blue-400 text-white rounded-full transition-colors"
-                        onClick={(e) => { e.stopPropagation(); handleRetryYoutube(); }}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        data-testid="button-youtube-retry"
-                      >
-                        Retry
-                      </button>
-                      <a
-                        className="px-3 py-1.5 text-[12px] font-semibold bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
-                        href={`https://www.youtube.com/watch?v=${activeYoutubeId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        data-testid="link-youtube-open"
-                      >
-                        Open on YouTube
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {isMini && !showAsHidden && (
-                <>
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-20 pointer-events-none">
-                    <button
-                      className="bg-blue-500 hover:bg-blue-400 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-lg transition-colors flex items-center gap-1.5 pointer-events-auto"
-                      onClick={(e) => { e.stopPropagation(); handleExpandMiniPlayer(); }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      data-testid="button-mini-player-expand"
-                    >
-                      <Maximize2 className="w-3 h-3" />
-                      Click to Zoom
-                    </button>
-                  </div>
-                  <button
-                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
-                    aria-label="Close mini player"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (user?.id === youtubeStartedBy) {
-                        handleStopYoutube();
-                        setMiniPlayerMode(false);
-                      } else {
-                        // Non-starter: just hide the player locally, don't
-                        // affect anyone else's playback.
-                        setShowYoutube(false);
-                        setMiniPlayerMode(false);
-                        setUserDismissedYoutube(true);
-                      }
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    title={user?.id === youtubeStartedBy ? "Close video for everyone" : "Hide video (just for me)"}
-                    data-testid="button-mini-player-close"
-                  >
-                    <X className="w-3 h-3 text-white" />
-                  </button>
-                </>
-              )}
+              {/* Expand overlay on hover */}
+              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-20 pointer-events-none">
+                <button
+                  className="bg-blue-500 hover:bg-blue-400 text-white text-[11px] font-semibold px-3 py-1.5 rounded-full shadow-lg transition-colors flex items-center gap-1.5 pointer-events-auto"
+                  onClick={(e) => { e.stopPropagation(); handleExpandMiniPlayer(); }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  data-testid="button-mini-player-expand"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  Expand
+                </button>
+              </div>
+              {/* Close button */}
+              <button
+                className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-30"
+                aria-label="Close mini player"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (user?.id === youtubeStartedBy) {
+                    handleStopYoutube();
+                    setMiniPlayerMode(false);
+                  } else {
+                    setShowYoutube(false);
+                    setMiniPlayerMode(false);
+                    setUserDismissedYoutube(true);
+                  }
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                title={user?.id === youtubeStartedBy ? "Close video for everyone" : "Hide video (just for me)"}
+                data-testid="button-mini-player-close"
+              >
+                <X className="w-3 h-3 text-white" />
+              </button>
             </div>
           </div>
         );
