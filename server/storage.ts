@@ -212,6 +212,8 @@ export interface IStorage {
     hourlyActivity: { hour: number; joins: number; views: number }[];
     topPages: { path: string; count: number }[];
     newUsersPerDay: { date: string; count: number }[];
+    viewerOnlyCountries: { country: string; count: number }[];
+    recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
   }>;
 
   createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign>;
@@ -1193,6 +1195,8 @@ export class DatabaseStorage implements IStorage {
     hourlyActivity: { hour: number; joins: number; views: number }[];
     topPages: { path: string; count: number }[];
     newUsersPerDay: { date: string; count: number }[];
+    viewerOnlyCountries: { country: string; count: number }[];
+    recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
   }> {
     const empty = {
       dailyViews: [], topReferrers: [], topCountries: [], topJoinCountries: [],
@@ -1200,6 +1204,7 @@ export class DatabaseStorage implements IStorage {
       totalRoomJoins: 0, uniqueRoomJoiners: 0, dailyJoins: [],
       todayViews: 0, todayUniqueVisitors: 0, todayRoomJoins: 0, todayUniqueJoiners: 0,
       recentJoiners: [], topRooms: [], topActiveUsers: [], hourlyActivity: [], topPages: [], newUsersPerDay: [],
+      viewerOnlyCountries: [], recentViewers: [],
     };
     try {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -1208,7 +1213,7 @@ export class DatabaseStorage implements IStorage {
       dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw,
       joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw,
       recentJoinersRaw, topRoomsRaw, topActiveUsersRaw, hourlyJoinsRaw, hourlyViewsRaw,
-      topPagesRaw, newUsersRaw,
+      topPagesRaw, newUsersRaw, viewerOnlyCountriesRaw, recentViewersRaw,
     ] = await Promise.all([
       db.execute(sql`
         SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
@@ -1364,6 +1369,54 @@ export class DatabaseStorage implements IStorage {
         GROUP BY date
         ORDER BY date ASC
       `),
+      // Countries of viewers who browsed but did NOT join any room in the period
+      db.execute(sql`
+        WITH viewer_countries AS (
+          SELECT country, session_hash AS id_key
+          FROM page_views
+          WHERE created_at >= ${since}
+            AND user_id IS NULL
+            AND country IS NOT NULL
+            AND country != ''
+            AND session_hash IS NOT NULL
+          UNION ALL
+          SELECT country, user_id AS id_key
+          FROM page_views
+          WHERE created_at >= ${since}
+            AND user_id IS NOT NULL
+            AND country IS NOT NULL
+            AND country != ''
+            AND user_id NOT IN (
+              SELECT DISTINCT user_id FROM room_joins
+              WHERE created_at >= ${since}
+                AND user_id IS NOT NULL
+            )
+        )
+        SELECT country, COUNT(DISTINCT id_key)::int AS count
+        FROM viewer_countries
+        GROUP BY country
+        ORDER BY count DESC
+        LIMIT 15
+      `),
+      // Recent page views (non-API) with country — excludes people who joined rooms
+      db.execute(sql`
+        SELECT pv.country,
+               pv.path,
+               pv.user_id,
+               pv.created_at AS viewed_at,
+               u.display_name
+        FROM page_views pv
+        LEFT JOIN users u ON u.id = pv.user_id
+        WHERE pv.created_at >= ${since}
+          AND pv.path NOT LIKE '/api/%'
+          AND pv.user_id NOT IN (
+            SELECT DISTINCT user_id FROM room_joins
+            WHERE created_at >= ${since}
+              AND user_id IS NOT NULL
+          )
+        ORDER BY pv.created_at DESC
+        LIMIT 40
+      `),
     ]);
 
     const totals = (totalsRaw.rows[0] ?? {}) as any;
@@ -1422,6 +1475,14 @@ export class DatabaseStorage implements IStorage {
       hourlyActivity,
       topPages: (topPagesRaw.rows as any[]).map((r) => ({ path: r.path as string, count: Number(r.count) })),
       newUsersPerDay: (newUsersRaw.rows as any[]).map((r) => ({ date: r.date as string, count: Number(r.count) })),
+      viewerOnlyCountries: (viewerOnlyCountriesRaw.rows as any[]).map((r) => ({ country: r.country as string, count: Number(r.count) })),
+      recentViewers: (recentViewersRaw.rows as any[]).map((r) => ({
+        country: (r.country as string | null) ?? null,
+        path: r.path as string,
+        isLoggedIn: !!(r.user_id),
+        displayName: (r.display_name as string | null) ?? null,
+        viewedAt: r.viewed_at as string,
+      })),
     };
     } catch (err: any) {
       console.warn("[analytics] query failed, returning empty data:", err?.message);

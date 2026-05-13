@@ -194,6 +194,8 @@ type AnalyticsData = {
   hourlyActivity: { hour: number; joins: number; views: number }[];
   topPages: { path: string; count: number }[];
   newUsersPerDay: { date: string; count: number }[];
+  viewerOnlyCountries: { country: string; count: number }[];
+  recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
 };
 
 function AnalyticsTab() {
@@ -796,6 +798,116 @@ function AnalyticsTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Viewer-only countries + Recent browse-only viewers ─────────── */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        {/* Countries of viewers who did NOT join a room */}
+        <Card className="bg-card/75 border-amber-400/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-amber-400" /> Browse-Only Countries
+              <span className="ml-1 text-[10px] text-muted-foreground/60 font-normal">(viewed but didn't join)</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : !data?.viewerOnlyCountries.length ? (
+              <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">No browse-only data yet.</div>
+            ) : (
+              <div className="space-y-1.5">
+                {data.viewerOnlyCountries.map((c, i) => {
+                  const max = data.viewerOnlyCountries[0]?.count ?? 1;
+                  const pct = Math.round((c.count / max) * 100);
+                  return (
+                    <div key={c.country} className="flex items-center gap-2" data-testid={`row-viewer-country-${i}`}>
+                      <span className="text-[10px] text-muted-foreground w-3 text-right shrink-0">{i + 1}</span>
+                      <img
+                        src={`https://flagcdn.com/16x12/${c.country.toLowerCase()}.png`}
+                        alt={c.country}
+                        className="w-4 h-3 rounded-[2px] object-cover shrink-0"
+                        loading="lazy"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-xs font-medium">{c.country.toUpperCase()}</span>
+                          <span className="text-xs text-amber-400 ml-2 shrink-0">{c.count.toLocaleString()}</span>
+                        </div>
+                        <div className="h-1 bg-muted/40 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-amber-500/60" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent browse-only viewers */}
+        <Card className="bg-card/75 border-amber-400/15">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5 text-amber-400" /> Recent Browse-Only Visitors
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-4"><Skeleton className="h-48 w-full" /></div>
+            ) : !data?.recentViewers.length ? (
+              <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">No viewer data yet.</div>
+            ) : (
+              <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-card/95 backdrop-blur-sm z-10">
+                    <tr className="border-b border-border/40">
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Visitor</th>
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Page</th>
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Country</th>
+                      <th className="text-left px-4 py-2 font-medium text-muted-foreground">Time (UTC)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.recentViewers.map((v, i) => (
+                      <tr key={i} className="border-b border-border/20 hover:bg-muted/10 transition-colors" data-testid={`row-viewer-${i}`}>
+                        <td className="px-4 py-2">
+                          {v.isLoggedIn && v.displayName ? (
+                            <span className="font-medium text-cyan-300 truncate max-w-[100px] block">{v.displayName}</span>
+                          ) : (
+                            <span className="text-muted-foreground/60 italic">Anonymous</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2">
+                          <span className="truncate max-w-[100px] block text-amber-300/80 font-mono">{v.path}</span>
+                        </td>
+                        <td className="px-4 py-2">
+                          {v.country ? (
+                            <div className="flex items-center gap-1.5">
+                              <img
+                                src={`https://flagcdn.com/16x12/${v.country.toLowerCase()}.png`}
+                                alt={v.country}
+                                className="w-4 h-3 rounded-[2px] object-cover"
+                                loading="lazy"
+                              />
+                              <span className="text-muted-foreground">{v.country.toUpperCase()}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground/50">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                          {v.viewedAt.replace("T", " ").slice(0, 16)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
