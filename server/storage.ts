@@ -215,6 +215,7 @@ export interface IStorage {
     viewerOnlyCountries: { country: string; count: number }[];
     recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
     conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
+    signedInVisitors: number;
   }>;
 
   createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign>;
@@ -1199,6 +1200,7 @@ export class DatabaseStorage implements IStorage {
     viewerOnlyCountries: { country: string; count: number }[];
     recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
     conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
+    signedInVisitors: number;
   }> {
     const empty = {
       dailyViews: [], topReferrers: [], topCountries: [], topJoinCountries: [],
@@ -1206,7 +1208,7 @@ export class DatabaseStorage implements IStorage {
       totalRoomJoins: 0, uniqueRoomJoiners: 0, dailyJoins: [],
       todayViews: 0, todayUniqueVisitors: 0, todayRoomJoins: 0, todayUniqueJoiners: 0,
       recentJoiners: [], topRooms: [], topActiveUsers: [], hourlyActivity: [], topPages: [], newUsersPerDay: [],
-      viewerOnlyCountries: [], recentViewers: [], conversionByCountry: [],
+      viewerOnlyCountries: [], recentViewers: [], conversionByCountry: [], signedInVisitors: 0,
     };
     try {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -1215,7 +1217,7 @@ export class DatabaseStorage implements IStorage {
       dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw,
       joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw,
       recentJoinersRaw, topRoomsRaw, topActiveUsersRaw, hourlyJoinsRaw, hourlyViewsRaw,
-      topPagesRaw, newUsersRaw, viewerOnlyCountriesRaw, recentViewersRaw, conversionByCountryRaw,
+      topPagesRaw, newUsersRaw, viewerOnlyCountriesRaw, recentViewersRaw, conversionByCountryRaw, signedInRaw,
     ] = await Promise.all([
       db.execute(sql`
         SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
@@ -1450,6 +1452,13 @@ export class DatabaseStorage implements IStorage {
         ORDER BY pvc.total_visitors DESC
         LIMIT 15
       `),
+      // Signed-in visitors: distinct logged-in users who viewed any page
+      db.execute(sql`
+        SELECT COUNT(DISTINCT user_id)::int AS signed_in
+        FROM page_views
+        WHERE created_at >= ${since}
+          AND user_id IS NOT NULL
+      `),
     ]);
 
     const totals = (totalsRaw.rows[0] ?? {}) as any;
@@ -1522,6 +1531,7 @@ export class DatabaseStorage implements IStorage {
         joiners: Number(r.joiners),
         rate: Number(r.rate),
       })),
+      signedInVisitors: Number((signedInRaw.rows[0] as any)?.signed_in ?? 0),
     };
     } catch (err: any) {
       console.warn("[analytics] query failed, returning empty data:", err?.message);

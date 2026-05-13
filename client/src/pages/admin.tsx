@@ -197,6 +197,7 @@ type AnalyticsData = {
   viewerOnlyCountries: { country: string; count: number }[];
   recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
   conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
+  signedInVisitors: number;
 };
 
 function AnalyticsTab() {
@@ -302,6 +303,82 @@ function AnalyticsTab() {
           </div>
         </div>
       </div>
+
+      {/* ── Drop-off Funnel ──────────────────────────────────────────── */}
+      <Card className="bg-card/75 border-violet-400/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <TrendingDown className="w-3.5 h-3.5 text-violet-400" /> Engagement Funnel
+            <span className="ml-1 text-[10px] text-muted-foreground/60 font-normal">visitors → signed in → joined room</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-44 w-full" />
+          ) : (() => {
+            const steps = [
+              {
+                label: "All Visitors",
+                sublabel: "unique sessions",
+                value: data?.uniqueSessions ?? 0,
+                color: "from-violet-500/80 to-violet-600/60",
+                border: "border-violet-400/30",
+                text: "text-violet-300",
+              },
+              {
+                label: "Signed-In Users",
+                sublabel: "had an account",
+                value: data?.signedInVisitors ?? 0,
+                color: "from-cyan-500/80 to-cyan-600/60",
+                border: "border-cyan-400/30",
+                text: "text-cyan-300",
+              },
+              {
+                label: "Joined a Room",
+                sublabel: "started practicing",
+                value: data?.uniqueRoomJoiners ?? 0,
+                color: "from-green-500/80 to-green-600/60",
+                border: "border-green-400/30",
+                text: "text-green-300",
+              },
+            ];
+            const top = steps[0].value || 1;
+            return (
+              <div className="space-y-1.5">
+                {steps.map((step, i) => {
+                  const widthPct = Math.round((step.value / top) * 100);
+                  const dropPct = i > 0 && steps[i - 1].value > 0
+                    ? Math.round((1 - step.value / steps[i - 1].value) * 100)
+                    : null;
+                  return (
+                    <div key={step.label} data-testid={`funnel-step-${i}`}>
+                      {dropPct !== null && (
+                        <div className="flex items-center gap-2 py-0.5 px-2">
+                          <div className="flex-1 border-l border-dashed border-border/40 ml-3 h-3" />
+                          <span className="text-[10px] text-rose-400/80 shrink-0">↓ {dropPct}% dropped off</span>
+                        </div>
+                      )}
+                      <div
+                        className={`relative flex items-center justify-between rounded-lg px-4 py-3 border bg-gradient-to-r ${step.color} ${step.border} transition-all`}
+                        style={{ marginLeft: `${(100 - widthPct) / 2}%`, marginRight: `${(100 - widthPct) / 2}%` }}
+                      >
+                        <div>
+                          <p className={`text-sm font-semibold ${step.text}`}>{step.label}</p>
+                          <p className="text-[10px] text-white/50 mt-0.5">{step.sublabel}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-xl font-bold ${step.text}`}>{step.value.toLocaleString()}</p>
+                          <p className="text-[10px] text-white/50">{widthPct}% of visitors</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
 
       {/* ── Conversion Rate card ──────────────────────────────────────── */}
       <Card className="bg-card/75 border-green-400/20">
