@@ -20,11 +20,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, ZoomIn, Ban, X, Bell, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, LayoutGrid, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff, Linkedin } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, ZoomIn, Ban, X, Bell, BellRing, BellOff, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, LayoutGrid, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff, Linkedin } from "lucide-react";
 import { isSoundEnabled, setSoundEnabled, onSoundEnabledChange, sfxToggle } from "@/lib/sound-fx";
 import { isBoostMode, setBoostMode, onBoostModeChange } from "@/lib/perf-bus";
 import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useAuth } from "@/hooks/use-auth";
+import { usePushSubscription } from "@/hooks/use-push-subscription";
 import { useSocket } from "@/lib/socket-context";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -253,6 +254,7 @@ export function ProfileDropdown({
   const { user, logout } = useAuth();
   const { appearOffline, setAppearOffline } = useSocket();
   const { toast } = useToast();
+  const push = usePushSubscription();
   const [editOpen, setEditOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [blockedOpen, setBlockedOpen] = useState(false);
@@ -726,6 +728,38 @@ export function ProfileDropdown({
             <div className="flex items-center gap-1.5">
               <SoundFxMiniToggle />
               <BoostModeMiniToggle />
+              {/* Push notification toggle */}
+              {push.state !== "unsupported" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (push.isLoading) return;
+                    if (push.state === "subscribed") {
+                      push.unsubscribe();
+                    } else if (push.state === "denied") {
+                      toast({ title: "Notifications blocked", description: "Allow notifications in your browser settings, then try again.", variant: "destructive" });
+                    } else {
+                      push.subscribe();
+                    }
+                  }}
+                  className="orbit-mini-toggle"
+                  data-testid="button-push-notifications"
+                  title={
+                    push.state === "subscribed" ? "Push notifications on — click to turn off" :
+                    push.state === "denied" ? "Notifications blocked by browser" :
+                    push.state === "loading" ? "Checking notification status…" :
+                    "Enable push notifications"
+                  }
+                  aria-label="Toggle push notifications"
+                  disabled={push.isLoading}
+                >
+                  {push.state === "subscribed"
+                    ? <BellRing className="w-3.5 h-3.5 text-amber-400" />
+                    : push.state === "denied"
+                    ? <BellOff className="w-3.5 h-3.5 text-destructive/70" />
+                    : <Bell className="w-3.5 h-3.5 opacity-50" />}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setAppearOffline(!appearOffline)}
