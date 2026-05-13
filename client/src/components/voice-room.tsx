@@ -1882,6 +1882,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [showEReader, setShowEReader] = useState(false);
   const [eReaderTheme, setEReaderTheme] = useState<"light" | "dark" | "sepia">("sepia");
   const [eReaderFontSize, setEReaderFontSize] = useState(16);
+  const [eReaderHeight, setEReaderHeight] = useState<number | null>(null);
+  const [eReaderFullscreen, setEReaderFullscreen] = useState(false);
   const [translationLang, setTranslationLang] = useState<string>(() => {
     const m: Record<string, string> = { Spanish:"es", French:"fr", German:"de", Arabic:"ar", Japanese:"ja", Korean:"ko", Chinese:"zh", Portuguese:"pt", Hindi:"hi", Italian:"it", Russian:"ru", Turkish:"tr", Dutch:"nl", Polish:"pl", Vietnamese:"vi", Indonesian:"id", Thai:"th" };
     return m[(room as any).language] || "es";
@@ -11963,13 +11965,59 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
           {showEReader && selectedBook && (
             <div
-              className="flex-1 min-h-0 flex flex-col relative"
-              style={{
-                background: eReaderTheme === "sepia" ? "#f5ead5" : eReaderTheme === "light" ? "#ffffff" : "#1a1a1a",
-                color: eReaderTheme === "dark" ? "#d4c9b0" : "#1a1008",
-              }}
+              className={eReaderFullscreen ? "fixed inset-0 z-[90] flex flex-col" : "flex flex-col relative"}
+              style={eReaderFullscreen
+                ? { background: eReaderTheme === "sepia" ? "#f5ead5" : eReaderTheme === "light" ? "#ffffff" : "#1a1a1a", color: eReaderTheme === "dark" ? "#d4c9b0" : "#1a1008" }
+                : eReaderHeight
+                  ? { height: eReaderHeight, flexShrink: 0, background: eReaderTheme === "sepia" ? "#f5ead5" : eReaderTheme === "light" ? "#ffffff" : "#1a1a1a", color: eReaderTheme === "dark" ? "#d4c9b0" : "#1a1008" }
+                  : { flex: 1, minHeight: 0, background: eReaderTheme === "sepia" ? "#f5ead5" : eReaderTheme === "light" ? "#ffffff" : "#1a1a1a", color: eReaderTheme === "dark" ? "#d4c9b0" : "#1a1008" }
+              }
               data-testid="media-main-ereader"
             >
+              {/* Drag-to-resize handle — only shown when not fullscreen */}
+              {!eReaderFullscreen && (
+                <div
+                  className="flex-shrink-0 h-3 flex items-center justify-center cursor-ns-resize group/resize-reader hover:bg-black/10 transition-colors"
+                  data-testid="ereader-resize-handle"
+                  title="Drag to resize"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startY = e.clientY;
+                    const container = e.currentTarget.parentElement!;
+                    const startH = container.getBoundingClientRect().height;
+                    const onMove = (me: MouseEvent) => {
+                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                      setEReaderHeight(Math.max(200, Math.min(outerH - 60, startH - (me.clientY - startY))));
+                    };
+                    const onUp = () => {
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
+                  onTouchStart={(e) => {
+                    const touch = e.touches[0];
+                    const startY = touch.clientY;
+                    const container = e.currentTarget.parentElement!;
+                    const startH = container.getBoundingClientRect().height;
+                    const onMove = (te: TouchEvent) => {
+                      const t = te.touches[0];
+                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                      setEReaderHeight(Math.max(200, Math.min(outerH - 60, startH - (t.clientY - startY))));
+                    };
+                    const onUp = () => {
+                      window.removeEventListener("touchmove", onMove);
+                      window.removeEventListener("touchend", onUp);
+                    };
+                    window.addEventListener("touchmove", onMove, { passive: true });
+                    window.addEventListener("touchend", onUp);
+                  }}
+                >
+                  <div className="w-10 h-1 rounded-full bg-current opacity-20 group-hover/resize-reader:opacity-50 transition-opacity" />
+                </div>
+              )}
+
               {/* Reader toolbar */}
               <div
                 className="flex items-center gap-2 px-3 py-2 border-b flex-shrink-0 flex-wrap"
@@ -11993,6 +12041,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <button onClick={() => setEReaderFontSize(s => Math.max(12, s - 2))} className="px-1.5 py-0.5 rounded text-xs font-bold hover:opacity-70 transition-opacity" title="Smaller">A−</button>
                   <span className="text-[10px] opacity-60 w-7 text-center">{eReaderFontSize}</span>
                   <button onClick={() => setEReaderFontSize(s => Math.min(28, s + 2))} className="px-1.5 py-0.5 rounded text-xs font-bold hover:opacity-70 transition-opacity" title="Larger">A+</button>
+                  {/* Fullscreen / collapse toggle */}
+                  <button
+                    onClick={() => { setEReaderFullscreen(v => !v); setEReaderHeight(null); }}
+                    className="p-1 rounded hover:opacity-70 transition-opacity ml-0.5"
+                    title={eReaderFullscreen ? "Exit fullscreen" : "Expand to fullscreen"}
+                    data-testid="button-ereader-fullscreen"
+                  >
+                    {eReaderFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  </button>
 
                   {/* Theme dots */}
                   <div className="flex items-center gap-1 ml-1">
