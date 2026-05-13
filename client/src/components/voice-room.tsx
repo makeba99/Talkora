@@ -4351,9 +4351,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); ytLoadTimeoutRef.current = null; }
       return;
     }
+    // Direct iframe mode — we now use a plain <iframe> with native controls.
+    // Skip the YT IFrame API player entirely to avoid creating a duplicate player.
     setYtPlayerLoading(true);
     setYtPlayerReady(false);
     setYtPlayerError(null);
+    return;
 
     // Hard timeout: if onReady never fires within 12s, surface an error so the
     // user sees a retry button instead of a forever spinner. Common causes:
@@ -14298,16 +14301,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               <iframe
                 ref={ytIframeDirectRef}
                 key={activeYoutubeId}
-                src={`https://www.youtube.com/embed/${activeYoutubeId}?autoplay=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`}
+                src={`https://www.youtube-nocookie.com/embed/${activeYoutubeId}?autoplay=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 className="w-full border-0"
-                style={{ height: "100%", marginTop: (!isMini && !showAsHidden) ? "28px" : "0", display: "block" }}
+                style={{ height: (!isMini && !showAsHidden) ? "calc(100% - 28px)" : "100%", marginTop: (!isMini && !showAsHidden) ? "28px" : "0", display: "block" }}
                 data-testid="iframe-youtube-player"
                 onLoad={() => { setYtPlayerReady(true); setYtPlayerLoading(false); setYtPlayerError(null); }}
               />
-              {/* Keep old container ref alive so existing YT API code doesn't throw */}
-              <div ref={ytContainerRef} style={{ display: "none" }} />
               {ytPlayerLoading && !ytPlayerReady && !ytPlayerError && !showAsHidden && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-black pointer-events-none" data-testid="youtube-loading-overlay">
                   <div className="flex flex-col items-center gap-2">
