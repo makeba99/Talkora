@@ -11774,16 +11774,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                   {/* Top-right cluster: volume + close — z-[30] clears the iframe (z-[1]) */}
                   <div className="absolute top-3 right-3 z-[30] flex items-center gap-2">
-                    {/* Volume mute toggle — large button for easy access */}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleYtVolume(ytVolume > 0 ? 0 : 100); }}
-                      className="w-9 h-9 rounded-full bg-black/55 backdrop-blur-sm hover:bg-white/20 border border-white/20 flex items-center justify-center text-white shadow-md transition-colors"
-                      title={ytVolume === 0 ? "Unmute" : "Mute"}
-                      data-testid="button-yt-mute"
-                    >
-                      {ytVolume === 0 ? <VolumeX className="w-4 h-4" /> : ytVolume < 50 ? <Volume1 className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                    </button>
                     {/* Hide / close */}
                     <button
                       type="button"
@@ -11806,129 +11796,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </div>
                 </div>
 
-                {/* ── Always-visible control bar — never disappears, no hover required ── */}
-                {/* z-[20] ensures this bar is above the position:fixed iframe (z-index:5) */}
+                {/* ── Reactions bar — emoji reactions only ── */}
                 <div
-                  className="relative z-[20] flex-shrink-0 flex items-center gap-2 px-3 py-2.5 bg-[#0a0a0a] border-t border-white/[0.07]"
+                  className="relative z-[20] flex-shrink-0 flex items-center justify-end gap-2 px-3 py-2 bg-[#0a0a0a] border-t border-white/[0.07]"
                   data-testid="youtube-host-controls"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Play / Pause — prominent, easy to hit */}
-                  <button
-                    onClick={handleYtPlayPause}
-                    className="w-10 h-10 flex-shrink-0 rounded-full bg-white/15 hover:bg-white/28 border border-white/20 flex items-center justify-center transition-colors shadow-sm"
-                    data-testid="button-yt-playpause"
-                    aria-label={ytIsPlaying ? "Pause" : "Play"}
-                  >
-                    {ytIsPlaying
-                      ? <Pause className="w-4 h-4 text-white" />
-                      : <Play className="w-4 h-4 text-white fill-white ml-0.5" />}
-                  </button>
-
-                  {/* Reload */}
-                  <button
-                    onClick={() => {
-                      try {
-                        const t = youtubePlayerRef.current?.getCurrentTime?.() || 0;
-                        ytSyncTimeRef.current = Math.max(0, t);
-                        const id = activeYoutubeId;
-                        setActiveYoutubeId(null);
-                        setTimeout(() => setActiveYoutubeId(id), 60);
-                      } catch (_) {}
-                    }}
-                    className="w-9 h-9 flex-shrink-0 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors"
-                    title="Reload (fixes frozen frame)"
-                    data-testid="button-yt-reload"
-                  >
-                    <RotateCcw className="w-4 h-4 text-white/70" />
-                  </button>
-
-                  {/* Sync with starter — only for watchers */}
-                  {user?.id !== youtubeStartedBy && youtubeStartedBy && (
-                    <button
-                      onClick={handleYtSyncToStarter}
-                      className="h-9 px-3 flex-shrink-0 rounded-full bg-white/8 hover:bg-purple-500/50 border border-white/12 flex items-center gap-1.5 transition-colors"
-                      title="Jump to where the starter is watching"
-                      data-testid="button-yt-sync"
-                    >
-                      <Zap className="w-3.5 h-3.5 text-white/75" />
-                      <span className="text-[11px] text-white/75 font-semibold leading-none">Sync</span>
-                    </button>
-                  )}
-
-                  {/* Stop — starters only */}
-                  {user?.id === youtubeStartedBy && (
-                    <button
-                      onClick={handleStopYoutube}
-                      className="w-9 h-9 flex-shrink-0 rounded-full bg-white/8 hover:bg-red-500/50 border border-white/12 flex items-center justify-center transition-colors"
-                      title="Close video for everyone"
-                      data-testid="button-yt-stop"
-                    >
-                      <StopCircle className="w-4 h-4 text-white/70" />
-                    </button>
-                  )}
-
-                  {/* Seek bar — drag locally, always seek on release (mouseUp reads target value directly, avoiding stale React state) */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                    <input
-                      type="range"
-                      min={0}
-                      max={ytDuration || 100}
-                      step={1}
-                      value={ytSeekDragging ? ytSeekLocal : ytCurrentTime}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        setYtSeekLocal(v);
-                        setYtSeekDragging(true);
-                      }}
-                      onMouseUp={(e) => {
-                        handleYtSeek(Number((e.target as HTMLInputElement).value));
-                      }}
-                      onTouchEnd={(e) => {
-                        handleYtSeek(Number((e.target as HTMLInputElement).value));
-                      }}
-                      className="w-full h-3 cursor-pointer rounded-full appearance-none"
-                      style={{ accentColor: "#ef4444" }}
-                      data-testid="input-yt-seek"
-                      aria-label="Video seek"
-                    />
-                    <span className="text-white/40 text-[10px] font-mono tabular-nums text-right leading-none" data-testid="text-yt-time">
-                      {formatYtTime(ytSeekDragging ? ytSeekLocal : ytCurrentTime)} / {formatYtTime(ytDuration)}
-                    </span>
-                  </div>
-
-                  {/* Volume — mute-toggle icon + slider */}
-                  <div className="flex-shrink-0 flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleYtVolume(ytVolume > 0 ? 0 : 80)}
-                      className="flex-shrink-0 w-8 h-8 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors"
-                      title={ytVolume === 0 ? "Unmute" : "Mute"}
-                      data-testid="button-yt-volume-toggle"
-                    >
-                      {ytVolume === 0
-                        ? <VolumeX className="w-3.5 h-3.5 text-white/70" />
-                        : ytVolume < 50
-                          ? <Volume1 className="w-3.5 h-3.5 text-white/70" />
-                          : <Volume2 className="w-3.5 h-3.5 text-white/70" />}
-                    </button>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={ytVolume}
-                      onChange={(e) => handleYtVolume(Number(e.target.value))}
-                      className="w-20 h-3 cursor-pointer rounded-full appearance-none"
-                      style={{ accentColor: "#ffffff" }}
-                      data-testid="input-yt-volume"
-                      aria-label="YouTube volume"
-                    />
-                  </div>
-
-                  {/* Divider */}
-                  <div className="flex-shrink-0 w-px h-6 bg-white/15" />
-
                   {/* Reactions toggle — opens emoji + vote pills inline */}
                   <div className="flex-shrink-0 flex items-center gap-1.5">
                     {ytReactionsOpen && (
