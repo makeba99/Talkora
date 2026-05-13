@@ -216,6 +216,9 @@ export interface IStorage {
     recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
     conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
     signedInVisitors: number;
+    retentionStats: { totalJoiners: number; returningJoiners: number; singleDayJoiners: number; retentionRate: number };
+    retentionDistribution: { daysActive: string; userCount: number }[];
+    topRetainedUsers: { userId: string; displayName: string; avatarUrl: string | null; activeDays: number; totalJoins: number }[];
   }>;
 
   createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign>;
@@ -1201,6 +1204,9 @@ export class DatabaseStorage implements IStorage {
     recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
     conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
     signedInVisitors: number;
+    retentionStats: { totalJoiners: number; returningJoiners: number; singleDayJoiners: number; retentionRate: number };
+    retentionDistribution: { daysActive: string; userCount: number }[];
+    topRetainedUsers: { userId: string; displayName: string; avatarUrl: string | null; activeDays: number; totalJoins: number }[];
   }> {
     const empty = {
       dailyViews: [], topReferrers: [], topCountries: [], topJoinCountries: [],
@@ -1209,6 +1215,8 @@ export class DatabaseStorage implements IStorage {
       todayViews: 0, todayUniqueVisitors: 0, todayRoomJoins: 0, todayUniqueJoiners: 0,
       recentJoiners: [], topRooms: [], topActiveUsers: [], hourlyActivity: [], topPages: [], newUsersPerDay: [],
       viewerOnlyCountries: [], recentViewers: [], conversionByCountry: [], signedInVisitors: 0,
+      retentionStats: { totalJoiners: 0, returningJoiners: 0, singleDayJoiners: 0, retentionRate: 0 },
+      retentionDistribution: [], topRetainedUsers: [],
     };
     try {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -1218,6 +1226,7 @@ export class DatabaseStorage implements IStorage {
       joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw,
       recentJoinersRaw, topRoomsRaw, topActiveUsersRaw, hourlyJoinsRaw, hourlyViewsRaw,
       topPagesRaw, newUsersRaw, viewerOnlyCountriesRaw, recentViewersRaw, conversionByCountryRaw, signedInRaw,
+      retentionStatsRaw, retentionDistRaw, topRetainedRaw,
     ] = await Promise.all([
       db.execute(sql`
         SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
@@ -1459,6 +1468,52 @@ export class DatabaseStorage implements IStorage {
         WHERE created_at >= ${since}
           AND user_id IS NOT NULL
       `),
+      // Retention summary: single-day vs returning joiners
+      db.execute(sql`
+        SELECT
+          COUNT(*)::int AS total_joiners,
+          COUNT(*) FILTER (WHERE day_count = 1)::int AS single_day_joiners,
+          COUNT(*) FILTER (WHERE day_count >= 2)::int AS returning_joiners,
+          ROUND(COUNT(*) FILTER (WHERE day_count >= 2) * 100.0 / NULLIF(COUNT(*), 0), 1) AS retention_rate
+        FROM (
+          SELECT user_id, COUNT(DISTINCT DATE(created_at AT TIME ZONE 'UTC')) AS day_count
+          FROM room_joins
+          WHERE created_at >= ${since}
+            AND user_id IS NOT NULL
+          GROUP BY user_id
+        ) sub
+      `),
+      // Distribution: how many users were active on exactly 1, 2, 3, 4, 5+ days
+      db.execute(sql`
+        SELECT
+          CASE WHEN day_count >= 5 THEN '5+' ELSE day_count::text END AS days_active,
+          COUNT(*)::int AS user_count
+        FROM (
+          SELECT user_id, COUNT(DISTINCT DATE(created_at AT TIME ZONE 'UTC')) AS day_count
+          FROM room_joins
+          WHERE created_at >= ${since}
+            AND user_id IS NOT NULL
+          GROUP BY user_id
+        ) sub
+        GROUP BY CASE WHEN day_count >= 5 THEN '5+' ELSE day_count::text END
+        ORDER BY MIN(day_count)
+      `),
+      // Top retained users: most distinct active days
+      db.execute(sql`
+        SELECT rj.user_id,
+               u.display_name,
+               u.profile_image_url AS avatar_url,
+               COUNT(DISTINCT DATE(rj.created_at AT TIME ZONE 'UTC'))::int AS active_days,
+               COUNT(*)::int AS total_joins
+        FROM room_joins rj
+        LEFT JOIN users u ON u.id = rj.user_id
+        WHERE rj.created_at >= ${since}
+          AND rj.user_id IS NOT NULL
+        GROUP BY rj.user_id, u.display_name, u.profile_image_url
+        HAVING COUNT(DISTINCT DATE(rj.created_at AT TIME ZONE 'UTC')) >= 2
+        ORDER BY active_days DESC, total_joins DESC
+        LIMIT 8
+      `),
     ]);
 
     const totals = (totalsRaw.rows[0] ?? {}) as any;
@@ -1532,6 +1587,26 @@ export class DatabaseStorage implements IStorage {
         rate: Number(r.rate),
       })),
       signedInVisitors: Number((signedInRaw.rows[0] as any)?.signed_in ?? 0),
+      retentionStats: (() => {
+        const r = (retentionStatsRaw.rows[0] ?? {}) as any;
+        return {
+          totalJoiners: Number(r.total_joiners ?? 0),
+          returningJoiners: Number(r.returning_joiners ?? 0),
+          singleDayJoiners: Number(r.single_day_joiners ?? 0),
+          retentionRate: Number(r.retention_rate ?? 0),
+        };
+      })(),
+      retentionDistribution: (retentionDistRaw.rows as any[]).map((r) => ({
+        daysActive: r.days_active as string,
+        userCount: Number(r.user_count),
+      })),
+      topRetainedUsers: (topRetainedRaw.rows as any[]).map((r) => ({
+        userId: r.user_id as string,
+        displayName: r.display_name as string,
+        avatarUrl: (r.avatar_url as string | null) ?? null,
+        activeDays: Number(r.active_days),
+        totalJoins: Number(r.total_joins),
+      })),
     };
     } catch (err: any) {
       console.warn("[analytics] query failed, returning empty data:", err?.message);

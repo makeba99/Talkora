@@ -198,6 +198,9 @@ type AnalyticsData = {
   recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
   conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
   signedInVisitors: number;
+  retentionStats: { totalJoiners: number; returningJoiners: number; singleDayJoiners: number; retentionRate: number };
+  retentionDistribution: { daysActive: string; userCount: number }[];
+  topRetainedUsers: { userId: string; displayName: string; avatarUrl: string | null; activeDays: number; totalJoins: number }[];
 };
 
 function AnalyticsTab() {
@@ -303,6 +306,108 @@ function AnalyticsTab() {
           </div>
         </div>
       </div>
+
+      {/* ── Retention ────────────────────────────────────────────────── */}
+      <Card className="bg-card/75 border-indigo-400/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <RefreshCw className="w-3.5 h-3.5 text-indigo-400" /> User Retention
+            <span className="ml-1 text-[10px] text-muted-foreground/60 font-normal">who comes back on a different day</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : (
+            <div className="space-y-5">
+              {/* Summary banner */}
+              <div className="flex flex-wrap gap-4 p-3 rounded-lg bg-indigo-400/8 border border-indigo-400/15 items-center">
+                <div className="text-center min-w-[72px]">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Retention Rate</p>
+                  {(() => {
+                    const rate = data?.retentionStats.retentionRate ?? 0;
+                    const color = rate >= 40 ? "text-green-400" : rate >= 20 ? "text-amber-400" : "text-rose-400";
+                    return <p className={`text-3xl font-bold ${color}`} data-testid="text-retention-rate">{rate.toFixed(1)}%</p>;
+                  })()}
+                </div>
+                <div className="h-10 w-px bg-border/40 hidden sm:block" />
+                <div className="flex gap-5 text-xs text-muted-foreground flex-wrap">
+                  <div>
+                    <p className="font-medium text-foreground">{(data?.retentionStats.totalJoiners ?? 0).toLocaleString()}</p>
+                    <p>Total Joiners</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-indigo-300">{(data?.retentionStats.returningJoiners ?? 0).toLocaleString()}</p>
+                    <p>Came Back</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground/70">{(data?.retentionStats.singleDayJoiners ?? 0).toLocaleString()}</p>
+                    <p>One-Time Only</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-5">
+                {/* Days-active distribution bars */}
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground mb-2 uppercase tracking-wider">Days Active Distribution</p>
+                  {!data?.retentionDistribution.length ? (
+                    <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">No data yet.</div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {data.retentionDistribution.map((d) => {
+                        const max = Math.max(...(data.retentionDistribution.map((x) => x.userCount)));
+                        const pct = Math.round((d.userCount / max) * 100);
+                        const isReturn = d.daysActive !== "1";
+                        return (
+                          <div key={d.daysActive} className="flex items-center gap-2" data-testid={`row-retention-dist-${d.daysActive}`}>
+                            <span className="text-[10px] text-muted-foreground w-5 shrink-0 text-right">{d.daysActive}d</span>
+                            <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isReturn ? "bg-indigo-500/70" : "bg-muted-foreground/30"}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className={`text-xs w-8 text-right shrink-0 ${isReturn ? "text-indigo-300" : "text-muted-foreground/60"}`}>
+                              {d.userCount.toLocaleString()}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Top retained users */}
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground mb-2 uppercase tracking-wider">Most Loyal Users</p>
+                  {!data?.topRetainedUsers.length ? (
+                    <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">No returning users yet.</div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {data.topRetainedUsers.map((u, i) => (
+                        <div key={u.userId} className="flex items-center gap-2" data-testid={`row-retained-${i}`}>
+                          <Avatar className="w-6 h-6 shrink-0">
+                            <AvatarImage src={u.avatarUrl ?? undefined} />
+                            <AvatarFallback className="text-[8px]">{u.displayName?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs font-medium flex-1 truncate">{u.displayName}</span>
+                          <span className="text-[10px] bg-indigo-500/20 text-indigo-300 rounded px-1.5 py-0.5 shrink-0 font-medium">
+                            {u.activeDays}d
+                          </span>
+                          <span className="text-[10px] text-muted-foreground/60 shrink-0 w-14 text-right">
+                            {u.totalJoins} joins
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ── Drop-off Funnel ──────────────────────────────────────────── */}
       <Card className="bg-card/75 border-violet-400/20">
