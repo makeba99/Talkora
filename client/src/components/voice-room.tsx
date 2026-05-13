@@ -4351,12 +4351,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (ytLoadTimeoutRef.current) { clearTimeout(ytLoadTimeoutRef.current); ytLoadTimeoutRef.current = null; }
       return;
     }
-    // Direct iframe mode — we now use a plain <iframe> with native controls.
-    // Skip the YT IFrame API player entirely to avoid creating a duplicate player.
     setYtPlayerLoading(true);
     setYtPlayerReady(false);
     setYtPlayerError(null);
-    return;
 
     // Hard timeout: if onReady never fires within 12s, surface an error so the
     // user sees a retry button instead of a forever spinner. Common causes:
@@ -4489,9 +4486,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             rel: 0,
             modestbranding: 1,
             playsinline: 1,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
+            controls: 1,
+            fs: 1,
             iv_load_policy: 3,
             origin: window.location.origin,
           },
@@ -4559,9 +4555,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               const messages: Record<number, string> = {
                 2:   "Invalid video ID.",
                 5:   "Playback error in this browser. Try a refresh.",
+                15:  "The owner of this video has disabled embedded playback.",
                 100: "Video not found or has been removed.",
                 101: "The owner of this video has disabled embedded playback.",
                 150: "The owner of this video has disabled embedded playback.",
+                153: "The owner of this video has disabled embedded playback.",
               };
               const msg = messages[code] ?? `Video could not be played (code ${code || "?"}).`;
               setYtPlayerLoading(false);
@@ -11741,17 +11739,38 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     {ytQualityState === "slow" ? "Slow" : "Good"}
                   </div>
 
-                  {/* Inline iframe — rendered directly in the slot, no fixed-position overlay needed */}
-                  <iframe
-                    ref={ytIframeDirectRef}
-                    key={activeYoutubeId}
-                    src={`https://www.youtube-nocookie.com/embed/${activeYoutubeId}?autoplay=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="absolute inset-0 w-full h-full border-0 z-[1]"
-                    data-testid="iframe-youtube-player"
-                    onLoad={() => { setYtPlayerReady(true); setYtPlayerLoading(false); setYtPlayerError(null); }}
+                  {/* YT API container — always visible; YT.Player injects its <iframe> here */}
+                  <div
+                    ref={ytContainerRef}
+                    className="absolute inset-0 w-full h-full z-[1]"
+                    style={{ opacity: 1 }}
+                    data-testid="div-youtube-container"
                   />
+
+                  {/* Error overlay — shown when YT API fires onError (e.g. embed disabled) */}
+                  {ytPlayerError && (
+                    <div className="absolute inset-0 z-[25] flex items-center justify-center bg-black/95 px-4" data-testid="youtube-error-overlay">
+                      <div className="flex flex-col items-center gap-3 text-center max-w-xs">
+                        <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </div>
+                        <p className="text-sm text-white/90 leading-snug">{ytPlayerError.message}</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="px-3 py-1.5 text-[12px] font-semibold bg-blue-500 hover:bg-blue-400 text-white rounded-full transition-colors"
+                            onClick={() => { setYtPlayerError(null); setYtRetryNonce(n => n + 1); }}
+                            data-testid="button-youtube-retry"
+                          >Retry</button>
+                          <a
+                            className="px-3 py-1.5 text-[12px] font-semibold bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+                            href={`https://www.youtube.com/watch?v=${activeYoutubeId}`}
+                            target="_blank" rel="noopener noreferrer"
+                            data-testid="link-youtube-open"
+                          >Watch on YouTube ↗</a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Top-right cluster: volume + close — z-[30] clears the iframe (z-[1]) */}
                   <div className="absolute top-3 right-3 z-[30] flex items-center gap-2">
@@ -11991,7 +12010,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                 {/* Resize handle — drag to resize the player height */}
                 <div
-                  className="relative z-[10] flex-shrink-0 h-2.5 flex items-center justify-center cursor-ns-resize group/resize-yt hover:bg-white/10 transition-colors"
+                  className="relative z-[40] flex-shrink-0 h-2.5 flex items-center justify-center cursor-ns-resize group/resize-yt hover:bg-white/10 transition-colors"
                   data-testid="youtube-player-resize-handle"
                   onMouseDown={(e) => {
                     e.preventDefault();
