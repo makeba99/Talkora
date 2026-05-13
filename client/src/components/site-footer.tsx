@@ -13,7 +13,7 @@ import {
   SiInstagram,
   SiFacebook,
   SiTiktok,
-  SiDiscord,
+  SiYoutube,
   SiWhatsapp,
   SiTelegram,
 } from "react-icons/si";
@@ -40,11 +40,9 @@ type SocialLink = {
 };
 
 const SOCIALS: SocialLink[] = [
-  { name: "X (Twitter)", href: "https://twitter.com/vextorn",   Icon: SiX,         hoverHue: "210 80% 60%" },
-  { name: "Instagram",   href: "https://instagram.com/vextorn", Icon: SiInstagram, hoverHue: "330 75% 60%" },
-  { name: "Facebook",    href: "https://facebook.com/vextorn",  Icon: SiFacebook,  hoverHue: "220 80% 58%" },
-  { name: "TikTok",      href: "https://tiktok.com/@vextorn",   Icon: SiTiktok,    hoverHue: "180 80% 55%" },
-  { name: "Discord",     href: "https://discord.gg/vextorn",    Icon: SiDiscord,   hoverHue: "248 80% 65%" },
+  { name: "Instagram", href: "https://www.instagram.com/joinvextorn/", Icon: SiInstagram, hoverHue: "330 75% 60%" },
+  { name: "TikTok",   href: "https://www.tiktok.com/@joinvextorn",    Icon: SiTiktok,    hoverHue: "180 80% 55%" },
+  { name: "YouTube",  href: "https://www.youtube.com/@vextorn",       Icon: SiYoutube,   hoverHue: "0 85% 55%"   },
 ];
 
 type ShareDest = {
