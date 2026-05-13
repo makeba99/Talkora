@@ -11707,8 +11707,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     {ytQualityState === "slow" ? "Slow" : "Good"}
                   </div>
 
-                  {/* Top-right cluster: volume + close — easy thumb targets */}
-                  <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                  {/* Top-right cluster: volume + close — z-[30] clears the iframe (z-5) */}
+                  <div className="absolute top-3 right-3 z-[30] flex items-center gap-2">
                     {/* Volume mute toggle — large button for easy access */}
                     <button
                       type="button"
@@ -11742,8 +11742,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
 
                 {/* ── Always-visible control bar — never disappears, no hover required ── */}
+                {/* z-[10] ensures this bar is above the position:fixed iframe (z-index:5) */}
                 <div
-                  className="flex-shrink-0 flex items-center gap-2 px-3 py-2.5 bg-[#0a0a0a] border-t border-white/[0.07]"
+                  className="relative z-[10] flex-shrink-0 flex items-center gap-2 px-3 py-2.5 bg-[#0a0a0a] border-t border-white/[0.07]"
                   data-testid="youtube-host-controls"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -11923,7 +11924,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                 {/* Resize handle — drag to resize the player height */}
                 <div
-                  className="flex-shrink-0 h-2.5 flex items-center justify-center cursor-ns-resize group/resize-yt hover:bg-white/10 transition-colors"
+                  className="relative z-[10] flex-shrink-0 h-2.5 flex items-center justify-center cursor-ns-resize group/resize-yt hover:bg-white/10 transition-colors"
                   data-testid="youtube-player-resize-handle"
                   onMouseDown={(e) => {
                     e.preventDefault();
