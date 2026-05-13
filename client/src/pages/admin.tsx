@@ -196,6 +196,7 @@ type AnalyticsData = {
   newUsersPerDay: { date: string; count: number }[];
   viewerOnlyCountries: { country: string; count: number }[];
   recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
+  conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
 };
 
 function AnalyticsTab() {
@@ -301,6 +302,85 @@ function AnalyticsTab() {
           </div>
         </div>
       </div>
+
+      {/* ── Conversion Rate card ──────────────────────────────────────── */}
+      <Card className="bg-card/75 border-green-400/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5 text-green-400" /> Visitor → Room Conversion Rate
+            <span className="ml-1 text-[10px] text-muted-foreground/60 font-normal">by country</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : (
+            <>
+              {/* Overall rate banner */}
+              <div className="flex items-center gap-4 mb-4 p-3 rounded-lg bg-green-400/8 border border-green-400/15">
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Overall Rate</p>
+                  {(() => {
+                    const rate = data && data.uniqueSessions > 0
+                      ? Math.round((data.uniqueRoomJoiners / data.uniqueSessions) * 1000) / 10
+                      : 0;
+                    const color = rate >= 30 ? "text-green-400" : rate >= 10 ? "text-amber-400" : "text-rose-400";
+                    return <p className={`text-3xl font-bold ${color}`} data-testid="text-conversion-overall">{rate.toFixed(1)}%</p>;
+                  })()}
+                </div>
+                <div className="h-10 w-px bg-border/40" />
+                <div className="flex gap-5 text-xs text-muted-foreground">
+                  <div>
+                    <p className="font-medium text-foreground">{(data?.uniqueSessions ?? 0).toLocaleString()}</p>
+                    <p>Unique Visitors</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-green-300">{(data?.uniqueRoomJoiners ?? 0).toLocaleString()}</p>
+                    <p>Joined a Room</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-rose-300">{((data?.uniqueSessions ?? 0) - (data?.uniqueRoomJoiners ?? 0)).toLocaleString()}</p>
+                    <p>Did Not Join</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Per-country table */}
+              {!data?.conversionByCountry.length ? (
+                <div className="h-20 flex items-center justify-center text-sm text-muted-foreground">No country data yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {data.conversionByCountry.map((c, i) => {
+                    const barColor = c.rate >= 30 ? "bg-green-500/70" : c.rate >= 10 ? "bg-amber-500/70" : "bg-rose-500/60";
+                    const textColor = c.rate >= 30 ? "text-green-400" : c.rate >= 10 ? "text-amber-400" : "text-rose-400";
+                    return (
+                      <div key={c.country} className="flex items-center gap-2" data-testid={`row-conversion-${i}`}>
+                        <span className="text-[10px] text-muted-foreground w-3 text-right shrink-0">{i + 1}</span>
+                        <img
+                          src={`https://flagcdn.com/16x12/${c.country.toLowerCase()}.png`}
+                          alt={c.country}
+                          className="w-4 h-3 rounded-[2px] object-cover shrink-0"
+                          loading="lazy"
+                        />
+                        <span className="text-xs font-medium w-7 shrink-0">{c.country.toUpperCase()}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(c.rate, 100)}%` }} />
+                          </div>
+                        </div>
+                        <span className={`text-xs font-bold w-10 text-right shrink-0 ${textColor}`}>{c.rate.toFixed(1)}%</span>
+                        <span className="text-[10px] text-muted-foreground w-24 shrink-0 text-right">
+                          {c.joiners.toLocaleString()} / {c.visitors.toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stat cards — page views row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

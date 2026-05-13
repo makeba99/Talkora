@@ -214,6 +214,7 @@ export interface IStorage {
     newUsersPerDay: { date: string; count: number }[];
     viewerOnlyCountries: { country: string; count: number }[];
     recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
+    conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
   }>;
 
   createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign>;
@@ -1197,6 +1198,7 @@ export class DatabaseStorage implements IStorage {
     newUsersPerDay: { date: string; count: number }[];
     viewerOnlyCountries: { country: string; count: number }[];
     recentViewers: { country: string | null; path: string; isLoggedIn: boolean; displayName: string | null; viewedAt: string }[];
+    conversionByCountry: { country: string; visitors: number; joiners: number; rate: number }[];
   }> {
     const empty = {
       dailyViews: [], topReferrers: [], topCountries: [], topJoinCountries: [],
@@ -1204,7 +1206,7 @@ export class DatabaseStorage implements IStorage {
       totalRoomJoins: 0, uniqueRoomJoiners: 0, dailyJoins: [],
       todayViews: 0, todayUniqueVisitors: 0, todayRoomJoins: 0, todayUniqueJoiners: 0,
       recentJoiners: [], topRooms: [], topActiveUsers: [], hourlyActivity: [], topPages: [], newUsersPerDay: [],
-      viewerOnlyCountries: [], recentViewers: [],
+      viewerOnlyCountries: [], recentViewers: [], conversionByCountry: [],
     };
     try {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -1213,7 +1215,7 @@ export class DatabaseStorage implements IStorage {
       dailyRaw, referrersRaw, countriesRaw, totalsRaw, redirectRaw,
       joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw,
       recentJoinersRaw, topRoomsRaw, topActiveUsersRaw, hourlyJoinsRaw, hourlyViewsRaw,
-      topPagesRaw, newUsersRaw, viewerOnlyCountriesRaw, recentViewersRaw,
+      topPagesRaw, newUsersRaw, viewerOnlyCountriesRaw, recentViewersRaw, conversionByCountryRaw,
     ] = await Promise.all([
       db.execute(sql`
         SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
@@ -1417,6 +1419,37 @@ export class DatabaseStorage implements IStorage {
         ORDER BY pv.created_at DESC
         LIMIT 40
       `),
+      // Conversion rate by country: visitors vs room joiners
+      db.execute(sql`
+        WITH pv_countries AS (
+          SELECT country,
+                 COUNT(DISTINCT COALESCE(user_id, session_hash)) AS total_visitors
+          FROM page_views
+          WHERE created_at >= ${since}
+            AND country IS NOT NULL
+            AND country != ''
+          GROUP BY country
+        ),
+        rj_countries AS (
+          SELECT country,
+                 COUNT(DISTINCT user_id) AS total_joiners
+          FROM room_joins
+          WHERE created_at >= ${since}
+            AND country IS NOT NULL
+            AND country != ''
+            AND user_id IS NOT NULL
+          GROUP BY country
+        )
+        SELECT
+          pvc.country,
+          pvc.total_visitors::int AS visitors,
+          COALESCE(rjc.total_joiners, 0)::int AS joiners,
+          ROUND(COALESCE(rjc.total_joiners, 0) * 100.0 / NULLIF(pvc.total_visitors, 0), 1) AS rate
+        FROM pv_countries pvc
+        LEFT JOIN rj_countries rjc ON rjc.country = pvc.country
+        ORDER BY pvc.total_visitors DESC
+        LIMIT 15
+      `),
     ]);
 
     const totals = (totalsRaw.rows[0] ?? {}) as any;
@@ -1482,6 +1515,12 @@ export class DatabaseStorage implements IStorage {
         isLoggedIn: !!(r.user_id),
         displayName: (r.display_name as string | null) ?? null,
         viewedAt: r.viewed_at as string,
+      })),
+      conversionByCountry: (conversionByCountryRaw.rows as any[]).map((r) => ({
+        country: r.country as string,
+        visitors: Number(r.visitors),
+        joiners: Number(r.joiners),
+        rate: Number(r.rate),
       })),
     };
     } catch (err: any) {
