@@ -11684,18 +11684,241 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
             return (
               <div
-                ref={ytSlotRef}
-                className="bg-black relative group/ytplayer"
+                className="bg-black flex flex-col group/ytplayer overflow-hidden"
                 style={ytPlayerHeight ? { height: ytPlayerHeight, flexShrink: 0 } : { flex: 1, minHeight: 0 }}
                 data-testid="media-main-youtube"
                 data-yt-slot="true"
               >
-                {/* Persistent player is mounted at top-level (see ytPersistentWrapper).
-                    This slot just reserves the visual area; overlays render with the player. */}
+                {/* ── Video area: takes all remaining height — ref'd so the persistent
+                    fixed-position player can match exactly this rect, not the whole container */}
+                <div ref={ytSlotRef} className="relative flex-1 min-h-0 overflow-hidden">
 
-                {/* Resize handle — drag bottom edge to resize the player */}
+                  {/* Connection quality badge */}
+                  <div
+                    className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 backdrop-blur-sm text-[10px] font-medium px-2 py-1 rounded-full border shadow-md transition-colors ${
+                      ytQualityState === "slow"
+                        ? "bg-amber-500/85 border-amber-300/50 text-white"
+                        : "bg-emerald-600/70 border-emerald-300/40 text-white"
+                    }`}
+                    data-testid="badge-yt-connection"
+                    title={ytQualityState === "slow" ? "Slow connection — quality reduced to keep playing" : "Connection good"}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${ytQualityState === "slow" ? "bg-white animate-pulse" : "bg-white"}`} />
+                    {ytQualityState === "slow" ? "Slow" : "Good"}
+                  </div>
+
+                  {/* Top-right hide/close button */}
+                  <div className="absolute top-3 right-3 z-20">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (user?.id === youtubeStartedBy) {
+                          handleStopYoutube();
+                        } else {
+                          setShowYoutube(false);
+                          setUserDismissedYoutube(true);
+                          setMiniPlayerMode(false);
+                        }
+                      }}
+                      className="w-7 h-7 rounded-full bg-black/55 backdrop-blur-sm hover:bg-red-500/80 border border-white/15 flex items-center justify-center text-white shadow-md transition-colors"
+                      title={user?.id === youtubeStartedBy ? "Close video for everyone" : "Hide video (just for you)"}
+                      data-testid="button-yt-corner-close"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Always-visible control bar — never disappears, no hover required ── */}
                 <div
-                  className="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center z-30 cursor-ns-resize group/resize-yt hover:bg-white/10 transition-colors"
+                  className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-[#0a0a0a] border-t border-white/[0.07]"
+                  data-testid="youtube-host-controls"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Left cluster: playback buttons + seek + time */}
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    {/* Play / Pause */}
+                    <button
+                      onClick={handleYtPlayPause}
+                      className="w-8 h-8 flex-shrink-0 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center transition-colors"
+                      data-testid="button-yt-playpause"
+                      aria-label={ytIsPlaying ? "Pause" : "Play"}
+                    >
+                      {ytIsPlaying
+                        ? <Pause className="w-3.5 h-3.5 text-white" />
+                        : <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />}
+                    </button>
+                    {/* Reload */}
+                    <button
+                      onClick={() => {
+                        const player = youtubePlayerRef.current;
+                        if (!player) return;
+                        try {
+                          const t = player.getCurrentTime?.() || 0;
+                          ytSyncTimeRef.current = Math.max(0, t);
+                          const id = activeYoutubeId;
+                          setActiveYoutubeId(null);
+                          setTimeout(() => setActiveYoutubeId(id), 60);
+                        } catch (_) {}
+                      }}
+                      className="w-7 h-7 flex-shrink-0 rounded-full bg-white/8 hover:bg-white/18 border border-white/12 flex items-center justify-center transition-colors"
+                      title="Reload (fixes frozen frame)"
+                      data-testid="button-yt-reload"
+                    >
+                      <RotateCcw className="w-3 h-3 text-white/60" />
+                    </button>
+                    {/* Sync with starter — only for watchers */}
+                    {user?.id !== youtubeStartedBy && youtubeStartedBy && (
+                      <button
+                        onClick={handleYtSyncToStarter}
+                        className="h-7 px-2 flex-shrink-0 rounded-full bg-white/8 hover:bg-purple-500/50 border border-white/12 flex items-center gap-1 transition-colors"
+                        title="Jump to where the starter is watching"
+                        data-testid="button-yt-sync"
+                      >
+                        <Zap className="w-3 h-3 text-white/60" />
+                        <span className="text-[10px] text-white/60 font-semibold leading-none">Sync</span>
+                      </button>
+                    )}
+                    {/* Stop — starters only */}
+                    {user?.id === youtubeStartedBy && (
+                      <button
+                        onClick={handleStopYoutube}
+                        className="w-7 h-7 flex-shrink-0 rounded-full bg-white/8 hover:bg-red-500/50 border border-white/12 flex items-center justify-center transition-colors"
+                        title="Close video for everyone"
+                        data-testid="button-yt-stop"
+                      >
+                        <StopCircle className="w-3 h-3 text-white/60" />
+                      </button>
+                    )}
+                    {/* Seek bar */}
+                    <input
+                      type="range"
+                      min={0}
+                      max={ytDuration || 100}
+                      step={1}
+                      value={ytCurrentTime}
+                      onChange={(e) => handleYtSeek(Number(e.target.value))}
+                      className="flex-1 min-w-0 h-1.5 cursor-pointer rounded-full appearance-none"
+                      style={{ accentColor: "#ef4444" }}
+                      data-testid="input-yt-seek"
+                      aria-label="Video seek"
+                    />
+                    {/* Time */}
+                    <span className="flex-shrink-0 text-white/45 text-[10px] font-mono tabular-nums whitespace-nowrap" data-testid="text-yt-time">
+                      {formatYtTime(ytCurrentTime)} / {formatYtTime(ytDuration)}
+                    </span>
+                  </div>
+
+                  {/* Volume */}
+                  <div className="flex-shrink-0 flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleYtVolume(ytVolume > 0 ? 0 : 100)}
+                      className="text-white/45 hover:text-white transition-colors"
+                      title={ytVolume === 0 ? "Unmute" : "Mute"}
+                      data-testid="button-yt-mute"
+                    >
+                      {ytVolume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : ytVolume < 50 ? <Volume1 className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={ytVolume}
+                      onChange={(e) => handleYtVolume(Number(e.target.value))}
+                      className="w-16 h-1.5 cursor-pointer rounded-full appearance-none"
+                      style={{ accentColor: "#ffffff" }}
+                      data-testid="input-yt-volume"
+                      aria-label="YouTube volume"
+                    />
+                  </div>
+
+                  {/* Divider */}
+                  <div className="flex-shrink-0 w-px h-5 bg-white/15" />
+
+                  {/* Reactions toggle — opens emoji + vote pills inline, no overlap with controls */}
+                  <div className="flex-shrink-0 flex items-center gap-1.5">
+                    {ytReactionsOpen && (
+                      <div
+                        className="flex items-center gap-1 bg-black/80 backdrop-blur-sm rounded-full border border-white/15 px-2 py-1 shadow-lg animate-in fade-in slide-in-from-right-2 duration-150"
+                        data-testid="yt-reactions-panel"
+                      >
+                        {["❤️", "🔥", "😂", "😮", "👏", "👍", "🤯"].map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => { if (socket) socket.emit("room:youtube-reaction", { roomId: room.id, emoji }); }}
+                            className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-90"
+                            title={`Send ${emoji}`}
+                            data-testid={`button-yt-react-${emoji}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                        <div className="w-px h-4 bg-white/20 mx-0.5" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!socket) return;
+                            const next = myYtVote === "like" ? null : "like";
+                            setMyYtVote(next);
+                            socket.emit("room:youtube-vote", { roomId: room.id, hostId: youtubeStartedBy, kind: next || "none" });
+                          }}
+                          className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "like" ? "bg-emerald-500/85 text-white" : "bg-white/10 text-white/80 hover:bg-white/20"}`}
+                          title="Like this video"
+                          data-testid="button-yt-vote-like"
+                        >
+                          <ThumbsUp className="w-3 h-3" />
+                          <span className="tabular-nums">{ytVotes.likes}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!socket) return;
+                            const next = myYtVote === "dislike" ? null : "dislike";
+                            setMyYtVote(next);
+                            socket.emit("room:youtube-vote", { roomId: room.id, hostId: youtubeStartedBy, kind: next || "none" });
+                          }}
+                          className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "dislike" ? "bg-red-500/85 text-white" : "bg-white/10 text-white/80 hover:bg-white/20"}`}
+                          title="Dislike this video"
+                          data-testid="button-yt-vote-dislike"
+                        >
+                          <ThumbsDown className="w-3 h-3" />
+                          <span className="tabular-nums">{ytVotes.dislikes}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!socket) return;
+                            const next = !myYtSkipVote;
+                            setMyYtSkipVote(next);
+                            socket.emit("room:youtube-skip-vote", { roomId: room.id, hostId: youtubeStartedBy, vote: next });
+                          }}
+                          className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtSkipVote ? "bg-amber-500/85 text-white" : "bg-white/10 text-white/80 hover:bg-white/20"}`}
+                          title={`Vote to skip — auto-advances when ${Math.max(2, Math.ceil((ytVotes.watchers || participants.length) / 2))} people agree`}
+                          data-testid="button-yt-vote-skip"
+                        >
+                          <SkipForward className="w-3 h-3" />
+                          <span className="tabular-nums">{ytVotes.skip}</span>
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setYtReactionsOpen((v) => !v)}
+                      className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${ytReactionsOpen ? "bg-purple-500/85 border-purple-300/50 text-white" : "bg-white/8 border-white/15 text-white/50 hover:text-white hover:bg-white/15"}`}
+                      title={ytReactionsOpen ? "Hide reactions" : "Reactions & votes"}
+                      data-testid="button-yt-reactions-toggle"
+                    >
+                      {ytReactionsOpen ? <X className="w-3.5 h-3.5" /> : <Smile className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Resize handle — drag to resize the player height */}
+                <div
+                  className="flex-shrink-0 h-2.5 flex items-center justify-center cursor-ns-resize group/resize-yt hover:bg-white/10 transition-colors"
                   data-testid="youtube-player-resize-handle"
                   onMouseDown={(e) => {
                     e.preventDefault();
@@ -11716,245 +11939,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 >
                   <div className="w-14 h-1 rounded-full bg-white/25 group-hover/resize-yt:bg-white/60 transition-colors" />
                 </div>
-
-                {/* Host control bar — only visible to the broadcaster, revealed on hover */}
-                {isYoutubeHost && (
-                  <div
-                    className="absolute bottom-0 left-0 right-0 z-20 flex flex-col gap-2.5 px-4 pt-8 pb-3 opacity-0 group-hover/ytplayer:opacity-100 transition-opacity duration-200"
-                    style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)" }}
-                    data-testid="youtube-host-controls"
-                  >
-                    {/* Seek bar */}
-                    <input
-                      type="range"
-                      min={0}
-                      max={ytDuration || 100}
-                      step={1}
-                      value={ytCurrentTime}
-                      onChange={(e) => handleYtSeek(Number(e.target.value))}
-                      className="w-full h-1.5 cursor-pointer rounded-full appearance-none"
-                      style={{ accentColor: "#ef4444" }}
-                      data-testid="input-yt-seek"
-                      aria-label="Video seek"
-                    />
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        {/* Play / Pause */}
-                        <button
-                          onClick={handleYtPlayPause}
-                          className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/28 border border-white/20 flex items-center justify-center transition-colors shadow-lg"
-                          data-testid="button-yt-playpause"
-                          aria-label={ytIsPlaying ? "Pause" : "Play"}
-                        >
-                          {ytIsPlaying
-                            ? <Pause className="w-4 h-4 text-white" />
-                            : <Play className="w-4 h-4 text-white fill-white ml-0.5" />}
-                        </button>
-                        {/* Reload — recovers from frozen frame while audio still plays */}
-                        <button
-                          onClick={() => {
-                            const player = youtubePlayerRef.current;
-                            if (!player) return;
-                            try {
-                              const t = player.getCurrentTime?.() || 0;
-                              ytSyncTimeRef.current = Math.max(0, t);
-                              const id = activeYoutubeId;
-                              setActiveYoutubeId(null);
-                              setTimeout(() => setActiveYoutubeId(id), 60);
-                            } catch (_) {}
-                          }}
-                          className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 border border-white/15 flex items-center justify-center transition-colors shadow-lg"
-                          title="Reload video (fixes frozen frame)"
-                          data-testid="button-yt-reload"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5 text-white" />
-                        </button>
-                        {/* Sync with starter — non-starters only */}
-                        {user?.id !== youtubeStartedBy && youtubeStartedBy && (
-                          <button
-                            onClick={handleYtSyncToStarter}
-                            className="h-8 px-2.5 rounded-full bg-white/10 hover:bg-purple-500/60 border border-white/15 flex items-center justify-center gap-1 transition-colors shadow-lg"
-                            title="Jump to where the starter is watching"
-                            data-testid="button-yt-sync"
-                          >
-                            <Zap className="w-3.5 h-3.5 text-white" />
-                            <span className="text-[10px] text-white font-semibold leading-none">Sync</span>
-                          </button>
-                        )}
-                        {/* Close — only the starter can close the video for everyone */}
-                        {user?.id === youtubeStartedBy && (
-                          <button
-                            onClick={handleStopYoutube}
-                            className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-500/60 border border-white/15 flex items-center justify-center transition-colors shadow-lg"
-                            title="Close video for everyone"
-                            data-testid="button-yt-stop"
-                          >
-                            <StopCircle className="w-3.5 h-3.5 text-white" />
-                          </button>
-                        )}
-                        {/* Time */}
-                        <span className="text-white/70 text-[11px] font-mono tabular-nums" data-testid="text-yt-time">
-                          {formatYtTime(ytCurrentTime)} / {formatYtTime(ytDuration)}
-                        </span>
-                      </div>
-                      {/* Volume */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleYtVolume(ytVolume > 0 ? 0 : 100)}
-                          className="text-white/60 hover:text-white transition-colors flex-shrink-0"
-                          title={ytVolume === 0 ? "Unmute" : "Mute"}
-                          data-testid="button-yt-mute"
-                        >
-                          {ytVolume === 0 ? <VolumeX className="w-4 h-4" /> : ytVolume < 50 ? <Volume1 className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                        </button>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={ytVolume}
-                          onChange={(e) => handleYtVolume(Number(e.target.value))}
-                          className="w-20 h-1.5 cursor-pointer rounded-full appearance-none"
-                          style={{ accentColor: "#ffffff" }}
-                          data-testid="input-yt-volume"
-                          aria-label="YouTube volume"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-
-                {/* Connection quality badge — auto-shown when slow internet triggers a quality downgrade */}
-                <div
-                  className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 backdrop-blur-sm text-[10px] font-medium px-2 py-1 rounded-full border shadow-md transition-colors ${
-                    ytQualityState === "slow"
-                      ? "bg-amber-500/85 border-amber-300/50 text-white"
-                      : "bg-emerald-600/70 border-emerald-300/40 text-white"
-                  }`}
-                  data-testid="badge-yt-connection"
-                  title={ytQualityState === "slow" ? "Slow connection — quality reduced to keep playing" : "Connection good"}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${ytQualityState === "slow" ? "bg-white animate-pulse" : "bg-white"}`} />
-                  {ytQualityState === "slow" ? "Slow" : "Good"}
-                </div>
-
-                {/* Top-right close button.
-                    The close button does different things depending on who clicks it:
-                      - Starter : stops the video for everyone in the room
-                      - Anyone else (watcher): just hides the player for themselves;
-                                               the room keeps watching, and they can
-                                               re-join from the side panel. */}
-                <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (user?.id === youtubeStartedBy) {
-                        handleStopYoutube();
-                      } else {
-                        setShowYoutube(false);
-                        setUserDismissedYoutube(true);
-                        setMiniPlayerMode(false);
-                      }
-                    }}
-                    className="w-7 h-7 rounded-full bg-black/55 backdrop-blur-sm hover:bg-red-500/80 border border-white/15 flex items-center justify-center text-white shadow-md transition-colors"
-                    title={user?.id === youtubeStartedBy ? "Close video for everyone" : "Hide video (just for you)"}
-                    data-testid="button-yt-corner-close"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Reactions toggle (smiley) + collapsible reactions/voting panel.
-                    The panel is HIDDEN by default — users tap the smiley to open it.
-                    When open it reveals an emoji picker (everyone can fire reactions)
-                    and the live like / dislike / skip-vote tally. The skip vote
-                    auto-advances the queue once a majority of the room agrees.
-                    None of this affects the starter's playhead. */}
-                <div
-                  className="absolute right-3 z-20 flex items-center gap-2 transition-[bottom] duration-200 bottom-3 group-hover/ytplayer:bottom-20"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {ytReactionsOpen && (
-                    <div
-                      className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm rounded-full border border-white/15 px-2 py-1.5 shadow-lg animate-in fade-in slide-in-from-right-2 duration-200"
-                      data-testid="yt-reactions-panel"
-                    >
-                      {/* Emoji picker — everyone in the watch party can fire any of these. */}
-                      {["❤️", "🔥", "😂", "😮", "👏", "👍", "🤯"].map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => { if (socket) socket.emit("room:youtube-reaction", { roomId: room.id, emoji }); }}
-                          className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-90"
-                          title={`Send ${emoji}`}
-                          data-testid={`button-yt-react-${emoji}`}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                      <div className="w-px h-5 bg-white/20" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!socket) return;
-                          const next = myYtVote === "like" ? null : "like";
-                          setMyYtVote(next);
-                          socket.emit("room:youtube-vote", { roomId: room.id, hostId: youtubeStartedBy, kind: next || "none" });
-                        }}
-                        className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "like" ? "bg-emerald-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
-                        title="Like this video"
-                        data-testid="button-yt-vote-like"
-                      >
-                        <ThumbsUp className="w-3.5 h-3.5" />
-                        <span className="tabular-nums">{ytVotes.likes}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!socket) return;
-                          const next = myYtVote === "dislike" ? null : "dislike";
-                          setMyYtVote(next);
-                          socket.emit("room:youtube-vote", { roomId: room.id, hostId: youtubeStartedBy, kind: next || "none" });
-                        }}
-                        className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtVote === "dislike" ? "bg-red-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
-                        title="Dislike this video"
-                        data-testid="button-yt-vote-dislike"
-                      >
-                        <ThumbsDown className="w-3.5 h-3.5" />
-                        <span className="tabular-nums">{ytVotes.dislikes}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!socket) return;
-                          const next = !myYtSkipVote;
-                          setMyYtSkipVote(next);
-                          socket.emit("room:youtube-skip-vote", { roomId: room.id, hostId: youtubeStartedBy, vote: next });
-                        }}
-                        className={`h-7 px-2 rounded-full flex items-center gap-1 text-[11px] font-semibold transition-colors ${myYtSkipVote ? "bg-amber-500/85 text-white" : "bg-white/10 text-white/85 hover:bg-white/20"}`}
-                        title={`Vote to skip — auto-advances when ${Math.max(2, Math.ceil((ytVotes.watchers || participants.length) / 2))} people agree`}
-                        data-testid="button-yt-vote-skip"
-                      >
-                        <SkipForward className="w-3.5 h-3.5" />
-                        <span className="tabular-nums">{ytVotes.skip}</span>
-                      </button>
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setYtReactionsOpen((v) => !v)}
-                    className={`w-9 h-9 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-colors ${ytReactionsOpen ? "bg-purple-500/85 border-purple-300/50 text-white" : "bg-black/65 border-white/15 text-white hover:bg-white/20"}`}
-                    title={ytReactionsOpen ? "Hide reactions" : "Show reactions"}
-                    data-testid="button-yt-reactions-toggle"
-                  >
-                    {ytReactionsOpen ? <X className="w-4 h-4" /> : <Smile className="w-4 h-4" />}
-                  </button>
-                </div>
-
-                {/* Profiles intentionally NOT overlaid on the video — they appear in the
-                    participant strip beneath the player, mirroring the book reader pattern. */}
               </div>
             );
           })()}
