@@ -3613,11 +3613,32 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     });
 
-    // Independent playback: each user controls their own player. We intentionally
-    // do NOT auto-apply remote play/pause/seek events — incoming room:youtube-state
-    // events are ignored. The only way to follow the starter is the manual
-    // "Sync with starter" button, which uses the time-request/respond mechanism.
-    socket.on("room:youtube-state", () => { /* intentional no-op */ });
+    // Synced playback: when the host plays/pauses/seeks, watchers follow.
+    // Only applied to non-hosts to prevent feedback loops.
+    socket.on("room:youtube-state", (data: { action: string; time?: number; ts?: number; senderId?: string }) => {
+      if (!data?.action) return;
+      // Ignore if we are the host (we drove the action)
+      if (user?.id === youtubeStartedByRef.current) return;
+      const player = youtubePlayerRef.current;
+      if (!player) return;
+      const networkDelay = data.ts ? Math.min((Date.now() - data.ts) / 1000, 3) : 0.15;
+      ytRemoteAction.current = true;
+      setTimeout(() => { ytRemoteAction.current = false; }, 3500);
+      try {
+        if (data.action === "play") {
+          const target = (data.time ?? 0) + networkDelay;
+          player.seekTo(target, true);
+          player.playVideo();
+        } else if (data.action === "pause") {
+          player.pauseVideo();
+          if (data.time !== undefined) player.seekTo(data.time, true);
+        } else if (data.action === "seek") {
+          const target = (data.time ?? 0) + networkDelay;
+          player.seekTo(target, true);
+          player.playVideo();
+        }
+      } catch (_) {}
+    });
 
     // Server may still emit a denial in rare edge cases (e.g. trying to close
     // someone else's video for everyone). Show a generic message.
@@ -4401,10 +4422,24 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setYtIsPlaying(true);
         setYoutubeActive(true);
         try { const d = player.getDuration(); if (d > 0) setYtDuration(d); } catch (_) {}
+        // Host broadcasts play + current time so watchers sync
+        if (!ytRemoteAction.current && user?.id === youtubeStartedByRef.current && socketRef.current) {
+          try {
+            const t = player.getCurrentTime() || 0;
+            socketRef.current.emit("room:youtube-state", { roomId: room.id, action: "play", time: t, ts: Date.now() });
+          } catch (_) {}
+        }
       } else if (state === YT.PlayerState.PAUSED) {
         setYtIsPlaying(false);
         setYoutubeActive(false);
         try { setYtCurrentTime(player.getCurrentTime() || 0); } catch (_) {}
+        // Host broadcasts pause so watchers pause too
+        if (!ytRemoteAction.current && user?.id === youtubeStartedByRef.current && socketRef.current) {
+          try {
+            const t = player.getCurrentTime() || 0;
+            socketRef.current.emit("room:youtube-state", { roomId: room.id, action: "pause", time: t, ts: Date.now() });
+          } catch (_) {}
+        }
       } else if (state === YT.PlayerState.BUFFERING) {
         // Slow-internet adaptation: if buffering lasts >4s, downgrade quality one step.
         // Repeat every 5s of continuous buffering until we hit "small" (the lowest tier).
@@ -4486,7 +4521,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             rel: 0,
             modestbranding: 1,
             playsinline: 1,
-            controls: 1,
+            controls: user?.id === youtubeStartedByRef.current ? 1 : 0,
             fs: 1,
             iv_load_policy: 3,
             origin: window.location.origin,
@@ -6790,7 +6825,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setYtCurrentTime(seconds);
     setYtSeekDragging(false);
     sendYtCommand("seekTo", [seconds, true]);
-  }, [sendYtCommand]);
+    // Host broadcasts seek so watchers jump to same position
+    if (socket && user?.id === youtubeStartedByRef.current) {
+      socket.emit("room:youtube-state", { roomId: room.id, action: "seek", time: seconds, ts: Date.now() });
+    }
+  }, [sendYtCommand, socket, user, room.id]);
 
   const handleYtVolume = useCallback((vol: number) => {
     setYtVolume(vol);
@@ -11710,7 +11749,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
 
           {activeYoutubeId && showYoutube && (() => {
-            const isYoutubeHost = true;
+            const isYoutubeHost = user?.id === youtubeStartedBy;
             const broadcaster = youtubeStartedBy ? participantById.get(youtubeStartedBy) : undefined;
             const bIndex = participants.findIndex(p => p.id === youtubeStartedBy);
             const bGradient = getAvatarGradient(bIndex >= 0 ? bIndex : 0);
@@ -11772,9 +11811,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   )}
 
-                  {/* Top-right cluster: volume + close — z-[30] clears the iframe (z-[1]) */}
+                  {/* Top-right cluster: close button — z-[30] clears the iframe (z-[1]) */}
                   <div className="absolute top-3 right-3 z-[30] flex items-center gap-2">
-                    {/* Hide / close */}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -11794,26 +11832,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
 
-                {/* ── Reactions bar — emoji reactions only ── */}
-                <div
-                  className="relative z-[20] flex-shrink-0 flex items-center justify-end gap-2 px-3 py-2 bg-[#0a0a0a] border-t border-white/[0.07]"
-                  data-testid="youtube-host-controls"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Reactions toggle — opens emoji + vote pills inline */}
-                  <div className="flex-shrink-0 flex items-center gap-1.5">
+                  {/* ── Emoji / reactions bar — floats over the bottom of the video, no black bar ── */}
+                  <div
+                    className="absolute bottom-3 left-1/2 z-[30] flex items-center gap-2"
+                    style={{ transform: "translateX(-50%)" }}
+                    data-testid="youtube-host-controls"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Expanded emoji + vote panel */}
                     {ytReactionsOpen && (
                       <div
-                        className="flex items-center gap-1 bg-black/80 backdrop-blur-sm rounded-full border border-white/15 px-2 py-1.5 shadow-lg animate-in fade-in slide-in-from-right-2 duration-150"
+                        className="flex items-center gap-1 bg-black/75 backdrop-blur-md rounded-full border border-white/15 px-2 py-1.5 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150"
                         data-testid="yt-reactions-panel"
                       >
                         {["❤️", "🔥", "😂", "😮", "👏", "👍", "🤯"].map((emoji) => (
                           <button
                             key={emoji}
                             type="button"
-                            onClick={() => { if (socket) socket.emit("room:youtube-reaction", { roomId: room.id, emoji }); }}
+                            onClick={(e) => { e.stopPropagation(); if (socket) socket.emit("room:youtube-reaction", { roomId: room.id, emoji }); }}
                             className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center text-lg transition-transform hover:scale-125 active:scale-90"
                             title={`Send ${emoji}`}
                             data-testid={`button-yt-react-${emoji}`}
@@ -11824,7 +11861,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         <div className="w-px h-5 bg-white/20 mx-0.5" />
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (!socket) return;
                             const next = myYtVote === "like" ? null : "like";
                             setMyYtVote(next);
@@ -11839,7 +11877,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (!socket) return;
                             const next = myYtVote === "dislike" ? null : "dislike";
                             setMyYtVote(next);
@@ -11854,7 +11893,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             if (!socket) return;
                             const next = !myYtSkipVote;
                             setMyYtSkipVote(next);
@@ -11867,17 +11907,30 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           <SkipForward className="w-3.5 h-3.5" />
                           <span className="tabular-nums">{ytVotes.skip}</span>
                         </button>
+                        {/* Close / collapse the emoji bar */}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setYtReactionsOpen(false); }}
+                          className="w-7 h-7 ml-0.5 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                          title="Close emoji bar"
+                          data-testid="button-yt-reactions-close"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setYtReactionsOpen((v) => !v)}
-                      className={`w-9 h-9 rounded-full border flex items-center justify-center transition-colors ${ytReactionsOpen ? "bg-purple-500/85 border-purple-300/50 text-white" : "bg-white/8 border-white/15 text-white/60 hover:text-white hover:bg-white/18"}`}
-                      title={ytReactionsOpen ? "Hide reactions" : "Reactions & votes"}
-                      data-testid="button-yt-reactions-toggle"
-                    >
-                      {ytReactionsOpen ? <X className="w-4 h-4" /> : <Smile className="w-4 h-4" />}
-                    </button>
+                    {/* Toggle button — always visible so users can open/close the bar */}
+                    {!ytReactionsOpen && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setYtReactionsOpen(true); }}
+                        className="w-9 h-9 rounded-full bg-black/55 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white/70 hover:text-white hover:bg-black/75 shadow-md transition-colors"
+                        title="Reactions & votes"
+                        data-testid="button-yt-reactions-toggle"
+                      >
+                        <Smile className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
