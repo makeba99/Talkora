@@ -219,6 +219,7 @@ export interface IStorage {
     retentionStats: { totalJoiners: number; returningJoiners: number; singleDayJoiners: number; retentionRate: number };
     retentionDistribution: { daysActive: string; userCount: number }[];
     topRetainedUsers: { userId: string; displayName: string; avatarUrl: string | null; activeDays: number; totalJoins: number }[];
+    heatmapData: { dow: number; hour: number; joins: number }[];
   }>;
 
   createEmailCampaign(data: { subject: string; body: string; recipientType: string; recipientCount: number; adminId: string }): Promise<EmailCampaign>;
@@ -1207,6 +1208,7 @@ export class DatabaseStorage implements IStorage {
     retentionStats: { totalJoiners: number; returningJoiners: number; singleDayJoiners: number; retentionRate: number };
     retentionDistribution: { daysActive: string; userCount: number }[];
     topRetainedUsers: { userId: string; displayName: string; avatarUrl: string | null; activeDays: number; totalJoins: number }[];
+    heatmapData: { dow: number; hour: number; joins: number }[];
   }> {
     const empty = {
       dailyViews: [], topReferrers: [], topCountries: [], topJoinCountries: [],
@@ -1216,7 +1218,7 @@ export class DatabaseStorage implements IStorage {
       recentJoiners: [], topRooms: [], topActiveUsers: [], hourlyActivity: [], topPages: [], newUsersPerDay: [],
       viewerOnlyCountries: [], recentViewers: [], conversionByCountry: [], signedInVisitors: 0,
       retentionStats: { totalJoiners: 0, returningJoiners: 0, singleDayJoiners: 0, retentionRate: 0 },
-      retentionDistribution: [], topRetainedUsers: [],
+      retentionDistribution: [], topRetainedUsers: [], heatmapData: [],
     };
     try {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -1226,7 +1228,7 @@ export class DatabaseStorage implements IStorage {
       joinTotalsRaw, joinCountriesRaw, dailyJoinsRaw, todayViewsRaw, todayJoinsRaw,
       recentJoinersRaw, topRoomsRaw, topActiveUsersRaw, hourlyJoinsRaw, hourlyViewsRaw,
       topPagesRaw, newUsersRaw, viewerOnlyCountriesRaw, recentViewersRaw, conversionByCountryRaw, signedInRaw,
-      retentionStatsRaw, retentionDistRaw, topRetainedRaw,
+      retentionStatsRaw, retentionDistRaw, topRetainedRaw, heatmapRaw,
     ] = await Promise.all([
       db.execute(sql`
         SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date,
@@ -1514,6 +1516,17 @@ export class DatabaseStorage implements IStorage {
         ORDER BY active_days DESC, total_joins DESC
         LIMIT 8
       `),
+      // Peak hours heatmap: joins by day-of-week × hour-of-day
+      db.execute(sql`
+        SELECT
+          EXTRACT(DOW FROM created_at AT TIME ZONE 'UTC')::int AS dow,
+          EXTRACT(HOUR FROM created_at AT TIME ZONE 'UTC')::int AS hour,
+          COUNT(*)::int AS joins
+        FROM room_joins
+        WHERE created_at >= ${since}
+        GROUP BY dow, hour
+        ORDER BY dow, hour
+      `),
     ]);
 
     const totals = (totalsRaw.rows[0] ?? {}) as any;
@@ -1606,6 +1619,11 @@ export class DatabaseStorage implements IStorage {
         avatarUrl: (r.avatar_url as string | null) ?? null,
         activeDays: Number(r.active_days),
         totalJoins: Number(r.total_joins),
+      })),
+      heatmapData: (heatmapRaw.rows as any[]).map((r) => ({
+        dow: Number(r.dow),
+        hour: Number(r.hour),
+        joins: Number(r.joins),
       })),
     };
     } catch (err: any) {

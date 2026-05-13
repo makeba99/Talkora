@@ -201,6 +201,7 @@ type AnalyticsData = {
   retentionStats: { totalJoiners: number; returningJoiners: number; singleDayJoiners: number; retentionRate: number };
   retentionDistribution: { daysActive: string; userCount: number }[];
   topRetainedUsers: { userId: string; displayName: string; avatarUrl: string | null; activeDays: number; totalJoins: number }[];
+  heatmapData: { dow: number; hour: number; joins: number }[];
 };
 
 function AnalyticsTab() {
@@ -306,6 +307,90 @@ function AnalyticsTab() {
           </div>
         </div>
       </div>
+
+      {/* ── Peak Hours Heatmap ───────────────────────────────────────── */}
+      <Card className="bg-card/75 border-orange-400/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-orange-400" /> Peak Hours Heatmap
+            <span className="ml-1 text-[10px] text-muted-foreground/60 font-normal">room joins by day × hour (UTC)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-44 w-full" />
+          ) : (() => {
+            const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+            // Build lookup: dow × hour → joins
+            const lookup = new Map<string, number>();
+            let maxJoins = 1;
+            for (const d of (data?.heatmapData ?? [])) {
+              const key = `${d.dow}-${d.hour}`;
+              lookup.set(key, d.joins);
+              if (d.joins > maxJoins) maxJoins = d.joins;
+            }
+
+            const cellColor = (joins: number) => {
+              if (joins === 0) return "bg-muted/20";
+              const intensity = joins / maxJoins;
+              if (intensity >= 0.8) return "bg-orange-500";
+              if (intensity >= 0.6) return "bg-orange-500/75";
+              if (intensity >= 0.4) return "bg-orange-500/55";
+              if (intensity >= 0.2) return "bg-orange-500/35";
+              return "bg-orange-500/18";
+            };
+
+            const totalJoins = data?.heatmapData.reduce((s, d) => s + d.joins, 0) ?? 0;
+            if (totalJoins === 0) {
+              return <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">No room join data yet.</div>;
+            }
+
+            return (
+              <div className="overflow-x-auto">
+                <div className="min-w-[600px]">
+                  {/* Hour labels */}
+                  <div className="flex ml-9 mb-0.5">
+                    {HOURS.map((h) => (
+                      <div key={h} className="flex-1 text-center text-[8px] text-muted-foreground/50 leading-none">
+                        {h % 3 === 0 ? `${String(h).padStart(2, "0")}` : ""}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Grid rows */}
+                  {DAYS.map((day, dow) => (
+                    <div key={dow} className="flex items-center gap-0.5 mb-0.5">
+                      <span className="text-[9px] text-muted-foreground/60 w-8 shrink-0 text-right pr-1">{day}</span>
+                      {HOURS.map((h) => {
+                        const joins = lookup.get(`${dow}-${h}`) ?? 0;
+                        return (
+                          <div
+                            key={h}
+                            title={joins > 0 ? `${day} ${String(h).padStart(2,"0")}:00 UTC — ${joins} join${joins !== 1 ? "s" : ""}` : undefined}
+                            className={`flex-1 h-5 rounded-[2px] transition-colors cursor-default ${cellColor(joins)}`}
+                            data-testid={`cell-heatmap-${dow}-${h}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+
+                  {/* Legend */}
+                  <div className="flex items-center justify-end gap-1.5 mt-2">
+                    <span className="text-[9px] text-muted-foreground/50">Less</span>
+                    {["bg-muted/20", "bg-orange-500/18", "bg-orange-500/35", "bg-orange-500/55", "bg-orange-500/75", "bg-orange-500"].map((c, i) => (
+                      <div key={i} className={`w-3 h-3 rounded-[2px] ${c}`} />
+                    ))}
+                    <span className="text-[9px] text-muted-foreground/50">More</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
 
       {/* ── Retention ────────────────────────────────────────────────── */}
       <Card className="bg-card/75 border-indigo-400/20">
