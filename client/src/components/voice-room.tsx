@@ -6734,46 +6734,53 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     finally { setPopularMoviesLoading(false); }
   }, [popularMovies.length]);
 
+  // Send a command to the YouTube player using two independent channels:
+  //   1. The YT.Player JS API (may be gated behind onReady)
+  //   2. Raw postMessage directly to the iframe (bypasses the ready-gate entirely)
+  // Using both guarantees the command reaches the player even when the YT.Player
+  // ready-gate has stalled (common in deeply-nested iframe environments like Replit).
+  const sendYtCommand = useCallback((funcName: string, args: any[] = []) => {
+    // Channel 1 — YT.Player API
+    const player = youtubePlayerRef.current;
+    if (player) {
+      try { (player as any)[funcName]?.(...args); } catch (_) {}
+    }
+    // Channel 2 — direct postMessage to the YouTube iframe
+    const iframe = ytContainerRef.current?.querySelector("iframe") as HTMLIFrameElement | null;
+    if (iframe?.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func: funcName, args }),
+          "*"
+        );
+      } catch (_) {}
+    }
+  }, []);
+
   // Independent playback: play / pause / seek operate only on this user's local
   // YouTube player. Nothing is broadcast to other participants, so each user has
   // full local control without affecting anyone else.
   const handleYtPlayPause = useCallback(() => {
     const willPause = ytIsPlaying;
     setYtIsPlaying(!willPause);
-    const player = youtubePlayerRef.current;
-    if (!player) return;
-    try {
-      if (willPause) {
-        player.pauseVideo();
-      } else {
-        player.playVideo();
-      }
-    } catch (_) {}
-  }, [ytIsPlaying]);
+    sendYtCommand(willPause ? "pauseVideo" : "playVideo");
+  }, [ytIsPlaying, sendYtCommand]);
 
   const handleYtSeek = useCallback((seconds: number) => {
     setYtCurrentTime(seconds);
     setYtSeekDragging(false);
-    const player = youtubePlayerRef.current;
-    if (!player) return;
-    try {
-      player.seekTo(seconds, true);
-    } catch (_) {}
-  }, []);
+    sendYtCommand("seekTo", [seconds, true]);
+  }, [sendYtCommand]);
 
   const handleYtVolume = useCallback((vol: number) => {
     setYtVolume(vol);
-    const player = youtubePlayerRef.current;
-    if (!player) return;
-    try {
-      if (vol === 0) {
-        player.mute();
-      } else {
-        player.unMute();
-        player.setVolume(vol);
-      }
-    } catch (_) {}
-  }, []);
+    if (vol === 0) {
+      sendYtCommand("mute");
+    } else {
+      sendYtCommand("unMute");
+      sendYtCommand("setVolume", [vol]);
+    }
+  }, [sendYtCommand]);
 
   const handleParticipantClick = (peerId: string) => {
     const isClickingOther = peerId !== user?.id;
