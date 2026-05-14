@@ -1864,6 +1864,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const glMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const glDurationRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const glViewerPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const ytKeyInputRef = useRef<HTMLInputElement>(null);
+  const twKeyInputRef = useRef<HTMLInputElement>(null);
+  const [glWaitingForKey, setGlWaitingForKey] = useState<"youtube" | "twitch" | "both" | null>(null);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -4240,6 +4243,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
+
+  // Auto-focus the stream key input when user returns to tab after clicking a dashboard button
+  useEffect(() => {
+    if (!glWaitingForKey) return;
+    const handleFocus = () => {
+      if (document.hidden) return;
+      setTimeout(() => {
+        if (glWaitingForKey === "twitch") {
+          twKeyInputRef.current?.focus();
+        } else {
+          ytKeyInputRef.current?.focus();
+        }
+      }, 300);
+    };
+    document.addEventListener("visibilitychange", handleFocus);
+    return () => document.removeEventListener("visibilitychange", handleFocus);
+  }, [glWaitingForKey]);
 
   useEffect(() => {
     if (!historyLoadedRef.current) {
@@ -10066,6 +10086,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+
           {/* Live status bar */}
           {glStatus === "live" && (
             <div className="p-2.5 rounded-lg bg-red-600/10 border border-red-600/25 space-y-1.5">
@@ -10094,154 +10115,191 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       <span className="text-[9px] text-muted-foreground">viewers</span>
                     </div>
                   )}
-                  {glViewers.twitch === null && glViewers.youtube === null && (
-                    <span className="text-[9px] text-muted-foreground/50">Viewer counts unavailable — add username below to enable</span>
-                  )}
                 </div>
               )}
             </div>
           )}
+
           {glStatus === "error" && glError && (
             <div className="p-2.5 rounded-lg bg-red-900/20 border border-red-600/25">
               <p className="text-xs text-red-400">{glError}</p>
             </div>
           )}
 
-          {/* Platform tabs */}
-          {glStatus === "idle" || glStatus === "error" ? (
-            <>
-              <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
-                {(["youtube", "twitch", "both"] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setGoLivePlatform(p)}
-                    className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150"
-                    style={goLivePlatform === p
-                      ? { background: p === "youtube" ? "rgba(239,68,68,0.22)" : p === "twitch" ? "rgba(145,70,255,0.22)" : "rgba(80,160,80,0.22)", color: p === "youtube" ? "#fc6464" : p === "twitch" ? "#bf94ff" : "#6ee86e", border: "1px solid " + (p === "youtube" ? "rgba(239,68,68,0.30)" : p === "twitch" ? "rgba(145,70,255,0.30)" : "rgba(80,200,80,0.30)") }
-                      : { color: "rgba(255,255,255,0.38)", border: "1px solid transparent" }
-                    }
-                  >
-                    {p === "both" ? "Both 🔗" : p === "youtube" ? "YouTube" : "Twitch"}
-                  </button>
-                ))}
-              </div>
+          {glStatus === "connecting" && (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-red-400" />
+              <p className="text-sm text-muted-foreground">Connecting…</p>
+            </div>
+          )}
 
-              {/* Stream key inputs */}
+          {(glStatus === "idle" || glStatus === "error") && (<>
+
+            {/* Platform picker */}
+            <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
+              {(["youtube", "twitch", "both"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { setGoLivePlatform(p); setGlWaitingForKey(null); }}
+                  className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150"
+                  style={goLivePlatform === p
+                    ? { background: p === "youtube" ? "rgba(239,68,68,0.22)" : p === "twitch" ? "rgba(145,70,255,0.22)" : "rgba(80,160,80,0.22)", color: p === "youtube" ? "#fc6464" : p === "twitch" ? "#bf94ff" : "#6ee86e", border: "1px solid " + (p === "youtube" ? "rgba(239,68,68,0.30)" : p === "twitch" ? "rgba(145,70,255,0.30)" : "rgba(80,200,80,0.30)") }
+                    : { color: "rgba(255,255,255,0.38)", border: "1px solid transparent" }
+                  }
+                >
+                  {p === "both" ? "Both" : p === "youtube" ? "YouTube" : "Twitch"}
+                </button>
+              ))}
+            </div>
+
+            {/* YouTube section */}
+            {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
               <div className="space-y-2">
-                {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="vr-go-live-yt-key-a" className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">YouTube Stream Key</label>
-                      <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5" title="YouTube Studio → Create → Go Live → Streaming software → Copy stream key">Get key <ExternalLink className="w-2.5 h-2.5" /></a>
-                    </div>
-                    <p className="text-[9px] text-white/30 -mt-0.5">studio.youtube.com → Create → Go Live → Streaming software → Copy key</p>
-                    <div className="relative">
-                      <input
-                        id="vr-go-live-yt-key-a"
-                        type={glShowYoutubeKey ? "text" : "password"}
-                        value={glYoutubeKey}
-                        onChange={e => setGlYoutubeKey(e.target.value)}
-                        placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
-                        className="w-full px-2.5 py-1.5 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/50"
-                      />
-                      <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60" aria-label={glShowYoutubeKey ? "Hide YouTube stream key" : "Show YouTube stream key"}>
-                        {glShowYoutubeKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
+                <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wide">
+                  {goLivePlatform === "both" ? "Step 1 of 2 — YouTube" : "Step 1 — Open your YouTube dashboard"}
+                </p>
+                <a
+                  href="https://www.youtube.com/live_dashboard"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setGlWaitingForKey(goLivePlatform)}
+                  className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: "linear-gradient(135deg,#ef4444,#b91c1c)", boxShadow: "0 4px 14px rgba(239,68,68,0.35)" }}
+                >
+                  <span className="flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    Open YouTube Live Dashboard
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                </a>
+                {glWaitingForKey && (
+                  <p className="text-[10px] text-amber-400/80 text-center animate-pulse">
+                    Copy your Stream Key from the "Streaming software" tab, then come back here
+                  </p>
                 )}
-                {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="vr-go-live-tw-key-a" className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide">Twitch Stream Key</label>
-                      <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5">Get key <ExternalLink className="w-2.5 h-2.5" /></a>
-                    </div>
-                    <div className="relative">
-                      <input
-                        id="vr-go-live-tw-key-a"
-                        type={glShowTwitchKey ? "text" : "password"}
-                        value={glTwitchKey}
-                        onChange={e => setGlTwitchKey(e.target.value)}
-                        placeholder="live_xxxxxxxxxxxxxxxxxxxx"
-                        className="w-full px-2.5 py-1.5 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/50"
-                      />
-                      <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60" aria-label={glShowTwitchKey ? "Hide Twitch stream key" : "Show Twitch stream key"}>
-                        {glShowTwitchKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
+                <div className="space-y-1">
+                  <label htmlFor="vr-go-live-yt-key-a" className="text-[10px] font-semibold text-white/40 uppercase tracking-wide">
+                    {goLivePlatform === "both" ? "YouTube stream key" : "Step 2 — Paste your stream key"}
+                  </label>
+                  <div className="relative">
+                    <input
+                      ref={ytKeyInputRef}
+                      id="vr-go-live-yt-key-a"
+                      type={glShowYoutubeKey ? "text" : "password"}
+                      value={glYoutubeKey}
+                      onChange={e => setGlYoutubeKey(e.target.value)}
+                      placeholder="Paste stream key here…"
+                      className="w-full px-2.5 py-2 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/25 focus:outline-none focus:border-red-500/60 focus:bg-white/[0.08] transition-all"
+                    />
+                    <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60" aria-label={glShowYoutubeKey ? "Hide key" : "Show key"}>
+                      {glShowYoutubeKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
+            )}
 
-              {/* Optional viewer count usernames */}
-              <div className="space-y-1.5">
+            {/* Twitch section */}
+            {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wide">
+                  {goLivePlatform === "both" ? "Step 2 of 2 — Twitch" : "Step 1 — Open your Twitch dashboard"}
+                </p>
+                <a
+                  href="https://dashboard.twitch.tv/settings/stream"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setGlWaitingForKey(goLivePlatform)}
+                  className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: "linear-gradient(135deg,#9146ff,#6523b0)", boxShadow: "0 4px 14px rgba(145,70,255,0.35)" }}
+                >
+                  <span className="flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
+                    Open Twitch Dashboard
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                </a>
+                {glWaitingForKey && (
+                  <p className="text-[10px] text-amber-400/80 text-center animate-pulse">
+                    Copy your Primary Stream Key, then come back here
+                  </p>
+                )}
+                <div className="space-y-1">
+                  <label htmlFor="vr-go-live-tw-key-a" className="text-[10px] font-semibold text-white/40 uppercase tracking-wide">
+                    {goLivePlatform === "both" ? "Twitch stream key" : "Step 2 — Paste your stream key"}
+                  </label>
+                  <div className="relative">
+                    <input
+                      ref={twKeyInputRef}
+                      id="vr-go-live-tw-key-a"
+                      type={glShowTwitchKey ? "text" : "password"}
+                      value={glTwitchKey}
+                      onChange={e => setGlTwitchKey(e.target.value)}
+                      placeholder="Paste stream key here…"
+                      className="w-full px-2.5 py-2 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/25 focus:outline-none focus:border-purple-500/60 focus:bg-white/[0.08] transition-all"
+                    />
+                    <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60" aria-label={glShowTwitchKey ? "Hide key" : "Show key"}>
+                      {glShowTwitchKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Go Live button */}
+            <button
+              onClick={() => { setGlWaitingForKey(null); startGoLive(); }}
+              className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              style={{
+                background: goLivePlatform === "twitch"
+                  ? "linear-gradient(135deg,rgba(145,70,255,0.9),rgba(100,40,200,0.9))"
+                  : goLivePlatform === "youtube"
+                    ? "linear-gradient(135deg,rgba(239,68,68,0.9),rgba(180,30,30,0.9))"
+                    : "linear-gradient(135deg,rgba(239,68,68,0.8),rgba(145,70,255,0.8))",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+              }}
+            >
+              <Radio className="w-4 h-4" />
+              {goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
+            </button>
+
+            {/* Optional: viewer count */}
+            <details className="group">
+              <summary className="text-[10px] text-white/30 cursor-pointer hover:text-white/50 select-none list-none flex items-center gap-1">
+                <span className="group-open:rotate-90 transition-transform inline-block">▶</span> Advanced — live viewer count
+              </summary>
+              <div className="mt-2 space-y-2 pl-2 border-l border-white/[0.06]">
                 {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
                   <div>
-                    <label htmlFor="vr-go-live-yt-channel-a" className="text-[9px] font-semibold text-white/40 uppercase tracking-wide">YouTube Channel ID <span className="normal-case font-normal">(optional · for live viewer count)</span></label>
+                    <label htmlFor="vr-go-live-yt-channel-a" className="text-[9px] text-white/40 uppercase tracking-wide">YouTube Channel ID (optional)</label>
                     <input
                       id="vr-go-live-yt-channel-a"
                       type="text"
                       value={glYoutubeChannelId}
                       onChange={e => setGlYoutubeChannelId(e.target.value)}
                       placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
-                      className="mt-0.5 w-full px-2.5 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/40"
+                      className="mt-0.5 w-full px-2.5 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/20 focus:outline-none"
                     />
                   </div>
                 )}
                 {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
                   <div>
-                    <label htmlFor="vr-go-live-tw-user-a" className="text-[9px] font-semibold text-white/40 uppercase tracking-wide">Twitch Username <span className="normal-case font-normal">(optional · for live viewer count)</span></label>
+                    <label htmlFor="vr-go-live-tw-user-a" className="text-[9px] text-white/40 uppercase tracking-wide">Twitch Username (optional)</label>
                     <input
                       id="vr-go-live-tw-user-a"
                       type="text"
                       value={glTwitchUsername}
                       onChange={e => setGlTwitchUsername(e.target.value)}
                       placeholder="yourchannelname"
-                      className="mt-0.5 w-full px-2.5 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/40"
+                      className="mt-0.5 w-full px-2.5 py-1.5 rounded-lg text-xs bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/20 focus:outline-none"
                     />
                   </div>
                 )}
               </div>
+            </details>
 
-              {/* How it works */}
-              <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-1.5">
-                <p className="text-[10px] font-semibold text-white/60 uppercase tracking-wide">How it works</p>
-                {[
-                  "Paste your stream key(s) above",
-                  "Click Go Live — browser captures this tab",
-                  "Your room streams directly to the platform(s)",
-                  "Click End when you're done",
-                ].map((t, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-[9px] font-bold text-white/50">{i + 1}</span>
-                    <p className="text-[11px] text-muted-foreground leading-snug">{t}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Go Live button */}
-              <button
-                onClick={startGoLive}
-                className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all"
-                style={{
-                  background: goLivePlatform === "twitch"
-                    ? "linear-gradient(135deg,rgba(145,70,255,0.85),rgba(100,40,200,0.85))"
-                    : goLivePlatform === "youtube"
-                      ? "linear-gradient(135deg,rgba(239,68,68,0.85),rgba(180,30,30,0.85))"
-                      : "linear-gradient(135deg,rgba(239,68,68,0.75),rgba(145,70,255,0.75))",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-                }}
-              >
-                <Radio className="w-4 h-4" /> Go Live
-              </button>
-            </>
-          ) : glStatus === "connecting" ? (
-            <div className="flex flex-col items-center gap-3 py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-red-400" />
-              <p className="text-sm text-muted-foreground">Connecting to stream server…</p>
-            </div>
-          ) : null}
+          </>)}
         </div>
       </div>
 
@@ -10511,111 +10569,153 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
+          {glStatus === "connecting" && (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Connecting…</p>
+            </div>
+          )}
+
           {(glStatus === "idle" || glStatus === "error") && (<>
             {/* Platform selector */}
             <div className="flex gap-1 p-1 rounded-xl bg-muted/40 border">
               {(["youtube", "twitch", "both"] as const).map((p) => (
                 <button
                   key={p}
-                  onClick={() => setGoLivePlatform(p)}
+                  onClick={() => { setGoLivePlatform(p); setGlWaitingForKey(null); }}
                   className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${goLivePlatform === p ? (p === "youtube" ? "bg-red-600/20 text-red-400 border border-red-600/30" : p === "twitch" ? "bg-purple-600/20 text-purple-400 border border-purple-600/30" : "bg-green-600/15 text-green-400 border border-green-600/25") : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  {p === "both" ? "Both 🔗" : p === "youtube" ? "YouTube" : "Twitch"}
+                  {p === "both" ? "Both" : p === "youtube" ? "YouTube" : "Twitch"}
                 </button>
               ))}
             </div>
 
-            {/* Stream key fields */}
-            <div className="space-y-3">
-              {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor="vr-go-live-yt-key-b" className="text-xs font-semibold text-red-400">YouTube Stream Key</label>
-                    <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-0.5" title="YouTube Studio → Create → Go Live → Streaming software → Copy stream key">
-                      Get key <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground/50">studio.youtube.com → Create → Go Live → Streaming software → Copy key</p>
+            {/* YouTube section */}
+            {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {goLivePlatform === "both" ? "YouTube — Step 1 of 2" : "Step 1 — Open your YouTube dashboard"}
+                </p>
+                <a
+                  href="https://www.youtube.com/live_dashboard"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setGlWaitingForKey(goLivePlatform)}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: "linear-gradient(135deg,#ef4444,#b91c1c)", boxShadow: "0 4px 16px rgba(239,68,68,0.3)" }}
+                >
+                  <span className="flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    Open YouTube Live Dashboard
+                  </span>
+                  <ExternalLink className="w-4 h-4 opacity-70" />
+                </a>
+                {glWaitingForKey && (
+                  <p className="text-[11px] text-amber-500/80 text-center animate-pulse">
+                    Select "Streaming software" tab → copy your Stream Key → come back here
+                  </p>
+                )}
+                <div className="space-y-1">
+                  <label htmlFor="vr-go-live-yt-key-b" className="text-xs font-semibold text-muted-foreground">
+                    {goLivePlatform === "both" ? "YouTube stream key" : "Step 2 — Paste your stream key"}
+                  </label>
                   <div className="relative">
                     <input
                       id="vr-go-live-yt-key-b"
                       type={glShowYoutubeKey ? "text" : "password"}
                       value={glYoutubeKey}
                       onChange={e => setGlYoutubeKey(e.target.value)}
-                      placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
-                      className="w-full px-3 py-2 pr-9 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-red-500/50 placeholder:text-muted-foreground/40"
+                      placeholder="Paste stream key here…"
+                      className="w-full px-3 py-2.5 pr-10 rounded-lg text-sm bg-background border focus:outline-none focus:ring-2 focus:ring-red-500/40 placeholder:text-muted-foreground/40 transition-all"
                     />
-                    <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={glShowYoutubeKey ? "Hide YouTube stream key" : "Show YouTube stream key"}>
+                    <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={glShowYoutubeKey ? "Hide key" : "Show key"}>
                       {glShowYoutubeKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
-              )}
-              {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor="vr-go-live-tw-key-b" className="text-xs font-semibold text-purple-400">Twitch Stream Key</label>
-                    <a href="https://dashboard.twitch.tv/settings/stream" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-0.5">
-                      Get key <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
+              </div>
+            )}
+
+            {/* Twitch section */}
+            {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {goLivePlatform === "both" ? "Twitch — Step 2 of 2" : "Step 1 — Open your Twitch dashboard"}
+                </p>
+                <a
+                  href="https://dashboard.twitch.tv/settings/stream"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setGlWaitingForKey(goLivePlatform)}
+                  className="flex items-center justify-between w-full px-4 py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: "linear-gradient(135deg,#9146ff,#6523b0)", boxShadow: "0 4px 16px rgba(145,70,255,0.3)" }}
+                >
+                  <span className="flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
+                    Open Twitch Dashboard
+                  </span>
+                  <ExternalLink className="w-4 h-4 opacity-70" />
+                </a>
+                {glWaitingForKey && (
+                  <p className="text-[11px] text-amber-500/80 text-center animate-pulse">
+                    Copy your Primary Stream Key → come back here and paste it below
+                  </p>
+                )}
+                <div className="space-y-1">
+                  <label htmlFor="vr-go-live-tw-key-b" className="text-xs font-semibold text-muted-foreground">
+                    {goLivePlatform === "both" ? "Twitch stream key" : "Step 2 — Paste your stream key"}
+                  </label>
                   <div className="relative">
                     <input
                       id="vr-go-live-tw-key-b"
                       type={glShowTwitchKey ? "text" : "password"}
                       value={glTwitchKey}
                       onChange={e => setGlTwitchKey(e.target.value)}
-                      placeholder="live_xxxxxxxxxxxxxxxxxxxx"
-                      className="w-full px-3 py-2 pr-9 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-purple-500/50 placeholder:text-muted-foreground/40"
+                      placeholder="Paste stream key here…"
+                      className="w-full px-3 py-2.5 pr-10 rounded-lg text-sm bg-background border focus:outline-none focus:ring-2 focus:ring-purple-500/40 placeholder:text-muted-foreground/40 transition-all"
                     />
-                    <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={glShowTwitchKey ? "Hide Twitch stream key" : "Show Twitch stream key"}>
+                    <button onClick={() => setGlShowTwitchKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={glShowTwitchKey ? "Hide key" : "Show key"}>
                       {glShowTwitchKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Optional viewer count fields */}
-            <div className="space-y-2">
-              {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
-                <div className="space-y-1">
-                  <label htmlFor="vr-go-live-yt-channel-b" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">YouTube Channel ID <span className="normal-case font-normal">(optional — enables live viewer count)</span></label>
-                  <input
-                    id="vr-go-live-yt-channel-b"
-                    type="text"
-                    value={glYoutubeChannelId}
-                    onChange={e => setGlYoutubeChannelId(e.target.value)}
-                    placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
-                    className="w-full px-3 py-2 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-red-500/40 placeholder:text-muted-foreground/40"
-                  />
-                </div>
-              )}
-              {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
-                <div className="space-y-1">
-                  <label htmlFor="vr-go-live-tw-user-b" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Twitch Username <span className="normal-case font-normal">(optional — enables live viewer count)</span></label>
-                  <input
-                    id="vr-go-live-tw-user-b"
-                    type="text"
-                    value={glTwitchUsername}
-                    onChange={e => setGlTwitchUsername(e.target.value)}
-                    placeholder="yourchannelname"
-                    className="w-full px-3 py-2 rounded-lg text-sm bg-background border focus:outline-none focus:ring-1 focus:ring-purple-500/40 placeholder:text-muted-foreground/40"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* How it works */}
-            <div className="p-3 rounded-xl bg-muted/30 border space-y-2">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">How it works — no software needed</p>
-              {["Paste your stream key(s) above", "Click Go Live — your browser captures this tab", "Your room streams directly to the platform(s)", "Click End Stream when you're done"].map((t, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-primary">{i + 1}</span>
-                  <p className="text-xs text-muted-foreground">{t}</p>
-                </div>
-              ))}
-            </div>
+            {/* Advanced (optional viewer count) */}
+            <details className="group">
+              <summary className="text-[11px] text-muted-foreground/50 cursor-pointer hover:text-muted-foreground select-none list-none flex items-center gap-1">
+                <span className="group-open:rotate-90 transition-transform inline-block">▶</span> Advanced — live viewer count
+              </summary>
+              <div className="mt-2 space-y-2 pl-3 border-l">
+                {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
+                  <div className="space-y-1">
+                    <label htmlFor="vr-go-live-yt-channel-b" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">YouTube Channel ID (optional)</label>
+                    <input
+                      id="vr-go-live-yt-channel-b"
+                      type="text"
+                      value={glYoutubeChannelId}
+                      onChange={e => setGlYoutubeChannelId(e.target.value)}
+                      placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
+                      className="w-full px-3 py-2 rounded-lg text-sm bg-background border focus:outline-none placeholder:text-muted-foreground/40"
+                    />
+                  </div>
+                )}
+                {(goLivePlatform === "twitch" || goLivePlatform === "both") && (
+                  <div className="space-y-1">
+                    <label htmlFor="vr-go-live-tw-user-b" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Twitch Username (optional)</label>
+                    <input
+                      id="vr-go-live-tw-user-b"
+                      type="text"
+                      value={glTwitchUsername}
+                      onChange={e => setGlTwitchUsername(e.target.value)}
+                      placeholder="yourchannelname"
+                      className="w-full px-3 py-2 rounded-lg text-sm bg-background border focus:outline-none placeholder:text-muted-foreground/40"
+                    />
+                  </div>
+                )}
+              </div>
+            </details>
 
             <Button
               className="w-full font-bold text-white"
@@ -10626,18 +10726,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     ? "linear-gradient(135deg,#ef4444,#b91c1c)"
                     : "linear-gradient(135deg,#ef4444 0%,#9146ff 100%)",
               }}
-              onClick={startGoLive}
+              onClick={() => { setGlWaitingForKey(null); startGoLive(); }}
             >
-              <Radio className="w-4 h-4 mr-2" /> Go Live
+              <Radio className="w-4 h-4 mr-2" />
+              {goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
             </Button>
           </>)}
-
-          {glStatus === "connecting" && (
-            <div className="flex flex-col items-center gap-3 py-6">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Connecting to stream server…</p>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 
