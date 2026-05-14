@@ -1871,9 +1871,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const glRafRef = useRef<number | null>(null);
   const glAudioCtxRef = useRef<AudioContext | null>(null);
   const glCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [glTutorialVideoId, setGlTutorialVideoId] = useState<string | null>(null);
+  const [glTutorialResults, setGlTutorialResults] = useState<{id: string; title: string}[]>([]);
+  const [glTutorialIdx, setGlTutorialIdx] = useState(0);
   const [glTutorialLoading, setGlTutorialLoading] = useState(false);
   const glTutorialFetchedRef = useRef(false);
+  const glTutorialVideoId = glTutorialResults[glTutorialIdx]?.id ?? null;
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -5937,18 +5939,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   useEffect(() => {
     const ytVisible = (sidePanelTab === "golive" || goLiveOpen) &&
       (goLivePlatform === "youtube" || goLivePlatform === "both");
-    if (!ytVisible || glTutorialVideoId || glTutorialFetchedRef.current) return;
+    if (!ytVisible || glTutorialFetchedRef.current) return;
     glTutorialFetchedRef.current = true;
     setGlTutorialLoading(true);
     fetch("/api/youtube/search?q=how+to+find+youtube+stream+key+streaming+software+2024", { credentials: "include" })
       .then(r => r.ok ? r.json() : [])
       .then((results: any[]) => {
-        const first = results[0];
-        if (first?.id) setGlTutorialVideoId(first.id);
+        const mapped = results.filter((r: any) => r?.id).map((r: any) => ({ id: r.id, title: r.title || "" }));
+        if (mapped.length) setGlTutorialResults(mapped);
       })
       .catch(() => {})
       .finally(() => setGlTutorialLoading(false));
-  }, [sidePanelTab, goLiveOpen, goLivePlatform, glTutorialVideoId]);
+  }, [sidePanelTab, goLiveOpen, goLivePlatform]);
+
+  // Listen for YouTube player errors (101/150 = embedding disabled = shown as Error 153)
+  // and auto-advance to the next search result.
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (!e.origin.includes("youtube")) return;
+      try {
+        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (data?.event === "infoDelivery" && (data?.info?.error === 101 || data?.info?.error === 150)) {
+          setGlTutorialIdx(i => i + 1);
+        }
+      } catch {}
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   // ── Go Live: direct browser-to-RTMP streaming ──────────────────────────
   const formatGlDuration = (secs: number) => {
@@ -10351,13 +10369,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   ) : glTutorialVideoId ? (
                     <iframe
-                      src={`https://www.youtube-nocookie.com/embed/${glTutorialVideoId}?rel=0&modestbranding=1`}
+                      key={`tut-panel-${glTutorialIdx}`}
+                      src={`https://www.youtube-nocookie.com/embed/${glTutorialVideoId}?rel=0&modestbranding=1&enablejsapi=1`}
                       title="YouTube Stream Key Tutorial"
                       allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                       allowFullScreen
                       className="w-full h-full border-0"
                       style={{ display: "block" }}
                     />
+                  ) : glTutorialResults.length > 0 && glTutorialIdx >= glTutorialResults.length ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-white/[0.03]">
+                      <span className="text-[9px] text-white/40">No embeddable tutorial found</span>
+                      <a href="https://www.youtube.com/results?search_query=youtube+stream+key+tutorial" target="_blank" rel="noopener noreferrer" className="text-[9px] text-red-400/70 hover:text-red-400 transition-colors underline">Search tutorials on YouTube ↗</a>
+                    </div>
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-white/[0.03]">
                       <svg viewBox="0 0 24 24" className="w-6 h-6 fill-red-500/40"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
@@ -10830,13 +10854,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   ) : glTutorialVideoId ? (
                     <iframe
-                      src={`https://www.youtube-nocookie.com/embed/${glTutorialVideoId}?rel=0&modestbranding=1`}
+                      key={`tut-dialog-${glTutorialIdx}`}
+                      src={`https://www.youtube-nocookie.com/embed/${glTutorialVideoId}?rel=0&modestbranding=1&enablejsapi=1`}
                       title="YouTube Stream Key Tutorial"
                       allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                       allowFullScreen
                       className="w-full h-full border-0"
                       style={{ display: "block" }}
                     />
+                  ) : glTutorialResults.length > 0 && glTutorialIdx >= glTutorialResults.length ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/10">
+                      <span className="text-xs text-muted-foreground/50">No embeddable tutorial found</span>
+                      <a href="https://www.youtube.com/results?search_query=youtube+stream+key+tutorial" target="_blank" rel="noopener noreferrer" className="text-xs text-red-400/60 hover:text-red-400 transition-colors underline">Search tutorials on YouTube ↗</a>
+                    </div>
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/10">
                       <svg viewBox="0 0 24 24" className="w-8 h-8 fill-red-500/30"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
