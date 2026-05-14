@@ -1145,6 +1145,50 @@ export async function registerRoutes(
     }
   });
 
+  // Returns the first YouTube video for a given query that actually allows embedding.
+  // Uses the public oEmbed API (no key needed) to verify each candidate before returning.
+  app.get("/api/youtube/tutorial", isAuthenticated, async (req: any, res) => {
+    try {
+      const query = (req.query.q as string) || "how to find youtube stream key streaming software tutorial";
+      const cacheKey = `yt:tutorial:${query.toLowerCase().trim()}`;
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
+
+      const ytSearch = await import("youtube-search-api");
+      const results = await ytSearch.GetListByKeyword(query, false, 25);
+      const candidates = (results.items || [])
+        .filter((item: any) => item.type === "video" && item.id)
+        .slice(0, 20)
+        .map((item: any) => ({
+          id: item.id,
+          title: item.title || "",
+          thumbnail: item.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`,
+          channelTitle: item.channelTitle || "",
+          duration: item.length?.simpleText || "",
+        }));
+
+      // Check each candidate with oEmbed — returns 200 if embeddable, 401/403/404 if not.
+      for (const video of candidates) {
+        try {
+          const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${video.id}&format=json`;
+          const check = await fetch(oembedUrl, { method: "HEAD" });
+          if (check.ok) {
+            externalCache.set(cacheKey, video, 60 * 60_000); // cache for 1 hour
+            return res.json(video);
+          }
+        } catch {
+          // network hiccup — skip this candidate
+        }
+      }
+
+      // All candidates failed oEmbed — return null so client can show fallback link
+      res.json(null);
+    } catch (err: any) {
+      console.error("YouTube tutorial error:", err);
+      res.status(500).json(null);
+    }
+  });
+
   app.get("/api/youtube/search", isAuthenticated, async (req: any, res) => {
     try {
       const query = req.query.q as string;

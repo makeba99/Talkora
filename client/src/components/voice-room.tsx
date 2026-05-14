@@ -5942,11 +5942,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (!ytVisible || glTutorialFetchedRef.current) return;
     glTutorialFetchedRef.current = true;
     setGlTutorialLoading(true);
-    fetch("/api/youtube/search?q=how+to+find+youtube+stream+key+streaming+software+2024", { credentials: "include" })
-      .then(r => r.ok ? r.json() : [])
-      .then((results: any[]) => {
-        const mapped = results.filter((r: any) => r?.id).map((r: any) => ({ id: r.id, title: r.title || "" }));
-        if (mapped.length) setGlTutorialResults(mapped);
+    fetch("/api/youtube/tutorial", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then((video: any) => {
+        if (video?.id) setGlTutorialResults([{ id: video.id, title: video.title || "" }]);
       })
       .catch(() => {})
       .finally(() => setGlTutorialLoading(false));
