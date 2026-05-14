@@ -1871,11 +1871,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const glRafRef = useRef<number | null>(null);
   const glAudioCtxRef = useRef<AudioContext | null>(null);
   const glCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [glTutorialResults, setGlTutorialResults] = useState<{id: string; title: string}[]>([]);
-  const [glTutorialIdx, setGlTutorialIdx] = useState(0);
-  const [glTutorialLoading, setGlTutorialLoading] = useState(false);
-  const glTutorialFetchedRef = useRef(false);
-  const glTutorialVideoId = glTutorialResults[glTutorialIdx]?.id ?? null;
+  const [glAnimStep, setGlAnimStep] = useState(0);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -5932,40 +5928,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
   };
 
-  // ── Go Live: tutorial video auto-fetch ──────────────────────────────────
-  // Fetch an embeddable tutorial video via the app's own YouTube search API
-  // whenever the YouTube Go Live section becomes visible. Videos returned by
-  // the search API are always regular public videos with embedding enabled.
+  // ── Go Live: tutorial step animation ────────────────────────────────────
+  // Cycles through 4 steps (2.5 s each) while the Go Live panel is visible.
   useEffect(() => {
     const ytVisible = (sidePanelTab === "golive" || goLiveOpen) &&
       (goLivePlatform === "youtube" || goLivePlatform === "both");
-    if (!ytVisible || glTutorialFetchedRef.current) return;
-    glTutorialFetchedRef.current = true;
-    setGlTutorialLoading(true);
-    fetch("/api/youtube/tutorial", { credentials: "include" })
-      .then(r => r.ok ? r.json() : null)
-      .then((video: any) => {
-        if (video?.id) setGlTutorialResults([{ id: video.id, title: video.title || "" }]);
-      })
-      .catch(() => {})
-      .finally(() => setGlTutorialLoading(false));
+    if (!ytVisible) return;
+    const t = setInterval(() => setGlAnimStep(s => (s + 1) % 4), 2500);
+    return () => clearInterval(t);
   }, [sidePanelTab, goLiveOpen, goLivePlatform]);
-
-  // Listen for YouTube player errors (101/150 = embedding disabled = shown as Error 153)
-  // and auto-advance to the next search result.
-  useEffect(() => {
-    const onMessage = (e: MessageEvent) => {
-      if (!e.origin.includes("youtube")) return;
-      try {
-        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        if (data?.event === "infoDelivery" && (data?.info?.error === 101 || data?.info?.error === 150)) {
-          setGlTutorialIdx(i => i + 1);
-        }
-      } catch {}
-    };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, []);
 
   // ── Go Live: direct browser-to-RTMP streaming ──────────────────────────
   const formatGlDuration = (secs: number) => {
@@ -10357,37 +10328,44 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   ))}
                 </div>
-                {/* Tutorial video — loaded dynamically from YouTube search (always embeddable) */}
-                <div className="rounded-xl overflow-hidden border border-white/[0.08]" style={{ height: "158px" }}>
-                  {glTutorialLoading ? (
-                    <div className="w-full h-full flex items-center justify-center bg-white/[0.03]">
-                      <div className="flex flex-col items-center gap-2">
-                        <svg className="w-5 h-5 animate-spin text-red-500/60" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                        <span className="text-[9px] text-white/30">Loading tutorial…</span>
+                {/* Animated tutorial — always available, no external dependencies */}
+                {(() => {
+                  const GL_STEPS = [
+                    { num: "1", label: "Open YouTube Studio", sub: 'Click "Create" → "Go Live" (top-right)', color: "#ef4444", bg: "rgba(239,68,68,0.12)", icon: <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg> },
+                    { num: "2", label: "Pick Streaming software", sub: 'Select the "Streaming software" tab', color: "#f97316", bg: "rgba(249,115,22,0.12)", icon: <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v-2h3V9l4 3.5-4 3.5V16z"/></svg> },
+                    { num: "3", label: "Copy your Stream Key", sub: 'Click "Copy" next to Stream key field', color: "#eab308", bg: "rgba(234,179,8,0.12)", icon: <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> },
+                    { num: "4", label: "Paste key below & Go Live!", sub: "Come back here, paste, then click Go Live", color: "#22c55e", bg: "rgba(34,197,94,0.12)", icon: <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> },
+                  ];
+                  const s = GL_STEPS[glAnimStep];
+                  return (
+                    <div className="rounded-xl overflow-hidden border border-white/[0.08]" style={{ height: "158px", background: "#0f0f0f" }}>
+                      {/* YouTube Studio mock header */}
+                      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/[0.08]" style={{ background: "#202020" }}>
+                        <svg viewBox="0 0 24 24" className="w-3 h-3 fill-red-500 flex-shrink-0"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        <span className="text-[9px] text-white/40 font-medium">YouTube Studio — How to find your stream key</span>
+                      </div>
+                      {/* Animated step content */}
+                      <div className="flex flex-col items-center justify-center gap-2 px-4" style={{ height: "calc(100% - 62px)" }}>
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-500" style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}30` }}>
+                          {s.icon}
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[11px] font-semibold text-white leading-tight">{s.label}</p>
+                          <p className="text-[9px] text-white/40 mt-0.5 leading-snug">{s.sub}</p>
+                        </div>
+                      </div>
+                      {/* Progress dots + link */}
+                      <div className="flex items-center justify-between px-3 pb-2">
+                        <div className="flex gap-1">
+                          {GL_STEPS.map((_, i) => (
+                            <button key={i} onClick={() => setGlAnimStep(i)} className="w-1.5 h-1.5 rounded-full transition-all duration-300 cursor-pointer" style={{ background: i === glAnimStep ? GL_STEPS[i].color : "rgba(255,255,255,0.15)" }} aria-label={`Step ${i + 1}`} />
+                          ))}
+                        </div>
+                        <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" className="text-[8px] text-white/25 hover:text-white/50 transition-colors">Open Studio ↗</a>
                       </div>
                     </div>
-                  ) : glTutorialVideoId ? (
-                    <iframe
-                      key={`tut-panel-${glTutorialIdx}`}
-                      src={`https://www.youtube-nocookie.com/embed/${glTutorialVideoId}?rel=0&modestbranding=1&enablejsapi=1`}
-                      title="YouTube Stream Key Tutorial"
-                      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                      allowFullScreen
-                      className="w-full h-full border-0"
-                      style={{ display: "block" }}
-                    />
-                  ) : glTutorialResults.length > 0 && glTutorialIdx >= glTutorialResults.length ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-white/[0.03]">
-                      <span className="text-[9px] text-white/40">No embeddable tutorial found</span>
-                      <a href="https://www.youtube.com/results?search_query=youtube+stream+key+tutorial" target="_blank" rel="noopener noreferrer" className="text-[9px] text-red-400/70 hover:text-red-400 transition-colors underline">Search tutorials on YouTube ↗</a>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-white/[0.03]">
-                      <svg viewBox="0 0 24 24" className="w-6 h-6 fill-red-500/40"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                      <a href="https://www.youtube.com/results?search_query=youtube+stream+key+tutorial" target="_blank" rel="noopener noreferrer" className="text-[9px] text-red-400/70 hover:text-red-400 transition-colors underline">Search tutorials on YouTube ↗</a>
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
                 {glWaitingForKey && (
                   <p className="text-[10px] text-amber-400/80 text-center animate-pulse">
                     ✓ Come back here and paste your stream key below
@@ -10842,37 +10820,42 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   ))}
                 </div>
-                {/* Tutorial video — loaded dynamically from YouTube search (always embeddable) */}
-                <div className="rounded-xl overflow-hidden border" style={{ height: "185px" }}>
-                  {glTutorialLoading ? (
-                    <div className="w-full h-full flex items-center justify-center bg-muted/10">
-                      <div className="flex flex-col items-center gap-2">
-                        <svg className="w-6 h-6 animate-spin text-red-500/50" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                        <span className="text-xs text-muted-foreground/50">Loading tutorial…</span>
+                {/* Animated tutorial — always available, no external dependencies */}
+                {(() => {
+                  const GL_STEPS_D = [
+                    { label: "Open YouTube Studio", sub: 'Click "Create" → "Go Live" (top-right corner)', color: "#ef4444", bg: "rgba(239,68,68,0.10)", icon: <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg> },
+                    { label: "Pick Streaming software", sub: 'Select the "Streaming software" tab in the dialog', color: "#f97316", bg: "rgba(249,115,22,0.10)", icon: <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v-2h3V9l4 3.5-4 3.5V16z"/></svg> },
+                    { label: "Copy your Stream Key", sub: 'Click "Copy" next to the Stream key field', color: "#eab308", bg: "rgba(234,179,8,0.10)", icon: <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> },
+                    { label: "Paste key below & Go Live!", sub: "Come back here, paste your key, then click Go Live", color: "#22c55e", bg: "rgba(34,197,94,0.10)", icon: <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> },
+                  ];
+                  const s = GL_STEPS_D[glAnimStep];
+                  return (
+                    <div className="rounded-xl overflow-hidden border" style={{ height: "185px", background: "#0f0f0f" }}>
+                      <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.08]" style={{ background: "#202020" }}>
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-red-500 flex-shrink-0"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        <span className="text-[10px] text-white/40 font-medium">YouTube Studio — Finding your stream key</span>
+                        <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded font-bold" style={{ background: s.color + "20", color: s.color }}>Step {glAnimStep + 1} / 4</span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center gap-3 px-6" style={{ height: "calc(100% - 70px)" }}>
+                        <div className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-500" style={{ background: s.bg, color: s.color, border: `1.5px solid ${s.color}30` }}>
+                          {s.icon}
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-semibold text-white leading-tight">{s.label}</p>
+                          <p className="text-[11px] text-white/40 mt-1 leading-snug">{s.sub}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between px-3 pb-2.5">
+                        <div className="flex gap-1.5">
+                          {GL_STEPS_D.map((_, i) => (
+                            <button key={i} onClick={() => setGlAnimStep(i)} className="w-2 h-2 rounded-full transition-all duration-300" style={{ background: i === glAnimStep ? GL_STEPS_D[i].color : "rgba(255,255,255,0.12)" }} aria-label={`Step ${i + 1}`} />
+                          ))}
+                        </div>
+                        <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" className="text-[9px] text-white/25 hover:text-white/50 transition-colors">Open YouTube Studio ↗</a>
                       </div>
                     </div>
-                  ) : glTutorialVideoId ? (
-                    <iframe
-                      key={`tut-dialog-${glTutorialIdx}`}
-                      src={`https://www.youtube-nocookie.com/embed/${glTutorialVideoId}?rel=0&modestbranding=1&enablejsapi=1`}
-                      title="YouTube Stream Key Tutorial"
-                      allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                      allowFullScreen
-                      className="w-full h-full border-0"
-                      style={{ display: "block" }}
-                    />
-                  ) : glTutorialResults.length > 0 && glTutorialIdx >= glTutorialResults.length ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/10">
-                      <span className="text-xs text-muted-foreground/50">No embeddable tutorial found</span>
-                      <a href="https://www.youtube.com/results?search_query=youtube+stream+key+tutorial" target="_blank" rel="noopener noreferrer" className="text-xs text-red-400/60 hover:text-red-400 transition-colors underline">Search tutorials on YouTube ↗</a>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/10">
-                      <svg viewBox="0 0 24 24" className="w-8 h-8 fill-red-500/30"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                      <a href="https://www.youtube.com/results?search_query=youtube+stream+key+tutorial" target="_blank" rel="noopener noreferrer" className="text-xs text-red-400/60 hover:text-red-400 transition-colors underline">Search tutorials on YouTube ↗</a>
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
                 {glWaitingForKey && (
                   <p className="text-[11px] text-amber-500 text-center animate-pulse font-medium">
                     ✓ Stream key copied? Paste it below to go live!

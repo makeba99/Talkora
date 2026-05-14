@@ -1167,13 +1167,20 @@ export async function registerRoutes(
           duration: item.length?.simpleText || "",
         }));
 
-      // Check each candidate with oEmbed — returns 200 if embeddable, 401/403/404 if not.
+      // Check each candidate with oEmbed — GET + body parse is more reliable than HEAD
+      // because some proxies return 200 for all HEAD requests.
+      // YouTube oEmbed returns JSON with an `html` field (containing the iframe) only
+      // when the video actually allows embedding; otherwise 401/404.
       for (const video of candidates) {
         try {
           const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${video.id}&format=json`;
-          const check = await fetch(oembedUrl, { method: "HEAD" });
-          if (check.ok) {
+          const check = await fetch(oembedUrl);
+          if (!check.ok) continue;
+          const body = await check.json() as any;
+          // body.html contains "<iframe ...>" only for embeddable videos
+          if (body?.html && body.html.includes("iframe")) {
             externalCache.set(cacheKey, video, 60 * 60_000); // cache for 1 hour
+            console.log(`[tutorial] embeddable video found: ${video.id} — "${video.title}"`);
             return res.json(video);
           }
         } catch {
@@ -1182,6 +1189,7 @@ export async function registerRoutes(
       }
 
       // All candidates failed oEmbed — return null so client can show fallback link
+      console.log("[tutorial] no embeddable tutorial found in search results");
       res.json(null);
     } catch (err: any) {
       console.error("YouTube tutorial error:", err);
