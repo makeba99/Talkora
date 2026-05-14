@@ -10172,6 +10172,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                 </a>
+                {/* Tutorial video */}
+                <div className="rounded-xl overflow-hidden border border-white/[0.08]" style={{ aspectRatio: "16/9" }}>
+                  <iframe
+                    src="https://www.youtube.com/embed/eHbLjShOABg?rel=0&modestbranding=1"
+                    title="How To Find Your YouTube Stream Key 2026"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                    className="w-full h-full"
+                  />
+                </div>
                 {glWaitingForKey && (
                   <p className="text-[10px] text-amber-400/80 text-center animate-pulse">
                     Copy your Stream Key from the "Streaming software" tab, then come back here
@@ -10610,6 +10621,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </span>
                   <ExternalLink className="w-4 h-4 opacity-70" />
                 </a>
+                {/* Tutorial video */}
+                <div className="rounded-xl overflow-hidden border" style={{ aspectRatio: "16/9" }}>
+                  <iframe
+                    src="https://www.youtube.com/embed/eHbLjShOABg?rel=0&modestbranding=1"
+                    title="How To Find Your YouTube Stream Key 2026"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                    className="w-full h-full"
+                  />
+                </div>
                 {glWaitingForKey && (
                   <p className="text-[11px] text-amber-500/80 text-center animate-pulse">
                     Select "Streaming software" tab → copy your Stream Key → come back here
