@@ -105,21 +105,34 @@ export async function getViewerCounts(streamId: string): Promise<{
 // ── FFmpeg ───────────────────────────────────────────────────────────────────
 
 function buildFfmpegArgs(twitchKey?: string, youtubeKey?: string): string[] {
+  // Input: raw WebM piped from MediaRecorder.
+  // -fflags +nobuffer+flush_packets  → minimize encoder buffering latency
+  // -flags low_delay                  → low-latency mode throughout the pipeline
+  const inputArgs = [
+    "-fflags", "+nobuffer+flush_packets",
+    "-flags", "low_delay",
+    "-f", "webm",
+    "-i", "pipe:0",
+  ];
   const videoArgs = [
     "-c:v", "libx264",
     "-preset", "veryfast",
     "-tune", "zerolatency",
+    "-profile:v", "baseline",  // widest YouTube compatibility
+    "-level", "3.1",
     "-b:v", "2500k",
     "-maxrate", "2500k",
     "-bufsize", "5000k",
     "-pix_fmt", "yuv420p",
-    "-g", "60",
+    "-g", "60",               // 2-second keyframe interval at 30fps (YouTube requirement)
     "-keyint_min", "60",
+    "-sc_threshold", "0",     // disable scene-change keyframes (keeps GOP stable)
   ];
   const audioArgs = [
     "-c:a", "aac",
     "-b:a", "128k",
     "-ar", "44100",
+    "-ac", "2",               // stereo
   ];
 
   const outputs: string[] = [];
@@ -127,18 +140,14 @@ function buildFfmpegArgs(twitchKey?: string, youtubeKey?: string): string[] {
   if (youtubeKey) outputs.push(`[f=flv]rtmp://a.rtmp.youtube.com/live2/${youtubeKey}`);
 
   if (outputs.length === 2) {
-    return [
-      "-f", "webm", "-i", "pipe:0",
-      ...videoArgs, ...audioArgs,
-      "-f", "tee", outputs.join("|"),
-    ];
+    return [...inputArgs, ...videoArgs, ...audioArgs, "-f", "tee", outputs.join("|")];
   }
 
   const rtmpUrl = twitchKey
     ? `rtmp://live.twitch.tv/live/${twitchKey}`
     : `rtmp://a.rtmp.youtube.com/live2/${youtubeKey}`;
 
-  return ["-f", "webm", "-i", "pipe:0", ...videoArgs, ...audioArgs, "-f", "flv", rtmpUrl];
+  return [...inputArgs, ...videoArgs, ...audioArgs, "-f", "flv", rtmpUrl];
 }
 
 export function startStream(opts: {

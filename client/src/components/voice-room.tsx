@@ -1493,6 +1493,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return map;
   }, [participants]);
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
+  const speakingUsersRef = useRef<Set<string>>(new Set());
   const [micError, setMicError] = useState(false);
   const [showMicHelp, setShowMicHelp] = useState(false);
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
@@ -1867,6 +1868,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const ytKeyInputRef = useRef<HTMLInputElement>(null);
   const twKeyInputRef = useRef<HTMLInputElement>(null);
   const [glWaitingForKey, setGlWaitingForKey] = useState<"youtube" | "twitch" | "both" | null>(null);
+  const glRafRef = useRef<number | null>(null);
+  const glAudioCtxRef = useRef<AudioContext | null>(null);
+  const glCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -3091,6 +3095,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         const next = new Set(prev);
         if (data.isSpeaking) next.add(data.userId);
         else next.delete(data.userId);
+        speakingUsersRef.current = next;
         return next;
       });
     });
@@ -5935,92 +5940,218 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const startGoLive = useCallback(async () => {
     const twitchKey = goLivePlatform === "youtube" ? "" : glTwitchKey.trim();
     const youtubeKey = goLivePlatform === "twitch" ? "" : glYoutubeKey.trim();
-    if (goLivePlatform === "youtube" && !youtubeKey) { toast({ title: "Enter your YouTube stream key", variant: "destructive" }); return; }
-    if (goLivePlatform === "twitch" && !twitchKey) { toast({ title: "Enter your Twitch stream key", variant: "destructive" }); return; }
+    if (goLivePlatform === "youtube" && !youtubeKey) { toast({ title: "Paste your YouTube stream key first", variant: "destructive" }); return; }
+    if (goLivePlatform === "twitch" && !twitchKey) { toast({ title: "Paste your Twitch stream key first", variant: "destructive" }); return; }
     if (goLivePlatform === "both" && !twitchKey && !youtubeKey) { toast({ title: "Enter at least one stream key", variant: "destructive" }); return; }
 
     setGlStatus("connecting");
     setGlError(null);
 
-    let displayStream: MediaStream;
+    // ── Audio: mic (optional) + all room peer streams mixed together ──────────
     let micStream: MediaStream | null = null;
-    try {
-      displayStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
-    } catch {
-      setGlStatus("error");
-      setGlError("Screen capture was denied. Please allow screen sharing to go live.");
-      return;
-    }
-    try {
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch { /* mic optional */ }
+    try { micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); } catch { /* mic optional */ }
 
-    const audioCtx = new AudioContext();
-    const dest = audioCtx.createMediaStreamDestination();
-    displayStream.getAudioTracks().forEach(t => audioCtx.createMediaStreamSource(new MediaStream([t])).connect(dest));
-    if (micStream) micStream.getAudioTracks().forEach(t => audioCtx.createMediaStreamSource(new MediaStream([t])).connect(dest));
-    const combined = new MediaStream([...displayStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+    const audioCtx = new AudioContext({ sampleRate: 44100 });
+    glAudioCtxRef.current = audioCtx;
+    const audioDest = audioCtx.createMediaStreamDestination();
+    if (micStream) audioCtx.createMediaStreamSource(micStream).connect(audioDest);
+    // Tap every remote peer's audio stream — no screen-share dialog needed
+    audioElements.current.forEach((el) => {
+      const s = el.srcObject as MediaStream | null;
+      if (s?.getAudioTracks().length) try { audioCtx.createMediaStreamSource(s).connect(audioDest); } catch {}
+    });
 
+    // ── Video: canvas rendering of the room — no screen-share dialog needed ───
+    const canvas = document.createElement("canvas");
+    canvas.width = 1280; canvas.height = 720;
+    glCanvasRef.current = canvas;
+    const c = canvas.getContext("2d")!;
+
+    const avatarCache = new Map<string, HTMLImageElement>();
+    const loadImg = (url: string) => {
+      if (avatarCache.has(url)) return;
+      const img = new Image(); img.crossOrigin = "anonymous"; img.src = url; avatarCache.set(url, img);
+    };
+    participantsRef.current.forEach(p => { if (p.avatarUrl) loadImg(p.avatarUrl); });
+
+    // Safe rounded-rect helper (no reliance on ctx.roundRect browser support)
+    const rrect = (x: number, y: number, w: number, h: number, r: number) => {
+      c.beginPath(); c.moveTo(x+r,y); c.lineTo(x+w-r,y);
+      c.quadraticCurveTo(x+w,y,x+w,y+r); c.lineTo(x+w,y+h-r);
+      c.quadraticCurveTo(x+w,y+h,x+w-r,y+h); c.lineTo(x+r,y+h);
+      c.quadraticCurveTo(x,y+h,x,y+h-r); c.lineTo(x,y+r);
+      c.quadraticCurveTo(x,y,x+r,y); c.closePath();
+    };
+
+    const AVATAR_COLORS = ["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981","#0ea5e9","#ef4444","#f97316"];
+
+    const drawFrame = (sec: number) => {
+      const W = 1280, H = 720;
+      const pts = participantsRef.current;
+      const spk = speakingUsersRef.current;
+
+      // Background
+      const bg = c.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, "#0b0b1c"); bg.addColorStop(1, "#0f0f28");
+      c.fillStyle = bg; c.fillRect(0, 0, W, H);
+
+      // Subtle grid
+      c.strokeStyle = "rgba(255,255,255,0.022)"; c.lineWidth = 1;
+      for (let x = 0; x < W; x += 80) { c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); }
+      for (let y = 0; y < H; y += 80) { c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
+
+      // Top bar
+      c.fillStyle = "rgba(0,0,0,0.55)"; c.fillRect(0, 0, W, 62);
+      c.strokeStyle = "rgba(255,255,255,0.07)"; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(0,62); c.lineTo(W,62); c.stroke();
+
+      // LIVE badge (slow pulse)
+      const pulse = 0.72 + 0.28 * Math.sin(sec * Math.PI * 2);
+      c.fillStyle = `rgba(239,68,68,${pulse})`; rrect(20,16,72,30,7); c.fill();
+      c.fillStyle = "#fff"; c.font = "bold 13px Arial,sans-serif";
+      c.textAlign = "left"; c.textBaseline = "middle"; c.fillText("● LIVE", 30, 31);
+
+      // Duration
+      const h2=Math.floor(sec/3600), m2=Math.floor((sec%3600)/60), s2=sec%60;
+      const dur = `${h2>0?h2+":":""}${String(m2).padStart(2,"0")}:${String(s2).padStart(2,"0")}`;
+      c.fillStyle = "rgba(255,255,255,0.5)"; c.font = "13px Arial,sans-serif"; c.fillText(dur, 100, 31);
+
+      // Room title
+      c.fillStyle = "#fff"; c.font = "bold 18px Arial,sans-serif"; c.textAlign = "center";
+      c.fillText(room.title || "Vextorn Room", W/2, 31);
+
+      // Brand
+      c.fillStyle = "rgba(255,165,60,0.9)"; c.font = "bold 16px Arial,sans-serif"; c.textAlign = "right";
+      c.fillText("Vextorn", W-20, 31); c.textBaseline = "alphabetic";
+
+      // Participant grid
+      const vis = pts.slice(0, 12);
+      const n = vis.length;
+      if (n === 0) {
+        c.fillStyle = "rgba(255,255,255,0.22)"; c.font = "22px Arial,sans-serif";
+        c.textAlign = "center"; c.textBaseline = "middle";
+        c.fillText("Waiting for participants…", W/2, H/2); c.textBaseline = "alphabetic";
+      } else {
+        const cols = n<=1?1:n<=4?2:n<=9?3:4;
+        const rows = Math.ceil(n/cols);
+        const gW = W-64, gH = H-62-52;
+        const cW = gW/cols, cH = gH/rows;
+        const R = Math.min(cW*0.28, cH*0.3, 92);
+        vis.forEach((p, i) => {
+          const col = i%cols, row = Math.floor(i/cols);
+          const cx = 32 + col*cW + cW/2;
+          const cy = 62 + row*cH + cH*0.44;
+          const isSpeaking = spk.has(p.id);
+
+          // Speaking rings (double ring, pulsing amber)
+          if (isSpeaking) {
+            const a = 0.45 + 0.55*Math.sin(sec*Math.PI*3.5);
+            c.strokeStyle = `rgba(255,165,60,${a})`; c.lineWidth = 5;
+            c.beginPath(); c.arc(cx,cy,R+9,0,Math.PI*2); c.stroke();
+            c.strokeStyle = `rgba(255,165,60,${a*0.35})`; c.lineWidth = 2;
+            c.beginPath(); c.arc(cx,cy,R+20,0,Math.PI*2); c.stroke();
+          }
+
+          // Avatar circle
+          c.save(); c.beginPath(); c.arc(cx,cy,R,0,Math.PI*2); c.clip();
+          const img = p.avatarUrl ? avatarCache.get(p.avatarUrl) : undefined;
+          if (img?.complete && img.naturalWidth > 0) {
+            c.drawImage(img, cx-R, cy-R, R*2, R*2);
+          } else {
+            c.fillStyle = AVATAR_COLORS[(p.displayName?.charCodeAt(0)||0) % AVATAR_COLORS.length];
+            c.fillRect(cx-R, cy-R, R*2, R*2);
+            c.fillStyle = "#fff"; c.font = `bold ${Math.round(R*0.6)}px Arial,sans-serif`;
+            c.textAlign = "center"; c.textBaseline = "middle";
+            c.fillText(((p.displayName||p.firstName||"?")[0]).toUpperCase(), cx, cy);
+          }
+          c.restore();
+
+          // Name label
+          const name = p.displayName||p.firstName||"User";
+          c.fillStyle = isSpeaking ? "rgba(255,180,80,0.95)" : "rgba(255,255,255,0.85)";
+          c.font = `${Math.max(11,Math.round(R*0.28))}px Arial,sans-serif`;
+          c.textAlign = "center"; c.textBaseline = "alphabetic";
+          c.fillText(name.length>16?name.slice(0,15)+"…":name, cx, cy+R+18);
+
+          if (p.avatarUrl && !avatarCache.has(p.avatarUrl)) loadImg(p.avatarUrl);
+        });
+        if (pts.length > 12) {
+          c.fillStyle = "rgba(255,255,255,0.35)"; c.font = "13px Arial,sans-serif";
+          c.textAlign = "center"; c.textBaseline = "alphabetic";
+          c.fillText(`+${pts.length-12} more`, W/2, H-58);
+        }
+      }
+
+      // Bottom bar
+      c.fillStyle = "rgba(0,0,0,0.45)"; c.fillRect(0, H-48, W, 48);
+      c.strokeStyle = "rgba(255,255,255,0.06)"; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(0,H-48); c.lineTo(W,H-48); c.stroke();
+      const meta = [room.language, `${pts.length} online`].filter(Boolean).join(" · ");
+      c.fillStyle = "rgba(255,255,255,0.4)"; c.font = "13px Arial,sans-serif";
+      c.textAlign = "left"; c.textBaseline = "middle"; c.fillText(meta, 20, H-24);
+      c.fillStyle = "rgba(255,165,60,0.5)"; c.textAlign = "right";
+      c.fillText("vextorn.com · Talk. Share. Belong.", W-20, H-24);
+      c.textBaseline = "alphabetic";
+    };
+
+    let t0 = Date.now();
+    const loop = () => { drawFrame(Math.floor((Date.now()-t0)/1000)); glRafRef.current = requestAnimationFrame(loop); };
+    loop();
+
+    // Combine canvas video + mixed audio → MediaRecorder → FFmpeg → RTMP
+    const canvasStream = canvas.captureStream(30);
+    const combined = new MediaStream([...canvasStream.getVideoTracks(), ...audioDest.stream.getAudioTracks()]);
+
+    // Start server-side FFmpeg
     let startRes: Response;
     try {
       startRes = await fetch("/api/stream/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({
-          twitchKey: twitchKey || undefined,
-          youtubeKey: youtubeKey || undefined,
-          roomId: room.id,
-          twitchUsername: glTwitchUsername.trim() || undefined,
+          twitchKey: twitchKey || undefined, youtubeKey: youtubeKey || undefined,
+          roomId: room.id, twitchUsername: glTwitchUsername.trim() || undefined,
           youtubeChannelId: glYoutubeChannelId.trim() || undefined,
         }),
       });
     } catch {
-      setGlStatus("error");
-      setGlError("Could not connect to streaming server. Try again.");
-      displayStream.getTracks().forEach(t => t.stop());
-      return;
+      if (glRafRef.current) { cancelAnimationFrame(glRafRef.current); glRafRef.current = null; }
+      audioCtx.close().catch(()=>{}); glAudioCtxRef.current = null; glCanvasRef.current = null;
+      micStream?.getTracks().forEach(t=>t.stop());
+      setGlStatus("error"); setGlError("Could not reach streaming server. Try again."); return;
     }
     if (!startRes.ok) {
-      const err = await startRes.json().catch(() => ({}));
-      setGlStatus("error");
-      setGlError((err as any).message || "Failed to start stream.");
-      displayStream.getTracks().forEach(t => t.stop());
-      return;
+      const err = await startRes.json().catch(()=>({}));
+      if (glRafRef.current) { cancelAnimationFrame(glRafRef.current); glRafRef.current = null; }
+      audioCtx.close().catch(()=>{}); glAudioCtxRef.current = null; glCanvasRef.current = null;
+      micStream?.getTracks().forEach(t=>t.stop());
+      setGlStatus("error"); setGlError((err as any).message || "Failed to start stream."); return;
     }
     const { streamId } = await startRes.json();
     setGlStreamId(streamId);
 
     const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
-      ? "video/webm;codecs=vp8,opus"
-      : "video/webm";
+      ? "video/webm;codecs=vp8,opus" : "video/webm";
     const mr = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 2_500_000 });
     glMediaRecorderRef.current = mr;
 
     mr.ondataavailable = async (e) => {
-      if (e.data.size === 0) return;
-      const buf = await e.data.arrayBuffer();
+      if (!e.data.size) return;
       fetch(`/api/stream/${streamId}/chunk`, {
-        method: "POST",
-        headers: { "Content-Type": "application/octet-stream" },
-        credentials: "include",
-        body: buf,
-      }).catch(() => {});
+        method: "POST", headers: { "Content-Type": "application/octet-stream" },
+        credentials: "include", body: await e.data.arrayBuffer(),
+      }).catch(()=>{});
     };
 
     mr.onstop = () => {
-      displayStream.getTracks().forEach(t => t.stop());
-      micStream?.getTracks().forEach(t => t.stop());
-      audioCtx.close();
+      micStream?.getTracks().forEach(t=>t.stop());
+      audioCtx.close().catch(()=>{}); glAudioCtxRef.current = null;
+      if (glRafRef.current) { cancelAnimationFrame(glRafRef.current); glRafRef.current = null; }
+      glCanvasRef.current = null;
     };
 
-    displayStream.getVideoTracks()[0].onended = () => stopGoLive(streamId);
-
     mr.start(2000);
-    setGlStatus("live");
-    setGlDuration(0);
-    setGlViewers(null);
-    glDurationRef.current = setInterval(() => setGlDuration(d => d + 1), 1000);
+    setGlStatus("live"); setGlDuration(0); setGlViewers(null);
+    glDurationRef.current = setInterval(() => setGlDuration(d => d+1), 1000);
 
     const pollViewers = async () => {
       try {
@@ -6030,23 +6161,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     };
     pollViewers();
     glViewerPollRef.current = setInterval(pollViewers, 30_000);
-  }, [goLivePlatform, glTwitchKey, glYoutubeKey, glTwitchUsername, glYoutubeChannelId, room.id]);
+  }, [goLivePlatform, glTwitchKey, glYoutubeKey, glTwitchUsername, glYoutubeChannelId, room.id, room.title, room.language]);
 
   const stopGoLive = useCallback(async (sid?: string) => {
     const id = sid ?? glStreamId;
     if (glMediaRecorderRef.current && glMediaRecorderRef.current.state !== "inactive") {
-      glMediaRecorderRef.current.stop();
+      glMediaRecorderRef.current.stop(); // triggers mr.onstop → cleans up audioCtx + RAF
     }
     glMediaRecorderRef.current = null;
+    // Fallback cleanup if onstop didn't fire
+    if (glRafRef.current) { cancelAnimationFrame(glRafRef.current); glRafRef.current = null; }
+    if (glAudioCtxRef.current) { glAudioCtxRef.current.close().catch(()=>{}); glAudioCtxRef.current = null; }
+    glCanvasRef.current = null;
     if (glDurationRef.current) { clearInterval(glDurationRef.current); glDurationRef.current = null; }
     if (glViewerPollRef.current) { clearInterval(glViewerPollRef.current); glViewerPollRef.current = null; }
-    setGlStatus("idle");
-    setGlDuration(0);
-    setGlViewers(null);
-    if (id) {
-      setGlStreamId(null);
-      fetch(`/api/stream/${id}/stop`, { method: "POST", credentials: "include" }).catch(() => {});
-    }
+    setGlStatus("idle"); setGlDuration(0); setGlViewers(null);
+    if (id) { setGlStreamId(null); fetch(`/api/stream/${id}/stop`, { method: "POST", credentials: "include" }).catch(()=>{}); }
   }, [glStreamId]);
   // ─────────────────────────────────────────────────────────────────────────
 
