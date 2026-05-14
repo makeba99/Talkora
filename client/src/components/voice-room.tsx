@@ -10317,16 +10317,32 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   ))}
                 </div>
-                {/* Tutorial video */}
-                <div className="rounded-xl overflow-hidden border border-white/[0.08]" style={{ height: "160px" }}>
-                  <iframe
-                    src="https://www.youtube-nocookie.com/embed/eHbLjShOABg?rel=0&modestbranding=1&autoplay=0"
-                    title="How To Find Your YouTube Stream Key"
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full border-0"
-                    style={{ display: "block" }}
-                  />
+                {/* Visual UI path guide */}
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+                  {/* Mock YouTube Studio path */}
+                  <div className="px-2.5 py-2 border-b border-white/[0.06] flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-red-500 flex-shrink-0"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    <span className="text-[9px] text-white/40 font-medium">YouTube Studio</span>
+                  </div>
+                  <div className="p-2.5 space-y-1.5">
+                    {/* Step path visualization */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[9px] px-2 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-600/25 font-semibold whitespace-nowrap">Create → Go Live</span>
+                      <span className="text-white/25 text-[9px]">›</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded bg-white/[0.06] text-white/50 border border-white/[0.08] font-semibold whitespace-nowrap">Streaming software</span>
+                      <span className="text-white/25 text-[9px]">›</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/25 font-semibold whitespace-nowrap">Stream key → Copy</span>
+                    </div>
+                    <a
+                      href="https://www.youtube.com/watch?v=eHbLjShOABg"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-[9px] text-white/35 hover:text-white/60 transition-colors"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-current flex-shrink-0"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                      Watch video tutorial on YouTube ↗
+                    </a>
+                  </div>
                 </div>
                 {glWaitingForKey && (
                   <p className="text-[10px] text-amber-400/80 text-center animate-pulse">
@@ -10782,16 +10798,30 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   ))}
                 </div>
-                {/* Tutorial video — use youtube-nocookie for better iframe compatibility */}
-                <div className="rounded-xl overflow-hidden border" style={{ height: "185px" }}>
-                  <iframe
-                    src="https://www.youtube-nocookie.com/embed/eHbLjShOABg?rel=0&modestbranding=1"
-                    title="How To Find Your YouTube Stream Key"
-                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full border-0"
-                    style={{ display: "block" }}
-                  />
+                {/* Visual UI path guide — replaces broken embed (YT error 153: embedding disabled) */}
+                <div className="rounded-xl border overflow-hidden bg-muted/10">
+                  <div className="px-3 py-2 border-b flex items-center gap-2">
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-red-500 flex-shrink-0"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    <span className="text-xs text-muted-foreground font-medium">YouTube Studio — path to stream key</span>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs px-2.5 py-1 rounded-lg bg-red-600/15 text-red-400 border border-red-600/25 font-semibold whitespace-nowrap">Create → Go Live</span>
+                      <span className="text-muted-foreground/40 text-sm">›</span>
+                      <span className="text-xs px-2.5 py-1 rounded-lg bg-muted/40 text-muted-foreground border font-semibold whitespace-nowrap">Streaming software</span>
+                      <span className="text-muted-foreground/40 text-sm">›</span>
+                      <span className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold whitespace-nowrap">Stream key → Copy</span>
+                    </div>
+                    <a
+                      href="https://www.youtube.com/watch?v=eHbLjShOABg"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current flex-shrink-0"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                      Watch video tutorial on YouTube ↗
+                    </a>
+                  </div>
                 </div>
                 {glWaitingForKey && (
                   <p className="text-[11px] text-amber-500 text-center animate-pulse font-medium">
