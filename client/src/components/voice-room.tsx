@@ -1873,6 +1873,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const glCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [glTutorialVideoId, setGlTutorialVideoId] = useState<string | null>(null);
   const [glTutorialLoading, setGlTutorialLoading] = useState(false);
+  const glTutorialFetchedRef = useRef(false);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -5936,20 +5937,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   useEffect(() => {
     const ytVisible = (sidePanelTab === "golive" || goLiveOpen) &&
       (goLivePlatform === "youtube" || goLivePlatform === "both");
-    if (!ytVisible || glTutorialVideoId || glTutorialLoading) return;
-    let cancelled = false;
+    if (!ytVisible || glTutorialVideoId || glTutorialFetchedRef.current) return;
+    glTutorialFetchedRef.current = true;
     setGlTutorialLoading(true);
     fetch("/api/youtube/search?q=how+to+find+youtube+stream+key+streaming+software+2024", { credentials: "include" })
       .then(r => r.ok ? r.json() : [])
       .then((results: any[]) => {
-        if (cancelled) return;
         const first = results[0];
         if (first?.id) setGlTutorialVideoId(first.id);
       })
       .catch(() => {})
-      .finally(() => { if (!cancelled) setGlTutorialLoading(false); });
-    return () => { cancelled = true; };
-  }, [sidePanelTab, goLiveOpen, goLivePlatform, glTutorialVideoId, glTutorialLoading]);
+      .finally(() => setGlTutorialLoading(false));
+  }, [sidePanelTab, goLiveOpen, goLivePlatform, glTutorialVideoId]);
 
   // ── Go Live: direct browser-to-RTMP streaming ──────────────────────────
   const formatGlDuration = (secs: number) => {
