@@ -10286,10 +10286,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
               <div className="space-y-2">
                 <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wide">
-                  {goLivePlatform === "both" ? "Step 1 of 2 — YouTube" : "Step 1 — Open your YouTube dashboard"}
+                  {goLivePlatform === "both" ? "Step 1 of 2 — YouTube" : "Step 1 — Open YouTube Studio"}
                 </p>
                 <a
-                  href="https://www.youtube.com/live_dashboard"
+                  href="https://studio.youtube.com/channel/UC/livestreaming"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setGlWaitingForKey(goLivePlatform)}
@@ -10298,24 +10298,39 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 >
                   <span className="flex items-center gap-2">
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                    Open YouTube Live Dashboard
+                    Open YouTube Studio → Go Live
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                 </a>
+                {/* Step-by-step visual guide */}
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 space-y-1.5">
+                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider mb-1">How to find your stream key:</p>
+                  {[
+                    { n: "1", text: 'Click "Go Live" in YouTube Studio (top right)' },
+                    { n: "2", text: 'Choose "Streaming software" tab' },
+                    { n: "3", text: 'Click "Copy" next to Stream Key' },
+                    { n: "4", text: "Come back here and paste it below" },
+                  ].map(({ n, text }) => (
+                    <div key={n} className="flex items-start gap-2">
+                      <span className="flex-shrink-0 w-4 h-4 rounded-full bg-red-600/30 text-red-400 text-[9px] font-bold flex items-center justify-center mt-0.5">{n}</span>
+                      <p className="text-[10px] text-white/55 leading-snug">{text}</p>
+                    </div>
+                  ))}
+                </div>
                 {/* Tutorial video */}
-                <div className="rounded-xl overflow-hidden border border-white/[0.08]" style={{ aspectRatio: "16/9" }}>
+                <div className="rounded-xl overflow-hidden border border-white/[0.08]" style={{ height: "160px" }}>
                   <iframe
-                    src="https://www.youtube.com/embed/eHbLjShOABg?rel=0&modestbranding=1"
-                    title="How To Find Your YouTube Stream Key 2026"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    src="https://www.youtube-nocookie.com/embed/eHbLjShOABg?rel=0&modestbranding=1&autoplay=0"
+                    title="How To Find Your YouTube Stream Key"
+                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                    loading="lazy"
-                    className="w-full h-full"
+                    className="w-full h-full border-0"
+                    style={{ display: "block" }}
                   />
                 </div>
                 {glWaitingForKey && (
                   <p className="text-[10px] text-amber-400/80 text-center animate-pulse">
-                    Copy your Stream Key from the "Streaming software" tab, then come back here
+                    ✓ Come back here and paste your stream key below
                   </p>
                 )}
                 <div className="space-y-1">
@@ -10329,8 +10344,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       type={glShowYoutubeKey ? "text" : "password"}
                       value={glYoutubeKey}
                       onChange={e => setGlYoutubeKey(e.target.value)}
-                      placeholder="Paste stream key here…"
-                      className="w-full px-2.5 py-2 pr-8 rounded-lg text-xs bg-white/[0.05] border border-white/[0.10] text-white placeholder:text-white/25 focus:outline-none focus:border-red-500/60 focus:bg-white/[0.08] transition-all"
+                      placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
+                      className="w-full px-2.5 py-2 pr-8 rounded-lg text-xs bg-white/[0.05] border text-white placeholder:text-white/20 focus:outline-none transition-all"
+                      style={{ borderColor: glYoutubeKey ? "rgba(239,68,68,0.5)" : "rgba(255,255,255,0.12)" }}
                     />
                     <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60" aria-label={glShowYoutubeKey ? "Hide key" : "Show key"}>
                       {glShowYoutubeKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -10735,10 +10751,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             {(goLivePlatform === "youtube" || goLivePlatform === "both") && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground">
-                  {goLivePlatform === "both" ? "YouTube — Step 1 of 2" : "Step 1 — Open your YouTube dashboard"}
+                  {goLivePlatform === "both" ? "YouTube — Step 1 of 2" : "Step 1 — Open YouTube Studio"}
                 </p>
                 <a
-                  href="https://www.youtube.com/live_dashboard"
+                  href="https://studio.youtube.com/channel/UC/livestreaming"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setGlWaitingForKey(goLivePlatform)}
@@ -10747,24 +10763,39 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 >
                   <span className="flex items-center gap-2">
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                    Open YouTube Live Dashboard
+                    Open YouTube Studio → Go Live
                   </span>
                   <ExternalLink className="w-4 h-4 opacity-70" />
                 </a>
-                {/* Tutorial video */}
-                <div className="rounded-xl overflow-hidden border" style={{ aspectRatio: "16/9" }}>
+                {/* Step-by-step visual guide */}
+                <div className="rounded-xl border bg-muted/20 p-3 space-y-2">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">How to find your stream key:</p>
+                  {[
+                    { n: "1", text: 'Click "Go Live" in YouTube Studio (top right)' },
+                    { n: "2", text: 'Select the "Streaming software" tab' },
+                    { n: "3", text: 'Click "Copy" next to your Stream key' },
+                    { n: "4", text: "Come back here and paste it in the field below" },
+                  ].map(({ n, text }) => (
+                    <div key={n} className="flex items-start gap-2.5">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-600/20 text-red-400 text-[10px] font-bold flex items-center justify-center mt-0.5 border border-red-600/30">{n}</span>
+                      <p className="text-xs text-muted-foreground leading-snug">{text}</p>
+                    </div>
+                  ))}
+                </div>
+                {/* Tutorial video — use youtube-nocookie for better iframe compatibility */}
+                <div className="rounded-xl overflow-hidden border" style={{ height: "185px" }}>
                   <iframe
-                    src="https://www.youtube.com/embed/eHbLjShOABg?rel=0&modestbranding=1"
-                    title="How To Find Your YouTube Stream Key 2026"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    src="https://www.youtube-nocookie.com/embed/eHbLjShOABg?rel=0&modestbranding=1"
+                    title="How To Find Your YouTube Stream Key"
+                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                    loading="lazy"
-                    className="w-full h-full"
+                    className="w-full h-full border-0"
+                    style={{ display: "block" }}
                   />
                 </div>
                 {glWaitingForKey && (
-                  <p className="text-[11px] text-amber-500/80 text-center animate-pulse">
-                    Select "Streaming software" tab → copy your Stream Key → come back here
+                  <p className="text-[11px] text-amber-500 text-center animate-pulse font-medium">
+                    ✓ Stream key copied? Paste it below to go live!
                   </p>
                 )}
                 <div className="space-y-1">
@@ -10777,8 +10808,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       type={glShowYoutubeKey ? "text" : "password"}
                       value={glYoutubeKey}
                       onChange={e => setGlYoutubeKey(e.target.value)}
-                      placeholder="Paste stream key here…"
+                      placeholder="xxxx-xxxx-xxxx-xxxx-xxxx"
                       className="w-full px-3 py-2.5 pr-10 rounded-lg text-sm bg-background border focus:outline-none focus:ring-2 focus:ring-red-500/40 placeholder:text-muted-foreground/40 transition-all"
+                      style={{ borderColor: glYoutubeKey ? "rgba(239,68,68,0.5)" : undefined }}
                     />
                     <button onClick={() => setGlShowYoutubeKey(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label={glShowYoutubeKey ? "Hide key" : "Show key"}>
                       {glShowYoutubeKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
