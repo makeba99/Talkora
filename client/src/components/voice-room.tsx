@@ -3498,9 +3498,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setMyYtVote(null);
         setMyYtSkipVote(false);
         setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
+      } else if (data.videoId && !youtubeStartedByRef.current) {
+        // Auto-share: a room member started a video and I'm not watching anything —
+        // automatically open the player so the whole room watches together.
+        setActiveYoutubeId(data.videoId);
+        setYoutubeStartedBy(hostId);
+        setShowYoutube(true);
+        setUserDismissedYoutube(false);
+        setMyYtVote(null);
+        setMyYtSkipVote(false);
+        setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
       }
-      // Otherwise: another participant started a video. Leave my view alone —
-      // I can choose to join from their participant tile.
     });
 
     socket.on("room:book", (data: { book: any | null; hostId: string | null; scrollPct: number; watchers?: string[] }) => {
@@ -10124,8 +10132,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <label htmlFor="vr-go-live-yt-key-a" className="text-[10px] font-semibold text-red-400 uppercase tracking-wide">YouTube Stream Key</label>
-                      <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5">Get key <ExternalLink className="w-2.5 h-2.5" /></a>
+                      <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5" title="YouTube Studio → Create → Go Live → Streaming software → Copy stream key">Get key <ExternalLink className="w-2.5 h-2.5" /></a>
                     </div>
+                    <p className="text-[9px] text-white/30 -mt-0.5">studio.youtube.com → Create → Go Live → Streaming software → Copy key</p>
                     <div className="relative">
                       <input
                         id="vr-go-live-yt-key-a"
@@ -10522,10 +10531,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label htmlFor="vr-go-live-yt-key-b" className="text-xs font-semibold text-red-400">YouTube Stream Key</label>
-                    <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-0.5">
+                    <a href="https://studio.youtube.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-0.5" title="YouTube Studio → Create → Go Live → Streaming software → Copy stream key">
                       Get key <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
+                  <p className="text-[10px] text-muted-foreground/50">studio.youtube.com → Create → Go Live → Streaming software → Copy key</p>
                   <div className="relative">
                     <input
                       id="vr-go-live-yt-key-b"
