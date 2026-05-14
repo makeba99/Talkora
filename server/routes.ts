@@ -2236,13 +2236,17 @@ export async function registerRoutes(
       const { streamId } = req.params;
       const userId = req.user?.id?.toString();
       const info = getStreamInfo(streamId);
-      if (!info) return res.status(404).json({ message: "Stream not found" });
+      if (!info) return res.status(404).json({ message: "Stream not found", dead: true });
       if (info.userId !== userId) return res.status(403).json({ message: "Forbidden" });
+      // If FFmpeg already died, tell the client immediately so it can show the error
+      if (!info.alive) return res.status(410).json({ message: "Stream ended", dead: true, exitError: info.exitError });
       const chunks: Buffer[] = [];
       req.on("data", (d: Buffer) => chunks.push(d));
       req.on("end", () => {
         const buf = Buffer.concat(chunks);
-        writeChunk(streamId, buf);
+        const result = writeChunk(streamId, buf);
+        if (result === "dead") return res.status(410).json({ message: "Stream ended", dead: true });
+        if (result === "notfound") return res.status(404).json({ message: "Stream not found", dead: true });
         res.json({ ok: true, bytes: buf.length });
       });
     } catch (err: any) {

@@ -1865,6 +1865,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const glMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const glDurationRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const glViewerPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const glStatusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const glChunkFailRef = useRef(0);
   const ytKeyInputRef = useRef<HTMLInputElement>(null);
   const twKeyInputRef = useRef<HTMLInputElement>(null);
   const [glWaitingForKey, setGlWaitingForKey] = useState<"youtube" | "twitch" | "both" | null>(null);
@@ -6145,13 +6147,50 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const mr = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 2_500_000 });
     glMediaRecorderRef.current = mr;
 
+    // Helper: stop everything and surface an error message to the user
+    const crashStop = (msg: string) => {
+      if (glMediaRecorderRef.current?.state !== "inactive") { try { glMediaRecorderRef.current?.stop(); } catch {} }
+      glMediaRecorderRef.current = null;
+      if (glRafRef.current) { cancelAnimationFrame(glRafRef.current); glRafRef.current = null; }
+      if (glAudioCtxRef.current) { glAudioCtxRef.current.close().catch(()=>{}); glAudioCtxRef.current = null; }
+      glCanvasRef.current = null;
+      if (glDurationRef.current) { clearInterval(glDurationRef.current); glDurationRef.current = null; }
+      if (glViewerPollRef.current) { clearInterval(glViewerPollRef.current); glViewerPollRef.current = null; }
+      if (glStatusPollRef.current) { clearInterval(glStatusPollRef.current); glStatusPollRef.current = null; }
+      micStream?.getTracks().forEach(t => t.stop());
+      fetch(`/api/stream/${streamId}/stop`, { method: "POST", credentials: "include" }).catch(()=>{});
+      setGlStreamId(null); setGlStatus("error"); setGlError(msg);
+    };
+
+    glChunkFailRef.current = 0;
+
     mr.ondataavailable = async (e) => {
       if (!e.data.size) return;
-      fetch(`/api/stream/${streamId}/chunk`, {
-        method: "POST", headers: { "Content-Type": "application/octet-stream" },
-        credentials: "include", body: await e.data.arrayBuffer(),
-      }).catch(()=>{});
+      try {
+        const buf = await e.data.arrayBuffer();
+        const res = await fetch(`/api/stream/${streamId}/chunk`, {
+          method: "POST", headers: { "Content-Type": "application/octet-stream" },
+          credentials: "include", body: buf,
+        });
+        if (res.status === 410 || res.status === 404) {
+          // FFmpeg died — grab the error message from the server and surface it
+          const body = await res.json().catch(() => ({})) as any;
+          const msg = body.exitError || body.message || "Stream disconnected — check your stream key and try again.";
+          crashStop(msg); return;
+        }
+        if (!res.ok) {
+          glChunkFailRef.current++;
+          if (glChunkFailRef.current >= 4) crashStop("Connection to streaming server lost after repeated errors.");
+        } else {
+          glChunkFailRef.current = 0; // reset on success
+        }
+      } catch {
+        glChunkFailRef.current++;
+        if (glChunkFailRef.current >= 4) crashStop("Connection to streaming server lost.");
+      }
     };
+
+    mr.onerror = (e) => { crashStop(`Recording error: ${(e as any)?.error?.message ?? "unknown"}`); };
 
     mr.onstop = () => {
       micStream?.getTracks().forEach(t=>t.stop());
@@ -6160,9 +6199,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       glCanvasRef.current = null;
     };
 
-    mr.start(2000);
+    mr.start(1500);
     setGlStatus("live"); setGlDuration(0); setGlViewers(null);
     glDurationRef.current = setInterval(() => setGlDuration(d => d+1), 1000);
+
+    // ── Poll stream status every 10 s to detect silent FFmpeg crashes ────────
+    const pollStatus = async () => {
+      try {
+        const r = await fetch(`/api/stream/${streamId}/status`, { credentials: "include" });
+        if (!r.ok) return;
+        const data = await r.json() as any;
+        if (data.alive === false && glMediaRecorderRef.current?.state !== "inactive") {
+          const msg = data.exitError || "Stream ended unexpectedly — check your stream key and try again.";
+          crashStop(msg);
+        }
+      } catch {}
+    };
+    glStatusPollRef.current = setInterval(pollStatus, 10_000);
 
     const pollViewers = async () => {
       try {
@@ -6186,6 +6239,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     glCanvasRef.current = null;
     if (glDurationRef.current) { clearInterval(glDurationRef.current); glDurationRef.current = null; }
     if (glViewerPollRef.current) { clearInterval(glViewerPollRef.current); glViewerPollRef.current = null; }
+    if (glStatusPollRef.current) { clearInterval(glStatusPollRef.current); glStatusPollRef.current = null; }
+    glChunkFailRef.current = 0;
     setGlStatus("idle"); setGlDuration(0); setGlViewers(null);
     if (id) { setGlStreamId(null); fetch(`/api/stream/${id}/stop`, { method: "POST", credentials: "include" }).catch(()=>{}); }
   }, [glStreamId]);

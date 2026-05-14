@@ -1,4 +1,5 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "child_process";
+import { execFileSync } from "child_process";
 
 interface StreamSession {
   proc: ChildProcessWithoutNullStreams;
@@ -10,6 +11,18 @@ interface StreamSession {
   roomId: string;
   startedAt: Date;
   bytesWritten: number;
+  exitCode: number | null;
+  exitError: string | null;
+  alive: boolean;
+}
+
+// Check FFmpeg is available once at startup
+let ffmpegAvailable: boolean | null = null;
+function checkFfmpeg(): boolean {
+  if (ffmpegAvailable !== null) return ffmpegAvailable;
+  try { execFileSync("ffmpeg", ["-version"], { timeout: 3000 }); ffmpegAvailable = true; }
+  catch { ffmpegAvailable = false; }
+  return ffmpegAvailable;
 }
 
 const activeSessions = new Map<string, StreamSession>();
@@ -105,11 +118,17 @@ export async function getViewerCounts(streamId: string): Promise<{
 // ── FFmpeg ───────────────────────────────────────────────────────────────────
 
 function buildFfmpegArgs(twitchKey?: string, youtubeKey?: string): string[] {
-  // Input: raw WebM piped from MediaRecorder.
-  // -fflags +nobuffer+flush_packets  → minimize encoder buffering latency
-  // -flags low_delay                  → low-latency mode throughout the pipeline
+  // Input: fragmented WebM piped from browser MediaRecorder.
+  // -analyzeduration 0 -probesize 32  → skip probing (we know the format), start fast
+  // -fflags +discardcorrupt+genpts+nobuffer+flush_packets
+  //   discardcorrupt → survive malformed packets from network hiccups
+  //   genpts         → generate missing PTS (MediaRecorder chunks may omit them)
+  //   nobuffer+flush_packets → minimize latency
+  // -flags low_delay → low-latency throughout the pipeline
   const inputArgs = [
-    "-fflags", "+nobuffer+flush_packets",
+    "-analyzeduration", "0",
+    "-probesize", "32",
+    "-fflags", "+discardcorrupt+genpts+nobuffer+flush_packets",
     "-flags", "low_delay",
     "-f", "webm",
     "-i", "pipe:0",
@@ -162,6 +181,7 @@ export function startStream(opts: {
   const { streamId, userId, roomId, twitchKey, youtubeKey, twitchUsername, youtubeChannelId } = opts;
   if (!twitchKey && !youtubeKey) return { ok: false, error: "At least one stream key required" };
   if (activeSessions.has(streamId)) return { ok: false, error: "Stream already active" };
+  if (!checkFfmpeg()) return { ok: false, error: "FFmpeg is not installed on this server. Streaming is unavailable." };
 
   const args = buildFfmpegArgs(twitchKey, youtubeKey);
   let proc: ChildProcessWithoutNullStreams;
@@ -171,28 +191,63 @@ export function startStream(opts: {
     return { ok: false, error: `Failed to start FFmpeg: ${e.message}` };
   }
 
-  proc.stderr.on("data", (d) => { process.stdout.write(`[stream:${streamId}] ${d}`); });
-  proc.on("exit", (code) => {
-    console.log(`[stream:${streamId}] FFmpeg exited with code ${code}`);
-    activeSessions.delete(streamId);
+  // Guard stdin against EPIPE (FFmpeg exited while we're still writing)
+  proc.stdin.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code !== "EPIPE" && err.code !== "ERR_STREAM_DESTROYED") {
+      console.error(`[stream:${streamId}] stdin error:`, err.code);
+    }
   });
 
-  activeSessions.set(streamId, {
+  // Collect last 2 KB of stderr to surface meaningful error messages
+  let stderrTail = "";
+  proc.stderr.on("data", (d: Buffer) => {
+    const chunk = d.toString();
+    process.stdout.write(`[stream:${streamId}] ${chunk}`);
+    stderrTail = (stderrTail + chunk).slice(-2048);
+  });
+
+  const session: StreamSession = {
     proc, twitchKey, youtubeKey, twitchUsername, youtubeChannelId,
     userId, roomId, startedAt: new Date(), bytesWritten: 0,
+    exitCode: null, exitError: null, alive: true,
+  };
+
+  proc.on("exit", (code) => {
+    session.alive = false;
+    session.exitCode = code;
+    // Surface a meaningful error if FFmpeg exited non-zero
+    if (code !== 0) {
+      const rtmpErr = stderrTail.match(/rtmp.*?(error|failed|refused|denied|invalid)[^\n]*/i)?.[0]
+        ?? stderrTail.match(/error[^\n]*/i)?.[0]
+        ?? null;
+      session.exitError = rtmpErr
+        ? rtmpErr.slice(0, 200)
+        : code === 1
+          ? "Stream rejected — check your stream key and try again."
+          : `FFmpeg exited with code ${code}.`;
+    }
+    console.log(`[stream:${streamId}] FFmpeg exited with code ${code}`);
+    // Keep the dead session for 60 s so the client can read the error
+    setTimeout(() => activeSessions.delete(streamId), 60_000);
   });
 
+  activeSessions.set(streamId, session);
   return { ok: true };
 }
 
-export function writeChunk(streamId: string, chunk: Buffer): boolean {
+export function writeChunk(streamId: string, chunk: Buffer): "ok" | "dead" | "notfound" {
   const session = activeSessions.get(streamId);
-  if (!session) return false;
+  if (!session) return "notfound";
+  if (!session.alive) return "dead";
   try {
-    session.proc.stdin.write(chunk);
+    const ok = session.proc.stdin.write(chunk);
     session.bytesWritten += chunk.length;
-    return true;
-  } catch { return false; }
+    // If write returns false the buffer is full — drain before continuing.
+    // We don't await it here (fire-and-forget) since the next chunk will either
+    // succeed or back-pressure the client via 503.
+    if (!ok) session.proc.stdin.once("drain", () => {});
+    return "ok";
+  } catch { return "dead"; }
 }
 
 export function stopStream(streamId: string): boolean {
@@ -218,6 +273,9 @@ export function getStreamInfo(streamId: string) {
     twitchUsername: s.twitchUsername,
     youtubeChannelId: s.youtubeChannelId,
     platforms: [s.twitchKey ? "twitch" : null, s.youtubeKey ? "youtube" : null].filter(Boolean),
+    alive: s.alive,
+    exitCode: s.exitCode,
+    exitError: s.exitError,
   };
 }
 
