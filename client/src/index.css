@@ -13344,6 +13344,15 @@ html.boost-mode .glass-panel {
   55%  { opacity: 0.38; transform: scale(1.03); }
   100% { opacity: 0;    transform: scale(1.00); }
 }
+/* DJ intro countdown number — pops in from big→normal, then shrinks and fades out */
+@keyframes dj-countdown-pop {
+  0%   { opacity: 0;    transform: scale(2.2) rotate(-8deg); }
+  14%  { opacity: 1;    transform: scale(0.88) rotate(3deg); }
+  30%  { opacity: 1;    transform: scale(1.05) rotate(-1deg); }
+  55%  { opacity: 1;    transform: scale(1.00) rotate(0deg); }
+  80%  { opacity: 0.70; transform: scale(0.95); }
+  100% { opacity: 0;    transform: scale(0.60); }
+}
 @keyframes rt-disco-participant-glow {
   0%,100% { opacity: 0.80; }
   50%     { opacity: 1.00; }

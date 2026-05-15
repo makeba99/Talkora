@@ -1503,6 +1503,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({}); 
   const [djModeActive, setDjModeActive] = useState(false);
   const djModeActiveRef = useRef(false);
+  const [djCountdown, setDjCountdown] = useState<number | null>(null);
   const [djBeatDropTick, setDjBeatDropTick] = useState(0);
   const [djSpotlightIdx, setDjSpotlightIdx] = useState(-1);
   const [djCurrentScene, setDjCurrentScene] = useState<string>("spotlight");
@@ -3841,8 +3842,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setParticipantMoods({});
         setYtFloatingReactions([]);
         setMovieFloatingReactions([]);
-        // Fire the intro beat-drop pulse on all cards
-        setDjBeatDropTick(t => t + 1);
+        // Start the 3-2-1 intro countdown for all users
+        setDjCountdown(3);
+        // Fire the intro beat-drop pulse on all cards (after countdown)
+        setTimeout(() => setDjBeatDropTick(t => t + 1), 3000);
       } else {
         setDjSpotlightIdx(-1);
         setDjCurrentScene("spotlight");
@@ -4037,6 +4040,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   // ── Keep djModeActiveRef in sync so socket handlers can read current value ───
   useEffect(() => { djModeActiveRef.current = djModeActive; }, [djModeActive]);
+
+  // ── DJ Intro countdown — ticks 3→2→1→null every 0.9s ────────────────────────
+  useEffect(() => {
+    if (djCountdown === null || djCountdown <= 0) { setDjCountdown(null); return; }
+    const id = setTimeout(() => setDjCountdown(n => (n !== null && n > 1) ? n - 1 : null), 900);
+    return () => clearTimeout(id);
+  }, [djCountdown]);
 
   // ── DJ Auto-advance — host automatically cycles scenes every 20s ────────────
   useEffect(() => {
@@ -12466,10 +12476,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </button>
                   </div>
 
-                  {/* ── Emoji / reactions bar — floats over the bottom of the video, no black bar ── */}
+                  {/* ── Emoji / reactions bar — pinned to bottom-right corner of the video ── */}
                   <div
-                    className="absolute bottom-3 left-1/2 z-[30] flex items-center gap-2"
-                    style={{ transform: "translateX(-50%)" }}
+                    className="absolute bottom-3 right-3 z-[30] flex items-center gap-2"
                     data-testid="youtube-host-controls"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -13018,6 +13027,35 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
           {/* ── DJ Scene full-screen overlay (position:fixed, covers whole viewport) ── */}
           <DjSceneOverlay scene={djCurrentScene} participants={participants} active={djModeActive} />
+
+          {/* ── DJ Intro Countdown — 3→2→1 fullscreen overlay before first scene ── */}
+          {djCountdown !== null && (
+            <div
+              style={{
+                position: "fixed", inset: 0, zIndex: 10000,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                pointerEvents: "none",
+                background: "radial-gradient(ellipse at center, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.40) 60%, transparent 100%)",
+              }}
+              aria-hidden="true"
+            >
+              <div
+                key={djCountdown}
+                style={{
+                  fontSize: "clamp(100px,22vw,220px)",
+                  fontWeight: 900,
+                  fontFamily: "'Space Grotesk','Impact','Arial Black',sans-serif",
+                  letterSpacing: "-0.04em",
+                  lineHeight: 1,
+                  color: "#fff",
+                  textShadow: `0 0 60px rgba(${getDjBeatColor(djCurrentScene)},0.95), 0 0 120px rgba(${getDjBeatColor(djCurrentScene)},0.55), 0 8px 32px rgba(0,0,0,0.80)`,
+                  animation: "dj-countdown-pop 0.88s cubic-bezier(0.22,1,0.36,1) forwards",
+                }}
+              >
+                {djCountdown}
+              </div>
+            </div>
+          )}
 
           {(() => {
             const visibleCount = participants.filter(p => !foreverBlockedIds.has(p.id)).length;
