@@ -1,0 +1,30 @@
+You are a senior backend engineer tasked with implementing a content moderation system for a web application.
+
+Your objective: Design and build a comprehensive profanity and inappropriate content filter that detects offensive language, sexual content, slurs, and improper slang across all user-generated content types (text posts, comments, GIF titles, image captions, etc.). When inappropriate content is detected, the system should silently prevent it from displaying to other users while notifying the offending user that their content violates community guidelines.
+
+**Core Requirements:**
+
+1. **Detection Scope**: The filter must catch:
+  - Explicit profanity and curse words
+  - Sexual language and content references
+  - Slurs and hate speech
+  - Vulgar slang and crude phrases
+  - Inappropriate combinations of words that form offensive meanings
+  - Offensive language embedded in GIF titles, image captions, and metadata
+2. **Behavior**:
+  - When offensive content is submitted, accept it in the database but mark it as flagged/hidden
+  - Do not display the content to other users (make it invisible in feeds, replies, searches)
+  - Display a clear warning to the submitting user explaining that their text/content won't be visible to others because it violates community standards
+  - Allow the user to edit and resubmit if they choose
+3. **Technical Considerations**:
+  - Implement a multi-layer detection approach (keyword matching, pattern recognition, semantic analysis)
+  - Include a configurable word/phrase list that can be updated without redeploying
+  - Handle false positives ew
+4. **User Experience**:
+  - The warning message should be respectful but clear
+  - Users should understand why their content was flagged
+  - Provide guidance on what types of content are acceptablegracefully (consider context, legitimate uses of potentially flagged words)
+  - Ensure the system works across all content input fields and media metadata
+  - Log all flagged content for moderation revi
+
+Provide the implementation approach, including architecture decisions, the detection methodology you'd recommend, and code structure or pseudocode for the core filtering logic.

@@ -18,6 +18,7 @@ import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "
 import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, type AiTutorConfig } from "./ai-config";
 import { openAiSynthesize, openAiTtsHealth } from "./openai-tts";
 import { huggingFaceSynthesize, huggingFaceTtsHealth } from "./huggingface-tts";
+import { checkContent, checkFields } from "./content-filter";
 import { startStream, writeChunk, stopStream, getStreamInfo, stopAllStreamsForUser, getViewerCounts } from "./streaming";
 import {
   renderIndexHtml,
@@ -2189,6 +2190,18 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Cannot update other users" });
       }
       const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status } = req.body;
+
+      // ── Content moderation ─────────────────────────────────────────────────
+      const profileModResult = checkFields({ displayName, bio });
+      if (profileModResult.flagged) {
+        const fieldLabel = profileModResult.field === "displayName" ? "display name" : "bio";
+        return res.status(422).json({
+          flagged: true,
+          field: profileModResult.field,
+          message: `Your ${fieldLabel} wasn't saved — ${profileModResult.message.replace("Your content", "it")}`,
+        });
+      }
+
       const updateData: any = {};
       if (displayName !== undefined) updateData.displayName = displayName;
       if (profileImageUrl !== undefined) updateData.profileImageUrl = normalizeProfileImageUrl(profileImageUrl);
@@ -2560,6 +2573,12 @@ export async function registerRoutes(
           restrictedUntil: owner?.restrictedUntil,
         });
       }
+      // ── Content moderation ─────────────────────────────────────────────────
+      const roomCreateModResult = checkContent(parsed.data.title);
+      if (roomCreateModResult.flagged) {
+        return res.status(422).json({ flagged: true, message: `Room title wasn't created — ${roomCreateModResult.message.replace("Your content", "it")}` });
+      }
+
       const existingRooms = await storage.getRoomsByOwner(ownerId);
       if (existingRooms.length > 0) {
         return res.status(400).json({ message: "You can only host one room at a time. Please close your existing room first." });
@@ -2598,6 +2617,18 @@ export async function registerRoutes(
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
       const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission, chatPermission } = req.body;
+
+      // ── Content moderation ─────────────────────────────────────────────────
+      const roomUpdateModResult = checkFields({ title, welcomeMessage });
+      if (roomUpdateModResult.flagged) {
+        const fieldLabel = roomUpdateModResult.field === "title" ? "room title" : "welcome message";
+        return res.status(422).json({
+          flagged: true,
+          field: roomUpdateModResult.field,
+          message: `Your ${fieldLabel} wasn't saved — ${roomUpdateModResult.message.replace("Your content", "it")}`,
+        });
+      }
+
       const updateData: any = {};
       if (title) updateData.title = title;
       if (language) updateData.language = language;
@@ -2898,6 +2929,12 @@ export async function registerRoutes(
           message: sender?.restrictedReason || "Your account is temporarily restricted from sending messages.",
           restrictedUntil: sender?.restrictedUntil,
         });
+      }
+
+      // ── Content moderation ─────────────────────────────────────────────────
+      const dmModResult = checkContent(parsed.data.text);
+      if (dmModResult.flagged) {
+        return res.status(422).json({ flagged: true, message: dmModResult.message });
       }
 
       const msg = await storage.createMessage(parsed.data);
@@ -4567,6 +4604,15 @@ export async function registerRoutes(
       if (typeof rating !== "number" || rating < 1 || rating > 5) {
         return res.status(400).json({ message: "Rating must be between 1 and 5" });
       }
+
+      // ── Content moderation ─────────────────────────────────────────────────
+      if (comment) {
+        const reviewModResult = checkContent(comment);
+        if (reviewModResult.flagged) {
+          return res.status(422).json({ flagged: true, message: reviewModResult.message });
+        }
+      }
+
       const review = await storage.createTeacherReview({ teacherId, userId, rating, comment });
       res.json(review);
     } catch (err: any) {
@@ -4751,6 +4797,13 @@ export async function registerRoutes(
       const { targetUserId } = req.params;
       const parsed = insertUserCommentSchema.safeParse({ ...req.body, authorId, targetUserId });
       if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid comment" });
+
+      // ── Content moderation ─────────────────────────────────────────────────
+      const commentModResult = checkContent(parsed.data.text);
+      if (commentModResult.flagged) {
+        return res.status(422).json({ flagged: true, message: commentModResult.message });
+      }
+
       const comment = await storage.createUserComment(parsed.data);
       res.status(201).json(comment);
     } catch (err: any) {
@@ -5662,6 +5715,13 @@ export async function registerRoutes(
           trollCooldown.set(data.userId, now);
         }
 
+        // ── Content moderation ───────────────────────────────────────────────
+        const chatModResult = checkContent(data.text);
+        if (chatModResult.flagged) {
+          socket.emit("room:chat-blocked", { reason: chatModResult.message });
+          return;
+        }
+
         if (data.privateToId && data.privateToId !== data.userId) {
           const participants = roomParticipants.get(data.roomId);
           if (!participants?.has(data.userId) || !participants.has(data.privateToId)) return;
@@ -5712,6 +5772,11 @@ export async function registerRoutes(
       try {
         const trimmed = (data.newText || "").trim().slice(0, 4000);
         if (!trimmed) return;
+        const editModResult = checkContent(trimmed);
+        if (editModResult.flagged) {
+          socket.emit("room:chat-blocked", { reason: editModResult.message });
+          return;
+        }
         io.to(data.roomId).emit("room:chat-edit", { messageId: data.messageId, newText: trimmed });
       } catch (err) {
         console.error("Error editing room message:", err);
