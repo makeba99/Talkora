@@ -827,6 +827,147 @@ function drawPremiumAtmosphere(ctx: Ctx, W: number, H: number, t: number, state:
 }
 
 /* ─────────────────────────────────────────────
+   SKELETON GANGSTA – bone-ash drift + cold fog + crack lines
+───────────────────────────────────────────── */
+interface AshFlake { x: number; y: number; vy: number; vx: number; r: number; alpha: number; tw: number; rot: number; vrot: number; }
+interface CrackSeg  { x1: number; y1: number; x2: number; y2: number; alpha: number; }
+interface SkeletonState { ash: AshFlake[]; cracks: CrackSeg[][]; fogPhase: number; }
+
+const BONE_WHITES = ["#e8e0d0","#d8d0c0","#c8bfaf","#f0ece3","#b8b0a0","#ffffff","#ddd5c5"];
+
+function buildAsh(W: number, H: number): AshFlake[] {
+  return Array.from({ length: 120 }, () => ({
+    x:    Math.random() * W,
+    y:    Math.random() * H,
+    vy:   0.18 + Math.random() * 0.55,
+    vx:   (Math.random() - 0.5) * 0.22,
+    r:    0.8 + Math.random() * 2.2,
+    alpha:0.12 + Math.random() * 0.40,
+    tw:   Math.random() * Math.PI * 2,
+    rot:  Math.random() * Math.PI * 2,
+    vrot: (Math.random() - 0.5) * 0.03,
+  }));
+}
+
+function buildCracks(W: number, H: number): CrackSeg[][] {
+  const result: CrackSeg[][] = [];
+  for (let c = 0; c < 6; c++) {
+    const segs: CrackSeg[] = [];
+    let x = Math.random() * W, y = Math.random() * H;
+    let angle = Math.random() * Math.PI * 2;
+    for (let s = 0; s < 8 + Math.floor(Math.random() * 8); s++) {
+      const len = 18 + Math.random() * 40;
+      angle += (Math.random() - 0.5) * 0.9;
+      const nx = x + Math.cos(angle) * len;
+      const ny = y + Math.sin(angle) * len;
+      segs.push({ x1: x, y1: y, x2: nx, y2: ny, alpha: 0.12 + Math.random() * 0.22 });
+      x = nx; y = ny;
+    }
+    result.push(segs);
+  }
+  return result;
+}
+
+function buildSkeletonGangsta(W: number, H: number): SkeletonState {
+  return { ash: buildAsh(W, H), cracks: buildCracks(W, H), fogPhase: 0 };
+}
+
+function drawSkeletonGangsta(ctx: Ctx, W: number, H: number, t: number, state: SkeletonState) {
+  ctx.clearRect(0, 0, W, H);
+  state.fogPhase = t;
+
+  ctx.fillStyle = "#050505";
+  ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+
+  // Cold drifting fog layers
+  for (let fi = 0; fi < 3; fi++) {
+    const ox = Math.sin(t * (0.06 + fi * 0.03) + fi * 2.1) * W * 0.18;
+    const oy = Math.cos(t * (0.05 + fi * 0.02) + fi) * H * 0.10;
+    const cx = W * [0.25, 0.72, 0.50][fi] + ox;
+    const cy = H * [0.55, 0.40, 0.70][fi] + oy;
+    const r  = W * [0.42, 0.38, 0.34][fi];
+    const alphas = [0.055, 0.045, 0.035];
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, `rgba(200,195,185,${alphas[fi]})`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle   = g;
+    ctx.globalAlpha = 1;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Ground crack lines — static, haunting
+  state.cracks.forEach(segs => {
+    segs.forEach(seg => {
+      const pulse = seg.alpha * (0.6 + 0.4 * Math.sin(t * 0.5 + seg.x1 * 0.01));
+      ctx.globalAlpha = pulse;
+      ctx.strokeStyle = "#c8bfaf";
+      ctx.lineWidth   = 0.6;
+      ctx.shadowColor = "#c8bfaf";
+      ctx.shadowBlur  = 3;
+      ctx.beginPath();
+      ctx.moveTo(seg.x1, seg.y1);
+      ctx.lineTo(seg.x2, seg.y2);
+      ctx.stroke();
+    });
+  });
+  ctx.shadowBlur = 0;
+
+  // Bone-ash flakes drifting downward
+  state.ash.forEach(a => {
+    a.y   += a.vy;
+    a.x   += a.vx + Math.sin(t * 0.7 + a.tw) * 0.14;
+    a.rot += a.vrot;
+    if (a.y > H + 6) { a.y = -6; a.x = Math.random() * W; }
+    if (a.x < -6) a.x = W + 6;
+    if (a.x > W + 6) a.x = -6;
+
+    const pulse = a.alpha * (0.5 + 0.5 * Math.sin(t * 1.1 + a.tw));
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle   = BONE_WHITES[Math.floor(a.tw * 3) % BONE_WHITES.length];
+    ctx.shadowColor = "#d8d0c0";
+    ctx.shadowBlur  = a.r > 1.5 ? 6 : 2;
+
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(a.rot);
+    if (a.r > 1.8) {
+      // Larger flakes are tiny bone shards (diamond shape)
+      ctx.beginPath();
+      ctx.moveTo(0, -a.r * 1.4);
+      ctx.lineTo(a.r * 0.7, 0);
+      ctx.lineTo(0, a.r * 1.4);
+      ctx.lineTo(-a.r * 0.7, 0);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, 0, a.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  });
+  ctx.shadowBlur = 0;
+
+  // Bottom ground mist
+  const mistG = ctx.createLinearGradient(0, H * 0.72, 0, H);
+  mistG.addColorStop(0, "rgba(0,0,0,0)");
+  mistG.addColorStop(1, "rgba(0,0,0,0.82)");
+  ctx.fillStyle   = mistG;
+  ctx.globalAlpha = 1;
+  ctx.fillRect(0, H * 0.72, W, H * 0.28);
+
+  // Top vignette
+  const vig = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.7);
+  vig.addColorStop(0,   "rgba(0,0,0,0)");
+  vig.addColorStop(0.65,"rgba(0,0,0,0.18)");
+  vig.addColorStop(1,   "rgba(0,0,0,0.78)");
+  ctx.fillStyle   = vig;
+  ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ─────────────────────────────────────────────
    TRAP GOLD – gold ember particles + city skyline + bass ripples
 ───────────────────────────────────────────── */
 interface TrapEmber { x: number; y: number; vy: number; vx: number; r: number; alpha: number; tw: number; color: string; }
@@ -971,7 +1112,7 @@ function drawTrapGold(ctx: Ctx, W: number, H: number, t: number, state: TrapStat
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const ANIMATED_THEMES = new Set([
-  "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon","neural-pulse","premium-atmosphere","trap-gold",
+  "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon","neural-pulse","premium-atmosphere","trap-gold","skeleton-gangsta",
 ]);
 
 export function AnimatedBackground() {
@@ -989,6 +1130,7 @@ export function AnimatedBackground() {
     neural?:      NeuralState;
     premium?:     PremiumState;
     trapGold?:    TrapState;
+    skeleton?:    SkeletonState;
   }>({});
 
   const active = ANIMATED_THEMES.has(theme);
@@ -1063,6 +1205,9 @@ export function AnimatedBackground() {
       }
       if (theme === "trap-gold") {
         dataRef.current.trapGold = buildTrapGold(W, H);
+      }
+      if (theme === "skeleton-gangsta") {
+        dataRef.current.skeleton = buildSkeletonGangsta(W, H);
       }
     };
 
@@ -1185,6 +1330,10 @@ export function AnimatedBackground() {
       else if (theme === "trap-gold") {
         if (!dataRef.current.trapGold) return;
         drawTrapGold(ctx, W, H, t, dataRef.current.trapGold);
+      }
+      else if (theme === "skeleton-gangsta") {
+        if (!dataRef.current.skeleton) return;
+        drawSkeletonGangsta(ctx, W, H, t, dataRef.current.skeleton);
       }
 
       rafRef.current = requestAnimationFrame(draw);

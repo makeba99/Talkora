@@ -20,7 +20,8 @@ export type Theme =
   | "premium-atmosphere"
   | "neomorphic-dark"
   | "neomorphic-light"
-  | "trap-gold";
+  | "trap-gold"
+  | "skeleton-gangsta";
 
 export interface ThemeDefinition {
   id: Theme;
@@ -178,6 +179,14 @@ export const THEMES: ThemeDefinition[] = [
     label: "Trap Gold",
     description: "Hip-hop gold street vibes",
     swatchColors: ["#0a0800", "#1a1200", "#f59e0b"],
+    isDark: true,
+    animated: true,
+  },
+  {
+    id: "skeleton-gangsta",
+    label: "Skeleton Gangsta",
+    description: "Cold bone-white street darkness",
+    swatchColors: ["#050505", "#111111", "#c8c0b0"],
     isDark: true,
     animated: true,
   },
