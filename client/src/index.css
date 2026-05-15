@@ -1820,6 +1820,59 @@ html.blood-moon {
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+/* ─── TRAP GOLD ──────────────────────────────────────────────── */
+html.trap-gold {
+  --button-outline: rgba(245, 158, 11, .18);
+  --badge-outline: rgba(245, 158, 11, .07);
+  --opaque-button-border-intensity: 10;
+  --elevate-1: rgba(245, 158, 11, .06);
+  --elevate-2: rgba(245, 158, 11, .12);
+  --background: 38 100% 3%;
+  --foreground: 40 30% 92%;
+  --border: 38 60% 14%;
+  --card: 38 70% 6%;
+  --card-foreground: 40 30% 92%;
+  --card-border: 38 55% 10%;
+  --sidebar: 38 80% 4%;
+  --sidebar-foreground: 40 30% 92%;
+  --sidebar-border: 38 55% 10%;
+  --sidebar-primary: 38 95% 52%;
+  --sidebar-primary-foreground: 38 100% 4%;
+  --sidebar-accent: 38 60% 10%;
+  --sidebar-accent-foreground: 40 30% 92%;
+  --sidebar-ring: 38 95% 52%;
+  --popover: 38 70% 6%;
+  --popover-foreground: 40 30% 92%;
+  --popover-border: 38 60% 14%;
+  --primary: 38 95% 52%;
+  --primary-foreground: 38 100% 4%;
+  --secondary: 28 90% 48%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 38 50% 10%;
+  --muted-foreground: 38 20% 52%;
+  --accent: 38 55% 8%;
+  --accent-foreground: 40 30% 92%;
+  --destructive: 0 84% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 38 50% 14%;
+  --ring: 38 95% 52%;
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+html.trap-gold body {
+  background: hsl(38 100% 3%);
+}
+
+html.trap-gold #animated-bg-canvas {
+  opacity: 0.85;
+}
+
 /* ─── SLATE NOIR ──────────────────────────────────────────────── */
 html.slate-noir {
   --button-outline: rgba(148, 163, 184, .12);

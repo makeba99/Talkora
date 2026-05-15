@@ -19,7 +19,8 @@ export type Theme =
   | "neural-pulse"
   | "premium-atmosphere"
   | "neomorphic-dark"
-  | "neomorphic-light";
+  | "neomorphic-light"
+  | "trap-gold";
 
 export interface ThemeDefinition {
   id: Theme;
@@ -169,6 +170,14 @@ export const THEMES: ThemeDefinition[] = [
     label: "Neural Pulse",
     description: "AI network live connections",
     swatchColors: ["#03050e", "#080f1f", "#00d4ff"],
+    isDark: true,
+    animated: true,
+  },
+  {
+    id: "trap-gold",
+    label: "Trap Gold",
+    description: "Hip-hop gold street vibes",
+    swatchColors: ["#0a0800", "#1a1200", "#f59e0b"],
     isDark: true,
     animated: true,
   },

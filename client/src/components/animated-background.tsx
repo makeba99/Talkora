@@ -827,10 +827,151 @@ function drawPremiumAtmosphere(ctx: Ctx, W: number, H: number, t: number, state:
 }
 
 /* ─────────────────────────────────────────────
+   TRAP GOLD – gold ember particles + city skyline + bass ripples
+───────────────────────────────────────────── */
+interface TrapEmber { x: number; y: number; vy: number; vx: number; r: number; alpha: number; tw: number; color: string; }
+interface TrapRipple { x: number; y: number; radius: number; maxRadius: number; alpha: number; }
+interface TrapState { embers: TrapEmber[]; ripples: TrapRipple[]; skyline: number[]; nextRipple: number; }
+
+const TRAP_COLORS = ["#f59e0b","#fbbf24","#fcd34d","#d97706","#f59e0b","#fffbeb","#fde68a","#f59e0b"];
+
+function buildTrapGold(W: number, H: number): TrapState {
+  const embers: TrapEmber[] = Array.from({ length: 140 }, () => ({
+    x:     Math.random() * W,
+    y:     Math.random() * H,
+    vy:    -(0.3 + Math.random() * 1.1),
+    vx:    (Math.random() - 0.5) * 0.35,
+    r:     0.6 + Math.random() * 2.4,
+    alpha: 0.15 + Math.random() * 0.55,
+    tw:    Math.random() * Math.PI * 2,
+    color: TRAP_COLORS[Math.floor(Math.random() * TRAP_COLORS.length)],
+  }));
+
+  const cols = Math.ceil(W / 28) + 2;
+  const skyline: number[] = [];
+  for (let i = 0; i < cols; i++) {
+    const seed = Math.sin(i * 1.7) * 0.5 + Math.sin(i * 0.4) * 0.3 + Math.cos(i * 2.3) * 0.2;
+    skyline.push(H * 0.58 - (seed * 0.5 + 0.5) * H * 0.26);
+  }
+
+  return { embers, ripples: [], skyline, nextRipple: 0 };
+}
+
+function drawTrapGold(ctx: Ctx, W: number, H: number, t: number, state: TrapState) {
+  ctx.clearRect(0, 0, W, H);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0,    "#060400");
+  bg.addColorStop(0.55, "#0d0800");
+  bg.addColorStop(1,    "#1a0e00");
+  ctx.fillStyle   = bg;
+  ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+
+  const ambientG = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, W * 0.6);
+  ambientG.addColorStop(0,   "rgba(245,158,11,0.06)");
+  ambientG.addColorStop(0.6, "rgba(217,119,6,0.03)");
+  ambientG.addColorStop(1,   "rgba(0,0,0,0)");
+  ctx.fillStyle = ambientG;
+  ctx.fillRect(0, 0, W, H);
+
+  // Bass ripples — expand outward and fade
+  state.nextRipple -= 1;
+  if (state.nextRipple <= 0) {
+    state.ripples.push({
+      x:         W * (0.25 + Math.random() * 0.5),
+      y:         H * (0.3 + Math.random() * 0.4),
+      radius:    0,
+      maxRadius: 90 + Math.random() * 130,
+      alpha:     0.55,
+    });
+    state.nextRipple = 55 + Math.random() * 40;
+  }
+
+  for (let i = state.ripples.length - 1; i >= 0; i--) {
+    const rp = state.ripples[i];
+    rp.radius += 1.8;
+    rp.alpha  *= 0.975;
+    if (rp.alpha < 0.01 || rp.radius > rp.maxRadius) { state.ripples.splice(i, 1); continue; }
+    ctx.globalAlpha = rp.alpha;
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth   = 1.2;
+    ctx.shadowColor = "#f59e0b";
+    ctx.shadowBlur  = 8;
+    ctx.beginPath();
+    ctx.arc(rp.x, rp.y, rp.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  // Gold ember particles floating upward
+  state.embers.forEach(e => {
+    e.y  += e.vy;
+    e.x  += e.vx + Math.sin(t * 0.8 + e.tw) * 0.18;
+    if (e.y < -8)  { e.y = H + 8; e.x = Math.random() * W; }
+    if (e.x < -8)  e.x = W + 8;
+    if (e.x > W+8) e.x = -8;
+
+    const pulse = e.alpha * (0.55 + 0.45 * Math.sin(t * 1.6 + e.tw));
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle   = e.color;
+    ctx.shadowColor = e.color;
+    ctx.shadowBlur  = e.r > 1.6 ? 12 : 5;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+    ctx.fill();
+    if (e.r > 1.5) {
+      ctx.globalAlpha = pulse * 0.12;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r * 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  ctx.shadowBlur = 0;
+
+  // City skyline silhouette
+  const colW = 28;
+  ctx.globalAlpha = 1;
+  ctx.fillStyle   = "#000000";
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  state.skyline.forEach((top, i) => {
+    const bx = i * colW;
+    ctx.lineTo(bx,        H);
+    ctx.lineTo(bx,        top);
+    ctx.lineTo(bx + colW * 0.12, top);
+    ctx.lineTo(bx + colW * 0.12, top - 14);
+    ctx.lineTo(bx + colW * 0.22, top - 14);
+    ctx.lineTo(bx + colW * 0.22, top);
+    ctx.lineTo(bx + colW,        top);
+    ctx.lineTo(bx + colW,        H);
+  });
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Warm gold glow along rooftops
+  const roofGlow = ctx.createLinearGradient(0, H * 0.55, 0, H * 0.62);
+  roofGlow.addColorStop(0, "rgba(245,158,11,0.13)");
+  roofGlow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = roofGlow;
+  ctx.fillRect(0, H * 0.55, W, H * 0.1);
+
+  // Vignette
+  const vig = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.75);
+  vig.addColorStop(0,   "rgba(0,0,0,0)");
+  vig.addColorStop(0.7, "rgba(0,0,0,0.2)");
+  vig.addColorStop(1,   "rgba(0,0,0,0.72)");
+  ctx.fillStyle   = vig;
+  ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const ANIMATED_THEMES = new Set([
-  "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon","neural-pulse","premium-atmosphere",
+  "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon","neural-pulse","premium-atmosphere","trap-gold",
 ]);
 
 export function AnimatedBackground() {
@@ -847,6 +988,7 @@ export function AnimatedBackground() {
     nebula?:      NebParticle[];
     neural?:      NeuralState;
     premium?:     PremiumState;
+    trapGold?:    TrapState;
   }>({});
 
   const active = ANIMATED_THEMES.has(theme);
@@ -918,6 +1060,9 @@ export function AnimatedBackground() {
       }
       if (theme === "premium-atmosphere") {
         dataRef.current.premium = buildPremiumAtmosphere(W, H);
+      }
+      if (theme === "trap-gold") {
+        dataRef.current.trapGold = buildTrapGold(W, H);
       }
     };
 
@@ -1036,6 +1181,10 @@ export function AnimatedBackground() {
       else if (theme === "premium-atmosphere") {
         if (!dataRef.current.premium) return;
         drawPremiumAtmosphere(ctx, W, H, t, dataRef.current.premium);
+      }
+      else if (theme === "trap-gold") {
+        if (!dataRef.current.trapGold) return;
+        drawTrapGold(ctx, W, H, t, dataRef.current.trapGold);
       }
 
       rafRef.current = requestAnimationFrame(draw);
