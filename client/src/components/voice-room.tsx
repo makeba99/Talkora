@@ -1261,6 +1261,11 @@ function getDjSlingStyle(index: number): React.CSSProperties {
   return { animation: `${ANIMS[v]} ${DURS[v]}s cubic-bezier(0.34,1.56,0.64,1) infinite ${DELS[v]}s` };
 }
 
+// ── DJ auto-cycle order — all 10 styles rotate so cards are visually varied ──
+const DJ_AUTO_CYCLE = [
+  "sling","wave","bounce","pulse","tilt","orbit","float","wiggle","slam","spin","stretch","shake",
+] as const;
+
 // ── DJ Movement styles helper ────────────────────────────────────────────────
 function getDjMoveStyle(index: number, style: string): React.CSSProperties {
   if (style === "sling") return getDjSlingStyle(index);
@@ -1277,6 +1282,46 @@ function getDjMoveStyle(index: number, style: string): React.CSSProperties {
     const durs = [2.5, 3.0, 2.2, 2.8, 3.5, 2.4];
     const dels = [0, 0.5, 1.0, 0.3, 0.8, 0.2];
     return { animation: `dj-float ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
+  }
+  if (style === "wave") {
+    const durs = [1.3, 1.6, 1.1, 1.8, 1.4, 1.5];
+    const dels = [0, 0.22, 0.44, 0.11, 0.33, 0.55];
+    return { animation: `dj-wave ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
+  }
+  if (style === "pulse") {
+    const durs = [0.8, 1.0, 0.7, 0.9, 1.1, 0.75];
+    const dels = [0, 0.15, 0.32, 0.08, 0.25, 0.42];
+    return { animation: `dj-pulse ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
+  }
+  if (style === "tilt") {
+    const durs = [1.2, 1.5, 1.0, 1.4, 1.6, 1.1];
+    const dels = [0, 0.28, 0.52, 0.14, 0.38, 0.64];
+    return { animation: `dj-tilt ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
+  }
+  if (style === "orbit") {
+    const durs = [2.2, 2.8, 1.9, 2.5, 3.2, 2.1];
+    const dels = [0, 0.4, 0.8, 0.2, 0.6, 1.0];
+    return { animation: `dj-orbit ${durs[index % 6]}s cubic-bezier(0.4,0,0.6,1) infinite ${dels[index % 6]}s` };
+  }
+  if (style === "shake") {
+    const durs = [0.55, 0.65, 0.50, 0.60, 0.70, 0.58];
+    const dels = [0, 0.12, 0.24, 0.06, 0.18, 0.30];
+    return { animation: `dj-shake ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
+  }
+  if (style === "slam") {
+    const durs = [1.4, 1.7, 1.2, 1.6, 1.9, 1.3];
+    const dels = [0, 0.3, 0.6, 0.15, 0.45, 0.75];
+    return { animation: `dj-slam ${durs[index % 6]}s cubic-bezier(0.34,1.56,0.64,1) infinite ${dels[index % 6]}s` };
+  }
+  if (style === "wiggle") {
+    const durs = [0.7, 0.85, 0.6, 0.8, 0.95, 0.72];
+    const dels = [0, 0.18, 0.35, 0.09, 0.27, 0.45];
+    return { animation: `dj-wiggle ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
+  }
+  if (style === "stretch") {
+    const durs = [1.1, 1.4, 0.95, 1.25, 1.5, 1.05];
+    const dels = [0, 0.24, 0.48, 0.12, 0.36, 0.60];
+    return { animation: `dj-stretch ${durs[index % 6]}s ease-in-out infinite ${dels[index % 6]}s` };
   }
   return {};
 }
@@ -1447,7 +1492,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [djSpotlightIdx, setDjSpotlightIdx] = useState(-1);
   const [djCurrentScene, setDjCurrentScene] = useState<string>("spotlight");
   const [djAutoAdvance, setDjAutoAdvance] = useState(false);
-  const [djMoveStyle, setDjMoveStyle] = useState<string>("sling");
+  const [djMoveStyle, setDjMoveStyle] = useState<string>("auto");
+  const [djMoveTick, setDjMoveTick] = useState(0);
   const [discoOverlaySceneIdx, setDiscoOverlaySceneIdx] = useState(0);
   // Client-side dedup: suppress "X joined" messages that arrive within 3s of a
   // previous join for the same user (catches the server-side race before the
@@ -3771,10 +3817,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (data?.active) {
         setDjCurrentScene(data.scene || "spotlight");
         if (data.moveStyle) setDjMoveStyle(data.moveStyle);
+        else setDjMoveStyle("auto");
+        setDjMoveTick(0);
         if (data.overlaySceneIdx !== undefined) setDiscoOverlaySceneIdx(data.overlaySceneIdx);
       } else {
         setDjSpotlightIdx(-1);
         setDjCurrentScene("spotlight");
+        setDjMoveTick(0);
       }
     });
     // ── DJ Skip — server sends the next scene name, all clients sync together ──
@@ -3967,6 +4016,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }, 20000);
     return () => clearInterval(id);
   }, [djModeActive, djAutoAdvance, isHost, socket, room.id]);
+
+  // ── DJ Move auto-cycle — advances movement style every 5s when "auto" mode ──
+  // All clients reset tick to 0 on dj-mode activate (in the socket handler),
+  // so they all stay in sync without any additional socket traffic.
+  useEffect(() => {
+    if (!djModeActive || djMoveStyle !== "auto") return;
+    const id = setInterval(() => setDjMoveTick(t => t + 1), 5000);
+    return () => clearInterval(id);
+  }, [djModeActive, djMoveStyle]);
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -12963,7 +13021,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     className="flex flex-col items-center gap-2 group relative"
                     data-testid={`card-participant-${p.id}`}
                     style={{
-                      ...(djModeActive && !isRoomOwner ? getDjMoveStyle(index, djMoveStyle) : {}),
+                      ...(djModeActive && !isRoomOwner ? (() => {
+                        const resolvedStyle = djMoveStyle === "auto"
+                          ? DJ_AUTO_CYCLE[(djMoveTick + index * 3) % DJ_AUTO_CYCLE.length]
+                          : djMoveStyle;
+                        return getDjMoveStyle(index, resolvedStyle);
+                      })() : {}),
                       ...(djModeActive && djCurrentScene === "spotlight" && djSpotlightIdx === index
                         ? { filter: `drop-shadow(0 0 18px rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.95)) drop-shadow(0 0 36px rgba(${DJ_SPOT_COLS[djSpotlightIdx % DJ_SPOT_COLS.length]},0.55))` }
                         : {}),
@@ -13236,9 +13299,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                     cursor:"pointer", whiteSpace:"nowrap",
                                   }}
                                 >{djAutoAdvance ? "⏱ AUTO ON" : "⏱ AUTO"}</button>
-                                {/* Movement style picker */}
-                                <div style={{ display:"flex", gap:3, flexWrap:"wrap", justifyContent:"center", maxWidth:130 }}>
-                                  {(["sling","bounce","spin","float","static"] as const).map(s => (
+                                {/* Movement style picker — AUTO cycles all 12 styles every 5s */}
+                                <div style={{ display:"flex", gap:3, flexWrap:"wrap", justifyContent:"center", maxWidth:148 }}>
+                                  {/* AUTO is the first and default option */}
+                                  <button key="auto" data-testid="button-dj-move-auto"
+                                    onClick={() => { setDjMoveStyle("auto"); setDjMoveTick(0); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: "auto" }); }}
+                                    style={{
+                                      padding:"2px 8px", borderRadius:999, fontSize:7, fontWeight:800,
+                                      letterSpacing:"0.07em", cursor:"pointer", textTransform:"uppercase",
+                                      background: djMoveStyle === "auto" ? "rgba(0,220,180,0.30)" : "rgba(255,255,255,0.06)",
+                                      border: djMoveStyle === "auto" ? "1px solid rgba(0,220,180,0.70)" : "1px solid rgba(255,255,255,0.12)",
+                                      color: djMoveStyle === "auto" ? "rgba(120,255,220,0.95)" : "rgba(255,255,255,0.38)",
+                                      animation: djMoveStyle === "auto" ? "dj-badge-pulse 1.4s ease-in-out infinite" : "none",
+                                    }}>✦ AUTO</button>
+                                  {(["sling","wave","bounce","pulse","tilt","orbit","float","wiggle","slam","spin","stretch","shake","static"] as const).map(s => (
                                     <button key={s} data-testid={`button-dj-move-${s}`}
                                       onClick={() => { setDjMoveStyle(s); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: s }); }}
                                       style={{
