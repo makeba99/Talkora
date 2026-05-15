@@ -314,7 +314,7 @@ export class DatabaseStorage implements IStorage {
     const cached = userCache.get("users:all");
     if (cached) return cached;
     const result = await db.select().from(users);
-    userCache.set("users:all", result, 15_000);
+    userCache.set("users:all", result, 30_000);
     return result;
   }
 
