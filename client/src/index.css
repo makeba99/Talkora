@@ -13577,3 +13577,7 @@ html.boost-mode .glass-panel {
   26%  { opacity: 0; transform: translateY(-3px);}
   100% { opacity: 0; transform: translateY(-3px);}
 }
+@keyframes vx-ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}

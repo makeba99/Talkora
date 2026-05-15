@@ -11039,6 +11039,80 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         </div>
       )}
 
+      {/* ── VOX PRIME themed ticker banner ── */}
+      {(currentTheme === "trap-gold" || currentTheme === "skeleton-gangsta") && (() => {
+        const isGold = currentTheme === "trap-gold";
+        const quotes = isGold ? [
+          "Jay-Z: \"I am not a businessman, I am a business, man\"",
+          "Drake: \"Started from the bottom, now we're here\"",
+          "Lil Wayne: \"Real Gs move in silence like lasagna\"",
+          "DJ Khaled: \"We the best! Another one!\"",
+          "Kendrick Lamar: \"Sit down, be humble\"",
+          "Biggie: \"Stay far from timid, only make moves when your heart's in it\"",
+          "Nas: \"Sleep is the cousin of death\"",
+          "Rick Ross: \"Every day I'm hustlin'\"",
+        ] : [
+          "2Pac: \"Death before dishonor\"",
+          "2Pac: \"All eyez on me\"",
+          "Biggie: \"Ready to die\"",
+          "Eazy-E: \"Fear no man, fear no evil\"",
+          "2Pac: \"Only God can judge me\"",
+          "Biggie: \"Born alone, die alone\"",
+          "NWA: \"Straight outta Compton\"",
+          "2Pac: \"I see no changes — wake up in the morning and I ask myself\"",
+        ];
+        const tickerText = quotes.join("   ✦   ");
+        const accent    = isGold ? "rgba(245,158,11,1)"   : "rgba(200,192,176,1)";
+        const accentDim = isGold ? "rgba(245,158,11,0.35)": "rgba(200,192,176,0.20)";
+        const bg        = isGold
+          ? "linear-gradient(90deg, rgba(10,6,0,0.97) 0%, rgba(20,12,0,0.95) 50%, rgba(10,6,0,0.97) 100%)"
+          : "linear-gradient(90deg, rgba(4,4,4,0.98) 0%, rgba(8,8,8,0.96) 50%, rgba(4,4,4,0.98) 100%)";
+        return (
+          <div style={{
+            position:"absolute", bottom:0, left:0, right:0, zIndex:9,
+            height:30, overflow:"hidden",
+            background: bg,
+            borderTop:`1px solid ${accentDim}`,
+            display:"flex", alignItems:"center",
+            boxShadow: isGold ? "0 -4px 20px rgba(245,158,11,0.12)" : "0 -4px 20px rgba(200,192,176,0.06)",
+          }}>
+            {/* VOX PRIME brand badge */}
+            <div style={{
+              flexShrink:0, display:"flex", alignItems:"center", gap:5,
+              padding:"0 10px 0 12px",
+              borderRight:`1px solid ${accentDim}`,
+              height:"100%",
+            }}>
+              <span style={{
+                fontSize:9, fontWeight:900, letterSpacing:"0.18em",
+                color: accent,
+                textShadow: isGold
+                  ? "0 0 12px rgba(245,158,11,0.9), 0 0 24px rgba(245,158,11,0.4)"
+                  : "0 0 12px rgba(200,192,176,0.7), 0 0 24px rgba(200,192,176,0.3)",
+                textTransform:"uppercase",
+              }}>VOX PRIME</span>
+              <span style={{ fontSize:8, color: accent, opacity:0.75 }}>{isGold ? "🥇" : "💀"}</span>
+            </div>
+            {/* scrolling quotes */}
+            <div style={{ flex:1, overflow:"hidden", position:"relative", height:"100%" }}>
+              <div style={{
+                position:"absolute", top:0, bottom:0,
+                display:"flex", alignItems:"center",
+                whiteSpace:"nowrap",
+                animation:"vx-ticker-scroll 55s linear infinite",
+                paddingLeft:"100%",
+              }}>
+                <span style={{
+                  fontSize:9, fontWeight:600, letterSpacing:"0.04em",
+                  color: isGold ? "rgba(255,215,0,0.88)" : "rgba(210,205,195,0.85)",
+                  textShadow: isGold ? "0 0 8px rgba(245,158,11,0.5)" : "0 0 8px rgba(200,192,176,0.35)",
+                }}>{tickerText}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <Suspense fallback={null}>
         <CenterChessOverlay
           socket={socket}
