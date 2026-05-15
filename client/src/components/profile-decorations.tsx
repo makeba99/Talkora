@@ -1554,6 +1554,10 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
       return { background: "rgba(14,2,0,0.76)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "rgba(200,40,0,0.22)" };
     case "disco":
       return { background: "rgba(4,0,8,0.80)", backdropFilter: "blur(16px) saturate(1.6)", WebkitBackdropFilter: "blur(16px) saturate(1.6)", borderColor: "rgba(255,0,160,0.30)" };
+    case "trap-gold":
+      return { background: "rgba(10,6,0,0.82)", backdropFilter: "blur(16px) saturate(1.3)", WebkitBackdropFilter: "blur(16px) saturate(1.3)", borderColor: "rgba(245,158,11,0.28)" };
+    case "skeleton-gangsta":
+      return { background: "rgba(4,4,4,0.84)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderColor: "rgba(200,192,176,0.18)" };
     default:
       // Default chat panel — matches the room's base dark violet-slate so the
       // panel reads as ONE unified surface with the room background.
@@ -1596,6 +1600,10 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
       return { background: "radial-gradient(ellipse at 50% 100%, #1c0400 0%, #0e0200 55%, #080100 100%)" };
     case "disco":
       return { background: "#030104" };
+    case "trap-gold":
+      return { background: "radial-gradient(ellipse at 50% 100%, #1a0e00 0%, #0d0700 50%, #070400 100%)" };
+    case "skeleton-gangsta":
+      return { background: "#050505" };
     default:
       // Default room background — a single, unified sculpted neumorphic panel.
       // Deep violet-slate base with a directional top-left light source and a
@@ -2473,6 +2481,117 @@ export function RoomThemeOverlay({ themeId, discoSceneIdx, onDiscoAdvance }: { t
 
     case "disco":
       return <DiscoThemeOverlay base={base} serverSceneIdx={discoSceneIdx} onAdvance={onDiscoAdvance} />;
+
+    case "trap-gold": {
+      const goldEmbers = Array.from({length:40},(_,i)=>({
+        left: 3+(i*2.4)%94,
+        size: 1.5+(i%4)*1.2,
+        dur: 3+(i%7)*0.7,
+        del: (i*0.28)%8,
+        ex: -18+(i%5)*9,
+        col: i%4===0?"255,215,0":i%4===1?"245,158,11":i%4===2?"251,191,36":"252,211,77",
+      }));
+      const skylineBlocks = [
+        {l:0,w:6,h:28},{l:5,w:4,h:18},{l:8,w:8,h:38},{l:15,w:5,h:24},{l:19,w:3,h:14},
+        {l:21,w:7,h:45},{l:27,w:4,h:30},{l:30,w:6,h:20},{l:35,w:5,h:35},{l:39,w:3,h:18},
+        {l:41,w:8,h:50},{l:48,w:4,h:28},{l:51,w:6,h:38},{l:56,w:3,h:22},{l:58,w:7,h:42},
+        {l:64,w:4,h:30},{l:67,w:5,h:18},{l:71,w:6,h:36},{l:76,w:3,h:24},{l:78,w:8,h:48},
+        {l:85,w:4,h:28},{l:88,w:5,h:20},{l:92,w:5,h:34},{l:96,w:4,h:16},
+      ];
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          {/* amber glow from below */}
+          <div style={{ position:"absolute", bottom:"-5%", left:"-10%", right:"-10%", height:"30%",
+            background:"radial-gradient(ellipse at 50% 100%, rgba(245,158,11,0.20) 0%, rgba(180,90,0,0.10) 55%, transparent 80%)",
+            animation:"rt-lava-glow 5s ease-in-out infinite" }} />
+          {/* top gold shimmer */}
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:"25%",
+            background:"radial-gradient(ellipse at 50% 0%, rgba(252,211,77,0.08) 0%, transparent 70%)",
+            animation:"rt-orb-drift 8s ease-in-out infinite" }} />
+          {/* city skyline silhouette */}
+          <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"30%" }}>
+            {skylineBlocks.map((b,i)=>(
+              <div key={i} style={{
+                position:"absolute", bottom:0, left:`${b.l}%`, width:`${b.w}%`, height:`${b.h}%`,
+                background:"rgba(8,5,0,0.92)",
+                boxShadow:"0 0 0 1px rgba(245,158,11,0.10)",
+              }} />
+            ))}
+          </div>
+          {/* gold ember particles */}
+          {goldEmbers.map((e,i)=>(
+            <div key={i} style={{
+              position:"absolute", borderRadius:"50%",
+              width:e.size, height:e.size,
+              left:`${e.left}%`, bottom:"28%",
+              background:`radial-gradient(circle, rgba(${e.col},1) 0%, rgba(${e.col},0.3) 70%, transparent 100%)`,
+              boxShadow:`0 0 ${e.size*3}px rgba(${e.col},0.7)`,
+              ["--ex" as any]:`${e.ex}px`,
+              ["--ex2" as any]:`${e.ex}px`,
+              animation:`rt-ember-rise ${e.dur}s ease-out infinite ${e.del}s`,
+            }} />
+          ))}
+          {/* inner vignette */}
+          <div style={{ position:"absolute", inset:0, boxShadow:"inset 0 60px 80px -40px rgba(0,0,0,0.5), inset 0 -80px 100px -40px rgba(0,0,0,0.35)" }} />
+        </div>
+      );
+    }
+
+    case "skeleton-gangsta": {
+      const boneFlakes = Array.from({length:35},(_,i)=>({
+        left: 2+(i*2.8)%96,
+        size: 1+(i%5)*1.4,
+        dur: 4+(i%6)*0.8,
+        del: (i*0.31)%9,
+        ex: -12+(i%5)*6,
+        col: i%3===0?"220,215,200":i%3===1?"190,185,170":"240,235,225",
+      }));
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+          {/* cold fog radials */}
+          <div style={{ position:"absolute", bottom:"-10%", left:"-20%", width:"70%", height:"50%",
+            borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(200,195,185,0.06) 0%, transparent 65%)",
+            animation:"rt-orb-drift 12s ease-in-out infinite" }} />
+          <div style={{ position:"absolute", top:"-10%", right:"-15%", width:"60%", height:"55%",
+            borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(180,175,165,0.05) 0%, transparent 65%)",
+            animation:"rt-orb-drift2 15s ease-in-out infinite 3s" }} />
+          {/* crack line patterns */}
+          {[0,1,2].map(li=>(
+            <div key={li} style={{
+              position:"absolute",
+              left:`${15+li*28}%`, top:`${20+li*15}%`,
+              width:"1px", height:`${18+li*8}%`,
+              background:`linear-gradient(to bottom, transparent, rgba(200,192,176,${0.10+li*0.04}), transparent)`,
+              transform:`rotate(${-8+li*8}deg)`,
+              animation:`rt-scanline ${10+li*4}s ease-in-out infinite ${li*2}s`,
+            }} />
+          ))}
+          {/* bone-ash flakes drifting down */}
+          {boneFlakes.map((f,i)=>(
+            <div key={i} style={{
+              position:"absolute",
+              width:f.size, height:f.size,
+              borderRadius: i%4===0?"0%":"50%",
+              left:`${f.left}%`, top:"-2%",
+              background:`rgba(${f.col},${0.35+(i%4)*0.12})`,
+              boxShadow: i%5===0 ? `0 0 ${f.size*2}px rgba(${f.col},0.4)` : undefined,
+              ["--ex" as any]:`${f.ex}px`,
+              ["--ex2" as any]:`${f.ex}px`,
+              animation:`rt-ember-rise ${f.dur}s ease-in-out infinite ${f.del}s`,
+              transform:`rotate(${i*37%180}deg) scaleY(-1)`,
+            }} />
+          ))}
+          {/* heavy vignette */}
+          <div style={{ position:"absolute", inset:0,
+            boxShadow:"inset 0 0 120px 40px rgba(0,0,0,0.65)",
+            background:"radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.28) 100%)" }} />
+        </div>
+      );
+    }
 
     default:
       return null;
