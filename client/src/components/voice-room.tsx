@@ -1489,6 +1489,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [participantAvatarGifs, setParticipantAvatarGifs] = useState<Record<string, string>>({});
   const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({}); 
   const [djModeActive, setDjModeActive] = useState(false);
+  const djModeActiveRef = useRef(false);
   const [djSpotlightIdx, setDjSpotlightIdx] = useState(-1);
   const [djCurrentScene, setDjCurrentScene] = useState<string>("spotlight");
   const [djAutoAdvance, setDjAutoAdvance] = useState(false);
@@ -3216,6 +3217,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
     socket.on("room:mood-update", (data: { userId: string; emoji: string; ts?: number }) => {
       if (!data?.userId || !data?.emoji) return;
+      // Suppress new mood emojis while DJ mode is running — they clutter DJ visuals
+      if (djModeActiveRef.current) return;
       const id = `${data.ts || Date.now()}-${Math.random().toString(36).slice(2, 8)}`; 
       setParticipantMoods((prev) => ({ ...prev, [data.userId]: { id, emoji: data.emoji } }));
       // Subtle audio cue so reactions register even when you're not looking at the screen.
@@ -3820,6 +3823,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         else setDjMoveStyle("auto");
         setDjMoveTick(0);
         if (data.overlaySceneIdx !== undefined) setDiscoOverlaySceneIdx(data.overlaySceneIdx);
+        // Clear all floating emojis and reaction particles when DJ mode turns on
+        setParticipantMoods({});
+        setYtFloatingReactions([]);
+        setMovieFloatingReactions([]);
       } else {
         setDjSpotlightIdx(-1);
         setDjCurrentScene("spotlight");
@@ -3829,6 +3836,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // ── DJ Skip — server sends the next scene name, all clients sync together ──
     socket.on("room:dj-skip", (data?: { scene?: string }) => {
       if (data?.scene) setDjCurrentScene(data.scene);
+      // Clear mood emojis on every scene change so they don't clutter DJ visuals
+      setParticipantMoods({});
     });
     // ── DJ Move — host changes movement style for all participant cards ──
     socket.on("room:dj-move", (data: { moveStyle: string }) => {
@@ -4007,6 +4016,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }, 1800);
     return () => clearInterval(id);
   }, [djModeActive, djCurrentScene]);
+
+  // ── Keep djModeActiveRef in sync so socket handlers can read current value ───
+  useEffect(() => { djModeActiveRef.current = djModeActive; }, [djModeActive]);
 
   // ── DJ Auto-advance — host automatically cycles scenes every 20s ────────────
   useEffect(() => {
@@ -13399,7 +13411,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       isBlocked={isBlockedUser}
                       onUnblock={handleUnblock}
                       analyserNode={analysersRef.current.get(p.id)}
-                      mood={participantMoods[p.id]}
+                      mood={djModeActive ? undefined : participantMoods[p.id]}
                       onClearMood={isMe ? clearMyMood : undefined}
                       hasActiveMovie={movieHosts.has(p.id)}
                       moviePosterPath={movieHosts.get(p.id)?.posterPath || null}
@@ -13622,7 +13634,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                Rendered at the content-area level so emojis float freely
                OVER the player AND the participant strip without being clipped.
                z-[60] ensures it sits above the strip (z-10) and host controls (z-20). */}
-          {(ytFloatingReactions.length > 0 || movieFloatingReactions.length > 0) && (
+          {!djModeActive && (ytFloatingReactions.length > 0 || movieFloatingReactions.length > 0) && (
             <div className="absolute inset-0 pointer-events-none z-[60]" aria-hidden="true" data-testid="watch-party-reactions-overlay">
               {[...ytFloatingReactions, ...movieFloatingReactions].map(r => {
                 const sender = participants.find(p => p.id === r.userId);
