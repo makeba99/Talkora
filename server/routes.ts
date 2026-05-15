@@ -173,6 +173,8 @@ const roomPinnedMessages = new Map<string, { message: any; pinnedBy: string; pin
 // DJ scene system — tracks which scene index each room is on so skip broadcasts are in sync
 const roomDjSceneIdx = new Map<string, number>();
 const DJ_SCENE_LIST = ["spotlight","namestorm","disco","kiss","cocktails","boomer"];
+// Disco overlay scene — tracks which of the 7 cinematic scenes is showing so all clients stay in sync
+const roomDiscoOverlaySceneIdx = new Map<string, number>();
 // Join deduplication — prevents doubled "X joined" system messages caused by the race
 // between initMedia() emitting room:join and the socket "connect" listener (handleReconnect)
 // both firing almost simultaneously on first page load.
@@ -2574,6 +2576,19 @@ export async function registerRoutes(
       const updated = await storage.updateRoom(roomId, updateData);
       io.emit("room:updated", updated);
       broadcastRooms().catch(() => {});
+
+      // When theme changes away from disco, kill DJ mode for all users in the room
+      // and reset the overlay scene index so the next disco session starts fresh.
+      if (updateData.roomTheme !== undefined && room.roomTheme === "disco" && updateData.roomTheme !== "disco") {
+        roomDjSceneIdx.delete(roomId);
+        roomDiscoOverlaySceneIdx.delete(roomId);
+        io.to(roomId).emit("room:dj-mode", { active: false, scene: "spotlight", overlaySceneIdx: 0 });
+      }
+      // When switching TO disco, initialise the overlay scene at 0
+      if (updateData.roomTheme === "disco" && room.roomTheme !== "disco") {
+        roomDiscoOverlaySceneIdx.set(roomId, 0);
+        io.to(roomId).emit("room:disco-advance", { sceneIdx: 0 });
+      }
 
       if (updateData.welcomeMessage !== undefined && updateData.welcomeMessage) {
         const rawMsg = updateData.welcomeMessage;
@@ -5019,6 +5034,18 @@ export async function registerRoutes(
         socket.emit("room:avatar-gifs-snapshot", Object.fromEntries(gifSnapshot));
       }
 
+      // Sync disco overlay scene so new joiners start on the same scene as everyone else
+      if (room.roomTheme === "disco") {
+        const overlaySceneIdx = roomDiscoOverlaySceneIdx.get(roomId) ?? 0;
+        socket.emit("room:disco-advance", { sceneIdx: overlaySceneIdx });
+        // Also sync DJ mode state if it's currently active
+        const djActive = roomDjSceneIdx.has(roomId);
+        if (djActive) {
+          const djSceneIdx = roomDjSceneIdx.get(roomId) ?? 0;
+          socket.emit("room:dj-mode", { active: true, scene: DJ_SCENE_LIST[djSceneIdx], overlaySceneIdx });
+        }
+      }
+
       // Always broadcast updated participant list to existing room members so
       // they see the joining/rejoining user. On a true rejoin (socket.io
       // reconnect after a network glitch), skipping this broadcast left the
@@ -5167,10 +5194,15 @@ export async function registerRoutes(
       if (!data?.roomId) return;
       if (data.active) {
         roomDjSceneIdx.set(data.roomId, 0);
+        // Start the overlay at scene 0 when DJ mode turns on
+        if (!roomDiscoOverlaySceneIdx.has(data.roomId)) {
+          roomDiscoOverlaySceneIdx.set(data.roomId, 0);
+        }
       } else {
         roomDjSceneIdx.delete(data.roomId);
       }
-      io.to(data.roomId).emit("room:dj-mode", { active: !!data.active, scene: "spotlight", moveStyle: data.moveStyle || "sling" });
+      const overlaySceneIdx = roomDiscoOverlaySceneIdx.get(data.roomId) ?? 0;
+      io.to(data.roomId).emit("room:dj-mode", { active: !!data.active, scene: "spotlight", moveStyle: data.moveStyle || "sling", overlaySceneIdx });
     });
 
     // ── DJ Skip — advances to next scene, broadcast scene name to all participants ──
@@ -5186,6 +5218,15 @@ export async function registerRoutes(
     socket.on("room:dj-move", (data: { roomId: string; moveStyle: string }) => {
       if (!data?.roomId) return;
       io.to(data.roomId).emit("room:dj-move", { moveStyle: data.moveStyle });
+    });
+
+    // ── Disco Overlay Advance — host's auto-cycle timer fires, server tracks + broadcasts to all ──
+    socket.on("room:disco-advance", (data: { roomId: string }) => {
+      if (!data?.roomId) return;
+      const cur = roomDiscoOverlaySceneIdx.get(data.roomId) ?? 0;
+      const next = (cur + 1) % 7;
+      roomDiscoOverlaySceneIdx.set(data.roomId, next);
+      io.to(data.roomId).emit("room:disco-advance", { sceneIdx: next });
     });
 
     // "Say Bye" — user waves goodbye to the room before leaving. Server

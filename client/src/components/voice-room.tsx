@@ -1448,6 +1448,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [djCurrentScene, setDjCurrentScene] = useState<string>("spotlight");
   const [djAutoAdvance, setDjAutoAdvance] = useState(false);
   const [djMoveStyle, setDjMoveStyle] = useState<string>("sling");
+  const [discoOverlaySceneIdx, setDiscoOverlaySceneIdx] = useState(0);
   // Client-side dedup: suppress "X joined" messages that arrive within 3s of a
   // previous join for the same user (catches the server-side race before the
   // joiningNow fix takes effect, and handles edge cases like StrictMode mounts).
@@ -3765,11 +3766,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     });
 
     // ── DJ Mode — host toggles disco sling animations for all participants ──
-    socket.on("room:dj-mode", (data: { active: boolean; scene?: string; moveStyle?: string }) => {
+    socket.on("room:dj-mode", (data: { active: boolean; scene?: string; moveStyle?: string; overlaySceneIdx?: number }) => {
       setDjModeActive(!!data?.active);
       if (data?.active) {
         setDjCurrentScene(data.scene || "spotlight");
         if (data.moveStyle) setDjMoveStyle(data.moveStyle);
+        if (data.overlaySceneIdx !== undefined) setDiscoOverlaySceneIdx(data.overlaySceneIdx);
       } else {
         setDjSpotlightIdx(-1);
         setDjCurrentScene("spotlight");
@@ -3783,10 +3785,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket.on("room:dj-move", (data: { moveStyle: string }) => {
       if (data?.moveStyle) setDjMoveStyle(data.moveStyle);
     });
+    // ── Disco Overlay Advance — server broadcasts new scene index so all clients stay in sync ──
+    socket.on("room:disco-advance", (data: { sceneIdx: number }) => {
+      if (typeof data?.sceneIdx === "number") setDiscoOverlaySceneIdx(data.sceneIdx);
+    });
 
     socket.on("room:updated", (updatedRoom: any) => {
       if (updatedRoom && updatedRoom.id === room.id) {
-        setRoomData((prev: any) => ({ ...prev, ...updatedRoom }));
+        setRoomData((prev: any) => {
+          const prevTheme = (prev as any).roomTheme;
+          const newTheme = updatedRoom.roomTheme;
+          // When theme changes away from disco, turn off DJ mode immediately for all users
+          if (prevTheme === "disco" && newTheme && newTheme !== "disco") {
+            setDjModeActive(false);
+            setDjSpotlightIdx(-1);
+            setDjCurrentScene("spotlight");
+            setDiscoOverlaySceneIdx(0);
+          }
+          return { ...prev, ...updatedRoom };
+        });
       }
     });
 
@@ -7782,6 +7799,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const currentTheme = (room as any).roomTheme || "none";
 
+  // Only the host drives the disco overlay auto-advance so all clients see
+  // the same scene at the same time.  Non-host clients receive room:disco-advance
+  // from the server and update their local discoOverlaySceneIdx accordingly.
+  const handleDiscoAdvance = isHost && currentTheme === "disco"
+    ? () => { socket?.emit("room:disco-advance", { roomId: room.id }); }
+    : undefined;
+
   const sidePanelContent = (
     <div className="flex flex-col h-full">
       {/* ── Tab bar — neumorphic raised tray ──────────────────────────── */}
@@ -10763,7 +10787,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   return (
     <div className="flex h-full relative overflow-hidden" style={getRoomThemeStyle(currentTheme)}>
-      <RoomThemeOverlay themeId={currentTheme} />
+      <RoomThemeOverlay themeId={currentTheme} discoSceneIdx={discoOverlaySceneIdx} onDiscoAdvance={handleDiscoAdvance} />
 
       {/* Knock-knock prompts — floats top-center for the host only */}
       {isHost && pendingKnocks.length > 0 && (

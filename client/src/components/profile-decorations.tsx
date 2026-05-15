@@ -1930,46 +1930,49 @@ function renderDiscoScene(idx: number): React.ReactNode {
   }
 }
 
-function DiscoThemeOverlay({ base }: { base: React.CSSProperties }) {
-  const [sceneIdx, setSceneIdx] = useState(() => Math.floor(Math.random() * 7));
+function DiscoThemeOverlay({ base, serverSceneIdx, onAdvance }: { base: React.CSSProperties; serverSceneIdx?: number; onAdvance?: () => void }) {
+  // When serverSceneIdx is provided (controlled mode), we use it as the source of truth.
+  // Otherwise fall back to local state starting at 0 (uncontrolled fallback).
+  const [localSceneIdx, setLocalSceneIdx] = useState(0);
+  const sceneIdx = serverSceneIdx !== undefined ? serverSceneIdx : localSceneIdx;
   const [opacity, setOpacity]   = useState(1);
   const [showLabel, setShowLabel] = useState(false);
   const timerRef = useRef<number | null>(null);
+  // Track previous serverSceneIdx so we can trigger the crossfade transition when it changes
+  const prevServerSceneRef = useRef<number | undefined>(serverSceneIdx);
 
-  // Manual scene-skip triggered by the host's DJ Mode button
+  // When the server broadcasts a new scene, trigger the crossfade animation
   useEffect(() => {
-    const onSkip = () => {
-      if (timerRef.current !== null) clearTimeout(timerRef.current);
-      setOpacity(0);
+    if (serverSceneIdx === undefined) return;
+    if (prevServerSceneRef.current === serverSceneIdx) return;
+    prevServerSceneRef.current = serverSceneIdx;
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+    setOpacity(0);
+    timerRef.current = window.setTimeout(() => {
+      setShowLabel(true);
       timerRef.current = window.setTimeout(() => {
-        setSceneIdx(prev => (prev + 1) % 7);
-        setShowLabel(true);
-        timerRef.current = window.setTimeout(() => {
-          setOpacity(1);
-          timerRef.current = window.setTimeout(() => setShowLabel(false), 3500);
-        }, 80);
-      }, 400);
-    };
-    window.addEventListener("vx-dj-skip", onSkip);
-    return () => window.removeEventListener("vx-dj-skip", onSkip);
-  }, []);
+        setOpacity(1);
+        timerRef.current = window.setTimeout(() => setShowLabel(false), 3500);
+      }, 80);
+    }, 400);
+  }, [serverSceneIdx]);
 
+  // Auto-advance timer: only fires when NOT in server-controlled mode.
+  // In controlled mode the host's client emits room:disco-advance and all
+  // clients receive the new index from the server — no local timer needed.
   useEffect(() => {
+    if (serverSceneIdx !== undefined) return; // controlled — skip local timer
     const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
     const schedule = () => {
       // Random interval: 2.3 – 3.5 minutes
       const delay = (138 + Math.random() * 72) * 1000;
       timerRef.current = window.setTimeout(() => {
-        // 1. Fade out
         setOpacity(0);
         timerRef.current = window.setTimeout(() => {
-          // 2. Switch scene while dark
-          setSceneIdx(prev => (prev + 1) % 7);
+          setLocalSceneIdx(prev => (prev + 1) % 7);
           setShowLabel(true);
-          // 3. Fade back in
           timerRef.current = window.setTimeout(() => {
             setOpacity(1);
-            // 4. Hide label after 3.5s
             timerRef.current = window.setTimeout(() => {
               setShowLabel(false);
               schedule();
@@ -1980,7 +1983,23 @@ function DiscoThemeOverlay({ base }: { base: React.CSSProperties }) {
     };
     schedule();
     return clear;
-  }, []);
+  }, [serverSceneIdx]);
+
+  // Host-side auto-cycle timer: fires when onAdvance is provided (this client is the host).
+  // Emits room:disco-advance via the callback so the server tracks and broadcasts to all.
+  useEffect(() => {
+    if (!onAdvance) return;
+    const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
+    const schedule = () => {
+      const delay = (138 + Math.random() * 72) * 1000;
+      timerRef.current = window.setTimeout(() => {
+        onAdvance();
+        schedule();
+      }, delay);
+    };
+    schedule();
+    return clear;
+  }, [onAdvance]);
 
   const scene = DISCO_SCENES[sceneIdx];
 
@@ -2010,7 +2029,7 @@ function DiscoThemeOverlay({ base }: { base: React.CSSProperties }) {
   );
 }
 
-export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefined }) {
+export function RoomThemeOverlay({ themeId, discoSceneIdx, onDiscoAdvance }: { themeId: string | null | undefined; discoSceneIdx?: number; onDiscoAdvance?: () => void }) {
   const base: React.CSSProperties = { position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 };
 
   if (!themeId || themeId === "none") {
@@ -2453,7 +2472,7 @@ export function RoomThemeOverlay({ themeId }: { themeId: string | null | undefin
     }
 
     case "disco":
-      return <DiscoThemeOverlay base={base} />;
+      return <DiscoThemeOverlay base={base} serverSceneIdx={discoSceneIdx} onAdvance={onDiscoAdvance} />;
 
     default:
       return null;
