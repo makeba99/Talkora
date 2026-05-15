@@ -22,7 +22,7 @@ import {
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
-  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, Dices, SendHorizontal,
+  Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, SendHorizontal,
   Pin
 } from "lucide-react";
 import { SiInstagram, SiFacebook } from "react-icons/si";
@@ -54,8 +54,8 @@ const ChessPanel = lazy(() =>
 const CenterChessOverlay = lazy(() =>
   import("@/components/center-chess-overlay").then((m) => ({ default: m.CenterChessOverlay }))
 );
-const GroupGamesPanel = lazy(() =>
-  import("@/components/group-games-panel").then((m) => ({ default: m.GroupGamesPanel }))
+const CenterC4Overlay = lazy(() =>
+  import("@/components/center-c4-overlay").then((m) => ({ default: m.CenterC4Overlay }))
 );
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
@@ -1566,7 +1566,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [dismissedWelcomeIds, setDismissedWelcomeIds] = useState<Set<string>>(new Set());
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [sidePanelTab, setSidePanelTab] = useState("chat");
-  const [gamesSubTab, setGamesSubTab] = useState<"chess" | "group">("chess");
+  const [c4OverlayOpen, setC4OverlayOpen] = useState(false);
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
@@ -10266,48 +10266,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         )}
       </div>
 
-      {/* ── Unified Games tab: Chess + Group Games sub-tabs ─────────────── */}
+      {/* ── Games tab: Chess · Tic-Tac-Toe · Connect Four · Lichess ──────── */}
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chess" ? "flex" : "none" }}>
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* Sub-tab bar */}
-          <div className="flex-shrink-0 flex border-b border-white/8">
-            <button
-              onClick={() => setGamesSubTab("chess")}
-              className="flex-1 py-1.5 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors"
-              style={gamesSubTab === "chess"
-                ? { color: "rgb(129,140,248)", borderBottom: "2px solid rgb(129,140,248)" }
-                : { color: "rgba(255,255,255,0.35)" }}
-              data-testid="games-subtab-chess"
-            >
-              <Gamepad2 className="w-3 h-3" /> Chess
-            </button>
-            <button
-              onClick={() => setGamesSubTab("group")}
-              className="flex-1 py-1.5 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors"
-              style={gamesSubTab === "group"
-                ? { color: "rgb(167,139,250)", borderBottom: "2px solid rgb(167,139,250)" }
-                : { color: "rgba(255,255,255,0.35)" }}
-              data-testid="games-subtab-group"
-            >
-              <Dices className="w-3 h-3" /> Group Games
-            </button>
-          </div>
-          {/* Chess panel */}
-          <div className="flex-1 overflow-hidden" style={{ display: gamesSubTab === "chess" ? "flex" : "none", flexDirection: "column" }}>
-            {user?.id && socket && (
-              <Suspense fallback={null}>
-                <ChessPanel socket={socket} roomId={room.id} userId={user.id} participants={participants} />
-              </Suspense>
-            )}
-          </div>
-          {/* Group games panel */}
-          <div className="flex-1 overflow-hidden" style={{ display: gamesSubTab === "group" ? "flex" : "none", flexDirection: "column" }}>
-            {user?.id && (
-              <Suspense fallback={null}>
-                <GroupGamesPanel participants={participants} userId={user.id} />
-              </Suspense>
-            )}
-          </div>
+        <div className="flex-1 overflow-hidden" style={{ display: "flex", flexDirection: "column" }}>
+          {user?.id && socket && (
+            <Suspense fallback={null}>
+              <ChessPanel
+                socket={socket}
+                roomId={room.id}
+                userId={user.id}
+                participants={participants}
+                onOpenC4Board={() => setC4OverlayOpen(true)}
+              />
+            </Suspense>
+          )}
         </div>
       </div>
 
@@ -10949,6 +10921,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           }}
         />
       </Suspense>
+
+      {socket && user?.id && (
+        <Suspense fallback={null}>
+          <CenterC4Overlay
+            socket={socket}
+            roomId={room.id}
+            userId={user.id}
+            forceOpen={c4OverlayOpen}
+            onClose={() => setC4OverlayOpen(false)}
+          />
+        </Suspense>
+      )}
 
       <Dialog open={goLiveOpen} onOpenChange={(o) => { if (!o && glStatus === "live") stopGoLive(); setGoLiveOpen(o); }}>
         <DialogContent className="sm:max-w-md" aria-describedby={undefined}>

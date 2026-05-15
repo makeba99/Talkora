@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   ExternalLink, Flag, Crown, RotateCcw, X, Link as LinkIcon, Trophy, Users,
-  Swords, Check, Timer, Hash, RefreshCw, Zap, ChevronDown, ChevronUp,
+  Swords, Check, Timer, Hash, RefreshCw, Zap, ChevronDown, ChevronUp, Circle, Maximize2,
 } from "lucide-react";
 import type { Socket } from "socket.io-client";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +50,25 @@ type TttState = {
   o: TttSeat;
   scores: { x: number; o: number; draws: number };
   startedAt: number;
+};
+
+type C4Seat = { userId: string; username: string; avatar: string | null } | null;
+type C4State = {
+  board: (null | "red" | "yellow")[][];
+  turn: "red" | "yellow";
+  status: "playing" | "ended";
+  winner: "red" | "yellow" | "draw" | null;
+  winLine: [number, number][] | null;
+  red: C4Seat;
+  yellow: C4Seat;
+  scores: { red: number; yellow: number; draws: number };
+  startedAt: number;
+};
+type IncomingC4Challenge = {
+  fromUserId: string;
+  fromUsername: string;
+  fromAvatar: string | null;
+  roomId: string;
 };
 
 export interface ChessRoomState {
@@ -95,6 +114,7 @@ interface Props {
   roomId: string;
   userId: string;
   participants: ChessParticipant[];
+  onOpenC4Board?: () => void;
 }
 
 function nameOf(p: ChessParticipant) {
@@ -116,9 +136,9 @@ function lichessEmbedUrl(rawUrl: string): string {
   return `https://lichess.org/embed/game/${gameId}?theme=auto&bg=auto`;
 }
 
-export function ChessPanel({ socket, roomId, userId, participants }: Props) {
+export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board }: Props) {
   const { toast } = useToast();
-  const [tab, setTab] = useState<"quick" | "lichess" | "tictactoe">("quick");
+  const [tab, setTab] = useState<"quick" | "lichess" | "tictactoe" | "c4">("quick");
   const [state, setState] = useState<ChessRoomState | null>(null);
   const [lichess, setLichess] = useState<LichessShare | null>(null);
   const [lichessInput, setLichessInput] = useState("");
@@ -134,6 +154,12 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
   const [incomingTtt, setIncomingTtt] = useState<IncomingTttChallenge | null>(null);
   const [pendingTttTo, setPendingTttTo] = useState<{ userId: string; username: string } | null>(null);
   const [showTttChallengeList, setShowTttChallengeList] = useState(false);
+
+  // Connect Four state
+  const [c4State, setC4State] = useState<C4State | null>(null);
+  const [incomingC4, setIncomingC4] = useState<IncomingC4Challenge | null>(null);
+  const [pendingC4To, setPendingC4To] = useState<{ userId: string; username: string } | null>(null);
+  const [showC4ChallengeList, setShowC4ChallengeList] = useState(false);
 
   // Live clocks
   const [liveClocks, setLiveClocks] = useState<{ white: number; black: number } | null>(null);
@@ -213,6 +239,19 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
       setTab("tictactoe");
       toast({ title: "Match starting!", description: "Tic-Tac-Toe is on." });
     };
+    const onC4State = (s: C4State | null) => setC4State(s);
+    const onC4Challenge = (c: IncomingC4Challenge) => setIncomingC4(c);
+    const onC4Declined = (d: { byUserId: string; byUsername: string }) => {
+      if (pendingC4To?.userId === d.byUserId) setPendingC4To(null);
+      toast({ title: "Connect Four declined", description: `${d.byUsername} declined.` });
+    };
+    const onC4Accepted = (d: { byUserId: string; byUsername: string }) => {
+      setPendingC4To(null);
+      setShowC4ChallengeList(false);
+      setTab("c4");
+      toast({ title: "Connect Four accepted!", description: "Game starting — open the board!" });
+      onOpenC4Board?.();
+    };
     socket.on("room:chess-state", onState);
     socket.on("room:lichess", onLichess);
     socket.on("room:chess-challenge", onChallenge);
@@ -222,8 +261,13 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
     socket.on("room:ttt-state", onTttState);
     socket.on("room:ttt-declined", onTttDeclined);
     socket.on("room:ttt-accepted", onTttAccepted);
+    socket.on("room:c4-state", onC4State);
+    socket.on("room:c4-challenge", onC4Challenge);
+    socket.on("room:c4-declined", onC4Declined);
+    socket.on("room:c4-accepted", onC4Accepted);
     socket.emit("room:chess-sync-request", { roomId });
     socket.emit("room:ttt-sync", { roomId });
+    socket.emit("room:c4-sync", { roomId });
     return () => {
       socket.off("room:chess-state", onState);
       socket.off("room:lichess", onLichess);
@@ -234,8 +278,12 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
       socket.off("room:ttt-state", onTttState);
       socket.off("room:ttt-declined", onTttDeclined);
       socket.off("room:ttt-accepted", onTttAccepted);
+      socket.off("room:c4-state", onC4State);
+      socket.off("room:c4-challenge", onC4Challenge);
+      socket.off("room:c4-declined", onC4Declined);
+      socket.off("room:c4-accepted", onC4Accepted);
     };
-  }, [socket, roomId, pendingTo?.userId, pendingTttTo?.userId, toast]);
+  }, [socket, roomId, pendingTo?.userId, pendingTttTo?.userId, pendingC4To?.userId, onOpenC4Board, toast]);
 
   const sendChallenge = (target: ChessParticipant) => {
     if (!socket) return;
@@ -282,6 +330,21 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
   };
   const tttRematch = () => socket?.emit("room:ttt-rematch", { roomId });
   const tttClose = () => socket?.emit("room:ttt-close", { roomId });
+
+  const sendC4Challenge = (target: ChessParticipant) => {
+    if (!socket) return;
+    socket.emit("room:c4-challenge", { roomId, targetUserId: target.id });
+    setPendingC4To({ userId: target.id, username: nameOf(target) });
+    setShowC4ChallengeList(false);
+    toast({ title: "Connect Four sent!", description: `Waiting for ${nameOf(target)}…` });
+    setTimeout(() => setPendingC4To((p) => (p?.userId === target.id ? null : p)), 30000);
+  };
+  const respondC4 = (accept: boolean) => {
+    if (!incomingC4 || !socket) return;
+    socket.emit("room:c4-respond", { roomId, fromUserId: incomingC4.fromUserId, accept });
+    setIncomingC4(null);
+    if (accept) { setTab("c4"); onOpenC4Board?.(); }
+  };
 
   const myColor: "white" | "black" | null = useMemo(() => {
     if (state?.white?.userId === userId) return "white";
@@ -525,6 +588,14 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
           data-testid="tab-chess-lichess"
         >
           <ExternalLink className="w-3 h-3 inline mr-1" /> Lichess
+        </button>
+        <button
+          onClick={() => setTab("c4")}
+          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors relative ${tab === "c4" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted/60"}`}
+          data-testid="tab-c4"
+        >
+          <Circle className="w-3 h-3 inline mr-1" /> Connect 4
+          {c4State?.status === "playing" && <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />}
         </button>
       </div>
 
@@ -838,6 +909,120 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
         </div>
       )}
 
+      {/* ─── Connect Four ─── */}
+      {tab === "c4" && (
+        <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2" data-testid="panel-c4">
+          {!c4State ? (
+            <>
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-base select-none" aria-hidden="true">🔴🟡</span>
+                  <p className="text-xs font-semibold">Connect Four</p>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Challenge someone in this room to a 7-column grid game. Drop your pieces and be the first to connect four in a row — horizontally, vertically, or diagonally. The board opens in a big-screen overlay.
+                </p>
+              </div>
+              <Button
+                size="sm" variant="default" className="w-full h-8 text-xs"
+                onClick={() => setShowC4ChallengeList(o => !o)}
+                data-testid="button-c4-challenge-toggle"
+              >
+                <Swords className="w-3.5 h-3.5 mr-1" /> Challenge to Connect Four
+              </Button>
+              {pendingC4To && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-300 flex items-center justify-between">
+                  <span>Waiting for {pendingC4To.username}…</span>
+                  <button onClick={() => setPendingC4To(null)} aria-label="Cancel Connect Four request" data-testid="button-cancel-c4-pending">
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+              {showC4ChallengeList && (
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-2 space-y-1.5" data-testid="list-c4-targets">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1">Players in this room</p>
+                  {participants.filter(p => p.id !== userId).length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground p-2 text-center">No one else here yet!</p>
+                  ) : (
+                    participants.filter(p => p.id !== userId).map(p => (
+                      <div key={p.id} className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-muted/40">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Avatar className="w-7 h-7">
+                            {p.profileImageUrl ? <AvatarImage src={p.profileImageUrl} alt="" /> : null}
+                            <AvatarFallback className="text-[10px]">{nameOf(p)[0]?.toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs truncate">{nameOf(p)}</span>
+                        </div>
+                        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2" disabled={!!pendingC4To}
+                          onClick={() => sendC4Challenge(p)} data-testid={`button-c4-challenge-${p.id}`}>
+                          <Swords className="w-3 h-3 mr-1" /> Play
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+                <div className="text-center min-w-0">
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
+                    <p className="text-[10px] text-muted-foreground truncate">{c4State.red?.username || "Red"}</p>
+                  </div>
+                  <p className="text-2xl font-bold tabular-nums text-red-400">{c4State.scores.red}</p>
+                </div>
+                <div className="text-center px-2">
+                  <p className="text-[10px] text-muted-foreground">Draws</p>
+                  <p className="text-base font-semibold tabular-nums text-muted-foreground">{c4State.scores.draws}</p>
+                </div>
+                <div className="text-center min-w-0">
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0" />
+                    <p className="text-[10px] text-muted-foreground truncate">{c4State.yellow?.username || "Yellow"}</p>
+                  </div>
+                  <p className="text-2xl font-bold tabular-nums text-yellow-400">{c4State.scores.yellow}</p>
+                </div>
+              </div>
+
+              <div className="text-center text-xs font-medium py-1">
+                {c4State.status === "ended"
+                  ? c4State.winner === "draw"
+                    ? "Game drawn!"
+                    : `${c4State.winner === "red" ? c4State.red?.username : c4State.yellow?.username} wins!`
+                  : `${(c4State.turn === "red" ? c4State.red?.username : c4State.yellow?.username) || c4State.turn}'s turn`}
+              </div>
+
+              <Button size="sm" className="w-full h-8 text-xs" onClick={() => onOpenC4Board?.()} data-testid="button-c4-open-board">
+                <Maximize2 className="w-3.5 h-3.5 mr-1" /> Open Board
+              </Button>
+
+              {(c4State.red?.userId === userId || c4State.yellow?.userId === userId) && (
+                <div className="flex gap-2">
+                  {c4State.status === "ended" && (
+                    <Button size="sm" variant="default" className="flex-1 h-8 text-xs"
+                      onClick={() => socket?.emit("room:c4-rematch", { roomId })} data-testid="button-c4-rematch">
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" /> Rematch
+                    </Button>
+                  )}
+                  {c4State.status === "playing" && (
+                    <Button size="sm" variant="destructive" className="flex-1 h-8 text-xs"
+                      onClick={() => socket?.emit("room:c4-resign", { roomId })} data-testid="button-c4-resign">
+                      <Flag className="w-3.5 h-3.5 mr-1" /> Resign
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" className="flex-1 h-8 text-xs"
+                    onClick={() => socket?.emit("room:c4-close", { roomId })} data-testid="button-c4-close">
+                    <X className="w-3.5 h-3.5 mr-1" /> End match
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Incoming chess challenge dialog */}
       <Dialog open={!!incoming} onOpenChange={(o) => { if (!o) respondChallenge(false); }}>
         <DialogContent className="sm:max-w-sm" data-testid="dialog-incoming-challenge">
@@ -903,6 +1088,36 @@ export function ChessPanel({ socket, roomId, userId, participants }: Props) {
             <Button variant="ghost" className="flex-1" onClick={() => respondTttChallenge(false)} data-testid="button-decline-ttt">Decline</Button>
             <Button className="flex-1" onClick={() => respondTttChallenge(true)} data-testid="button-accept-ttt">
               <Hash className="w-3.5 h-3.5 mr-1" /> Accept
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Incoming Connect Four dialog */}
+      <Dialog open={!!incomingC4} onOpenChange={(o) => { if (!o) respondC4(false); }}>
+        <DialogContent className="sm:max-w-sm" data-testid="dialog-incoming-c4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span aria-hidden="true">🔴🟡</span> Connect Four Challenge!
+            </DialogTitle>
+            <DialogDescription asChild>
+              {incomingC4 ? (
+                <span className="flex items-center gap-2 mt-2">
+                  <Avatar className="w-8 h-8">
+                    {incomingC4.fromAvatar ? <AvatarImage src={incomingC4.fromAvatar} alt="" /> : null}
+                    <AvatarFallback>{incomingC4.fromUsername?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <span>
+                    <strong className="text-foreground">{incomingC4.fromUsername}</strong> wants to play Connect Four with you!
+                  </span>
+                </span>
+              ) : <span />}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" className="flex-1" onClick={() => respondC4(false)} data-testid="button-decline-c4">Decline</Button>
+            <Button className="flex-1" onClick={() => respondC4(true)} data-testid="button-accept-c4">
+              <Check className="w-3.5 h-3.5 mr-1" /> Accept
             </Button>
           </DialogFooter>
         </DialogContent>

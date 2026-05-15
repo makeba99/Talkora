@@ -218,6 +218,42 @@ const roomTttState = new Map<string, {
 
 const pendingTttChallenges = new Map<string, { challengerId: string; challengerName: string; challengerAvatar: string | null; roomId: string }>();
 
+// Connect Four: one active match per room
+type C4Seat = { userId: string; username: string; avatar: string | null } | null;
+const roomC4State = new Map<string, {
+  board: (null | "red" | "yellow")[][];
+  turn: "red" | "yellow";
+  status: "playing" | "ended";
+  winner: "red" | "yellow" | "draw" | null;
+  winLine: [number, number][] | null;
+  red: C4Seat;
+  yellow: C4Seat;
+  scores: { red: number; yellow: number; draws: number };
+  startedAt: number;
+}>();
+const pendingC4Challenges = new Map<string, { challengerId: string; challengerName: string; challengerAvatar: string | null; roomId: string }>();
+
+function c4CheckWin(board: (null | "red" | "yellow")[][]): { winner: "red" | "yellow" | "draw"; line: [number, number][] } | null {
+  const ROWS = 6, COLS = 7;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = board[r][c];
+      if (!cell) continue;
+      for (const [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]] as [number,number][]) {
+        const line: [number,number][] = [];
+        for (let i = 0; i < 4; i++) {
+          const nr = r + dr * i, nc = c + dc * i;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || board[nr][nc] !== cell) break;
+          line.push([nr, nc]);
+        }
+        if (line.length === 4) return { winner: cell as "red" | "yellow", line };
+      }
+    }
+  }
+  if (board[0].every(c => c !== null)) return { winner: "draw", line: [] };
+  return null;
+}
+
 // Lichess shared embed per room (URL string of game/study/tv)
 const roomLichessState = new Map<string, { url: string; sharedBy: string } | null>();
 
@@ -2456,6 +2492,24 @@ export async function registerRoutes(
     if (lichessState && lichessState.sharedBy === userId) {
       roomLichessState.delete(roomId);
       io.to(roomId).emit("room:lichess", null);
+    }
+
+    // C4: if leaving user was a player, end the game
+    const c4LeaveState = roomC4State.get(roomId);
+    if (c4LeaveState && c4LeaveState.status === "playing") {
+      if (c4LeaveState.red?.userId === userId || c4LeaveState.yellow?.userId === userId) {
+        const wasRed = c4LeaveState.red?.userId === userId;
+        c4LeaveState.status = "ended";
+        c4LeaveState.winner = wasRed ? "yellow" : "red";
+        c4LeaveState.winLine = null;
+        io.to(roomId).emit("room:c4-state", c4LeaveState);
+        setTimeout(() => {
+          if (roomC4State.get(roomId) === c4LeaveState) {
+            roomC4State.delete(roomId);
+            io.to(roomId).emit("room:c4-state", null);
+          }
+        }, 5000);
+      }
     }
 
     if (!roomParticipants.has(roomId)) return [];
@@ -6450,6 +6504,117 @@ export async function registerRoutes(
       if (!isPlayer) return;
       roomTttState.delete(data.roomId);
       io.to(data.roomId).emit("room:ttt-state", null);
+    });
+
+    // ---------- Connect Four ----------
+    socket.on("room:c4-sync", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      socket.emit("room:c4-state", roomC4State.get(data.roomId) || null);
+    });
+
+    socket.on("room:c4-challenge", async (data: { roomId: string; targetUserId: string }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId) || !participants.has(data.targetUserId)) return;
+      if (data.targetUserId === currentUserId) return;
+      if (roomC4State.get(data.roomId)?.status === "playing") return;
+      const challenger = await storage.getUser(currentUserId);
+      if (!challenger) return;
+      const targetSocketId = userSockets.get(data.targetUserId);
+      if (!targetSocketId) return;
+      const challengerName = challenger.displayName || challenger.firstName || (challenger.email ? challenger.email.split("@")[0] : null) || "Someone";
+      const key = `${data.roomId}:${data.targetUserId}`;
+      pendingC4Challenges.set(key, { challengerId: currentUserId, challengerName, challengerAvatar: challenger.profileImageUrl || null, roomId: data.roomId });
+      io.to(targetSocketId).emit("room:c4-challenge", {
+        fromUserId: currentUserId, fromUsername: challengerName,
+        fromAvatar: challenger.profileImageUrl || null, roomId: data.roomId,
+      });
+    });
+
+    socket.on("room:c4-respond", async (data: { roomId: string; fromUserId: string; accept: boolean }) => {
+      if (!currentUserId) return;
+      const key = `${data.roomId}:${currentUserId}`;
+      const pending = pendingC4Challenges.get(key);
+      if (!pending || pending.challengerId !== data.fromUserId) return;
+      pendingC4Challenges.delete(key);
+      const challengerSocket = userSockets.get(data.fromUserId);
+      const responder = await storage.getUser(currentUserId);
+      const responderName = responder?.displayName || responder?.firstName || (responder?.email ? responder.email.split("@")[0] : null) || "Player";
+      if (!data.accept) {
+        if (challengerSocket) io.to(challengerSocket).emit("room:c4-declined", { byUserId: currentUserId, byUsername: responderName });
+        return;
+      }
+      const newBoard: (null | "red" | "yellow")[][] = Array.from({ length: 6 }, () => Array(7).fill(null));
+      const newState = {
+        board: newBoard,
+        turn: "red" as "red" | "yellow",
+        status: "playing" as "playing" | "ended",
+        winner: null as "red" | "yellow" | "draw" | null,
+        winLine: null as [number, number][] | null,
+        red: { userId: data.fromUserId, username: pending.challengerName, avatar: pending.challengerAvatar },
+        yellow: { userId: currentUserId, username: responderName, avatar: responder?.profileImageUrl || null },
+        scores: { red: 0, yellow: 0, draws: 0 },
+        startedAt: Date.now(),
+      };
+      roomC4State.set(data.roomId, newState);
+      io.to(data.roomId).emit("room:c4-state", newState);
+      if (challengerSocket) io.to(challengerSocket).emit("room:c4-accepted", { byUserId: currentUserId, byUsername: responderName });
+    });
+
+    socket.on("room:c4-drop", (data: { roomId: string; col: number }) => {
+      if (!currentUserId) return;
+      const s = roomC4State.get(data.roomId);
+      if (!s || s.status !== "playing") return;
+      const color: "red" | "yellow" | null = s.red?.userId === currentUserId ? "red" : s.yellow?.userId === currentUserId ? "yellow" : null;
+      if (!color || s.turn !== color) return;
+      if (data.col < 0 || data.col >= 7) return;
+      let row = -1;
+      for (let r = 5; r >= 0; r--) { if (s.board[r][data.col] === null) { row = r; break; } }
+      if (row === -1) return;
+      s.board[row][data.col] = color;
+      const result = c4CheckWin(s.board);
+      if (result) {
+        s.status = "ended"; s.winner = result.winner; s.winLine = result.line;
+        if (result.winner === "red") s.scores.red++;
+        else if (result.winner === "yellow") s.scores.yellow++;
+        else s.scores.draws++;
+      } else {
+        s.turn = color === "red" ? "yellow" : "red";
+      }
+      io.to(data.roomId).emit("room:c4-state", s);
+    });
+
+    socket.on("room:c4-resign", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const s = roomC4State.get(data.roomId);
+      if (!s || s.status !== "playing") return;
+      const color: "red" | "yellow" | null = s.red?.userId === currentUserId ? "red" : s.yellow?.userId === currentUserId ? "yellow" : null;
+      if (!color) return;
+      s.status = "ended"; s.winner = color === "red" ? "yellow" : "red"; s.winLine = null;
+      if (s.winner === "red") s.scores.red++; else s.scores.yellow++;
+      io.to(data.roomId).emit("room:c4-state", s);
+    });
+
+    socket.on("room:c4-rematch", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const s = roomC4State.get(data.roomId);
+      if (!s) return;
+      if (s.red?.userId !== currentUserId && s.yellow?.userId !== currentUserId) return;
+      s.board = Array.from({ length: 6 }, () => Array(7).fill(null));
+      if (s.winner === "red") s.turn = "yellow";
+      else if (s.winner === "yellow") s.turn = "red";
+      else s.turn = s.turn === "red" ? "yellow" : "red";
+      s.status = "playing"; s.winner = null; s.winLine = null; s.startedAt = Date.now();
+      io.to(data.roomId).emit("room:c4-state", s);
+    });
+
+    socket.on("room:c4-close", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const s = roomC4State.get(data.roomId);
+      if (!s) return;
+      if (s.red?.userId !== currentUserId && s.yellow?.userId !== currentUserId) return;
+      roomC4State.delete(data.roomId);
+      io.to(data.roomId).emit("room:c4-state", null);
     });
 
     // ---------- Lichess shared embed (any participant can share a Lichess URL) ----------
