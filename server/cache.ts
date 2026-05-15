@@ -2,9 +2,9 @@
  * Lightweight in-process TTL cache
  *
  * Used to reduce repeated identical DB hits for hot read paths:
- *   - Individual user lookups  (TTL: 30s)
- *   - All-users list           (TTL: 15s)
- *   - Individual room lookups  (TTL: 10s)
+ *   - Individual user lookups  (TTL: 60s)
+ *   - All-users list           (TTL: 30s)
+ *   - Individual room lookups  (TTL: 30s)  ← SSE broadcast invalidates on write, so 30s is safe
  *   - YouTube featured videos  (TTL: 5min)
  *   - GIF trending results     (TTL: 5min)
  *
@@ -65,6 +65,6 @@ export class TtlCache<V> {
   }
 }
 
-export const userCache   = new TtlCache<any>(30_000);
-export const roomCache   = new TtlCache<any>(10_000);
+export const userCache   = new TtlCache<any>(60_000);
+export const roomCache   = new TtlCache<any>(30_000);
 export const externalCache = new TtlCache<any>(5 * 60_000);
