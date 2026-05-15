@@ -417,6 +417,7 @@ function ParticipantCard({
   hologramVideoUrl,
   avatarGifUrl,
   onSetAvatarGif,
+  roomTheme,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -1125,6 +1126,139 @@ function ParticipantCard({
         {/* Note: the old static "raise hand" badge here has been replaced by
             the floating mood emoji that animates above the card (see top of
             avatarContent above). */}
+
+        {/* ── Trap Gold avatar theme effect ── */}
+        {roomTheme === "trap-gold" && (() => {
+          const trapQuotes = [
+            { text: "I am not a businessman, I am a business", artist: "Jay-Z" },
+            { text: "Started from the bottom", artist: "Drake" },
+            { text: "Real Gs move in silence", artist: "Lil Wayne" },
+            { text: "We the best!", artist: "DJ Khaled" },
+          ];
+          const cycleS = trapQuotes.length * 4;
+          return (
+            <>
+              {/* diagonal gold shimmer sweep */}
+              <div style={{
+                position:"absolute", inset:0, pointerEvents:"none", zIndex:38,
+                background:"linear-gradient(135deg, transparent 0%, rgba(252,211,77,0.18) 45%, transparent 55%, rgba(245,158,11,0.10) 100%)",
+                animation:"vx-gold-shimmer 3.4s ease-in-out infinite",
+              }} />
+              {/* gold sparkle dots */}
+              {[0,1,2,3,4,5].map(i=>(
+                <div key={i} style={{
+                  position:"absolute", borderRadius:"50%", pointerEvents:"none", zIndex:39,
+                  width:2+(i%3), height:2+(i%3),
+                  left:`${14+i*13}%`, top:`${18+(i*17+3)%55}%`,
+                  background:"rgba(255,215,0,0.95)",
+                  boxShadow:"0 0 6px rgba(255,215,0,0.8), 0 0 12px rgba(245,158,11,0.5)",
+                  animation:`vx-sparkle ${1.1+i*0.38}s ease-in-out infinite ${i*0.28}s`,
+                }} />
+              ))}
+              {/* gold border glow */}
+              <div style={{
+                position:"absolute", inset:0, pointerEvents:"none", zIndex:40, borderRadius:"inherit",
+                boxShadow:"inset 0 0 0 2px rgba(245,158,11,0.55), inset 0 0 18px rgba(245,158,11,0.12)",
+                animation:"vx-gold-border-pulse 2.2s ease-in-out infinite",
+              }} />
+              {/* amber glow from bottom */}
+              <div style={{
+                position:"absolute", bottom:0, left:0, right:0, height:"35%",
+                pointerEvents:"none", zIndex:37,
+                background:"linear-gradient(to top, rgba(245,158,11,0.22), transparent)",
+                animation:"vx-gold-ember-glow 2.8s ease-in-out infinite",
+              }} />
+              {/* rotating rapper quotes strip */}
+              <div style={{
+                position:"absolute", bottom:0, left:0, right:0, height:36,
+                pointerEvents:"none", zIndex:45,
+                background:"linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 60%, transparent 100%)",
+              }}>
+                {trapQuotes.map((q, i) => (
+                  <div key={i} style={{
+                    position:"absolute", bottom:3, left:0, right:0,
+                    textAlign:"center", opacity:0,
+                    animation:`vx-quote-cycle ${cycleS}s ease-in-out infinite ${i*4}s`,
+                  }}>
+                    <div style={{ fontSize:7, color:"rgba(255,215,0,0.95)", fontWeight:800, letterSpacing:"0.03em", textShadow:"0 0 10px rgba(255,215,0,0.7)", lineHeight:1.2, padding:"0 4px", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>
+                      &ldquo;{q.text}&rdquo;
+                    </div>
+                    <div style={{ fontSize:6, color:"rgba(245,158,11,0.80)", fontWeight:600, letterSpacing:"0.06em", marginTop:1 }}>
+                      — {q.artist}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
+
+        {/* ── Skeleton Gangsta avatar theme effect ── */}
+        {roomTheme === "skeleton-gangsta" && (() => {
+          const skeletonQuotes = [
+            { text: "Death before dishonor", artist: "2Pac" },
+            { text: "All eyez on me", artist: "2Pac" },
+            { text: "Ready to die", artist: "Biggie" },
+            { text: "Fear no man, fear no evil", artist: "Eazy-E" },
+          ];
+          const cycleS = skeletonQuotes.length * 4;
+          return (
+            <>
+              {/* cold bone mist rising from bottom */}
+              <div style={{
+                position:"absolute", bottom:0, left:0, right:0, height:"40%",
+                pointerEvents:"none", zIndex:37,
+                background:"linear-gradient(to top, rgba(200,192,176,0.14), rgba(200,192,176,0.04), transparent)",
+                animation:"vx-bone-fog 4.5s ease-in-out infinite",
+              }} />
+              {/* moving scan line */}
+              <div style={{
+                position:"absolute", left:0, right:0, height:"1px",
+                pointerEvents:"none", zIndex:39,
+                background:"linear-gradient(90deg, transparent, rgba(220,215,200,0.55), transparent)",
+                animation:"vx-scan-line 3.2s linear infinite",
+              }} />
+              {/* bone-white border pulse */}
+              <div style={{
+                position:"absolute", inset:0, pointerEvents:"none", zIndex:40, borderRadius:"inherit",
+                boxShadow:"inset 0 0 0 2px rgba(200,192,176,0.38), inset 0 0 16px rgba(200,192,176,0.08)",
+                animation:"vx-bone-border-pulse 2.8s ease-in-out infinite",
+              }} />
+              {/* bone flakes falling */}
+              {[0,1,2,3].map(i=>(
+                <div key={i} style={{
+                  position:"absolute", pointerEvents:"none", zIndex:38,
+                  width:2+(i%2), height:2+(i%2),
+                  borderRadius: i%2===0 ? "50%" : "2px",
+                  left:`${12+i*22}%`, top:"-4%",
+                  background:`rgba(220,215,200,${0.55+i*0.08})`,
+                  animation:`vx-bone-fall ${2.2+i*0.55}s linear infinite ${i*0.75}s`,
+                }} />
+              ))}
+              {/* rotating rapper quotes strip */}
+              <div style={{
+                position:"absolute", bottom:0, left:0, right:0, height:36,
+                pointerEvents:"none", zIndex:45,
+                background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 60%, transparent 100%)",
+              }}>
+                {skeletonQuotes.map((q, i) => (
+                  <div key={i} style={{
+                    position:"absolute", bottom:3, left:0, right:0,
+                    textAlign:"center", opacity:0,
+                    animation:`vx-quote-cycle ${cycleS}s ease-in-out infinite ${i*4}s`,
+                  }}>
+                    <div style={{ fontSize:7, color:"rgba(220,215,200,0.95)", fontWeight:800, letterSpacing:"0.03em", textShadow:"0 0 10px rgba(200,192,176,0.6)", lineHeight:1.2, padding:"0 4px", overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>
+                      &ldquo;{q.text}&rdquo;
+                    </div>
+                    <div style={{ fontSize:6, color:"rgba(160,155,145,0.80)", fontWeight:600, letterSpacing:"0.06em", marginTop:1 }}>
+                      — {q.artist}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
@@ -13494,6 +13628,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       cardPx={cardPx}
                       hologramVideoUrl={(room as any).hologramVideoUrl || null}
                       avatarGifUrl={participantAvatarGifs[p.id] || null}
+                      roomTheme={currentTheme}
                       onSetAvatarGif={isMe ? (gifUrl: string | null) => {
                         setParticipantAvatarGifs((prev) => {
                           if (gifUrl) return { ...prev, [user!.id]: gifUrl };
