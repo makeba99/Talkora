@@ -827,10 +827,214 @@ function drawPremiumAtmosphere(ctx: Ctx, W: number, H: number, t: number, state:
 }
 
 /* ─────────────────────────────────────────────
+   TRAP GOLD – cascading gold coin rain + glow grid
+───────────────────────────────────────────── */
+interface GoldCoin { x: number; y: number; vy: number; r: number; alpha: number; rot: number; rotV: number; }
+
+let _goldCoins: GoldCoin[] | null = null;
+function getGoldCoins(W: number, H: number, count: number): GoldCoin[] {
+  if (_goldCoins && _goldCoins.length === count) return _goldCoins;
+  _goldCoins = Array.from({ length: count }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * H * 1.2 - H * 0.1,
+    vy: 0.6 + Math.random() * 1.4,
+    r: 1.5 + Math.random() * 3.5,
+    alpha: 0.18 + Math.random() * 0.55,
+    rot: Math.random() * Math.PI * 2,
+    rotV: (Math.random() - 0.5) * 0.06,
+  }));
+  return _goldCoins;
+}
+
+function drawTrapGold(ctx: Ctx, W: number, H: number, t: number) {
+  ctx.clearRect(0, 0, W, H);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#050300");
+  bg.addColorStop(0.5, "#0a0700");
+  bg.addColorStop(1, "#080500");
+  ctx.fillStyle = bg; ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow1 = ctx.createRadialGradient(W * 0.5, H * 0.1, 0, W * 0.5, H * 0.1, W * 0.5);
+  glow1.addColorStop(0, "rgba(255,200,0,0.07)");
+  glow1.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow1; ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+
+  const GRID_COLS = 10;
+  const GRID_ROWS = 7;
+  const cellW = W / GRID_COLS;
+  const cellH = H / GRID_ROWS;
+  ctx.strokeStyle = "rgba(255,200,0,0.04)";
+  ctx.lineWidth = 0.6;
+  ctx.globalAlpha = 1;
+  for (let xi = 0; xi <= GRID_COLS; xi++) {
+    ctx.beginPath(); ctx.moveTo(xi * cellW, 0); ctx.lineTo(xi * cellW, H); ctx.stroke();
+  }
+  for (let yi = 0; yi <= GRID_ROWS; yi++) {
+    ctx.beginPath(); ctx.moveTo(0, yi * cellH); ctx.lineTo(W, yi * cellH); ctx.stroke();
+  }
+
+  const isMobile = W < 768;
+  const coins = getGoldCoins(W, H, isMobile ? 80 : 160);
+  coins.forEach(c => {
+    c.y += c.vy;
+    c.rot += c.rotV;
+    if (c.y > H + c.r * 2) { c.y = -c.r * 2; c.x = Math.random() * W; }
+
+    const scaleX = Math.abs(Math.cos(c.rot));
+    const pulse = c.alpha * (0.65 + 0.35 * Math.sin(t * 1.5 + c.x * 0.02));
+
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.scale(scaleX + 0.01, 1);
+
+    const coinG = ctx.createRadialGradient(0, 0, 0, 0, 0, c.r);
+    coinG.addColorStop(0, `rgba(255,230,80,${pulse})`);
+    coinG.addColorStop(0.55, `rgba(255,195,0,${pulse * 0.85})`);
+    coinG.addColorStop(1, `rgba(180,120,0,${pulse * 0.4})`);
+    ctx.fillStyle = coinG;
+    ctx.shadowColor = "#ffd700";
+    ctx.shadowBlur = c.r > 2.5 ? 12 : 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, c.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  const shine = ctx.createRadialGradient(W * 0.5, H * 0.72, 0, W * 0.5, H * 0.72, W * 0.55);
+  shine.addColorStop(0, `rgba(255,210,0,${0.03 + 0.02 * Math.sin(t * 0.8)})`);
+  shine.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = shine; ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+
+  const vign = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.72);
+  vign.addColorStop(0, "rgba(0,0,0,0)");
+  vign.addColorStop(0.65, "rgba(0,0,0,0.22)");
+  vign.addColorStop(1, "rgba(0,0,0,0.72)");
+  ctx.fillStyle = vign; ctx.globalAlpha = 1; ctx.fillRect(0, 0, W, H);
+
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+}
+
+/* ─────────────────────────────────────────────
+   DIAMOND DISTRICT – VVS crystal sparkle field
+───────────────────────────────────────────── */
+interface DiamondSparkle { x: number; y: number; vx: number; vy: number; r: number; phase: number; speed: number; color: string; }
+
+const DD_COLORS = ["#7dd3fc","#bae6fd","#e0f2fe","#ffffff","#a5f3fc","#67e8f9","#38bdf8"];
+
+let _ddSparkles: DiamondSparkle[] | null = null;
+function getDDSparkles(W: number, H: number, count: number): DiamondSparkle[] {
+  if (_ddSparkles && _ddSparkles.length === count) return _ddSparkles;
+  _ddSparkles = Array.from({ length: count }, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 0.08 + Math.random() * 0.22;
+    return {
+      x: Math.random() * W, y: Math.random() * H,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      r: 0.5 + Math.random() * 2.2,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.7 + Math.random() * 1.2,
+      color: DD_COLORS[Math.floor(Math.random() * DD_COLORS.length)],
+    };
+  });
+  return _ddSparkles;
+}
+
+function drawDiamondDistrict(ctx: Ctx, W: number, H: number, t: number) {
+  ctx.clearRect(0, 0, W, H);
+
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#010308");
+  bg.addColorStop(0.5, "#020610");
+  bg.addColorStop(1, "#010407");
+  ctx.fillStyle = bg; ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+
+  const icyGlow = [
+    { x: W * 0.25, y: H * 0.2, r: W * 0.38, c: "rgba(30,140,255,0.07)" },
+    { x: W * 0.78, y: H * 0.65, r: W * 0.32, c: "rgba(0,200,255,0.05)" },
+    { x: W * 0.55, y: H * 0.8, r: W * 0.28, c: "rgba(80,200,255,0.04)" },
+  ];
+  icyGlow.forEach((g, i) => {
+    const ox = Math.sin(t * 0.14 + i * 1.4) * 22;
+    const oy = Math.cos(t * 0.11 + i * 1.1) * 16;
+    const grad = ctx.createRadialGradient(g.x + ox, g.y + oy, 0, g.x + ox, g.y + oy, g.r);
+    grad.addColorStop(0, g.c);
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = grad; ctx.globalAlpha = 1;
+    ctx.fillRect(0, 0, W, H);
+  });
+
+  const isMobile = W < 768;
+  const sparkles = getDDSparkles(W, H, isMobile ? 90 : 190);
+
+  for (let i = 0; i < sparkles.length; i++) {
+    const s = sparkles[i];
+    s.x += s.vx; s.y += s.vy;
+    if (s.x < -10) s.x = W + 10;
+    if (s.x > W + 10) s.x = -10;
+    if (s.y < -10) s.y = H + 10;
+    if (s.y > H + 10) s.y = -10;
+
+    for (let j = i + 1; j < sparkles.length; j++) {
+      const b = sparkles[j];
+      const dx = s.x - b.x, dy = s.y - b.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const maxDist = 120;
+      if (dist < maxDist) {
+        const alpha = (1 - dist / maxDist) * 0.18;
+        ctx.strokeStyle = `rgba(125,211,252,${alpha})`;
+        ctx.lineWidth = 0.5;
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+
+    const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+    const alpha = pulse * (s.r > 1.5 ? 0.85 : 0.55);
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = s.color;
+    ctx.shadowColor = s.color;
+    ctx.shadowBlur = s.r > 1.5 ? 14 : 5;
+
+    const crossSize = s.r * (0.8 + 0.4 * Math.sin(t * s.speed * 0.7 + s.phase));
+    ctx.beginPath();
+    ctx.moveTo(s.x - crossSize, s.y);
+    ctx.lineTo(s.x + crossSize, s.y);
+    ctx.moveTo(s.x, s.y - crossSize);
+    ctx.lineTo(s.x, s.y + crossSize);
+    ctx.lineWidth = s.r > 1.5 ? 1.2 : 0.7;
+    ctx.strokeStyle = s.color;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const vign = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.75);
+  vign.addColorStop(0, "rgba(0,0,0,0)");
+  vign.addColorStop(0.7, "rgba(0,0,0,0.20)");
+  vign.addColorStop(1, "rgba(0,0,0,0.65)");
+  ctx.fillStyle = vign; ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 const ANIMATED_THEMES = new Set([
   "starfield","galaxy","synthwave","aurora","neon-cyberpunk","midnight-purple","blood-moon","neural-pulse","premium-atmosphere",
+  "trap-gold","diamond-district",
 ]);
 
 export function AnimatedBackground() {
@@ -1036,6 +1240,12 @@ export function AnimatedBackground() {
       else if (theme === "premium-atmosphere") {
         if (!dataRef.current.premium) return;
         drawPremiumAtmosphere(ctx, W, H, t, dataRef.current.premium);
+      }
+      else if (theme === "trap-gold") {
+        drawTrapGold(ctx, W, H, t);
+      }
+      else if (theme === "diamond-district") {
+        drawDiamondDistrict(ctx, W, H, t);
       }
 
       rafRef.current = requestAnimationFrame(draw);

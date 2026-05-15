@@ -19,7 +19,10 @@ export type Theme =
   | "neural-pulse"
   | "premium-atmosphere"
   | "neomorphic-dark"
-  | "neomorphic-light";
+  | "neomorphic-light"
+  | "trap-gold"
+  | "drip-noir"
+  | "diamond-district";
 
 export interface ThemeDefinition {
   id: Theme;
@@ -52,6 +55,29 @@ export const THEMES: ThemeDefinition[] = [
     description: "Soft tactile lightness",
     swatchColors: ["#e6e7ee", "#f0f1f7", "#7c5cff"],
     isDark: false,
+  },
+  {
+    id: "trap-gold",
+    label: "Trap Gold",
+    description: "Black & gold luxury trap",
+    swatchColors: ["#080600", "#120d00", "#ffd700"],
+    isDark: true,
+    animated: true,
+  },
+  {
+    id: "drip-noir",
+    label: "Drip Noir",
+    description: "High-fashion platinum streetwear",
+    swatchColors: ["#060606", "#0d0d0d", "#d4d4d4"],
+    isDark: true,
+  },
+  {
+    id: "diamond-district",
+    label: "Diamond District",
+    description: "VVS icy diamond shimmer",
+    swatchColors: ["#020508", "#040d18", "#7dd3fc"],
+    isDark: true,
+    animated: true,
   },
   {
     id: "dark",
