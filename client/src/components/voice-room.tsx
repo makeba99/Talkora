@@ -1261,6 +1261,19 @@ function getDjSlingStyle(index: number): React.CSSProperties {
   return { animation: `${ANIMS[v]} ${DURS[v]}s cubic-bezier(0.34,1.56,0.64,1) infinite ${DELS[v]}s` };
 }
 
+// ── DJ scene → beat-drop color (rgba components, no alpha) ─────────────────
+const DJ_SCENE_COLORS: Record<string, string> = {
+  spotlight: "255,210,0",
+  namestorm: "80,200,255",
+  disco:     "255,0,200",
+  kiss:      "255,60,120",
+  cocktails: "0,255,180",
+  boomer:    "255,140,0",
+};
+function getDjBeatColor(scene: string): string {
+  return DJ_SCENE_COLORS[scene] || "200,100,255";
+}
+
 // ── DJ auto-cycle order — all 10 styles rotate so cards are visually varied ──
 const DJ_AUTO_CYCLE = [
   "sling","wave","bounce","pulse","tilt","orbit","float","wiggle","slam","spin","stretch","shake",
@@ -1490,6 +1503,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({}); 
   const [djModeActive, setDjModeActive] = useState(false);
   const djModeActiveRef = useRef(false);
+  const [djBeatDropTick, setDjBeatDropTick] = useState(0);
   const [djSpotlightIdx, setDjSpotlightIdx] = useState(-1);
   const [djCurrentScene, setDjCurrentScene] = useState<string>("spotlight");
   const [djAutoAdvance, setDjAutoAdvance] = useState(false);
@@ -3827,6 +3841,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setParticipantMoods({});
         setYtFloatingReactions([]);
         setMovieFloatingReactions([]);
+        // Fire the intro beat-drop pulse on all cards
+        setDjBeatDropTick(t => t + 1);
       } else {
         setDjSpotlightIdx(-1);
         setDjCurrentScene("spotlight");
@@ -3838,6 +3854,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (data?.scene) setDjCurrentScene(data.scene);
       // Clear mood emojis on every scene change so they don't clutter DJ visuals
       setParticipantMoods({});
+      // Fire the beat-drop pulse on all participant cards
+      setDjBeatDropTick(t => t + 1);
     });
     // ── DJ Move — host changes movement style for all participant cards ──
     socket.on("room:dj-move", (data: { moveStyle: string }) => {
@@ -13044,6 +13062,24 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         : {}),
                     }}
                   >
+                    {/* ── DJ Beat-drop pulse — fires on every scene transition ── */}
+                    {djModeActive && djBeatDropTick > 0 && (
+                      <div
+                        key={djBeatDropTick}
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          inset: -6,
+                          borderRadius: 18,
+                          background: `radial-gradient(ellipse at 50% 60%, rgba(${getDjBeatColor(djCurrentScene)},0.72) 0%, rgba(${getDjBeatColor(djCurrentScene)},0.18) 55%, transparent 80%)`,
+                          boxShadow: `0 0 32px 8px rgba(${getDjBeatColor(djCurrentScene)},0.55), 0 0 60px 20px rgba(${getDjBeatColor(djCurrentScene)},0.22)`,
+                          animation: "dj-beat-drop 0.72s cubic-bezier(0.22,1,0.36,1) forwards",
+                          pointerEvents: "none",
+                          zIndex: 28,
+                        }}
+                      />
+                    )}
+
                     {/* DJ spotlight beam from above */}
                     {djModeActive && djCurrentScene === "spotlight" && djSpotlightIdx === index && (
                       <>
