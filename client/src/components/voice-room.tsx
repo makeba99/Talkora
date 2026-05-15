@@ -3576,15 +3576,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setMyYtSkipVote(false);
         setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
       } else if (data.videoId && !youtubeStartedByRef.current) {
-        // Auto-share: a room member started a video and I'm not watching anything —
-        // automatically open the player so the whole room watches together.
-        setActiveYoutubeId(data.videoId);
-        setYoutubeStartedBy(hostId);
-        setShowYoutube(true);
-        setUserDismissedYoutube(false);
-        setMyYtVote(null);
-        setMyYtSkipVote(false);
-        setYtVotes({ likes: 0, dislikes: 0, skip: 0, watchers: 0 });
+        // A room member started a video. Do NOT auto-join — just notify the user
+        // so they can choose to watch. They can click the host's participant card
+        // or the YouTube icon on their tile to join the watch party.
+        const hostParticipant = participantsRef.current.find((p) => p.id === hostId);
+        const hostName = hostParticipant ? getUserDisplayName(hostParticipant) : "Someone";
+        toast({
+          title: `▶ ${hostName} started a YouTube video`,
+          description: "Click their card in the room to watch together.",
+          duration: 6000,
+        });
       }
     });
 
