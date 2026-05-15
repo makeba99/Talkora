@@ -1,18 +1,20 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
   plugins: [
     react(),
-    // Runtime error overlay is a dev-only debugging aid (full-screen modal on
-    // unhandled errors). Including it in production ships ~3 KB of overlay
-    // JS that runs on every page load. Dev-only keeps the prod bundle clean.
-    ...(process.env.NODE_ENV !== "production" ? [runtimeErrorOverlay()] : []),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
+    // All Replit-specific plugins are dynamically imported so they are never
+    // resolved outside the Replit runtime (Railway, Render, local builds).
+    // A static import of @replit/vite-plugin-runtime-error-modal crashes when
+    // the Replit runtime isn't present — dynamic import inside the condition
+    // means the module loader never even attempts to resolve it in production.
+    ...(process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined
       ? [
+          await import("@replit/vite-plugin-runtime-error-modal").then((m) =>
+            m.default(),
+          ),
           await import("@replit/vite-plugin-cartographer").then((m) =>
             m.cartographer(),
           ),
