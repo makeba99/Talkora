@@ -9,10 +9,11 @@ import {
 import { useTheme, THEMES, type Theme } from "@/lib/theme";
 
 const CATEGORIES = [
-  { label: "All", ids: null },
-  { label: "Dark", ids: THEMES.filter((t) => t.isDark && !t.animated).map((t) => t.id) },
-  { label: "Light", ids: THEMES.filter((t) => !t.isDark).map((t) => t.id) },
-  { label: "Animated", ids: THEMES.filter((t) => t.animated).map((t) => t.id) },
+  { label: "All",      ids: null,                                                                     emoji: null },
+  { label: "Dark",     ids: THEMES.filter((t) => t.isDark && !t.animated && !t.category).map((t) => t.id), emoji: null },
+  { label: "Light",    ids: THEMES.filter((t) => !t.isDark).map((t) => t.id),                        emoji: null },
+  { label: "Animated", ids: THEMES.filter((t) => t.animated && !t.category).map((t) => t.id),        emoji: null },
+  { label: "Rap",      ids: THEMES.filter((t) => t.category === "rap").map((t) => t.id),              emoji: "🎤" },
 ];
 
 interface ThemePickerProps {
@@ -89,7 +90,7 @@ export function ThemePicker({ open: controlledOpen, onOpenChange, hideTrigger }:
         </div>
 
         {/* Category filter */}
-        <div className="flex gap-1 mb-3">
+        <div className="flex gap-1 mb-3 flex-wrap">
           {CATEGORIES.map((c) => (
             <button
               key={c.label}
@@ -101,7 +102,7 @@ export function ThemePicker({ open: controlledOpen, onOpenChange, hideTrigger }:
               }`}
               data-testid={`tab-theme-cat-${c.label.toLowerCase()}`}
             >
-              {c.label}
+              {c.emoji ? `${c.emoji} ${c.label}` : c.label}
             </button>
           ))}
         </div>

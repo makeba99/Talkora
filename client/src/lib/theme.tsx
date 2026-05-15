@@ -31,6 +31,7 @@ export interface ThemeDefinition {
   swatchColors: string[];
   isDark: boolean;
   animated?: boolean;
+  category?: "rap";
 }
 
 export const THEMES: ThemeDefinition[] = [
@@ -63,6 +64,7 @@ export const THEMES: ThemeDefinition[] = [
     swatchColors: ["#080600", "#120d00", "#ffd700"],
     isDark: true,
     animated: true,
+    category: "rap",
   },
   {
     id: "drip-noir",
@@ -70,6 +72,7 @@ export const THEMES: ThemeDefinition[] = [
     description: "High-fashion platinum streetwear",
     swatchColors: ["#060606", "#0d0d0d", "#d4d4d4"],
     isDark: true,
+    category: "rap",
   },
   {
     id: "diamond-district",
@@ -78,6 +81,7 @@ export const THEMES: ThemeDefinition[] = [
     swatchColors: ["#020508", "#040d18", "#7dd3fc"],
     isDark: true,
     animated: true,
+    category: "rap",
   },
   {
     id: "dark",
