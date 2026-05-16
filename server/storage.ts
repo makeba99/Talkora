@@ -88,7 +88,7 @@ export interface IStorage {
   deleteRoom(id: string): Promise<void>;
 
   createMessage(msg: InsertMessage): Promise<Message>;
-  getMessages(userId1: string, userId2: string): Promise<Message[]>;
+  getMessages(userId1: string, userId2: string, limit?: number): Promise<Message[]>;
   getUnreadMessageCount(userId: string): Promise<number>;
   getConversations(userId: string): Promise<{ otherUserId: string; lastMessage: string; lastMessageAt: Date; unreadCount: number }[]>;
   markConversationRead(userId: string, otherUserId: string): Promise<void>;
@@ -393,7 +393,7 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
-  async getMessages(userId1: string, userId2: string): Promise<Message[]> {
+  async getMessages(userId1: string, userId2: string, limit = 200): Promise<Message[]> {
     return db
       .select()
       .from(messages)
@@ -403,7 +403,8 @@ export class DatabaseStorage implements IStorage {
           and(eq(messages.fromId, userId2), eq(messages.toId, userId1))
         )
       )
-      .orderBy(messages.createdAt);
+      .orderBy(messages.createdAt)
+      .limit(limit);
   }
 
   async getUnreadMessageCount(userId: string): Promise<number> {

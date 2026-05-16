@@ -12,7 +12,7 @@ import fs from "fs";
 import nodemailer from "nodemailer";
 import webpush from "web-push";
 import { externalCache } from "./cache";
-import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
+import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "./elevenlabs";
 import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, type AiTutorConfig } from "./ai-config";
@@ -1433,7 +1433,7 @@ export async function registerRoutes(
   }
   // ───────────────────────────────────────────────────────────────────────────
 
-  app.post("/api/ai-tutor/chat", isAuthenticated, async (req: any, res) => {
+  app.post("/api/ai-tutor/chat", isAuthenticated, aiTutorRateLimiter, async (req: any, res) => {
     const startTime = Date.now();
     try {
       const { message, history = [], settings = {}, language = "English", youtubeActive = false, roomId } = req.body;
@@ -1609,7 +1609,7 @@ export async function registerRoutes(
   // Synthesize a single sentence via the configured TTS provider.
   // Returns audio bytes. Active-session gate stops other room participants
   // from burning quota on someone else's AI session.
-  app.post("/api/ai-tutor/tts", isAuthenticated, async (req: any, res) => {
+  app.post("/api/ai-tutor/tts", isAuthenticated, aiTutorRateLimiter, async (req: any, res) => {
     try {
       const cfg = await getAiTutorConfig();
 
@@ -1703,7 +1703,7 @@ export async function registerRoutes(
   // ── AI Tutor Streaming (SSE) ─────────────────────────────────────────────
   // Streams tokens from OpenAI → client for real-time TTS playback.
   // Falls back to a context-aware canned reply.
-  app.post("/api/ai-tutor/stream", isAuthenticated, async (req: any, res) => {
+  app.post("/api/ai-tutor/stream", isAuthenticated, aiTutorRateLimiter, async (req: any, res) => {
     const startTime = Date.now();
     // Disable compression so SSE tokens flush immediately
     res.setHeader('Content-Type', 'text/event-stream');
@@ -2905,9 +2905,17 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/messages/:userId1/:userId2", isAuthenticated, async (req, res) => {
+  app.get("/api/messages/:userId1/:userId2", isAuthenticated, async (req: any, res) => {
     try {
-      const msgs = await storage.getMessages(Array.isArray(req.params.userId1) ? req.params.userId1[0] : req.params.userId1, Array.isArray(req.params.userId2) ? req.params.userId2[0] : req.params.userId2);
+      const requestingUserId = (req.user as any).id;
+      const userId1 = Array.isArray(req.params.userId1) ? req.params.userId1[0] : req.params.userId1;
+      const userId2 = Array.isArray(req.params.userId2) ? req.params.userId2[0] : req.params.userId2;
+      // Access control: only allow participants of the conversation to read it.
+      if (requestingUserId !== userId1 && requestingUserId !== userId2) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const limit = Math.min(Number(req.query.limit) || 200, 500);
+      const msgs = await storage.getMessages(userId1, userId2, limit);
       res.json(msgs);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -2916,7 +2924,7 @@ export async function registerRoutes(
 
   const sendMessageBody = insertMessageSchema;
 
-  app.post("/api/messages", isAuthenticated, async (req, res) => {
+  app.post("/api/messages", isAuthenticated, messageRateLimiter, async (req, res) => {
     try {
       const parsed = sendMessageBody.safeParse(req.body);
       if (!parsed.success) {
@@ -3790,6 +3798,9 @@ export async function registerRoutes(
   app.get("/api/users/:id/badges", async (req, res) => {
     try {
       const badges = await storage.getUserBadges(req.params.id);
+      // Badges change rarely — allow browsers/CDNs to serve stale for 30s,
+      // revalidate in the background for up to 5 minutes.
+      res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=300");
       res.json(badges);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -4532,6 +4543,9 @@ export async function registerRoutes(
   app.get("/api/teachers", async (_req, res) => {
     try {
       const all = await storage.getAllTeachers();
+      // Teacher list changes infrequently — serve stale for 60s, revalidate
+      // for up to 10 minutes, so returning users get instant responses.
+      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
       res.json(all);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
