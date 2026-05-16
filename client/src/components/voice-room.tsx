@@ -7837,23 +7837,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const buildYtEmbed = (id: string) =>
     `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&rel=0`;
 
-  const handleYtSearchVR = async (query: string) => {
-    if (!query.trim()) { setYtResultsVR([]); return; }
-    setYtSearchingVR(true);
-    try {
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`, { credentials: "include" });
-      if (res.ok) setYtResultsVR(await res.json());
-    } finally {
-      setYtSearchingVR(false);
-    }
-  };
-
-  const handleYtQueryVR = (val: string) => {
-    setYtQueryVR(val);
-    if (ytTimeoutVR.current) clearTimeout(ytTimeoutVR.current);
-    ytTimeoutVR.current = setTimeout(() => handleYtSearchVR(val), 400);
-  };
-
   const handleEditRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
