@@ -261,6 +261,7 @@ export interface IStorage {
   getAvailableThemesForUser(userId: string, allThemeIds: string[]): Promise<string[]>;
 
   addUserThemeAssignment(userId: string, themeId: string): Promise<void>;
+  getUserThemeOrderStats(userId: string): Promise<{ pendingCount: number; last24hCount: number }>;
   createThemeOrder(userId: string, themeName: string, description: string): Promise<ThemeOrder>;
   getThemeOrders(status?: string): Promise<Array<ThemeOrder & { userDisplayName: string | null; userEmail: string | null }>>;
   getUserThemeOrders(userId: string): Promise<ThemeOrder[]>;
@@ -1846,6 +1847,17 @@ export class DatabaseStorage implements IStorage {
       .insert(userThemeAssignments)
       .values({ userId, themeId })
       .onConflictDoNothing();
+  }
+
+  async getUserThemeOrderStats(userId: string): Promise<{ pendingCount: number; last24hCount: number }> {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const rows = await db
+      .select({ status: themeOrders.status, createdAt: themeOrders.createdAt })
+      .from(themeOrders)
+      .where(eq(themeOrders.userId, userId));
+    const pendingCount = rows.filter((r) => r.status === "pending").length;
+    const last24hCount = rows.filter((r) => new Date(r.createdAt) >= since).length;
+    return { pendingCount, last24hCount };
   }
 
   async createThemeOrder(userId: string, themeName: string, description: string): Promise<ThemeOrder> {

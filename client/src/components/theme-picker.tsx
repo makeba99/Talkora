@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Palette, Check, Sparkles, ShoppingBag, ChevronDown, ChevronUp, Loader2, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Palette, Check, Sparkles, ShoppingBag, ChevronDown, ChevronUp, Loader2, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -61,12 +61,23 @@ export function ThemePicker({ open: controlledOpen, onOpenChange, hideTrigger }:
     enabled: open && showMyOrders,
   });
 
+  const { data: orderStats } = useQuery<{ pendingCount: number; last24hCount: number }>({
+    queryKey: ["/api/themes/order-stats"],
+    enabled: open && showRequest,
+  });
+
+  const hasPending = (orderStats?.pendingCount ?? 0) >= 1;
+  const hitDailyLimit = (orderStats?.last24hCount ?? 0) >= 3;
+  const requestsLeft = Math.max(0, 3 - (orderStats?.last24hCount ?? 0));
+  const isBlocked = hasPending || hitDailyLimit;
+
   const submitOrder = useMutation({
     mutationFn: async () => {
       return apiRequest("POST", "/api/themes/order", { themeName: reqName.trim(), description: reqDesc.trim() });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/themes/my-orders"] });
+      qc.invalidateQueries({ queryKey: ["/api/themes/order-stats"] });
       toast({ title: "Theme request sent!", description: "The admin will review your request." });
       setReqName("");
       setReqDesc("");
@@ -233,41 +244,75 @@ export function ThemePicker({ open: controlledOpen, onOpenChange, hideTrigger }:
 
             {showRequest && (
               <div className="mt-2 space-y-2">
-                <input
-                  type="text"
-                  placeholder="Theme name (e.g. Midnight Rose)"
-                  value={reqName}
-                  onChange={(e) => setReqName(e.target.value)}
-                  maxLength={100}
-                  className="w-full text-xs bg-muted/40 border border-border rounded px-2.5 py-1.5 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
-                  data-testid="input-theme-request-name"
-                />
-                <textarea
-                  placeholder="Describe the vibe, colors, style you'd like... (min 10 chars)"
-                  value={reqDesc}
-                  onChange={(e) => setReqDesc(e.target.value)}
-                  maxLength={1000}
-                  rows={3}
-                  className="w-full text-xs bg-muted/40 border border-border rounded px-2.5 py-1.5 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                  data-testid="input-theme-request-desc"
-                />
-                <div className="flex gap-2 justify-end">
+                {/* Quota indicator */}
+                {orderStats && (
+                  <div className={`flex items-center gap-1.5 text-[10px] rounded px-2 py-1 ${
+                    isBlocked ? "bg-red-500/10 border border-red-500/20 text-red-400" : "bg-muted/30 text-muted-foreground"
+                  }`}>
+                    {isBlocked
+                      ? <AlertCircle className="w-3 h-3 shrink-0" />
+                      : <ShoppingBag className="w-3 h-3 shrink-0 text-amber-400" />
+                    }
+                    {hasPending
+                      ? "You have a pending request — wait for it to be reviewed first."
+                      : hitDailyLimit
+                      ? "Daily limit reached (3/3). Try again after 24 hours."
+                      : `${requestsLeft} of 3 requests remaining today.`
+                    }
+                  </div>
+                )}
+
+                {/* Form (hidden when blocked) */}
+                {!isBlocked && (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Theme name (e.g. Midnight Rose)"
+                      value={reqName}
+                      onChange={(e) => setReqName(e.target.value)}
+                      maxLength={100}
+                      className="w-full text-xs bg-muted/40 border border-border rounded px-2.5 py-1.5 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
+                      data-testid="input-theme-request-name"
+                    />
+                    <textarea
+                      placeholder="Describe the vibe, colors, style you'd like... (min 10 chars)"
+                      value={reqDesc}
+                      onChange={(e) => setReqDesc(e.target.value)}
+                      maxLength={1000}
+                      rows={3}
+                      className="w-full text-xs bg-muted/40 border border-border rounded px-2.5 py-1.5 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                      data-testid="input-theme-request-desc"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => setShowRequest(false)}
+                        className="text-[10px] text-muted-foreground hover:text-foreground px-2 py-1"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => submitOrder.mutate()}
+                        disabled={submitOrder.isPending || reqName.trim().length < 2 || reqDesc.trim().length < 10}
+                        className="flex items-center gap-1 text-[10px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed px-2.5 py-1 rounded transition-colors"
+                        data-testid="button-submit-theme-request"
+                      >
+                        {submitOrder.isPending ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <ShoppingBag className="w-2.5 h-2.5" />}
+                        Send Request
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Blocked — show shortcut to check status */}
+                {isBlocked && (
                   <button
-                    onClick={() => setShowRequest(false)}
-                    className="text-[10px] text-muted-foreground hover:text-foreground px-2 py-1"
+                    onClick={() => { setShowMyOrders(true); setShowRequest(false); }}
+                    className="w-full text-[10px] text-amber-400/80 hover:text-amber-400 text-center py-1 transition-colors"
+                    data-testid="button-view-pending-request"
                   >
-                    Cancel
+                    View your pending request →
                   </button>
-                  <button
-                    onClick={() => submitOrder.mutate()}
-                    disabled={submitOrder.isPending || reqName.trim().length < 2 || reqDesc.trim().length < 10}
-                    className="flex items-center gap-1 text-[10px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed px-2.5 py-1 rounded transition-colors"
-                    data-testid="button-submit-theme-request"
-                  >
-                    {submitOrder.isPending ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <ShoppingBag className="w-2.5 h-2.5" />}
-                    Send Request
-                  </button>
-                </div>
+                )}
               </div>
             )}
 

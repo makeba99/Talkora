@@ -4883,8 +4883,26 @@ export async function registerRoutes(
       if (!description || typeof description !== "string" || description.trim().length < 10) {
         return res.status(400).json({ message: "Description must be at least 10 characters" });
       }
+      // Rate-limit: max 1 pending + max 3 per 24 hours
+      const { pendingCount, last24hCount } = await storage.getUserThemeOrderStats(userId);
+      if (pendingCount >= 1) {
+        return res.status(429).json({ message: "You already have a pending request. Wait for it to be reviewed before submitting another.", code: "PENDING_EXISTS" });
+      }
+      if (last24hCount >= 3) {
+        return res.status(429).json({ message: "You've reached the limit of 3 theme requests per 24 hours. Please try again later.", code: "DAILY_LIMIT" });
+      }
       const order = await storage.createThemeOrder(userId, themeName.trim().slice(0, 100), description.trim().slice(0, 1000));
       res.json(order);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/themes/order-stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id ?? (req.user as any).claims?.sub;
+      const stats = await storage.getUserThemeOrderStats(userId);
+      res.json(stats);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
