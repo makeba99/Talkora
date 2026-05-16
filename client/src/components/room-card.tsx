@@ -181,6 +181,11 @@ function _computeThemeGlowColor(themeId: string | null | undefined): { from: str
     case "aurora":     return { from: "rgba(45,212,191,0.40)", to: "rgba(74,200,110,0.32)", ring: "rgba(45,212,191,0.35), rgba(74,200,110,0.28)" };
     case "storm":      return { from: "rgba(59,130,246,0.40)", to: "rgba(90,105,130,0.30)", ring: "rgba(59,130,246,0.35), rgba(90,105,130,0.28)" };
     case "volcanic":   return { from: "rgba(220,60,60,0.40)",  to: "rgba(230,130,50,0.32)", ring: "rgba(220,60,60,0.35), rgba(230,130,50,0.28)" };
+    /* ── DJ / Music Themes ── */
+    case "disco":      return { from: "rgba(255,50,200,0.70)", to: "rgba(0,220,255,0.60)", ring: "rgba(255,50,200,0.65), rgba(255,220,0,0.55), rgba(0,220,255,0.60)", animated: "disco-border-wrap" };
+    case "trap-gold":  return { from: "rgba(255,185,0,0.65)",  to: "rgba(200,130,0,0.55)", ring: "rgba(255,185,0,0.60), rgba(200,130,0,0.50)", animated: "trap-gold-border-wrap" };
+    case "skeleton-gangsta": return { from: "rgba(190,180,165,0.50)", to: "rgba(40,50,65,0.40)", ring: "rgba(190,180,165,0.45), rgba(40,50,65,0.35)" };
+    case "romance":    return { from: "rgba(200,40,60,0.50)",  to: "rgba(175,115,20,0.42)", ring: "rgba(200,40,60,0.45), rgba(175,115,20,0.38)" };
     default:           return { from: "rgba(100,140,255,0.38)", to: "rgba(130,90,230,0.30)", ring: "rgba(100,140,255,0.32), rgba(130,90,230,0.26)", animated: undefined };
   }
 }
@@ -731,7 +736,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
   const isPremiumAtmosphere = theme === "premium-atmosphere" || (room as any).roomTheme === "premium-atmosphere";
-  const glow = getThemeGlowColor(isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme);
+  const isDiscoDJ = theme === "disco" || (room as any).roomTheme === "disco";
+  const activeThemeId = isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme;
+  const glow = getThemeGlowColor(activeThemeId);
   // Unlimited rooms (maxUsers===0) only show filled participants, no ghost tiles.
   // Capped rooms show ALL slots so viewers can see how many spots are open.
   const displayCount = isUnlimited
@@ -846,6 +853,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   /* ── elegant border gradient ── */
   const borderGradient = isPremiumAtmosphere
     ? `linear-gradient(135deg, rgba(0,220,255,0.60) 0%, rgba(80,60,255,0.50) 28%, rgba(160,40,255,0.44) 52%, rgba(80,160,255,0.50) 76%, rgba(0,220,255,0.60) 100%)`
+    : isDiscoDJ
+    ? `linear-gradient(135deg, rgba(255,50,200,0.80) 0%, rgba(255,220,0,0.70) 25%, rgba(0,255,160,0.65) 50%, rgba(0,220,255,0.70) 75%, rgba(200,50,255,0.80) 100%)`
     : `linear-gradient(135deg, ${glow.from} 0%, rgba(80,100,200,0.08) 50%, ${glow.to} 100%)`;
   // Layered ambient elevation shadow: tight contact shadow + mid float + deep halo.
   // Centered below the card (no X offset) so there are zero directional "shadow edges" —
@@ -858,6 +867,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   ].join(", ");
   const outerGlow = isPremiumAtmosphere
     ? `${ambientDepth}, 0 0 18px rgba(0,210,255,0.22), 0 0 36px rgba(110,50,255,0.12), 0 0 60px rgba(0,100,255,0.06)`
+    : isDiscoDJ
+    ? `${ambientDepth}, 0 0 20px rgba(255,50,200,0.30), 0 0 40px rgba(255,220,0,0.15), 0 0 60px rgba(0,220,255,0.10)`
     : `${ambientDepth}, 0 0 14px ${glow.from.replace(/[\d.]+\)$/, "0.18)")}`;
 
   /* ── grid columns: every capacity must fill its grid EXACTLY (no dangling
@@ -897,7 +908,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       data-testid={`card-room-${room.id}`}
     >
       <div
-        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""} ${hologramVideoUrl && isImageMedia(hologramVideoUrl) ? "card-image-bg" : ""}`}
+        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""} ${isDiscoDJ ? "disco-card" : ""} ${hologramVideoUrl && isImageMedia(hologramVideoUrl) ? "card-image-bg" : ""}`}
         style={{
           borderRadius: "24px",
           // For GIF/image holograms: apply the background-image directly on
@@ -926,9 +937,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             : {
                 background: isPremiumAtmosphere
                   ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
+                  : isDiscoDJ
+                  ? "linear-gradient(145deg, rgb(22,6,28) 0%, rgb(18,5,24) 40%, rgb(8,5,22) 72%, rgb(14,4,26) 100%)"
                   : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
               }),
-          height: isPremiumAtmosphere ? 268 : 252,
+          height: isPremiumAtmosphere || isDiscoDJ ? 268 : 252,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
             "inset 0 -1px 0 rgba(0,0,0,0.50)",
@@ -943,6 +956,17 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             <span className="premium-atmosphere-orb premium-atmosphere-orb-b" />
             <span className="premium-atmosphere-orb premium-atmosphere-orb-c" />
             <span className="premium-atmosphere-sweep" />
+          </div>
+        )}
+        {isDiscoDJ && (
+          <div className="disco-card-effects" aria-hidden="true">
+            <span className="disco-orb disco-orb-a" />
+            <span className="disco-orb disco-orb-b" />
+            <span className="disco-orb disco-orb-c" />
+            <span className="disco-orb disco-orb-d" />
+            <span className="disco-sweep disco-sweep-a" />
+            <span className="disco-sweep disco-sweep-b" />
+            <span className="disco-ball" />
           </div>
         )}
         {hologramVideoUrl && <CardHologramVideo key={hologramVideoUrl} src={hologramVideoUrl} priority={priority} />}

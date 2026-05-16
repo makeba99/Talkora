@@ -2001,8 +2001,8 @@ function DiscoThemeOverlay({ base, serverSceneIdx, onAdvance }: { base: React.CS
     if (serverSceneIdx !== undefined) return; // controlled — skip local timer
     const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
     const schedule = () => {
-      // Random interval: 2.3 – 3.5 minutes
-      const delay = (138 + Math.random() * 72) * 1000;
+      // Random interval: 28 – 42 seconds — keeps the room feeling alive
+      const delay = (28 + Math.random() * 14) * 1000;
       timerRef.current = window.setTimeout(() => {
         setOpacity(0);
         timerRef.current = window.setTimeout(() => {
@@ -2024,11 +2024,14 @@ function DiscoThemeOverlay({ base, serverSceneIdx, onAdvance }: { base: React.CS
 
   // Host-side auto-cycle timer: fires when onAdvance is provided (this client is the host).
   // Emits room:disco-advance via the callback so the server tracks and broadcasts to all.
+  // All clients (including non-hosts) receive the new scene index via room:disco-advance
+  // so the scene changes simultaneously for everyone in the room.
   useEffect(() => {
     if (!onAdvance) return;
     const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
     const schedule = () => {
-      const delay = (138 + Math.random() * 72) * 1000;
+      // Random interval: 28 – 42 seconds — fast enough to feel like a live DJ set
+      const delay = (28 + Math.random() * 14) * 1000;
       timerRef.current = window.setTimeout(() => {
         onAdvance();
         schedule();
