@@ -1643,6 +1643,205 @@ function ContentFilterLogTab() {
   );
 }
 
+// ── Strike Tracker Tab ────────────────────────────────────────────────────────
+type StrikeRecord = {
+  userId: string;
+  displayName: string;
+  recentStrikes: number;
+  totalStrikes: number;
+  totalMutes: number;
+  mutedUntil?: string;
+  minutesLeft?: number;
+  latestTerm: string;
+  latestSurface: string;
+  latestAt: string;
+};
+
+function StrikeTrackerTab() {
+  const { toast } = useToast();
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
+  const { data: records = [], isLoading, refetch } = useQuery<StrikeRecord[]>({
+    queryKey: ["/api/admin/strikes"],
+    refetchInterval: autoRefresh ? 5000 : false,
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest("DELETE", `/api/admin/strikes/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/strikes"] });
+      toast({ title: "Strikes cleared" });
+    },
+  });
+
+  const unmuteMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest("POST", `/api/admin/strikes/${userId}/unmute`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/strikes"] });
+      toast({ title: "User unmuted" });
+    },
+  });
+
+  const mutedCount = records.filter((r) => r.mutedUntil).length;
+  const atRisk = records.filter((r) => r.recentStrikes >= 2 && !r.mutedUntil).length;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Users tracked", value: records.length, color: "text-blue-300" },
+          { label: "Currently muted", value: mutedCount, color: "text-red-300" },
+          { label: "At-risk (2 strikes)", value: atRisk, color: "text-amber-300" },
+          { label: "Total blocks (all time)", value: records.reduce((s, r) => s + r.totalStrikes, 0), color: "text-purple-300" },
+        ].map(({ label, value, color }) => (
+          <Card key={label} className="bg-card/60 border-border/40">
+            <CardContent className="p-3 text-center">
+              <p className={`text-2xl font-bold ${color}`}>{value}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Zap className="w-4 h-4 text-amber-400" />
+              Strike Log
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAutoRefresh((v) => !v)}
+                data-testid="button-strikes-autorefresh"
+                className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
+                  autoRefresh
+                    ? "bg-green-500/15 border-green-500/30 text-green-300"
+                    : "bg-muted/30 border-border text-muted-foreground"
+                }`}
+              >
+                {autoRefresh ? "Live" : "Paused"}
+              </button>
+              <button
+                onClick={() => refetch()}
+                data-testid="button-strikes-refresh"
+                className="px-2 py-0.5 rounded text-[10px] font-medium border bg-muted/30 border-border text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pt-0">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+            </div>
+          ) : records.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+              <ShieldCheck className="w-12 h-12 text-green-400/40" />
+              <p className="text-sm text-muted-foreground">No violations recorded this session.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-border/50">
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">User</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Recent</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Mutes</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Last term</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Last at</th>
+                    <th className="text-right py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {records.map((rec) => {
+                    const isMuted = !!rec.mutedUntil;
+                    return (
+                      <tr key={rec.userId} className="hover:bg-muted/10 transition-colors" data-testid={`row-strike-${rec.userId}`}>
+                        <td className="py-2 px-3">
+                          <div>
+                            <p className="font-medium text-xs text-foreground truncate max-w-[140px]">{rec.displayName}</p>
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{rec.userId.slice(0, 12)}…</p>
+                          </div>
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                            rec.recentStrikes >= 3 ? "text-red-400" :
+                            rec.recentStrikes === 2 ? "text-amber-400" : "text-muted-foreground"
+                          }`}>
+                            {rec.recentStrikes}/3
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-xs text-muted-foreground">{rec.totalMutes}</td>
+                        <td className="py-2 px-3">
+                          {isMuted ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/15 text-red-300 border border-red-500/30">
+                              <Ban className="w-2.5 h-2.5" />
+                              Muted {rec.minutesLeft}m
+                            </span>
+                          ) : rec.recentStrikes >= 2 ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                              <Zap className="w-2.5 h-2.5" />
+                              At risk
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/30 text-muted-foreground border border-border">
+                              <Clock className="w-2.5 h-2.5" />
+                              Watching
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3">
+                          <code className="text-[10px] bg-muted/30 px-1.5 py-0.5 rounded text-rose-300">{rec.latestTerm}</code>
+                          <span className="ml-1 text-[10px] text-muted-foreground">{rec.latestSurface}</span>
+                        </td>
+                        <td className="py-2 px-3 text-[10px] text-muted-foreground whitespace-nowrap">
+                          {new Date(rec.latestAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {isMuted && (
+                              <button
+                                onClick={() => unmuteMutation.mutate(rec.userId)}
+                                disabled={unmuteMutation.isPending}
+                                data-testid={`button-unmute-${rec.userId}`}
+                                className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-colors disabled:opacity-50"
+                              >
+                                Unmute
+                              </button>
+                            )}
+                            <button
+                              onClick={() => clearMutation.mutate(rec.userId)}
+                              disabled={clearMutation.isPending}
+                              data-testid={`button-clear-strikes-${rec.userId}`}
+                              className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted/30 text-muted-foreground border border-border hover:text-foreground transition-colors disabled:opacity-50"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function MaintenanceTab() {
   const { toast } = useToast();
 
@@ -4336,6 +4535,12 @@ export default function AdminPage() {
                 Filter Log
               </TabsTrigger>
             )}
+            {isSuperAdmin && (
+              <TabsTrigger value="strikes" data-testid="tab-admin-strikes">
+                <Zap className="w-4 h-4 mr-2" />
+                Strikes
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="reports">
@@ -5341,9 +5546,14 @@ export default function AdminPage() {
           )}
 
           {isSuperAdmin && (
-            <TabsContent value="content-filter">
-              <ContentFilterLogTab />
-            </TabsContent>
+            <>
+              <TabsContent value="content-filter">
+                <ContentFilterLogTab />
+              </TabsContent>
+              <TabsContent value="strikes">
+                <StrikeTrackerTab />
+              </TabsContent>
+            </>
           )}
         </Tabs>
 

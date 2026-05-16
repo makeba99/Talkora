@@ -19,6 +19,7 @@ import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, type AiT
 import { openAiSynthesize, openAiTtsHealth } from "./openai-tts";
 import { huggingFaceSynthesize, huggingFaceTtsHealth } from "./huggingface-tts";
 import { checkContent, checkFields, getBlockLog, clearBlockLog } from "./content-filter";
+import { recordStrike, isStrikeMuted, clearUserStrikes, unmuteUser, getStrikeRecords } from "./strike-tracker";
 import { startStream, writeChunk, stopStream, getStreamInfo, stopAllStreamsForUser, getViewerCounts } from "./streaming";
 import {
   renderIndexHtml,
@@ -2195,6 +2196,7 @@ export async function registerRoutes(
       const profileModResult = checkFields({ displayName, bio }, "profile");
       if (profileModResult.flagged) {
         const fieldLabel = profileModResult.field === "displayName" ? "display name" : "bio";
+        recordStrike(userId, displayName ?? userId, profileModResult.matchedTerm ?? "unknown", "profile");
         return res.status(422).json({
           flagged: true,
           field: profileModResult.field,
@@ -2576,6 +2578,8 @@ export async function registerRoutes(
       // ── Content moderation ─────────────────────────────────────────────────
       const roomCreateModResult = checkContent(parsed.data.title, "room-title");
       if (roomCreateModResult.flagged) {
+        const rcUserId = (req as any).user?.id ?? "unknown";
+        recordStrike(rcUserId, parsed.data.title, roomCreateModResult.matchedTerm ?? "unknown", "room-title");
         return res.status(422).json({ flagged: true, message: `Room title wasn't created — ${roomCreateModResult.message.replace("Your content", "it")}` });
       }
 
@@ -2622,6 +2626,8 @@ export async function registerRoutes(
       const roomUpdateModResult = checkFields({ title, welcomeMessage }, "room-settings");
       if (roomUpdateModResult.flagged) {
         const fieldLabel = roomUpdateModResult.field === "title" ? "room title" : "welcome message";
+        const ruUserId = (req as any).user?.id ?? "unknown";
+        recordStrike(ruUserId, title ?? ruUserId, roomUpdateModResult.matchedTerm ?? "unknown", "room-settings");
         return res.status(422).json({
           flagged: true,
           field: roomUpdateModResult.field,
@@ -2940,9 +2946,17 @@ export async function registerRoutes(
       }
 
       // ── Content moderation ─────────────────────────────────────────────────
+      const dmMuteStatus = isStrikeMuted(parsed.data.fromId);
+      if (dmMuteStatus.muted) {
+        return res.status(429).json({ flagged: true, muted: true, message: dmMuteStatus.message });
+      }
       const dmModResult = checkContent(parsed.data.text, "dm");
       if (dmModResult.flagged) {
-        return res.status(422).json({ flagged: true, message: dmModResult.message });
+        const dmSender2 = await storage.getUser(parsed.data.fromId);
+        const dmDn = dmSender2?.displayName ?? dmSender2?.firstName ?? parsed.data.fromId;
+        const dmStrike = recordStrike(parsed.data.fromId, dmDn, dmModResult.matchedTerm ?? "unknown", "dm");
+        const dmMsg = dmStrike.action === "mute" ? dmStrike.message : dmModResult.message;
+        return res.status(422).json({ flagged: true, muted: dmStrike.action === "mute", message: dmMsg });
       }
 
       const msg = await storage.createMessage(parsed.data);
@@ -4623,6 +4637,8 @@ export async function registerRoutes(
       if (comment) {
         const reviewModResult = checkContent(comment, "review");
         if (reviewModResult.flagged) {
+          const rvUserId = (req as any).user?.id ?? "unknown";
+          recordStrike(rvUserId, comment.slice(0, 30), reviewModResult.matchedTerm ?? "unknown", "review");
           return res.status(422).json({ flagged: true, message: reviewModResult.message });
         }
       }
@@ -4886,6 +4902,7 @@ export async function registerRoutes(
       // Content moderation on the request fields
       const orderModResult = checkFields({ themeName, description }, "theme-request");
       if (orderModResult.flagged) {
+        recordStrike(userId, themeName ?? userId, orderModResult.matchedTerm ?? "unknown", "theme-request");
         return res.status(422).json({ flagged: true, message: orderModResult.message });
       }
       // Rate-limit: max 1 pending + max 3 per 24 hours
@@ -4974,6 +4991,21 @@ export async function registerRoutes(
 
   app.delete("/api/admin/content-blocks", isAuthenticated, isSuperAdmin, (_req, res) => {
     clearBlockLog();
+    res.json({ ok: true });
+  });
+
+  // ── Strike Tracker ─────────────────────────────────────────────────────────
+  app.get("/api/admin/strikes", isAuthenticated, isSuperAdmin, (_req, res) => {
+    res.json(getStrikeRecords());
+  });
+
+  app.delete("/api/admin/strikes/:userId", isAuthenticated, isSuperAdmin, (req, res) => {
+    clearUserStrikes(req.params.userId);
+    res.json({ ok: true });
+  });
+
+  app.post("/api/admin/strikes/:userId/unmute", isAuthenticated, isSuperAdmin, (req, res) => {
+    unmuteUser(req.params.userId);
     res.json({ ok: true });
   });
 
@@ -5072,6 +5104,7 @@ export async function registerRoutes(
       // ── Content moderation ─────────────────────────────────────────────────
       const commentModResult = checkContent(parsed.data.text, "comment");
       if (commentModResult.flagged) {
+        recordStrike(authorId, parsed.data.text.slice(0, 30), commentModResult.matchedTerm ?? "unknown", "comment");
         return res.status(422).json({ flagged: true, message: commentModResult.message });
       }
 
@@ -6003,10 +6036,20 @@ export async function registerRoutes(
           trollCooldown.set(data.userId, now);
         }
 
+        // ── Strike mute check ────────────────────────────────────────────────
+        const chatMuteStatus = isStrikeMuted(data.userId);
+        if (chatMuteStatus.muted) {
+          socket.emit("room:chat-blocked", { reason: chatMuteStatus.message, muted: true });
+          return;
+        }
+
         // ── Content moderation ───────────────────────────────────────────────
         const chatModResult = checkContent(data.text, "chat");
         if (chatModResult.flagged) {
-          socket.emit("room:chat-blocked", { reason: chatModResult.message });
+          const chatDn = user?.displayName ?? user?.firstName ?? data.userId;
+          const chatStrike = recordStrike(data.userId, chatDn, chatModResult.matchedTerm ?? "unknown", "chat");
+          const chatReason = chatStrike.action === "mute" ? chatStrike.message : chatModResult.message;
+          socket.emit("room:chat-blocked", { reason: chatReason, muted: chatStrike.action === "mute" });
           return;
         }
 
@@ -6062,7 +6105,9 @@ export async function registerRoutes(
         if (!trimmed) return;
         const editModResult = checkContent(trimmed, "chat-edit");
         if (editModResult.flagged) {
-          socket.emit("room:chat-blocked", { reason: editModResult.message });
+          const editStrike = recordStrike(data.editedBy, data.editedBy, editModResult.matchedTerm ?? "unknown", "chat-edit");
+          const editReason = editStrike.action === "mute" ? editStrike.message : editModResult.message;
+          socket.emit("room:chat-blocked", { reason: editReason, muted: editStrike.action === "mute" });
           return;
         }
         io.to(data.roomId).emit("room:chat-edit", { messageId: data.messageId, newText: trimmed });
