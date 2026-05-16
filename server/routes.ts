@@ -4795,10 +4795,13 @@ export async function registerRoutes(
   });
 
   // ── Theme Visibility Management ─────────────────────────────────────────────
+  // Must stay in sync with THEMES array in client/src/lib/theme.tsx
   const ALL_THEME_IDS = [
-    "none","premium-atmosphere","plasma","neon","galaxy","sunset","forest",
-    "cyberpunk","ocean","cherry","aurora","matrix","storm","volcanic","disco",
-    "trap-gold","skeleton-gangsta","romance",
+    "none",
+    "premium-atmosphere","neomorphic-dark","neomorphic-light","dark","light",
+    "midnight-purple","warm-sepia","neon-cyberpunk","frosted-glass","ocean-deep",
+    "forest-dark","rose-gold","aurora","starfield","galaxy","synthwave",
+    "blood-moon","slate-noir","neural-pulse","trap-gold","skeleton-gangsta",
   ];
 
   app.get("/api/admin/themes", isAuthenticated, isAdmin, async (_req, res) => {
@@ -4864,6 +4867,60 @@ export async function registerRoutes(
       const userId = (req.user as any).id;
       const available = await storage.getAvailableThemesForUser(userId, ALL_THEME_IDS);
       res.json({ themeIds: available });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Theme Orders (user requests for custom/new themes) ────────────────────
+  app.post("/api/themes/order", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id ?? (req.user as any).claims?.sub;
+      const { themeName, description } = req.body;
+      if (!themeName || typeof themeName !== "string" || themeName.trim().length < 2) {
+        return res.status(400).json({ message: "Theme name must be at least 2 characters" });
+      }
+      if (!description || typeof description !== "string" || description.trim().length < 10) {
+        return res.status(400).json({ message: "Description must be at least 10 characters" });
+      }
+      const order = await storage.createThemeOrder(userId, themeName.trim().slice(0, 100), description.trim().slice(0, 1000));
+      res.json(order);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/themes/my-orders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id ?? (req.user as any).claims?.sub;
+      const orders = await storage.getUserThemeOrders(userId);
+      res.json(orders);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/theme-orders", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const orders = await storage.getThemeOrders(status);
+      res.json(orders);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/theme-orders/:id", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNote } = req.body;
+      if (!["approved", "denied"].includes(status)) {
+        return res.status(400).json({ message: "status must be approved or denied" });
+      }
+      const reviewedBy = (req.user as any).id ?? (req.user as any).claims?.sub;
+      const order = await storage.reviewThemeOrder(id, status, adminNote ?? null, reviewedBy);
+      if (!order) return res.status(404).json({ message: "Order not found" });
+      res.json(order);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

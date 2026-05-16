@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft, ShoppingBag } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName } from "@/lib/utils";
 import type { Announcement, Report, User, TeacherApplication, UserBadge } from "@shared/schema";
 import { BADGE_TYPES } from "@shared/constants";
+import { THEMES } from "@/lib/theme";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { GifPickerButton } from "@/components/chat-picker";
@@ -2794,11 +2795,40 @@ function RoomFeaturesTab() {
 type AdminThemeEntry = { id: string; visible: boolean; canHide: boolean };
 type AdminThemesData = { themes: AdminThemeEntry[]; userAssignments: Record<string, string[]> };
 
+type ThemeOrderRow = {
+  id: string; userId: string; themeName: string; description: string;
+  status: string; adminNote: string | null; reviewedBy: string | null;
+  createdAt: string; reviewedAt: string | null;
+  userDisplayName: string | null; userEmail: string | null;
+};
+
+function ThemeSwatchPreview({ themeId, size = "md" }: { themeId: string; size?: "sm" | "md" }) {
+  const def = THEMES.find((t) => t.id === themeId);
+  const h = size === "sm" ? "h-8" : "h-12";
+  if (!def) {
+    return (
+      <div className={`${h} w-full rounded bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center`}>
+        <span className="text-[9px] text-muted-foreground">Default</span>
+      </div>
+    );
+  }
+  return (
+    <div className={`${h} w-full rounded flex overflow-hidden`}>
+      {def.swatchColors.map((c, i) => (
+        <div key={i} className="flex-1" style={{ background: c }} />
+      ))}
+    </div>
+  );
+}
+
 function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const { toast } = useToast();
   const [userSearch, setUserSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<{ id: string; displayName: string | null; firstName: string | null; email: string | null } | null>(null);
   const [pendingAssignments, setPendingAssignments] = useState<string[]>([]);
+  const [orderFilter, setOrderFilter] = useState<"all" | "pending" | "approved" | "denied">("pending");
+  const [reviewingOrder, setReviewingOrder] = useState<ThemeOrderRow | null>(null);
+  const [adminNote, setAdminNote] = useState("");
 
   const { data, isLoading, refetch } = useQuery<AdminThemesData>({
     queryKey: ["/api/admin/themes"],
@@ -2806,6 +2836,15 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 
   const { data: usersData = [] } = useQuery<{ id: string; email: string | null; displayName: string | null; firstName: string | null }[]>({
     queryKey: ["/api/admin/users"],
+  });
+
+  const { data: themeOrders = [], refetch: refetchOrders } = useQuery<ThemeOrderRow[]>({
+    queryKey: ["/api/admin/theme-orders", orderFilter],
+    queryFn: async () => {
+      const param = orderFilter === "all" ? "" : `?status=${orderFilter}`;
+      const res = await fetch(`/api/admin/theme-orders${param}`, { credentials: "include" });
+      return res.json();
+    },
   });
 
   const themes = data?.themes ?? [];
@@ -2842,6 +2881,19 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const reviewOrder = useMutation({
+    mutationFn: async ({ id, status, note }: { id: string; status: "approved" | "denied"; note: string }) => {
+      return apiRequest("PATCH", `/api/admin/theme-orders/${id}`, { status, adminNote: note || null });
+    },
+    onSuccess: () => {
+      refetchOrders();
+      setReviewingOrder(null);
+      setAdminNote("");
+      toast({ title: "Theme order reviewed" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const handleSelectUser = (u: typeof usersData[number]) => {
     setSelectedUser(u);
     setUserSearch("");
@@ -2854,6 +2906,8 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       prev.includes(themeId) ? prev.filter((id) => id !== themeId) : [...prev, themeId]
     );
   };
+
+  const pendingCount = themeOrders.filter((o) => o.status === "pending").length;
 
   return (
     <div className="space-y-6">
@@ -2869,60 +2923,56 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         <CardContent>
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3">
-              {themes.map((theme) => (
-                <div
-                  key={theme.id}
-                  className={`relative rounded-lg overflow-hidden border transition-all ${theme.visible ? "border-border/40" : "border-red-500/40 opacity-60"}`}
-                  data-testid={`card-theme-${theme.id}`}
-                >
-                  {/* preview */}
-                  <div className="h-14 bg-muted/40 relative">
-                    {theme.id !== "none" && (
-                      <img
-                        src={`https://images.unsplash.com/photo-${
-                          {
-                            "premium-atmosphere":"1543002588-bfa74002ed7e","plasma":"1558618666-fcd25c85cd64","neon":"1519501025264-65ba15a82390","galaxy":"1506318137071-a8e063b4bec0","sunset":"1503803548695-c2a7b4a5b875","forest":"1441974231531-c6227db76b6e","cyberpunk":"1620503374956-c942862f0372","ocean":"1505118380757-91f5f5632de0","cherry":"1522383225653-ed111181a951","aurora":"1531366936337-7c912a4589a7","matrix":"1526378722484-bd91ca387e72","storm":"1504370805625-d37c82b94a8e","volcanic":"1495953557-73f0ba4c50af","disco":"1516450360452-9312f5e86fc7","trap-gold":"1493225457124-a3eb161ffa5f","skeleton-gangsta":"1518609878373-06d740f60d8b","romance":"1518998053901-5348d3961a04"
-                          }[theme.id] ?? "1497091071254-cc9b2ba7c48a"
-                        }?w=160&h=56&fit=crop`}
-                        alt={theme.id}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    )}
-                    {theme.id === "none" && (
-                      <div className="w-full h-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center">
-                        <span className="text-[10px] text-muted-foreground">Default</span>
-                      </div>
-                    )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+              {themes.map((theme) => {
+                const def = THEMES.find((t) => t.id === theme.id);
+                return (
+                  <div
+                    key={theme.id}
+                    className={`relative rounded-lg overflow-hidden border transition-all ${theme.visible ? "border-border/40" : "border-red-500/40 opacity-60"}`}
+                    data-testid={`card-theme-${theme.id}`}
+                  >
+                    {/* color swatch preview */}
+                    <ThemeSwatchPreview themeId={theme.id} />
                     {!theme.visible && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <EyeOff className="w-4 h-4 text-red-400" />
+                      <div className="absolute top-1 left-1 bg-black/70 rounded px-1 py-0.5 flex items-center gap-1">
+                        <EyeOff className="w-2.5 h-2.5 text-red-400" />
+                        <span className="text-[9px] text-red-400">Hidden</span>
                       </div>
                     )}
-                  </div>
-                  {/* label + toggle */}
-                  <div className="px-2 py-1.5 bg-card/80 flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-medium text-foreground truncate leading-none" data-testid={`text-theme-name-${theme.id}`}>
-                      {theme.id === "none" ? "Default" : theme.id.replace(/-/g," ")}
-                    </span>
-                    {theme.canHide && isSuperAdmin ? (
-                      <Switch
-                        checked={theme.visible}
-                        onCheckedChange={(v) => toggleVisibility.mutate({ themeId: theme.id, visible: v })}
-                        disabled={toggleVisibility.isPending}
-                        data-testid={`switch-theme-visible-${theme.id}`}
-                        className="scale-75 origin-right"
-                      />
-                    ) : (
-                      <span className="text-[9px] text-muted-foreground/50">{theme.id === "none" ? "always on" : "view only"}</span>
+                    {def?.animated && (
+                      <div className="absolute top-1 right-1 bg-black/60 rounded px-1 py-0.5">
+                        <span className="text-[9px] text-primary">✦ anim</span>
+                      </div>
                     )}
+                    {/* label + description + toggle */}
+                    <div className="px-2 pt-1.5 pb-2 bg-card/90">
+                      <div className="flex items-start justify-between gap-1 mb-0.5">
+                        <span className="text-[11px] font-semibold text-foreground leading-tight" data-testid={`text-theme-name-${theme.id}`}>
+                          {theme.id === "none" ? "Default" : (def?.label ?? theme.id.replace(/-/g," "))}
+                        </span>
+                        {theme.canHide && isSuperAdmin ? (
+                          <Switch
+                            checked={theme.visible}
+                            onCheckedChange={(v) => toggleVisibility.mutate({ themeId: theme.id, visible: v })}
+                            disabled={toggleVisibility.isPending}
+                            data-testid={`switch-theme-visible-${theme.id}`}
+                            className="scale-[0.65] origin-right shrink-0 mt-0.5"
+                          />
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground/50 shrink-0">{theme.id === "none" ? "always on" : ""}</span>
+                        )}
+                      </div>
+                      {def?.description && (
+                        <p className="text-[10px] text-muted-foreground leading-tight line-clamp-1">{def.description}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           {!isSuperAdmin && (
@@ -2983,7 +3033,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                       {(getUserDisplayName(selectedUser)?.[0] ?? "?").toUpperCase()}
                     </div>
                     <span className="text-sm font-medium" data-testid="text-selected-theme-user">{getUserDisplayName(selectedUser)}</span>
-                    <span className="text-xs text-muted-foreground">{pendingAssignments.length} private theme{pendingAssignments.length !== 1 ? "s" : ""} assigned</span>
+                    <span className="text-xs text-muted-foreground">{pendingAssignments.length} theme{pendingAssignments.length !== 1 ? "s" : ""} assigned</span>
                   </div>
                   <Button
                     size="sm"
@@ -2997,40 +3047,31 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Check themes below to grant this user private access, even if globally hidden.
+                  Toggle themes to grant or revoke this user's access. Hidden themes require explicit assignment.
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
                   {themes.filter((t) => t.id !== "none").map((theme) => {
                     const isAssigned = pendingAssignments.includes(theme.id);
+                    const def = THEMES.find((t2) => t2.id === theme.id);
                     return (
                       <button
                         key={theme.id}
                         onClick={() => togglePendingAssignment(theme.id)}
-                        className={`relative rounded-lg overflow-hidden border-2 transition-all text-left ${isAssigned ? "border-violet-500 shadow-md shadow-violet-500/20" : "border-border/30 opacity-60 hover:opacity-100"}`}
+                        className={`relative rounded-lg overflow-hidden border-2 transition-all text-left ${isAssigned ? "border-violet-500 shadow-md shadow-violet-500/20" : "border-border/30 opacity-60 hover:opacity-90 hover:border-border/60"}`}
                         data-testid={`button-assign-theme-${theme.id}`}
                       >
-                        <div className="h-10 bg-muted/40 relative">
-                          <img
-                            src={`https://images.unsplash.com/photo-${
-                              {
-                                "premium-atmosphere":"1543002588-bfa74002ed7e","plasma":"1558618666-fcd25c85cd64","neon":"1519501025264-65ba15a82390","galaxy":"1506318137071-a8e063b4bec0","sunset":"1503803548695-c2a7b4a5b875","forest":"1441974231531-c6227db76b6e","cyberpunk":"1620503374956-c942862f0372","ocean":"1505118380757-91f5f5632de0","cherry":"1522383225653-ed111181a951","aurora":"1531366936337-7c912a4589a7","matrix":"1526378722484-bd91ca387e72","storm":"1504370805625-d37c82b94a8e","volcanic":"1495953557-73f0ba4c50af","disco":"1516450360452-9312f5e86fc7","trap-gold":"1493225457124-a3eb161ffa5f","skeleton-gangsta":"1518609878373-06d740f60d8b","romance":"1518998053901-5348d3961a04"
-                              }[theme.id] ?? "1497091071254-cc9b2ba7c48a"
-                            }?w=120&h=40&fit=crop`}
-                            alt={theme.id}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        </div>
-                        <div className="px-1.5 py-1 bg-card/80 flex items-center justify-between">
-                          <span className="text-[9px] font-medium truncate leading-none">{theme.id.replace(/-/g," ")}</span>
-                          {!theme.visible && <EyeOff className="w-2.5 h-2.5 text-red-400 shrink-0" />}
-                        </div>
-                        {isAssigned && (
-                          <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-violet-500 flex items-center justify-center">
-                            <svg className="w-2 h-2" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-5" /></svg>
+                        <ThemeSwatchPreview themeId={theme.id} size="sm" />
+                        <div className="px-1.5 py-1 bg-card/90 flex items-center justify-between gap-1">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-medium truncate leading-tight">{def?.label ?? theme.id.replace(/-/g," ")}</p>
+                            {!theme.visible && <p className="text-[9px] text-red-400 leading-tight">Hidden globally</p>}
                           </div>
-                        )}
+                          {isAssigned && (
+                            <div className="w-3.5 h-3.5 rounded-full bg-violet-500 flex items-center justify-center shrink-0">
+                              <svg className="w-2 h-2" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-5" /></svg>
+                            </div>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
@@ -3052,6 +3093,149 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* ── Theme Orders from Users ── */}
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-amber-400" />
+            Theme Orders
+            {pendingCount > 0 && (
+              <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] px-1.5 py-0">
+                {pendingCount} pending
+              </Badge>
+            )}
+            <span className="ml-1 text-[11px] font-normal text-muted-foreground">(user requests for new/custom themes)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Filter tabs */}
+          <div className="flex gap-1.5">
+            {(["pending","all","approved","denied"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setOrderFilter(f)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium capitalize transition-colors ${
+                  orderFilter === f
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid={`tab-theme-orders-${f}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          {themeOrders.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-6">No {orderFilter === "all" ? "" : orderFilter + " "}orders.</p>
+          ) : (
+            <div className="space-y-2">
+              {themeOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="rounded-lg border border-border/40 bg-muted/20 p-3 flex items-start gap-3"
+                  data-testid={`card-theme-order-${order.id}`}
+                >
+                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">
+                    {((order.userDisplayName || order.userEmail || "?")?.[0] ?? "?").toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-semibold">{order.userDisplayName || order.userEmail || order.userId}</span>
+                      <Badge className={`text-[9px] px-1.5 py-0 ${
+                        order.status === "pending" ? "bg-amber-500/20 text-amber-300 border-amber-500/30" :
+                        order.status === "approved" ? "bg-green-500/20 text-green-300 border-green-500/30" :
+                        "bg-red-500/20 text-red-300 border-red-500/30"
+                      }`}>
+                        {order.status}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground ml-auto">{new Date(order.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-[11px] font-medium text-primary mt-0.5">"{order.themeName}"</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{order.description}</p>
+                    {order.adminNote && (
+                      <p className="text-[10px] text-muted-foreground/70 mt-1 italic">Note: {order.adminNote}</p>
+                    )}
+                  </div>
+                  {isSuperAdmin && order.status === "pending" && (
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <Button
+                        size="sm"
+                        className="h-7 text-[10px] bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
+                        onClick={() => { setReviewingOrder(order); setAdminNote(""); }}
+                        data-testid={`button-review-order-${order.id}`}
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1" /> Review
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Review dialog */}
+      {reviewingOrder && (
+        <Dialog open onOpenChange={(o) => { if (!o) { setReviewingOrder(null); setAdminNote(""); } }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-sm">
+                <ShoppingBag className="w-4 h-4 text-amber-400" />
+                Review Theme Order
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 pt-1">
+              <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
+                <p className="text-xs font-semibold">{reviewingOrder.userDisplayName || reviewingOrder.userEmail}</p>
+                <p className="text-sm font-bold text-primary mt-1">"{reviewingOrder.themeName}"</p>
+                <p className="text-xs text-muted-foreground mt-1">{reviewingOrder.description}</p>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Admin note (optional)</Label>
+                <Textarea
+                  placeholder="Leave a note for the user..."
+                  value={adminNote}
+                  onChange={(e) => setAdminNote(e.target.value)}
+                  className="text-xs min-h-[60px] resize-none"
+                  data-testid="input-admin-note"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setReviewingOrder(null); setAdminNote(""); }}
+                  className="text-xs h-8"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30"
+                  disabled={reviewOrder.isPending}
+                  onClick={() => reviewOrder.mutate({ id: reviewingOrder.id, status: "denied", note: adminNote })}
+                  data-testid="button-deny-order"
+                >
+                  <XCircle className="w-3.5 h-3.5 mr-1" /> Deny
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
+                  disabled={reviewOrder.isPending}
+                  onClick={() => reviewOrder.mutate({ id: reviewingOrder.id, status: "approved", note: adminNote })}
+                  data-testid="button-approve-order"
+                >
+                  {reviewOrder.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle className="w-3.5 h-3.5 mr-1" />}
+                  Approve
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

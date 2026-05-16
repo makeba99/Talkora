@@ -66,6 +66,8 @@ import {
   type Transaction,
   type InsertTransaction,
   themeVisibility,
+  themeOrders,
+  type ThemeOrder,
   type ThemeVisibility,
   userThemeAssignments,
   type UserThemeAssignment,
@@ -257,6 +259,11 @@ export interface IStorage {
   getAllUserThemeAssignments(): Promise<Array<{ userId: string; themeId: string }>>;
   setUserThemeAssignments(userId: string, themeIds: string[]): Promise<void>;
   getAvailableThemesForUser(userId: string, allThemeIds: string[]): Promise<string[]>;
+
+  createThemeOrder(userId: string, themeName: string, description: string): Promise<ThemeOrder>;
+  getThemeOrders(status?: string): Promise<Array<ThemeOrder & { userDisplayName: string | null; userEmail: string | null }>>;
+  getUserThemeOrders(userId: string): Promise<ThemeOrder[]>;
+  reviewThemeOrder(id: string, status: "approved" | "denied", adminNote: string | null, reviewedBy: string): Promise<ThemeOrder | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1831,6 +1838,46 @@ export class DatabaseStorage implements IStorage {
       const globallyVisible = visibilityMap[id] !== false;
       return globallyVisible || assignedSet.has(id);
     });
+  }
+
+  async createThemeOrder(userId: string, themeName: string, description: string): Promise<ThemeOrder> {
+    const [row] = await db.insert(themeOrders).values({ userId, themeName, description }).returning();
+    return row;
+  }
+
+  async getThemeOrders(status?: string): Promise<Array<ThemeOrder & { userDisplayName: string | null; userEmail: string | null }>> {
+    const rows = await db
+      .select({
+        id: themeOrders.id,
+        userId: themeOrders.userId,
+        themeName: themeOrders.themeName,
+        description: themeOrders.description,
+        status: themeOrders.status,
+        adminNote: themeOrders.adminNote,
+        reviewedBy: themeOrders.reviewedBy,
+        createdAt: themeOrders.createdAt,
+        reviewedAt: themeOrders.reviewedAt,
+        userDisplayName: users.displayName,
+        userEmail: users.email,
+      })
+      .from(themeOrders)
+      .leftJoin(users, eq(themeOrders.userId, users.id))
+      .where(status ? eq(themeOrders.status, status) : undefined)
+      .orderBy(desc(themeOrders.createdAt));
+    return rows as Array<ThemeOrder & { userDisplayName: string | null; userEmail: string | null }>;
+  }
+
+  async getUserThemeOrders(userId: string): Promise<ThemeOrder[]> {
+    return db.select().from(themeOrders).where(eq(themeOrders.userId, userId)).orderBy(desc(themeOrders.createdAt));
+  }
+
+  async reviewThemeOrder(id: string, status: "approved" | "denied", adminNote: string | null, reviewedBy: string): Promise<ThemeOrder | undefined> {
+    const [row] = await db
+      .update(themeOrders)
+      .set({ status, adminNote, reviewedBy, reviewedAt: new Date() })
+      .where(eq(themeOrders.id, id))
+      .returning();
+    return row;
   }
 }
 

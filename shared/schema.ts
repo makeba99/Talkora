@@ -554,6 +554,22 @@ export const userThemeAssignments = pgTable("user_theme_assignments", {
 }));
 export type UserThemeAssignment = typeof userThemeAssignments.$inferSelect;
 
+export const themeOrders = pgTable("theme_orders", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  themeName: varchar("theme_name", { length: 100 }).notNull(),
+  description: text("description").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  adminNote: text("admin_note"),
+  reviewedBy: varchar("reviewed_by", { length: 36 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+}, (table) => ({
+  toUserIdx: index("theme_orders_user_id_idx").on(table.userId),
+  toStatusIdx: index("theme_orders_status_idx").on(table.status),
+}));
+export type ThemeOrder = typeof themeOrders.$inferSelect;
+
 export const emailCampaigns = pgTable("email_campaigns", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   subject: text("subject").notNull(),
