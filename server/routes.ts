@@ -4874,7 +4874,7 @@ export async function registerRoutes(
     "voiceEffects","aiTutor","screenShare","youtubeWatch","movieParty","games","gifPicker","readTogether",
   ] as const;
 
-  app.get("/api/admin/features", isAuthenticated, isAdmin, async (_req, res) => {
+  app.get("/api/admin/features", isAuthenticated, isSuperAdmin, async (_req, res) => {
     try {
       const flags = await storage.getFeatureFlags();
       const features = PLATFORM_FEATURE_IDS.map((id) => ({
@@ -4902,7 +4902,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/features/user/:userId", isAuthenticated, isAdmin, async (req, res) => {
+  app.get("/api/admin/features/user/:userId", isAuthenticated, isSuperAdmin, async (req, res) => {
     try {
       const overrides = await storage.getUserFeatureOverrides(req.params.userId);
       res.json({ userId: req.params.userId, overrides });

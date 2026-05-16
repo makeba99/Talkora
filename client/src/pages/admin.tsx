@@ -2554,7 +2554,7 @@ const FEATURE_COLOR_MAP: Record<string, string> = {
   orange: "text-orange-400 bg-orange-500/10 border-orange-500/30",
 };
 
-function RoomFeaturesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+function RoomFeaturesTab() {
   const { toast } = useToast();
   const [userSearch, setUserSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<{ id: string; displayName: string | null; firstName: string | null; email: string | null } | null>(null);
@@ -2647,17 +2647,13 @@ function RoomFeaturesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                       <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${colorCls}`}>
                         <Icon className="w-4 h-4" />
                       </div>
-                      {isSuperAdmin ? (
-                        <Switch
-                          checked={enabled}
-                          onCheckedChange={(v) => toggleGlobal.mutate({ featureId: id, enabled: v })}
-                          disabled={toggleGlobal.isPending}
-                          data-testid={`switch-feature-${id}`}
-                          className="scale-90 origin-right mt-0.5"
-                        />
-                      ) : (
-                        <span className="text-[9px] text-muted-foreground/50 mt-1">view only</span>
-                      )}
+                      <Switch
+                        checked={enabled}
+                        onCheckedChange={(v) => toggleGlobal.mutate({ featureId: id, enabled: v })}
+                        disabled={toggleGlobal.isPending}
+                        data-testid={`switch-feature-${id}`}
+                        className="scale-90 origin-right mt-0.5"
+                      />
                     </div>
                     <div>
                       <p className="text-xs font-semibold leading-tight" data-testid={`text-feature-name-${id}`}>{label}</p>
@@ -2673,15 +2669,11 @@ function RoomFeaturesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
               })}
             </div>
           )}
-          {!isSuperAdmin && (
-            <p className="text-xs text-muted-foreground mt-3 text-center">Super admin access required to toggle features.</p>
-          )}
         </CardContent>
       </Card>
 
       {/* ── Per-User Feature Overrides ── */}
-      {isSuperAdmin && (
-        <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <UserPlus className="w-4 h-4 text-violet-400" />
@@ -2795,7 +2787,6 @@ function RoomFeaturesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             )}
           </CardContent>
         </Card>
-      )}
     </div>
   );
 }
@@ -3797,10 +3788,10 @@ export default function AdminPage() {
               <HardDrive className="w-4 h-4 mr-2" />
               Storage
             </TabsTrigger>
-            <TabsTrigger value="features" data-testid="tab-admin-features">
+            {isSuperAdmin && <TabsTrigger value="features" data-testid="tab-admin-features">
               <Settings2 className="w-4 h-4 mr-2" />
               Features
-            </TabsTrigger>
+            </TabsTrigger>}
             <TabsTrigger value="themes" data-testid="tab-admin-themes">
               <Eye className="w-4 h-4 mr-2" />
               Themes
@@ -4558,9 +4549,9 @@ export default function AdminPage() {
             <StorageTab isSuperAdmin={isSuperAdmin} />
           </TabsContent>
 
-          <TabsContent value="features">
-            <RoomFeaturesTab isSuperAdmin={isSuperAdmin} />
-          </TabsContent>
+          {isSuperAdmin && <TabsContent value="features">
+            <RoomFeaturesTab />
+          </TabsContent>}
 
           <TabsContent value="themes">
             <ThemesTab isSuperAdmin={isSuperAdmin} />
