@@ -1,5 +1,5 @@
 // ─── Vextorn Content Filter ────────────────────────────────────────────────────
-// Six-layer evasion-resistant detection pipeline:
+// Seven-layer evasion-resistant detection pipeline:
 //
 //  Layer 1  Strip zero-width / invisible Unicode characters
 //  Layer 2  Convert Unicode lookalike letters (Cyrillic а → a, etc.)
@@ -8,6 +8,9 @@
 //  Layer 5  Collapse repeated characters ("fuuuuck" → "fuck")
 //  Layer 6  Strip ALL non-alpha to catch fully punctuated obfuscation
 //           ("f.u.c.k!!!" → "fuck")
+//  Layer 7  Semantic intent analysis — detects harassment from the COMBINATION
+//           and CONTEXT of words ("sucking dick", "show me ur boobs", "boobies")
+//           even when no single term would be caught by word-boundary matching.
 //
 // Then each variant is checked against PHRASE_TERMS (substring) and
 // WORD_TERMS (word-boundary regex).
@@ -18,6 +21,7 @@
 //   if (result.flagged) { /* block and surface result.message */ }
 
 import { WORD_TERMS, PHRASE_TERMS, CATEGORY_MESSAGES, FilterCategory } from "./moderation-words";
+import { checkSemantic } from "./semantic-filter";
 
 export interface FilterResult {
   flagged: boolean;
@@ -248,6 +252,25 @@ export function checkContent(text: string, surface = "unknown"): FilterResult {
         matchedVariant: strippedCollapsed,
       };
     }
+  }
+
+  // 5. Semantic intent analysis — detects harassment from word COMBINATIONS
+  //    and context rather than individual terms.  Catches things like:
+  //      "sucking dick"  "lick my boobs"  "show me ur pussy"  "boobies"
+  //    Build the semantic input directly (homoglyph → leet → lowercase) so
+  //    evasion tricks are neutralised before the semantic parser sees the text.
+  const semanticText = normalizeLeet(normalizeHomoglyphs(stripInvisible(trimmed)));
+  const semantic = checkSemantic(semanticText);
+  if (semantic.flagged) {
+    const semTerm = semantic.matchedTerm ?? "semantic";
+    logFlagged("sexual_content", semTerm, semanticText, surface);
+    return {
+      flagged: true,
+      category: "sexual_content",
+      message: semantic.message ?? CATEGORY_MESSAGES["sexual_content"],
+      matchedTerm: semTerm,
+      matchedVariant: semanticText,
+    };
   }
 
   return CLEAN;
