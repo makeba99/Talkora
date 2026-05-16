@@ -64,6 +64,33 @@ export const WORD_TERMS: BannedEntry[] = [
   { term: "scumbag",        category: "profanity" },
   { term: "scum",           category: "profanity" },
 
+  // ── Dick/cock variants ───────────────────────────────────────────────────
+  { term: "dicky",          category: "sexual_content" },
+  { term: "dickie",         category: "sexual_content" },
+  { term: "dickies",        category: "sexual_content" },
+  { term: "dicksuck",       category: "sexual_content" },
+  { term: "dicksucker",     category: "sexual_content" },
+  { term: "cockface",       category: "sexual_content" },
+  { term: "dickface",       category: "sexual_content" },
+
+  // ── Fuck variants ────────────────────────────────────────────────────────
+  { term: "fuckar",         category: "profanity" },
+  { term: "fuckard",        category: "profanity" },
+  { term: "fuckr",          category: "profanity" },
+  { term: "fuckwit",        category: "profanity" },
+  { term: "fuckboy",        category: "profanity" },
+  { term: "fuckgirl",       category: "profanity" },
+  { term: "fuckhead",       category: "profanity" },
+  { term: "fuckface",       category: "profanity" },
+  { term: "fuckoff",        category: "profanity" },
+  { term: "fvck",           category: "profanity" },
+  { term: "fxck",           category: "profanity" },
+
+  // ── Bitch/ass variants ───────────────────────────────────────────────────
+  { term: "bitchboy",       category: "profanity" },
+  { term: "bitchface",      category: "profanity" },
+  { term: "bitchmade",      category: "profanity" },
+
   // ── Sexual harassment / explicit ──────────────────────────────────────────
   { term: "sex",            category: "sexual_content" },
   { term: "sexy",           category: "sexual_content" },
@@ -317,7 +344,25 @@ export const PHRASE_TERMS: BannedEntry[] = [
   { term: "underage",               category: "sexual_content" },
   { term: "minor nude",             category: "sexual_content" },
 
-  // ── Compound profanity ────────────────────────────────────────────────────
+  // ── Compound profanity (glued together — no spaces) ─────────────────────
+  { term: "bitchass",               category: "profanity" },
+  { term: "assbitch",               category: "profanity" },
+  { term: "dickbitch",              category: "profanity" },
+  { term: "dickass",                category: "profanity" },
+  { term: "fuckass",                category: "profanity" },
+  { term: "asshat",                 category: "profanity" },
+  { term: "shitass",                category: "profanity" },
+  { term: "fucknigga",              category: "slur" },
+  { term: "bitchnigga",             category: "slur" },
+  { term: "assnigga",               category: "slur" },
+  { term: "niggas",                 category: "slur" },
+  // ── Compound sexual ──────────────────────────────────────────────────────
+  { term: "bigdick",                category: "sexual_content" },
+  { term: "bigcock",                category: "sexual_content" },
+  { term: "bigass",                 category: "sexual_content" },
+  { term: "fuckslut",               category: "sexual_content" },
+  { term: "slutbitch",              category: "sexual_content" },
+  // ── Compound profanity (spaced) ───────────────────────────────────────────
   { term: "mother fucker",          category: "profanity" },
   { term: "son of a bitch",         category: "profanity" },
   { term: "son of bitch",           category: "profanity" },

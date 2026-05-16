@@ -231,6 +231,25 @@ export function checkContent(text: string, surface = "unknown"): FilterResult {
     }
   }
 
+  // 4. Compound-word catch: substring-match WORD_TERMS (≥5 chars) on the
+  //    fully-stripped+collapsed text.  Word boundaries (\b) are useless inside
+  //    glued compounds like "bigdicky", "bitchassnigga", "fuckar" — this stage
+  //    catches them.  The 5-char floor avoids false positives from short terms
+  //    like "ass" (3), "nig" (3), "fag" (3) that could appear inside innocent words.
+  for (const { term, category } of WORD_TERMS) {
+    if (term.length < 5) continue;
+    if (strippedCollapsed.includes(term)) {
+      logFlagged(category, term, strippedCollapsed, surface);
+      return {
+        flagged: true,
+        category,
+        message: CATEGORY_MESSAGES[category],
+        matchedTerm: term,
+        matchedVariant: strippedCollapsed,
+      };
+    }
+  }
+
   return CLEAN;
 }
 
