@@ -2829,6 +2829,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [orderFilter, setOrderFilter] = useState<"all" | "pending" | "approved" | "denied">("pending");
   const [reviewingOrder, setReviewingOrder] = useState<ThemeOrderRow | null>(null);
   const [adminNote, setAdminNote] = useState("");
+  const [grantThemeId, setGrantThemeId] = useState<string>("");
 
   const { data, isLoading, refetch } = useQuery<AdminThemesData>({
     queryKey: ["/api/admin/themes"],
@@ -2882,14 +2883,23 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   });
 
   const reviewOrder = useMutation({
-    mutationFn: async ({ id, status, note }: { id: string; status: "approved" | "denied"; note: string }) => {
-      return apiRequest("PATCH", `/api/admin/theme-orders/${id}`, { status, adminNote: note || null });
+    mutationFn: async ({ id, status, note, themeId }: { id: string; status: "approved" | "denied"; note: string; themeId?: string }) => {
+      return apiRequest("PATCH", `/api/admin/theme-orders/${id}`, {
+        status,
+        adminNote: note || null,
+        grantThemeId: themeId || null,
+      });
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       refetchOrders();
       setReviewingOrder(null);
       setAdminNote("");
-      toast({ title: "Theme order reviewed" });
+      setGrantThemeId("");
+      const granted = vars.themeId ? THEMES.find((t) => t.id === vars.themeId) : null;
+      toast({
+        title: vars.status === "approved" ? "Theme order approved" : "Theme order denied",
+        description: granted ? `"${granted.label}" granted to user.` : undefined,
+      });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -3180,35 +3190,87 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 
       {/* Review dialog */}
       {reviewingOrder && (
-        <Dialog open onOpenChange={(o) => { if (!o) { setReviewingOrder(null); setAdminNote(""); } }}>
+        <Dialog open onOpenChange={(o) => { if (!o) { setReviewingOrder(null); setAdminNote(""); setGrantThemeId(""); } }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-sm">
                 <ShoppingBag className="w-4 h-4 text-amber-400" />
-                Review Theme Order
+                Review Theme Request
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-3 pt-1">
-              <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
-                <p className="text-xs font-semibold">{reviewingOrder.userDisplayName || reviewingOrder.userEmail}</p>
-                <p className="text-sm font-bold text-primary mt-1">"{reviewingOrder.themeName}"</p>
-                <p className="text-xs text-muted-foreground mt-1">{reviewingOrder.description}</p>
+              {/* Request details */}
+              <div className="rounded-lg border border-border/40 bg-muted/20 p-3 space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {reviewingOrder.userDisplayName || reviewingOrder.userEmail}
+                </p>
+                <p className="text-sm font-bold text-primary">"{reviewingOrder.themeName}"</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{reviewingOrder.description}</p>
               </div>
+
+              {/* Grant theme access (shown when approving) */}
               <div>
-                <Label className="text-xs mb-1 block">Admin note (optional)</Label>
+                <Label className="text-xs mb-1.5 flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  Grant theme access (optional)
+                </Label>
+                <div className="grid grid-cols-2 gap-1 max-h-36 overflow-y-auto pr-0.5">
+                  <button
+                    onClick={() => setGrantThemeId("")}
+                    className={`text-left px-2.5 py-1.5 rounded border text-[11px] transition-colors ${
+                      !grantThemeId
+                        ? "border-border/40 bg-muted/30 text-muted-foreground"
+                        : "border-transparent text-muted-foreground/50 hover:bg-muted/20"
+                    }`}
+                    data-testid="button-grant-none"
+                  >
+                    None (notify only)
+                  </button>
+                  {THEMES.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setGrantThemeId(t.id)}
+                      className={`flex items-center gap-1.5 text-left px-2 py-1.5 rounded border text-[11px] transition-colors ${
+                        grantThemeId === t.id
+                          ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
+                          : "border-border/30 hover:border-border hover:bg-muted/20 text-foreground"
+                      }`}
+                      data-testid={`button-grant-theme-${t.id}`}
+                    >
+                      <span className="flex gap-0.5 shrink-0">
+                        {t.swatchColors.slice(0, 2).map((c, i) => (
+                          <span key={i} className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
+                        ))}
+                      </span>
+                      <span className="truncate">{t.label}</span>
+                      {grantThemeId === t.id && <CheckCircle className="w-3 h-3 ml-auto shrink-0 text-amber-400" />}
+                    </button>
+                  ))}
+                </div>
+                {grantThemeId && (
+                  <p className="text-[10px] text-amber-400/80 mt-1">
+                    Will grant access to "{THEMES.find((t) => t.id === grantThemeId)?.label}" on approval.
+                  </p>
+                )}
+              </div>
+
+              {/* Admin note */}
+              <div>
+                <Label className="text-xs mb-1 block">Note to user (optional)</Label>
                 <Textarea
                   placeholder="Leave a note for the user..."
                   value={adminNote}
                   onChange={(e) => setAdminNote(e.target.value)}
-                  className="text-xs min-h-[60px] resize-none"
+                  className="text-xs min-h-[56px] resize-none"
                   data-testid="input-admin-note"
                 />
               </div>
-              <div className="flex gap-2 justify-end">
+
+              <div className="flex gap-2 justify-end pt-1">
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => { setReviewingOrder(null); setAdminNote(""); }}
+                  onClick={() => { setReviewingOrder(null); setAdminNote(""); setGrantThemeId(""); }}
                   className="text-xs h-8"
                 >
                   Cancel
@@ -3226,11 +3288,11 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                   size="sm"
                   className="h-8 text-xs bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30"
                   disabled={reviewOrder.isPending}
-                  onClick={() => reviewOrder.mutate({ id: reviewingOrder.id, status: "approved", note: adminNote })}
+                  onClick={() => reviewOrder.mutate({ id: reviewingOrder.id, status: "approved", note: adminNote, themeId: grantThemeId || undefined })}
                   data-testid="button-approve-order"
                 >
                   {reviewOrder.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <CheckCircle className="w-3.5 h-3.5 mr-1" />}
-                  Approve
+                  Approve{grantThemeId ? " & Grant" : ""}
                 </Button>
               </div>
             </div>

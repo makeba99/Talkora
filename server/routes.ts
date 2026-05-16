@@ -4913,13 +4913,17 @@ export async function registerRoutes(
   app.patch("/api/admin/theme-orders/:id", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { status, adminNote } = req.body;
+      const { status, adminNote, grantThemeId } = req.body;
       if (!["approved", "denied"].includes(status)) {
         return res.status(400).json({ message: "status must be approved or denied" });
       }
       const reviewedBy = (req.user as any).id ?? (req.user as any).claims?.sub;
       const order = await storage.reviewThemeOrder(id, status, adminNote ?? null, reviewedBy);
       if (!order) return res.status(404).json({ message: "Order not found" });
+      // Auto-assign the selected theme to the user on approval
+      if (status === "approved" && grantThemeId && ALL_THEME_IDS.includes(grantThemeId)) {
+        await storage.addUserThemeAssignment(order.userId, grantThemeId);
+      }
       res.json(order);
     } catch (err: any) {
       res.status(500).json({ message: err.message });

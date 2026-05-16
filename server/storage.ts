@@ -260,6 +260,7 @@ export interface IStorage {
   setUserThemeAssignments(userId: string, themeIds: string[]): Promise<void>;
   getAvailableThemesForUser(userId: string, allThemeIds: string[]): Promise<string[]>;
 
+  addUserThemeAssignment(userId: string, themeId: string): Promise<void>;
   createThemeOrder(userId: string, themeName: string, description: string): Promise<ThemeOrder>;
   getThemeOrders(status?: string): Promise<Array<ThemeOrder & { userDisplayName: string | null; userEmail: string | null }>>;
   getUserThemeOrders(userId: string): Promise<ThemeOrder[]>;
@@ -1838,6 +1839,13 @@ export class DatabaseStorage implements IStorage {
       const globallyVisible = visibilityMap[id] !== false;
       return globallyVisible || assignedSet.has(id);
     });
+  }
+
+  async addUserThemeAssignment(userId: string, themeId: string): Promise<void> {
+    await db
+      .insert(userThemeAssignments)
+      .values({ userId, themeId })
+      .onConflictDoNothing();
   }
 
   async createThemeOrder(userId: string, themeName: string, description: string): Promise<ThemeOrder> {
