@@ -18,7 +18,7 @@ import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "
 import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, type AiTutorConfig } from "./ai-config";
 import { openAiSynthesize, openAiTtsHealth } from "./openai-tts";
 import { huggingFaceSynthesize, huggingFaceTtsHealth } from "./huggingface-tts";
-import { checkContent, checkFields } from "./content-filter";
+import { checkContent, checkFields, getBlockLog, clearBlockLog } from "./content-filter";
 import { startStream, writeChunk, stopStream, getStreamInfo, stopAllStreamsForUser, getViewerCounts } from "./streaming";
 import {
   renderIndexHtml,
@@ -2192,7 +2192,7 @@ export async function registerRoutes(
       const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
-      const profileModResult = checkFields({ displayName, bio });
+      const profileModResult = checkFields({ displayName, bio }, "profile");
       if (profileModResult.flagged) {
         const fieldLabel = profileModResult.field === "displayName" ? "display name" : "bio";
         return res.status(422).json({
@@ -2574,7 +2574,7 @@ export async function registerRoutes(
         });
       }
       // ── Content moderation ─────────────────────────────────────────────────
-      const roomCreateModResult = checkContent(parsed.data.title);
+      const roomCreateModResult = checkContent(parsed.data.title, "room-title");
       if (roomCreateModResult.flagged) {
         return res.status(422).json({ flagged: true, message: `Room title wasn't created — ${roomCreateModResult.message.replace("Your content", "it")}` });
       }
@@ -2619,7 +2619,7 @@ export async function registerRoutes(
       const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission, chatPermission } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
-      const roomUpdateModResult = checkFields({ title, welcomeMessage });
+      const roomUpdateModResult = checkFields({ title, welcomeMessage }, "room-settings");
       if (roomUpdateModResult.flagged) {
         const fieldLabel = roomUpdateModResult.field === "title" ? "room title" : "welcome message";
         return res.status(422).json({
@@ -2940,7 +2940,7 @@ export async function registerRoutes(
       }
 
       // ── Content moderation ─────────────────────────────────────────────────
-      const dmModResult = checkContent(parsed.data.text);
+      const dmModResult = checkContent(parsed.data.text, "dm");
       if (dmModResult.flagged) {
         return res.status(422).json({ flagged: true, message: dmModResult.message });
       }
@@ -4621,7 +4621,7 @@ export async function registerRoutes(
 
       // ── Content moderation ─────────────────────────────────────────────────
       if (comment) {
-        const reviewModResult = checkContent(comment);
+        const reviewModResult = checkContent(comment, "review");
         if (reviewModResult.flagged) {
           return res.status(422).json({ flagged: true, message: reviewModResult.message });
         }
@@ -4884,7 +4884,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Description must be at least 10 characters" });
       }
       // Content moderation on the request fields
-      const orderModResult = checkFields({ themeName, description });
+      const orderModResult = checkFields({ themeName, description }, "theme-request");
       if (orderModResult.flagged) {
         return res.status(422).json({ flagged: true, message: orderModResult.message });
       }
@@ -4965,6 +4965,16 @@ export async function registerRoutes(
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
+  });
+
+  // ── Content Block Log ──────────────────────────────────────────────────────
+  app.get("/api/admin/content-blocks", isAuthenticated, isSuperAdmin, (_req, res) => {
+    res.json(getBlockLog());
+  });
+
+  app.delete("/api/admin/content-blocks", isAuthenticated, isSuperAdmin, (_req, res) => {
+    clearBlockLog();
+    res.json({ ok: true });
   });
 
   // ── Platform Feature Flags ─────────────────────────────────────────────────
@@ -5060,7 +5070,7 @@ export async function registerRoutes(
       if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid comment" });
 
       // ── Content moderation ─────────────────────────────────────────────────
-      const commentModResult = checkContent(parsed.data.text);
+      const commentModResult = checkContent(parsed.data.text, "comment");
       if (commentModResult.flagged) {
         return res.status(422).json({ flagged: true, message: commentModResult.message });
       }
@@ -5994,7 +6004,7 @@ export async function registerRoutes(
         }
 
         // ── Content moderation ───────────────────────────────────────────────
-        const chatModResult = checkContent(data.text);
+        const chatModResult = checkContent(data.text, "chat");
         if (chatModResult.flagged) {
           socket.emit("room:chat-blocked", { reason: chatModResult.message });
           return;
@@ -6050,7 +6060,7 @@ export async function registerRoutes(
       try {
         const trimmed = (data.newText || "").trim().slice(0, 4000);
         if (!trimmed) return;
-        const editModResult = checkContent(trimmed);
+        const editModResult = checkContent(trimmed, "chat-edit");
         if (editModResult.flagged) {
           socket.emit("room:chat-blocked", { reason: editModResult.message });
           return;

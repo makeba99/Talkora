@@ -1389,6 +1389,260 @@ function TransactionsTab() {
   );
 }
 
+// ── Content Filter Log Tab ────────────────────────────────────────────────────
+type BlockLogEntry = {
+  id: number;
+  category: string;
+  surface: string;
+  matchedTerm: string;
+  timestamp: string;
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  profanity:      "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  sexual_content: "bg-red-500/15 text-red-300 border-red-500/30",
+  slur:           "bg-purple-500/15 text-purple-300 border-purple-500/30",
+  hate_speech:    "bg-rose-600/15 text-rose-300 border-rose-600/30",
+};
+const SURFACE_COLORS: Record<string, string> = {
+  chat:           "bg-blue-500/10 text-blue-300",
+  "chat-edit":    "bg-blue-400/10 text-blue-200",
+  dm:             "bg-cyan-500/10 text-cyan-300",
+  profile:        "bg-green-500/10 text-green-300",
+  "room-title":   "bg-violet-500/10 text-violet-300",
+  "room-settings":"bg-violet-400/10 text-violet-200",
+  review:         "bg-orange-500/10 text-orange-300",
+  comment:        "bg-yellow-500/10 text-yellow-300",
+  "theme-request":"bg-pink-500/10 text-pink-300",
+};
+
+function fmtTs(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return "Today";
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function ContentFilterLogTab() {
+  const { toast } = useToast();
+  const [filterCat, setFilterCat] = useState<string>("all");
+  const [filterSurface, setFilterSurface] = useState<string>("all");
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
+  const { data: entries = [], isLoading, refetch } = useQuery<BlockLogEntry[]>({
+    queryKey: ["/api/admin/content-blocks"],
+    refetchInterval: autoRefresh ? 5000 : false,
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", "/api/admin/content-blocks");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/content-blocks"] });
+      toast({ title: "Block log cleared" });
+    },
+  });
+
+  const cats = useMemo(() => [...new Set(entries.map((e) => e.category))].sort(), [entries]);
+  const surfaces = useMemo(() => [...new Set(entries.map((e) => e.surface))].sort(), [entries]);
+
+  const filtered = useMemo(() => entries.filter((e) => {
+    if (filterCat !== "all" && e.category !== filterCat) return false;
+    if (filterSurface !== "all" && e.surface !== filterSurface) return false;
+    return true;
+  }), [entries, filterCat, filterSurface]);
+
+  // Category breakdown counts
+  const catCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const e of entries) m[e.category] = (m[e.category] ?? 0) + 1;
+    return m;
+  }, [entries]);
+
+  const surfaceCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const e of entries) m[e.surface] = (m[e.surface] ?? 0) + 1;
+    return m;
+  }, [entries]);
+
+  return (
+    <div className="space-y-4">
+      {/* Header summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card className="bg-background/50 border-primary/20">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground">Total blocked</p>
+            <p className="text-2xl font-bold text-primary" data-testid="text-block-total">{entries.length}</p>
+          </CardContent>
+        </Card>
+        {Object.entries(catCounts).slice(0, 3).map(([cat, count]) => (
+          <Card key={cat} className="bg-background/50 border-border/30">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground capitalize">{cat.replace("_", " ")}</p>
+              <p className="text-2xl font-bold text-foreground" data-testid={`text-block-cat-${cat}`}>{count}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader className="pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-destructive" />
+                Blocked Content Attempts
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Last {entries.length} events — no user PII stored. Resets on server restart.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Auto-refresh toggle */}
+              <button
+                onClick={() => setAutoRefresh((v) => !v)}
+                data-testid="button-autorefresh-toggle"
+                className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+                  autoRefresh
+                    ? "bg-green-500/15 border-green-500/30 text-green-300"
+                    : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${autoRefresh ? "bg-green-400 animate-pulse" : "bg-muted-foreground"}`} />
+                {autoRefresh ? "Live" : "Paused"}
+              </button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => refetch()}
+                data-testid="button-refresh-block-log"
+                className="h-8 px-2"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => clearMutation.mutate()}
+                disabled={clearMutation.isPending || entries.length === 0}
+                data-testid="button-clear-block-log"
+                className="h-8 text-xs"
+              >
+                Clear log
+              </Button>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Category:</span>
+              {["all", ...cats].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setFilterCat(c)}
+                  data-testid={`filter-cat-${c}`}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors border ${
+                    filterCat === c
+                      ? "bg-primary/20 border-primary/40 text-primary"
+                      : "bg-muted/30 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {c === "all" ? "All" : c.replace("_", " ")}
+                  {c !== "all" && catCounts[c] ? ` (${catCounts[c]})` : ""}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Surface:</span>
+              {["all", ...surfaces].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilterSurface(s)}
+                  data-testid={`filter-surface-${s}`}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors border ${
+                    filterSurface === s
+                      ? "bg-primary/20 border-primary/40 text-primary"
+                      : "bg-muted/30 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {s === "all" ? "All" : s}
+                  {s !== "all" && surfaceCounts[s] ? ` (${surfaceCounts[s]})` : ""}
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pt-0">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+              <ShieldCheck className="w-12 h-12 text-green-400/40" />
+              <p className="text-sm text-muted-foreground">
+                {entries.length === 0 ? "No blocked attempts yet — filter is clean." : "No entries match the selected filters."}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-border/50">
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-32">Time</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Category</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Surface</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Matched term</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {filtered.map((entry) => (
+                    <tr
+                      key={entry.id}
+                      className="hover:bg-muted/20 transition-colors"
+                      data-testid={`row-block-${entry.id}`}
+                    >
+                      <td className="py-2 px-3 text-[11px] text-muted-foreground whitespace-nowrap">
+                        <span className="font-mono">{fmtTs(entry.timestamp)}</span>
+                        <span className="block text-[10px] opacity-60">{fmtDate(entry.timestamp)}</span>
+                      </td>
+                      <td className="py-2 px-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${CATEGORY_COLORS[entry.category] ?? "bg-muted/20 text-muted-foreground border-border"}`}>
+                          {entry.category.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono ${SURFACE_COLORS[entry.surface] ?? "bg-muted/20 text-muted-foreground"}`}>
+                          {entry.surface}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-foreground/80">
+                        {entry.matchedTerm}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-[10px] text-muted-foreground text-right mt-2 pr-1">
+                Showing {filtered.length} of {entries.length} entries
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function MaintenanceTab() {
   const { toast } = useToast();
 
@@ -4076,6 +4330,12 @@ export default function AdminPage() {
                 Maintenance
               </TabsTrigger>
             )}
+            {isSuperAdmin && (
+              <TabsTrigger value="content-filter" data-testid="tab-admin-content-filter">
+                <ShieldAlert className="w-4 h-4 mr-2" />
+                Filter Log
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="reports">
@@ -5077,6 +5337,12 @@ export default function AdminPage() {
           {isSuperAdmin && (
             <TabsContent value="maintenance">
               <MaintenanceTab />
+            </TabsContent>
+          )}
+
+          {isSuperAdmin && (
+            <TabsContent value="content-filter">
+              <ContentFilterLogTab />
             </TabsContent>
           )}
         </Tabs>
