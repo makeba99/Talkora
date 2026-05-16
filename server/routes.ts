@@ -4869,6 +4869,80 @@ export async function registerRoutes(
     }
   });
 
+  // ── Platform Feature Flags ─────────────────────────────────────────────────
+  const PLATFORM_FEATURE_IDS = [
+    "voiceEffects","aiTutor","screenShare","youtubeWatch","movieParty","games","gifPicker","readTogether",
+  ] as const;
+
+  app.get("/api/admin/features", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const flags = await storage.getFeatureFlags();
+      const features = PLATFORM_FEATURE_IDS.map((id) => ({
+        id,
+        enabled: flags[id] !== false,
+      }));
+      res.json({ features });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/features/:featureId", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { featureId } = req.params;
+      const { enabled } = req.body;
+      if (!(PLATFORM_FEATURE_IDS as readonly string[]).includes(featureId))
+        return res.status(404).json({ message: "Unknown feature" });
+      if (typeof enabled !== "boolean")
+        return res.status(400).json({ message: "enabled must be boolean" });
+      await storage.setFeatureFlag(featureId, enabled);
+      res.json({ featureId, enabled });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/features/user/:userId", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const overrides = await storage.getUserFeatureOverrides(req.params.userId);
+      res.json({ userId: req.params.userId, overrides });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.put("/api/admin/features/user/:userId", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { overrides } = req.body;
+      if (typeof overrides !== "object" || Array.isArray(overrides) || overrides === null)
+        return res.status(400).json({ message: "overrides must be an object" });
+      const clean: Record<string, boolean> = {};
+      for (const [k, v] of Object.entries(overrides)) {
+        if ((PLATFORM_FEATURE_IDS as readonly string[]).includes(k) && typeof v === "boolean")
+          clean[k] = v;
+      }
+      await storage.setUserFeatureOverrides(userId, clean);
+      res.json({ userId, overrides: clean });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/features/active", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const effective = await storage.getEffectiveFeatures(userId);
+      const result: Record<string, boolean> = {};
+      for (const id of PLATFORM_FEATURE_IDS) {
+        result[id] = effective[id] !== false;
+      }
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // ── User Comments ───────────────────────────────────────────────────────────
   app.get("/api/users/:targetUserId/comments", async (req, res) => {
     try {

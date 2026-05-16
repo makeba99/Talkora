@@ -2361,6 +2361,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: platformFeatures } = useQuery<Record<string, boolean>>({
+    queryKey: ["/api/features/active"],
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+  const featVoiceEffects  = platformFeatures ? platformFeatures["voiceEffects"]  !== false : true;
+  const featAiTutor       = platformFeatures ? platformFeatures["aiTutor"]        !== false : true;
+  const featScreenShare   = platformFeatures ? platformFeatures["screenShare"]    !== false : true;
+  const featYoutube       = platformFeatures ? platformFeatures["youtubeWatch"]   !== false : true;
+  const featMovieParty    = platformFeatures ? platformFeatures["movieParty"]     !== false : true;
+  const featGames         = platformFeatures ? platformFeatures["games"]          !== false : true;
+  const featGifPicker     = platformFeatures ? platformFeatures["gifPicker"]      !== false : true;
+  const featReadTogether  = platformFeatures ? platformFeatures["readTogether"]   !== false : true;
   const visibleThemes = availableThemeData
     ? ROOM_THEMES.filter((t) => availableThemeData.themeIds.includes(t.id))
     : ROOM_THEMES;
@@ -5531,7 +5545,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
 
         {/* Share — hidden on mobile, screen share is not supported on mobile browsers */}
-        <div className="hidden sm:flex flex-col items-center gap-[5px] sm:gap-[7px]">
+        {featScreenShare && <div className="hidden sm:flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <button
             onClick={handleScreenShare}
             disabled={!isScreenSharing && !canShareScreenByPerm}
@@ -5554,10 +5568,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <span className={labelBase} style={isScreenSharing ? { color: "rgba(196,181,253,0.85)" } : { color: "rgba(255,255,255,0.32)" }}>
             {isScreenSharing && isCameraShareMode ? "Cam Share" : "Share"}
           </span>
-        </div>
+        </div>}
 
         {/* Voice preset picker */}
-        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px] relative">
+        {featVoiceEffects && <div className="flex flex-col items-center gap-[5px] sm:gap-[7px] relative">
           <div className="relative">
             {voicePickerOpen && (
               <span
@@ -5805,7 +5819,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               ? (VOICE_PRESETS.find(p => p.id === selectedVoicePresetId)?.label ?? "Voice")
               : "Voice"}
           </span>
-        </div>
+        </div>}
 
         {/* Mood — replaces the old "raise hand" button.
             Tap to open a mini emoji bar with quick mood reactions (sleepy,
@@ -5909,7 +5923,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         </div>
 
         {/* AI Tutor */}
-        <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
+        {featAiTutor && <div className="flex flex-col items-center gap-[5px] sm:gap-[7px]">
           <div className="relative">
             {!aiTutorActive && (
               <span
@@ -5949,7 +5963,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <span className={labelBase} style={{ color: aiTutorActive ? "hsl(var(--neu-orange-hi) / 0.95)" : "hsl(var(--neu-orange-hi) / 0.72)" }}>
             {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
-        </div>
+        </div>}
 
         <div className="mx-0.5 h-7 sm:h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
 
@@ -8070,18 +8084,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </span>
           )}
         </div>
-        <button onClick={() => setSidePanelTab("youtube")} data-testid="tab-youtube" title="YouTube" className="room-tab-btn" data-accent="youtube" data-active={sidePanelTab === "youtube"}>
+        {featYoutube && <button onClick={() => setSidePanelTab("youtube")} data-testid="tab-youtube" title="YouTube" className="room-tab-btn" data-accent="youtube" data-active={sidePanelTab === "youtube"}>
           <Youtube className="w-[20px] h-[20px]" />
-        </button>
-        <button onClick={() => setSidePanelTab("movies")} data-testid="tab-movies" title="Movies" className="room-tab-btn" data-accent="movies" data-active={sidePanelTab === "movies"}>
+        </button>}
+        {featMovieParty && <button onClick={() => setSidePanelTab("movies")} data-testid="tab-movies" title="Movies" className="room-tab-btn" data-accent="movies" data-active={sidePanelTab === "movies"}>
           <Film className="w-[20px] h-[20px]" />
-        </button>
-        <button onClick={() => setSidePanelTab("read")} data-testid="tab-read" title="Read" className="room-tab-btn" data-accent="read" data-active={sidePanelTab === "read"}>
+        </button>}
+        {featReadTogether && <button onClick={() => setSidePanelTab("read")} data-testid="tab-read" title="Read" className="room-tab-btn" data-accent="read" data-active={sidePanelTab === "read"}>
           <BookOpen className="w-[20px] h-[20px]" />
-        </button>
-        <button onClick={() => setSidePanelTab("chess")} data-testid="tab-chess" title="Games" className="room-tab-btn" data-accent="chess" data-active={sidePanelTab === "chess"}>
+        </button>}
+        {featGames && <button onClick={() => setSidePanelTab("chess")} data-testid="tab-chess" title="Games" className="room-tab-btn" data-accent="chess" data-active={sidePanelTab === "chess"}>
           <Gamepad2 className="w-[20px] h-[20px]" />
-        </button>
+        </button>}
         <button onClick={() => setSidePanelTab("golive")} data-testid="tab-golive" title="Go Live" className="room-tab-btn" data-accent="golive" data-active={sidePanelTab === "golive"}>
           <Radio className="w-[20px] h-[20px]" />
         </button>
@@ -9447,7 +9461,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </PopoverContent>
               </Popover>
 
-              <GifPickerButton onGifSelect={(gifUrl) => {
+              {featGifPicker && <GifPickerButton onGifSelect={(gifUrl) => {
                 if (socket && user) {
                   socket.emit("room:chat", {
                     roomId: room.id,
@@ -9460,7 +9474,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   });
                   setReplyingTo(null);
                 }
-              }} />
+              }} />}
               <ImageUploadButton onImageSelect={(imgUrl) => {
                 if (socket && user) {
                   socket.emit("room:chat", {

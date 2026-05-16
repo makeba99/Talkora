@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -2529,6 +2529,277 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   );
 }
 
+// ── Platform Feature Flags ─────────────────────────────────────────────────
+const PLATFORM_FEATURES = [
+  { id: "voiceEffects",  label: "Voice Effects",        description: "Voice presets & pitch modulation inside rooms",  Icon: AudioLines,   color: "cyan"   },
+  { id: "aiTutor",       label: "AI Tutor",             description: "Eva / Afik AI tutor panel inside rooms",         Icon: BrainCircuit, color: "amber"  },
+  { id: "screenShare",   label: "Screen Share",         description: "Screen sharing capability in voice rooms",       Icon: Monitor,      color: "blue"   },
+  { id: "youtubeWatch",  label: "YouTube Watch",        description: "YouTube watch-together side panel",              Icon: Youtube,      color: "red"    },
+  { id: "movieParty",    label: "Movie Party",          description: "Archive.org movie watch party panel",            Icon: Film,         color: "violet" },
+  { id: "games",         label: "Games",                description: "Chess, Connect Four & Tic-Tac-Toe panels",       Icon: Gamepad2,     color: "green"  },
+  { id: "gifPicker",     label: "GIF Picker",           description: "GIF search & sharing in room chat",             Icon: ImageIcon,    color: "pink"   },
+  { id: "readTogether",  label: "Read Together",        description: "Gutenberg book reader / Read-together panel",    Icon: BookOpen,     color: "orange" },
+] as const;
+
+type AdminFeaturesData = { features: { id: string; enabled: boolean }[] };
+
+const FEATURE_COLOR_MAP: Record<string, string> = {
+  cyan:   "text-cyan-400 bg-cyan-500/10 border-cyan-500/30",
+  amber:  "text-amber-400 bg-amber-500/10 border-amber-500/30",
+  blue:   "text-blue-400 bg-blue-500/10 border-blue-500/30",
+  red:    "text-red-400 bg-red-500/10 border-red-500/30",
+  violet: "text-violet-400 bg-violet-500/10 border-violet-500/30",
+  green:  "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+  pink:   "text-pink-400 bg-pink-500/10 border-pink-500/30",
+  orange: "text-orange-400 bg-orange-500/10 border-orange-500/30",
+};
+
+function RoomFeaturesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const { toast } = useToast();
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<{ id: string; displayName: string | null; firstName: string | null; email: string | null } | null>(null);
+  const [pendingOverrides, setPendingOverrides] = useState<Record<string, boolean>>({});
+
+  const { data, isLoading, refetch } = useQuery<AdminFeaturesData>({
+    queryKey: ["/api/admin/features"],
+  });
+
+  const { data: usersData = [] } = useQuery<{ id: string; email: string | null; displayName: string | null; firstName: string | null }[]>({
+    queryKey: ["/api/admin/users"],
+  });
+
+  const filteredUsers = usersData.filter((u) => {
+    if (!userSearch.trim()) return false;
+    const q = userSearch.toLowerCase();
+    return (
+      u.displayName?.toLowerCase().includes(q) ||
+      u.firstName?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
+      u.id.toLowerCase().includes(q)
+    );
+  }).slice(0, 8);
+
+  const toggleGlobal = useMutation({
+    mutationFn: async ({ featureId, enabled }: { featureId: string; enabled: boolean }) => {
+      return apiRequest("PATCH", `/api/admin/features/${featureId}`, { enabled });
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/features/active"] });
+      toast({ title: "Feature updated" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const saveUserOverrides = useMutation({
+    mutationFn: async ({ userId, overrides }: { userId: string; overrides: Record<string, boolean> }) => {
+      return apiRequest("PUT", `/api/admin/features/user/${userId}`, { overrides });
+    },
+    onSuccess: () => {
+      toast({ title: "User feature access updated" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const handleSelectUser = async (u: typeof usersData[number]) => {
+    setSelectedUser(u);
+    setUserSearch("");
+    try {
+      const res = await apiRequest("GET", `/api/admin/features/user/${u.id}`);
+      const json = await res.json();
+      setPendingOverrides(json.overrides ?? {});
+    } catch {
+      setPendingOverrides({});
+    }
+  };
+
+  const features = data?.features ?? [];
+  const featureMap = Object.fromEntries(features.map(f => [f.id, f.enabled]));
+
+  return (
+    <div className="space-y-6">
+      {/* ── Global Feature Toggles ── */}
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Settings2 className="w-4 h-4 text-cyan-400" />
+            Global Room Feature Controls
+            <span className="ml-1 text-[11px] font-normal text-muted-foreground">(applies to all users by default)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {PLATFORM_FEATURES.map(({ id, label, description, Icon, color }) => {
+                const enabled = featureMap[id] !== false;
+                const colorCls = FEATURE_COLOR_MAP[color] ?? "";
+                return (
+                  <div
+                    key={id}
+                    className={`rounded-xl border p-3.5 transition-all flex flex-col gap-2.5 ${enabled ? "border-border/40 bg-card/60" : "border-red-500/30 bg-red-500/5 opacity-75"}`}
+                    data-testid={`card-feature-${id}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${colorCls}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      {isSuperAdmin ? (
+                        <Switch
+                          checked={enabled}
+                          onCheckedChange={(v) => toggleGlobal.mutate({ featureId: id, enabled: v })}
+                          disabled={toggleGlobal.isPending}
+                          data-testid={`switch-feature-${id}`}
+                          className="scale-90 origin-right mt-0.5"
+                        />
+                      ) : (
+                        <span className="text-[9px] text-muted-foreground/50 mt-1">view only</span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold leading-tight" data-testid={`text-feature-name-${id}`}>{label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{description}</p>
+                    </div>
+                    {!enabled && (
+                      <span className="text-[9px] font-bold uppercase tracking-wide text-red-400/80 bg-red-500/10 rounded px-1.5 py-0.5 self-start border border-red-500/20">
+                        Hidden from users
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {!isSuperAdmin && (
+            <p className="text-xs text-muted-foreground mt-3 text-center">Super admin access required to toggle features.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Per-User Feature Overrides ── */}
+      {isSuperAdmin && (
+        <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-violet-400" />
+              Override Features for a Specific User
+              <span className="ml-1 text-[11px] font-normal text-muted-foreground">(overrides global settings for that user)</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users by name or email..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="pl-9"
+                data-testid="input-feature-user-search"
+              />
+              {filteredUsers.length > 0 && (
+                <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-lg border border-border/60 bg-card shadow-lg overflow-hidden">
+                  {filteredUsers.map((u) => (
+                    <button
+                      key={u.id}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/40 text-left transition-colors"
+                      onClick={() => handleSelectUser(u)}
+                      data-testid={`button-feature-user-${u.id}`}
+                    >
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                        {(getUserDisplayName(u)?.[0] ?? "?").toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{getUserDisplayName(u)}</p>
+                        {u.email && <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {selectedUser && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-300">
+                      {(getUserDisplayName(selectedUser)?.[0] ?? "?").toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium">{getUserDisplayName(selectedUser)}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7"
+                      onClick={() => setPendingOverrides({})}
+                      data-testid="button-feature-overrides-clear"
+                    >
+                      Clear all overrides
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => saveUserOverrides.mutate({ userId: selectedUser.id, overrides: pendingOverrides })}
+                      disabled={saveUserOverrides.isPending}
+                      data-testid="button-feature-overrides-save"
+                    >
+                      {saveUserOverrides.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                      Save
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Toggle each feature for this user. Overrides apply on top of global settings.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                  {PLATFORM_FEATURES.map(({ id, label, Icon, color }) => {
+                    const globalEnabled = featureMap[id] !== false;
+                    const hasOverride = id in pendingOverrides;
+                    const effectiveEnabled = hasOverride ? pendingOverrides[id] : globalEnabled;
+                    const colorCls = FEATURE_COLOR_MAP[color] ?? "";
+                    return (
+                      <div
+                        key={id}
+                        className={`flex items-center gap-2.5 p-2.5 rounded-lg border transition-all ${effectiveEnabled ? "border-border/30 bg-muted/20" : "border-red-500/20 bg-red-500/5"}`}
+                        data-testid={`card-user-feature-${id}`}
+                      >
+                        <div className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 ${colorCls}`}>
+                          <Icon className="w-3 h-3" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium truncate">{label}</p>
+                          {hasOverride && (
+                            <p className="text-[9px] text-violet-400">overridden</p>
+                          )}
+                          {!hasOverride && (
+                            <p className="text-[9px] text-muted-foreground/60">global: {globalEnabled ? "on" : "off"}</p>
+                          )}
+                        </div>
+                        <Switch
+                          checked={effectiveEnabled}
+                          onCheckedChange={(v) => {
+                            setPendingOverrides(prev => ({ ...prev, [id]: v }));
+                          }}
+                          className="scale-75 origin-right shrink-0"
+                          data-testid={`switch-user-feature-${id}`}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 type AdminThemeEntry = { id: string; visible: boolean; canHide: boolean };
 type AdminThemesData = { themes: AdminThemeEntry[]; userAssignments: Record<string, string[]> };
 
@@ -3526,6 +3797,10 @@ export default function AdminPage() {
               <HardDrive className="w-4 h-4 mr-2" />
               Storage
             </TabsTrigger>
+            <TabsTrigger value="features" data-testid="tab-admin-features">
+              <Settings2 className="w-4 h-4 mr-2" />
+              Features
+            </TabsTrigger>
             <TabsTrigger value="themes" data-testid="tab-admin-themes">
               <Eye className="w-4 h-4 mr-2" />
               Themes
@@ -4281,6 +4556,10 @@ export default function AdminPage() {
 
           <TabsContent value="storage">
             <StorageTab isSuperAdmin={isSuperAdmin} />
+          </TabsContent>
+
+          <TabsContent value="features">
+            <RoomFeaturesTab isSuperAdmin={isSuperAdmin} />
           </TabsContent>
 
           <TabsContent value="themes">

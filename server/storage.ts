@@ -195,6 +195,12 @@ export interface IStorage {
   getSetting(key: string): Promise<string | null>;
   setSetting(key: string, value: string): Promise<void>;
 
+  getFeatureFlags(): Promise<Record<string, boolean>>;
+  setFeatureFlag(featureId: string, enabled: boolean): Promise<void>;
+  getUserFeatureOverrides(userId: string): Promise<Record<string, boolean>>;
+  setUserFeatureOverrides(userId: string, overrides: Record<string, boolean>): Promise<void>;
+  getEffectiveFeatures(userId: string): Promise<Record<string, boolean>>;
+
   recordPageView(data: { path: string; referrer?: string; referrerDomain?: string; country?: string; sessionHash?: string; userId?: string }): Promise<void>;
   recordRoomJoin(data: { roomId: string; userId: string; country?: string; roomName?: string }): Promise<void>;
   getAnalytics(days?: number): Promise<{
@@ -1178,6 +1184,38 @@ export class DatabaseStorage implements IStorage {
         target: appSettings.key,
         set: { value, updatedAt: new Date() },
       });
+  }
+
+  async getFeatureFlags(): Promise<Record<string, boolean>> {
+    const rows = await db.select().from(appSettings).where(sql`key LIKE 'feature:global:%'`);
+    const flags: Record<string, boolean> = {};
+    for (const row of rows) {
+      const featureId = row.key.replace("feature:global:", "");
+      flags[featureId] = row.value === "true";
+    }
+    return flags;
+  }
+
+  async setFeatureFlag(featureId: string, enabled: boolean): Promise<void> {
+    await this.setSetting(`feature:global:${featureId}`, enabled ? "true" : "false");
+  }
+
+  async getUserFeatureOverrides(userId: string): Promise<Record<string, boolean>> {
+    const val = await this.getSetting(`feature:user:${userId}`);
+    if (!val) return {};
+    try { return JSON.parse(val); } catch { return {}; }
+  }
+
+  async setUserFeatureOverrides(userId: string, overrides: Record<string, boolean>): Promise<void> {
+    await this.setSetting(`feature:user:${userId}`, JSON.stringify(overrides));
+  }
+
+  async getEffectiveFeatures(userId: string): Promise<Record<string, boolean>> {
+    const [globals, userOverrides] = await Promise.all([
+      this.getFeatureFlags(),
+      this.getUserFeatureOverrides(userId),
+    ]);
+    return { ...globals, ...userOverrides };
   }
 
   async recordPageView(data: { path: string; referrer?: string; referrerDomain?: string; country?: string; sessionHash?: string; userId?: string }): Promise<void> {

@@ -1,0 +1,32 @@
+You are a product manager designing a new feature for a platform. Your task is to help develop a clear product specification and go-to-market strategy for a **custom room theme ordering system**.
+
+Here's what we know about the concept:
+- Room owners can commission custom themes tailored to their specific vision
+- The process: room owners describe what they want → designer creates it → they pay $10 → they own unlimited usage rights within their rooms
+- This is a new revenue and retention driver for the platform
+
+Your job is to explore and develop this idea by thinking through the key questions that will make it viable:
+
+**Problem Space & Feasibility:**
+- Who are the room owners ordering these themes? (Active users? Power users? New segment?)
+- What does "describe what they want" look like in practice? (Form? Chat? Gallery of examples to remix?)
+- Who creates the themes on the supply side? (Platform design team? Freelancers? AI-generated with human review?)
+- What's the turnaround time expectation? (Hours? Days? Real-time?)
+- At $10 per theme, what's the unit economics? (Design cost, platform margin, sustainability?)
+
+**Feature Definition:**
+- What exactly can room owners customize with their theme? (Colors, fonts, layouts, imagery, all of the above?)
+- What does "unlimited usage in their rooms" mean? (Can they apply it to multiple rooms? Share with others? Resell?)
+- Are there brand/content guardrails? (What themes get rejected?)
+
+**User Experience:**
+- How do room owners know what's possible? Do you show them examples or a template gallery first?
+- What happens if they're unhappy with the result? (Revisions? Refund policy?)
+- How do they see their theme before paying?
+
+**Business Model:**
+- Is $10 the final price or a starting point?
+- Do you want different pricing tiers (quick design vs. premium design)?
+- Who owns the theme once purchased—only that room owner, or can multiple users license the same design?
+
+Help me think through these dimensions so we can clarify what this feature actually is, what problems it solves, and whether the model works. Start by identifying which of these questions are critical to decide NOW vs. which can be figured out later. Then help me develop the strongest version of this concept.
