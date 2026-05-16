@@ -11554,11 +11554,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </DialogHeader>
           <p className="text-sm text-muted-foreground">Choose a visual theme for your room. All participants will see it.</p>
           <div className="space-y-2 mt-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Selected</span>
-              <span className="text-xs font-medium text-foreground" data-testid="text-theme-dialog-selected">
-                {visibleThemes.find((t) => t.id === editRoomTheme)?.label || "Default"}
-              </span>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Selected</span>
+                <span className="text-xs font-medium text-foreground" data-testid="text-theme-dialog-selected">
+                  {visibleThemes.find((t) => t.id === editRoomTheme)?.label || "Default"}
+                </span>
+              </div>
+              {(() => {
+                const desc = visibleThemes.find((t) => t.id === editRoomTheme)?.description;
+                return desc ? (
+                  <p className="text-[11px] text-primary/70 text-right leading-snug italic">{desc}</p>
+                ) : null;
+              })()}
             </div>
             <div className="flex items-center gap-2">
               <button

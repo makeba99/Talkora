@@ -1968,45 +1968,46 @@ function renderDiscoScene(idx: number): React.ReactNode {
 }
 
 function DiscoThemeOverlay({ base, serverSceneIdx, onAdvance }: { base: React.CSSProperties; serverSceneIdx?: number; onAdvance?: () => void }) {
-  // When serverSceneIdx is provided (controlled mode), we use it as the source of truth.
-  // Otherwise fall back to local state starting at 0 (uncontrolled fallback).
-  const [localSceneIdx, setLocalSceneIdx] = useState(0);
-  const sceneIdx = serverSceneIdx !== undefined ? serverSceneIdx : localSceneIdx;
+  // Single source-of-truth for what is actually RENDERED.
+  // Both server-controlled and local-fallback paths update this state
+  // during the "black" (opacity=0) phase so users see:
+  //   old scene → fade to black → new scene → fade in
+  // rather than new scene flashing in immediately then blinking.
+  const [displayedSceneIdx, setDisplayedSceneIdx] = useState(serverSceneIdx ?? 0);
   const [opacity, setOpacity]   = useState(1);
   const [showLabel, setShowLabel] = useState(false);
   const timerRef = useRef<number | null>(null);
-  // Track previous serverSceneIdx so we can trigger the crossfade transition when it changes
   const prevServerSceneRef = useRef<number | undefined>(serverSceneIdx);
 
-  // When the server broadcasts a new scene, trigger the crossfade animation
+  // Server-controlled crossfade: wait for full 2.7s fade-out BEFORE
+  // swapping the rendered scene so users see old→black→new (not new→blink→new).
   useEffect(() => {
     if (serverSceneIdx === undefined) return;
     if (prevServerSceneRef.current === serverSceneIdx) return;
     prevServerSceneRef.current = serverSceneIdx;
+    const targetIdx = serverSceneIdx;
     if (timerRef.current !== null) clearTimeout(timerRef.current);
     setOpacity(0);
     timerRef.current = window.setTimeout(() => {
+      setDisplayedSceneIdx(targetIdx); // scene swaps while fully black
       setShowLabel(true);
       timerRef.current = window.setTimeout(() => {
         setOpacity(1);
         timerRef.current = window.setTimeout(() => setShowLabel(false), 3500);
       }, 80);
-    }, 400);
+    }, 2700); // matches the 2.7s CSS opacity transition
   }, [serverSceneIdx]);
 
-  // Auto-advance timer: only fires when NOT in server-controlled mode.
-  // In controlled mode the host's client emits room:disco-advance and all
-  // clients receive the new index from the server — no local timer needed.
+  // Local auto-advance: fires when NOT in server-controlled mode.
   useEffect(() => {
-    if (serverSceneIdx !== undefined) return; // controlled — skip local timer
+    if (serverSceneIdx !== undefined) return;
     const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
     const schedule = () => {
-      // Random interval: 28 – 42 seconds — keeps the room feeling alive
       const delay = (28 + Math.random() * 14) * 1000;
       timerRef.current = window.setTimeout(() => {
         setOpacity(0);
         timerRef.current = window.setTimeout(() => {
-          setLocalSceneIdx(prev => (prev + 1) % 7);
+          setDisplayedSceneIdx(prev => (prev + 1) % 7); // scene swaps while black
           setShowLabel(true);
           timerRef.current = window.setTimeout(() => {
             setOpacity(1);
@@ -2022,33 +2023,26 @@ function DiscoThemeOverlay({ base, serverSceneIdx, onAdvance }: { base: React.CS
     return clear;
   }, [serverSceneIdx]);
 
-  // Host-side auto-cycle timer: fires when onAdvance is provided (this client is the host).
-  // Emits room:disco-advance via the callback so the server tracks and broadcasts to all.
-  // All clients (including non-hosts) receive the new scene index via room:disco-advance
-  // so the scene changes simultaneously for everyone in the room.
+  // Host-side timer: emits room:disco-advance so the server broadcasts to all.
   useEffect(() => {
     if (!onAdvance) return;
     const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
     const schedule = () => {
-      // Random interval: 28 – 42 seconds — fast enough to feel like a live DJ set
       const delay = (28 + Math.random() * 14) * 1000;
-      timerRef.current = window.setTimeout(() => {
-        onAdvance();
-        schedule();
-      }, delay);
+      timerRef.current = window.setTimeout(() => { onAdvance(); schedule(); }, delay);
     };
     schedule();
     return clear;
   }, [onAdvance]);
 
-  const scene = DISCO_SCENES[sceneIdx];
+  const scene = DISCO_SCENES[displayedSceneIdx];
 
   return (
     <div style={base}>
       <style>{ROOM_THEME_KEYFRAMES}</style>
-      {/* Scene content — smooth crossfade */}
+      {/* Scene content — old scene fades to black, THEN new scene fades in */}
       <div style={{ position:"absolute", inset:0, transition:"opacity 2.7s cubic-bezier(0.4,0,0.2,1)", opacity }}>
-        {renderDiscoScene(sceneIdx)}
+        {renderDiscoScene(displayedSceneIdx)}
       </div>
       {/* Scene name flash — appears briefly on every scene change */}
       {showLabel && (

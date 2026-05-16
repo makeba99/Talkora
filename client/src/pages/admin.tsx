@@ -3669,6 +3669,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                 </Label>
                 <div className="grid grid-cols-2 gap-1 max-h-36 overflow-y-auto pr-0.5">
                   <button
+                    type="button"
                     onClick={() => setGrantThemeId("")}
                     className={`text-left px-2.5 py-1.5 rounded border text-[11px] transition-colors ${
                       !grantThemeId
@@ -3682,6 +3683,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                   {THEMES.map((t) => (
                     <button
                       key={t.id}
+                      type="button"
                       onClick={() => setGrantThemeId(t.id)}
                       className={`flex items-center gap-1.5 text-left px-2 py-1.5 rounded border text-[11px] transition-colors ${
                         grantThemeId === t.id
