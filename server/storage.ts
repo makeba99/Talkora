@@ -65,6 +65,10 @@ import {
   transactions,
   type Transaction,
   type InsertTransaction,
+  themeVisibility,
+  type ThemeVisibility,
+  userThemeAssignments,
+  type UserThemeAssignment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -240,6 +244,13 @@ export interface IStorage {
   getAllTransactions(limit?: number): Promise<Transaction[]>;
   updateTransactionStatus(id: string, status: string, confirmedById?: string): Promise<Transaction | undefined>;
   getTransactionStats(): Promise<{ totalRevenue: number; pendingCash: number; completedCount: number; pendingCount: number }>;
+
+  getThemeVisibility(): Promise<Record<string, boolean>>;
+  setThemeVisibility(themeId: string, visible: boolean): Promise<void>;
+  getUserThemeAssignments(userId: string): Promise<string[]>;
+  getAllUserThemeAssignments(): Promise<Array<{ userId: string; themeId: string }>>;
+  setUserThemeAssignments(userId: string, themeIds: string[]): Promise<void>;
+  getAvailableThemesForUser(userId: string, allThemeIds: string[]): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1728,6 +1739,60 @@ export class DatabaseStorage implements IStorage {
       completedCount: Number(r.completed_count ?? 0),
       pendingCount: Number(r.pending_count ?? 0),
     };
+  }
+
+  async getThemeVisibility(): Promise<Record<string, boolean>> {
+    const rows = await db.select().from(themeVisibility);
+    const map: Record<string, boolean> = {};
+    for (const row of rows) {
+      map[row.themeId] = row.visible;
+    }
+    return map;
+  }
+
+  async setThemeVisibility(themeId: string, visible: boolean): Promise<void> {
+    await db
+      .insert(themeVisibility)
+      .values({ themeId, visible, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: themeVisibility.themeId,
+        set: { visible, updatedAt: new Date() },
+      });
+  }
+
+  async getUserThemeAssignments(userId: string): Promise<string[]> {
+    const rows = await db
+      .select({ themeId: userThemeAssignments.themeId })
+      .from(userThemeAssignments)
+      .where(eq(userThemeAssignments.userId, userId));
+    return rows.map((r) => r.themeId);
+  }
+
+  async getAllUserThemeAssignments(): Promise<Array<{ userId: string; themeId: string }>> {
+    const rows = await db.select({ userId: userThemeAssignments.userId, themeId: userThemeAssignments.themeId }).from(userThemeAssignments);
+    return rows;
+  }
+
+  async setUserThemeAssignments(userId: string, themeIds: string[]): Promise<void> {
+    await db.delete(userThemeAssignments).where(eq(userThemeAssignments.userId, userId));
+    if (themeIds.length > 0) {
+      await db.insert(userThemeAssignments).values(
+        themeIds.map((themeId) => ({ userId, themeId }))
+      );
+    }
+  }
+
+  async getAvailableThemesForUser(userId: string, allThemeIds: string[]): Promise<string[]> {
+    const [visibilityMap, userAssigned] = await Promise.all([
+      this.getThemeVisibility(),
+      this.getUserThemeAssignments(userId),
+    ]);
+    const assignedSet = new Set(userAssigned);
+    return allThemeIds.filter((id) => {
+      if (id === "none") return true;
+      const globallyVisible = visibilityMap[id] !== false;
+      return globallyVisible || assignedSet.has(id);
+    });
   }
 }
 

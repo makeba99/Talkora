@@ -536,6 +536,24 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 }));
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 
+export const themeVisibility = pgTable("theme_visibility", {
+  themeId: varchar("theme_id", { length: 50 }).primaryKey(),
+  visible: boolean("visible").notNull().default(true),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type ThemeVisibility = typeof themeVisibility.$inferSelect;
+
+export const userThemeAssignments = pgTable("user_theme_assignments", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  themeId: varchar("theme_id", { length: 50 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  utaUserIdx: index("uta_user_id_idx").on(table.userId),
+  utaUniqueIdx: uniqueIndex("uta_user_theme_idx").on(table.userId, table.themeId),
+}));
+export type UserThemeAssignment = typeof userThemeAssignments.$inferSelect;
+
 export const emailCampaigns = pgTable("email_campaigns", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   subject: text("subject").notNull(),

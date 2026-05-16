@@ -4794,6 +4794,81 @@ export async function registerRoutes(
     }
   });
 
+  // ── Theme Visibility Management ─────────────────────────────────────────────
+  const ALL_THEME_IDS = [
+    "none","premium-atmosphere","plasma","neon","galaxy","sunset","forest",
+    "cyberpunk","ocean","cherry","aurora","matrix","storm","volcanic","disco",
+    "trap-gold","skeleton-gangsta","romance",
+  ];
+
+  app.get("/api/admin/themes", isAuthenticated, isAdmin, async (_req, res) => {
+    try {
+      const [visMap, assignments] = await Promise.all([
+        storage.getThemeVisibility(),
+        storage.getAllUserThemeAssignments(),
+      ]);
+      const userAssignmentMap: Record<string, string[]> = {};
+      for (const a of assignments) {
+        if (!userAssignmentMap[a.userId]) userAssignmentMap[a.userId] = [];
+        userAssignmentMap[a.userId].push(a.themeId);
+      }
+      const themes = ALL_THEME_IDS.map((id) => ({
+        id,
+        visible: id === "none" ? true : (visMap[id] !== false),
+        canHide: id !== "none",
+      }));
+      res.json({ themes, userAssignments: userAssignmentMap });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/admin/themes/:themeId/visibility", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { themeId } = req.params;
+      const { visible } = req.body;
+      if (themeId === "none") return res.status(400).json({ message: "Cannot hide the default theme" });
+      if (!ALL_THEME_IDS.includes(themeId)) return res.status(404).json({ message: "Unknown theme" });
+      if (typeof visible !== "boolean") return res.status(400).json({ message: "visible must be boolean" });
+      await storage.setThemeVisibility(themeId, visible);
+      res.json({ themeId, visible });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/themes/user/:userId", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const assigned = await storage.getUserThemeAssignments(req.params.userId);
+      res.json({ userId: req.params.userId, themeIds: assigned });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.put("/api/admin/themes/user/:userId", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { themeIds } = req.body;
+      if (!Array.isArray(themeIds)) return res.status(400).json({ message: "themeIds must be an array" });
+      const valid = themeIds.filter((id: unknown) => typeof id === "string" && ALL_THEME_IDS.includes(id) && id !== "none");
+      await storage.setUserThemeAssignments(userId, valid);
+      res.json({ userId, themeIds: valid });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/themes/available", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const available = await storage.getAvailableThemesForUser(userId, ALL_THEME_IDS);
+      res.json({ themeIds: available });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // ── User Comments ───────────────────────────────────────────────────────────
   app.get("/api/users/:targetUserId/comments", async (req, res) => {
     try {

@@ -2356,6 +2356,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     enabled: !!user,
   });
 
+  const { data: availableThemeData } = useQuery<{ themeIds: string[] }>({
+    queryKey: ["/api/themes/available"],
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+  const visibleThemes = availableThemeData
+    ? ROOM_THEMES.filter((t) => availableThemeData.themeIds.includes(t.id))
+    : ROOM_THEMES;
+
   const [peopleSearch, setPeopleSearch] = useState("");
   const [peopleFilter, setPeopleFilter] = useState<"all" | "friends" | "following" | "followers">("all");
 
@@ -11475,7 +11484,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Selected</span>
               <span className="text-xs font-medium text-foreground" data-testid="text-theme-dialog-selected">
-                {ROOM_THEMES.find((t) => t.id === editRoomTheme)?.label || "Default"}
+                {visibleThemes.find((t) => t.id === editRoomTheme)?.label || "Default"}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -11489,7 +11498,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="flex-1 grid grid-cols-4 gap-2">
-                {ROOM_THEMES.slice(themeDialogOffset, themeDialogOffset + 4).map((theme) => (
+                {visibleThemes.slice(themeDialogOffset, themeDialogOffset + 4).map((theme) => (
                   <button
                     key={theme.id}
                     type="button"
@@ -11527,8 +11536,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </div>
               <button
                 type="button"
-                onClick={() => setThemeDialogOffset((o) => Math.min(Math.max(0, ROOM_THEMES.length - 4), o + 4))}
-                disabled={themeDialogOffset + 4 >= ROOM_THEMES.length}
+                onClick={() => setThemeDialogOffset((o) => Math.min(Math.max(0, visibleThemes.length - 4), o + 4))}
+                disabled={themeDialogOffset + 4 >= visibleThemes.length}
                 className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 data-testid="button-theme-dialog-next"
               >
@@ -11536,7 +11545,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </button>
             </div>
             <div className="flex justify-center gap-1">
-              {Array.from({ length: Math.ceil(ROOM_THEMES.length / 4) }).map((_, i) => (
+              {Array.from({ length: Math.ceil(visibleThemes.length / 4) }).map((_, i) => (
                 <button
                   key={i}
                   type="button"
@@ -11666,7 +11675,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div className="flex items-center justify-between">
                       <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Card Theme</Label>
                       <span className="text-xs text-primary font-medium" data-testid="text-edit-theme-selected">
-                        {ROOM_THEMES.find((t) => t.id === editRoomTheme)?.label || "Default"}
+                        {visibleThemes.find((t) => t.id === editRoomTheme)?.label || "Default"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -11680,7 +11689,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       <div className="flex-1 grid grid-cols-4 gap-2">
-                        {ROOM_THEMES.slice(editThemeOffset, editThemeOffset + 4).map((theme) => (
+                        {visibleThemes.slice(editThemeOffset, editThemeOffset + 4).map((theme) => (
                           <button
                             key={theme.id}
                             type="button"
@@ -11716,8 +11725,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       </div>
                       <button
                         type="button"
-                        onClick={() => setEditThemeOffset((o) => Math.min(Math.max(0, ROOM_THEMES.length - 4), o + 4))}
-                        disabled={editThemeOffset + 4 >= ROOM_THEMES.length}
+                        onClick={() => setEditThemeOffset((o) => Math.min(Math.max(0, visibleThemes.length - 4), o + 4))}
+                        disabled={editThemeOffset + 4 >= visibleThemes.length}
                         className="flex-shrink-0 w-7 h-12 rounded-md border border-border/40 bg-muted/30 flex items-center justify-center text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         data-testid="button-edit-theme-next"
                       >
@@ -11725,7 +11734,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       </button>
                     </div>
                     <div className="flex justify-center gap-1">
-                      {Array.from({ length: Math.ceil(ROOM_THEMES.length / 4) }).map((_, i) => (
+                      {Array.from({ length: Math.ceil(visibleThemes.length / 4) }).map((_, i) => (
                         <button
                           key={i}
                           type="button"

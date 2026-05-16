@@ -2529,6 +2529,272 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   );
 }
 
+type AdminThemeEntry = { id: string; visible: boolean; canHide: boolean };
+type AdminThemesData = { themes: AdminThemeEntry[]; userAssignments: Record<string, string[]> };
+
+function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const { toast } = useToast();
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<{ id: string; displayName: string | null; firstName: string | null; email: string | null } | null>(null);
+  const [pendingAssignments, setPendingAssignments] = useState<string[]>([]);
+
+  const { data, isLoading, refetch } = useQuery<AdminThemesData>({
+    queryKey: ["/api/admin/themes"],
+  });
+
+  const { data: usersData = [] } = useQuery<{ id: string; email: string | null; displayName: string | null; firstName: string | null }[]>({
+    queryKey: ["/api/admin/users"],
+  });
+
+  const themes = data?.themes ?? [];
+  const filteredUsers = usersData.filter((u) => {
+    if (!userSearch.trim()) return false;
+    const q = userSearch.toLowerCase();
+    return (
+      u.displayName?.toLowerCase().includes(q) ||
+      u.firstName?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
+      u.id.toLowerCase().includes(q)
+    );
+  }).slice(0, 8);
+
+  const toggleVisibility = useMutation({
+    mutationFn: async ({ themeId, visible }: { themeId: string; visible: boolean }) => {
+      return apiRequest("PATCH", `/api/admin/themes/${themeId}/visibility`, { visible });
+    },
+    onSuccess: () => {
+      refetch();
+      toast({ title: "Theme visibility updated" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const saveUserAssignments = useMutation({
+    mutationFn: async ({ userId, themeIds }: { userId: string; themeIds: string[] }) => {
+      return apiRequest("PUT", `/api/admin/themes/user/${userId}`, { themeIds });
+    },
+    onSuccess: () => {
+      refetch();
+      toast({ title: "User theme access updated" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const handleSelectUser = (u: typeof usersData[number]) => {
+    setSelectedUser(u);
+    setUserSearch("");
+    const existing = data?.userAssignments[u.id] ?? [];
+    setPendingAssignments(existing);
+  };
+
+  const togglePendingAssignment = (themeId: string) => {
+    setPendingAssignments((prev) =>
+      prev.includes(themeId) ? prev.filter((id) => id !== themeId) : [...prev, themeId]
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* ── Global Theme Visibility ── */}
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Eye className="w-4 h-4 text-cyan-400" />
+            Global Theme Visibility
+            <span className="ml-1 text-[11px] font-normal text-muted-foreground">(applies to all users by default)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3">
+              {themes.map((theme) => (
+                <div
+                  key={theme.id}
+                  className={`relative rounded-lg overflow-hidden border transition-all ${theme.visible ? "border-border/40" : "border-red-500/40 opacity-60"}`}
+                  data-testid={`card-theme-${theme.id}`}
+                >
+                  {/* preview */}
+                  <div className="h-14 bg-muted/40 relative">
+                    {theme.id !== "none" && (
+                      <img
+                        src={`https://images.unsplash.com/photo-${
+                          {
+                            "premium-atmosphere":"1543002588-bfa74002ed7e","plasma":"1558618666-fcd25c85cd64","neon":"1519501025264-65ba15a82390","galaxy":"1506318137071-a8e063b4bec0","sunset":"1503803548695-c2a7b4a5b875","forest":"1441974231531-c6227db76b6e","cyberpunk":"1620503374956-c942862f0372","ocean":"1505118380757-91f5f5632de0","cherry":"1522383225653-ed111181a951","aurora":"1531366936337-7c912a4589a7","matrix":"1526378722484-bd91ca387e72","storm":"1504370805625-d37c82b94a8e","volcanic":"1495953557-73f0ba4c50af","disco":"1516450360452-9312f5e86fc7","trap-gold":"1493225457124-a3eb161ffa5f","skeleton-gangsta":"1518609878373-06d740f60d8b","romance":"1518998053901-5348d3961a04"
+                          }[theme.id] ?? "1497091071254-cc9b2ba7c48a"
+                        }?w=160&h=56&fit=crop`}
+                        alt={theme.id}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    )}
+                    {theme.id === "none" && (
+                      <div className="w-full h-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center">
+                        <span className="text-[10px] text-muted-foreground">Default</span>
+                      </div>
+                    )}
+                    {!theme.visible && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <EyeOff className="w-4 h-4 text-red-400" />
+                      </div>
+                    )}
+                  </div>
+                  {/* label + toggle */}
+                  <div className="px-2 py-1.5 bg-card/80 flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-medium text-foreground truncate leading-none" data-testid={`text-theme-name-${theme.id}`}>
+                      {theme.id === "none" ? "Default" : theme.id.replace(/-/g," ")}
+                    </span>
+                    {theme.canHide && isSuperAdmin ? (
+                      <Switch
+                        checked={theme.visible}
+                        onCheckedChange={(v) => toggleVisibility.mutate({ themeId: theme.id, visible: v })}
+                        disabled={toggleVisibility.isPending}
+                        data-testid={`switch-theme-visible-${theme.id}`}
+                        className="scale-75 origin-right"
+                      />
+                    ) : (
+                      <span className="text-[9px] text-muted-foreground/50">{theme.id === "none" ? "always on" : "view only"}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {!isSuperAdmin && (
+            <p className="text-xs text-muted-foreground mt-3 text-center">Super admin access required to toggle visibility.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Per-User Theme Assignment ── */}
+      {isSuperAdmin && (
+        <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-violet-400" />
+              Assign Themes to a User
+              <span className="ml-1 text-[11px] font-normal text-muted-foreground">(grants access to hidden themes)</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* User search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users by name or email..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="pl-9"
+                data-testid="input-theme-user-search"
+              />
+              {filteredUsers.length > 0 && (
+                <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-lg border border-border/60 bg-card shadow-lg overflow-hidden">
+                  {filteredUsers.map((u) => (
+                    <button
+                      key={u.id}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/40 text-left transition-colors"
+                      onClick={() => handleSelectUser(u)}
+                      data-testid={`button-theme-user-${u.id}`}
+                    >
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                        {(getUserDisplayName(u)?.[0] ?? "?").toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{getUserDisplayName(u)}</p>
+                        {u.email && <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected user's assignment editor */}
+            {selectedUser && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-300">
+                      {(getUserDisplayName(selectedUser)?.[0] ?? "?").toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium" data-testid="text-selected-theme-user">{getUserDisplayName(selectedUser)}</span>
+                    <span className="text-xs text-muted-foreground">{pendingAssignments.length} private theme{pendingAssignments.length !== 1 ? "s" : ""} assigned</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedUser(null)}
+                    className="text-xs h-7"
+                    data-testid="button-theme-user-clear"
+                  >
+                    <X className="w-3 h-3 mr-1" /> Clear
+                  </Button>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Check themes below to grant this user private access, even if globally hidden.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {themes.filter((t) => t.id !== "none").map((theme) => {
+                    const isAssigned = pendingAssignments.includes(theme.id);
+                    return (
+                      <button
+                        key={theme.id}
+                        onClick={() => togglePendingAssignment(theme.id)}
+                        className={`relative rounded-lg overflow-hidden border-2 transition-all text-left ${isAssigned ? "border-violet-500 shadow-md shadow-violet-500/20" : "border-border/30 opacity-60 hover:opacity-100"}`}
+                        data-testid={`button-assign-theme-${theme.id}`}
+                      >
+                        <div className="h-10 bg-muted/40 relative">
+                          <img
+                            src={`https://images.unsplash.com/photo-${
+                              {
+                                "premium-atmosphere":"1543002588-bfa74002ed7e","plasma":"1558618666-fcd25c85cd64","neon":"1519501025264-65ba15a82390","galaxy":"1506318137071-a8e063b4bec0","sunset":"1503803548695-c2a7b4a5b875","forest":"1441974231531-c6227db76b6e","cyberpunk":"1620503374956-c942862f0372","ocean":"1505118380757-91f5f5632de0","cherry":"1522383225653-ed111181a951","aurora":"1531366936337-7c912a4589a7","matrix":"1526378722484-bd91ca387e72","storm":"1504370805625-d37c82b94a8e","volcanic":"1495953557-73f0ba4c50af","disco":"1516450360452-9312f5e86fc7","trap-gold":"1493225457124-a3eb161ffa5f","skeleton-gangsta":"1518609878373-06d740f60d8b","romance":"1518998053901-5348d3961a04"
+                              }[theme.id] ?? "1497091071254-cc9b2ba7c48a"
+                            }?w=120&h=40&fit=crop`}
+                            alt={theme.id}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        </div>
+                        <div className="px-1.5 py-1 bg-card/80 flex items-center justify-between">
+                          <span className="text-[9px] font-medium truncate leading-none">{theme.id.replace(/-/g," ")}</span>
+                          {!theme.visible && <EyeOff className="w-2.5 h-2.5 text-red-400 shrink-0" />}
+                        </div>
+                        {isAssigned && (
+                          <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-violet-500 flex items-center justify-center">
+                            <svg className="w-2 h-2" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-5" /></svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    onClick={() => saveUserAssignments.mutate({ userId: selectedUser.id, themeIds: pendingAssignments })}
+                    disabled={saveUserAssignments.isPending}
+                    className="bg-violet-500/20 text-violet-200 border border-violet-500/30 hover:bg-violet-500/30"
+                    data-testid="button-save-theme-assignments"
+                  >
+                    {saveUserAssignments.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+                    Save access
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 function StorageTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const { toast } = useToast();
   const { data: stats, isLoading } = useQuery<CleanupStats>({
@@ -3259,6 +3525,10 @@ export default function AdminPage() {
             <TabsTrigger value="storage" data-testid="tab-admin-storage">
               <HardDrive className="w-4 h-4 mr-2" />
               Storage
+            </TabsTrigger>
+            <TabsTrigger value="themes" data-testid="tab-admin-themes">
+              <Eye className="w-4 h-4 mr-2" />
+              Themes
             </TabsTrigger>
             {isSuperAdmin && (
               <TabsTrigger value="announcements" data-testid="tab-admin-announcements">
@@ -4011,6 +4281,10 @@ export default function AdminPage() {
 
           <TabsContent value="storage">
             <StorageTab isSuperAdmin={isSuperAdmin} />
+          </TabsContent>
+
+          <TabsContent value="themes">
+            <ThemesTab isSuperAdmin={isSuperAdmin} />
           </TabsContent>
 
           <TabsContent value="analytics">
