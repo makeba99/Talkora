@@ -5657,6 +5657,14 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:disco-advance", { sceneIdx: next });
     });
 
+    // ── Disco Overlay Goto — host jumps directly to a specific scene index ──
+    socket.on("room:disco-goto", (data: { roomId: string; sceneIdx: number }) => {
+      if (!data?.roomId || typeof data.sceneIdx !== "number") return;
+      const idx = Math.max(0, Math.min(6, data.sceneIdx));
+      roomDiscoOverlaySceneIdx.set(data.roomId, idx);
+      io.to(data.roomId).emit("room:disco-advance", { sceneIdx: idx });
+    });
+
     // "Say Bye" — user waves goodbye to the room before leaving. Server
     // broadcasts to everyone (including sender) so they all hear the sound
     // and see the farewell toast, then the client handles the leave itself.

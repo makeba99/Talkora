@@ -1645,6 +1645,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [djMoveStyle, setDjMoveStyle] = useState<string>("auto");
   const [djMoveTick, setDjMoveTick] = useState(0);
   const [discoOverlaySceneIdx, setDiscoOverlaySceneIdx] = useState(0);
+  const [discoHostPanelOpen, setDiscoHostPanelOpen] = useState(false);
   // Client-side dedup: suppress "X joined" messages that arrive within 3s of a
   // previous join for the same user (catches the server-side race before the
   // joiningNow fix takes effect, and handles edge cases like StrictMode mounts).
@@ -8063,6 +8064,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     ? () => { socket?.emit("room:disco-advance", { roomId: room.id }); }
     : undefined;
 
+  const handleDiscoGoto = isHost && currentTheme === "disco"
+    ? (idx: number) => { socket?.emit("room:disco-goto", { roomId: room.id, sceneIdx: idx }); setDiscoHostPanelOpen(false); }
+    : undefined;
+
+  const DISCO_SCENES_LIST = [
+    { id: 0, name: "Rainbow Rave",    emoji: "🌈" },
+    { id: 1, name: "Red Alert",       emoji: "🔴" },
+    { id: 2, name: "Ocean Club",      emoji: "🌊" },
+    { id: 3, name: "Purple Rain",     emoji: "💜" },
+    { id: 4, name: "Golden Fever",    emoji: "✨" },
+    { id: 5, name: "Blackout Strobe", emoji: "⚡" },
+    { id: 6, name: "Shadow Dancer",   emoji: "💃" },
+  ];
+
   const sidePanelContent = (
     <div className="flex flex-col h-full">
       {/* ── Tab bar — neumorphic raised tray ──────────────────────────── */}
@@ -11048,6 +11063,103 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   return (
     <div className="flex h-full relative overflow-hidden" style={getRoomThemeStyle(currentTheme)}>
       <RoomThemeOverlay themeId={currentTheme} discoSceneIdx={discoOverlaySceneIdx} onDiscoAdvance={handleDiscoAdvance} />
+
+      {/* 🪩 Disco host control panel — visible only to the host when theme is disco */}
+      {isHost && currentTheme === "disco" && (
+        <div
+          style={{
+            position: "absolute", top: 10, left: "50%", transform: "translateX(-50%)",
+            zIndex: 30, pointerEvents: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+          }}
+          data-testid="disco-host-panel"
+        >
+          {/* Control bar row */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "rgba(0,0,0,0.72)", backdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,100,255,0.35)", borderRadius: 999,
+            padding: "5px 10px", boxShadow: "0 0 18px rgba(255,0,200,0.25)",
+          }}>
+            {/* Current scene label */}
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", color: "rgba(255,200,255,0.90)", whiteSpace: "nowrap" }}>
+              {DISCO_SCENES_LIST[discoOverlaySceneIdx]?.emoji} {DISCO_SCENES_LIST[discoOverlaySceneIdx]?.name}
+            </span>
+            {/* Divider */}
+            <span style={{ width: 1, height: 14, background: "rgba(255,100,255,0.30)", flexShrink: 0 }} />
+            {/* Skip next */}
+            <button
+              type="button"
+              data-testid="button-disco-skip"
+              onClick={() => handleDiscoAdvance?.()}
+              style={{
+                display: "flex", alignItems: "center", gap: 3,
+                padding: "2px 10px", borderRadius: 999,
+                background: "rgba(0,220,255,0.18)", border: "1px solid rgba(0,220,255,0.50)",
+                color: "rgba(100,240,255,0.95)", fontSize: 10, fontWeight: 800,
+                letterSpacing: "0.06em", cursor: "pointer", whiteSpace: "nowrap",
+              }}
+              title="Skip to next scene"
+            >⏭ Skip</button>
+            {/* Dropdown toggle */}
+            <button
+              type="button"
+              data-testid="button-disco-dropdown-toggle"
+              onClick={() => setDiscoHostPanelOpen(o => !o)}
+              style={{
+                display: "flex", alignItems: "center", gap: 3,
+                padding: "2px 8px", borderRadius: 999,
+                background: discoHostPanelOpen ? "rgba(255,100,255,0.30)" : "rgba(255,100,255,0.14)",
+                border: "1px solid rgba(255,100,255,0.50)",
+                color: "rgba(255,180,255,0.95)", fontSize: 10, fontWeight: 800,
+                letterSpacing: "0.06em", cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+              title="Pick a scene"
+            >🎭 {discoHostPanelOpen ? "▲" : "▼"}</button>
+          </div>
+
+          {/* Scene picker dropdown */}
+          {discoHostPanelOpen && (
+            <div style={{
+              display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4,
+              background: "rgba(0,0,0,0.82)", backdropFilter: "blur(14px)",
+              border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12,
+              padding: 8, boxShadow: "0 8px 32px rgba(0,0,0,0.55), 0 0 20px rgba(255,0,200,0.18)",
+              minWidth: 200,
+            }}>
+              {DISCO_SCENES_LIST.map((scene) => (
+                <button
+                  key={scene.id}
+                  type="button"
+                  data-testid={`button-disco-scene-${scene.id}`}
+                  onClick={() => handleDiscoGoto?.(scene.id)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: "6px 10px", borderRadius: 8, cursor: "pointer",
+                    background: discoOverlaySceneIdx === scene.id
+                      ? "rgba(255,100,255,0.28)"
+                      : "rgba(255,255,255,0.06)",
+                    border: discoOverlaySceneIdx === scene.id
+                      ? "1px solid rgba(255,100,255,0.65)"
+                      : "1px solid rgba(255,255,255,0.10)",
+                    color: discoOverlaySceneIdx === scene.id
+                      ? "rgba(255,200,255,1)"
+                      : "rgba(255,255,255,0.70)",
+                    fontSize: 11, fontWeight: 700, letterSpacing: "0.04em",
+                    transition: "all 0.15s", textAlign: "left",
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>{scene.emoji}</span>
+                  <span>{scene.name}</span>
+                  {discoOverlaySceneIdx === scene.id && (
+                    <span style={{ marginLeft: "auto", fontSize: 8, color: "rgba(255,100,255,0.90)" }}>▶ NOW</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Knock-knock prompts — floats top-center for the host only */}
       {isHost && pendingKnocks.length > 0 && (
