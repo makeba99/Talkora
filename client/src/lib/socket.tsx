@@ -55,7 +55,10 @@ export function SocketProvider({ children, userId }: { children: React.ReactNode
       startHeartbeat();
     });
 
-    s.on("reconnect", () => {
+    // socket.io-client v4: "reconnect" is a Manager-level event, not a Socket
+    // event. s.on("reconnect") never fires. Use s.io.on() instead so we get
+    // the callback after every successful re-connection attempt.
+    s.io.on("reconnect", () => {
       emitOnline(s);
       startHeartbeat();
     });
@@ -90,6 +93,7 @@ export function SocketProvider({ children, userId }: { children: React.ReactNode
 
     return () => {
       stopHeartbeat();
+      s.io.off("reconnect");
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("focus", handleVisibilityChange);

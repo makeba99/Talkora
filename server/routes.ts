@@ -5029,6 +5029,23 @@ export async function registerRoutes(
     });
 
     socket.on("heartbeat", () => {
+      // Use the heartbeat as a keep-alive: cancel any pending disconnect grace
+      // timer so a user whose socket stayed connected is never accidentally
+      // removed from the online set while they're actively sending pings.
+      if (currentUserId) {
+        const timerId = `${currentUserId}-disconnect`;
+        const existingTimer = disconnectTimers.get(timerId);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+          disconnectTimers.delete(timerId);
+        }
+        // If somehow evicted from onlineUsers while the socket is still alive,
+        // quietly restore them so they don't appear invisible.
+        if (!onlineUsers.has(currentUserId)) {
+          onlineUsers.add(currentUserId);
+          io.emit("presence:update", { userId: currentUserId, status: "online" });
+        }
+      }
     });
 
     socket.on("room:join", async (data: { roomId: string; userId: string }) => {
@@ -6979,10 +6996,20 @@ export async function registerRoutes(
         }
 
         if (!isInRoom) {
-          onlineUsers.delete(disconnectingUserId);
-          userSockets.delete(disconnectingUserId);
-          await storage.updateUserStatus(disconnectingUserId, "offline");
-          io.emit("presence:update", { userId: disconnectingUserId, status: "offline" });
+          // Give lobby (non-room) users a short grace period too. Without this,
+          // any network blip (mobile switching WiFi→4G, Replit proxy hiccup)
+          // immediately marks the user offline and makes them invisible to
+          // friends/followers — even though they reconnect within a second.
+          const lobbyTimer = setTimeout(async () => {
+            disconnectTimers.delete(timerId);
+            const currentSocketId = userSockets.get(disconnectingUserId);
+            if (currentSocketId && currentSocketId !== socket.id) return; // reconnected
+            onlineUsers.delete(disconnectingUserId);
+            userSockets.delete(disconnectingUserId);
+            await storage.updateUserStatus(disconnectingUserId, "offline");
+            io.emit("presence:update", { userId: disconnectingUserId, status: "offline" });
+          }, 10000);
+          disconnectTimers.set(timerId, lobbyTimer);
         } else {
           const timer = setTimeout(async () => {
             disconnectTimers.delete(timerId);
@@ -7077,12 +7104,43 @@ export async function registerRoutes(
                 }
               }
             }
-          }, 25000);
+          }, 40000);
           disconnectTimers.set(timerId, timer);
         }
       }
     });
   });
+
+  // ── Ghost-user reconciliation ─────────────────────────────────────────────
+  // Periodically sweep onlineUsers and userSockets for entries whose socket
+  // is no longer connected. This catches edge-cases where the disconnect
+  // event was lost or a timer was cleared prematurely, preventing users from
+  // appearing permanently online/invisible to others.
+  setInterval(() => {
+    for (const [userId, socketId] of Array.from(userSockets.entries())) {
+      const sock = io.sockets.sockets.get(socketId);
+      if (!sock || !sock.connected) {
+        // Only clean up if there is no pending grace timer — if a timer exists
+        // it will handle the cleanup at the right time.
+        const timerId = `${userId}-disconnect`;
+        if (!disconnectTimers.has(timerId)) {
+          userSockets.delete(userId);
+          onlineUsers.delete(userId);
+          userCurrentRoom.delete(userId);
+          storage.updateUserStatus(userId, "offline").catch(() => {});
+          io.emit("presence:update", { userId, status: "offline" });
+        }
+      }
+    }
+    // Also remove anyone in onlineUsers whose socket entry is gone entirely.
+    for (const userId of Array.from(onlineUsers)) {
+      if (!userSockets.has(userId) && !disconnectTimers.has(`${userId}-disconnect`)) {
+        onlineUsers.delete(userId);
+        storage.updateUserStatus(userId, "offline").catch(() => {});
+        io.emit("presence:update", { userId, status: "offline" });
+      }
+    }
+  }, 60000);
 
   // ── Email tracking pixel ──────────────────────────────────────────────────
   // GET /t/o/:id.gif  — 1×1 transparent GIF served when an email is "opened".
