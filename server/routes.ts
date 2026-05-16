@@ -6091,8 +6091,18 @@ export async function registerRoutes(
       }
     });
 
-    socket.on("room:chat-delete", async (data: { roomId: string; messageId: string; deletedBy: string }) => {
+    socket.on("room:chat-delete", async (data: { roomId: string; messageId: string; deletedBy: string; messageUserId?: string }) => {
       try {
+        if (!data?.roomId || !data?.deletedBy) return;
+        // Allow if: deleting own message, OR room owner, OR co-owner
+        const isOwnMessage = data.messageUserId === data.deletedBy;
+        if (!isOwnMessage) {
+          const room = await storage.getRoom(data.roomId);
+          if (!room) return;
+          const roles = roomRoles.get(data.roomId);
+          const userRole = roles?.get(data.deletedBy);
+          if (room.ownerId !== data.deletedBy && userRole !== "co-owner") return;
+        }
         io.to(data.roomId).emit("room:chat-delete", { messageId: data.messageId });
       } catch (err) {
         console.error("Error deleting room message:", err);

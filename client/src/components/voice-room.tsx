@@ -8462,6 +8462,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 const hasReactions = Object.keys(reactions).some((e) => reactions[e].length > 0);
                 const QUICK_EMOJIS = ["👍", "❤️", "😢", "😠", "💔", "😂", "😮", "👏"];
                 const isOwn = msg.userId === user?.id;
+                const myRoleInRoom = participantRoles[user?.id || ""] || "";
+                const canDeleteMsg = isOwn || isHost || myRoleInRoom === "co-owner";
 
                 /* Per-user ring colour palette — 8 distinct hues */
                 const ringPalette = [
@@ -8631,14 +8633,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 </TooltipContent>
                               </Tooltip>
                             )}
-                            {/* 🗑 Delete — own */}
-                            {isOwn && (
+                            {/* 🗑 Delete — own message, or owner/co-owner deleting any message */}
+                            {canDeleteMsg && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id });
+                                      socket?.emit("room:chat-delete", { roomId: room.id, messageId: msg.id, deletedBy: user!.id, messageUserId: msg.userId });
                                       setChatMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
                                     }}
                                     className="chat-quick-btn chat-quick-btn--delete"
@@ -8647,7 +8649,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                     <Trash2 className="w-3 h-3" />
                                   </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">Delete</TooltipContent>
+                                <TooltipContent side="top" sideOffset={6} className="text-[10px] px-1.5 py-0.5">
+                                  {isOwn ? "Delete" : "Delete (mod)"}
+                                </TooltipContent>
                               </Tooltip>
                             )}
                           </div>
