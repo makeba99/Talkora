@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Award, Bell, Check, Crown, Shield, ShieldAlert, ShieldCheck, Ban, ShieldOff } from "lucide-react";
+import { AlertTriangle, Award, Bell, Check, Crown, Shield, ShieldAlert, ShieldCheck, Ban, ShieldOff, Palette } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -77,6 +77,23 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
       }
       if (event?.type === "badge_awarded") {
         queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      }
+      if (event?.type === "theme_order_approved") {
+        queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+        toast({
+          title: "Theme request approved!",
+          description: event.grantedThemeId
+            ? `"${event.themeName}" was approved${event.adminNote ? ` — ${event.adminNote}` : ""}. The theme has been added to your picker.`
+            : `"${event.themeName}" was approved${event.adminNote ? ` — ${event.adminNote}` : ""}.`,
+        });
+      }
+      if (event?.type === "theme_order_denied") {
+        queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+        toast({
+          title: "Theme request not approved",
+          description: `"${event.themeName}"${event.adminNote ? ` — ${event.adminNote}` : " was not approved at this time."}`,
+          variant: "destructive",
+        });
       }
       if (event?.type === "join_request") {
         toast({
@@ -148,6 +165,14 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
       const title = notif.type.split(":").slice(1).join(":");
       return `📢 ${title}`;
     }
+    if (notif.type.startsWith("theme_order_approved:")) {
+      const name = notif.type.split(":").slice(1).join(":");
+      return `🎨 Your theme request "${name}" was approved! Check the theme picker to use it.`;
+    }
+    if (notif.type.startsWith("theme_order_denied:")) {
+      const name = notif.type.split(":").slice(1).join(":");
+      return `Your theme request "${name}" was not approved at this time.`;
+    }
     return notif.type;
   };
 
@@ -160,6 +185,8 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
     if (notif.type.startsWith("badge_awarded:")) return <Award className="w-4 h-4 text-amber-400" />;
     if (notif.type.startsWith("security_")) return <ShieldAlert className="w-4 h-4 text-red-400" />;
     if (notif.type.startsWith("join_request:")) return null;
+    if (notif.type.startsWith("theme_order_approved:")) return <Palette className="w-4 h-4 text-green-400" />;
+    if (notif.type.startsWith("theme_order_denied:")) return <Palette className="w-4 h-4 text-red-400" />;
     return null;
   };
 

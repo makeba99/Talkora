@@ -4924,6 +4924,20 @@ export async function registerRoutes(
       if (status === "approved" && grantThemeId && ALL_THEME_IDS.includes(grantThemeId)) {
         await storage.addUserThemeAssignment(order.userId, grantThemeId);
       }
+      // Notify the requesting user
+      const notifType = status === "approved"
+        ? `theme_order_approved:${order.themeName}`
+        : `theme_order_denied:${order.themeName}`;
+      await storage.createNotification({ userId: order.userId, fromUserId: reviewedBy, type: notifType });
+      const userSocketId = userSockets.get(order.userId);
+      if (userSocketId) {
+        io.to(userSocketId).emit("admin:notification", {
+          type: status === "approved" ? "theme_order_approved" : "theme_order_denied",
+          themeName: order.themeName,
+          grantedThemeId: status === "approved" && grantThemeId ? grantThemeId : null,
+          adminNote: adminNote ?? null,
+        });
+      }
       res.json(order);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
