@@ -2072,6 +2072,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const glCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [glVidTime, setGlVidTime] = useState(0);
   const [glVidPlaying, setGlVidPlaying] = useState(true);
+  const [glPreviewDataUrl, setGlPreviewDataUrl] = useState<string | null>(null);
+  const glPreviewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -6212,6 +6214,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const t = setInterval(() => setGlVidTime(s => (s >= 35 ? 0 : s + 1)), 1000);
     return () => clearInterval(t);
   }, [sidePanelTab, goLiveOpen, goLivePlatform, glVidPlaying]);
+
+  // ── Go Live: canvas preview snapshots (every 1.5 s while connecting/live) ──
+  useEffect(() => {
+    if (glStatus === "connecting" || glStatus === "live") {
+      // Capture immediately then on interval
+      const capture = () => {
+        const canvas = glCanvasRef.current;
+        if (!canvas) return;
+        try { setGlPreviewDataUrl(canvas.toDataURL("image/jpeg", 0.55)); } catch { /* tainted canvas */ }
+      };
+      capture();
+      glPreviewIntervalRef.current = setInterval(capture, 1500);
+    } else {
+      if (glPreviewIntervalRef.current) {
+        clearInterval(glPreviewIntervalRef.current);
+        glPreviewIntervalRef.current = null;
+      }
+      // Keep last frame visible for a moment after stream ends then clear
+      if (glStatus === "idle") setGlPreviewDataUrl(null);
+    }
+    return () => {
+      if (glPreviewIntervalRef.current) {
+        clearInterval(glPreviewIntervalRef.current);
+        glPreviewIntervalRef.current = null;
+      }
+    };
+  }, [glStatus]);
 
   // ── Go Live: direct browser-to-RTMP streaming ──────────────────────────
   const formatGlDuration = (secs: number) => {
@@ -10558,9 +10587,36 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
 
           {glStatus === "connecting" && (
-            <div className="flex flex-col items-center gap-3 py-8">
+            <div className="flex flex-col items-center gap-3 py-4">
               <Loader2 className="w-8 h-8 animate-spin text-red-400" />
-              <p className="text-sm text-muted-foreground">Connecting…</p>
+              <p className="text-sm text-muted-foreground">Connecting to RTMP server…</p>
+            </div>
+          )}
+
+          {/* ── Live canvas preview ── */}
+          {glPreviewDataUrl && (glStatus === "live" || glStatus === "connecting") && (
+            <div className="rounded-xl overflow-hidden border border-white/[0.10] bg-black relative" style={{ aspectRatio: "16/9" }}>
+              <img
+                src={glPreviewDataUrl}
+                alt="Stream preview"
+                className="w-full h-full object-cover"
+                style={{ display: "block" }}
+              />
+              {glStatus === "live" && (
+                <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-red-600/90 rounded-md px-2 py-0.5 backdrop-blur-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  <span className="text-[9px] font-bold text-white tracking-wide">LIVE</span>
+                </div>
+              )}
+              {glStatus === "connecting" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                  <div className="flex items-center gap-2 bg-black/60 rounded-lg px-3 py-1.5">
+                    <Loader2 className="w-3 h-3 animate-spin text-white/70" />
+                    <span className="text-[10px] text-white/70">Connecting…</span>
+                  </div>
+                </div>
+              )}
+              <div className="absolute bottom-1.5 right-2 text-[8px] text-white/30 font-mono">preview</div>
             </div>
           )}
 
@@ -11206,9 +11262,36 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
 
           {glStatus === "connecting" && (
-            <div className="flex flex-col items-center gap-3 py-6">
+            <div className="flex flex-col items-center gap-3 py-4">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Connecting…</p>
+              <p className="text-sm text-muted-foreground">Connecting to RTMP server…</p>
+            </div>
+          )}
+
+          {/* ── Live canvas preview ── */}
+          {glPreviewDataUrl && (glStatus === "live" || glStatus === "connecting") && (
+            <div className="rounded-xl overflow-hidden border bg-black relative" style={{ aspectRatio: "16/9" }}>
+              <img
+                src={glPreviewDataUrl}
+                alt="Stream preview"
+                className="w-full h-full object-cover"
+                style={{ display: "block" }}
+              />
+              {glStatus === "live" && (
+                <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-red-600/90 rounded-md px-2 py-1 backdrop-blur-sm">
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  <span className="text-[10px] font-bold text-white tracking-wide">LIVE</span>
+                </div>
+              )}
+              {glStatus === "connecting" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                  <div className="flex items-center gap-2 bg-black/60 rounded-lg px-3 py-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white/80" />
+                    <span className="text-xs text-white/80">Connecting…</span>
+                  </div>
+                </div>
+              )}
+              <div className="absolute bottom-2 right-2.5 text-[9px] text-white/30 font-mono">stream preview</div>
             </div>
           )}
 
