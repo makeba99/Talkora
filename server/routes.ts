@@ -4883,6 +4883,11 @@ export async function registerRoutes(
       if (!description || typeof description !== "string" || description.trim().length < 10) {
         return res.status(400).json({ message: "Description must be at least 10 characters" });
       }
+      // Content moderation on the request fields
+      const orderModResult = checkFields({ themeName, description });
+      if (orderModResult.flagged) {
+        return res.status(422).json({ flagged: true, message: orderModResult.message });
+      }
       // Rate-limit: max 1 pending + max 3 per 24 hours
       const { pendingCount, last24hCount } = await storage.getUserThemeOrderStats(userId);
       if (pendingCount >= 1) {
