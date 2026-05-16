@@ -1522,6 +1522,31 @@ const ROOM_THEME_KEYFRAMES = `
     0%,100% { opacity: 0.85; filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 14px currentColor); }
     50%     { opacity: 1;    filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 28px currentColor) drop-shadow(0 0 44px currentColor); }
   }
+
+  @keyframes rt-romance-petal-fall {
+    0%   { transform: translateY(-8%) rotate(0deg) translateX(0); opacity: 0; }
+    8%   { opacity: 0.72; }
+    48%  { transform: translateY(52%) rotate(calc(var(--cr) * 0.48)) translateX(calc(var(--cx) * 0.52)); opacity: 0.60; }
+    90%  { opacity: 0.40; }
+    100% { transform: translateY(115%) rotate(var(--cr)) translateX(var(--cx)); opacity: 0; }
+  }
+  @keyframes rt-romance-glow-breathe {
+    0%, 100% { opacity: 0.50; transform: scale(1.00); }
+    50%       { opacity: 0.88; transform: scale(1.12); }
+  }
+  @keyframes rt-romance-candle {
+    0%,100% { opacity: 0.52; transform: scaleX(1.00) scaleY(1.00); }
+    18%     { opacity: 0.70; transform: scaleX(0.96) scaleY(1.05); }
+    38%     { opacity: 0.58; transform: scaleX(1.03) scaleY(0.96); }
+    60%     { opacity: 0.74; transform: scaleX(0.97) scaleY(1.04); }
+    80%     { opacity: 0.55; transform: scaleX(1.02) scaleY(0.97); }
+  }
+  @keyframes rt-romance-dust {
+    0%   { transform: translateY(0) translateX(0) scale(1);    opacity: 0; }
+    12%  { opacity: 0.80; }
+    80%  { opacity: 0.55; }
+    100% { transform: translateY(-70px) translateX(var(--dx,12px)) scale(0.4); opacity: 0; }
+  }
 `;
 
 export function getChatPanelStyle(themeId: string | null | undefined): React.CSSProperties {
@@ -1558,6 +1583,8 @@ export function getChatPanelStyle(themeId: string | null | undefined): React.CSS
       return { background: "rgba(10,6,0,0.82)", backdropFilter: "blur(16px) saturate(1.3)", WebkitBackdropFilter: "blur(16px) saturate(1.3)", borderColor: "rgba(245,158,11,0.28)" };
     case "skeleton-gangsta":
       return { background: "rgba(4,4,4,0.84)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderColor: "rgba(200,192,176,0.18)" };
+    case "romance":
+      return { background: "rgba(14,4,8,0.80)", backdropFilter: "blur(18px) saturate(1.3)", WebkitBackdropFilter: "blur(18px) saturate(1.3)", borderColor: "rgba(180,60,80,0.26)" };
     default:
       // Default chat panel — matches the room's base dark violet-slate so the
       // panel reads as ONE unified surface with the room background.
@@ -1604,6 +1631,8 @@ export function getRoomThemeStyle(themeId: string | null | undefined): React.CSS
       return { background: "radial-gradient(ellipse at 50% 100%, #1a0e00 0%, #0d0700 50%, #070400 100%)" };
     case "skeleton-gangsta":
       return { background: "#050505" };
+    case "romance":
+      return { background: "radial-gradient(ellipse at 50% 0%, #1e0810 0%, #130508 45%, #0a0205 100%)" };
     default:
       // Default room background — a single, unified sculpted neumorphic panel.
       // Deep violet-slate base with a directional top-left light source and a
@@ -2589,6 +2618,124 @@ export function RoomThemeOverlay({ themeId, discoSceneIdx, onDiscoAdvance }: { t
           <div style={{ position:"absolute", inset:0,
             boxShadow:"inset 0 0 120px 40px rgba(0,0,0,0.65)",
             background:"radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.28) 100%)" }} />
+        </div>
+      );
+    }
+
+    case "romance": {
+      const petals = Array.from({length: 18}, (_, i) => ({
+        left:    4 + (i * 5.4) % 92,
+        fontSize: 14 + (i % 5) * 6,
+        dur:     9 + (i % 7) * 1.6,
+        del:     (i * 0.85) % 14,
+        cx:      -60 + (i % 6) * 24,
+        cr:      130 + (i % 5) * 42,
+        emoji:   i % 3 === 0 ? "🌹" : i % 3 === 1 ? "🥀" : "❤️",
+      }));
+      const goldDust = Array.from({length: 32}, (_, i) => ({
+        left: 2 + (i * 3.1) % 96,
+        top:  10 + (i * 2.9) % 78,
+        size: 1.5 + (i % 3) * 0.8,
+        dur:  4 + (i % 6) * 0.9,
+        del:  (i * 0.42) % 7,
+        dx:   -14 + (i % 5) * 7,
+        col:  i % 4 === 0 ? "212,175,55" : i % 4 === 1 ? "201,152,72" : i % 4 === 2 ? "232,201,122" : "180,110,70",
+      }));
+      return (
+        <div style={base}>
+          <style>{ROOM_THEME_KEYFRAMES}</style>
+
+          {/* Deep burgundy bloom — slow heartbeat from top-center */}
+          <div style={{
+            position:"absolute", top:"-18%", left:"15%", right:"15%", height:"55%",
+            borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(140,20,50,0.24) 0%, rgba(100,10,30,0.14) 45%, transparent 75%)",
+            filter:"blur(38px)",
+            animation:"rt-romance-glow-breathe 8s ease-in-out infinite",
+          }} />
+
+          {/* Warm gold ambient from lower-left — candlelight pool */}
+          <div style={{
+            position:"absolute", bottom:"-10%", left:"-8%", width:"52%", height:"42%",
+            borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(180,110,30,0.18) 0%, rgba(140,70,15,0.10) 55%, transparent 80%)",
+            filter:"blur(44px)",
+            animation:"rt-romance-candle 6s ease-in-out infinite",
+          }} />
+
+          {/* Muted rose shimmer — upper-right depth */}
+          <div style={{
+            position:"absolute", top:"8%", right:"-12%", width:"48%", height:"48%",
+            borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(160,50,80,0.13) 0%, rgba(120,30,55,0.07) 60%, transparent 85%)",
+            filter:"blur(50px)",
+            animation:"rt-romance-glow-breathe 11s ease-in-out infinite 3.5s",
+          }} />
+
+          {/* Secondary deep burgundy pulse — center warmth */}
+          <div style={{
+            position:"absolute", top:"30%", left:"25%", right:"25%", height:"35%",
+            borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(120,15,40,0.12) 0%, transparent 70%)",
+            filter:"blur(30px)",
+            animation:"rt-romance-glow-breathe 13s ease-in-out infinite 6s",
+          }} />
+
+          {/* Candleflicker warm pool at the bottom edge */}
+          <div style={{
+            position:"absolute", bottom:0, left:"20%", right:"20%", height:"22%",
+            background:"radial-gradient(ellipse at 50% 100%, rgba(200,100,30,0.16) 0%, rgba(160,60,20,0.08) 55%, transparent 80%)",
+            animation:"rt-romance-candle 4.5s ease-in-out infinite 1s",
+          }} />
+
+          {/* Slow-drifting rose petals, wilted roses, and hearts */}
+          {petals.map((p, i) => (
+            <div key={i} style={{
+              position:"absolute", fontSize:p.fontSize,
+              top:"-4%", left:`${p.left}%`,
+              ["--cx" as any]:`${p.cx}px`,
+              ["--cr" as any]:`${p.cr}deg`,
+              animation:`rt-romance-petal-fall ${p.dur}s cubic-bezier(.3,.1,.7,.9) infinite ${p.del}s`,
+              userSelect:"none", opacity:0,
+              filter:"drop-shadow(0 2px 6px rgba(140,20,50,0.45))",
+            }}>
+              {p.emoji}
+            </div>
+          ))}
+
+          {/* Gold dust particles — shimmer rising from the warmth */}
+          {goldDust.map((d, i) => (
+            <div key={`gd-${i}`} style={{
+              position:"absolute", borderRadius:"50%",
+              width:d.size, height:d.size,
+              left:`${d.left}%`, top:`${d.top}%`,
+              background:`radial-gradient(circle, rgba(${d.col},0.95) 0%, rgba(${d.col},0.30) 70%, transparent 100%)`,
+              boxShadow: i % 4 === 0 ? `0 0 ${d.size * 3}px rgba(${d.col},0.55)` : undefined,
+              ["--dx" as any]:`${d.dx}px`,
+              animation:`rt-romance-dust ${d.dur}s ease-out infinite ${d.del}s`,
+            }} />
+          ))}
+
+          {/* Thin golden thread lines — elegant filigree suggestion */}
+          {[0,1,2].map(li => (
+            <div key={`line-${li}`} style={{
+              position:"absolute",
+              height:"1px", width:`${18+li*12}%`,
+              left:`${8+li*26}%`, top:`${22+li*22}%`,
+              background:`linear-gradient(90deg, transparent, rgba(201,152,72,${0.18+li*0.06}), rgba(180,110,50,0.12), transparent)`,
+              transform:`rotate(${-12+li*10}deg)`,
+              animation:`rt-romance-glow-breathe ${7+li*2}s ease-in-out infinite ${li*1.8}s`,
+            }} />
+          ))}
+
+          {/* Warm vignette — frames the room, draws the eye inward */}
+          <div style={{
+            position:"absolute", inset:0,
+            boxShadow:
+              "inset 0 0 80px 30px rgba(0,0,0,0.50), " +
+              "inset 0 -60px 90px -20px rgba(100,20,10,0.18)",
+            pointerEvents:"none",
+          }} />
         </div>
       );
     }
