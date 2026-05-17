@@ -736,6 +736,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
   const isPremiumAtmosphere = theme === "premium-atmosphere" || (room as any).roomTheme === "premium-atmosphere";
+  const isDiscoDJ = (room as any).roomTheme === "disco";
   const activeThemeId = isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme;
   const glow = getThemeGlowColor(activeThemeId);
   // Unlimited rooms (maxUsers===0) only show filled participants, no ghost tiles.
