@@ -8,7 +8,7 @@ import { createServer } from "http";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { startCleanupScheduler } from "./cleanup";
 import { applySecurityMiddleware } from "./security";
-import { runMigrations } from "./db";
+import { runMigrations, pool } from "./db";
 import { detectCountry } from "./geo";
 
 const app = express();
@@ -165,6 +165,41 @@ app.get("/api/health", (_req: Request, res: Response) => {
     await runMigrations();
   } catch (err) {
     console.error("[startup] DB migrations failed — continuing without migrations:", (err as Error)?.message || err);
+  }
+
+  // ── VAPID key auto-provisioning ─────────────────────────────────────────────
+  // If VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY are not set as environment variables
+  // (common in Railway/Replit first-deploy), generate a persistent keypair and
+  // store it in app_settings so the same keys survive across restarts/redeploys.
+  try {
+    const hasPub = !!process.env.VAPID_PUBLIC_KEY;
+    const hasPri = !!process.env.VAPID_PRIVATE_KEY;
+    if (!hasPub || !hasPri) {
+      const { rows: pubRows } = await pool.query<{ value: string }>(
+        `SELECT value FROM app_settings WHERE key = 'vapid_public_key'`
+      );
+      const { rows: priRows } = await pool.query<{ value: string }>(
+        `SELECT value FROM app_settings WHERE key = 'vapid_private_key'`
+      );
+      if (pubRows.length && priRows.length) {
+        process.env.VAPID_PUBLIC_KEY = pubRows[0].value;
+        process.env.VAPID_PRIVATE_KEY = priRows[0].value;
+        log("[vapid] Loaded VAPID keys from app_settings");
+      } else {
+        const webpush = (await import("web-push")).default;
+        const keys = webpush.generateVAPIDKeys();
+        await pool.query(
+          `INSERT INTO app_settings (key, value) VALUES ('vapid_public_key', $1), ('vapid_private_key', $2)
+           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+          [keys.publicKey, keys.privateKey]
+        );
+        process.env.VAPID_PUBLIC_KEY = keys.publicKey;
+        process.env.VAPID_PRIVATE_KEY = keys.privateKey;
+        log(`[vapid] Generated and stored new VAPID keys (public: ${keys.publicKey.slice(0, 20)}…)`);
+      }
+    }
+  } catch (err) {
+    console.error("[startup] VAPID key provisioning failed:", (err as Error)?.message || err);
   }
 
   try {

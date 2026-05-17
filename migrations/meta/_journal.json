@@ -57,6 +57,13 @@
       "when": 1779061200000,
       "tag": "0007_missing_user_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779062000000,
+      "tag": "0008_theme_tables",
+      "breakpoints": true
     }
   ]
 }
