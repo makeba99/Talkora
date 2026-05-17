@@ -1403,6 +1403,11 @@ const DJ_SCENE_COLORS: Record<string, string> = {
   kiss:      "255,60,120",
   cocktails: "0,255,180",
   boomer:    "255,140,0",
+  laser:     "0,255,100",
+  fireworks: "255,120,0",
+  aurora:    "0,255,200",
+  vortex:    "180,0,255",
+  matrix:    "0,255,70",
 };
 function getDjBeatColor(scene: string): string {
   return DJ_SCENE_COLORS[scene] || "200,100,255";
@@ -1515,25 +1520,52 @@ function DjSceneOverlay({ scene, participants, active }: {
     );
   }
   if (scene === "disco") {
+    const ballFlash = tick % 8 < 4;
     return (
       <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden" }}>
-        {[0,45,90,135,180,225,270,315].map((deg, i) => (
-          <div key={i} style={{
-            position:"absolute", top:"50%", left:"50%",
-            width:3, height:"65vh",
-            background:`linear-gradient(to bottom,transparent 0%,hsl(${(i*45+tick*4)%360},100%,60%) 60%,transparent 100%)`,
-            transformOrigin:"0% 0%",
-            transform:`rotate(${deg + tick * 1.5}deg)`,
-            opacity:0.30,
-          }} />
-        ))}
+        {/* Disco ball beams — 16 beams rotating */}
+        {Array.from({length:16}).map((_, i) => {
+          const deg = i * 22.5;
+          const hue = (i * 22 + tick * 5) % 360;
+          return (
+            <div key={i} style={{
+              position:"absolute", top:"50%", left:"50%",
+              width:2, height:"80vh",
+              background:`linear-gradient(to bottom,transparent 0%,hsl(${hue},100%,65%) 55%,transparent 100%)`,
+              transformOrigin:"0% 0%",
+              transform:`rotate(${deg + tick * 2}deg)`,
+              opacity:0.28 + (i % 3) * 0.08,
+            }} />
+          );
+        })}
+        {/* Secondary counter-rotating beams */}
+        {Array.from({length:8}).map((_, i) => {
+          const hue = (i * 45 + tick * 3 + 180) % 360;
+          return (
+            <div key={`r${i}`} style={{
+              position:"absolute", top:"50%", left:"50%",
+              width:1.5, height:"60vh",
+              background:`linear-gradient(to bottom,transparent 0%,hsl(${hue},100%,75%) 60%,transparent 100%)`,
+              transformOrigin:"0% 0%",
+              transform:`rotate(${i * 45 - tick * 1.5}deg)`,
+              opacity:0.22,
+            }} />
+          );
+        })}
+        {/* Disco ball center */}
         <div style={{
           position:"absolute", top:"50%", left:"50%",
           transform:"translate(-50%,-50%)",
-          width:55, height:55, borderRadius:"50%",
-          background:"radial-gradient(circle,rgba(255,255,255,0.9) 0%,rgba(255,255,255,0) 70%)",
-          boxShadow:"0 0 40px 20px rgba(255,255,255,0.25)",
-          opacity:tick % 6 < 3 ? 0.85 : 0.35,
+          width:60, height:60, borderRadius:"50%",
+          background:"radial-gradient(circle,rgba(255,255,255,0.95) 10%,rgba(255,255,255,0) 70%)",
+          boxShadow:`0 0 ${ballFlash ? 60 : 30}px ${ballFlash ? 30 : 10}px rgba(255,255,255,0.35)`,
+          transition:"box-shadow 0.15s",
+        }} />
+        {/* Floor glow sweep */}
+        <div style={{
+          position:"absolute", bottom:0, left:0, right:0, height:"35%",
+          background:`linear-gradient(to top,rgba(${(tick*3)%255},0,${(200-tick*2)%255},0.12) 0%,transparent 100%)`,
+          mixBlendMode:"screen",
         }} />
       </div>
     );
@@ -1604,6 +1636,275 @@ function DjSceneOverlay({ scene, participants, active }: {
       </div>
     );
   }
+
+  // ── LASER — diagonal scanning laser beams + grid ────────────────────────────
+  if (scene === "laser") {
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden" }}>
+        {/* Horizontal scanning beams */}
+        {Array.from({length:6}).map((_, i) => {
+          const y = ((tick * 1.8 + i * 28) % 115) - 5;
+          const hue = (i * 60 + tick * 4) % 360;
+          return (
+            <div key={`h${i}`} style={{
+              position:"absolute", left:0, right:0,
+              top:`${y}%`, height:2,
+              background:`linear-gradient(to right, transparent 0%, hsl(${hue},100%,65%) 30%, hsl(${hue},100%,90%) 50%, hsl(${hue},100%,65%) 70%, transparent 100%)`,
+              boxShadow:`0 0 8px 2px hsl(${hue},100%,60%)`,
+              opacity:0.85,
+            }} />
+          );
+        })}
+        {/* Diagonal beams */}
+        {Array.from({length:4}).map((_, i) => {
+          const offX = ((tick * 1.2 + i * 30) % 130) - 15;
+          const hue = (i * 90 + tick * 6 + 120) % 360;
+          return (
+            <div key={`d${i}`} style={{
+              position:"absolute", top:"-20%", bottom:"-20%",
+              left:`${offX}%`, width:1.5,
+              background:`linear-gradient(to bottom, transparent 0%, hsl(${hue},100%,70%) 40%, hsl(${hue},100%,90%) 50%, hsl(${hue},100%,70%) 60%, transparent 100%)`,
+              boxShadow:`0 0 6px 2px hsl(${hue},100%,55%)`,
+              transform:"rotate(15deg)",
+              opacity:0.65,
+            }} />
+          );
+        })}
+        {/* Grid nodes — laser intersection points */}
+        {Array.from({length:16}).map((_, i) => {
+          const gx = 10 + (i % 4) * 25;
+          const gy = 10 + Math.floor(i / 4) * 30;
+          const pulse = Math.abs(Math.sin(tick * 0.12 + i * 0.9));
+          return (
+            <div key={`g${i}`} style={{
+              position:"absolute", left:`${gx}%`, top:`${gy}%`,
+              width:5, height:5, borderRadius:"50%",
+              background:`hsl(${(i * 22 + tick * 5) % 360},100%,70%)`,
+              boxShadow:`0 0 ${8 + pulse * 12}px ${4 + pulse * 6}px hsl(${(i * 22 + tick * 5) % 360},100%,60%)`,
+              transform:"translate(-50%,-50%)",
+              opacity:0.5 + pulse * 0.5,
+            }} />
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ── FIREWORKS — bursting particle explosions ────────────────────────────────
+  if (scene === "fireworks") {
+    const BURST_COUNT = 5;
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden" }}>
+        {Array.from({length:BURST_COUNT}).map((_, b) => {
+          const burstTick = (tick + b * 31) % 60;
+          const progress = burstTick / 60;
+          const cx = 15 + (b * 17 + Math.floor(tick / 60) * 13) % 70;
+          const cy = 15 + (b * 23 + Math.floor(tick / 60) * 11) % 55;
+          const hue = (b * 72 + Math.floor(tick / 60) * 137) % 360;
+          const burst = progress > 0.15;
+          const alpha = burst ? Math.max(0, 1 - (progress - 0.15) / 0.85) : progress / 0.15;
+          if (!burst) {
+            // Rising trail
+            return (
+              <div key={b} style={{
+                position:"absolute", left:`${cx}%`, bottom:`${(1 - progress / 0.15) * 45}%`,
+                width:4, height:4, borderRadius:"50%",
+                background:`hsl(${hue},100%,90%)`,
+                boxShadow:`0 0 6px 3px hsl(${hue},100%,70%)`,
+                opacity:alpha,
+              }} />
+            );
+          }
+          // Burst particles
+          const r = (progress - 0.15) / 0.85 * 22;
+          return (
+            <div key={b} style={{ position:"absolute", left:`${cx}%`, top:`${cy}%` }}>
+              {Array.from({length:18}).map((_, p) => {
+                const angle = (p / 18) * Math.PI * 2;
+                const px = Math.cos(angle) * r;
+                const py = Math.sin(angle) * r + (progress - 0.15) * 8;
+                const pHue = (hue + p * 20) % 360;
+                return (
+                  <div key={p} style={{
+                    position:"absolute",
+                    left:`${px}vw`, top:`${py}vh`,
+                    width:5, height:5, borderRadius:"50%",
+                    background:`hsl(${pHue},100%,75%)`,
+                    boxShadow:`0 0 5px 2px hsl(${pHue},100%,65%)`,
+                    transform:"translate(-50%,-50%)",
+                    opacity:alpha * (0.6 + (p % 3) * 0.13),
+                  }} />
+                );
+              })}
+              {/* Star sparkles */}
+              {Array.from({length:8}).map((_, s) => {
+                const sa = (s / 8) * Math.PI * 2 + 0.4;
+                const sr = (progress - 0.15) / 0.85 * 30;
+                return (
+                  <div key={`s${s}`} style={{
+                    position:"absolute",
+                    left:`${Math.cos(sa) * sr}vw`, top:`${Math.sin(sa) * sr}vh`,
+                    fontSize:"10px", transform:"translate(-50%,-50%)",
+                    opacity:alpha * 0.9,
+                  }}>✦</div>
+                );
+              })}
+            </div>
+          );
+        })}
+        {/* Trailing sparkle rain */}
+        {Array.from({length:20}).map((_, i) => (
+          <div key={`sp${i}`} style={{
+            position:"absolute",
+            left:`${(i * 5.3 + tick * 0.4) % 100}%`,
+            top:`${(tick * 0.7 + i * 19) % 105 - 5}%`,
+            width:3, height:3, borderRadius:"50%",
+            background:`hsl(${(i * 18 + tick * 3) % 360},100%,80%)`,
+            opacity:0.4 + Math.abs(Math.sin(tick * 0.1 + i)) * 0.5,
+          }} />
+        ))}
+      </div>
+    );
+  }
+
+  // ── AURORA — northern lights flowing curtains ───────────────────────────────
+  if (scene === "aurora") {
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden" }}>
+        {/* Aurora curtains — 8 flowing gradient bands */}
+        {Array.from({length:8}).map((_, i) => {
+          const baseHue = i % 2 === 0 ? 160 : 280;
+          const hue = (baseHue + i * 18 + tick * 0.5) % 360;
+          const hue2 = (hue + 40) % 360;
+          const xOffset = Math.sin(tick * 0.03 + i * 0.8) * 12;
+          const yShift = Math.cos(tick * 0.025 + i * 0.6) * 8;
+          const skew = Math.sin(tick * 0.02 + i * 1.1) * 10;
+          return (
+            <div key={i} style={{
+              position:"absolute",
+              left:`${i * 13 + xOffset - 2}%`, top:`${-10 + yShift}%`,
+              width:"16%", height:"70%",
+              background:`linear-gradient(to bottom, transparent 0%, hsla(${hue},90%,65%,0.55) 25%, hsla(${hue2},85%,70%,0.40) 55%, hsla(${hue},80%,60%,0.20) 80%, transparent 100%)`,
+              transform:`skewX(${skew}deg)`,
+              filter:"blur(18px)",
+              mixBlendMode:"screen",
+            }} />
+          );
+        })}
+        {/* Stars twinkle */}
+        {Array.from({length:30}).map((_, i) => {
+          const twinkle = 0.3 + Math.abs(Math.sin(tick * 0.08 + i * 1.3)) * 0.7;
+          return (
+            <div key={`st${i}`} style={{
+              position:"absolute",
+              left:`${(i * 3.37 + 1) % 99}%`,
+              top:`${(i * 7.11) % 45}%`,
+              width:Math.random() > 0.7 ? 3 : 2, height:Math.random() > 0.7 ? 3 : 2,
+              borderRadius:"50%", background:"white",
+              opacity:twinkle * 0.8,
+            }} />
+          );
+        })}
+        {/* Horizon glow */}
+        <div style={{
+          position:"absolute", bottom:0, left:0, right:0, height:"30%",
+          background:"linear-gradient(to top, rgba(0,255,160,0.08) 0%, transparent 100%)",
+          mixBlendMode:"screen",
+        }} />
+      </div>
+    );
+  }
+
+  // ── VORTEX — spinning color spiral ─────────────────────────────────────────
+  if (scene === "vortex") {
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {/* Concentric rotating rings */}
+        {Array.from({length:12}).map((_, i) => {
+          const radius = 40 + i * 30;
+          const hue = (i * 30 + tick * 4) % 360;
+          const rot = tick * (i % 2 === 0 ? 2.5 : -2) + i * 15;
+          const segments = 8 + i * 2;
+          return (
+            <div key={i} style={{
+              position:"absolute",
+              width:radius, height:radius, borderRadius:"50%",
+              border:`${3 - Math.min(i * 0.15, 1.5)}px solid hsla(${hue},100%,65%,${0.55 - i * 0.03})`,
+              boxShadow:`0 0 ${10 + i * 2}px hsla(${hue},100%,65%,0.35), inset 0 0 ${6 + i}px hsla(${hue},100%,65%,0.15)`,
+              transform:`translate(-50%,-50%) rotate(${rot}deg) scaleX(${1 + Math.sin(tick * 0.07 + i) * 0.15})`,
+              left:"50%", top:"50%",
+            }} />
+          );
+        })}
+        {/* Center energy core */}
+        <div style={{
+          position:"absolute", left:"50%", top:"50%",
+          width:30, height:30, borderRadius:"50%",
+          background:`radial-gradient(circle, hsl(${(tick * 8) % 360},100%,90%) 0%, hsl(${(tick * 8 + 60) % 360},100%,55%) 60%, transparent 100%)`,
+          boxShadow:`0 0 30px 15px hsla(${(tick * 8) % 360},100%,65%,0.7)`,
+          transform:"translate(-50%,-50%)",
+          animation:"dj-vortex-core 0.8s ease-in-out infinite alternate",
+        }} />
+        {/* Orbital particles */}
+        {Array.from({length:24}).map((_, i) => {
+          const angle = (i / 24) * Math.PI * 2 + tick * 0.05;
+          const r = 80 + Math.sin(tick * 0.06 + i * 0.5) * 40;
+          const px = Math.cos(angle) * r;
+          const py = Math.sin(angle) * r * 0.55;
+          const pHue = (i * 15 + tick * 6) % 360;
+          return (
+            <div key={`p${i}`} style={{
+              position:"absolute", left:"50%", top:"50%",
+              width:5, height:5, borderRadius:"50%",
+              background:`hsl(${pHue},100%,70%)`,
+              boxShadow:`0 0 6px 3px hsl(${pHue},100%,60%)`,
+              transform:`translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`,
+              opacity:0.7 + Math.sin(tick * 0.08 + i) * 0.3,
+            }} />
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ── MATRIX — falling digital rain ──────────────────────────────────────────
+  if (scene === "matrix") {
+    const CHARS = "アイウエオカキクケコサシスセソタチツテト0123456789ABCDEF█▓▒░";
+    const COLS = 22;
+    return (
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:9997, overflow:"hidden", fontFamily:"monospace" }}>
+        {Array.from({length:COLS}).map((_, col) => {
+          const colSeed = col * 137;
+          const speed = 0.8 + (colSeed % 7) * 0.3;
+          const length = 6 + (colSeed % 10);
+          return Array.from({length}).map((__, row) => {
+            const charIdx = (Math.floor(tick * speed) + row + colSeed) % CHARS.length;
+            const progress = ((tick * speed + row * 3) % (110 + colSeed % 30)) / 100;
+            const isHead = row === 0;
+            const brightness = isHead ? "95%" : `${Math.max(25, 75 - row * 8)}%`;
+            return (
+              <div key={`${col}-${row}`} style={{
+                position:"absolute",
+                left:`${(col / COLS) * 100 + 2}%`,
+                top:`${(progress * 110) - 10 + row * 4.5}%`,
+                color: isHead ? `hsl(120,100%,95%)` : `hsl(120,100%,${brightness})`,
+                fontSize:14, lineHeight:1,
+                textShadow: isHead ? "0 0 10px #00ff44, 0 0 20px #00ff44" : "0 0 4px #00cc33",
+                opacity: isHead ? 1 : Math.max(0.08, 1 - row * 0.1),
+              }}>{CHARS[charIdx]}</div>
+            );
+          });
+        })}
+        {/* Green ambient glow tint */}
+        <div style={{
+          position:"absolute", inset:0,
+          background:"radial-gradient(ellipse at 50% 50%, rgba(0,255,60,0.04) 0%, transparent 70%)",
+          mixBlendMode:"screen",
+        }} />
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -13673,7 +13974,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                       {/* Current DJ scene + Skip */}
                                       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 4px" }}>
                                         <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "rgba(200,180,255,0.80)", textTransform: "uppercase", whiteSpace: "nowrap", flex: 1 }}>
-                                          {djCurrentScene === "spotlight" ? "🔦" : djCurrentScene === "namestorm" ? "🌪" : djCurrentScene === "disco" ? "🪩" : djCurrentScene === "kiss" ? "💋" : djCurrentScene === "cocktails" ? "🍹" : "💥"} {djCurrentScene}
+                                          {({"spotlight":"🔦","namestorm":"🌪","disco":"🪩","kiss":"💋","cocktails":"🍹","boomer":"💥","laser":"⚡","fireworks":"🎆","aurora":"🌌","vortex":"🌀","matrix":"💻"} as Record<string,string>)[djCurrentScene] ?? "🎧"} {djCurrentScene}
                                         </span>
                                         <button
                                           type="button"

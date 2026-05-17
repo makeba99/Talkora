@@ -13607,6 +13607,34 @@ html.boost-mode .glass-panel {
   80%  { opacity: 0.70; transform: scale(0.95); }
   100% { opacity: 0;    transform: scale(0.60); }
 }
+/* DJ Scene — vortex center core pulse */
+@keyframes dj-vortex-core {
+  0%   { transform: translate(-50%,-50%) scale(0.85); }
+  100% { transform: translate(-50%,-50%) scale(1.20); }
+}
+/* DJ Scene — laser beam sweep */
+@keyframes dj-laser-sweep {
+  0%,100% { opacity: 0.7; }
+  50%     { opacity: 1.0; }
+}
+/* DJ Scene — aurora curtain sway */
+@keyframes dj-aurora-sway {
+  0%,100% { transform: skewX(-8deg) scaleY(1.0); }
+  50%     { transform: skewX(8deg)  scaleY(1.08); }
+}
+/* DJ Scene — firework burst expand */
+@keyframes dj-firework-burst {
+  0%   { transform: scale(0) translate(-50%,-50%); opacity: 1; }
+  100% { transform: scale(1) translate(-50%,-50%); opacity: 0; }
+}
+/* DJ Scene — matrix character fall */
+@keyframes dj-matrix-fall {
+  0%   { transform: translateY(-10%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(110%); opacity: 0; }
+}
+
 @keyframes rt-disco-participant-glow {
   0%,100% { opacity: 0.80; }
   50%     { opacity: 1.00; }

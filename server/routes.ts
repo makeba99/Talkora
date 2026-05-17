@@ -174,7 +174,7 @@ const roomMessageReactions = new Map<string, Map<string, Set<string>>>();
 const roomPinnedMessages = new Map<string, { message: any; pinnedBy: string; pinnedByName: string; pinnedAt: number } | null>();
 // DJ scene system — tracks which scene index each room is on so skip broadcasts are in sync
 const roomDjSceneIdx = new Map<string, number>();
-const DJ_SCENE_LIST = ["spotlight","namestorm","disco","kiss","cocktails","boomer"];
+const DJ_SCENE_LIST = ["spotlight","namestorm","disco","kiss","cocktails","boomer","laser","fireworks","aurora","vortex","matrix"];
 // Disco overlay scene — tracks which of the 7 cinematic scenes is showing so all clients stay in sync
 const roomDiscoOverlaySceneIdx = new Map<string, number>();
 // Join deduplication — prevents doubled "X joined" system messages caused by the race
@@ -5633,12 +5633,17 @@ export async function registerRoutes(
     });
 
     // ── DJ Skip — advances to next scene, broadcast scene name to all participants ──
+    // Also auto-advances the disco background overlay so atmosphere syncs with the scene.
     socket.on("room:dj-skip", (data: { roomId: string }) => {
       if (!data?.roomId) return;
       const cur = roomDjSceneIdx.get(data.roomId) ?? 0;
       const next = (cur + 1) % DJ_SCENE_LIST.length;
       roomDjSceneIdx.set(data.roomId, next);
+      // Auto-advance disco background — keeps background in sync with scene changes
+      const discoNext = ((roomDiscoOverlaySceneIdx.get(data.roomId) ?? 0) + 1) % 7;
+      roomDiscoOverlaySceneIdx.set(data.roomId, discoNext);
       io.to(data.roomId).emit("room:dj-skip", { scene: DJ_SCENE_LIST[next] });
+      io.to(data.roomId).emit("room:disco-advance", { sceneIdx: discoNext });
     });
 
     // ── DJ Move — host changes participant card movement style for all ──
