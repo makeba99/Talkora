@@ -3384,6 +3384,40 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     );
   };
 
+  const [expandedThemeId, setExpandedThemeId] = useState<string | null>(null);
+  const [themeUserSearch, setThemeUserSearch] = useState<Record<string, string>>({});
+
+  const themeUserMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const [userId, themeIds] of Object.entries(data?.userAssignments ?? {})) {
+      for (const themeId of themeIds) {
+        if (!map[themeId]) map[themeId] = [];
+        map[themeId].push(userId);
+      }
+    }
+    return map;
+  }, [data?.userAssignments]);
+
+  const assignUserToThemeMutation = useMutation({
+    mutationFn: async ({ userId, themeId }: { userId: string; themeId: string }) => {
+      const current: string[] = data?.userAssignments?.[userId] ?? [];
+      const updated = current.includes(themeId) ? current : [...current, themeId];
+      return apiRequest("PUT", `/api/admin/themes/user/${userId}`, { themeIds: updated });
+    },
+    onSuccess: () => { refetch(); toast({ title: "User granted theme access" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const removeUserFromThemeMutation = useMutation({
+    mutationFn: async ({ userId, themeId }: { userId: string; themeId: string }) => {
+      const current: string[] = data?.userAssignments?.[userId] ?? [];
+      const updated = current.filter((id) => id !== themeId);
+      return apiRequest("PUT", `/api/admin/themes/user/${userId}`, { themeIds: updated });
+    },
+    onSuccess: () => { refetch(); toast({ title: "User theme access removed" }); },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const pendingCount = themeOrders.filter((o) => o.status === "pending").length;
 
   return (
@@ -3429,186 +3463,204 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         </Card>
       )}
 
-      {/* ── Global Theme Visibility ── */}
+      {/* ── Unified Theme Management ── */}
       <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Eye className="w-4 h-4 text-cyan-400" />
-            Global Room Theme Visibility
-            <span className="ml-1 text-[11px] font-normal text-muted-foreground">(ON = all users can pick this theme when creating / editing a room)</span>
+            Theme Management
+            <span className="ml-1 text-[11px] font-normal text-muted-foreground">(toggle globally or assign to specific users)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-              {themes.map((theme) => {
-                const def = ROOM_THEMES.find((t) => t.id === theme.id);
+            <div className="space-y-2">
+              {themes.filter((t) => t.id !== "none").map((theme) => {
+                const def = ROOM_THEMES.find((t2) => t2.id === theme.id);
+                const assignedUserIds: string[] = themeUserMap[theme.id] ?? [];
+                const assignedUsers = assignedUserIds.map((uid) => usersData.find((u) => u.id === uid)).filter(Boolean) as typeof usersData;
+                const isExpanded = expandedThemeId === theme.id;
+                const search = themeUserSearch[theme.id] ?? "";
+                const filteredForTheme = usersData
+                  .filter((u) => {
+                    if (!search.trim()) return false;
+                    const q = search.toLowerCase();
+                    return (
+                      u.displayName?.toLowerCase().includes(q) ||
+                      u.firstName?.toLowerCase().includes(q) ||
+                      u.email?.toLowerCase().includes(q)
+                    );
+                  })
+                  .filter((u) => !assignedUserIds.includes(u.id))
+                  .slice(0, 6);
                 return (
                   <div
                     key={theme.id}
-                    className={`relative rounded-lg overflow-hidden border transition-all ${theme.visible ? "border-border/40" : "border-red-500/40 opacity-60"}`}
+                    className={`rounded-lg border transition-all ${theme.visible ? "border-border/40 bg-muted/10" : "border-red-500/30 bg-red-500/5"}`}
                     data-testid={`card-theme-${theme.id}`}
                   >
-                    {/* preview image */}
-                    <ThemeSwatchPreview themeId={theme.id} />
-                    {!theme.visible && (
-                      <div className="absolute top-1 left-1 bg-black/70 rounded px-1 py-0.5 flex items-center gap-1">
-                        <EyeOff className="w-2.5 h-2.5 text-red-400" />
-                        <span className="text-[9px] text-red-400">Hidden</span>
+                    {/* Main row */}
+                    <div className="flex items-center gap-3 p-3">
+                      {/* Swatch */}
+                      <div className="w-14 h-10 rounded-md overflow-hidden flex-shrink-0 border border-border/30">
+                        <ThemeSwatchPreview themeId={theme.id} size="sm" />
                       </div>
-                    )}
-                    {/* label + description + toggle */}
-                    <div className="px-2 pt-1.5 pb-2 bg-card/90">
-                      <div className="flex items-start justify-between gap-1 mb-0.5">
-                        <span className="text-[11px] font-semibold text-foreground leading-tight" data-testid={`text-theme-name-${theme.id}`}>
-                          {theme.id === "none" ? "Default" : (def?.label ?? theme.id.replace(/-/g," "))}
-                        </span>
-                        {theme.canHide && isSuperAdmin ? (
-                          <Switch
-                            checked={theme.visible}
-                            onCheckedChange={(v) => toggleVisibility.mutate({ themeId: theme.id, visible: v })}
-                            disabled={toggleVisibility.isPending}
-                            data-testid={`switch-theme-visible-${theme.id}`}
-                            className="scale-[0.65] origin-right shrink-0 mt-0.5"
-                          />
-                        ) : (
-                          <span className="text-[9px] text-muted-foreground/50 shrink-0">{theme.id === "none" ? "always on" : ""}</span>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[12px] font-semibold text-foreground" data-testid={`text-theme-name-${theme.id}`}>
+                            {def?.label ?? theme.id.replace(/-/g, " ")}
+                          </span>
+                          {!theme.visible && (
+                            <span className="flex items-center gap-0.5 text-[9px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1 py-0.5 shrink-0">
+                              <EyeOff className="w-2.5 h-2.5" /> Hidden
+                            </span>
+                          )}
+                        </div>
+                        {def?.description && (
+                          <p className="text-[10px] text-muted-foreground leading-tight truncate">{def.description}</p>
+                        )}
+                        {/* Assigned user chips */}
+                        {assignedUsers.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {assignedUsers.slice(0, 4).map((u) => (
+                              <span key={u.id} className="flex items-center gap-0.5 text-[9px] bg-violet-500/15 border border-violet-500/20 text-violet-300 rounded-full px-1.5 py-0.5">
+                                {getUserDisplayName(u) ?? u.email ?? "User"}
+                                {isSuperAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeUserFromThemeMutation.mutate({ userId: u.id, themeId: theme.id })}
+                                    className="ml-0.5 hover:text-red-400 transition-colors"
+                                    data-testid={`button-remove-user-chip-${u.id}-${theme.id}`}
+                                  >
+                                    <X className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
+                              </span>
+                            ))}
+                            {assignedUsers.length > 4 && (
+                              <span className="text-[9px] text-muted-foreground/60 px-0.5">+{assignedUsers.length - 4} more</span>
+                            )}
+                          </div>
                         )}
                       </div>
-                      {def?.description && (
-                        <p className="text-[10px] text-muted-foreground leading-tight line-clamp-1">{def.description}</p>
-                      )}
+                      {/* Controls */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isSuperAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedThemeId(isExpanded ? null : theme.id)}
+                            className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border transition-colors ${isExpanded ? "bg-violet-500/20 border-violet-500/30 text-violet-300" : "border-border/40 text-muted-foreground hover:text-foreground hover:border-border/60"}`}
+                            data-testid={`button-assign-theme-expand-${theme.id}`}
+                          >
+                            <UserPlus className="w-3 h-3" />
+                            Assign
+                          </button>
+                        )}
+                        {theme.canHide && isSuperAdmin ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-muted-foreground">Global</span>
+                            <Switch
+                              checked={theme.visible}
+                              onCheckedChange={(v) => toggleVisibility.mutate({ themeId: theme.id, visible: v })}
+                              disabled={toggleVisibility.isPending}
+                              data-testid={`switch-theme-visible-${theme.id}`}
+                              className="scale-75 origin-right"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground/40">always on</span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Expanded: per-theme user assignment */}
+                    {isExpanded && isSuperAdmin && (
+                      <div className="px-3 pb-3 border-t border-border/20">
+                        <div className="pt-2.5 space-y-2">
+                          <p className="text-[10px] text-muted-foreground">
+                            Grant access to this theme for specific users. Hidden themes require explicit assignment to be usable.
+                          </p>
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+                            <Input
+                              placeholder="Search by name or email…"
+                              value={search}
+                              onChange={(e) => setThemeUserSearch((prev) => ({ ...prev, [theme.id]: e.target.value }))}
+                              className="pl-8 h-8 text-sm"
+                              data-testid={`input-assign-theme-search-${theme.id}`}
+                            />
+                            {filteredForTheme.length > 0 && (
+                              <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-lg border border-border/60 bg-card shadow-lg overflow-hidden">
+                                {filteredForTheme.map((u) => (
+                                  <button
+                                    key={u.id}
+                                    type="button"
+                                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/40 text-left transition-colors"
+                                    onClick={() => {
+                                      assignUserToThemeMutation.mutate({ userId: u.id, themeId: theme.id });
+                                      setThemeUserSearch((prev) => ({ ...prev, [theme.id]: "" }));
+                                    }}
+                                    data-testid={`button-assign-theme-user-${u.id}-${theme.id}`}
+                                  >
+                                    <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center text-[9px] font-bold text-violet-300 shrink-0">
+                                      {(getUserDisplayName(u)?.[0] ?? "?").toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-medium truncate">{getUserDisplayName(u)}</p>
+                                      {u.email && <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {assignedUsers.length > 0 && (
+                            <div className="space-y-1 pt-1">
+                              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Currently assigned</p>
+                              {assignedUsers.map((u) => (
+                                <div key={u.id} className="flex items-center justify-between rounded-md px-2 py-1.5 bg-muted/20 border border-border/20">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center text-[9px] font-bold text-violet-300 shrink-0">
+                                      {(getUserDisplayName(u)?.[0] ?? "?").toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-[11px] font-medium truncate">{getUserDisplayName(u)}</p>
+                                      {u.email && <p className="text-[9px] text-muted-foreground truncate">{u.email}</p>}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeUserFromThemeMutation.mutate({ userId: u.id, themeId: theme.id })}
+                                    className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-0.5 shrink-0 ml-2"
+                                    data-testid={`button-remove-user-from-theme-${u.id}-${theme.id}`}
+                                  >
+                                    <X className="w-3 h-3" /> Remove
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {assignedUsers.length === 0 && !search && (
+                            <p className="text-[10px] text-muted-foreground/60 text-center py-2">No users assigned — search above to grant access.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
           {!isSuperAdmin && (
-            <p className="text-xs text-muted-foreground mt-3 text-center">Super admin access required to toggle visibility.</p>
+            <p className="text-xs text-muted-foreground mt-3 text-center">Super admin access required to manage themes.</p>
           )}
         </CardContent>
       </Card>
-
-      {/* ── Per-User Theme Assignment ── */}
-      {isSuperAdmin && (
-        <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-violet-400" />
-              Assign Themes to a User
-              <span className="ml-1 text-[11px] font-normal text-muted-foreground">(grants access to hidden themes)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* User search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search users by name or email..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="pl-9"
-                data-testid="input-theme-user-search"
-              />
-              {filteredUsers.length > 0 && (
-                <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-lg border border-border/60 bg-card shadow-lg overflow-hidden">
-                  {filteredUsers.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/40 text-left transition-colors"
-                      onClick={() => handleSelectUser(u)}
-                      data-testid={`button-theme-user-${u.id}`}
-                    >
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
-                        {(getUserDisplayName(u)?.[0] ?? "?").toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium truncate">{getUserDisplayName(u)}</p>
-                        {u.email && <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Selected user's assignment editor */}
-            {selectedUser && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-300">
-                      {(getUserDisplayName(selectedUser)?.[0] ?? "?").toUpperCase()}
-                    </div>
-                    <span className="text-sm font-medium" data-testid="text-selected-theme-user">{getUserDisplayName(selectedUser)}</span>
-                    <span className="text-xs text-muted-foreground">{pendingAssignments.length} theme{pendingAssignments.length !== 1 ? "s" : ""} assigned</span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSelectedUser(null)}
-                    className="text-xs h-7"
-                    data-testid="button-theme-user-clear"
-                  >
-                    <X className="w-3 h-3 mr-1" /> Clear
-                  </Button>
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  Toggle themes to grant or revoke this user's access. Hidden themes require explicit assignment.
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
-                  {themes.filter((t) => t.id !== "none").map((theme) => {
-                    const isAssigned = pendingAssignments.includes(theme.id);
-                    const def = ROOM_THEMES.find((t2) => t2.id === theme.id);
-                    return (
-                      <button
-                        key={theme.id}
-                        type="button"
-                        onClick={() => togglePendingAssignment(theme.id)}
-                        className={`relative rounded-lg overflow-hidden border-2 transition-all text-left ${isAssigned ? "border-violet-500 shadow-md shadow-violet-500/20" : "border-border/30 opacity-60 hover:opacity-90 hover:border-border/60"}`}
-                        data-testid={`button-assign-theme-${theme.id}`}
-                      >
-                        <ThemeSwatchPreview themeId={theme.id} size="sm" />
-                        <div className="px-1.5 py-1 bg-card/90 flex items-center justify-between gap-1">
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-medium truncate leading-tight">{def?.label ?? theme.id.replace(/-/g," ")}</p>
-                            {!theme.visible && <p className="text-[9px] text-red-400 leading-tight">Hidden globally</p>}
-                          </div>
-                          {isAssigned && (
-                            <div className="w-3.5 h-3.5 rounded-full bg-violet-500 flex items-center justify-center shrink-0">
-                              <svg className="w-2 h-2" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-5" /></svg>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex justify-end">
-                  <Button
-                    size="sm"
-                    onClick={() => saveUserAssignments.mutate({ userId: selectedUser.id, themeIds: pendingAssignments })}
-                    disabled={saveUserAssignments.isPending}
-                    className="bg-violet-500/20 text-violet-200 border border-violet-500/30 hover:bg-violet-500/30"
-                    data-testid="button-save-theme-assignments"
-                  >
-                    {saveUserAssignments.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}
-                    Save access
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* ── Theme Orders from Users ── */}
       <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
