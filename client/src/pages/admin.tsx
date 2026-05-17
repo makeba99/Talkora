@@ -3357,6 +3357,8 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 
   const { data, isLoading, refetch } = useQuery<AdminThemesData>({
     queryKey: ["/api/admin/themes"],
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: usersData = [] } = useQuery<{ id: string; email: string | null; displayName: string | null; firstName: string | null }[]>({
@@ -3376,6 +3378,16 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 
   const themes = data?.themes ?? [];
   const roomThemesEnabled = data?.roomThemesEnabled ?? true;
+
+  const displayThemes = useMemo(() => {
+    const apiThemes = themes.filter((t) => t.id !== "none");
+    if (apiThemes.length > 0) return apiThemes;
+    return ROOM_THEMES.filter((t) => t.id !== "none").map((t) => ({
+      id: t.id,
+      visible: true,
+      canHide: true,
+    }));
+  }, [themes]);
 
   const toggleRoomThemes = useMutation({
     mutationFn: async (enabled: boolean) =>
@@ -3550,7 +3562,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             </div>
           ) : (
             <div className="space-y-2">
-              {themes.filter((t) => t.id !== "none").map((theme) => {
+              {displayThemes.map((theme) => {
                 const def = ROOM_THEMES.find((t2) => t2.id === theme.id);
                 const assignedUserIds: string[] = themeUserMap[theme.id] ?? [];
                 const assignedUsers = assignedUserIds.map((uid) => usersData.find((u) => u.id === uid)).filter(Boolean) as typeof usersData;
