@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft, ShoppingBag } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft, ShoppingBag, Sparkles } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -3297,7 +3297,9 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
     queryFn: async () => {
       const param = orderFilter === "all" ? "" : `?status=${orderFilter}`;
       const res = await fetch(`/api/admin/theme-orders${param}`, { credentials: "include" });
-      return res.json();
+      if (!res.ok) throw new Error(`Failed to load theme orders: ${res.status}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     },
   });
 
@@ -3470,6 +3472,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                   {filteredUsers.map((u) => (
                     <button
                       key={u.id}
+                      type="button"
                       className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/40 text-left transition-colors"
                       onClick={() => handleSelectUser(u)}
                       data-testid={`button-theme-user-${u.id}`}
@@ -3519,6 +3522,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                     return (
                       <button
                         key={theme.id}
+                        type="button"
                         onClick={() => togglePendingAssignment(theme.id)}
                         className={`relative rounded-lg overflow-hidden border-2 transition-all text-left ${isAssigned ? "border-violet-500 shadow-md shadow-violet-500/20" : "border-border/30 opacity-60 hover:opacity-90 hover:border-border/60"}`}
                         data-testid={`button-assign-theme-${theme.id}`}
@@ -3578,6 +3582,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
             {(["pending","all","approved","denied"] as const).map((f) => (
               <button
                 key={f}
+                type="button"
                 onClick={() => setOrderFilter(f)}
                 className={`px-2.5 py-1 rounded-md text-[11px] font-medium capitalize transition-colors ${
                   orderFilter === f
