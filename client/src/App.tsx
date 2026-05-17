@@ -41,6 +41,9 @@ const Toaster = lazy(() =>
 const UpdateAvailableToast = lazy(() =>
   import("@/components/update-available-toast").then((m) => ({ default: m.UpdateAvailableToast }))
 );
+const PushPromptBanner = lazy(() =>
+  import("@/components/push-prompt-banner").then((m) => ({ default: m.PushPromptBanner }))
+);
 
 function LobbyShell() {
   return (
@@ -304,6 +307,9 @@ function App() {
           <DeferredOverlays />
           <AppContent />
           <DeferredToasts />
+          <Suspense fallback={null}>
+            <PushPromptBanner />
+          </Suspense>
         </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
