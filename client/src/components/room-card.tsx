@@ -940,7 +940,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               <>
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 z-0 rounded-[24px] overflow-hidden"
+                  className="card-image-bg absolute inset-0 z-[2] rounded-[24px] overflow-hidden"
                   style={{
                     backgroundImage: `url('${proxyExternalUrl(hologramVideoUrl)}')`,
                     backgroundSize: "cover",
@@ -951,19 +951,19 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     non-image media so title/avatar contrast is preserved. */}
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 z-[1] pointer-events-none rounded-[24px]"
+                  className="absolute inset-0 z-[3] pointer-events-none rounded-[24px]"
                   style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.18) 0%, rgba(2,4,18,0.10) 50%, rgba(2,4,18,0.30) 100%)" }}
                 />
               </>
             )
             : (
-              <div className="absolute inset-0 z-0 rounded-[24px] overflow-hidden">
+              <div className="absolute inset-0 z-[2] rounded-[24px] overflow-hidden">
                 <CardHologramVideo src={hologramVideoUrl} />
               </div>
             )
         )}
 
-        <div className="relative z-[2] flex flex-col h-full">
+        <div className="relative z-[4] flex flex-col h-full">
 
           {/* ── Header ── */}
           <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-4">
