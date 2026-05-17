@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Palette, Check, Sparkles, ShoppingBag, ChevronDown, ChevronUp, Loader2, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Palette, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -13,9 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useTheme, THEMES, type Theme } from "@/lib/theme";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = [
   { label: "All", ids: null },
@@ -30,15 +27,6 @@ interface ThemePickerProps {
   hideTrigger?: boolean;
 }
 
-type ThemeOrder = {
-  id: string;
-  themeName: string;
-  description: string;
-  status: string;
-  adminNote: string | null;
-  createdAt: string;
-};
-
 function ThemePickerInner({
   open,
   setOpen,
@@ -47,14 +35,8 @@ function ThemePickerInner({
   setOpen: (v: boolean) => void;
 }) {
   const { theme, setTheme } = useTheme();
-  const { toast } = useToast();
-  const qc = useQueryClient();
   const [hovered, setHovered] = useState<Theme | null>(null);
   const [category, setCategory] = useState<string>("All");
-  const [showRequest, setShowRequest] = useState(false);
-  const [reqName, setReqName] = useState("");
-  const [reqDesc, setReqDesc] = useState("");
-  const [showMyOrders, setShowMyOrders] = useState(false);
 
   const previewTheme = hovered ?? theme;
   const previewDef = THEMES.find((t) => t.id === previewTheme) ?? THEMES[0];
@@ -64,43 +46,6 @@ function ThemePickerInner({
   const visibleThemes = cat?.ids
     ? THEMES.filter((t) => cat.ids!.includes(t.id))
     : THEMES;
-
-  const { data: myOrders = [] } = useQuery<ThemeOrder[]>({
-    queryKey: ["/api/themes/my-orders"],
-    enabled: open && showMyOrders,
-  });
-
-  const { data: orderStats } = useQuery<{ pendingCount: number; last24hCount: number }>({
-    queryKey: ["/api/themes/order-stats"],
-    enabled: open && showRequest,
-  });
-
-  const hasPending = (orderStats?.pendingCount ?? 0) >= 1;
-  const hitDailyLimit = (orderStats?.last24hCount ?? 0) >= 3;
-  const requestsLeft = Math.max(0, 3 - (orderStats?.last24hCount ?? 0));
-  const isBlocked = hasPending || hitDailyLimit;
-
-  const submitOrder = useMutation({
-    mutationFn: async () => {
-      return apiRequest("POST", "/api/themes/order", { themeName: reqName.trim(), description: reqDesc.trim() });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/themes/my-orders"] });
-      qc.invalidateQueries({ queryKey: ["/api/themes/order-stats"] });
-      toast({ title: "Theme request sent!", description: "The admin will review your request." });
-      setReqName("");
-      setReqDesc("");
-      setShowRequest(false);
-      setShowMyOrders(true);
-    },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
-  });
-
-  const statusIcon = (status: string) => {
-    if (status === "approved") return <CheckCircle className="w-3 h-3 text-green-400" />;
-    if (status === "denied") return <XCircle className="w-3 h-3 text-red-400" />;
-    return <Clock className="w-3 h-3 text-amber-400" />;
-  };
 
   return (
     <>
@@ -215,130 +160,6 @@ function ThemePickerInner({
           <p className="text-[10px] text-muted-foreground">Saved automatically</p>
         </div>
 
-        {/* Request a Theme section */}
-        <div className="border-t border-border/50 pt-2">
-          <button
-            type="button"
-            onClick={() => { setShowRequest((v) => !v); setShowMyOrders(false); }}
-            className="w-full flex items-center gap-2 text-left py-1 px-1 rounded hover:bg-muted/40 transition-colors"
-            data-testid="button-request-theme-toggle"
-          >
-            <ShoppingBag className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="text-[11px] font-medium text-foreground flex-1">Request a Theme</span>
-            {showRequest ? <ChevronUp className="w-3 h-3 text-muted-foreground" /> : <ChevronDown className="w-3 h-3 text-muted-foreground" />}
-          </button>
-
-          {showRequest && (
-            <div className="mt-2 space-y-2">
-              {/* Quota indicator */}
-              {orderStats && (
-                <div className={`flex items-center gap-1.5 text-[10px] rounded px-2 py-1 ${
-                  isBlocked ? "bg-red-500/10 border border-red-500/20 text-red-400" : "bg-muted/30 text-muted-foreground"
-                }`}>
-                  {isBlocked
-                    ? <AlertCircle className="w-3 h-3 shrink-0" />
-                    : <ShoppingBag className="w-3 h-3 shrink-0 text-amber-400" />
-                  }
-                  {hasPending
-                    ? "You have a pending request — wait for it to be reviewed first."
-                    : hitDailyLimit
-                    ? "Daily limit reached (3/3). Try again after 24 hours."
-                    : `${requestsLeft} of 3 requests remaining today.`
-                  }
-                </div>
-              )}
-
-              {/* Form (hidden when blocked) */}
-              {!isBlocked && (
-                <>
-                  <input
-                    type="text"
-                    placeholder="Theme name (e.g. Midnight Rose)"
-                    value={reqName}
-                    onChange={(e) => setReqName(e.target.value)}
-                    maxLength={100}
-                    className="w-full text-xs bg-muted/40 border border-border rounded px-2.5 py-1.5 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary"
-                    data-testid="input-theme-request-name"
-                  />
-                  <textarea
-                    placeholder="Describe the vibe, colors, style you'd like... (min 10 chars)"
-                    value={reqDesc}
-                    onChange={(e) => setReqDesc(e.target.value)}
-                    maxLength={1000}
-                    rows={3}
-                    className="w-full text-xs bg-muted/40 border border-border rounded px-2.5 py-1.5 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                    data-testid="input-theme-request-desc"
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setShowRequest(false)}
-                      className="text-[10px] text-muted-foreground hover:text-foreground px-2 py-1"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => submitOrder.mutate()}
-                      disabled={submitOrder.isPending || reqName.trim().length < 2 || reqDesc.trim().length < 10}
-                      className="flex items-center gap-1 text-[10px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed px-2.5 py-1 rounded transition-colors"
-                      data-testid="button-submit-theme-request"
-                    >
-                      {submitOrder.isPending ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <ShoppingBag className="w-2.5 h-2.5" />}
-                      Send Request
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* Blocked — show shortcut to check status */}
-              {isBlocked && (
-                <button
-                  type="button"
-                  onClick={() => { setShowMyOrders(true); setShowRequest(false); }}
-                  className="w-full text-[10px] text-amber-400/80 hover:text-amber-400 text-center py-1 transition-colors"
-                  data-testid="button-view-pending-request"
-                >
-                  View your pending request →
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* My orders toggle */}
-          <button
-            type="button"
-            onClick={() => { setShowMyOrders((v) => !v); setShowRequest(false); }}
-            className="w-full flex items-center gap-2 text-left py-1 px-1 rounded hover:bg-muted/40 transition-colors mt-1"
-            data-testid="button-my-orders-toggle"
-          >
-            <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <span className="text-[11px] text-muted-foreground flex-1">My requests</span>
-            {showMyOrders ? <ChevronUp className="w-3 h-3 text-muted-foreground" /> : <ChevronDown className="w-3 h-3 text-muted-foreground" />}
-          </button>
-
-          {showMyOrders && (
-            <div className="mt-1 space-y-1.5 max-h-40 overflow-y-auto">
-              {myOrders.length === 0 ? (
-                <p className="text-[10px] text-muted-foreground text-center py-3">No requests yet.</p>
-              ) : myOrders.map((order) => (
-                <div key={order.id} className="rounded border border-border/40 bg-muted/20 p-2">
-                  <div className="flex items-center gap-1.5">
-                    {statusIcon(order.status)}
-                    <span className="text-[11px] font-medium truncate flex-1">{order.themeName}</span>
-                    <span className={`text-[9px] capitalize font-medium ${
-                      order.status === "approved" ? "text-green-400" :
-                      order.status === "denied" ? "text-red-400" : "text-amber-400"
-                    }`}>{order.status}</span>
-                  </div>
-                  {order.adminNote && (
-                    <p className="text-[10px] text-muted-foreground mt-1 italic">"{order.adminNote}"</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </>
   );
