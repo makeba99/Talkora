@@ -2976,7 +2976,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
           <Button
             className="w-full bg-emerald-700 hover:bg-emerald-600"
             onClick={() => webPushMutation.mutate()}
-            disabled={webPushMutation.isPending || !pushTitle.trim() || !pushBody.trim() || (pushSubCount?.count ?? 0) === 0}
+            disabled={webPushMutation.isPending || !pushTitle.trim() || !pushBody.trim()}
             data-testid="button-send-web-push"
           >
             {webPushMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Smartphone className="w-4 h-4 mr-2" />}
@@ -4132,6 +4132,16 @@ export default function AdminPage() {
     queryKey: ["/api/admin/reports"],
     enabled: !!canAccess,
   });
+  const [selectedReportIds, setSelectedReportIds] = useState<Set<number>>(new Set());
+  const toggleReportSelection = (id: number) =>
+    setSelectedReportIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  const allReportIds = reports.map((r) => r.id);
+  const allSelected = allReportIds.length > 0 && allReportIds.every((id) => selectedReportIds.has(id));
+  const toggleSelectAll = () => setSelectedReportIds(allSelected ? new Set() : new Set(allReportIds));
+  const bulkUpdateReports = async (status: "reviewed" | "dismissed") => {
+    await Promise.all([...selectedReportIds].map((id) => updateReportMutation.mutateAsync({ reportId: id, status })));
+    setSelectedReportIds(new Set());
+  };
 
   const { data: teacherApps = [], isLoading: appsLoading } = useQuery<(TeacherApplication & { user: any })[]>({
     queryKey: ["/api/admin/teacher-applications"],
@@ -4722,8 +4732,57 @@ export default function AdminPage() {
 
           <TabsContent value="reports">
             <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
-              <CardHeader>
-                <CardTitle>Reports Queue</CardTitle>
+              <CardHeader className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle>Reports Queue</CardTitle>
+                  {reports.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none" data-testid="checkbox-select-all-reports">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={toggleSelectAll}
+                          className="rounded accent-primary w-3.5 h-3.5"
+                        />
+                        {allSelected ? "Deselect all" : "Select all"}
+                      </label>
+                    </div>
+                  )}
+                </div>
+                {selectedReportIds.size > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-border/50">
+                    <span className="text-xs text-muted-foreground">{selectedReportIds.size} selected</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => bulkUpdateReports("reviewed")}
+                      disabled={updateReportMutation.isPending}
+                      data-testid="button-bulk-mark-reviewed"
+                    >
+                      Mark reviewed
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => bulkUpdateReports("dismissed")}
+                      disabled={updateReportMutation.isPending}
+                      data-testid="button-bulk-dismiss"
+                    >
+                      Dismiss
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs text-muted-foreground"
+                      onClick={() => setSelectedReportIds(new Set())}
+                      data-testid="button-clear-report-selection"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="max-h-[620px] overflow-auto admin-scrollbar pr-2 space-y-3">
@@ -4732,44 +4791,60 @@ export default function AdminPage() {
                   ) : reports.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-12" data-testid="text-no-reports">No reports yet.</p>
                   ) : (
-                    reports.map((report) => (
-                      <div key={report.id} className="rounded-xl border border-border/70 bg-background/55 p-4 space-y-3" data-testid={`card-report-${report.id}`}>
-                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant={report.status === "pending" ? "default" : "outline"} data-testid={`status-report-${report.id}`}>
-                                {report.status}
-                              </Badge>
-                              <Badge variant="secondary" data-testid={`text-report-category-${report.id}`}>
-                                {report.category || "uncategorized"}
-                              </Badge>
-                              {reportsByUser.get(report.reportedId)! >= 3 && (
-                                <Badge className="bg-destructive/15 text-destructive border border-destructive/30" data-testid={`badge-report-flagged-${report.id}`}>
-                                  Flagged: repeated reports
-                                </Badge>
-                              )}
+                    reports.map((report) => {
+                      const isSelected = selectedReportIds.has(report.id);
+                      return (
+                        <div
+                          key={report.id}
+                          className={`rounded-xl border p-4 space-y-3 transition-colors ${isSelected ? "border-primary/50 bg-primary/5" : "border-border/70 bg-background/55"}`}
+                          data-testid={`card-report-${report.id}`}
+                        >
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleReportSelection(report.id)}
+                                className="mt-1 rounded accent-primary w-3.5 h-3.5 flex-shrink-0 cursor-pointer"
+                                data-testid={`checkbox-report-${report.id}`}
+                              />
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Badge variant={report.status === "pending" ? "default" : "outline"} data-testid={`status-report-${report.id}`}>
+                                    {report.status}
+                                  </Badge>
+                                  <Badge variant="secondary" data-testid={`text-report-category-${report.id}`}>
+                                    {report.category || "uncategorized"}
+                                  </Badge>
+                                  {reportsByUser.get(report.reportedId)! >= 3 && (
+                                    <Badge className="bg-destructive/15 text-destructive border border-destructive/30" data-testid={`badge-report-flagged-${report.id}`}>
+                                      Flagged: repeated reports
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="mt-3 font-medium" data-testid={`text-report-title-${report.id}`}>
+                                  {report.reporterName || report.reporterId} reported {report.reportedName || report.reportedId}
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-1" data-testid={`text-report-reason-${report.id}`}>
+                                  {report.reason || "No description provided."}
+                                </p>
+                              </div>
                             </div>
-                            <p className="mt-3 font-medium" data-testid={`text-report-title-${report.id}`}>
-                              {report.reporterName || report.reporterId} reported {report.reportedName || report.reportedId}
-                            </p>
-                            <p className="text-sm text-muted-foreground mt-1" data-testid={`text-report-reason-${report.id}`}>
-                              {report.reason || "No description provided."}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            <Button size="sm" variant="outline" onClick={() => updateReportMutation.mutate({ reportId: report.id, status: "reviewed" })} disabled={updateReportMutation.isPending} data-testid={`button-review-report-${report.id}`}>
-                              Mark reviewed
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => updateReportMutation.mutate({ reportId: report.id, status: "dismissed" })} disabled={updateReportMutation.isPending} data-testid={`button-dismiss-report-${report.id}`}>
-                              Dismiss
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => warnMutation.mutate(report.reportedId)} disabled={warnMutation.isPending} data-testid={`button-warn-reported-${report.id}`}>
-                              Warn user
-                            </Button>
+                            <div className="flex flex-wrap gap-2 flex-shrink-0">
+                              <Button size="sm" variant="outline" onClick={() => updateReportMutation.mutate({ reportId: report.id, status: "reviewed" })} disabled={updateReportMutation.isPending} data-testid={`button-review-report-${report.id}`}>
+                                Mark reviewed
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => updateReportMutation.mutate({ reportId: report.id, status: "dismissed" })} disabled={updateReportMutation.isPending} data-testid={`button-dismiss-report-${report.id}`}>
+                                Dismiss
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => warnMutation.mutate(report.reportedId)} disabled={warnMutation.isPending} data-testid={`button-warn-reported-${report.id}`}>
+                                Warn user
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </CardContent>
