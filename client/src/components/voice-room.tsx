@@ -12177,7 +12177,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                             className="text-xs h-7 bg-amber-500/20 text-amber-200 border border-amber-500/30 hover:bg-amber-500/30"
                             disabled={
                               !themeReqName.trim() ||
-                              themeReqDesc.trim().length < 10 ||
+                              themeReqDesc.trim().length < 3 ||
                               (themeOrderStats?.pendingCount ?? 0) >= 1 ||
                               (themeOrderStats?.last24hCount ?? 0) >= 3 ||
                               submitThemeOrderMutation.isPending

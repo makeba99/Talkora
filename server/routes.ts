@@ -4972,8 +4972,8 @@ export async function registerRoutes(
       if (!themeName || typeof themeName !== "string" || themeName.trim().length < 2) {
         return res.status(400).json({ message: "Theme name must be at least 2 characters" });
       }
-      if (!description || typeof description !== "string" || description.trim().length < 10) {
-        return res.status(400).json({ message: "Description must be at least 10 characters" });
+      if (!description || typeof description !== "string" || description.trim().length < 3) {
+        return res.status(400).json({ message: "Description must be at least 3 characters" });
       }
       // Content moderation on the request fields
       const orderModResult = checkFields({ themeName, description }, "theme-request");
