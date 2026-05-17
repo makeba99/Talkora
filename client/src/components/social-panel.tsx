@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Users, Search, UserPlus, UserCheck, MessageSquare, Phone, StickyNote, X, PlayCircle, Tv2 } from "lucide-react";
+import { Users, Search, UserPlus, UserCheck, UserMinus, MessageSquare, Phone, StickyNote, X, PlayCircle, Tv2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -148,8 +148,10 @@ interface UserProfileDialogProps {
   open: boolean;
   onClose: () => void;
   isFollowing: boolean;
+  isFollower: boolean;
   onFollow: () => void;
   onUnfollow: () => void;
+  onRemoveFollower: () => void;
   onMessage: () => void;
   onJoinRoom?: () => void;
   onWatchTogether?: () => void;
@@ -164,8 +166,10 @@ function UserProfileDialog({
   open,
   onClose,
   isFollowing,
+  isFollower,
   onFollow,
   onUnfollow,
+  onRemoveFollower,
   onMessage,
   onJoinRoom,
   onWatchTogether,
@@ -326,6 +330,17 @@ function UserProfileDialog({
               )}
             </Button>
           </div>
+          {isFollower && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="w-full h-7 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 mt-1"
+              onClick={() => { onRemoveFollower(); onClose(); }}
+              data-testid={`button-remove-follower-${u.id}`}
+            >
+              <UserMinus className="w-3 h-3 mr-1.5" /> Remove follower
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -403,6 +418,16 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
       queryClient.invalidateQueries({ queryKey: ["/api/follows/following"] });
       queryClient.invalidateQueries({ queryKey: ["/api/follows/followers"] });
       import("@/lib/sound-fx").then((s) => s.sfxUnfollow()).catch(() => {});
+    },
+  });
+
+  const removeFollowerMutation = useMutation({
+    mutationFn: async (followerId: string) => {
+      await apiRequest("DELETE", `/api/follows/${followerId}/${user?.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/follows/following"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/follows/followers"] });
     },
   });
 
@@ -799,8 +824,10 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
           open={!!profileTarget}
           onClose={() => setProfileUser(null)}
           isFollowing={followingIds.has(profileTarget.id)}
+          isFollower={followerIds.has(profileTarget.id)}
           onFollow={() => followMutation.mutate(profileTarget.id)}
           onUnfollow={() => unfollowMutation.mutate(profileTarget.id)}
+          onRemoveFollower={() => removeFollowerMutation.mutate(profileTarget.id)}
           onMessage={() => {
             if (onOpenDm) {
               onOpenDm(profileTarget.id);
