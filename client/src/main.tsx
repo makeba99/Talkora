@@ -62,7 +62,7 @@ if (typeof (window as any).requestIdleCallback === "function") {
   setTimeout(installPrivacyShims, 0);
 }
 
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
       const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
