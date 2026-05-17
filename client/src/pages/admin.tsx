@@ -2839,8 +2839,8 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
             <details className="cursor-pointer">
               <summary className="text-emerald-400 hover:text-emerald-300 transition-colors font-medium">Setup required →</summary>
               <ol className="mt-2 space-y-1 text-emerald-300/80 list-decimal list-inside">
-                <li>Add secret <code className="font-mono">VAPID_PUBLIC_KEY</code> = <code className="font-mono text-[10px] break-all">BPt6IdOwBjMG3RA3x4H5KNgvdHEIxdI-tcXDj0IQDvU56kZQPDTtQ8oq5WTPb5HJ6MNWHukaQjZNHkN1sUXQGkU</code></li>
-                <li>Add secret <code className="font-mono">VAPID_PRIVATE_KEY</code> = (the private key you were given)</li>
+                <li>Add secret <code className="font-mono">VAPID_PUBLIC_KEY</code> = <code className="font-mono text-[10px] break-all">BEsGiteMU1RlFA1PT-PukUjW-wgGBqi8ILrxJxLz3EQhGZnKsk9SHH7YptpKXD4grBpn_cUHvE94D1cV616jj8w</code></li>
+                <li>Add secret <code className="font-mono">VAPID_PRIVATE_KEY</code> = <code className="font-mono text-[10px] break-all">PchG36LDPYNAGFQcvhJYPtr5oxpNva_imm7mVDnTNZo</code></li>
                 <li>Restart the server after adding secrets</li>
                 <li>Users must click "Enable Notifications" (bell icon in their profile menu)</li>
               </ol>
