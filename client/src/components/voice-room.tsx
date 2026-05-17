@@ -2023,6 +2023,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [themeDialogOffset, setThemeDialogOffset] = useState(0);
   const [editRoomTheme, setEditRoomTheme] = useState((roomProp as any).roomTheme || "none");
   const [editThemeOffset, setEditThemeOffset] = useState(0);
+  const [showThemeRequest, setShowThemeRequest] = useState(false);
+  const [themeReqName, setThemeReqName] = useState("");
+  const [themeReqDesc, setThemeReqDesc] = useState("");
   const [editTalkPermission, setEditTalkPermission] = useState<"everyone" | "members" | "co_owners" | "owner_only" | "muted">(
     ((roomProp as any).talkPermission as any) || "everyone"
   );
@@ -2568,6 +2571,28 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     queryKey: ["/api/themes/available"],
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: themeOrderStats, refetch: refetchThemeOrderStats } = useQuery<{ pendingCount: number; last24hCount: number }>({
+    queryKey: ["/api/themes/order-stats"],
+    enabled: !!user && showThemeRequest,
+  });
+
+  const submitThemeOrderMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/themes/order", { themeName: themeReqName.trim(), description: themeReqDesc.trim() });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Theme request submitted!", description: "We'll review it and notify you when it's approved." });
+      setThemeReqName("");
+      setThemeReqDesc("");
+      setShowThemeRequest(false);
+      void refetchThemeOrderStats();
+    },
+    onError: (err: any) => {
+      toast({ title: "Request failed", description: err?.message || "Please try again.", variant: "destructive" });
+    },
   });
 
   const { data: platformFeatures } = useQuery<Record<string, boolean>>({
@@ -12065,6 +12090,107 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         />
                       ))}
                     </div>
+                  </div>
+
+                  {/* Request New Theme */}
+                  <div className="space-y-2">
+                    {!showThemeRequest ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowThemeRequest(true)}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/8 text-amber-300 text-[12px] font-semibold hover:bg-amber-500/20 transition-colors"
+                        data-testid="button-show-theme-request"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Request a New Theme
+                      </button>
+                    ) : (
+                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-300">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Request a New Theme
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {(themeOrderStats?.last24hCount ?? 0) > 0 && (
+                              <span className="text-[10px] text-amber-400/70">{3 - (themeOrderStats?.last24hCount ?? 0)} left today</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => { setShowThemeRequest(false); setThemeReqName(""); setThemeReqDesc(""); }}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                              data-testid="button-close-theme-request"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        {(themeOrderStats?.pendingCount ?? 0) >= 1 && (
+                          <p className="text-[11px] text-amber-400/80 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> You have a pending request — wait for it to be reviewed.
+                          </p>
+                        )}
+                        {(themeOrderStats?.last24hCount ?? 0) >= 3 && (themeOrderStats?.pendingCount ?? 0) === 0 && (
+                          <p className="text-[11px] text-red-400 flex items-center gap-1">
+                            <X className="w-3 h-3" /> Daily limit reached (3 per 24h).
+                          </p>
+                        )}
+                        <div className="space-y-2">
+                          <div>
+                            <Label className="text-[11px] mb-1 block text-muted-foreground">Theme name</Label>
+                            <Input
+                              placeholder="e.g. Retro Wave, Jungle Night…"
+                              value={themeReqName}
+                              onChange={(e) => setThemeReqName(e.target.value)}
+                              className="text-sm h-8"
+                              maxLength={60}
+                              disabled={(themeOrderStats?.pendingCount ?? 0) >= 1 || (themeOrderStats?.last24hCount ?? 0) >= 3}
+                              data-testid="input-new-theme-name"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[11px] mb-1 block text-muted-foreground">Description &amp; inspiration</Label>
+                            <textarea
+                              placeholder="Describe the vibe, colors, atmosphere…"
+                              value={themeReqDesc}
+                              onChange={(e) => setThemeReqDesc(e.target.value)}
+                              className="w-full min-h-[64px] resize-none rounded-md border border-border/60 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                              maxLength={400}
+                              disabled={(themeOrderStats?.pendingCount ?? 0) >= 1 || (themeOrderStats?.last24hCount ?? 0) >= 3}
+                              data-testid="input-new-theme-description"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7"
+                            onClick={() => { setShowThemeRequest(false); setThemeReqName(""); setThemeReqDesc(""); }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="text-xs h-7 bg-amber-500/20 text-amber-200 border border-amber-500/30 hover:bg-amber-500/30"
+                            disabled={
+                              !themeReqName.trim() ||
+                              themeReqDesc.trim().length < 10 ||
+                              (themeOrderStats?.pendingCount ?? 0) >= 1 ||
+                              (themeOrderStats?.last24hCount ?? 0) >= 3 ||
+                              submitThemeOrderMutation.isPending
+                            }
+                            onClick={() => submitThemeOrderMutation.mutate()}
+                            data-testid="button-submit-new-theme-request"
+                          >
+                            <Send className="w-3 h-3 mr-1" />
+                            {submitThemeOrderMutation.isPending ? "Submitting…" : "Submit Request"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Card Media */}
