@@ -1805,6 +1805,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({}); 
   const [djModeActive, setDjModeActive] = useState(false);
   const djModeActiveRef = useRef(false);
+  const djControlsBtnRef = useRef<HTMLButtonElement>(null);
+  const [djDropdownPos, setDjDropdownPos] = useState<{ bottom: number; left: number } | null>(null);
   const [djCountdown, setDjCountdown] = useState<number | null>(null);
   const [djBeatDropTick, setDjBeatDropTick] = useState(0);
   const [djSpotlightIdx, setDjSpotlightIdx] = useState(-1);
@@ -13809,17 +13811,27 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 >⏭</button>
                                 {/* ▼ opens DJ controls dropdown */}
                                 <button
+                                  ref={djControlsBtnRef}
                                   type="button"
                                   data-testid="button-dj-controls-toggle"
-                                  onClick={() => setDiscoHostPanelOpen(o => !o)}
+                                  onClick={() => {
+                                    const rect = djControlsBtnRef.current?.getBoundingClientRect();
+                                    if (rect) {
+                                      setDjDropdownPos({
+                                        bottom: window.innerHeight - rect.top + 6,
+                                        left: rect.left + rect.width / 2,
+                                      });
+                                    }
+                                    setDiscoHostPanelOpen(o => !o);
+                                  }}
                                   title="DJ controls"
                                   style={{ padding: "1px 6px", borderRadius: 999, fontSize: 8, fontWeight: 800, cursor: "pointer", transition: "all 0.15s", background: discoHostPanelOpen ? "rgba(255,100,255,0.30)" : "rgba(255,100,255,0.14)", border: "1px solid rgba(255,100,255,0.50)", color: "rgba(255,180,255,0.95)" }}
                                 >🎧 {discoHostPanelOpen ? "▲" : "▼"}</button>
                               </div>
 
-                              {/* DJ controls dropdown — opens upward so it never covers the DJ avatar */}
-                              {discoHostPanelOpen && (
-                                <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12, padding: "10px 10px 8px", boxShadow: "0 -8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(255,0,200,0.18)", minWidth: 200, maxHeight: "60vh", overflowY: "auto", zIndex: 9999, display: "flex", flexDirection: "column", gap: 6 }}>
+                              {/* DJ controls dropdown — fixed-positioned so no overflow:hidden ancestor clips it */}
+                              {discoHostPanelOpen && djDropdownPos && (
+                                <div style={{ position: "fixed", bottom: djDropdownPos.bottom, left: djDropdownPos.left, transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12, padding: "10px 10px 8px", boxShadow: "0 -8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(255,0,200,0.18)", minWidth: 220, maxHeight: "70vh", overflowY: "auto", zIndex: 99999, display: "flex", flexDirection: "column", gap: 6 }}>
                                   {/* DJ ON / Close DJ */}
                                   <button
                                     type="button"
