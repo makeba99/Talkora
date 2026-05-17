@@ -13624,133 +13624,103 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         {/* Host-only DJ controls */}
                         {isMe && (
                           <div className="flex flex-col items-center gap-1">
-                            {/* 🎬 Disco scene picker — always visible to host in disco rooms */}
+                            {/* Scene label + ⏭ + ▼ DJ controls dropdown — all in one row */}
                             <div style={{ position: "relative" }}>
-                              {/* Scene label + skip + dropdown toggle row */}
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                {/* Current disco scene name */}
                                 <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "rgba(255,200,255,0.85)", whiteSpace: "nowrap" }}>
                                   {DISCO_SCENES_LIST[discoOverlaySceneIdx]?.emoji} {DISCO_SCENES_LIST[discoOverlaySceneIdx]?.name}
                                 </span>
+                                {/* ⏭ skips the disco background scene */}
                                 <button
                                   type="button"
                                   data-testid="button-disco-scene-skip"
                                   onClick={() => handleDiscoAdvance?.()}
-                                  title="Skip to next scene"
+                                  title="Next background scene"
                                   style={{ padding: "1px 7px", borderRadius: 999, fontSize: 8, fontWeight: 800, letterSpacing: "0.05em", cursor: "pointer", whiteSpace: "nowrap", background: "rgba(0,220,255,0.18)", border: "1px solid rgba(0,220,255,0.50)", color: "rgba(100,240,255,0.95)" }}
                                 >⏭</button>
+                                {/* ▼ opens DJ controls dropdown */}
                                 <button
                                   type="button"
-                                  data-testid="button-disco-scene-picker"
+                                  data-testid="button-dj-controls-toggle"
                                   onClick={() => setDiscoHostPanelOpen(o => !o)}
-                                  title="Pick a scene"
+                                  title="DJ controls"
                                   style={{ padding: "1px 6px", borderRadius: 999, fontSize: 8, fontWeight: 800, cursor: "pointer", transition: "all 0.15s", background: discoHostPanelOpen ? "rgba(255,100,255,0.30)" : "rgba(255,100,255,0.14)", border: "1px solid rgba(255,100,255,0.50)", color: "rgba(255,180,255,0.95)" }}
-                                >🎭 {discoHostPanelOpen ? "▲" : "▼"}</button>
+                                >🎧 {discoHostPanelOpen ? "▲" : "▼"}</button>
                               </div>
-                              {/* Scene picker dropdown — opens upward */}
+
+                              {/* DJ controls dropdown — opens upward */}
                               {discoHostPanelOpen && (
-                                <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, background: "rgba(0,0,0,0.90)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12, padding: 8, boxShadow: "0 -8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(255,0,200,0.18)", minWidth: 200, zIndex: 50 }}>
-                                  {DISCO_SCENES_LIST.map((scene) => (
-                                    <button
-                                      key={scene.id}
-                                      type="button"
-                                      data-testid={`button-disco-scene-${scene.id}`}
-                                      onClick={() => handleDiscoGoto?.(scene.id)}
-                                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 8, cursor: "pointer", background: discoOverlaySceneIdx === scene.id ? "rgba(255,100,255,0.28)" : "rgba(255,255,255,0.06)", border: discoOverlaySceneIdx === scene.id ? "1px solid rgba(255,100,255,0.65)" : "1px solid rgba(255,255,255,0.10)", color: discoOverlaySceneIdx === scene.id ? "rgba(255,200,255,1)" : "rgba(255,255,255,0.70)", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", transition: "all 0.15s", textAlign: "left" }}
-                                    >
-                                      <span style={{ fontSize: 14 }}>{scene.emoji}</span>
-                                      <span>{scene.name}</span>
-                                      {discoOverlaySceneIdx === scene.id && <span style={{ marginLeft: "auto", fontSize: 8, color: "rgba(255,100,255,0.90)" }}>▶</span>}
-                                    </button>
-                                  ))}
+                                <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12, padding: "10px 10px 8px", boxShadow: "0 -8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(255,0,200,0.18)", minWidth: 172, zIndex: 50, display: "flex", flexDirection: "column", gap: 6 }}>
+                                  {/* DJ ON / Close DJ */}
+                                  <button
+                                    type="button"
+                                    data-testid="button-dj-mode-toggle"
+                                    onClick={() => {
+                                      const next = !djModeActive;
+                                      setDjModeActive(next);
+                                      if (next) { setDjCurrentScene("spotlight"); setDjAutoAdvance(false); }
+                                      else { setDiscoHostPanelOpen(false); }
+                                      socket?.emit("room:dj-mode", { roomId: room.id, active: next, moveStyle: djMoveStyle });
+                                    }}
+                                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 800, letterSpacing: "0.07em", transition: "all 0.15s", background: djModeActive ? "linear-gradient(135deg,rgba(255,0,200,0.38),rgba(120,0,255,0.38))" : "rgba(255,0,200,0.12)", border: djModeActive ? "1px solid rgba(255,0,200,0.70)" : "1px solid rgba(255,0,200,0.30)", color: djModeActive ? "rgba(255,180,255,1)" : "rgba(255,120,255,0.80)", animation: djModeActive ? "dj-btn-glow 1.0s ease-in-out infinite" : "none" }}
+                                  >
+                                    🎧 {djModeActive ? "Close DJ" : "Start DJ"}
+                                  </button>
+
+                                  {djModeActive && (
+                                    <>
+                                      {/* Current DJ scene + Skip */}
+                                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 4px" }}>
+                                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "rgba(200,180,255,0.80)", textTransform: "uppercase", whiteSpace: "nowrap", flex: 1 }}>
+                                          {djCurrentScene === "spotlight" ? "🔦" : djCurrentScene === "namestorm" ? "🌪" : djCurrentScene === "disco" ? "🪩" : djCurrentScene === "kiss" ? "💋" : djCurrentScene === "cocktails" ? "🍹" : "💥"} {djCurrentScene}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          data-testid="button-dj-skip"
+                                          onClick={() => { socket?.emit("room:dj-skip", { roomId: room.id }); }}
+                                          style={{ padding: "2px 8px", borderRadius: 999, background: "rgba(0,220,255,0.18)", border: "1px solid rgba(0,220,255,0.50)", color: "rgba(100,240,255,0.95)", fontSize: 8, fontWeight: 800, letterSpacing: "0.06em", cursor: "pointer", whiteSpace: "nowrap", animation: "dj-skip-ripple 1.5s ease-out infinite" }}
+                                        >⏭ SKIP</button>
+                                      </div>
+
+                                      {/* Auto-advance toggle */}
+                                      <button
+                                        type="button"
+                                        data-testid="button-dj-auto"
+                                        onClick={() => setDjAutoAdvance(a => !a)}
+                                        style={{ padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 700, letterSpacing: "0.07em", cursor: "pointer", transition: "all 0.15s", background: djAutoAdvance ? "rgba(34,197,94,0.22)" : "rgba(255,255,255,0.07)", border: djAutoAdvance ? "1px solid rgba(34,197,94,0.55)" : "1px solid rgba(255,255,255,0.15)", color: djAutoAdvance ? "rgba(134,239,172,0.95)" : "rgba(255,255,255,0.45)" }}
+                                      >
+                                        ⏱ {djAutoAdvance ? "AUTO ON" : "AUTO OFF"}
+                                      </button>
+
+                                      {/* Divider */}
+                                      <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "0 2px" }} />
+
+                                      {/* Movement style label */}
+                                      <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.10em", color: "rgba(255,255,255,0.30)", textTransform: "uppercase", paddingLeft: 4 }}>SLING STYLE</span>
+
+                                      {/* Movement style grid */}
+                                      <div style={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "flex-start" }}>
+                                        <button type="button" key="auto" data-testid="button-dj-move-auto"
+                                          onClick={() => { setDjMoveStyle("auto"); setDjMoveTick(0); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: "auto" }); }}
+                                          style={{ padding: "2px 7px", borderRadius: 999, fontSize: 8, fontWeight: 800, letterSpacing: "0.06em", cursor: "pointer", textTransform: "uppercase", background: djMoveStyle === "auto" ? "rgba(0,220,180,0.30)" : "rgba(255,255,255,0.06)", border: djMoveStyle === "auto" ? "1px solid rgba(0,220,180,0.70)" : "1px solid rgba(255,255,255,0.12)", color: djMoveStyle === "auto" ? "rgba(120,255,220,0.95)" : "rgba(255,255,255,0.38)", animation: djMoveStyle === "auto" ? "dj-badge-pulse 1.4s ease-in-out infinite" : "none" }}>✦ AUTO</button>
+                                        {(["sling","wave","bounce","pulse","tilt","orbit","float","wiggle","slam","spin","stretch","shake","static"] as const).map(s => (
+                                          <button type="button" key={s} data-testid={`button-dj-move-${s}`}
+                                            onClick={() => { setDjMoveStyle(s); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: s }); }}
+                                            style={{ padding: "2px 6px", borderRadius: 999, fontSize: 8, fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", textTransform: "uppercase", background: djMoveStyle === s ? "rgba(255,200,0,0.28)" : "rgba(255,255,255,0.06)", border: djMoveStyle === s ? "1px solid rgba(255,200,0,0.65)" : "1px solid rgba(255,255,255,0.12)", color: djMoveStyle === s ? "rgba(255,230,100,0.95)" : "rgba(255,255,255,0.38)" }}>{s}</button>
+                                        ))}
+                                      </div>
+                                    </>
+                                  )}
                                 </div>
                               )}
                             </div>
-                            {/* DJ Mode toggle */}
-                            <button
-                              data-testid="button-dj-mode-toggle"
-                              onClick={() => {
-                                const next = !djModeActive;
-                                setDjModeActive(next);
-                                if (next) { setDjCurrentScene("spotlight"); setDjAutoAdvance(false); }
-                                socket?.emit("room:dj-mode", { roomId: room.id, active: next, moveStyle: djMoveStyle });
-                              }}
-                              style={{
-                                display:"flex", alignItems:"center", gap:5,
-                                padding:"4px 12px", borderRadius:999,
-                                background: djModeActive
-                                  ? "linear-gradient(135deg,rgba(255,0,200,0.45),rgba(120,0,255,0.45))"
-                                  : "rgba(255,0,200,0.14)",
-                                border: djModeActive
-                                  ? "1px solid rgba(255,0,200,0.75)"
-                                  : "1px solid rgba(255,0,200,0.35)",
-                                color: djModeActive ? "rgba(255,180,255,1)" : "rgba(255,120,255,0.80)",
-                                fontSize:10, fontWeight:800, letterSpacing:"0.08em",
-                                cursor:"pointer", whiteSpace:"nowrap",
-                                animation: djModeActive ? "dj-btn-glow 1.0s ease-in-out infinite" : "none",
-                                transition:"all 0.2s",
-                              }}
-                            >
-                              🎧 {djModeActive ? "DJ ON" : "DJ MODE"}
-                            </button>
+
+                            {/* DJ ON badge — shown when active, outside dropdown */}
                             {djModeActive && (
-                              <>
-                                {/* Current scene label + skip */}
-                                <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                                  <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.06em", color:"rgba(200,180,255,0.75)", textTransform:"uppercase", whiteSpace:"nowrap" }}>
-                                    {djCurrentScene === "spotlight" ? "🔦" : djCurrentScene === "namestorm" ? "🌪" : djCurrentScene === "disco" ? "🪩" : djCurrentScene === "kiss" ? "💋" : djCurrentScene === "cocktails" ? "🍹" : "💥"} {djCurrentScene}
-                                  </span>
-                                  <button
-                                    data-testid="button-dj-skip"
-                                    onClick={() => { socket?.emit("room:dj-skip", { roomId: room.id }); }}
-                                    style={{
-                                      display:"flex", alignItems:"center", gap:3,
-                                      padding:"2px 8px", borderRadius:999,
-                                      background:"rgba(0,220,255,0.18)", border:"1px solid rgba(0,220,255,0.50)",
-                                      color:"rgba(100,240,255,0.95)", fontSize:8, fontWeight:800,
-                                      letterSpacing:"0.06em", cursor:"pointer", whiteSpace:"nowrap",
-                                      animation:"dj-skip-ripple 1.5s ease-out infinite",
-                                    }}
-                                  >⏭ SKIP</button>
-                                </div>
-                                {/* Auto-advance toggle */}
-                                <button
-                                  data-testid="button-dj-auto"
-                                  onClick={() => setDjAutoAdvance(a => !a)}
-                                  style={{
-                                    padding:"2px 8px", borderRadius:999,
-                                    background: djAutoAdvance ? "rgba(34,197,94,0.22)" : "rgba(255,255,255,0.07)",
-                                    border: djAutoAdvance ? "1px solid rgba(34,197,94,0.55)" : "1px solid rgba(255,255,255,0.15)",
-                                    color: djAutoAdvance ? "rgba(134,239,172,0.95)" : "rgba(255,255,255,0.45)",
-                                    fontSize:8, fontWeight:700, letterSpacing:"0.08em",
-                                    cursor:"pointer", whiteSpace:"nowrap",
-                                  }}
-                                >{djAutoAdvance ? "⏱ AUTO ON" : "⏱ AUTO"}</button>
-                                {/* Movement style picker — AUTO cycles all 12 styles every 5s */}
-                                <div style={{ display:"flex", gap:3, flexWrap:"wrap", justifyContent:"center", maxWidth:148 }}>
-                                  {/* AUTO is the first and default option */}
-                                  <button key="auto" data-testid="button-dj-move-auto"
-                                    onClick={() => { setDjMoveStyle("auto"); setDjMoveTick(0); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: "auto" }); }}
-                                    style={{
-                                      padding:"2px 8px", borderRadius:999, fontSize:7, fontWeight:800,
-                                      letterSpacing:"0.07em", cursor:"pointer", textTransform:"uppercase",
-                                      background: djMoveStyle === "auto" ? "rgba(0,220,180,0.30)" : "rgba(255,255,255,0.06)",
-                                      border: djMoveStyle === "auto" ? "1px solid rgba(0,220,180,0.70)" : "1px solid rgba(255,255,255,0.12)",
-                                      color: djMoveStyle === "auto" ? "rgba(120,255,220,0.95)" : "rgba(255,255,255,0.38)",
-                                      animation: djMoveStyle === "auto" ? "dj-badge-pulse 1.4s ease-in-out infinite" : "none",
-                                    }}>✦ AUTO</button>
-                                  {(["sling","wave","bounce","pulse","tilt","orbit","float","wiggle","slam","spin","stretch","shake","static"] as const).map(s => (
-                                    <button key={s} data-testid={`button-dj-move-${s}`}
-                                      onClick={() => { setDjMoveStyle(s); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: s }); }}
-                                      style={{
-                                        padding:"1px 5px", borderRadius:999, fontSize:7, fontWeight:700,
-                                        letterSpacing:"0.05em", cursor:"pointer", textTransform:"uppercase",
-                                        background: djMoveStyle === s ? "rgba(255,200,0,0.28)" : "rgba(255,255,255,0.06)",
-                                        border: djMoveStyle === s ? "1px solid rgba(255,200,0,0.65)" : "1px solid rgba(255,255,255,0.12)",
-                                        color: djMoveStyle === s ? "rgba(255,230,100,0.95)" : "rgba(255,255,255,0.38)",
-                                      }}>{s}</button>
-                                  ))}
-                                </div>
-                              </>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 999, background: "linear-gradient(135deg,rgba(255,0,200,0.30),rgba(120,0,255,0.30))", border: "1px solid rgba(255,0,200,0.55)", animation: "dj-btn-glow 1.0s ease-in-out infinite" }}>
+                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", color: "rgba(255,180,255,1)" }}>🎧 DJ ON</span>
+                              </div>
                             )}
                           </div>
                         )}
