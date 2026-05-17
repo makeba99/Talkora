@@ -906,37 +906,14 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       data-testid={`card-room-${room.id}`}
     >
       <div
-        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""} ${hologramVideoUrl && isImageMedia(hologramVideoUrl) ? "card-image-bg" : ""}`}
+        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
         style={{
           borderRadius: "24px",
-          // For GIF/image holograms: apply the background-image directly on
-          // this div so overflow:hidden + border-radius clip it correctly.
-          // IMPORTANT: use backgroundColor (not the `background` shorthand)
-          // for the fallback color. The `background` shorthand resets
-          // background-image to `none`, which cancels out the backgroundImage
-          // longhand set alongside it — causing GIFs to be invisible.
-          // Using backgroundColor leaves backgroundImage untouched.
-          // For video/YouTube: use the dark gradient so the card looks fine
-          // while the iframe/video loads inside CardHologramVideo.
-          //
-          // NOTE: CSS background-image has NO onError fallback. The image
-          // proxy has a 4 MB size cap — if a GIF exceeds it the proxy returns
-          // 413 and the background silently disappears (shows only the dark
-          // backgroundColor). To guarantee visibility, use the direct URL for
-          // all GIF/image backgrounds; the CSP already allows all https: imgs.
-          ...(hologramVideoUrl && isImageMedia(hologramVideoUrl)
-            ? {
-                backgroundColor: "rgb(5, 8, 20)",
-                backgroundImage: `url("${hologramVideoUrl.replace(/"/g, "%22")}")`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
-              }
-            : {
-                background: isPremiumAtmosphere
-                  ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
-                  : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
-              }),
+          // Lobby cards always use the dark gradient — the room's interior
+          // theme/hologram is only rendered inside the voice room itself.
+          background: isPremiumAtmosphere
+            ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
+            : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
           height: isPremiumAtmosphere ? 268 : 252,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
@@ -954,7 +931,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             <span className="premium-atmosphere-sweep" />
           </div>
         )}
-        {hologramVideoUrl && <CardHologramVideo key={hologramVideoUrl} src={hologramVideoUrl} priority={priority} />}
+        {/* hologramVideoUrl is only rendered inside the voice room, not on lobby cards */}
 
         <div className="relative z-[2] flex flex-col h-full">
 

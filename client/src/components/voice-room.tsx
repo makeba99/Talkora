@@ -13817,9 +13817,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 >🎧 {discoHostPanelOpen ? "▲" : "▼"}</button>
                               </div>
 
-                              {/* DJ controls dropdown — opens downward */}
+                              {/* DJ controls dropdown — opens upward so it never covers the DJ avatar */}
                               {discoHostPanelOpen && (
-                                <div style={{ position: "absolute", top: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12, padding: "10px 10px 8px", boxShadow: "0 8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(255,0,200,0.18)", minWidth: 200, maxHeight: "60vh", overflowY: "auto", zIndex: 9999, display: "flex", flexDirection: "column", gap: 6 }}>
+                                <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12, padding: "10px 10px 8px", boxShadow: "0 -8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(255,0,200,0.18)", minWidth: 200, maxHeight: "60vh", overflowY: "auto", zIndex: 9999, display: "flex", flexDirection: "column", gap: 6 }}>
                                   {/* DJ ON / Close DJ */}
                                   <button
                                     type="button"

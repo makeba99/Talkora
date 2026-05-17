@@ -177,6 +177,8 @@ const roomDjSceneIdx = new Map<string, number>();
 const DJ_SCENE_LIST = ["spotlight","namestorm","disco","kiss","cocktails","boomer","laser","fireworks","aurora","vortex","matrix"];
 // Disco overlay scene — tracks which of the 7 cinematic scenes is showing so all clients stay in sync
 const roomDiscoOverlaySceneIdx = new Map<string, number>();
+// DJ move style — tracks the current sling/animation style so late-joiners get the same theme
+const roomDjMoveStyle = new Map<string, string>();
 // Join deduplication — prevents doubled "X joined" system messages caused by the race
 // between initMedia() emitting room:join and the socket "connect" listener (handleReconnect)
 // both firing almost simultaneously on first page load.
@@ -5485,7 +5487,8 @@ export async function registerRoutes(
         const djActive = roomDjSceneIdx.has(roomId);
         if (djActive) {
           const djSceneIdx = roomDjSceneIdx.get(roomId) ?? 0;
-          socket.emit("room:dj-mode", { active: true, scene: DJ_SCENE_LIST[djSceneIdx], overlaySceneIdx });
+          const moveStyle = roomDjMoveStyle.get(roomId) ?? "sling";
+          socket.emit("room:dj-mode", { active: true, scene: DJ_SCENE_LIST[djSceneIdx], overlaySceneIdx, moveStyle });
         }
       }
 
@@ -5641,8 +5644,10 @@ export async function registerRoutes(
         if (!roomDiscoOverlaySceneIdx.has(data.roomId)) {
           roomDiscoOverlaySceneIdx.set(data.roomId, 0);
         }
+        if (data.moveStyle) roomDjMoveStyle.set(data.roomId, data.moveStyle);
       } else {
         roomDjSceneIdx.delete(data.roomId);
+        roomDjMoveStyle.delete(data.roomId);
       }
       const overlaySceneIdx = roomDiscoOverlaySceneIdx.get(data.roomId) ?? 0;
       io.to(data.roomId).emit("room:dj-mode", { active: !!data.active, scene: "spotlight", moveStyle: data.moveStyle || "sling", overlaySceneIdx });
@@ -5665,6 +5670,8 @@ export async function registerRoutes(
     // ── DJ Move — host changes participant card movement style for all ──
     socket.on("room:dj-move", (data: { roomId: string; moveStyle: string }) => {
       if (!data?.roomId) return;
+      // Persist so late-joiners receive the current style
+      roomDjMoveStyle.set(data.roomId, data.moveStyle);
       io.to(data.roomId).emit("room:dj-move", { moveStyle: data.moveStyle });
     });
 
