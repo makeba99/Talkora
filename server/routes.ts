@@ -442,6 +442,24 @@ const uploadWelcomeMedia = multer({
   },
 });
 
+const pushImageStorage = multer.diskStorage({
+  destination: uploadsDir,
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `push-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
+  },
+});
+
+const uploadPushImage = multer({
+  storage: pushImageStorage,
+  limits: { fileSize: 4 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowedExt = /\.(jpe?g|png|gif|webp)$/i.test(file.originalname);
+    const allowedMime = /^image\/(jpeg|png|gif|webp)$/.test(file.mimetype);
+    cb(null, allowedExt && allowedMime);
+  },
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -3300,6 +3318,17 @@ export async function registerRoutes(
     try {
       const count = await storage.getPushSubscriberCount();
       res.json({ count });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Web Push: image upload (admin) ────────────────────────────────────────
+  app.post("/api/admin/push/upload-image", isAuthenticated, isSuperAdmin, uploadRateLimiter, uploadPushImage.single("image"), async (req: any, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: "No image file provided or invalid type." });
+      const url = `/uploads/${req.file.filename}`;
+      res.json({ url });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

@@ -2506,6 +2506,8 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   const [pushBody, setPushBody] = useState("");
   const [pushUrl, setPushUrl] = useState("/");
   const [pushImageUrl, setPushImageUrl] = useState("");
+  const [pushImageUploading, setPushImageUploading] = useState(false);
+  const pushImageInputRef = useRef<HTMLInputElement>(null);
 
   const registeredWithEmail = users.filter((u) => u.email);
   const filteredForPicker = userSearch
@@ -2589,6 +2591,36 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
     },
     onError: (err: any) => toast({ title: "Failed to send web push", description: err.message, variant: "destructive" }),
   });
+
+  const uploadPushImageFile = async (file: File) => {
+    setPushImageUploading(true);
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      const res = await fetch("/api/admin/push/upload-image", {
+        method: "POST",
+        credentials: "include",
+        body: form,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      setPushImageUrl(url);
+      toast({ title: "Image uploaded" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+    } finally {
+      setPushImageUploading(false);
+    }
+  };
+
+  const handlePushImagePaste = async (e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItem = items.find((item) => item.type.startsWith("image/"));
+    if (!imageItem) return;
+    e.preventDefault();
+    const file = imageItem.getAsFile();
+    if (file) await uploadPushImageFile(file);
+  };
 
   return (
     <div className="space-y-6" data-testid="tab-content-outreach">
@@ -2881,16 +2913,48 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5" /> Image URL <span className="text-muted-foreground/50 font-normal">(optional — shown in notification)</span>
+              <ImageIcon className="w-3.5 h-3.5" /> Notification Image <span className="text-muted-foreground/50 font-normal">(optional)</span>
             </Label>
-            <Input
-              value={pushImageUrl}
-              onChange={(e) => setPushImageUrl(e.target.value)}
-              placeholder="https://example.com/banner.png"
-              data-testid="input-push-image-url"
+            <input
+              ref={pushImageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadPushImageFile(file);
+                e.target.value = "";
+              }}
             />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  value={pushImageUrl}
+                  onChange={(e) => setPushImageUrl(e.target.value)}
+                  onPaste={handlePushImagePaste}
+                  placeholder="Paste image or enter URL…"
+                  data-testid="input-push-image-url"
+                />
+                {pushImageUploading && (
+                  <Loader2 className="absolute right-2.5 top-2.5 w-4 h-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/10"
+                onClick={() => pushImageInputRef.current?.click()}
+                disabled={pushImageUploading}
+                data-testid="button-push-upload-image"
+              >
+                {pushImageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                <span className="ml-1.5 text-xs">Upload</span>
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground/60">Upload a file, paste from clipboard (Ctrl+V), or enter a URL directly.</p>
             {pushImageUrl.trim() && (
-              <div className="rounded-lg overflow-hidden border border-emerald-400/20 bg-black/20 max-h-32">
+              <div className="relative rounded-lg overflow-hidden border border-emerald-400/20 bg-black/20 max-h-32 group">
                 <img
                   src={pushImageUrl.trim()}
                   alt="Push image preview"
@@ -2898,6 +2962,13 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   onLoad={(e) => { (e.target as HTMLImageElement).style.display = "block"; }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setPushImageUrl("")}
+                  className="absolute top-1.5 right-1.5 bg-black/60 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
               </div>
             )}
           </div>
