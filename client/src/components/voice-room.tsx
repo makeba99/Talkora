@@ -14041,7 +14041,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         socket?.emit("room:movie-watching", { roomId: room.id, hostId: p.id, watching: true });
                       } : undefined}
                       cardPx={cardPx}
-                      hologramVideoUrl={(room as any).hologramVideoUrl || null}
+                      hologramVideoUrl={null}
                       avatarGifUrl={participantAvatarGifs[p.id] || null}
                       onSetAvatarGif={isMe ? (gifUrl: string | null) => {
                         setParticipantAvatarGifs((prev) => {
