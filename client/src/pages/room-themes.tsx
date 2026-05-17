@@ -57,7 +57,7 @@ export default function RoomThemesPage() {
   const [showRequest, setShowRequest] = useState(false);
   const [activeTab, setActiveTab] = useState<"browse" | "my-themes" | "orders">("browse");
 
-  const { data: availableData, isLoading: loadingAvailable } = useQuery<{ themeIds: string[] }>({
+  const { data: availableData, isLoading: loadingAvailable } = useQuery<{ themeIds: string[]; roomThemesEnabled: boolean }>({
     queryKey: ["/api/themes/available"],
     enabled: !!user,
   });
@@ -133,6 +133,7 @@ export default function RoomThemesPage() {
   const hitDailyLimit = (orderStats?.last24hCount ?? 0) >= 3;
   const requestsLeft = Math.max(0, 3 - (orderStats?.last24hCount ?? 0));
   const pendingOrders = myOrders.filter((o) => o.status === "pending").length;
+  const roomThemesEnabled = availableData?.roomThemesEnabled ?? true;
 
   return (
     <div className="min-h-screen bg-background">
@@ -163,6 +164,19 @@ export default function RoomThemesPage() {
             </button>
           </div>
         </div>
+
+        {/* Global disabled banner */}
+        {!roomThemesEnabled && !loadingAvailable && (
+          <div className="mb-6 rounded-xl border border-red-500/40 bg-red-500/8 px-4 py-3 flex items-start gap-3">
+            <XCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-red-300">Room Themes Disabled</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Room themes have been temporarily disabled by the platform. You can still browse themes, but they cannot be applied to rooms right now.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Custom theme request form */}
         {showRequest && (

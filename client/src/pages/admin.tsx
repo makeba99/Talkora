@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft, ShoppingBag, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft, ShoppingBag, Sparkles, Palette } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -3247,7 +3247,7 @@ function RoomFeaturesTab() {
 }
 
 type AdminThemeEntry = { id: string; visible: boolean; canHide: boolean };
-type AdminThemesData = { themes: AdminThemeEntry[]; userAssignments: Record<string, string[]> };
+type AdminThemesData = { themes: AdminThemeEntry[]; userAssignments: Record<string, string[]>; roomThemesEnabled: boolean };
 
 type ThemeOrderRow = {
   id: string; userId: string; themeName: string; description: string;
@@ -3304,6 +3304,18 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   });
 
   const themes = data?.themes ?? [];
+  const roomThemesEnabled = data?.roomThemesEnabled ?? true;
+
+  const toggleRoomThemes = useMutation({
+    mutationFn: async (enabled: boolean) =>
+      apiRequest("POST", "/api/admin/settings/room-themes", { enabled }),
+    onSuccess: () => {
+      refetch();
+      toast({ title: "Room themes setting updated" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const filteredUsers = usersData.filter((u) => {
     if (!userSearch.trim()) return false;
     const q = userSearch.toLowerCase();
@@ -3386,6 +3398,36 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           </p>
         </div>
       </div>
+
+      {/* ── Master Room Themes Toggle ── */}
+      {isSuperAdmin && (
+        <Card className={`bg-card/75 backdrop-blur-xl border-2 transition-colors ${roomThemesEnabled ? "border-green-500/30" : "border-red-500/40"}`}>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${roomThemesEnabled ? "bg-green-500/15" : "bg-red-500/15"}`}>
+                  <Palette className={`w-4.5 h-4.5 ${roomThemesEnabled ? "text-green-400" : "text-red-400"}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Room Themes — Globally {roomThemesEnabled ? "Enabled" : "Disabled"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {roomThemesEnabled
+                      ? "Users can set visual themes on their rooms. Toggle to disable all room themes platform-wide."
+                      : "All room themes are currently disabled. No user can apply or change a room theme."}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={roomThemesEnabled}
+                onCheckedChange={(v) => toggleRoomThemes.mutate(v)}
+                disabled={toggleRoomThemes.isPending}
+                data-testid="switch-room-themes-enabled"
+                className="shrink-0"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Global Theme Visibility ── */}
       <Card className="bg-card/75 backdrop-blur-xl border-primary/15">

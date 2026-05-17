@@ -2657,7 +2657,13 @@ export async function registerRoutes(
       if (language) updateData.language = language;
       if (level) updateData.level = level;
       if (maxUsers !== undefined && maxUsers !== null) updateData.maxUsers = maxUsers;
-      if (roomTheme !== undefined) updateData.roomTheme = roomTheme;
+      if (roomTheme !== undefined) {
+        const roomThemesEnabledRaw = await storage.getSetting("room_themes_enabled");
+        if (roomThemesEnabledRaw === "false") {
+          return res.status(403).json({ message: "Room themes are currently disabled by the platform." });
+        }
+        updateData.roomTheme = roomTheme;
+      }
       if (isPublic !== undefined && typeof isPublic === "boolean") updateData.isPublic = isPublic;
       if (hologramVideoUrl !== undefined) updateData.hologramVideoUrl = hologramVideoUrl;
       if (welcomeMessage !== undefined) updateData.welcomeMessage = welcomeMessage;
@@ -4838,9 +4844,10 @@ export async function registerRoutes(
 
   app.get("/api/admin/themes", isAuthenticated, isAdmin, async (_req, res) => {
     try {
-      const [visMap, assignments] = await Promise.all([
+      const [visMap, assignments, roomThemesEnabledRaw] = await Promise.all([
         storage.getThemeVisibility(),
         storage.getAllUserThemeAssignments(),
+        storage.getSetting("room_themes_enabled"),
       ]);
       const userAssignmentMap: Record<string, string[]> = {};
       for (const a of assignments) {
@@ -4852,7 +4859,19 @@ export async function registerRoutes(
         visible: id === "none" ? true : (visMap[id] !== false),
         canHide: id !== "none",
       }));
-      res.json({ themes, userAssignments: userAssignmentMap });
+      const roomThemesEnabled = roomThemesEnabledRaw !== "false";
+      res.json({ themes, userAssignments: userAssignmentMap, roomThemesEnabled });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/settings/room-themes", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { enabled } = req.body;
+      if (typeof enabled !== "boolean") return res.status(400).json({ message: "enabled must be boolean" });
+      await storage.setSetting("room_themes_enabled", enabled ? "true" : "false");
+      res.json({ ok: true, enabled });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -4897,8 +4916,12 @@ export async function registerRoutes(
   app.get("/api/themes/available", isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).id;
-      const available = await storage.getAvailableThemesForUser(userId, ALL_THEME_IDS);
-      res.json({ themeIds: available });
+      const [available, roomThemesEnabledRaw] = await Promise.all([
+        storage.getAvailableThemesForUser(userId, ALL_THEME_IDS),
+        storage.getSetting("room_themes_enabled"),
+      ]);
+      const roomThemesEnabled = roomThemesEnabledRaw !== "false";
+      res.json({ themeIds: available, roomThemesEnabled });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
