@@ -22,6 +22,7 @@ import { getUserDisplayName } from "@/lib/utils";
 import type { Announcement, Report, User, TeacherApplication, UserBadge } from "@shared/schema";
 import { BADGE_TYPES } from "@shared/constants";
 import { THEMES } from "@/lib/theme";
+import { ROOM_THEMES } from "@/lib/room-theme-utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { GifPickerButton } from "@/components/chat-picker";
@@ -3256,21 +3257,20 @@ type ThemeOrderRow = {
 };
 
 function ThemeSwatchPreview({ themeId, size = "md" }: { themeId: string; size?: "sm" | "md" }) {
-  const def = THEMES.find((t) => t.id === themeId);
+  const def = ROOM_THEMES.find((t) => t.id === themeId);
   const h = size === "sm" ? "h-8" : "h-12";
-  if (!def) {
+  if (!def || themeId === "none") {
     return (
-      <div className={`${h} w-full rounded bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center`}>
+      <div className={`${h} w-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center`}>
         <span className="text-[9px] text-muted-foreground">Default</span>
       </div>
     );
   }
   return (
-    <div className={`${h} w-full rounded flex overflow-hidden`}>
-      {def.swatchColors.map((c, i) => (
-        <div key={i} className="flex-1" style={{ background: c }} />
-      ))}
-    </div>
+    <div
+      className={`${h} w-full bg-cover bg-center`}
+      style={{ backgroundImage: `url(${def.img})` }}
+    />
   );
 }
 
@@ -3393,24 +3393,19 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
               {themes.map((theme) => {
-                const def = THEMES.find((t) => t.id === theme.id);
+                const def = ROOM_THEMES.find((t) => t.id === theme.id);
                 return (
                   <div
                     key={theme.id}
                     className={`relative rounded-lg overflow-hidden border transition-all ${theme.visible ? "border-border/40" : "border-red-500/40 opacity-60"}`}
                     data-testid={`card-theme-${theme.id}`}
                   >
-                    {/* color swatch preview */}
+                    {/* preview image */}
                     <ThemeSwatchPreview themeId={theme.id} />
                     {!theme.visible && (
                       <div className="absolute top-1 left-1 bg-black/70 rounded px-1 py-0.5 flex items-center gap-1">
                         <EyeOff className="w-2.5 h-2.5 text-red-400" />
                         <span className="text-[9px] text-red-400">Hidden</span>
-                      </div>
-                    )}
-                    {def?.animated && (
-                      <div className="absolute top-1 right-1 bg-black/60 rounded px-1 py-0.5">
-                        <span className="text-[9px] text-primary">✦ anim</span>
                       </div>
                     )}
                     {/* label + description + toggle */}
@@ -3518,7 +3513,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
                   {themes.filter((t) => t.id !== "none").map((theme) => {
                     const isAssigned = pendingAssignments.includes(theme.id);
-                    const def = THEMES.find((t2) => t2.id === theme.id);
+                    const def = ROOM_THEMES.find((t2) => t2.id === theme.id);
                     return (
                       <button
                         key={theme.id}
@@ -3685,7 +3680,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                   >
                     None (notify only)
                   </button>
-                  {THEMES.map((t) => (
+                  {ROOM_THEMES.filter((t) => t.id !== "none").map((t) => (
                     <button
                       key={t.id}
                       type="button"
@@ -3697,11 +3692,10 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                       }`}
                       data-testid={`button-grant-theme-${t.id}`}
                     >
-                      <span className="flex gap-0.5 shrink-0">
-                        {t.swatchColors.slice(0, 2).map((c, i) => (
-                          <span key={i} className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
-                        ))}
-                      </span>
+                      <div
+                        className="w-5 h-5 rounded-sm shrink-0 bg-cover bg-center"
+                        style={{ backgroundImage: `url(${t.img})` }}
+                      />
                       <span className="truncate">{t.label}</span>
                       {grantThemeId === t.id && <CheckCircle className="w-3 h-3 ml-auto shrink-0 text-amber-400" />}
                     </button>
@@ -3709,7 +3703,7 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
                 </div>
                 {grantThemeId && (
                   <p className="text-[10px] text-amber-400/80 mt-1">
-                    Will grant access to "{THEMES.find((t) => t.id === grantThemeId)?.label}" on approval.
+                    Will grant access to "{ROOM_THEMES.find((t) => t.id === grantThemeId)?.label}" on approval.
                   </p>
                 )}
               </div>

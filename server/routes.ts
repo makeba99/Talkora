@@ -4814,10 +4814,9 @@ export async function registerRoutes(
   // Must stay in sync with THEMES array in client/src/lib/theme.tsx
   const ALL_THEME_IDS = [
     "none",
-    "premium-atmosphere","neomorphic-dark","neomorphic-light","dark","light",
-    "midnight-purple","warm-sepia","neon-cyberpunk","frosted-glass","ocean-deep",
-    "forest-dark","rose-gold","aurora","starfield","galaxy","synthwave",
-    "blood-moon","slate-noir","neural-pulse","trap-gold","skeleton-gangsta",
+    "premium-atmosphere","plasma","neon","galaxy","sunset","forest",
+    "cyberpunk","ocean","cherry","aurora","matrix","storm","volcanic",
+    "disco","trap-gold","skeleton-gangsta","romance",
   ];
 
   app.get("/api/admin/themes", isAuthenticated, isAdmin, async (_req, res) => {
