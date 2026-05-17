@@ -13793,7 +13793,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         {isMe && (
                           <div className="flex flex-col items-center gap-1">
                             {/* Scene label + ⏭ + ▼ DJ controls dropdown — all in one row */}
-                            <div style={{ position: "relative" }}>
+                            <div style={{ position: "relative", overflow: "visible" }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                                 {/* Current disco scene name */}
                                 <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "rgba(255,200,255,0.85)", whiteSpace: "nowrap" }}>
@@ -13817,9 +13817,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 >🎧 {discoHostPanelOpen ? "▲" : "▼"}</button>
                               </div>
 
-                              {/* DJ controls dropdown — opens upward */}
+                              {/* DJ controls dropdown — opens downward */}
                               {discoHostPanelOpen && (
-                                <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12, padding: "10px 10px 8px", boxShadow: "0 -8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(255,0,200,0.18)", minWidth: 172, zIndex: 50, display: "flex", flexDirection: "column", gap: 6 }}>
+                                <div style={{ position: "absolute", top: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.92)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,100,255,0.30)", borderRadius: 12, padding: "10px 10px 8px", boxShadow: "0 8px 32px rgba(0,0,0,0.65), 0 0 20px rgba(255,0,200,0.18)", minWidth: 200, maxHeight: "60vh", overflowY: "auto", zIndex: 9999, display: "flex", flexDirection: "column", gap: 6 }}>
                                   {/* DJ ON / Close DJ */}
                                   <button
                                     type="button"
@@ -13867,15 +13867,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                       {/* Movement style label */}
                                       <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.10em", color: "rgba(255,255,255,0.30)", textTransform: "uppercase", paddingLeft: 4 }}>SLING STYLE</span>
 
-                                      {/* Movement style grid */}
+                                      {/* AUTO button — full-width, most prominent */}
+                                      <button type="button" data-testid="button-dj-move-auto"
+                                        onClick={() => { setDjMoveStyle("auto"); setDjMoveTick(0); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: "auto" }); }}
+                                        style={{ width: "100%", padding: "5px 10px", borderRadius: 8, fontSize: 10, fontWeight: 900, letterSpacing: "0.10em", cursor: "pointer", textTransform: "uppercase", background: djMoveStyle === "auto" ? "linear-gradient(135deg,rgba(0,220,180,0.40),rgba(0,180,255,0.30))" : "rgba(0,220,180,0.10)", border: djMoveStyle === "auto" ? "1px solid rgba(0,220,180,0.80)" : "1px solid rgba(0,220,180,0.35)", color: djMoveStyle === "auto" ? "rgba(120,255,220,1)" : "rgba(0,220,180,0.70)", animation: djMoveStyle === "auto" ? "dj-badge-pulse 1.4s ease-in-out infinite" : "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                                        <span style={{ fontSize: 12 }}>✦</span> AUTO — cycles all styles automatically
+                                      </button>
+
+                                      {/* Individual move style grid */}
                                       <div style={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "flex-start" }}>
-                                        <button type="button" key="auto" data-testid="button-dj-move-auto"
-                                          onClick={() => { setDjMoveStyle("auto"); setDjMoveTick(0); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: "auto" }); }}
-                                          style={{ padding: "2px 7px", borderRadius: 999, fontSize: 8, fontWeight: 800, letterSpacing: "0.06em", cursor: "pointer", textTransform: "uppercase", background: djMoveStyle === "auto" ? "rgba(0,220,180,0.30)" : "rgba(255,255,255,0.06)", border: djMoveStyle === "auto" ? "1px solid rgba(0,220,180,0.70)" : "1px solid rgba(255,255,255,0.12)", color: djMoveStyle === "auto" ? "rgba(120,255,220,0.95)" : "rgba(255,255,255,0.38)", animation: djMoveStyle === "auto" ? "dj-badge-pulse 1.4s ease-in-out infinite" : "none" }}>✦ AUTO</button>
                                         {(["sling","wave","bounce","pulse","tilt","orbit","float","wiggle","slam","spin","stretch","shake","static"] as const).map(s => (
                                           <button type="button" key={s} data-testid={`button-dj-move-${s}`}
                                             onClick={() => { setDjMoveStyle(s); socket?.emit("room:dj-move", { roomId: room.id, moveStyle: s }); }}
-                                            style={{ padding: "2px 6px", borderRadius: 999, fontSize: 8, fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", textTransform: "uppercase", background: djMoveStyle === s ? "rgba(255,200,0,0.28)" : "rgba(255,255,255,0.06)", border: djMoveStyle === s ? "1px solid rgba(255,200,0,0.65)" : "1px solid rgba(255,255,255,0.12)", color: djMoveStyle === s ? "rgba(255,230,100,0.95)" : "rgba(255,255,255,0.38)" }}>{s}</button>
+                                            style={{ padding: "3px 8px", borderRadius: 999, fontSize: 8, fontWeight: 700, letterSpacing: "0.05em", cursor: "pointer", textTransform: "uppercase", background: djMoveStyle === s ? "rgba(255,200,0,0.28)" : "rgba(255,255,255,0.06)", border: djMoveStyle === s ? "1px solid rgba(255,200,0,0.65)" : "1px solid rgba(255,255,255,0.12)", color: djMoveStyle === s ? "rgba(255,230,100,0.95)" : "rgba(255,255,255,0.50)" }}>{s}</button>
                                         ))}
                                       </div>
                                     </>
