@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   avatarRing: varchar("avatar_ring"),
   flairBadge: varchar("flair_badge"),
   profileDecoration: varchar("profile_decoration"),
+  profileAnimation: varchar("profile_animation"),
   instagramUrl: varchar("instagram_url"),
   linkedinUrl: varchar("linkedin_url"),
   facebookUrl: varchar("facebook_url"),

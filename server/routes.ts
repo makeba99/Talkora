@@ -2228,7 +2228,7 @@ export async function registerRoutes(
       if (userId !== req.params.id) {
         return res.status(403).json({ message: "Cannot update other users" });
       }
-      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status } = req.body;
+      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, profileAnimation, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
       const profileModResult = checkFields({ displayName, bio }, "profile");
@@ -2249,6 +2249,7 @@ export async function registerRoutes(
       if (flairBadge !== undefined) updateData.flairBadge = flairBadge;
       if (bio !== undefined) updateData.bio = bio;
       if (profileDecoration !== undefined) updateData.profileDecoration = profileDecoration;
+      if (profileAnimation !== undefined) updateData.profileAnimation = profileAnimation;
       if (instagramUrl !== undefined) updateData.instagramUrl = instagramUrl;
       if (linkedinUrl !== undefined) updateData.linkedinUrl = linkedinUrl;
       if (facebookUrl !== undefined) updateData.facebookUrl = facebookUrl;
@@ -2264,6 +2265,7 @@ export async function registerRoutes(
         avatarRing: updated.avatarRing,
         flairBadge: updated.flairBadge,
         profileDecoration: updated.profileDecoration,
+        profileAnimation: updated.profileAnimation,
         status: updated.status,
       });
       res.json(updated);

@@ -33,6 +33,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { PROFILE_DECORATIONS, ProfileDecoration } from "@/components/profile-decorations";
+import { PROFILE_ANIMATIONS, ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { BADGE_TYPES } from "@shared/constants";
 
 // AVATAR_RINGS / FLAIR_BADGES / getAvatarRingClass / getFlairIcon now live
@@ -271,6 +272,7 @@ export function ProfileDropdown({
   const [selectedRing, setSelectedRing] = useState<string>("none");
   const [selectedFlair, setSelectedFlair] = useState<string>("none");
   const [selectedDecoration, setSelectedDecoration] = useState<string>("none");
+  const [selectedAnimation, setSelectedAnimation] = useState<string>("none");
   const [requestedBadge, setRequestedBadge] = useState("");
   const [badgeReason, setBadgeReason] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -321,7 +323,7 @@ export function ProfileDropdown({
   });
 
   const saveDecorationsMutation = useMutation({
-    mutationFn: async (data: { avatarRing?: string; flairBadge?: string; profileDecoration?: string }) => {
+    mutationFn: async (data: { avatarRing?: string; flairBadge?: string; profileDecoration?: string; profileAnimation?: string }) => {
       const res = await apiRequest("PATCH", `/api/users/${user?.id}`, data);
       return res.json();
     },
@@ -415,6 +417,7 @@ export function ProfileDropdown({
     setSelectedRing(user?.avatarRing || "none");
     setSelectedFlair(user?.flairBadge || "none");
     setSelectedDecoration((user as any)?.profileDecoration || "none");
+    setSelectedAnimation((user as any)?.profileAnimation || "none");
     setSettingsOpen(true);
   };
 
@@ -423,6 +426,7 @@ export function ProfileDropdown({
       avatarRing: selectedRing,
       flairBadge: "none",
       profileDecoration: selectedDecoration,
+      profileAnimation: selectedAnimation,
     });
   };
 
@@ -1117,6 +1121,54 @@ export function ProfileDropdown({
                     </>
                   );
                 })()}
+              </div>
+
+              {/* ── Profile Card Animation ─────────────────────────────── */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Card Animation</Label>
+                <p className="text-xs text-muted-foreground">Animated overlay effect on your participant card in voice rooms</p>
+
+                {/* Live preview */}
+                <div className="flex justify-center mb-2">
+                  <div className="relative rounded-md overflow-hidden bg-muted/30 border border-border/40" style={{ width: 72, height: 72 }}>
+                    <ProfileAnimationOverlay animationId={selectedAnimation} isHost={true} />
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 ring-2 ring-primary/40 flex items-center justify-center">
+                        <span className="text-lg">{PROFILE_ANIMATIONS.find(a => a.id === selectedAnimation)?.emoji ?? "👤"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {PROFILE_ANIMATIONS.map((anim, idx) => (
+                    <button
+                      key={anim.id}
+                      onClick={() => setSelectedAnimation(anim.id)}
+                      className={`neu-deco-tile ${selectedAnimation === anim.id ? "is-active" : ""}`}
+                      style={{ ["--neu-deco-delay" as any]: `${idx * 30}ms` }}
+                      data-testid={`animation-option-${anim.id}`}
+                      title={anim.label}
+                    >
+                      {anim.id === "none" ? (
+                        <span className="neu-deco-tile-none" />
+                      ) : (
+                        <span className="neu-deco-tile-preview" style={{ width: 28, height: 28, background: "transparent", boxShadow: "none", position: "relative", overflow: "hidden", borderRadius: 4 }}>
+                          <span className="absolute inset-0 rounded" style={{ overflow: "hidden" }}>
+                            <ProfileAnimationOverlay animationId={anim.id} isHost={true} />
+                          </span>
+                          <span className="relative z-10 flex items-center justify-center w-full h-full text-[13px]">
+                            {anim.emoji ?? "✦"}
+                          </span>
+                        </span>
+                      )}
+                      <span className="neu-deco-tile-label">{anim.label}</span>
+                      {selectedAnimation === anim.id && (
+                        <span className="neu-deco-tile-check"><Check /></span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </ScrollArea>

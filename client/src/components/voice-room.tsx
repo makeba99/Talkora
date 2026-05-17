@@ -59,6 +59,7 @@ const CenterC4Overlay = lazy(() =>
   import("@/components/center-c4-overlay").then((m) => ({ default: m.CenterC4Overlay }))
 );
 import { getAvatarRingClass } from "@/lib/avatar-ring";
+import { ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
@@ -787,6 +788,11 @@ function ParticipantCard({
         } transition-all duration-300`}
         style={{ width: cardPx, height: cardPx, flexShrink: 0 }}
       >
+        {/* Profile card animation overlay — renders behind avatar content */}
+        <ProfileAnimationOverlay
+          animationId={(p as any).profileAnimation}
+          isHost={isRoomOwner}
+        />
         {hasActiveYoutube && youtubeVideoId ? (
           <>
             <img
@@ -3578,6 +3584,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         avatarRing?: string | null;
         flairBadge?: string | null;
         profileDecoration?: string | null;
+        profileAnimation?: string | null;
         status?: string | null;
       }) => {
         if (!data?.userId) return;
