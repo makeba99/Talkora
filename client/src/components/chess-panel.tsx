@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-  ExternalLink, Flag, Crown, RotateCcw, X, Link as LinkIcon, Trophy, Users,
-  Swords, Check, Timer, Hash, RefreshCw, Zap, ChevronDown, ChevronUp, Circle, Maximize2,
+  ExternalLink, Flag, Crown, RotateCcw, X, Trophy, Users,
+  Swords, Check, Timer, RefreshCw, Zap, ChevronDown, ChevronUp, Circle, Maximize2, Gamepad2,
 } from "lucide-react";
 import type { Socket } from "socket.io-client";
 import { useToast } from "@/hooks/use-toast";
@@ -31,26 +31,6 @@ interface IncomingChallenge {
   challengeId: string;
   timeControl?: number | null;
 }
-
-interface IncomingTttChallenge {
-  fromUserId: string;
-  fromUsername: string;
-  fromAvatar?: string | null;
-  roomId: string;
-}
-
-type TttSeat = { userId: string; username: string; avatar?: string | null } | null;
-type TttState = {
-  board: (null | "X" | "O")[];
-  turn: "X" | "O";
-  status: "active" | "ended";
-  winner: "X" | "O" | "draw" | null;
-  winLine: number[] | null;
-  x: TttSeat;
-  o: TttSeat;
-  scores: { x: number; o: number; draws: number };
-  startedAt: number;
-};
 
 type C4Seat = { userId: string; username: string; avatar: string | null } | null;
 type C4State = {
@@ -87,12 +67,6 @@ export interface ChessRoomState {
   mode?: "standard" | "timed" | null;
 }
 
-export interface LichessShare {
-  url: string;
-  sharedBy: string;
-}
-
-
 const TIME_OPTIONS = [
   { label: "Untimed", value: null },
   { label: "1 min", value: 60000 },
@@ -121,39 +95,23 @@ function nameOf(p: ChessParticipant) {
   return p.displayName || p.firstName || (p.email ? p.email.split("@")[0] : null) || "Player";
 }
 
-function extractLichessUrl(input: string): string | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  if (/^https?:\/\/(www\.)?lichess\.org\//i.test(trimmed)) return trimmed;
-  if (/^[a-zA-Z0-9]{8,12}$/.test(trimmed)) return `https://lichess.org/${trimmed}`;
-  return null;
-}
-
-function lichessEmbedUrl(rawUrl: string): string {
-  const u = rawUrl.replace(/^https?:\/\/(www\.)?lichess\.org\//i, "");
-  const gameId = u.split(/[/?#]/)[0]?.slice(0, 8);
-  if (!gameId) return rawUrl;
-  return `https://lichess.org/embed/game/${gameId}?theme=auto&bg=auto`;
-}
-
 export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board }: Props) {
   const { toast } = useToast();
-  const [tab, setTab] = useState<"quick" | "lichess" | "tictactoe" | "c4">("quick");
+  const [tab, setTab] = useState<"quick" | "jklm" | "c4">("quick");
   const [state, setState] = useState<ChessRoomState | null>(null);
-  const [lichess, setLichess] = useState<LichessShare | null>(null);
-  const [lichessInput, setLichessInput] = useState("");
-  const [lichessError, setLichessError] = useState<string | null>(null);
   const [incoming, setIncoming] = useState<IncomingChallenge | null>(null);
   const [pendingTo, setPendingTo] = useState<{ userId: string; username: string } | null>(null);
   const [showChallengeList, setShowChallengeList] = useState(false);
   const [selectedTimeControl, setSelectedTimeControl] = useState<number | null>(null);
   const [showTimeOptions, setShowTimeOptions] = useState(false);
 
-  // Tic-Tac-Toe state
-  const [tttState, setTttState] = useState<TttState | null>(null);
-  const [incomingTtt, setIncomingTtt] = useState<IncomingTttChallenge | null>(null);
-  const [pendingTttTo, setPendingTttTo] = useState<{ userId: string; username: string } | null>(null);
-  const [showTttChallengeList, setShowTttChallengeList] = useState(false);
+  // JKLM.fun state
+  const [jklmState, setJklmState] = useState<{ url: string; sharedBy: string; sharedByName: string } | null>(null);
+  const [incomingJklm, setIncomingJklm] = useState<{ fromUserId: string; fromUsername: string; fromAvatar?: string | null; url: string } | null>(null);
+  const [jklmInput, setJklmInput] = useState("");
+  const [jklmError, setJklmError] = useState<string | null>(null);
+  const [showJklmChallengeList, setShowJklmChallengeList] = useState(false);
+  const [jklmSelected, setJklmSelected] = useState<string[]>([]);
 
   // Connect Four state
   const [c4State, setC4State] = useState<C4State | null>(null);
@@ -216,7 +174,6 @@ export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board
       setSelectedSquare(null);
       setLegalTargets([]);
     };
-    const onLichess = (l: LichessShare | null) => setLichess(l);
     const onChallenge = (c: IncomingChallenge) => setIncoming(c);
     const onDeclined = (d: { byUserId: string; byUsername: string }) => {
       if (pendingTo?.userId === d.byUserId) setPendingTo(null);
@@ -227,63 +184,50 @@ export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board
       setShowChallengeList(false);
       toast({ title: "Challenge accepted!", description: "Game starting now." });
     };
-    const onTttChallenge = (c: IncomingTttChallenge) => setIncomingTtt(c);
-    const onTttState = (s: TttState | null) => setTttState(s);
-    const onTttDeclined = (d: { byUserId: string; byUsername: string }) => {
-      if (pendingTttTo?.userId === d.byUserId) setPendingTttTo(null);
-      toast({ title: "Tic-Tac-Toe declined", description: `${d.byUsername} declined.` });
-    };
-    const onTttAccepted = () => {
-      setPendingTttTo(null);
-      setShowTttChallengeList(false);
-      setTab("tictactoe");
-      toast({ title: "Match starting!", description: "Tic-Tac-Toe is on." });
-    };
     const onC4State = (s: C4State | null) => setC4State(s);
     const onC4Challenge = (c: IncomingC4Challenge) => setIncomingC4(c);
     const onC4Declined = (d: { byUserId: string; byUsername: string }) => {
       if (pendingC4To?.userId === d.byUserId) setPendingC4To(null);
       toast({ title: "Connect Four declined", description: `${d.byUsername} declined.` });
     };
-    const onC4Accepted = (d: { byUserId: string; byUsername: string }) => {
+    const onC4Accepted = (_d: { byUserId: string; byUsername: string }) => {
       setPendingC4To(null);
       setShowC4ChallengeList(false);
       setTab("c4");
       toast({ title: "Connect Four accepted!", description: "Game starting — open the board!" });
       onOpenC4Board?.();
     };
+    const onJklmState = (s: { url: string; sharedBy: string; sharedByName: string } | null) => setJklmState(s);
+    const onJklmInvite = (c: { fromUserId: string; fromUsername: string; fromAvatar?: string | null; url: string }) => {
+      setIncomingJklm(c);
+      setTab("jklm");
+    };
     socket.on("room:chess-state", onState);
-    socket.on("room:lichess", onLichess);
     socket.on("room:chess-challenge", onChallenge);
     socket.on("room:chess-challenge-declined", onDeclined);
     socket.on("room:chess-challenge-accepted", onAccepted);
-    socket.on("room:ttt-challenge", onTttChallenge);
-    socket.on("room:ttt-state", onTttState);
-    socket.on("room:ttt-declined", onTttDeclined);
-    socket.on("room:ttt-accepted", onTttAccepted);
     socket.on("room:c4-state", onC4State);
     socket.on("room:c4-challenge", onC4Challenge);
     socket.on("room:c4-declined", onC4Declined);
     socket.on("room:c4-accepted", onC4Accepted);
+    socket.on("room:jklm-state", onJklmState);
+    socket.on("room:jklm-invite", onJklmInvite);
     socket.emit("room:chess-sync-request", { roomId });
-    socket.emit("room:ttt-sync", { roomId });
     socket.emit("room:c4-sync", { roomId });
+    socket.emit("room:jklm-sync", { roomId });
     return () => {
       socket.off("room:chess-state", onState);
-      socket.off("room:lichess", onLichess);
       socket.off("room:chess-challenge", onChallenge);
       socket.off("room:chess-challenge-declined", onDeclined);
       socket.off("room:chess-challenge-accepted", onAccepted);
-      socket.off("room:ttt-challenge", onTttChallenge);
-      socket.off("room:ttt-state", onTttState);
-      socket.off("room:ttt-declined", onTttDeclined);
-      socket.off("room:ttt-accepted", onTttAccepted);
       socket.off("room:c4-state", onC4State);
       socket.off("room:c4-challenge", onC4Challenge);
       socket.off("room:c4-declined", onC4Declined);
       socket.off("room:c4-accepted", onC4Accepted);
+      socket.off("room:jklm-state", onJklmState);
+      socket.off("room:jklm-invite", onJklmInvite);
     };
-  }, [socket, roomId, pendingTo?.userId, pendingTttTo?.userId, pendingC4To?.userId, onOpenC4Board, toast]);
+  }, [socket, roomId, pendingTo?.userId, pendingC4To?.userId, onOpenC4Board, toast]);
 
   const sendChallenge = (target: ChessParticipant) => {
     if (!socket) return;
@@ -305,31 +249,6 @@ export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board
     setIncoming(null);
     if (accept) { setShowChallengeList(false); setTab("quick"); }
   };
-
-  const sendTttChallenge = (target: ChessParticipant) => {
-    if (!socket) return;
-    socket.emit("room:ttt-challenge", { roomId, targetUserId: target.id });
-    setPendingTttTo({ userId: target.id, username: nameOf(target) });
-    toast({ title: "Tic-Tac-Toe sent!", description: `Waiting for ${nameOf(target)}…` });
-    setTimeout(() => setPendingTttTo((p) => (p?.userId === target.id ? null : p)), 30000);
-  };
-
-  const respondTttChallenge = (accept: boolean) => {
-    if (!incomingTtt || !socket) return;
-    socket.emit("room:ttt-respond", { roomId, fromUserId: incomingTtt.fromUserId, accept });
-    setIncomingTtt(null);
-    if (accept) setTab("tictactoe");
-  };
-
-  const tttPlayCell = (idx: number) => {
-    if (!socket || !tttState || tttState.status !== "active") return;
-    const mySym: "X" | "O" | null = tttState.x?.userId === userId ? "X" : tttState.o?.userId === userId ? "O" : null;
-    if (!mySym || tttState.turn !== mySym) return;
-    if (tttState.board[idx] !== null) return;
-    socket.emit("room:ttt-move", { roomId, idx });
-  };
-  const tttRematch = () => socket?.emit("room:ttt-rematch", { roomId });
-  const tttClose = () => socket?.emit("room:ttt-close", { roomId });
 
   const sendC4Challenge = (target: ChessParticipant) => {
     if (!socket) return;
@@ -487,14 +406,19 @@ export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board
     return styles;
   }, [selectedSquare, legalTargets, state?.lastMove, state?.fen]);
 
-  const shareLichess = () => {
-    setLichessError(null);
-    const url = extractLichessUrl(lichessInput);
-    if (!url) { setLichessError("Paste a Lichess game URL or game ID"); return; }
-    socket?.emit("room:lichess", { roomId, url });
-    setLichessInput("");
+  const shareJklm = () => {
+    const code = jklmInput.trim();
+    if (!code) { setJklmError("Enter a JKLM room code or full URL"); return; }
+    setJklmError(null);
+    socket?.emit("room:jklm-share", { roomId, url: code });
+    if (jklmSelected.length > 0) {
+      socket?.emit("room:jklm-challenge", { roomId, targetUserIds: jklmSelected, url: code });
+    }
+    setJklmInput("");
+    setJklmSelected([]);
+    setShowJklmChallengeList(false);
   };
-  const clearLichess = () => socket?.emit("room:lichess", { roomId, url: null });
+  const clearJklm = () => socket?.emit("room:jklm-clear", { roomId });
 
   const selectedTimeLabel = TIME_OPTIONS.find(o => o.value === selectedTimeControl)?.label || "Untimed";
 
@@ -556,14 +480,6 @@ export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board
     return `${winnerName || state.winner} wins by ${state.endReason}`;
   };
 
-  // ---------- Tic-Tac-Toe helpers ----------
-  const myTttSym: "X" | "O" | null = useMemo(() => {
-    if (tttState?.x?.userId === userId) return "X";
-    if (tttState?.o?.userId === userId) return "O";
-    return null;
-  }, [tttState, userId]);
-  const isMyTttTurn = !!tttState && tttState.status === "active" && !!myTttSym && tttState.turn === myTttSym;
-
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Tabs */}
@@ -576,18 +492,12 @@ export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board
           <Users className="w-3 h-3 inline mr-1" /> Match
         </button>
         <button
-          onClick={() => setTab("tictactoe")}
-          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${tab === "tictactoe" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted/60"}`}
-          data-testid="tab-tictactoe"
+          onClick={() => setTab("jklm")}
+          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors relative ${tab === "jklm" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted/60"}`}
+          data-testid="tab-jklm"
         >
-          <Hash className="w-3 h-3 inline mr-1" /> Tic-Tac-Toe
-        </button>
-        <button
-          onClick={() => setTab("lichess")}
-          className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${tab === "lichess" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted/60"}`}
-          data-testid="tab-chess-lichess"
-        >
-          <ExternalLink className="w-3 h-3 inline mr-1" /> Lichess
+          <Gamepad2 className="w-3 h-3 inline mr-1" /> JKLM
+          {(jklmState || incomingJklm) && <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-violet-400" />}
         </button>
         <button
           onClick={() => setTab("c4")}
@@ -731,179 +641,145 @@ export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board
         </div>
       )}
 
-      {/* ─── Tic-Tac-Toe ─── */}
-      {tab === "tictactoe" && (
-        <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2" data-testid="panel-tictactoe">
-          {!tttState && (
+      {/* ─── JKLM.fun ─── */}
+      {tab === "jklm" && (
+        <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2" data-testid="panel-jklm">
+          {/* Active game link */}
+          {jklmState && (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-base select-none" aria-hidden="true">🎮</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-emerald-300">Game in progress</p>
+                    <p className="text-[10px] text-muted-foreground truncate">Shared by {jklmState.sharedByName}</p>
+                  </div>
+                </div>
+                {jklmState.sharedBy === userId && (
+                  <button onClick={clearJklm} className="text-muted-foreground/50 hover:text-muted-foreground" data-testid="button-jklm-clear" aria-label="Clear JKLM game">
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              <a
+                href={jklmState.url.startsWith("http") ? jklmState.url : `https://jklm.fun/rooms/${jklmState.url.toUpperCase()}`}
+                target="_blank" rel="noopener noreferrer"
+              >
+                <Button size="sm" className="w-full h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="button-jklm-join">
+                  <ExternalLink className="w-3.5 h-3.5 mr-1" /> Join JKLM Game
+                </Button>
+              </a>
+            </div>
+          )}
+
+          {/* Incoming invite */}
+          {incomingJklm && (
+            <div className="rounded-xl border border-violet-500/40 bg-violet-500/5 p-3 space-y-2" data-testid="incoming-jklm-invite">
+              <div className="flex items-center gap-2">
+                <Avatar className="w-7 h-7">
+                  {incomingJklm.fromAvatar ? <AvatarImage src={incomingJklm.fromAvatar} alt="" /> : null}
+                  <AvatarFallback className="text-[10px]">{incomingJklm.fromUsername?.[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold truncate">{incomingJklm.fromUsername} invited you</p>
+                  <p className="text-[10px] text-muted-foreground">to play JKLM.fun</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <a
+                  href={incomingJklm.url.startsWith("http") ? incomingJklm.url : `https://jklm.fun/rooms/${incomingJklm.url.toUpperCase()}`}
+                  target="_blank" rel="noopener noreferrer" className="flex-1"
+                  onClick={() => setIncomingJklm(null)}
+                >
+                  <Button size="sm" variant="default" className="w-full h-8 text-xs" data-testid="button-jklm-accept">
+                    <ExternalLink className="w-3.5 h-3.5 mr-1" /> Accept & Join
+                  </Button>
+                </a>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setIncomingJklm(null)} data-testid="button-jklm-decline">
+                  <X className="w-3.5 h-3.5 mr-1" aria-hidden="true" /> Dismiss
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Share form — only shown when no active game */}
+          {!jklmState && (
             <>
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Hash className="w-4 h-4 text-primary" />
-                  <p className="text-xs font-semibold">Tic-Tac-Toe</p>
+                  <Gamepad2 className="w-4 h-4 text-primary" />
+                  <p className="text-xs font-semibold">JKLM.fun Party Games</p>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  Quick 3-in-a-row match against another person in this room. Challenger plays X, opponent plays O. First to align three wins the round.
+                  Play Bomb Party, Populate, and more! Create a room on JKLM.fun, copy the 4-letter room code, and invite people below.
                 </p>
+                <a href="https://jklm.fun" target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline" data-testid="link-jklm-open">
+                  Open JKLM.fun <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              <div className="space-y-1.5">
+                <Input
+                  value={jklmInput}
+                  onChange={(e) => { setJklmInput(e.target.value); setJklmError(null); }}
+                  placeholder="Room code (e.g. ABCD) or full URL"
+                  className="h-8 text-xs"
+                  data-testid="input-jklm-code"
+                />
+                {jklmError && <p className="text-[11px] text-destructive">{jklmError}</p>}
               </div>
 
               <Button
                 size="sm" variant="default" className="w-full h-8 text-xs"
-                onClick={() => setShowTttChallengeList((o) => !o)}
-                data-testid="button-ttt-challenge-list"
+                onClick={() => setShowJklmChallengeList(o => !o)}
+                data-testid="button-jklm-challenge-toggle"
               >
-                <Swords className="w-3.5 h-3.5 mr-1" /> Challenge to Tic-Tac-Toe
+                <Swords className="w-3.5 h-3.5 mr-1" /> Select players to invite
               </Button>
 
-              {pendingTttTo && (
-                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2 text-[11px] text-amber-300 flex items-center justify-between">
-                  <span>Waiting for {pendingTttTo.username}…</span>
-                  <button onClick={() => setPendingTttTo(null)} aria-label="Cancel Tic-Tac-Toe request" data-testid="button-cancel-ttt-pending"><X className="w-3 h-3" aria-hidden="true" /></button>
-                </div>
-              )}
-
-              {showTttChallengeList && (
-                <div className="rounded-xl border border-border/60 bg-muted/20 p-2 space-y-1.5" data-testid="list-ttt-targets">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1">Players in this room</p>
-                  {participants.filter((p) => p.id !== userId).length === 0 ? (
+              {showJklmChallengeList && (
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-2 space-y-1.5" data-testid="list-jklm-targets">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1">Select participants</p>
+                  {participants.filter(p => p.id !== userId).length === 0 ? (
                     <p className="text-[11px] text-muted-foreground p-2 text-center">No one else here yet!</p>
                   ) : (
-                    participants.filter((p) => p.id !== userId).map((p) => (
-                      <div key={p.id} className="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-muted/40">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-7 h-7">
+                    participants.filter(p => p.id !== userId).map(p => {
+                      const selected = jklmSelected.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => setJklmSelected(s => selected ? s.filter(id => id !== p.id) : [...s, p.id])}
+                          className={`w-full flex items-center gap-2 p-1.5 rounded-lg transition-colors text-left ${selected ? "bg-primary/15 border border-primary/30" : "hover:bg-muted/40"}`}
+                          data-testid={`button-jklm-select-${p.id}`}
+                        >
+                          <Avatar className="w-7 h-7 shrink-0">
                             {p.profileImageUrl ? <AvatarImage src={p.profileImageUrl} alt="" /> : null}
                             <AvatarFallback className="text-[10px]">{nameOf(p)[0]?.toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <span className="text-xs">{nameOf(p)}</span>
-                        </div>
-                        <Button size="sm" variant="outline" className="h-7 text-[11px] px-2" disabled={!!pendingTttTo}
-                          onClick={() => sendTttChallenge(p)} data-testid={`button-ttt-challenge-${p.id}`}>
-                          <Hash className="w-3 h-3 mr-1" /> Play
-                        </Button>
-                      </div>
-                    ))
+                          <span className="text-xs flex-1">{nameOf(p)}</span>
+                          {selected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                        </button>
+                      );
+                    })
+                  )}
+                  {jklmSelected.length > 0 && (
+                    <Button
+                      size="sm" variant="default" className="w-full h-8 text-xs mt-1"
+                      onClick={shareJklm}
+                      data-testid="button-jklm-send-invite"
+                    >
+                      <Swords className="w-3.5 h-3.5 mr-1" /> Share & Invite {jklmSelected.length} player{jklmSelected.length !== 1 ? "s" : ""}
+                    </Button>
                   )}
                 </div>
               )}
-            </>
-          )}
 
-          {tttState && (
-            <div className="space-y-2" data-testid="ttt-board-wrapper">
-              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
-                <div className="text-center min-w-0">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide truncate">
-                    X · {tttState.x?.username || "—"}
-                  </p>
-                  <p className={`text-2xl font-bold tabular-nums ${myTttSym === "X" ? "text-primary" : "text-foreground"}`}>
-                    {tttState.scores.x}
-                  </p>
-                </div>
-                <div className="text-center px-2">
-                  <p className="text-[10px] text-muted-foreground">Draws</p>
-                  <p className="text-base font-semibold tabular-nums text-muted-foreground">{tttState.scores.draws}</p>
-                </div>
-                <div className="text-center min-w-0">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide truncate">
-                    O · {tttState.o?.username || "—"}
-                  </p>
-                  <p className={`text-2xl font-bold tabular-nums ${myTttSym === "O" ? "text-primary" : "text-foreground"}`}>
-                    {tttState.scores.o}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center text-xs font-medium py-1">
-                {tttState.status === "ended"
-                  ? tttState.winner === "draw"
-                    ? "Round drawn"
-                    : `${tttState.winner === "X" ? tttState.x?.username : tttState.o?.username} wins the round!`
-                  : isMyTttTurn
-                  ? "Your turn"
-                  : `${tttState.turn === "X" ? tttState.x?.username : tttState.o?.username || tttState.turn}'s turn`}
-              </div>
-
-              <div className="grid grid-cols-3 gap-1.5 rounded-lg p-1.5 bg-muted/20 border border-border/50 mx-auto" style={{ maxWidth: 320 }}>
-                {tttState.board.map((cell, idx) => {
-                  const isWinCell = !!tttState.winLine?.includes(idx);
-                  const playable = !cell && tttState.status === "active" && isMyTttTurn;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => tttPlayCell(idx)}
-                      disabled={!playable}
-                      data-testid={`ttt-cell-${idx}`}
-                      aria-label={cell ? `Cell ${idx + 1}, ${cell}` : `Cell ${idx + 1}, empty`}
-                      className={`aspect-square rounded-md flex items-center justify-center text-3xl font-bold select-none transition-colors ${
-                        isWinCell ? "bg-emerald-500/30 border-2 border-emerald-400/70 text-emerald-300" : "bg-muted/40 border border-border/60 hover:bg-muted/60"
-                      } ${!playable ? "cursor-default" : "cursor-pointer"}`}
-                    >
-                      <span aria-hidden="true" className={cell === "X" ? "text-sky-300" : cell === "O" ? "text-amber-300" : "opacity-0"}>
-                        {cell || "·"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex gap-2 pt-1">
-                {tttState.status === "ended" && (myTttSym !== null) && (
-                  <Button size="sm" variant="default" className="flex-1 h-8 text-xs" onClick={tttRematch} data-testid="button-ttt-rematch">
-                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> Next round
-                  </Button>
-                )}
-                {(myTttSym !== null) && (
-                  <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={tttClose} data-testid="button-ttt-close">
-                    <X className="w-3.5 h-3.5 mr-1" /> End match
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ─── Lichess ─── */}
-      {tab === "lichess" && (
-        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
-          {!lichess ? (
-            <>
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-2">
-                <p className="text-xs font-semibold">Share a Lichess game</p>
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  Open Lichess, start or join a game, then paste the game URL here so everyone in the room can watch live.
-                </p>
-                <a href="https://lichess.org/login" target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline" data-testid="link-lichess-login">
-                  Open lichess.org <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              <div className="space-y-2">
-                <Input value={lichessInput} onChange={(e) => setLichessInput(e.target.value)}
-                  placeholder="https://lichess.org/abcd1234" className="h-8 text-xs" data-testid="input-lichess-url" />
-                {lichessError && <p className="text-[11px] text-destructive">{lichessError}</p>}
-                <Button size="sm" className="w-full h-8 text-xs" onClick={shareLichess} data-testid="button-share-lichess">
-                  <LinkIcon className="w-3.5 h-3.5 mr-1" /> Share with room
+              {!showJklmChallengeList && jklmInput.trim() && (
+                <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={shareJklm} data-testid="button-jklm-share-room">
+                  <ExternalLink className="w-3.5 h-3.5 mr-1" /> Share with room (no specific invites)
                 </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="rounded-xl overflow-hidden border border-border/60 bg-black aspect-square">
-                <iframe src={lichessEmbedUrl(lichess.url)} title="Lichess chess game" className="w-full h-full border-0" loading="lazy" allow="fullscreen" data-testid="iframe-lichess" />
-              </div>
-              <div className="flex gap-2">
-                <a href={lichess.url} target="_blank" rel="noopener noreferrer" className="flex-1">
-                  <Button size="sm" variant="outline" className="w-full h-8 text-xs">
-                    <ExternalLink className="w-3.5 h-3.5 mr-1" /> Open on Lichess
-                  </Button>
-                </a>
-                {lichess.sharedBy === userId && (
-                  <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={clearLichess} data-testid="button-clear-lichess">
-                    <X className="w-3.5 h-3.5 mr-1" /> Clear
-                  </Button>
-                )}
-              </div>
+              )}
             </>
           )}
         </div>
@@ -1058,36 +934,6 @@ export function ChessPanel({ socket, roomId, userId, participants, onOpenC4Board
             </Button>
             <Button className="flex-1" onClick={() => respondChallenge(true)} data-testid="button-accept-challenge">
               <Check className="w-3.5 h-3.5 mr-1" /> Accept
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Incoming Tic-Tac-Toe dialog */}
-      <Dialog open={!!incomingTtt} onOpenChange={(o) => { if (!o) respondTttChallenge(false); }}>
-        <DialogContent className="sm:max-w-sm" data-testid="dialog-incoming-ttt">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Hash className="w-4 h-4 text-primary" /> Tic-Tac-Toe Challenge!
-            </DialogTitle>
-            <DialogDescription asChild>
-              {incomingTtt ? (
-                <span className="flex items-center gap-2 mt-2">
-                  <Avatar className="w-8 h-8">
-                    {incomingTtt.fromAvatar ? <AvatarImage src={incomingTtt.fromAvatar} alt="" /> : null}
-                    <AvatarFallback>{incomingTtt.fromUsername?.[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <span>
-                    <strong className="text-foreground">{incomingTtt.fromUsername}</strong> wants to play Tic-Tac-Toe with you!
-                  </span>
-                </span>
-              ) : <span />}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" className="flex-1" onClick={() => respondTttChallenge(false)} data-testid="button-decline-ttt">Decline</Button>
-            <Button className="flex-1" onClick={() => respondTttChallenge(true)} data-testid="button-accept-ttt">
-              <Hash className="w-3.5 h-3.5 mr-1" /> Accept
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -261,6 +261,9 @@ function c4CheckWin(board: (null | "red" | "yellow")[][]): { winner: "red" | "ye
 // Lichess shared embed per room (URL string of game/study/tv)
 const roomLichessState = new Map<string, { url: string; sharedBy: string } | null>();
 
+// JKLM.fun shared game per room
+const roomJklmState = new Map<string, { url: string; sharedBy: string; sharedByName: string } | null>();
+
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -2524,6 +2527,11 @@ export async function registerRoutes(
     if (lichessState && lichessState.sharedBy === userId) {
       roomLichessState.delete(roomId);
       io.to(roomId).emit("room:lichess", null);
+    }
+    const jklmLeaveState = roomJklmState.get(roomId);
+    if (jklmLeaveState && jklmLeaveState.sharedBy === userId) {
+      roomJklmState.delete(roomId);
+      io.to(roomId).emit("room:jklm-state", null);
     }
 
     // C4: if leaving user was a player, end the game
@@ -7117,6 +7125,51 @@ export async function registerRoutes(
       if (!/^https?:\/\/(www\.)?lichess\.org\//i.test(data.url)) return;
       roomLichessState.set(data.roomId, { url: data.url, sharedBy: currentUserId });
       io.to(data.roomId).emit("room:lichess", { url: data.url, sharedBy: currentUserId });
+    });
+
+    // ---------- JKLM.fun invite / share ----------
+    socket.on("room:jklm-sync", (data: { roomId: string }) => {
+      socket.emit("room:jklm-state", roomJklmState.get(data.roomId) || null);
+    });
+
+    socket.on("room:jklm-share", async (data: { roomId: string; url: string }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const u = await storage.getUser(currentUserId);
+      const name = u?.displayName || u?.firstName || u?.email?.split("@")[0] || "Someone";
+      const state = { url: data.url, sharedBy: currentUserId, sharedByName: name };
+      roomJklmState.set(data.roomId, state);
+      io.to(data.roomId).emit("room:jklm-state", state);
+    });
+
+    socket.on("room:jklm-challenge", async (data: { roomId: string; targetUserIds: string[]; url: string }) => {
+      if (!currentUserId) return;
+      const participants = roomParticipants.get(data.roomId);
+      if (!participants || !participants.has(currentUserId)) return;
+      const u = await storage.getUser(currentUserId);
+      const fromUsername = u?.displayName || u?.firstName || u?.email?.split("@")[0] || "Someone";
+      const fromAvatar = u?.profileImageUrl || null;
+      for (const targetUserId of data.targetUserIds) {
+        const targetSocketId = userSocketMap.get(targetUserId);
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("room:jklm-invite", {
+            fromUserId: currentUserId,
+            fromUsername,
+            fromAvatar,
+            url: data.url,
+            roomId: data.roomId,
+          });
+        }
+      }
+    });
+
+    socket.on("room:jklm-clear", (data: { roomId: string }) => {
+      if (!currentUserId) return;
+      const cur = roomJklmState.get(data.roomId);
+      if (!cur || cur.sharedBy !== currentUserId) return;
+      roomJklmState.delete(data.roomId);
+      io.to(data.roomId).emit("room:jklm-state", null);
     });
 
     socket.on("room:book", (data: { roomId: string; book: any | null }) => {
