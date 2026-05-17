@@ -110,6 +110,7 @@ export const roomMessages = pgTable("room_messages", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   roomMessagesRoomIdx: index("room_messages_room_id_idx").on(table.roomId),
+  roomMessagesUserIdx: index("room_messages_user_id_idx").on(table.userId),
   roomMessagesCreatedAtIdx: index("room_messages_created_at_idx").on(table.createdAt),
 }));
 
@@ -405,6 +406,7 @@ export const announcementReceipts = pgTable("announcement_receipts", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
   announcementUserUnique: uniqueIndex("announcement_receipts_announcement_user_idx").on(table.announcementId, table.userId),
+  announcementReceiptsUserIdx: index("announcement_receipts_user_id_idx").on(table.userId),
 }));
 
 export const insertAnnouncementReceiptSchema = createInsertSchema(announcementReceipts)

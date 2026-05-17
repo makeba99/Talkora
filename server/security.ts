@@ -217,6 +217,9 @@ export function threatDetectionMiddleware(
       description: `${threat === "xss" ? "XSS" : "SQL injection"} pattern detected in request to ${req.path}`,
       requestPath: req.path,
     }).catch(() => {});
+    // Block the request — do not pass malicious payloads to route handlers.
+    res.status(400).json({ message: "Request blocked: invalid input detected." });
+    return;
   }
   next();
 }

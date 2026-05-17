@@ -394,12 +394,11 @@ const uploadVideo = multer({
     /* Hologram backgrounds may be a video (mp4/webm/mov/ogg) OR a still
        image / GIF (jpeg/png/gif/webp). The frontend renders the file with
        a <video> tag for video MIME types and an <img> tag otherwise. */
-    const ext = path.extname(file.originalname).toLowerCase();
     const allowedExt = /\.(mp4|webm|mov|ogg|jpe?g|png|gif|webp)$/i.test(file.originalname);
     const allowedMime =
       /video\/(mp4|webm|quicktime|ogg)/.test(file.mimetype) ||
       /^image\/(jpeg|png|gif|webp)$/.test(file.mimetype);
-    cb(null, allowedExt || allowedMime || !!ext);
+    cb(null, allowedExt && allowedMime);
   },
 });
 
@@ -442,8 +441,24 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const allowedOrigins = [
+    /^https?:\/\/localhost(:\d+)?$/,
+    /\.railway\.app$/,
+    /\.replit\.dev$/,
+    /\.replit\.app$/,
+    /^https:\/\/(www\.)?vextorn\.com$/,
+    /^https:\/\/(www\.)?afikgang\.online$/,
+  ];
   const io = new SocketIOServer(httpServer, {
-    cors: { origin: "*" },
+    cors: {
+      origin: process.env.NODE_ENV === "production"
+        ? (origin, cb) => {
+            if (!origin || allowedOrigins.some(p => p.test(origin))) cb(null, true);
+            else cb(null, false);
+          }
+        : "*",
+      credentials: true,
+    },
     transports: ["websocket", "polling"],
     pingTimeout: 60000,
     pingInterval: 25000,
@@ -5166,15 +5181,16 @@ export async function registerRoutes(
 
   app.get("/api/admin/teacher-applications", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      const admin = await storage.getUser((req.user as any).id);
+      const [admin, applications] = await Promise.all([
+        storage.getUser((req.user as any).id),
+        storage.getAllTeacherApplications(),
+      ]);
       const canSeeEmails = admin?.role === "superadmin" || admin?.email === SUPER_ADMIN_EMAIL;
-      const applications = await storage.getAllTeacherApplications();
-      const enriched = await Promise.all(
-        applications.map(async (app) => {
-          const user = await storage.getUser(app.userId);
-          return { ...app, user: user ? { id: user.id, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, email: canSeeEmails ? user.email : null, profileImageUrl: user.profileImageUrl } : null };
-        })
-      );
+      const userMap = await storage.getUsersByIds(applications.map(a => a.userId));
+      const enriched = applications.map((app) => {
+        const user = userMap.get(app.userId);
+        return { ...app, user: user ? { id: user.id, displayName: user.displayName, firstName: user.firstName, lastName: user.lastName, email: canSeeEmails ? user.email : null, profileImageUrl: user.profileImageUrl } : null };
+      });
       res.json(enriched);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
