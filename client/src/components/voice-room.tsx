@@ -2635,25 +2635,31 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return await res.json();
     },
-    onSuccess: (updatedRoom: any) => {
+    onSuccess: async (updatedRoom: any) => {
       setRoomData((prev: any) => ({ ...prev, ...updatedRoom }));
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", room.id] });
-      // Also patch the lobby cache directly so the GIF background appears on
-      // the room card immediately — the socket room:updated event does the
-      // same but can arrive after one extra round-trip.
+      // Cancel any in-flight /api/rooms/mine refetch BEFORE patching the
+      // cache. Awaiting ensures a stale response on the wire cannot land
+      // after setQueryData and overwrite hologramVideoUrl back to null via
+      // the myOwnRooms useEffect in lobby.tsx.
+      await queryClient.cancelQueries({ queryKey: ["/api/rooms/mine"] });
+      // Patch the lobby cache so the GIF background appears immediately.
+      // Handle the case where the room is absent (activeUsers=0) by inserting.
       queryClient.setQueryData(["/api/rooms"], (old: any) => {
         if (!Array.isArray(old)) return old;
-        return old.map((r: any) =>
-          r.id === room.id ? { ...r, ...updatedRoom } : r
-        );
+        const found = old.some((r: any) => r.id === room.id);
+        if (found) {
+          return old.map((r: any) => r.id === room.id ? { ...r, ...updatedRoom } : r);
+        }
+        return [{ ...room, ...updatedRoom }, ...old];
       });
-      // Cancel any in-flight /api/rooms/mine refetch and sync it with the
-      // mutation result to prevent a stale response from overwriting
-      // hologramVideoUrl back to null via the myOwnRooms useEffect.
-      queryClient.cancelQueries({ queryKey: ["/api/rooms/mine"] });
       queryClient.setQueryData(["/api/rooms/mine"], (old: any) => {
         if (!Array.isArray(old)) return old;
-        return old.map((r: any) => r.id === room.id ? { ...r, ...updatedRoom } : r);
+        const found = old.some((r: any) => r.id === room.id);
+        if (found) {
+          return old.map((r: any) => r.id === room.id ? { ...r, ...updatedRoom } : r);
+        }
+        return [{ ...room, ...updatedRoom }, ...old];
       });
       setEditDialogOpen(false);
       if (updatedRoom.welcomeMessage !== undefined) setWelcomeText(updatedRoom.welcomeMessage || "");

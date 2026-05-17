@@ -91,31 +91,40 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return res.json();
     },
-    onSuccess: (updatedRoom, variables) => {
-      // Patch the cache immediately so the GIF/background shows without
-      // waiting for the SSE round-trip. Prefer the server's response when
-      // available, fall back to the variables we sent.
-      // Do NOT call invalidateQueries — the server emits room:updated via
-      // socket AND broadcastRooms() via SSE, both of which already sync all
-      // clients in real time. A redundant invalidation races against those
-      // updates and is the reason GIF backgrounds don't appear until refresh.
+    onSuccess: async (updatedRoom, variables) => {
+      // Prefer the server's response; fall back to what we sent.
       const patch = updatedRoom ?? variables;
+
+      // Cancel any in-flight /api/rooms/mine refetch BEFORE writing to the
+      // cache. Without awaiting this, a stale response already on the wire
+      // can land after setQueryData and overwrite hologramVideoUrl back to
+      // its previous value via the myOwnRooms useEffect in lobby.tsx.
+      await queryClient.cancelQueries({ queryKey: ["/api/rooms/mine"] });
+
+      // Patch /api/rooms. The room may not be in this list when activeUsers=0
+      // (the endpoint filters empty rooms); in that case add it so the lobby
+      // card shows the updated background immediately without waiting for the
+      // next myOwnRooms effect cycle.
       queryClient.setQueryData(["/api/rooms"], (old: any) => {
         if (!Array.isArray(old)) return old;
-        return old.map((r: any) =>
-          r.id === room.id ? { ...r, ...patch } : r
-        );
+        const found = old.some((r: any) => r.id === room.id);
+        if (found) {
+          return old.map((r: any) => r.id === room.id ? { ...r, ...patch } : r);
+        }
+        return [{ ...room, ...patch }, ...old];
       });
-      // Cancel any in-flight /api/rooms/mine refetch and immediately sync it
-      // with the mutation result. A stale background refetch that was already
-      // in-flight (triggered by a 30s stale-timer or window-focus event) can
-      // complete AFTER onSuccess and overwrite hologramVideoUrl back to null
-      // in the /api/rooms cache via the myOwnRooms useEffect in lobby.tsx.
-      queryClient.cancelQueries({ queryKey: ["/api/rooms/mine"] });
+
+      // Sync /api/rooms/mine with the confirmed server data so the
+      // myOwnRooms useEffect sees the latest hologramVideoUrl.
       queryClient.setQueryData(["/api/rooms/mine"], (old: any) => {
         if (!Array.isArray(old)) return old;
-        return old.map((r: any) => r.id === room.id ? { ...r, ...patch } : r);
+        const found = old.some((r: any) => r.id === room.id);
+        if (found) {
+          return old.map((r: any) => r.id === room.id ? { ...r, ...patch } : r);
+        }
+        return [{ ...room, ...patch }, ...old];
       });
+
       toast({ title: "Room settings saved!" });
       onClose();
     },
