@@ -761,7 +761,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   /* Fixed circle size — avatars stay the same size regardless of how many
      participants or slots there are. The scale factor still adjusts for
      viewport width so they look right on all screen sizes. */
-  const baseCircleSize = 52;
+  const baseCircleSize = 68;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -816,6 +816,20 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               <p className="text-sm font-medium text-white">{ownerName}</p>
             </div>
             <div className="border-t border-white/10" />
+            <button
+              className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                const shortId = (room as any).shortId || room.id;
+                const link = `${window.location.origin}/room/${shortId}`;
+                navigator.clipboard.writeText(link);
+                toast({ description: "Room link copied!" });
+              }}
+              data-testid={`button-copy-room-link-${room.id}`}
+            >
+              <Copy className="w-4 h-4 text-white/50" />
+              Copy Room Link
+            </button>
             <button
               className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
               onClick={(e) => {

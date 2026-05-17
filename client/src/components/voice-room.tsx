@@ -804,7 +804,7 @@ function ParticipantCard({
             <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
                 {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} decoding="async" className="w-full h-full object-cover" />
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} className="w-full h-full object-cover" style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }} />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                     <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
@@ -848,7 +848,7 @@ function ParticipantCard({
             <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
                 {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} decoding="async" className="w-full h-full object-cover" />
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} className="w-full h-full object-cover" style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }} />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                     <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
@@ -892,7 +892,7 @@ function ParticipantCard({
             <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
                 {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} decoding="async" className="w-full h-full object-cover" />
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} className="w-full h-full object-cover" style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }} />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                     <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
@@ -929,7 +929,7 @@ function ParticipantCard({
             <div className="absolute inset-x-0 bottom-0 z-[2] flex items-center gap-1 px-1.5 pb-1.5 pt-1">
               <div className="w-7 h-7 rounded-full overflow-hidden border border-white/60 shadow-md flex-shrink-0">
                 {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={28} height={28} decoding="async" className="w-full h-full object-cover" />
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={28} height={28} className="w-full h-full object-cover" style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }} />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                     <span className="text-[8px] font-bold text-white">{getUserInitials(p)}</span>
@@ -963,7 +963,7 @@ function ParticipantCard({
             <div className="absolute inset-x-0 bottom-0 z-[2] flex items-center gap-1 px-1.5 pb-1.5 pt-1">
               <div className="w-7 h-7 rounded-full overflow-hidden border border-white/60 shadow-md flex-shrink-0">
                 {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={28} height={28} decoding="async" className="w-full h-full object-cover" />
+                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={28} height={28} className="w-full h-full object-cover" style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }} />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
                     <span className="text-[8px] font-bold text-white">{getUserInitials(p)}</span>
@@ -985,10 +985,10 @@ function ParticipantCard({
             src={p.profileImageUrl}
             alt={getUserDisplayName(p)}
             loading="lazy"
-            decoding="async"
             width={200}
             height={200}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
           />
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
