@@ -2582,7 +2582,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const { data: themeOrderStats, refetch: refetchThemeOrderStats } = useQuery<{ pendingCount: number; last24hCount: number }>({
     queryKey: ["/api/themes/order-stats"],
     enabled: !!user && showThemeRequest,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
+
+  useEffect(() => {
+    if (showThemeRequest && user) {
+      void refetchThemeOrderStats();
+    }
+  }, [showThemeRequest]);
 
   const submitThemeOrderMutation = useMutation({
     mutationFn: async () => {
