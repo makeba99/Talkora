@@ -931,7 +931,28 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             <span className="premium-atmosphere-sweep" />
           </div>
         )}
-        {/* hologramVideoUrl is only rendered inside the voice room, not on lobby cards */}
+        {/* GIF / image background on lobby card — applied as CSS background-image (never
+            an LCP candidate) so it doesn't delay the skeleton icon preload. Videos and
+            YouTube links are also rendered here via CardHologramVideo. */}
+        {hologramVideoUrl && (
+          isImageMedia(hologramVideoUrl)
+            ? (
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 z-0 rounded-[24px] overflow-hidden"
+                style={{
+                  backgroundImage: `url('${proxyExternalUrl(hologramVideoUrl)}')`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              />
+            )
+            : (
+              <div className="absolute inset-0 z-0 rounded-[24px] overflow-hidden">
+                <CardHologramVideo src={hologramVideoUrl} />
+              </div>
+            )
+        )}
 
         <div className="relative z-[2] flex flex-col h-full">
 

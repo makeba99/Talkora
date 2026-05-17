@@ -122,7 +122,6 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editTitle.trim()) return;
     editMutation.mutate({
       title: editTitle.trim(),
       language: editLanguage,
@@ -288,7 +287,7 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
             <Button
               type="submit"
               className="w-full"
-              disabled={!editTitle.trim() || editMutation.isPending || editHologramUploading}
+              disabled={editMutation.isPending || editHologramUploading}
               data-testid="button-save-room-edit"
             >
               {editMutation.isPending ? "Saving..." : "Save Changes"}

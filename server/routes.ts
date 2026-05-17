@@ -2661,7 +2661,7 @@ export async function registerRoutes(
       }
 
       const updateData: any = {};
-      if (title) updateData.title = title;
+      if (title !== undefined) updateData.title = title;
       if (language) updateData.language = language;
       if (level) updateData.level = level;
       if (maxUsers !== undefined && maxUsers !== null) updateData.maxUsers = maxUsers;
