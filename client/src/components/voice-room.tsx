@@ -8438,13 +8438,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             : (pinnedMessage.message as any).userName || "Unknown";
           const pinAuthorAvatar = pinAuthorObj?.profileImageUrl;
           const pinAuthorInitial = (pinAuthorName?.[0] || "?").toUpperCase();
+
+          const txt = pinnedMessage.message.text.trim();
+          const isGif = txt.startsWith("[gif:") && txt.endsWith("]");
+          const isImg = txt.startsWith("[img:") && txt.endsWith("]");
+          const isMedia = isGif || isImg;
+          const mediaUrl = isGif ? txt.slice(5, -1) : isImg ? txt.slice(5, -1) : null;
+
+          const handleJump = () => {
+            const el = document.querySelector(`[data-testid="room-chat-${pinnedMessage.message.id}"]`);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "center" });
+              el.classList.add("pin-jump-highlight");
+              setTimeout(() => el.classList.remove("pin-jump-highlight"), 1400);
+            }
+          };
+
           return (
             <div className="chat-pin-banner" data-testid="chat-pinned-banner">
               <div className="chat-pin-icon">📌</div>
-              <div className="chat-pin-body" onClick={() => {
-                const el = document.querySelector(`[data-testid="room-chat-${pinnedMessage.message.id}"]`);
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-              }}>
+              <div className="chat-pin-body" onClick={handleJump}>
                 <span className="chat-pin-label">
                   {pinAuthorAvatar ? (
                     <img
@@ -8460,9 +8473,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <span className="chat-pin-author-name">{pinAuthorName}</span>
                   <span className="chat-pin-pinned-by">· pinned by {pinnedMessage.pinnedByName}</span>
                 </span>
-                <span className="chat-pin-text">
-                  {renderReplyPreview(pinnedMessage.message.text)}
-                </span>
+                {isMedia && mediaUrl ? (
+                  <img
+                    src={isGif ? proxyMediaUrl(mediaUrl) : mediaUrl}
+                    alt={isGif ? "GIF" : "Image"}
+                    className="chat-pin-media-preview"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLightboxMedia({ url: mediaUrl, msgId: pinnedMessage.message.id });
+                    }}
+                  />
+                ) : (
+                  <span className="chat-pin-text">
+                    {renderReplyPreview(pinnedMessage.message.text)}
+                  </span>
+                )}
               </div>
               {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
                 <button
