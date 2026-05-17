@@ -71,6 +71,8 @@ import {
   type ThemeVisibility,
   userThemeAssignments,
   type UserThemeAssignment,
+  userThemePreferences,
+  type UserThemePreferences,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, ne, inArray } from "drizzle-orm";
@@ -261,6 +263,8 @@ export interface IStorage {
   getAvailableThemesForUser(userId: string, allThemeIds: string[]): Promise<string[]>;
 
   addUserThemeAssignment(userId: string, themeId: string): Promise<void>;
+  getUserThemePreferences(userId: string): Promise<string[]>;
+  setUserThemePreferences(userId: string, orderedThemeIds: string[]): Promise<void>;
   getUserThemeOrderStats(userId: string): Promise<{ pendingCount: number; last24hCount: number }>;
   createThemeOrder(userId: string, themeName: string, description: string): Promise<ThemeOrder>;
   getThemeOrders(status?: string): Promise<Array<ThemeOrder & { userDisplayName: string | null; userEmail: string | null }>>;
@@ -1847,6 +1851,23 @@ export class DatabaseStorage implements IStorage {
       .insert(userThemeAssignments)
       .values({ userId, themeId })
       .onConflictDoNothing();
+  }
+
+  async getUserThemePreferences(userId: string): Promise<string[]> {
+    const [row] = await db.select().from(userThemePreferences).where(eq(userThemePreferences.userId, userId));
+    if (!row) return [];
+    try { return JSON.parse(row.orderedThemeIds) as string[]; } catch { return []; }
+  }
+
+  async setUserThemePreferences(userId: string, orderedThemeIds: string[]): Promise<void> {
+    const val = JSON.stringify(orderedThemeIds);
+    await db
+      .insert(userThemePreferences)
+      .values({ userId, orderedThemeIds: val, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: userThemePreferences.userId,
+        set: { orderedThemeIds: val, updatedAt: new Date() },
+      });
   }
 
   async getUserThemeOrderStats(userId: string): Promise<{ pendingCount: number; last24hCount: number }> {

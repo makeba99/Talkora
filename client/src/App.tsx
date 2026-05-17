@@ -28,6 +28,7 @@ const DmPage = lazy(() => import("@/pages/dm"));
 const AdminPage = lazy(() => import("@/pages/admin"));
 const TeachersPage = lazy(() => import("@/pages/teachers"));
 const PaymentMethodsPage = lazy(() => import("@/pages/payment-methods"));
+const RoomThemesPage = lazy(() => import("@/pages/room-themes"));
 const AnimatedBackground = lazy(() =>
   import("@/components/animated-background").then((m) => ({ default: m.AnimatedBackground }))
 );
@@ -159,6 +160,7 @@ function AppContent() {
           <Route path="/payment-methods" component={PaymentMethodsPage} />
           <Route path="/room/:id" component={RoomPage} />
           <Route path="/messages/:userId" component={DmPage} />
+          <Route path="/room-themes" component={RoomThemesPage} />
           <Route>
             <Lobby />
           </Route>

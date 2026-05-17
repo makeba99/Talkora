@@ -4936,6 +4936,24 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/themes/preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id ?? (req.user as any).claims?.sub;
+      const prefs = await storage.getUserThemePreferences(userId);
+      res.json({ orderedThemeIds: prefs });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
+  app.put("/api/themes/preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id ?? (req.user as any).claims?.sub;
+      const { orderedThemeIds } = req.body;
+      if (!Array.isArray(orderedThemeIds)) return res.status(400).json({ message: "orderedThemeIds must be an array" });
+      await storage.setUserThemePreferences(userId, orderedThemeIds.filter((id: any) => typeof id === "string"));
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+
   app.get("/api/themes/order-stats", isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).id ?? (req.user as any).claims?.sub;

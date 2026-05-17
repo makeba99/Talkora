@@ -572,6 +572,13 @@ export const themeOrders = pgTable("theme_orders", {
 }));
 export type ThemeOrder = typeof themeOrders.$inferSelect;
 
+export const userThemePreferences = pgTable("user_theme_preferences", {
+  userId: varchar("user_id", { length: 36 }).primaryKey(),
+  orderedThemeIds: text("ordered_theme_ids").notNull().default("[]"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type UserThemePreferences = typeof userThemePreferences.$inferSelect;
+
 export const emailCampaigns = pgTable("email_campaigns", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   subject: text("subject").notNull(),

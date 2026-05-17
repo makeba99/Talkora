@@ -3376,13 +3376,24 @@ function ThemesTab({ isSuperAdmin }: { isSuperAdmin: boolean }) {
 
   return (
     <div className="space-y-6">
+      {/* ── Page description ── */}
+      <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 flex items-start gap-3">
+        <Eye className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-cyan-200">Room Appearance Themes</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            These are the visual environments shown <strong>inside voice rooms</strong> — backgrounds, lighting, and atmospheric effects that every participant sees when they join. Control which themes are available globally and grant premium themes to specific users. Users can browse themes and request custom ones at <span className="text-cyan-400 font-mono">/room-themes</span>.
+          </p>
+        </div>
+      </div>
+
       {/* ── Global Theme Visibility ── */}
       <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Eye className="w-4 h-4 text-cyan-400" />
-            Global Theme Visibility
-            <span className="ml-1 text-[11px] font-normal text-muted-foreground">(applies to all users by default)</span>
+            Global Room Theme Visibility
+            <span className="ml-1 text-[11px] font-normal text-muted-foreground">(ON = all users can pick this theme when creating / editing a room)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
