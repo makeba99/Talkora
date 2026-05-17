@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Users, Settings, Lock, Globe, UserPlus, UserCheck, MessageSquare, Heart, Instagram, Linkedin, Facebook, X, Copy, Bell, Mic, Flame, Plus, Hand } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/lib/avatar-ring";
-import { getRoomThemeBorderClass, ROOM_THEMES } from "@/lib/room-theme-utils";
+import { ROOM_THEMES } from "@/lib/room-theme-utils";
 import { UserBadgePips } from "@/components/user-badge-pips";
 
 // Heavy components — only loaded on user interaction, never on initial paint.
@@ -732,13 +732,13 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
     Native: "text-rose-400",
   };
 
-  const themeBorderClass = getRoomThemeBorderClass((room as any).roomTheme);
   const hologramVideoUrl = (room as any).hologramVideoUrl as string | null | undefined;
 
-  const isPremiumAtmosphere = theme === "premium-atmosphere" || (room as any).roomTheme === "premium-atmosphere";
-  const isDiscoDJ = (room as any).roomTheme === "disco";
-  const activeThemeId = isPremiumAtmosphere ? "premium-atmosphere" : (room as any).roomTheme;
-  const glow = getThemeGlowColor(activeThemeId);
+  // Room themes only apply inside the voice room, never to lobby cards.
+  // Only the global app theme (premium-atmosphere) affects the card appearance.
+  const isPremiumAtmosphere = theme === "premium-atmosphere";
+  const isDiscoDJ = false;
+  const glow = getThemeGlowColor(isPremiumAtmosphere ? "premium-atmosphere" : null);
   // Unlimited rooms (maxUsers===0) only show filled participants, no ghost tiles.
   // Capped rooms show ALL slots so viewers can see how many spots are open.
   const displayCount = isUnlimited
