@@ -1,0 +1,52 @@
+content.js:17 Creating a TrustedTypePolicy named 'vue' violates the following Content Security policy directive: "trusted-types 'allow-duplicates' default". The action has been blocked.
+(anonymous) @ content.js:17
+chrome-extension://j…ntent_reporter.js:1 Uncaught SyntaxError: Cannot use import statement outside a module
+react-vendor-BoKGvhSL.js:8 ReferenceError: isDiscoDJ is not defined
+    at ia (room-card-jeqgr2mx.js:2:33772)
+    at Os (react-vendor-BoKGvhSL.js:6:17244)
+    at Ws (react-vendor-BoKGvhSL.js:8:3158)
+    at Ld (react-vendor-BoKGvhSL.js:8:2364)
+    at Od (react-vendor-BoKGvhSL.js:8:1897)
+    at pf (react-vendor-BoKGvhSL.js:8:47621)
+    at uf (react-vendor-BoKGvhSL.js:8:39988)
+    at uy (react-vendor-BoKGvhSL.js:8:39916)
+    at kl (react-vendor-BoKGvhSL.js:8:39769)
+    at ia (react-vendor-BoKGvhSL.js:8:36090)
+Us @ react-vendor-BoKGvhSL.js:8
+react-vendor-BoKGvhSL.js:8 ReferenceError: isDiscoDJ is not defined
+    at ia (room-card-jeqgr2mx.js:2:33772)
+    at Os (react-vendor-BoKGvhSL.js:6:17244)
+    at Ws (react-vendor-BoKGvhSL.js:8:3158)
+    at Ld (react-vendor-BoKGvhSL.js:8:2364)
+    at Od (react-vendor-BoKGvhSL.js:8:1897)
+    at pf (react-vendor-BoKGvhSL.js:8:47621)
+    at uf (react-vendor-BoKGvhSL.js:8:39988)
+    at uy (react-vendor-BoKGvhSL.js:8:39916)
+    at kl (react-vendor-BoKGvhSL.js:8:39769)
+    at ia (react-vendor-BoKGvhSL.js:8:36090)
+Us @ react-vendor-BoKGvhSL.js:8
+react-vendor-BoKGvhSL.js:8 ReferenceError: isDiscoDJ is not defined
+    at ia (room-card-jeqgr2mx.js:2:33772)
+    at Os (react-vendor-BoKGvhSL.js:6:17244)
+    at Ws (react-vendor-BoKGvhSL.js:8:3158)
+    at Ld (react-vendor-BoKGvhSL.js:8:2364)
+    at Od (react-vendor-BoKGvhSL.js:8:1897)
+    at pf (react-vendor-BoKGvhSL.js:8:47621)
+    at uf (react-vendor-BoKGvhSL.js:8:39988)
+    at uy (react-vendor-BoKGvhSL.js:8:39916)
+    at kl (react-vendor-BoKGvhSL.js:8:39769)
+    at ia (react-vendor-BoKGvhSL.js:8:36090)
+Us @ react-vendor-BoKGvhSL.js:8
+react-vendor-BoKGvhSL.js:6 Uncaught ReferenceError: isDiscoDJ is not defined
+    at ia (room-card-jeqgr2mx.js:2:33772)
+    at Os (react-vendor-BoKGvhSL.js:6:17244)
+    at Ws (react-vendor-BoKGvhSL.js:8:3158)
+    at Ld (react-vendor-BoKGvhSL.js:8:2364)
+    at Od (react-vendor-BoKGvhSL.js:8:1897)
+    at pf (react-vendor-BoKGvhSL.js:8:47621)
+    at uf (react-vendor-BoKGvhSL.js:8:39988)
+    at uy (react-vendor-BoKGvhSL.js:8:39916)
+    at kl (react-vendor-BoKGvhSL.js:8:39769)
+    at ia (react-vendor-BoKGvhSL.js:8:36090)
+(index):403 [vextorn] self-heal: root empty after 6s
+recover @ (index):403
