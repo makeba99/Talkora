@@ -55,7 +55,7 @@ type CacheEntry = {
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_ENTRIES = 200;
-const MAX_PROXY_BYTES = 4 * 1024 * 1024; // 4 MB hard cap
+const MAX_PROXY_BYTES = 12 * 1024 * 1024; // 12 MB hard cap
 const proxyCache = new Map<string, CacheEntry>();
 
 function evictIfNeeded(): void {
