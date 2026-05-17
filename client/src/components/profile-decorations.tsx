@@ -1977,6 +1977,8 @@ function DiscoThemeOverlay({ base, serverSceneIdx, onAdvance }: { base: React.CS
   const [opacity, setOpacity]   = useState(1);
   const [showLabel, setShowLabel] = useState(false);
   const timerRef = useRef<number | null>(null);
+  // Separate ref for the host advance timer so its cleanup never cancels crossfade timers.
+  const advanceTimerRef = useRef<number | null>(null);
   const prevServerSceneRef = useRef<number | undefined>(serverSceneIdx);
 
   // Server-controlled crossfade: wait for full 2.7s fade-out BEFORE
@@ -2023,13 +2025,14 @@ function DiscoThemeOverlay({ base, serverSceneIdx, onAdvance }: { base: React.CS
     return clear;
   }, [serverSceneIdx]);
 
-  // Host-side timer: emits room:disco-advance so the server broadcasts to all.
+  // Host-side auto-advance timer: emits room:disco-advance so the server broadcasts to all.
+  // Uses advanceTimerRef (separate from timerRef) so its cleanup NEVER cancels active crossfade timers.
   useEffect(() => {
     if (!onAdvance) return;
-    const clear = () => { if (timerRef.current !== null) clearTimeout(timerRef.current); };
+    const clear = () => { if (advanceTimerRef.current !== null) clearTimeout(advanceTimerRef.current); };
     const schedule = () => {
       const delay = (28 + Math.random() * 14) * 1000;
-      timerRef.current = window.setTimeout(() => { onAdvance(); schedule(); }, delay);
+      advanceTimerRef.current = window.setTimeout(() => { onAdvance(); schedule(); }, delay);
     };
     schedule();
     return clear;
