@@ -6,6 +6,7 @@
  * clicks the gear icon, removing ~20 KiB from the lobby's critical parse path.
  */
 import { useState, useRef, lazy, Suspense, ChangeEvent } from "react";
+import { proxyMediaUrl } from "@/lib/media-proxy";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -227,11 +228,12 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
                     />
                   ) : (
                     <img
-                      src={editHologramUrl}
+                      src={proxyMediaUrl(editHologramUrl)}
                       alt="Selected media"
                       width={56}
                       height={56}
                       className="w-14 h-14 rounded-md object-cover border-2 border-primary/60"
+                      referrerPolicy="no-referrer"
                       data-testid="img-edit-card-media-preview"
                     />
                   )

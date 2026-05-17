@@ -48,6 +48,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { RoomOnboardingTour } from "@/components/room-onboarding-tour";
 import { PinnedSocialsButton } from "@/components/pinned-socials-button";
 import { EmojiPickerButton, GifPickerButton, ImageUploadButton, renderMessageContent, renderReplyPreview, uploadChatImage } from "@/components/chat-picker";
+import { proxyMediaUrl } from "@/lib/media-proxy";
 const ChessPanel = lazy(() =>
   import("@/components/chess-panel").then((m) => ({ default: m.ChessPanel }))
 );
@@ -917,7 +918,7 @@ function ParticipantCard({
               aria-hidden="true"
               className="absolute inset-0 z-0"
               style={{
-                backgroundImage: `url('${avatarGifUrl}')`,
+                backgroundImage: `url('${proxyMediaUrl(avatarGifUrl)}')`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 opacity: 0.9,

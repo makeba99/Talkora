@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { proxyMediaUrl } from "@/lib/media-proxy";
 
 interface EmojiPickerButtonProps {
   onEmojiSelect: (emoji: string) => void;
@@ -703,10 +704,11 @@ export function renderReplyPreview(text: string): JSX.Element {
     return (
       <div className="flex items-center gap-1.5">
         <img
-          src={gifUrl}
+          src={proxyMediaUrl(gifUrl)}
           alt="GIF"
           className="rounded flex-shrink-0 object-cover"
           style={{ width: 36, height: 28 }}
+          referrerPolicy="no-referrer"
         />
         <span className="text-[10px] text-muted-foreground italic">GIF</span>
       </div>
@@ -774,13 +776,15 @@ export function renderReplyPreview(text: string): JSX.Element {
 export function renderMessageContent(text: string, onImageClick?: (url: string) => void, onVideoClick?: (videoId: string) => void): JSX.Element {
   if (text.startsWith("[gif:") && text.endsWith("]")) {
     const gifUrl = text.slice(5, -1);
+    const proxied = proxyMediaUrl(gifUrl);
     return (
       <img
-        src={gifUrl}
+        src={proxied}
         alt="GIF"
         className="max-w-full rounded-md cursor-pointer hover:opacity-90 transition-opacity"
         style={{ maxHeight: 200 }}
         loading="lazy"
+        referrerPolicy="no-referrer"
         data-testid="message-gif"
         onClick={() => onImageClick?.(gifUrl)}
       />
