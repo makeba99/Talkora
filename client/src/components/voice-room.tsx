@@ -8461,9 +8461,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <span className="chat-pin-pinned-by">· pinned by {pinnedMessage.pinnedByName}</span>
                 </span>
                 <span className="chat-pin-text">
-                  {pinnedMessage.message.text.length > 80
-                    ? pinnedMessage.message.text.slice(0, 80) + "…"
-                    : pinnedMessage.message.text}
+                  {renderReplyPreview(pinnedMessage.message.text)}
                 </span>
               </div>
               {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
