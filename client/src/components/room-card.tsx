@@ -937,15 +937,24 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         {hologramVideoUrl && (
           isImageMedia(hologramVideoUrl)
             ? (
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 z-0 rounded-[24px] overflow-hidden"
-                style={{
-                  backgroundImage: `url('${proxyExternalUrl(hologramVideoUrl)}')`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
+              <>
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 z-0 rounded-[24px] overflow-hidden"
+                  style={{
+                    backgroundImage: `url('${proxyExternalUrl(hologramVideoUrl)}')`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                />
+                {/* Dimming overlay — same gradient CardHologramVideo provides for
+                    non-image media so title/avatar contrast is preserved. */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 z-[1] pointer-events-none rounded-[24px]"
+                  style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.18) 0%, rgba(2,4,18,0.10) 50%, rgba(2,4,18,0.30) 100%)" }}
+                />
+              </>
             )
             : (
               <div className="absolute inset-0 z-0 rounded-[24px] overflow-hidden">

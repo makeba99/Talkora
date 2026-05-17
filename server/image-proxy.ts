@@ -10,13 +10,15 @@
  * Security: only URLs from an explicit allowlist of origins are proxied.
  * All other URLs receive a 400 response.
  *
- * Caching: an in-memory LRU map with a 24-hour TTL holds up to 200 entries.
- * The first request fetches from the upstream CDN; subsequent requests are
- * served from memory with no upstream round-trip.
+ * Caching strategy (two-tier):
+ *   ≤ CACHE_MAX_BYTES (4 MB): buffered in the LRU map, served instantly.
+ *   > CACHE_MAX_BYTES:        streamed directly from upstream — no buffering,
+ *     no 413. This eliminates the failure mode where large animated GIFs used
+ *     as lobby card backgrounds showed a blank card because the browser cached
+ *     the old 413 response.
  *
- * Size cap: responses larger than MAX_PROXY_BYTES (4 MB) are rejected with
- * 413. The client-side onError handler hides the element so the card still
- * renders cleanly.
+ * Error responses always include Cache-Control: no-store so the browser never
+ * caches a transient failure (upstream blip, timeout, etc.).
  *
  * Accept header: the proxy requests image/avif,image/webp so Tenor returns
  * animated WebP when available (60-80% smaller than GIF). The <img> element
@@ -55,7 +57,10 @@ type CacheEntry = {
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_ENTRIES = 200;
-const MAX_PROXY_BYTES = 12 * 1024 * 1024; // 12 MB hard cap
+/** Files at or below this size are buffered and cached in the LRU map. */
+const CACHE_MAX_BYTES = 4 * 1024 * 1024; // 4 MB
+/** Hard limit for streamed (non-cached) responses — protects against huge files. */
+const STREAM_MAX_BYTES = 30 * 1024 * 1024; // 30 MB
 const proxyCache = new Map<string, CacheEntry>();
 
 function evictIfNeeded(): void {
@@ -71,43 +76,9 @@ function evictIfNeeded(): void {
   if (oldest) proxyCache.delete(oldest);
 }
 
-async function fetchWithSizeCap(
-  fetchUrl: string,
-  abortMs = 15_000,
-): Promise<{ buffer: Buffer; contentType: string } | null> {
-  const upstream = await fetch(fetchUrl, {
-    headers: {
-      "User-Agent": "Vextorn-Proxy/1.0",
-      // Prefer WebP/AVIF so Tenor returns a smaller animated WebP when
-      // available (typically 60–80 % smaller than the equivalent GIF).
-      // The <img> element on the client renders animated WebP natively.
-      Accept: "image/avif,image/webp,image/*,*/*;q=0.8",
-    },
-    signal: AbortSignal.timeout(abortMs),
-  });
-
-  if (!upstream.ok) return null;
-
-  const declaredLength = Number(upstream.headers.get("content-length") ?? 0);
-  if (declaredLength > MAX_PROXY_BYTES) return null;
-
-  const contentType = upstream.headers.get("content-type") ?? "application/octet-stream";
-
-  const reader = upstream.body?.getReader();
-  if (!reader) return null;
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    totalBytes += value.byteLength;
-    if (totalBytes > MAX_PROXY_BYTES) {
-      reader.cancel();
-      return null;
-    }
-    chunks.push(value);
-  }
-  return { buffer: Buffer.concat(chunks), contentType };
+function sendNoStore(res: Response, status: number, message: string) {
+  res.setHeader("Cache-Control", "no-store");
+  return res.status(status).json({ error: message });
 }
 
 export function registerImageProxy(app: Express): void {
@@ -115,9 +86,10 @@ export function registerImageProxy(app: Express): void {
     const url = String(req.query.url ?? "").trim();
 
     if (!url || !isAllowedUrl(url)) {
-      return res.status(400).json({ error: "Invalid or disallowed URL" });
+      return sendNoStore(res, 400, "Invalid or disallowed URL");
     }
 
+    // Serve from in-memory cache when fresh.
     const cached = proxyCache.get(url);
     if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
@@ -128,22 +100,91 @@ export function registerImageProxy(app: Express): void {
     }
 
     try {
-      const result = await fetchWithSizeCap(url);
-      if (!result) {
-        return res.status(413).json({ error: "Image exceeds size limit or fetch failed" });
+      const upstream = await fetch(url, {
+        headers: {
+          "User-Agent": "Vextorn-Proxy/1.0",
+          Accept: "image/avif,image/webp,image/*,*/*;q=0.8",
+        },
+        signal: AbortSignal.timeout(20_000),
+      });
+
+      if (!upstream.ok) {
+        return sendNoStore(res, 502, "Upstream fetch failed");
       }
 
+      const contentType = upstream.headers.get("content-type") ?? "application/octet-stream";
+      const declaredLength = Number(upstream.headers.get("content-length") ?? 0);
+
+      // ── Streaming path for large files (> CACHE_MAX_BYTES) ──────────────
+      // Never buffer or cache; pass bytes straight through. This prevents
+      // 413 responses which the browser would cache, breaking card backgrounds.
+      if (declaredLength > CACHE_MAX_BYTES) {
+        if (declaredLength > STREAM_MAX_BYTES) {
+          return sendNoStore(res, 413, "Image exceeds maximum size");
+        }
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.setHeader("Content-Type", contentType);
+        if (declaredLength) res.setHeader("Content-Length", String(declaredLength));
+
+        const reader = upstream.body?.getReader();
+        if (!reader) return sendNoStore(res, 502, "No response body");
+
+        let streamed = 0;
+        let aborted = false;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          streamed += value.byteLength;
+          if (streamed > STREAM_MAX_BYTES) {
+            reader.cancel();
+            aborted = true;
+            break;
+          }
+          res.write(Buffer.from(value));
+        }
+        if (!aborted) res.end();
+        return;
+      }
+
+      // ── Buffered path for small files (≤ CACHE_MAX_BYTES) ───────────────
+      // Buffer the full response, cache it, then serve instantly on repeat requests.
+      const reader = upstream.body?.getReader();
+      if (!reader) return sendNoStore(res, 502, "No response body");
+
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > CACHE_MAX_BYTES) {
+          // Content-Length was absent or wrong — fall back to streaming the rest.
+          // We already buffered some chunks; send them then stream the remainder.
+          reader.cancel();
+          // Send what we have as a non-cached response.
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          res.setHeader("Content-Type", contentType);
+          for (const chunk of chunks) res.write(Buffer.from(chunk));
+          res.write(Buffer.from(value));
+          res.end();
+          return;
+        }
+        chunks.push(value);
+      }
+
+      const buffer = Buffer.concat(chunks);
       evictIfNeeded();
-      proxyCache.set(url, { ...result, cachedAt: Date.now() });
+      proxyCache.set(url, { buffer, contentType, cachedAt: Date.now() });
 
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      res.setHeader("Content-Type", result.contentType);
-      res.setHeader("Content-Length", String(result.buffer.length));
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Length", String(buffer.length));
       res.setHeader("X-Proxy-Cache", "MISS");
-      return res.end(result.buffer);
+      return res.end(buffer);
+
     } catch (err: any) {
       console.error("[image-proxy] fetch failed:", err?.message ?? err);
-      return res.status(502).json({ error: "Proxy fetch failed" });
+      return sendNoStore(res, 502, "Proxy fetch failed");
     }
   });
 }
