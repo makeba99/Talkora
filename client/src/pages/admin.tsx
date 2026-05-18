@@ -4144,14 +4144,21 @@ export default function AdminPage() {
     queryKey: ["/api/admin/reports"],
     enabled: !!canAccess,
   });
-  const [selectedReportIds, setSelectedReportIds] = useState<Set<number>>(new Set());
-  const toggleReportSelection = (id: number) =>
+  const [selectedReportIds, setSelectedReportIds] = useState<Set<string>>(new Set());
+  const toggleReportSelection = (id: string) =>
     setSelectedReportIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const allReportIds = reports.map((r) => r.id);
   const allSelected = allReportIds.length > 0 && allReportIds.every((id) => selectedReportIds.has(id));
   const toggleSelectAll = () => setSelectedReportIds(allSelected ? new Set() : new Set(allReportIds));
   const bulkUpdateReports = async (status: "reviewed" | "dismissed") => {
     await Promise.all([...selectedReportIds].map((id) => updateReportMutation.mutateAsync({ reportId: id, status })));
+    setSelectedReportIds(new Set());
+  };
+  const bulkDeleteReports = async () => {
+    if (selectedReportIds.size === 0) return;
+    await apiRequest("DELETE", "/api/admin/reports", { ids: [...selectedReportIds] });
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
+    toast({ title: `${selectedReportIds.size} report${selectedReportIds.size > 1 ? "s" : ""} deleted` });
     setSelectedReportIds(new Set());
   };
 
@@ -4346,6 +4353,18 @@ export default function AdminPage() {
       toast({ title: "Report updated" });
     },
     onError: (error: any) => toast({ title: "Failed to update report", description: error.message, variant: "destructive" }),
+  });
+
+  const deleteReportMutation = useMutation({
+    mutationFn: async (reportId: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/reports/${reportId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
+      toast({ title: "Report deleted" });
+    },
+    onError: (error: any) => toast({ title: "Failed to delete report", description: error.message, variant: "destructive" }),
   });
 
   const warnMutation = useMutation({
@@ -4787,6 +4806,16 @@ export default function AdminPage() {
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="h-7 text-xs text-destructive hover:text-destructive"
+                      onClick={bulkDeleteReports}
+                      data-testid="button-bulk-delete-reports"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      Delete
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       className="h-7 text-xs text-muted-foreground"
                       onClick={() => setSelectedReportIds(new Set())}
                       data-testid="button-clear-report-selection"
@@ -4851,6 +4880,9 @@ export default function AdminPage() {
                               </Button>
                               <Button size="sm" variant="destructive" onClick={() => warnMutation.mutate(report.reportedId)} disabled={warnMutation.isPending} data-testid={`button-warn-reported-${report.id}`}>
                                 Warn user
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => deleteReportMutation.mutate(report.id)} disabled={deleteReportMutation.isPending} data-testid={`button-delete-report-${report.id}`}>
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </div>
                           </div>

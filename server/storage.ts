@@ -122,6 +122,8 @@ export interface IStorage {
   createReport(report: InsertReport & { reporterName?: string; reportedName?: string; category?: string }): Promise<Report>;
   getAllReports(): Promise<Report[]>;
   updateReport(id: string, data: Partial<Report>): Promise<Report | undefined>;
+  deleteReport(id: string): Promise<void>;
+  deleteReportsBulk(ids: string[]): Promise<void>;
   getUserReportCount(userId: string): Promise<number>;
   warnUser(userId: string): Promise<User | undefined>;
   setUserRole(userId: string, role: string): Promise<User | undefined>;
@@ -623,6 +625,15 @@ export class DatabaseStorage implements IStorage {
   async updateReport(id: string, data: Partial<Report>): Promise<Report | undefined> {
     const [result] = await db.update(reports).set(data).where(eq(reports.id, id)).returning();
     return result;
+  }
+
+  async deleteReport(id: string): Promise<void> {
+    await db.delete(reports).where(eq(reports.id, id));
+  }
+
+  async deleteReportsBulk(ids: string[]): Promise<void> {
+    if (!ids.length) return;
+    await db.delete(reports).where(inArray(reports.id, ids));
   }
 
   async getUserReportCount(userId: string): Promise<number> {

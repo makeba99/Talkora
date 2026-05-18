@@ -3085,6 +3085,31 @@ export async function registerRoutes(
         fromUserId: parsed.data.followerId,
         type: "follow",
       });
+
+      // Email notification — fire-and-forget, non-blocking
+      (async () => {
+        try {
+          const smtpUser = process.env.SMTP_USER;
+          const smtpPass = process.env.SMTP_PASS;
+          if (smtpUser && smtpPass) {
+            const [follower, followed] = await Promise.all([
+              storage.getUser(parsed.data.followerId),
+              storage.getUser(parsed.data.followingId),
+            ]);
+            if (followed?.email) {
+              const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: smtpUser, pass: smtpPass } });
+              await transporter.sendMail({
+                from: `"Vextorn" <${smtpUser}>`,
+                to: followed.email,
+                subject: `${follower?.displayName || "Someone"} started following you on Vextorn`,
+                html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><p>Hi ${followed.displayName || "there"},</p><p><strong>${follower?.displayName || "Someone"}</strong> just followed you on Vextorn. Head over to your profile to connect!</p><p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
+                text: `${follower?.displayName || "Someone"} just followed you on Vextorn. Head over to https://vextorn.app to connect!`,
+              });
+            }
+          }
+        } catch { /* non-critical */ }
+      })();
+
       res.json(follow);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -3598,6 +3623,28 @@ export async function registerRoutes(
       }
       const updated = await storage.updateReport(req.params.id, { status });
       res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.deleteReport(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/reports", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "ids array is required" });
+      }
+      await storage.deleteReportsBulk(ids);
+      res.json({ ok: true, deleted: ids.length });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -4772,6 +4819,41 @@ export async function registerRoutes(
         description: `Session with ${teacher.name} · ${durationMinutes} min · ${sessionType}`,
         idramOrderId,
       });
+
+      // Email confirmation — fire-and-forget, non-blocking
+      (async () => {
+        try {
+          const smtpUser = process.env.SMTP_USER;
+          const smtpPass = process.env.SMTP_PASS;
+          if (smtpUser && smtpPass) {
+            const student = await storage.getUser(userId);
+            const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: smtpUser, pass: smtpPass } });
+            const sessionDate = new Date(scheduledAt).toLocaleString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+            const amountDisplay = `$${(amountUsd).toFixed(2)}`;
+            // Notify student
+            if (student?.email) {
+              await transporter.sendMail({
+                from: `"Vextorn" <${smtpUser}>`,
+                to: student.email,
+                subject: `Your session with ${teacher.name} is confirmed!`,
+                html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><h2 style="color:#f59e0b">Booking Confirmed</h2><p>Hi ${student.displayName || "there"},</p><p>Your <strong>${sessionType}</strong> session with <strong>${teacher.name}</strong> has been booked.</p><ul><li><strong>Date:</strong> ${sessionDate}</li><li><strong>Duration:</strong> ${durationMinutes} minutes</li><li><strong>Amount:</strong> ${amountDisplay}</li></ul>${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ""}<p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
+                text: `Booking confirmed! Session with ${teacher.name} on ${sessionDate} for ${durationMinutes} min (${amountDisplay}).`,
+              });
+            }
+            // Notify teacher
+            const teacherUser = teacher.userId ? await storage.getUser(teacher.userId) : null;
+            if (teacherUser?.email) {
+              await transporter.sendMail({
+                from: `"Vextorn" <${smtpUser}>`,
+                to: teacherUser.email,
+                subject: `New booking: ${student?.displayName || "A student"} booked a session`,
+                html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><h2 style="color:#f59e0b">New Booking</h2><p>Hi ${teacher.name},</p><p><strong>${student?.displayName || "A student"}</strong> has booked a <strong>${sessionType}</strong> session with you.</p><ul><li><strong>Date:</strong> ${sessionDate}</li><li><strong>Duration:</strong> ${durationMinutes} minutes</li><li><strong>Earnings:</strong> $${(teacherAmount / 100).toFixed(2)}</li></ul>${notes ? `<p><strong>Student notes:</strong> ${notes}</p>` : ""}<p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
+                text: `New booking from ${student?.displayName || "a student"} on ${sessionDate} for ${durationMinutes} min.`,
+              });
+            }
+          }
+        } catch { /* non-critical */ }
+      })();
 
       res.json({ ...booking, idramOrderId });
     } catch (err: any) {
