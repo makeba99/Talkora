@@ -250,6 +250,8 @@ export interface IStorage {
   deletePushSubscription(endpoint: string): Promise<void>;
   getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]>;
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
+  getRoomJoinNotifyPrefs(userIds: string[]): Promise<Record<string, string>>;
+  setRoomJoinNotifyPref(userId: string, pref: string): Promise<void>;
   getPushSubscriberCount(): Promise<number>;
   getPushSubscribersWithUsers(): Promise<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>>;
 
@@ -1756,6 +1758,25 @@ export class DatabaseStorage implements IStorage {
 
   async getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]> {
     return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async getRoomJoinNotifyPrefs(userIds: string[]): Promise<Record<string, string>> {
+    if (userIds.length === 0) return {};
+    const rows = await db
+      .select({ id: users.id, pref: users.roomJoinNotifyFrom })
+      .from(users)
+      .where(inArray(users.id, userIds));
+    const out: Record<string, string> = {};
+    for (const uid of userIds) out[uid] = "everyone";
+    for (const r of rows) out[r.id] = r.pref ?? "everyone";
+    return out;
+  }
+
+  async setRoomJoinNotifyPref(userId: string, pref: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ roomJoinNotifyFrom: pref, updatedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   async getAllPushSubscriptions(): Promise<PushSubscription[]> {

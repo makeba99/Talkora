@@ -212,8 +212,21 @@ async function notifyFollowersRoomJoin(
       "Someone you follow";
 
     const roomParticipantsInRoom = roomParticipants.get(room.id);
-
+    const followerIds = followers.map((f) => f.followerId);
     const now = Date.now();
+
+    // Batch-fetch each follower's notification preference
+    const prefs = await storage.getRoomJoinNotifyPrefs(followerIds);
+
+    // For followers who prefer "mutual only", we need to know if the joining
+    // user also follows them back. Fetch once and build a Set for O(1) lookup.
+    const hasMutualPref = followerIds.some((id) => prefs[id] === "mutual");
+    let joiningUserFollowingSet: Set<string> = new Set();
+    if (hasMutualPref) {
+      const joiningUserFollowing = await storage.getFollowing(joiningUser.id);
+      joiningUserFollowingSet = new Set(joiningUserFollowing.map((f) => f.followingId));
+    }
+
     const payload = JSON.stringify({
       title: `${joinerName} joined a room`,
       body: `"${room.name}" — tap to listen in`,
@@ -225,10 +238,15 @@ async function notifyFollowersRoomJoin(
       followers.map(async (follow) => {
         const followerUserId = follow.followerId;
 
+        // Respect the follower's notification preference
+        const pref = prefs[followerUserId] ?? "everyone";
+        if (pref === "none") return;
+        if (pref === "mutual" && !joiningUserFollowingSet.has(followerUserId)) return;
+
         // Skip if the follower is already inside the same room
         if (roomParticipantsInRoom?.has(followerUserId)) return;
 
-        // Cooldown check
+        // Cooldown check — max one push per joiner per follower per 15 min
         const cooldownKey = `${followerUserId}:${joiningUser.id}`;
         const lastNotified = followerNotifyCooldown.get(cooldownKey) ?? 0;
         if (now - lastNotified < FOLLOWER_NOTIFY_COOLDOWN_MS) return;
@@ -3420,6 +3438,20 @@ export async function registerRoutes(
       if (!endpoint) return res.status(400).json({ message: "endpoint is required." });
       await storage.deletePushSubscription(endpoint);
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Web Push: room-join notification preference ────────────────────────────
+  app.patch("/api/push/room-join-notify-pref", isAuthenticated, async (req: any, res) => {
+    try {
+      const { pref } = req.body;
+      if (!["everyone", "mutual", "none"].includes(pref)) {
+        return res.status(400).json({ message: "pref must be 'everyone', 'mutual', or 'none'." });
+      }
+      await storage.setRoomJoinNotifyPref((req.user as any).id, pref);
+      res.json({ success: true, pref });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

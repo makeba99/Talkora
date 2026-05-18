@@ -275,6 +275,7 @@ export function ProfileDropdown({
   const [selectedAnimation, setSelectedAnimation] = useState<string>("none");
   const [requestedBadge, setRequestedBadge] = useState("");
   const [badgeReason, setBadgeReason] = useState("");
+  const [roomJoinNotifyPref, setRoomJoinNotifyPref] = useState<"everyone" | "mutual" | "none">("everyone");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [cropImgSrc, setCropImgSrc] = useState("");
@@ -335,6 +336,20 @@ export function ProfileDropdown({
     },
     onError: () => {
       import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
+    },
+  });
+
+  const roomJoinNotifyMutation = useMutation({
+    mutationFn: async (pref: "everyone" | "mutual" | "none") => {
+      const res = await apiRequest("PATCH", "/api/push/room-join-notify-pref", { pref });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: "Notification preference saved" });
+    },
+    onError: () => {
+      toast({ title: "Could not save preference", variant: "destructive" });
     },
   });
 
@@ -410,6 +425,7 @@ export function ProfileDropdown({
     setFacebookUrl((user as any)?.facebookUrl || "");
     setSocialsPinned(!!(user as any)?.socialsPinned);
     setPresenceStatus((user as any)?.status || "online");
+    setRoomJoinNotifyPref(((user as any)?.roomJoinNotifyFrom as any) || "everyone");
     setEditOpen(true);
   };
 
@@ -965,6 +981,56 @@ export function ProfileDropdown({
                   />
                 </div>
               </div>
+
+              {/* Room-join notification preference — only shown when push is active */}
+              {push.state === "subscribed" && (
+                <div className="space-y-2 rounded-md border border-border/50 bg-muted/30 px-3 py-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <BellRing className="w-3.5 h-3.5 text-amber-400" />
+                    <Label className="text-sm font-medium">Room join notifications</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-snug mb-2">
+                    Get notified when someone you follow joins a room.
+                  </p>
+                  <div className="flex gap-2">
+                    {(["everyone", "mutual", "none"] as const).map((opt) => {
+                      const labels = { everyone: "Everyone", mutual: "Mutual only", none: "Off" };
+                      const active = roomJoinNotifyPref === opt;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            setRoomJoinNotifyPref(opt);
+                            roomJoinNotifyMutation.mutate(opt);
+                          }}
+                          disabled={roomJoinNotifyMutation.isPending}
+                          data-testid={`button-notify-pref-${opt}`}
+                          className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all border"
+                          style={{
+                            background: active
+                              ? "linear-gradient(135deg, rgba(139,92,246,0.25), rgba(99,102,241,0.15))"
+                              : "transparent",
+                            borderColor: active
+                              ? "rgba(139,92,246,0.5)"
+                              : "rgba(255,255,255,0.08)",
+                            color: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)",
+                          }}
+                        >
+                          {labels[opt]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-tight mt-1">
+                    {roomJoinNotifyPref === "mutual"
+                      ? "Only people you both follow each other will trigger a notification."
+                      : roomJoinNotifyPref === "none"
+                      ? "You won't receive any room-join push notifications."
+                      : "Anyone you follow will trigger a notification when they join a room."}
+                  </p>
+                </div>
+              )}
 
               <Button
                 className="w-full"
