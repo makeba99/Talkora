@@ -419,6 +419,7 @@ function ParticipantCard({
   hologramVideoUrl,
   avatarGifUrl,
   onSetAvatarGif,
+  fillMode = false,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -783,10 +784,10 @@ function ParticipantCard({
         </div>
       )}
       <div
-        className={`relative rounded-md overflow-hidden bg-muted/20 group border-[3px] select-none ${
+        className={`relative overflow-hidden bg-muted/20 group border-[3px] select-none ${
           isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_14px_hsl(var(--neu-orange)/0.45)]" : "border-transparent hover:border-white/20"
-        } transition-all duration-300`}
-        style={{ width: cardPx, height: cardPx, flexShrink: 0 }}
+        } transition-all duration-300 ${fillMode ? "w-full h-full rounded-xl" : "rounded-md"}`}
+        style={fillMode ? { flexShrink: 0 } : { width: cardPx, height: cardPx, flexShrink: 0 }}
       >
         {/* Profile card animation overlay — renders behind avatar content */}
         <ProfileAnimationOverlay
@@ -917,7 +918,35 @@ function ParticipantCard({
             </div>
           </>
         ) : remoteVideoStream ? (
-          <RemoteVideoPreview stream={remoteVideoStream} className={isMe && localVideoFlipped ? "scale-x-[-1]" : ""} />
+          <>
+            <RemoteVideoPreview stream={remoteVideoStream} className={isMe && localVideoFlipped ? "scale-x-[-1]" : ""} />
+            {fillMode && (
+              <>
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none z-[24]" />
+                <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-2 pb-2 pt-1">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/60 shadow-lg flex-shrink-0">
+                    {p.profileImageUrl ? (
+                      <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={32} height={32} className="w-full h-full object-cover" style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }} />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                        <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center gap-1 min-w-0">
+                      {isRoomOwner && <Crown className="w-3 h-3 text-yellow-300 flex-shrink-0" />}
+                      <span className="text-[11px] font-semibold text-white leading-tight truncate drop-shadow-md">{isMe ? "You" : getUserDisplayName(p)}</span>
+                    </div>
+                    {isSpeaking && <span className="text-[9px] text-green-400 font-medium leading-none">Speaking…</span>}
+                  </div>
+                  <div className="flex-shrink-0 opacity-80">
+                    {p.isMuted ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white" />}
+                  </div>
+                </div>
+              </>
+            )}
+          </>
         ) : avatarGifUrl ? (
           <>
             <div
@@ -997,7 +1026,29 @@ function ParticipantCard({
             style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+          <div className={`w-full h-full bg-gradient-to-br ${gradient} flex flex-col items-center justify-center gap-2 p-3`}>
+            <div className={`${fillMode ? "w-20 h-20 sm:w-24 sm:h-24" : "w-3/4 h-3/4"} max-w-full rounded-full overflow-hidden border-2 border-white/20 shadow-lg flex-shrink-0`}>
+              {p.profileImageUrl ? (
+                <img src={p.profileImageUrl} alt={getUserDisplayName(p)} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-black/20">
+                  <span className={`font-bold text-white ${fillMode ? "text-3xl sm:text-4xl" : "text-xs"}`}>{getUserInitials(p)}</span>
+                </div>
+              )}
+            </div>
+            {fillMode && (
+              <div className="flex flex-col items-center gap-1 text-center">
+                <div className="flex items-center gap-1.5">
+                  {isRoomOwner && <Crown className="w-3.5 h-3.5 text-yellow-300" />}
+                  <span className="text-sm font-semibold text-white drop-shadow-md truncate max-w-[160px]">{isMe ? "You" : getUserDisplayName(p)}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-white/50 text-[11px]">
+                  <VideoOff className="w-3.5 h-3.5" />
+                  <span>Camera off</span>
+                  {p.isMuted && <span className="flex items-center gap-0.5 ml-1"><MicOff className="w-3 h-3" /> Muted</span>}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -12850,7 +12901,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
         </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden relative" style={{ paddingBottom: ((activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode)) ? 210 : 0 }}>
+        <div className="flex-1 flex flex-col overflow-hidden relative" style={{ paddingBottom: ((activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId) ? 210 : 0 }}>
 
           {focusedUserId && !(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && (!isVideoOn || miniCameraMode) && !remoteVideoUserId && (
             <div className="flex-1 min-h-0 relative flex items-center justify-center p-4 cursor-pointer" onClick={() => { setFocusedUserId(null); setMiniCameraMode(false); setMiniPlayerMode(false); }}>
@@ -13675,7 +13726,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
-          {isVideoOn && localVideoStreamObj && !miniCameraMode && !isScreenSharing && !(activeYoutubeId && showYoutube) && !showEReader && !remoteVideoUserId && (
+          {false && isVideoOn && localVideoStreamObj && !miniCameraMode && !isScreenSharing && !(activeYoutubeId && showYoutube) && !showEReader && !remoteVideoUserId && (
             <div className="flex-1 min-h-0 bg-black relative" data-testid="media-local-camera">
               <video
                 ref={localVideoRef}
@@ -13757,13 +13808,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               visibleCount <= 14 ? 64 :
               56;
             const gapPx = cardPx <= 72 ? 6 : 8;
+            const isInOverlayMode = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId;
+            const gridCols = visibleCount === 1 ? 1 : visibleCount <= 4 ? 2 : visibleCount <= 9 ? 3 : 4;
           return (
-          <div className={`flex items-end justify-center p-2 pb-4 ${(activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || (isVideoOn && !miniCameraMode) ? "absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 pt-14 overflow-visible"}`}>
+          <div
+            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-hidden"}
+            style={isInOverlayMode ? {} : { display: "grid", gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gridAutoRows: "1fr", gap: 8 }}
+          >
             <div
-              className="overflow-x-auto w-full"
-              style={{ scrollbarWidth: "none" }}
+              className={isInOverlayMode ? "overflow-x-auto w-full" : "contents"}
+              style={isInOverlayMode ? { scrollbarWidth: "none" as const } : {}}
             >
-            <div className="flex flex-nowrap items-end justify-center pt-14" style={{ gap: gapPx, minWidth: "max-content", margin: "0 auto" }}>
+            <div className={isInOverlayMode ? "flex flex-nowrap items-end justify-center pt-14" : "contents"} style={isInOverlayMode ? { gap: gapPx, minWidth: "max-content", margin: "0 auto" } : {}}>
               {participants.map((p, index) => {
                 if (foreverBlockedIds.has(p.id) && p.id !== user?.id) return null;
                 const isBlockedUser = blockedIds.has(p.id) && p.id !== user?.id;
@@ -13775,7 +13831,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 return (
                   <div
                     key={p.id}
-                    className="flex flex-col items-center gap-2 group relative"
+                    className={isInOverlayMode ? "flex flex-col items-center gap-2 group relative" : "relative min-h-0"}
                     data-testid={`card-participant-${p.id}`}
                     style={{
                       ...(djModeActive && !isRoomOwner ? (() => {
@@ -14180,7 +14236,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       volume={participantVolumes[p.id] ?? 1}
                       onVolumeChange={handleVolumeChange}
                       youtubeVideoId={youtubeHosts.get(p.id) || null}
-                      remoteVideoStream={isMe && isVideoOn && miniCameraMode ? localVideoStreamObj : (!isMe && availableVideoUsers.has(p.id) ? remoteVideoStreams.current.get(p.id) : undefined)}
+                      remoteVideoStream={isMe && isVideoOn && (!isInOverlayMode || miniCameraMode) ? localVideoStreamObj : (!isMe && availableVideoUsers.has(p.id) ? remoteVideoStreams.current.get(p.id) : undefined)}
                       localVideoFlipped={isMe ? cameraFacing === "user" : false}
                       isBlocked={isBlockedUser}
                       onUnblock={handleUnblock}
@@ -14207,6 +14263,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         socket?.emit("room:movie-watching", { roomId: room.id, hostId: p.id, watching: true });
                       } : undefined}
                       cardPx={cardPx}
+                      fillMode={!isInOverlayMode}
                       hologramVideoUrl={null}
                       avatarGifUrl={participantAvatarGifs[p.id] || null}
                       onSetAvatarGif={isMe ? (gifUrl: string | null) => {
