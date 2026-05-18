@@ -3,7 +3,7 @@ import { Bell, X } from "lucide-react";
 import { usePushSubscription } from "@/hooks/use-push-subscription";
 import { useAuth } from "@/hooks/use-auth";
 
-const APP_VERSION = "v10";
+const APP_VERSION = "v11";
 const STORAGE_KEY = "vx_push_prompt";
 const REPROMPT_DAYS = 7;
 const REPROMPT_MS = REPROMPT_DAYS * 24 * 60 * 60 * 1000;

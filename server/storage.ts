@@ -126,6 +126,7 @@ export interface IStorage {
   deleteReportsBulk(ids: string[]): Promise<void>;
   getUserReportCount(userId: string): Promise<number>;
   warnUser(userId: string): Promise<User | undefined>;
+  removeWarning(userId: string): Promise<User | undefined>;
   setUserRole(userId: string, role: string): Promise<User | undefined>;
   restrictUser(userId: string, data: { restrictedUntil: Date | null; restrictedReason: string | null; restrictedById: string | null }): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -250,6 +251,7 @@ export interface IStorage {
   getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]>;
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
   getPushSubscriberCount(): Promise<number>;
+  getPushSubscribersWithUsers(): Promise<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>>;
 
   createTransaction(data: InsertTransaction): Promise<Transaction>;
   getTransactionsByUser(userId: string): Promise<Transaction[]>;
@@ -648,6 +650,17 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ warningCount: sql`${users.warningCount} + 1`, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    if (user) userCache.set(`user:${userId}`, user);
+    userCache.delete("users:all");
+    return user;
+  }
+
+  async removeWarning(userId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ warningCount: sql`GREATEST(${users.warningCount} - 1, 0)`, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     if (user) userCache.set(`user:${userId}`, user);
@@ -1752,6 +1765,25 @@ export class DatabaseStorage implements IStorage {
   async getPushSubscriberCount(): Promise<number> {
     const res = await db.execute(sql`SELECT COUNT(*)::int AS cnt FROM push_subscriptions`);
     return Number((res.rows[0] as any)?.cnt ?? 0);
+  }
+
+  async getPushSubscribersWithUsers(): Promise<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>> {
+    const res = await db.execute(sql`
+      SELECT ps.user_id,
+             COALESCE(u.display_name, u.first_name, u.email, ps.user_id) AS display_name,
+             u.email,
+             COUNT(*)::int AS device_count
+      FROM push_subscriptions ps
+      LEFT JOIN users u ON u.id = ps.user_id
+      GROUP BY ps.user_id, u.display_name, u.first_name, u.email
+      ORDER BY device_count DESC, display_name ASC
+    `);
+    return (res.rows as any[]).map((r) => ({
+      userId: r.user_id,
+      displayName: r.display_name ?? null,
+      email: r.email ?? null,
+      deviceCount: Number(r.device_count),
+    }));
   }
 
   async createTransaction(data: InsertTransaction): Promise<Transaction> {

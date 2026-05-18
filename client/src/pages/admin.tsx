@@ -2528,6 +2528,11 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
     refetchInterval: 60000,
   });
 
+  const { data: pushSubscribers = [] } = useQuery<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>>({
+    queryKey: ["/api/admin/push/subscribers"],
+    refetchInterval: 60000,
+  });
+
   const emailMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/admin/outreach/email", {
@@ -2868,16 +2873,32 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
             <p className="text-emerald-300/80">
               Web Push sends native OS notifications to users who've clicked "Enable notifications" — they appear even when the browser tab is closed.
             </p>
-            <details className="cursor-pointer">
-              <summary className="text-emerald-400 hover:text-emerald-300 transition-colors font-medium">Setup required →</summary>
-              <ol className="mt-2 space-y-1 text-emerald-300/80 list-decimal list-inside">
-                <li>Add secret <code className="font-mono">VAPID_PUBLIC_KEY</code> = <code className="font-mono text-[10px] break-all">BEsGiteMU1RlFA1PT-PukUjW-wgGBqi8ILrxJxLz3EQhGZnKsk9SHH7YptpKXD4grBpn_cUHvE94D1cV616jj8w</code></li>
-                <li>Add secret <code className="font-mono">VAPID_PRIVATE_KEY</code> = <code className="font-mono text-[10px] break-all">PchG36LDPYNAGFQcvhJYPtr5oxpNva_imm7mVDnTNZo</code></li>
-                <li>Restart the server after adding secrets</li>
-                <li>Users must click "Enable Notifications" (bell icon in their profile menu)</li>
-              </ol>
-            </details>
+            <p className="text-emerald-300/60">
+              VAPID keys are auto-provisioned on server startup — no manual setup needed. Users must grant permission via the bell prompt that appears after login.
+            </p>
           </div>
+
+          {pushSubscribers.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Bell className="w-3 h-3" /> Opted-in users ({pushSubscribers.length})
+              </p>
+              <div className="rounded-lg border border-border/50 bg-background/40 divide-y divide-border/30 max-h-40 overflow-y-auto">
+                {pushSubscribers.map((s) => (
+                  <div key={s.userId} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                    <span className="truncate text-foreground/80">{s.displayName ?? s.userId}</span>
+                    <span className="text-muted-foreground ml-2 shrink-0">{s.deviceCount} device{s.deviceCount !== 1 ? "s" : ""}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {pushSubscribers.length === 0 && (pushSubCount?.count ?? 0) === 0 && (
+            <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
+              No users have enabled push notifications yet. The bell prompt appears automatically a few seconds after users log in.
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Notification title</Label>
@@ -4379,6 +4400,18 @@ export default function AdminPage() {
     onError: (error: any) => toast({ title: "Failed to warn user", description: error.message, variant: "destructive" }),
   });
 
+  const removeWarnMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/warn/${userId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Warning removed" });
+    },
+    onError: (error: any) => toast({ title: "Failed to remove warning", description: error.message, variant: "destructive" }),
+  });
+
   const restrictMutation = useMutation({
     mutationFn: async ({ userId, days }: { userId: string; days: number }) => {
       const restrictionDays = Math.min(365, Math.max(1, Number(days) || 1));
@@ -5208,11 +5241,17 @@ export default function AdminPage() {
                               {item.warningCount >= 3 ? "Suggested action: review reports and consider restrictions." : "Monitor future reports before escalating."}
                             </p>
                           </div>
-                          {item.warningCount < 3 && (
-                            <Button size="sm" variant="destructive" onClick={() => warnMutation.mutate(item.id)} disabled={warnMutation.isPending} data-testid={`button-extra-warning-${item.id}`}>
-                              Send another warning
+                          <div className="flex flex-wrap gap-2">
+                            {item.warningCount < 3 && (
+                              <Button size="sm" variant="destructive" onClick={() => warnMutation.mutate(item.id)} disabled={warnMutation.isPending} data-testid={`button-extra-warning-${item.id}`}>
+                                Send another warning
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => removeWarnMutation.mutate(item.id)} disabled={removeWarnMutation.isPending} data-testid={`button-remove-warning-${item.id}`}>
+                              <Trash2 className="w-3 h-3 mr-1" />
+                              Remove warning
                             </Button>
-                          )}
+                          </div>
                         </div>
                       ))
                   )}

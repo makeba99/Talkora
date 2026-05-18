@@ -3350,6 +3350,15 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/push/subscribers", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const subscribers = await storage.getPushSubscribersWithUsers();
+      res.json(subscribers);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // ── Web Push: image upload (admin) ────────────────────────────────────────
   app.post("/api/admin/push/upload-image", isAuthenticated, isSuperAdmin, uploadRateLimiter, uploadPushImage.single("image"), async (req: any, res) => {
     try {
@@ -3676,6 +3685,18 @@ export async function registerRoutes(
         io.to(socketId).emit("admin:notification", { type: "admin_warning" });
       }
       res.json(warned);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/admin/warn/:userId", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const target = await storage.getUser(userId);
+      if (!target) return res.status(404).json({ message: "User not found" });
+      const updated = await storage.removeWarning(userId);
+      res.json(updated);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
