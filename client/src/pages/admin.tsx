@@ -1397,6 +1397,9 @@ type BlockLogEntry = {
   surface: string;
   matchedTerm: string;
   timestamp: string;
+  userId?: string;
+  displayName?: string;
+  avatarUrl?: string;
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -1449,6 +1452,15 @@ function ContentFilterLogTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/content-blocks"] });
       toast({ title: "Block log cleared" });
     },
+  });
+
+  const warnMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("POST", `/api/admin/warn/${userId}`, {});
+      return res.json();
+    },
+    onSuccess: () => toast({ title: "Warning issued" }),
+    onError: (error: any) => toast({ title: "Failed to warn user", description: error.message, variant: "destructive" }),
   });
 
   const cats = useMemo(() => [...new Set(entries.map((e) => e.category))].sort(), [entries]);
@@ -1600,9 +1612,11 @@ function ContentFilterLogTab() {
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground w-32">Time</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">User</th>
                     <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Category</th>
                     <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Surface</th>
                     <th className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Matched term</th>
+                    <th className="py-2 px-3 w-16"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
@@ -1617,6 +1631,24 @@ function ContentFilterLogTab() {
                         <span className="block text-[10px] opacity-60">{fmtDate(entry.timestamp)}</span>
                       </td>
                       <td className="py-2 px-3">
+                        {entry.userId ? (
+                          <div className="flex items-center gap-1.5 min-w-[120px]">
+                            {entry.avatarUrl ? (
+                              <img src={entry.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" loading="lazy" decoding="async" />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-primary/20 shrink-0 flex items-center justify-center text-[9px] font-bold text-primary">
+                                {(entry.displayName ?? entry.userId)[0]?.toUpperCase()}
+                              </div>
+                            )}
+                            <span className="text-[11px] truncate max-w-[100px]" title={entry.displayName ?? entry.userId}>
+                              {entry.displayName ?? entry.userId.slice(0, 8) + "…"}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground italic">anonymous</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${CATEGORY_COLORS[entry.category] ?? "bg-muted/20 text-muted-foreground border-border"}`}>
                           {entry.category.replace("_", " ")}
                         </span>
@@ -1628,6 +1660,19 @@ function ContentFilterLogTab() {
                       </td>
                       <td className="py-2 px-3 font-mono text-[11px] text-foreground/80">
                         {entry.matchedTerm}
+                      </td>
+                      <td className="py-2 px-3">
+                        {entry.userId && (
+                          <button
+                            data-testid={`button-warn-block-${entry.id}`}
+                            onClick={() => warnMutation.mutate(entry.userId!)}
+                            disabled={warnMutation.isPending}
+                            title={`Warn ${entry.displayName ?? entry.userId}`}
+                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                          >
+                            Warn
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -4139,6 +4184,7 @@ export default function AdminPage() {
   const [rejectNotes, setRejectNotes] = useState("");
   const [badgeUserId, setBadgeUserId] = useState("");
   const [badgeType, setBadgeType] = useState("");
+  const [badgeUserSearch, setBadgeUserSearch] = useState("");
   const [announcementKind, setAnnouncementKind] = useState("platform");
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementBody, setAnnouncementBody] = useState("");
@@ -5375,16 +5421,31 @@ export default function AdminPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select User</label>
+                    <Input
+                      placeholder="Search users..."
+                      value={badgeUserSearch}
+                      onChange={(e) => setBadgeUserSearch(e.target.value)}
+                      className="h-8 text-xs"
+                      data-testid="input-badge-user-search"
+                    />
                     <Select value={badgeUserId} onValueChange={setBadgeUserId}>
                       <SelectTrigger data-testid="select-badge-user">
                         <SelectValue placeholder="Choose a user..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {users.filter(u => u.email !== OWNER_EMAIL && u.role !== "superadmin").map((u) => (
-                          <SelectItem key={u.id} value={u.id} data-testid={`option-badge-user-${u.id}`}>
-                            {getUserDisplayName(u)}
-                          </SelectItem>
-                        ))}
+                        {users
+                          .filter(u => u.email !== OWNER_EMAIL && u.role !== "superadmin")
+                          .filter(u => {
+                            if (!badgeUserSearch.trim()) return true;
+                            const q = badgeUserSearch.toLowerCase();
+                            return getUserDisplayName(u).toLowerCase().includes(q) || (u.email ?? "").toLowerCase().includes(q);
+                          })
+                          .map((u) => (
+                            <SelectItem key={u.id} value={u.id} data-testid={`option-badge-user-${u.id}`}>
+                              {getUserDisplayName(u)}
+                            </SelectItem>
+                          ))
+                        }
                       </SelectContent>
                     </Select>
                   </div>

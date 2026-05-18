@@ -36,13 +36,22 @@ export interface FilterResult {
 
 const CLEAN: FilterResult = { flagged: false, message: "" };
 
-// ── Block Log (in-memory ring buffer, last 500 events, no PII) ───────────────
+// ── Block Log (in-memory ring buffer, last 500 events) ───────────────────────
 export interface BlockLogEntry {
   id: number;
   category: FilterCategory;
   surface: string;
   matchedTerm: string;
   timestamp: string;
+  userId?: string;
+  displayName?: string;
+  avatarUrl?: string;
+}
+
+export interface UserContext {
+  userId: string;
+  displayName?: string;
+  avatarUrl?: string;
 }
 
 let _logSeq = 0;
@@ -57,13 +66,16 @@ export function clearBlockLog(): void {
   _blockLog.length = 0;
 }
 
-function pushBlockLog(category: FilterCategory, surface: string, matchedTerm: string): void {
+function pushBlockLog(category: FilterCategory, surface: string, matchedTerm: string, userCtx?: UserContext): void {
   const entry: BlockLogEntry = {
     id: ++_logSeq,
     category,
     surface,
     matchedTerm,
     timestamp: new Date().toISOString(),
+    userId: userCtx?.userId,
+    displayName: userCtx?.displayName,
+    avatarUrl: userCtx?.avatarUrl,
   };
   _blockLog.push(entry);
   if (_blockLog.length > RING_SIZE) _blockLog.shift();
@@ -169,15 +181,15 @@ function buildVariants(raw: string): string[] {
 }
 
 // ── Logging helper ────────────────────────────────────────────────────────────
-function logFlagged(category: FilterCategory, matchedTerm: string, variant: string, surface: string): void {
+function logFlagged(category: FilterCategory, matchedTerm: string, variant: string, surface: string, userCtx?: UserContext): void {
   const ts = new Date().toISOString();
   const preview = variant.length > 60 ? variant.slice(0, 60) + "…" : variant;
   console.warn(`[content-filter] BLOCKED category=${category} term="${matchedTerm}" variant="${preview}" surface=${surface} at=${ts}`);
-  pushBlockLog(category, surface, matchedTerm);
+  pushBlockLog(category, surface, matchedTerm, userCtx);
 }
 
 // ── Core check ────────────────────────────────────────────────────────────────
-export function checkContent(text: string, surface = "unknown"): FilterResult {
+export function checkContent(text: string, surface = "unknown", userCtx?: UserContext): FilterResult {
   if (!text || typeof text !== "string") return CLEAN;
 
   const trimmed = text.trim();
@@ -189,7 +201,7 @@ export function checkContent(text: string, surface = "unknown"): FilterResult {
   for (const { term, category } of PHRASE_TERMS) {
     for (const v of variants) {
       if (v.includes(term)) {
-        logFlagged(category, term, v, surface);
+        logFlagged(category, term, v, surface, userCtx);
         return {
           flagged: true,
           category,
@@ -206,7 +218,7 @@ export function checkContent(text: string, surface = "unknown"): FilterResult {
     const re = new RegExp(`\\b${escapeRe(term)}\\b`);
     for (const v of variants) {
       if (re.test(v)) {
-        logFlagged(category, term, v, surface);
+        logFlagged(category, term, v, surface, userCtx);
         return {
           flagged: true,
           category,
@@ -224,7 +236,7 @@ export function checkContent(text: string, surface = "unknown"): FilterResult {
   for (const { term, category } of PHRASE_TERMS) {
     const termStripped = stripNonAlpha(term.replace(/\s+/g, ""));
     if (strippedCollapsed.includes(termStripped)) {
-      logFlagged(category, term, strippedCollapsed, surface);
+      logFlagged(category, term, strippedCollapsed, surface, userCtx);
       return {
         flagged: true,
         category,
@@ -235,15 +247,11 @@ export function checkContent(text: string, surface = "unknown"): FilterResult {
     }
   }
 
-  // 4. Compound-word catch: substring-match WORD_TERMS (≥5 chars) on the
-  //    fully-stripped+collapsed text.  Word boundaries (\b) are useless inside
-  //    glued compounds like "bigdicky", "bitchassnigga", "fuckar" — this stage
-  //    catches them.  The 5-char floor avoids false positives from short terms
-  //    like "ass" (3), "nig" (3), "fag" (3) that could appear inside innocent words.
+  // 4. Compound-word catch
   for (const { term, category } of WORD_TERMS) {
     if (term.length < 5) continue;
     if (strippedCollapsed.includes(term)) {
-      logFlagged(category, term, strippedCollapsed, surface);
+      logFlagged(category, term, strippedCollapsed, surface, userCtx);
       return {
         flagged: true,
         category,
@@ -254,16 +262,12 @@ export function checkContent(text: string, surface = "unknown"): FilterResult {
     }
   }
 
-  // 5. Semantic intent analysis — detects harassment from word COMBINATIONS
-  //    and context rather than individual terms.  Catches things like:
-  //      "sucking dick"  "lick my boobs"  "show me ur pussy"  "boobies"
-  //    Build the semantic input directly (homoglyph → leet → lowercase) so
-  //    evasion tricks are neutralised before the semantic parser sees the text.
+  // 5. Semantic intent analysis
   const semanticText = normalizeLeet(normalizeHomoglyphs(stripInvisible(trimmed)));
   const semantic = checkSemantic(semanticText);
   if (semantic.flagged) {
     const semTerm = semantic.matchedTerm ?? "semantic";
-    logFlagged("sexual_content", semTerm, semanticText, surface);
+    logFlagged("sexual_content", semTerm, semanticText, surface, userCtx);
     return {
       flagged: true,
       category: "sexual_content",
@@ -276,12 +280,12 @@ export function checkContent(text: string, surface = "unknown"): FilterResult {
   return CLEAN;
 }
 
-// ── Convenience: check multiple fields, return first violation found ──────────
-export function checkFields(fields: Record<string, string | undefined | null>, surface = "unknown"): FilterResult & { field?: string } {
+export function checkFields(fields: Record<string, string | undefined | null>, surface = "unknown", userCtx?: UserContext): FilterResult & { field?: string } {
   for (const [field, value] of Object.entries(fields)) {
     if (!value) continue;
-    const result = checkContent(value, surface);
+    const result = checkContent(value, surface, userCtx);
     if (result.flagged) return { ...result, field };
   }
-  return CLEAN;
+  return { ...CLEAN };
 }
+

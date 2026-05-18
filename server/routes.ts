@@ -2231,7 +2231,8 @@ export async function registerRoutes(
       const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, profileAnimation, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
-      const profileModResult = checkFields({ displayName, bio }, "profile");
+      const _profileUser = await storage.getUser(userId);
+      const profileModResult = checkFields({ displayName, bio }, "profile", { userId, displayName: displayName ?? _profileUser?.displayName ?? undefined, avatarUrl: profileImageUrl ?? _profileUser?.profileImageUrl ?? undefined });
       if (profileModResult.flagged) {
         const fieldLabel = profileModResult.field === "displayName" ? "display name" : "bio";
         recordStrike(userId, displayName ?? userId, profileModResult.matchedTerm ?? "unknown", "profile");
@@ -2621,7 +2622,8 @@ export async function registerRoutes(
         });
       }
       // ── Content moderation ─────────────────────────────────────────────────
-      const roomCreateModResult = checkContent(parsed.data.title, "room-title");
+      const _rcUser = await storage.getUser(ownerId);
+      const roomCreateModResult = checkContent(parsed.data.title, "room-title", { userId: ownerId, displayName: _rcUser?.displayName ?? undefined, avatarUrl: _rcUser?.profileImageUrl ?? undefined });
       if (roomCreateModResult.flagged) {
         const rcUserId = (req as any).user?.id ?? "unknown";
         recordStrike(rcUserId, parsed.data.title, roomCreateModResult.matchedTerm ?? "unknown", "room-title");
@@ -2668,7 +2670,8 @@ export async function registerRoutes(
       const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission, chatPermission } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
-      const roomUpdateModResult = checkFields({ title, welcomeMessage }, "room-settings");
+      const _ruUser = await storage.getUser(userId);
+      const roomUpdateModResult = checkFields({ title, welcomeMessage }, "room-settings", { userId, displayName: _ruUser?.displayName ?? undefined, avatarUrl: _ruUser?.profileImageUrl ?? undefined });
       if (roomUpdateModResult.flagged) {
         const fieldLabel = roomUpdateModResult.field === "title" ? "room title" : "welcome message";
         const ruUserId = (req as any).user?.id ?? "unknown";
@@ -3001,7 +3004,8 @@ export async function registerRoutes(
       if (dmMuteStatus.muted) {
         return res.status(429).json({ flagged: true, muted: true, message: dmMuteStatus.message });
       }
-      const dmModResult = checkContent(parsed.data.text, "dm");
+      const _dmUser = await storage.getUser(parsed.data.fromId);
+      const dmModResult = checkContent(parsed.data.text, "dm", { userId: parsed.data.fromId, displayName: _dmUser?.displayName ?? undefined, avatarUrl: _dmUser?.profileImageUrl ?? undefined });
       if (dmModResult.flagged) {
         const dmSender2 = await storage.getUser(parsed.data.fromId);
         const dmDn = dmSender2?.displayName ?? dmSender2?.firstName ?? parsed.data.fromId;
@@ -4765,7 +4769,8 @@ export async function registerRoutes(
 
       // ── Content moderation ─────────────────────────────────────────────────
       if (comment) {
-        const reviewModResult = checkContent(comment, "review");
+        const _rvUser = await storage.getUser(userId);
+        const reviewModResult = checkContent(comment, "review", { userId, displayName: _rvUser?.displayName ?? undefined, avatarUrl: _rvUser?.profileImageUrl ?? undefined });
         if (reviewModResult.flagged) {
           const rvUserId = (req as any).user?.id ?? "unknown";
           recordStrike(rvUserId, comment.slice(0, 30), reviewModResult.matchedTerm ?? "unknown", "review");
@@ -5081,7 +5086,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Description must be at least 3 characters" });
       }
       // Content moderation on the request fields
-      const orderModResult = checkFields({ themeName, description }, "theme-request");
+      const _orderUser = await storage.getUser(userId);
+      const orderModResult = checkFields({ themeName, description }, "theme-request", { userId, displayName: _orderUser?.displayName ?? undefined, avatarUrl: _orderUser?.profileImageUrl ?? undefined });
       if (orderModResult.flagged) {
         recordStrike(userId, themeName ?? userId, orderModResult.matchedTerm ?? "unknown", "theme-request");
         return res.status(422).json({ flagged: true, message: orderModResult.message });
@@ -5301,7 +5307,8 @@ export async function registerRoutes(
       if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid comment" });
 
       // ── Content moderation ─────────────────────────────────────────────────
-      const commentModResult = checkContent(parsed.data.text, "comment");
+      const _cmtUser = await storage.getUser(authorId);
+      const commentModResult = checkContent(parsed.data.text, "comment", { userId: authorId, displayName: _cmtUser?.displayName ?? undefined, avatarUrl: _cmtUser?.profileImageUrl ?? undefined });
       if (commentModResult.flagged) {
         recordStrike(authorId, parsed.data.text.slice(0, 30), commentModResult.matchedTerm ?? "unknown", "comment");
         return res.status(422).json({ flagged: true, message: commentModResult.message });
@@ -6262,7 +6269,7 @@ export async function registerRoutes(
         }
 
         // ── Content moderation ───────────────────────────────────────────────
-        const chatModResult = checkContent(data.text, "chat");
+        const chatModResult = checkContent(data.text, "chat", { userId: data.userId, displayName: user?.displayName ?? undefined, avatarUrl: user?.profileImageUrl ?? undefined });
         if (chatModResult.flagged) {
           const chatDn = user?.displayName ?? user?.firstName ?? data.userId;
           const chatStrike = recordStrike(data.userId, chatDn, chatModResult.matchedTerm ?? "unknown", "chat");
@@ -6331,7 +6338,8 @@ export async function registerRoutes(
       try {
         const trimmed = (data.newText || "").trim().slice(0, 4000);
         if (!trimmed) return;
-        const editModResult = checkContent(trimmed, "chat-edit");
+        const _editUser = await storage.getUser(data.editedBy);
+        const editModResult = checkContent(trimmed, "chat-edit", { userId: data.editedBy, displayName: _editUser?.displayName ?? undefined, avatarUrl: _editUser?.profileImageUrl ?? undefined });
         if (editModResult.flagged) {
           const editStrike = recordStrike(data.editedBy, data.editedBy, editModResult.matchedTerm ?? "unknown", "chat-edit");
           const editReason = editStrike.action === "mute" ? editStrike.message : editModResult.message;
