@@ -183,6 +183,87 @@ const roomDjMoveStyle = new Map<string, string>();
 // between initMedia() emitting room:join and the socket "connect" listener (handleReconnect)
 // both firing almost simultaneously on first page load.
 const joiningNow = new Set<string>();
+
+// ── Follower room-join push notifications ──────────────────────────────────
+// Cooldown prevents a follower from receiving more than one push per joiner
+// within a 15-minute window (handles reconnects, room hops, etc.).
+// Key: `${followerUserId}:${joiningUserId}`
+const followerNotifyCooldown = new Map<string, number>();
+const FOLLOWER_NOTIFY_COOLDOWN_MS = 15 * 60 * 1000;
+
+async function notifyFollowersRoomJoin(
+  joiningUser: User,
+  room: { id: string; name: string },
+): Promise<void> {
+  try {
+    const vapidPublic = process.env.VAPID_PUBLIC_KEY;
+    const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+    if (!vapidPublic || !vapidPrivate) return;
+
+    const followers = await storage.getFollowers(joiningUser.id);
+    if (followers.length === 0) return;
+
+    webpush.setVapidDetails("mailto:hello@vextorn.app", vapidPublic, vapidPrivate);
+
+    const joinerName =
+      joiningUser.displayName ||
+      joiningUser.firstName ||
+      joiningUser.email?.split("@")[0] ||
+      "Someone you follow";
+
+    const roomParticipantsInRoom = roomParticipants.get(room.id);
+
+    const now = Date.now();
+    const payload = JSON.stringify({
+      title: `${joinerName} joined a room`,
+      body: `"${room.name}" — tap to listen in`,
+      url: `/rooms/${room.id}`,
+      icon: joiningUser.profileImageUrl || "/vextorn-icon-192.png",
+    });
+
+    await Promise.allSettled(
+      followers.map(async (follow) => {
+        const followerUserId = follow.followerId;
+
+        // Skip if the follower is already inside the same room
+        if (roomParticipantsInRoom?.has(followerUserId)) return;
+
+        // Cooldown check
+        const cooldownKey = `${followerUserId}:${joiningUser.id}`;
+        const lastNotified = followerNotifyCooldown.get(cooldownKey) ?? 0;
+        if (now - lastNotified < FOLLOWER_NOTIFY_COOLDOWN_MS) return;
+        followerNotifyCooldown.set(cooldownKey, now);
+
+        const subs = await storage.getPushSubscriptionsByUser(followerUserId);
+        if (subs.length === 0) return;
+
+        await Promise.allSettled(
+          subs.map(async (sub) => {
+            try {
+              await webpush.sendNotification(
+                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                payload,
+              );
+            } catch (err: any) {
+              if (err.statusCode === 410) {
+                await storage.deletePushSubscription(sub.endpoint).catch(() => {});
+              }
+            }
+          }),
+        );
+      }),
+    );
+
+    // Purge stale cooldown entries older than the window to prevent unbounded growth
+    if (followerNotifyCooldown.size > 5000) {
+      for (const [key, ts] of followerNotifyCooldown) {
+        if (now - ts > FOLLOWER_NOTIFY_COOLDOWN_MS) followerNotifyCooldown.delete(key);
+      }
+    }
+  } catch (err: any) {
+    console.error("[push] notifyFollowersRoomJoin error:", err?.message || err);
+  }
+}
 // AI Tutor room state: one active session per room
 const roomAiTutorState = new Map<string, { userId: string; username: string; speaking: boolean; avatarId?: string | null; voice?: "Female" | "Male" | null; voiceId?: string | null } | null>();
 // SSE clients subscribed to real-time room list updates.
@@ -5708,6 +5789,8 @@ export async function registerRoutes(
           console.error("[analytics] recordRoomJoin failed:", err?.message || err);
         });
         void checkAndAwardStreakBadge(userId);
+        // Fire-and-forget: push notifications to followers who have subscribed
+        void notifyFollowersRoomJoin(user, { id: roomId, name: room.name });
       }
       io.emit("room:participants-update", { roomId, participants });
 
