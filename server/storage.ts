@@ -247,6 +247,8 @@ export interface IStorage {
   incrementCampaignOpens(id: string): Promise<void>;
   incrementCampaignClicks(id: string): Promise<void>;
 
+  isFollowing(followerId: string, followingId: string): Promise<boolean>;
+
   savePushSubscription(userId: string, sub: { endpoint: string; p256dh: string; auth: string }): Promise<void>;
   deletePushSubscription(endpoint: string): Promise<void>;
   getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]>;
@@ -526,6 +528,15 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(follows)
       .where(eq(follows.followerId, userId));
+  }
+
+  async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: follows.id })
+      .from(follows)
+      .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
+      .limit(1);
+    return rows.length > 0;
   }
 
   async getFollowers(userId: string): Promise<Follow[]> {
@@ -1774,8 +1785,8 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(inArray(users.id, userIds));
     const out: Record<string, string> = {};
-    for (const uid of userIds) out[uid] = "everyone";
-    for (const r of rows) out[r.id] = r.pref ?? "everyone";
+    for (const uid of userIds) out[uid] = "mutual";
+    for (const r of rows) out[r.id] = r.pref ?? "mutual";
     return out;
   }
 

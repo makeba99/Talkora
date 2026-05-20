@@ -248,7 +248,7 @@ async function notifyFollowersRoomJoin(
           // else: explicitly enabled — skip the global pref check entirely
         } else {
           // Fall back to follower's global notification preference
-          const pref = prefs[followerUserId] ?? "everyone";
+          const pref = prefs[followerUserId] ?? "mutual";
           if (pref === "none") return;
           if (pref === "mutual" && !joiningUserFollowingSet.has(followerUserId)) return;
         }
@@ -290,6 +290,46 @@ async function notifyFollowersRoomJoin(
     }
   } catch (err: any) {
     console.error("[push] notifyFollowersRoomJoin error:", err?.message || err);
+  }
+}
+
+// Push notification when a non-mutual user follows you
+async function notifyNewFollowerPush(followerId: string, followedId: string): Promise<void> {
+  try {
+    const vapidPublic = process.env.VAPID_PUBLIC_KEY;
+    const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+    if (!vapidPublic || !vapidPrivate) return;
+
+    const subs = await storage.getPushSubscriptionsByUser(followedId);
+    if (subs.length === 0) return;
+
+    const follower = await storage.getUser(followerId);
+    if (!follower) return;
+
+    const followerName = follower.displayName || follower.firstName || follower.email?.split("@")[0] || "Someone";
+    webpush.setVapidDetails("mailto:hello@vextorn.app", vapidPublic, vapidPrivate);
+
+    const payload = JSON.stringify({
+      title: `${followerName} started following you`,
+      body: "You have a new follower — tap to view their profile",
+      url: `/profile/${followerId}`,
+      icon: follower.profileImageUrl || "/vextorn-icon-192.png",
+    });
+
+    await Promise.allSettled(
+      subs.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload,
+          );
+        } catch (err: any) {
+          if (err.statusCode === 410) await storage.deletePushSubscription(sub.endpoint).catch(() => {});
+        }
+      }),
+    );
+  } catch (err: any) {
+    console.error("[push] notifyNewFollowerPush error:", err?.message || err);
   }
 }
 
@@ -3254,6 +3294,17 @@ export async function registerRoutes(
         fromUserId: parsed.data.followerId,
         type: "follow",
       });
+
+      // Push notification to the followed user if the follow is not mutual
+      // (i.e. the person being followed hasn't followed back yet)
+      (async () => {
+        try {
+          const isMutual = await storage.isFollowing(parsed.data.followingId, parsed.data.followerId);
+          if (!isMutual) {
+            void notifyNewFollowerPush(parsed.data.followerId, parsed.data.followingId);
+          }
+        } catch { /* non-critical */ }
+      })();
 
       // Email notification — fire-and-forget, non-blocking
       (async () => {

@@ -33,7 +33,7 @@ export const users = pgTable("users", {
   restrictedUntil: timestamp("restricted_until"),
   restrictedReason: text("restricted_reason"),
   restrictedById: varchar("restricted_by_id"),
-  roomJoinNotifyFrom: varchar("room_join_notify_from", { length: 20 }).notNull().default("everyone"),
+  roomJoinNotifyFrom: varchar("room_join_notify_from", { length: 20 }).notNull().default("mutual"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

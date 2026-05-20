@@ -425,7 +425,7 @@ export function ProfileDropdown({
     setFacebookUrl((user as any)?.facebookUrl || "");
     setSocialsPinned(!!(user as any)?.socialsPinned);
     setPresenceStatus((user as any)?.status || "online");
-    setRoomJoinNotifyPref(((user as any)?.roomJoinNotifyFrom as any) || "everyone");
+    setRoomJoinNotifyPref(((user as any)?.roomJoinNotifyFrom as any) || "mutual");
     setEditOpen(true);
   };
 
