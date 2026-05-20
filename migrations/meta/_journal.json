@@ -64,6 +64,27 @@
       "when": 1779062000000,
       "tag": "0008_theme_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779200000000,
+      "tag": "0009_room_join_notify_pref",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779201000000,
+      "tag": "0010_notification_mutes",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779202000000,
+      "tag": "0011_notif_prefs",
+      "breakpoints": true
     }
   ]
 }

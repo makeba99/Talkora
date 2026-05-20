@@ -277,6 +277,9 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     user.refresh_token = tokenResponse.refresh_token;
     user.expires_at = user.claims?.exp;
     user.id = user.claims?.sub;
+    // Persist the refreshed tokens so the next request reads updated data
+    // from the session store instead of re-refreshing every time.
+    await new Promise<void>((resolve) => req.session.save(() => resolve()));
     return next();
   } catch {
     return res.status(401).json({ message: "Unauthorized" });

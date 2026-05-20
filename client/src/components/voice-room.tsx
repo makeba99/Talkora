@@ -2876,8 +2876,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/push/muted-users"] });
     },
-    onError: () => {
-      toast({ title: "Failed to update notification preference", variant: "destructive" });
+    onError: (err: any) => {
+      const msg = err?.message || "";
+      if (msg.includes("401")) {
+        toast({ title: "Session expired", description: "Please sign in again to manage notifications.", variant: "destructive" });
+      } else {
+        toast({ title: "Failed to update notification preference", description: msg || undefined, variant: "destructive" });
+      }
     },
   });
 
