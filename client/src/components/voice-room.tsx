@@ -2665,7 +2665,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
   });
-  const featVoiceEffects  = platformFeatures ? platformFeatures["voiceEffects"]  !== false : true;
+  const featVoiceEffects  = platformFeatures ? platformFeatures["voiceEffects"]  === true : false;
   const featAiTutor       = platformFeatures ? platformFeatures["aiTutor"]        !== false : true;
   const featScreenShare   = platformFeatures ? platformFeatures["screenShare"]    !== false : true;
   const featYoutube       = platformFeatures ? platformFeatures["youtubeWatch"]   !== false : true;

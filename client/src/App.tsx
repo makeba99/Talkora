@@ -297,6 +297,16 @@ function PreRenderDismiss() {
   return null;
 }
 
+function ConditionalPushBanner() {
+  const [location] = useLocation();
+  if (location.startsWith("/room/")) return null;
+  return (
+    <Suspense fallback={null}>
+      <PushPromptBanner />
+    </Suspense>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -307,9 +317,7 @@ function App() {
           <DeferredOverlays />
           <AppContent />
           <DeferredToasts />
-          <Suspense fallback={null}>
-            <PushPromptBanner />
-          </Suspense>
+          <ConditionalPushBanner />
         </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
