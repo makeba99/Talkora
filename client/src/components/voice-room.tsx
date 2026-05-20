@@ -19,7 +19,7 @@ import {
   UserX, VolumeX, Send, X, Monitor, UserPlus, UserCheck, Users, Settings, Youtube,
   Video, VideoOff, LogIn, LogOut, Search, Play, Pause, Loader2, Pencil, Shield, Crown,
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Minimize2,
-  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, LockKeyhole,
+  Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, BellOff, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, SendHorizontal,
@@ -420,6 +420,8 @@ function ParticipantCard({
   avatarGifUrl,
   onSetAvatarGif,
   fillMode = false,
+  mutedNotifIds,
+  onToggleNotifMute,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -609,6 +611,21 @@ function ParticipantCard({
                   <span className="truncate w-full text-center">Reboot</span>
                </Button>
             </div>
+          )}
+
+          {isFollowing && !isMe && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onToggleNotifMute && onToggleNotifMute(p.id)}
+              className="w-full h-8 text-xs border-border bg-transparent hover:bg-muted px-2"
+              data-testid={`button-notif-mute-${p.id}`}
+            >
+              {mutedNotifIds?.has(p.id)
+                ? <><BellOff className="w-3.5 h-3.5 mr-1.5 text-orange-400" /> Unmute notifications</>
+                : <><Bell className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" /> Mute notifications</>
+              }
+            </Button>
           )}
 
           {(isCurrentUserHost || isCurrentUserCoOwner) && !isMe && p.id !== user?.id && (
@@ -2822,6 +2839,27 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   });
 
   const followingIds = new Set(following.map((f) => f.followingId));
+
+  const { data: mutedNotifIdsData } = useQuery<string[]>({ queryKey: ["/api/push/muted-users"] });
+  const mutedNotifIds = useMemo(() => new Set(mutedNotifIdsData ?? []), [mutedNotifIdsData]);
+
+  const muteNotifMutation = useMutation({
+    mutationFn: async ({ userId, mute }: { userId: string; mute: boolean }) => {
+      await apiRequest(mute ? "POST" : "DELETE", `/api/push/mute/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/push/muted-users"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to update notification preference", variant: "destructive" });
+    },
+  });
+
+  const handleToggleNotifMute = useCallback((userId: string) => {
+    const isMuted = mutedNotifIds.has(userId);
+    muteNotifMutation.mutate({ userId, mute: !isMuted });
+    toast({ title: isMuted ? "Notifications re-enabled" : "Notifications muted for this user" });
+  }, [mutedNotifIds, muteNotifMutation]);
 
   const iceServers = [
     { urls: "stun:stun.l.google.com:19302" },
@@ -14233,6 +14271,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onClearChatGlobal={handleClearChat}
                       onClearChatLocal={() => setChatMessages([])}
                       onReconnect={handleReconnect}
+                      mutedNotifIds={mutedNotifIds}
+                      onToggleNotifMute={handleToggleNotifMute}
                       volume={participantVolumes[p.id] ?? 1}
                       onVolumeChange={handleVolumeChange}
                       youtubeVideoId={youtubeHosts.get(p.id) || null}

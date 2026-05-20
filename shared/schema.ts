@@ -594,3 +594,15 @@ export const emailCampaigns = pgTable("email_campaigns", {
   ecCreatedAtIdx: index("email_campaigns_created_at_idx").on(table.createdAt),
 }));
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
+
+export const notificationMutes = pgTable("notification_mutes", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  muterId: varchar("muter_id", { length: 36 }).notNull(),
+  mutedId: varchar("muted_id", { length: 36 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  nmMuterIdx: index("nm_muter_id_idx").on(table.muterId),
+  nmMutedIdx: index("nm_muted_id_idx").on(table.mutedId),
+  nmUniqueIdx: uniqueIndex("nm_unique_idx").on(table.muterId, table.mutedId),
+}));
+export type NotificationMute = typeof notificationMutes.$inferSelect;

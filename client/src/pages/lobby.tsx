@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, BellOff, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { VextornMark } from "@/components/vextorn-logo";
@@ -184,6 +184,8 @@ function PeopleDiscoveryCard({
   onComment,
   bio,
   languages = [],
+  isMutedNotif = false,
+  onToggleNotifMute,
 }: {
   person: User;
   followerCount: number;
@@ -201,6 +203,8 @@ function PeopleDiscoveryCard({
   onComment?: () => void;
   bio?: string;
   languages?: string[];
+  isMutedNotif?: boolean;
+  onToggleNotifMute?: () => void;
 }) {
   const { toast } = useToast();
   const name = getUserName(person);
@@ -349,6 +353,20 @@ function PeopleDiscoveryCard({
               {isCurrentUser ? "You" : currentRoomId ? "Talk" : "Message"}
             </button>
           </div>
+          {isFollowing && !isCurrentUser && (
+            <button
+              onClick={onToggleNotifMute}
+              className={`neu-people-btn ${isMutedNotif ? "is-active" : ""}`}
+              data-testid={`button-notif-mute-discovery-${person.id}`}
+              aria-label={isMutedNotif ? `Re-enable notifications from ${name}` : `Mute notifications from ${name}`}
+              aria-pressed={isMutedNotif}
+            >
+              {isMutedNotif
+                ? <><BellOff className="w-3 h-3 inline mr-1" aria-hidden="true" />Notifications off</>
+                : <><Bell className="w-3 h-3 inline mr-1" aria-hidden="true" />Notifications on</>
+              }
+            </button>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={onVote}
@@ -975,6 +993,25 @@ export default function Lobby() {
     },
     onError: (err: any) => {
       toast({ title: err?.message || "Unable to update follow", variant: "destructive" });
+    },
+  });
+
+  const { data: mutedNotifIdsData } = useQuery<string[]>({
+    queryKey: ["/api/push/muted-users"],
+    enabled: !!user,
+  });
+  const mutedNotifIds = useMemo(() => new Set(mutedNotifIdsData ?? []), [mutedNotifIdsData]);
+
+  const muteNotifMutation = useMutation({
+    mutationFn: async ({ personId, mute }: { personId: string; mute: boolean }) => {
+      await apiRequest(mute ? "POST" : "DELETE", `/api/push/mute/${personId}`);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/push/muted-users"] });
+      toast({ title: variables.mute ? "Notifications muted for this user" : "Notifications re-enabled" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update notification preference", variant: "destructive" });
     },
   });
 
@@ -2238,6 +2275,11 @@ export default function Lobby() {
                         hasVoted={hasVoted}
                         bio={meta?.bio ?? (person as any).bio}
                         languages={meta?.languages ?? []}
+                        isMutedNotif={mutedNotifIds.has(person.id)}
+                        onToggleNotifMute={() => {
+                          if (!user) { toast({ title: "Sign in to manage notifications", description: "Create an account to adjust notification settings." }); return; }
+                          muteNotifMutation.mutate({ personId: person.id, mute: !mutedNotifIds.has(person.id) });
+                        }}
                         onFollowToggle={() => {
                           if (!user) { toast({ title: "Sign in to follow users", description: "Create an account to start following." }); return; }
                           if (person.id !== user.id) {

@@ -60,6 +60,7 @@ import {
   roomJoins,
   emailCampaigns,
   type EmailCampaign,
+  notificationMutes,
   pushSubscriptions,
   type PushSubscription,
   transactions,
@@ -252,6 +253,10 @@ export interface IStorage {
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
   getRoomJoinNotifyPrefs(userIds: string[]): Promise<Record<string, string>>;
   setRoomJoinNotifyPref(userId: string, pref: string): Promise<void>;
+  getNotifMutedIds(muterId: string): Promise<Set<string>>;
+  setNotifMute(muterId: string, mutedId: string): Promise<void>;
+  clearNotifMute(muterId: string, mutedId: string): Promise<void>;
+  getMutersOfUser(mutedId: string, muterIds: string[]): Promise<Set<string>>;
   getPushSubscriberCount(): Promise<number>;
   getPushSubscribersWithUsers(): Promise<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>>;
 
@@ -1777,6 +1782,36 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ roomJoinNotifyFrom: pref, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  async getNotifMutedIds(muterId: string): Promise<Set<string>> {
+    const rows = await db
+      .select({ mutedId: notificationMutes.mutedId })
+      .from(notificationMutes)
+      .where(eq(notificationMutes.muterId, muterId));
+    return new Set(rows.map((r) => r.mutedId));
+  }
+
+  async setNotifMute(muterId: string, mutedId: string): Promise<void> {
+    await db
+      .insert(notificationMutes)
+      .values({ muterId, mutedId })
+      .onConflictDoNothing();
+  }
+
+  async clearNotifMute(muterId: string, mutedId: string): Promise<void> {
+    await db
+      .delete(notificationMutes)
+      .where(and(eq(notificationMutes.muterId, muterId), eq(notificationMutes.mutedId, mutedId)));
+  }
+
+  async getMutersOfUser(mutedId: string, muterIds: string[]): Promise<Set<string>> {
+    if (muterIds.length === 0) return new Set();
+    const rows = await db
+      .select({ muterId: notificationMutes.muterId })
+      .from(notificationMutes)
+      .where(and(eq(notificationMutes.mutedId, mutedId), inArray(notificationMutes.muterId, muterIds)));
+    return new Set(rows.map((r) => r.muterId));
   }
 
   async getAllPushSubscriptions(): Promise<PushSubscription[]> {

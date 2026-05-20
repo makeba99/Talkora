@@ -227,6 +227,9 @@ async function notifyFollowersRoomJoin(
       joiningUserFollowingSet = new Set(joiningUserFollowing.map((f) => f.followingId));
     }
 
+    // Fetch which followers have specifically muted this joining user's notifications
+    const mutedByFollowers = await storage.getMutersOfUser(joiningUser.id, followerIds);
+
     const payload = JSON.stringify({
       title: `${joinerName} joined a room`,
       body: `"${room.name}" — tap to listen in`,
@@ -242,6 +245,9 @@ async function notifyFollowersRoomJoin(
         const pref = prefs[followerUserId] ?? "everyone";
         if (pref === "none") return;
         if (pref === "mutual" && !joiningUserFollowingSet.has(followerUserId)) return;
+
+        // Respect per-user notification mutes
+        if (mutedByFollowers.has(followerUserId)) return;
 
         // Skip if the follower is already inside the same room
         if (roomParticipantsInRoom?.has(followerUserId)) return;
@@ -3452,6 +3458,39 @@ export async function registerRoutes(
       }
       await storage.setRoomJoinNotifyPref((req.user as any).id, pref);
       res.json({ success: true, pref });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // ── Web Push: per-user notification mute ─────────────────────────────────
+  app.get("/api/push/muted-users", isAuthenticated, async (req: any, res) => {
+    try {
+      const mutedSet = await storage.getNotifMutedIds((req.user as any).id);
+      res.json([...mutedSet]);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/push/mute/:targetUserId", isAuthenticated, async (req: any, res) => {
+    try {
+      const muterId = (req.user as any).id;
+      const { targetUserId } = req.params;
+      if (muterId === targetUserId) return res.status(400).json({ message: "Cannot mute yourself." });
+      await storage.setNotifMute(muterId, targetUserId);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/push/mute/:targetUserId", isAuthenticated, async (req: any, res) => {
+    try {
+      const muterId = (req.user as any).id;
+      const { targetUserId } = req.params;
+      await storage.clearNotifMute(muterId, targetUserId);
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
