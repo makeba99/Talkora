@@ -253,10 +253,12 @@ export interface IStorage {
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
   getRoomJoinNotifyPrefs(userIds: string[]): Promise<Record<string, string>>;
   setRoomJoinNotifyPref(userId: string, pref: string): Promise<void>;
-  getNotifMutedIds(muterId: string): Promise<Set<string>>;
-  setNotifMute(muterId: string, mutedId: string): Promise<void>;
-  clearNotifMute(muterId: string, mutedId: string): Promise<void>;
-  getMutersOfUser(mutedId: string, muterIds: string[]): Promise<Set<string>>;
+  getAllNotifPrefs(muterId: string): Promise<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>>;
+  getNotifPrefsForPair(muterId: string, mutedId: string): Promise<{ notifyRoomJoin: boolean; notifyDm: boolean } | null>;
+  upsertNotifPrefs(muterId: string, mutedId: string, notifyRoomJoin: boolean, notifyDm: boolean): Promise<void>;
+  deleteNotifPrefs(muterId: string, mutedId: string): Promise<void>;
+  getFollowerNotifPrefs(targetId: string, followerIds: string[]): Promise<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>>;
+  getDmNotifBlocked(senderId: string, recipientId: string): Promise<boolean>;
   getPushSubscriberCount(): Promise<number>;
   getPushSubscribersWithUsers(): Promise<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>>;
 
@@ -1784,34 +1786,55 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async getNotifMutedIds(muterId: string): Promise<Set<string>> {
+  async getAllNotifPrefs(muterId: string): Promise<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>> {
     const rows = await db
-      .select({ mutedId: notificationMutes.mutedId })
+      .select({ mutedId: notificationMutes.mutedId, notifyRoomJoin: notificationMutes.notifyRoomJoin, notifyDm: notificationMutes.notifyDm })
       .from(notificationMutes)
       .where(eq(notificationMutes.muterId, muterId));
-    return new Set(rows.map((r) => r.mutedId));
+    const out: Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }> = {};
+    for (const r of rows) out[r.mutedId] = { notifyRoomJoin: r.notifyRoomJoin, notifyDm: r.notifyDm };
+    return out;
   }
 
-  async setNotifMute(muterId: string, mutedId: string): Promise<void> {
+  async getNotifPrefsForPair(muterId: string, mutedId: string): Promise<{ notifyRoomJoin: boolean; notifyDm: boolean } | null> {
+    const [row] = await db
+      .select({ notifyRoomJoin: notificationMutes.notifyRoomJoin, notifyDm: notificationMutes.notifyDm })
+      .from(notificationMutes)
+      .where(and(eq(notificationMutes.muterId, muterId), eq(notificationMutes.mutedId, mutedId)));
+    return row ?? null;
+  }
+
+  async upsertNotifPrefs(muterId: string, mutedId: string, notifyRoomJoin: boolean, notifyDm: boolean): Promise<void> {
     await db
       .insert(notificationMutes)
-      .values({ muterId, mutedId })
-      .onConflictDoNothing();
+      .values({ muterId, mutedId, notifyRoomJoin, notifyDm })
+      .onConflictDoUpdate({
+        target: [notificationMutes.muterId, notificationMutes.mutedId],
+        set: { notifyRoomJoin, notifyDm },
+      });
   }
 
-  async clearNotifMute(muterId: string, mutedId: string): Promise<void> {
+  async deleteNotifPrefs(muterId: string, mutedId: string): Promise<void> {
     await db
       .delete(notificationMutes)
       .where(and(eq(notificationMutes.muterId, muterId), eq(notificationMutes.mutedId, mutedId)));
   }
 
-  async getMutersOfUser(mutedId: string, muterIds: string[]): Promise<Set<string>> {
-    if (muterIds.length === 0) return new Set();
+  async getFollowerNotifPrefs(targetId: string, followerIds: string[]): Promise<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>> {
+    if (followerIds.length === 0) return {};
     const rows = await db
-      .select({ muterId: notificationMutes.muterId })
+      .select({ muterId: notificationMutes.muterId, notifyRoomJoin: notificationMutes.notifyRoomJoin, notifyDm: notificationMutes.notifyDm })
       .from(notificationMutes)
-      .where(and(eq(notificationMutes.mutedId, mutedId), inArray(notificationMutes.muterId, muterIds)));
-    return new Set(rows.map((r) => r.muterId));
+      .where(and(eq(notificationMutes.mutedId, targetId), inArray(notificationMutes.muterId, followerIds)));
+    const out: Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }> = {};
+    for (const r of rows) out[r.muterId] = { notifyRoomJoin: r.notifyRoomJoin, notifyDm: r.notifyDm };
+    return out;
+  }
+
+  async getDmNotifBlocked(senderId: string, recipientId: string): Promise<boolean> {
+    const row = await this.getNotifPrefsForPair(recipientId, senderId);
+    if (!row) return false;
+    return !row.notifyDm;
   }
 
   async getAllPushSubscriptions(): Promise<PushSubscription[]> {

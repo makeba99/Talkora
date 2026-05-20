@@ -227,8 +227,8 @@ async function notifyFollowersRoomJoin(
       joiningUserFollowingSet = new Set(joiningUserFollowing.map((f) => f.followingId));
     }
 
-    // Fetch which followers have specifically muted this joining user's notifications
-    const mutedByFollowers = await storage.getMutersOfUser(joiningUser.id, followerIds);
+    // Fetch per-follower explicit notification preferences (overrides global pref when set)
+    const explicitNotifPrefs = await storage.getFollowerNotifPrefs(joiningUser.id, followerIds);
 
     const payload = JSON.stringify({
       title: `${joinerName} joined a room`,
@@ -241,13 +241,17 @@ async function notifyFollowersRoomJoin(
       followers.map(async (follow) => {
         const followerUserId = follow.followerId;
 
-        // Respect the follower's notification preference
-        const pref = prefs[followerUserId] ?? "everyone";
-        if (pref === "none") return;
-        if (pref === "mutual" && !joiningUserFollowingSet.has(followerUserId)) return;
-
-        // Respect per-user notification mutes
-        if (mutedByFollowers.has(followerUserId)) return;
+        // Check per-user explicit prefs first (overrides global preference)
+        const explicitPref = explicitNotifPrefs[followerUserId];
+        if (explicitPref) {
+          if (!explicitPref.notifyRoomJoin) return; // explicitly disabled
+          // else: explicitly enabled — skip the global pref check entirely
+        } else {
+          // Fall back to follower's global notification preference
+          const pref = prefs[followerUserId] ?? "everyone";
+          if (pref === "none") return;
+          if (pref === "mutual" && !joiningUserFollowingSet.has(followerUserId)) return;
+        }
 
         // Skip if the follower is already inside the same room
         if (roomParticipantsInRoom?.has(followerUserId)) return;
@@ -286,6 +290,57 @@ async function notifyFollowersRoomJoin(
     }
   } catch (err: any) {
     console.error("[push] notifyFollowersRoomJoin error:", err?.message || err);
+  }
+}
+
+// Per-DM push cooldown: max one push per sender-recipient pair per 2 min
+const dmNotifyCooldown = new Map<string, number>();
+const DM_NOTIFY_COOLDOWN_MS = 2 * 60 * 1000;
+
+async function notifyDmPush(senderId: string, recipientId: string, senderUser: User | null | undefined): Promise<void> {
+  try {
+    const vapidPublic = process.env.VAPID_PUBLIC_KEY;
+    const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+    if (!vapidPublic || !vapidPrivate) return;
+
+    const cooldownKey = `${senderId}:${recipientId}`;
+    const now = Date.now();
+    const lastNotified = dmNotifyCooldown.get(cooldownKey) ?? 0;
+    if (now - lastNotified < DM_NOTIFY_COOLDOWN_MS) return;
+
+    const blocked = await storage.getDmNotifBlocked(senderId, recipientId);
+    if (blocked) return;
+
+    const subs = await storage.getPushSubscriptionsByUser(recipientId);
+    if (subs.length === 0) return;
+
+    dmNotifyCooldown.set(cooldownKey, now);
+    if (dmNotifyCooldown.size > 5000) {
+      for (const [key, ts] of dmNotifyCooldown) {
+        if (now - ts > DM_NOTIFY_COOLDOWN_MS) dmNotifyCooldown.delete(key);
+      }
+    }
+
+    webpush.setVapidDetails("mailto:hello@vextorn.app", vapidPublic, vapidPrivate);
+    const senderName = senderUser?.displayName || senderUser?.firstName || senderUser?.email?.split("@")[0] || "Someone";
+    const payload = JSON.stringify({
+      title: `New message from ${senderName}`,
+      body: "Tap to open your messages",
+      url: `/messages`,
+      icon: senderUser?.profileImageUrl || "/vextorn-icon-192.png",
+    });
+
+    await Promise.allSettled(
+      subs.map(async (sub) => {
+        try {
+          await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload);
+        } catch (err: any) {
+          if (err.statusCode === 410) await storage.deletePushSubscription(sub.endpoint).catch(() => {});
+        }
+      }),
+    );
+  } catch (err: any) {
+    console.error("[push] notifyDmPush error:", err?.message || err);
   }
 }
 // AI Tutor room state: one active session per room
@@ -3128,6 +3183,11 @@ export async function registerRoutes(
       if (fromSocketId) {
         io.to(fromSocketId).emit("dm:new", msg);
       }
+      // Push notification to recipient if they're not connected via socket
+      if (!toSocketId) {
+        const dmSender = await storage.getUser(parsed.data.fromId);
+        void notifyDmPush(parsed.data.fromId, parsed.data.toId, dmSender);
+      }
       res.json(msg);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -3463,33 +3523,52 @@ export async function registerRoutes(
     }
   });
 
-  // ── Web Push: per-user notification mute ─────────────────────────────────
+  // ── Web Push: per-user notification preferences ───────────────────────────
+  // Returns all explicit per-user prefs for the current user as a map
   app.get("/api/push/muted-users", isAuthenticated, async (req: any, res) => {
     try {
-      const mutedSet = await storage.getNotifMutedIds((req.user as any).id);
-      res.json([...mutedSet]);
+      const prefs = await storage.getAllNotifPrefs((req.user as any).id);
+      res.json(prefs);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  app.post("/api/push/mute/:targetUserId", isAuthenticated, async (req: any, res) => {
+  // Get prefs for a specific user pair
+  app.get("/api/push/notif-prefs/:targetUserId", isAuthenticated, async (req: any, res) => {
     try {
-      const muterId = (req.user as any).id;
+      const myId = (req.user as any).id;
       const { targetUserId } = req.params;
-      if (muterId === targetUserId) return res.status(400).json({ message: "Cannot mute yourself." });
-      await storage.setNotifMute(muterId, targetUserId);
-      res.json({ success: true });
+      const prefs = await storage.getNotifPrefsForPair(myId, targetUserId);
+      res.json(prefs ?? { notifyRoomJoin: null, notifyDm: null });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
 
-  app.delete("/api/push/mute/:targetUserId", isAuthenticated, async (req: any, res) => {
+  // Upsert prefs for a specific user pair
+  app.patch("/api/push/notif-prefs/:targetUserId", isAuthenticated, async (req: any, res) => {
     try {
-      const muterId = (req.user as any).id;
+      const myId = (req.user as any).id;
       const { targetUserId } = req.params;
-      await storage.clearNotifMute(muterId, targetUserId);
+      if (myId === targetUserId) return res.status(400).json({ message: "Cannot set prefs for yourself." });
+      const { notifyRoomJoin, notifyDm } = req.body;
+      if (typeof notifyRoomJoin !== "boolean" || typeof notifyDm !== "boolean") {
+        return res.status(400).json({ message: "notifyRoomJoin and notifyDm must be booleans." });
+      }
+      await storage.upsertNotifPrefs(myId, targetUserId, notifyRoomJoin, notifyDm);
+      res.json({ success: true, notifyRoomJoin, notifyDm });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Delete explicit prefs (revert to global preference)
+  app.delete("/api/push/notif-prefs/:targetUserId", isAuthenticated, async (req: any, res) => {
+    try {
+      const myId = (req.user as any).id;
+      const { targetUserId } = req.params;
+      await storage.deleteNotifPrefs(myId, targetUserId);
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });

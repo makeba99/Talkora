@@ -420,8 +420,8 @@ function ParticipantCard({
   avatarGifUrl,
   onSetAvatarGif,
   fillMode = false,
-  mutedNotifIds,
-  onToggleNotifMute,
+  notifPrefs,
+  onSetNotifPrefs,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -614,18 +614,41 @@ function ParticipantCard({
           )}
 
           {isFollowing && !isMe && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onToggleNotifMute && onToggleNotifMute(p.id)}
-              className="w-full h-8 text-xs border-border bg-transparent hover:bg-muted px-2"
-              data-testid={`button-notif-mute-${p.id}`}
-            >
-              {mutedNotifIds?.has(p.id)
-                ? <><BellOff className="w-3.5 h-3.5 mr-1.5 text-orange-400" /> Unmute notifications</>
-                : <><Bell className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" /> Mute notifications</>
-              }
-            </Button>
+            <div className="p-2 rounded-md border border-border bg-muted/30 space-y-2">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 flex items-center gap-1">
+                <Bell className="w-3 h-3" /> Notifications from {getUserDisplayName(p)}
+              </p>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Room joins</span>
+                  <button
+                    data-testid={`toggle-notif-room-${p.id}`}
+                    onClick={() => onSetNotifPrefs && onSetNotifPrefs(
+                      notifPrefs?.notifyRoomJoin === false ? true : false,
+                      notifPrefs?.notifyDm !== false
+                    )}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${notifPrefs?.notifyRoomJoin !== false ? "bg-orange-500" : "bg-muted-foreground/30"}`}
+                    aria-pressed={notifPrefs?.notifyRoomJoin !== false}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${notifPrefs?.notifyRoomJoin !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Direct messages</span>
+                  <button
+                    data-testid={`toggle-notif-dm-${p.id}`}
+                    onClick={() => onSetNotifPrefs && onSetNotifPrefs(
+                      notifPrefs?.notifyRoomJoin !== false,
+                      notifPrefs?.notifyDm === false ? true : false
+                    )}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${notifPrefs?.notifyDm !== false ? "bg-orange-500" : "bg-muted-foreground/30"}`}
+                    aria-pressed={notifPrefs?.notifyDm !== false}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${notifPrefs?.notifyDm !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {(isCurrentUserHost || isCurrentUserCoOwner) && !isMe && p.id !== user?.id && (
@@ -2721,9 +2744,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         followingId: targetId,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, targetId) => {
       queryClient.invalidateQueries({ queryKey: ["/api/follows/following", user?.id] });
       import("@/lib/sound-fx").then((s) => s.sfxFollow()).catch(() => {});
+      // Auto-subscribe to both notification types on follow
+      apiRequest("PATCH", `/api/push/notif-prefs/${targetId}`, { notifyRoomJoin: true, notifyDm: true })
+        .then(() => queryClient.invalidateQueries({ queryKey: ["/api/push/muted-users"] }))
+        .catch(() => {});
     },
   });
 
@@ -2840,12 +2867,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const followingIds = new Set(following.map((f) => f.followingId));
 
-  const { data: mutedNotifIdsData } = useQuery<string[]>({ queryKey: ["/api/push/muted-users"] });
-  const mutedNotifIds = useMemo(() => new Set(mutedNotifIdsData ?? []), [mutedNotifIdsData]);
+  const { data: notifPrefsData } = useQuery<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>>({ queryKey: ["/api/push/muted-users"] });
 
-  const muteNotifMutation = useMutation({
-    mutationFn: async ({ userId, mute }: { userId: string; mute: boolean }) => {
-      await apiRequest(mute ? "POST" : "DELETE", `/api/push/mute/${userId}`);
+  const updateNotifPrefsMutation = useMutation({
+    mutationFn: async ({ userId, notifyRoomJoin, notifyDm }: { userId: string; notifyRoomJoin: boolean; notifyDm: boolean }) => {
+      await apiRequest("PATCH", `/api/push/notif-prefs/${userId}`, { notifyRoomJoin, notifyDm });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/push/muted-users"] });
@@ -2854,12 +2880,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Failed to update notification preference", variant: "destructive" });
     },
   });
-
-  const handleToggleNotifMute = useCallback((userId: string) => {
-    const isMuted = mutedNotifIds.has(userId);
-    muteNotifMutation.mutate({ userId, mute: !isMuted });
-    toast({ title: isMuted ? "Notifications re-enabled" : "Notifications muted for this user" });
-  }, [mutedNotifIds, muteNotifMutation]);
 
   const iceServers = [
     { urls: "stun:stun.l.google.com:19302" },
@@ -14271,8 +14291,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onClearChatGlobal={handleClearChat}
                       onClearChatLocal={() => setChatMessages([])}
                       onReconnect={handleReconnect}
-                      mutedNotifIds={mutedNotifIds}
-                      onToggleNotifMute={handleToggleNotifMute}
+                      notifPrefs={notifPrefsData?.[p.id] ?? null}
+                      onSetNotifPrefs={(notifyRoomJoin: boolean, notifyDm: boolean) => updateNotifPrefsMutation.mutate({ userId: p.id, notifyRoomJoin, notifyDm })}
                       volume={participantVolumes[p.id] ?? 1}
                       onVolumeChange={handleVolumeChange}
                       youtubeVideoId={youtubeHosts.get(p.id) || null}

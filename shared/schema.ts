@@ -599,6 +599,8 @@ export const notificationMutes = pgTable("notification_mutes", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   muterId: varchar("muter_id", { length: 36 }).notNull(),
   mutedId: varchar("muted_id", { length: 36 }).notNull(),
+  notifyRoomJoin: boolean("notify_room_join").notNull().default(false),
+  notifyDm: boolean("notify_dm").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   nmMuterIdx: index("nm_muter_id_idx").on(table.muterId),

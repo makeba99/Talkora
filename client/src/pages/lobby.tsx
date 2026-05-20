@@ -184,8 +184,8 @@ function PeopleDiscoveryCard({
   onComment,
   bio,
   languages = [],
-  isMutedNotif = false,
-  onToggleNotifMute,
+  notifPrefs,
+  onSetNotifPrefs,
 }: {
   person: User;
   followerCount: number;
@@ -203,8 +203,8 @@ function PeopleDiscoveryCard({
   onComment?: () => void;
   bio?: string;
   languages?: string[];
-  isMutedNotif?: boolean;
-  onToggleNotifMute?: () => void;
+  notifPrefs?: { notifyRoomJoin: boolean; notifyDm: boolean } | null;
+  onSetNotifPrefs?: (notifyRoomJoin: boolean, notifyDm: boolean) => void;
 }) {
   const { toast } = useToast();
   const name = getUserName(person);
@@ -354,18 +354,43 @@ function PeopleDiscoveryCard({
             </button>
           </div>
           {isFollowing && !isCurrentUser && (
-            <button
-              onClick={onToggleNotifMute}
-              className={`neu-people-btn ${isMutedNotif ? "is-active" : ""}`}
-              data-testid={`button-notif-mute-discovery-${person.id}`}
-              aria-label={isMutedNotif ? `Re-enable notifications from ${name}` : `Mute notifications from ${name}`}
-              aria-pressed={isMutedNotif}
-            >
-              {isMutedNotif
-                ? <><BellOff className="w-3 h-3 inline mr-1" aria-hidden="true" />Notifications off</>
-                : <><Bell className="w-3 h-3 inline mr-1" aria-hidden="true" />Notifications on</>
-              }
-            </button>
+            <div className="rounded-md border border-white/[0.07] bg-white/[0.03] p-2 space-y-1.5">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-white/40 flex items-center gap-1">
+                <Bell className="w-3 h-3" aria-hidden="true" /> Notifications
+              </p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-white/60">Room joins</span>
+                  <button
+                    data-testid={`toggle-notif-room-discovery-${person.id}`}
+                    aria-label={notifPrefs?.notifyRoomJoin === false ? `Enable room join notifications from ${name}` : `Disable room join notifications from ${name}`}
+                    aria-pressed={notifPrefs?.notifyRoomJoin !== false}
+                    onClick={() => onSetNotifPrefs?.(
+                      notifPrefs?.notifyRoomJoin === false ? true : false,
+                      notifPrefs?.notifyDm !== false
+                    )}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${notifPrefs?.notifyRoomJoin !== false ? "bg-orange-500/80" : "bg-white/15"}`}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${notifPrefs?.notifyRoomJoin !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-white/60">Direct messages</span>
+                  <button
+                    data-testid={`toggle-notif-dm-discovery-${person.id}`}
+                    aria-label={notifPrefs?.notifyDm === false ? `Enable DM notifications from ${name}` : `Disable DM notifications from ${name}`}
+                    aria-pressed={notifPrefs?.notifyDm !== false}
+                    onClick={() => onSetNotifPrefs?.(
+                      notifPrefs?.notifyRoomJoin !== false,
+                      notifPrefs?.notifyDm === false ? true : false
+                    )}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${notifPrefs?.notifyDm !== false ? "bg-orange-500/80" : "bg-white/15"}`}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${notifPrefs?.notifyDm !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -986,29 +1011,33 @@ export default function Lobby() {
         await apiRequest("POST", "/api/follows", { followerId: user.id, followingId: personId });
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/follows/following", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/follows/counts"] });
       toast({ title: "Follow list updated" });
+      // Auto-subscribe to both notification types when following a new user
+      if (!variables.isFollowing && user?.id) {
+        apiRequest("PATCH", `/api/push/notif-prefs/${variables.personId}`, { notifyRoomJoin: true, notifyDm: true })
+          .then(() => queryClient.invalidateQueries({ queryKey: ["/api/push/muted-users"] }))
+          .catch(() => {});
+      }
     },
     onError: (err: any) => {
       toast({ title: err?.message || "Unable to update follow", variant: "destructive" });
     },
   });
 
-  const { data: mutedNotifIdsData } = useQuery<string[]>({
+  const { data: notifPrefsData } = useQuery<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>>({
     queryKey: ["/api/push/muted-users"],
     enabled: !!user,
   });
-  const mutedNotifIds = useMemo(() => new Set(mutedNotifIdsData ?? []), [mutedNotifIdsData]);
 
-  const muteNotifMutation = useMutation({
-    mutationFn: async ({ personId, mute }: { personId: string; mute: boolean }) => {
-      await apiRequest(mute ? "POST" : "DELETE", `/api/push/mute/${personId}`);
+  const updateNotifPrefsMutation = useMutation({
+    mutationFn: async ({ personId, notifyRoomJoin, notifyDm }: { personId: string; notifyRoomJoin: boolean; notifyDm: boolean }) => {
+      await apiRequest("PATCH", `/api/push/notif-prefs/${personId}`, { notifyRoomJoin, notifyDm });
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/push/muted-users"] });
-      toast({ title: variables.mute ? "Notifications muted for this user" : "Notifications re-enabled" });
     },
     onError: () => {
       toast({ title: "Failed to update notification preference", variant: "destructive" });
@@ -2275,10 +2304,10 @@ export default function Lobby() {
                         hasVoted={hasVoted}
                         bio={meta?.bio ?? (person as any).bio}
                         languages={meta?.languages ?? []}
-                        isMutedNotif={mutedNotifIds.has(person.id)}
-                        onToggleNotifMute={() => {
+                        notifPrefs={notifPrefsData?.[person.id] ?? null}
+                        onSetNotifPrefs={(notifyRoomJoin: boolean, notifyDm: boolean) => {
                           if (!user) { toast({ title: "Sign in to manage notifications", description: "Create an account to adjust notification settings." }); return; }
-                          muteNotifMutation.mutate({ personId: person.id, mute: !mutedNotifIds.has(person.id) });
+                          updateNotifPrefsMutation.mutate({ personId: person.id, notifyRoomJoin, notifyDm });
                         }}
                         onFollowToggle={() => {
                           if (!user) { toast({ title: "Sign in to follow users", description: "Create an account to start following." }); return; }
