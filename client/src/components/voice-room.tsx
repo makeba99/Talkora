@@ -13808,7 +13808,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               visibleCount <= 14 ? 64 :
               56;
             const gapPx = cardPx <= 72 ? 6 : 8;
-            const isInOverlayMode = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId;
+            const isInOverlayMode = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || !!(room as any).hologramVideoUrl || (currentTheme && currentTheme !== "none");
             const gridCols = visibleCount === 1 ? 1 : visibleCount <= 4 ? 2 : visibleCount <= 9 ? 3 : 4;
           return (
           <div

@@ -5393,7 +5393,11 @@ export async function registerRoutes(
       const effective = await storage.getEffectiveFeatures(userId);
       const result: Record<string, boolean> = {};
       for (const id of PLATFORM_FEATURE_IDS) {
-        result[id] = effective[id] !== false;
+        if (id === "voiceEffects") {
+          result[id] = effective[id] === true;
+        } else {
+          result[id] = effective[id] !== false;
+        }
       }
       res.json(result);
     } catch (err: any) {
