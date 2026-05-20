@@ -2243,6 +2243,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const pendingCandidates = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const youtubePlayerRef = useRef<any>(null);
   const ytContainerRef = useRef<HTMLDivElement | null>(null);
+  const ytMiniContainerRef = useRef<HTMLDivElement | null>(null);
   const ytIframeDirectRef = useRef<HTMLIFrameElement | null>(null);
   const ytPlayheadRef = useRef<{ time: number; wallMs: number }>({ time: 0, wallMs: 0 });
   const ytRemoteAction = useRef(false);
@@ -5150,9 +5151,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       // Only explicit user actions (handleYtPlayPause, handleYtSeek, video click) emit.
     };
 
-    const createPlayer = () => {
-      const container = ytContainerRef.current;
-      console.log("[YT] createPlayer — container:", !!container, "videoId:", activeYoutubeId);
+    const createPlayer = (targetContainer?: HTMLDivElement | null) => {
+      const container = targetContainer ?? ytContainerRef.current;
+      console.log("[YT] createPlayer — container:", !!container, "videoId:", activeYoutubeId, "mini:", miniPlayerMode);
       if (!container) { console.warn("[YT] container ref is null, aborting"); return; }
       const YT = (window as any).YT;
       if (!YT || !YT.Player) { console.warn("[YT] YT.Player not ready"); return; }
@@ -5292,10 +5293,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     };
 
+    // Save current playhead before destroying so a full↔mini mode switch resumes
+    // from the same position instead of restarting the video from 0.
+    if (youtubePlayerRef.current) {
+      try { ytSyncTimeRef.current = youtubePlayerRef.current.getCurrentTime() || 0; } catch (_) {}
+    }
+
+    // Route the YT API player into whichever container is currently visible:
+    // mini-player div when floating, or the in-panel div when watching full-size.
+    const targetContainer = miniPlayerMode ? ytMiniContainerRef.current : ytContainerRef.current;
+
     const YT = (window as any).YT;
-    console.log("[YT] effect — YT loaded:", !!YT, "YT.Player:", !!(YT?.Player), "videoId:", activeYoutubeId);
+    console.log("[YT] effect — YT loaded:", !!YT, "YT.Player:", !!(YT?.Player), "videoId:", activeYoutubeId, "mini:", miniPlayerMode);
     if (YT && YT.Player) {
-      createPlayer();
+      createPlayer(targetContainer);
     } else {
       let tag = document.getElementById("yt-api-script") as HTMLScriptElement | null;
       if (!tag) {
@@ -5317,7 +5328,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       (window as any).onYouTubeIframeAPIReady = () => {
         if (effectCancelled) return;
         console.log("[YT] onYouTubeIframeAPIReady fired");
-        createPlayer();
+        createPlayer(targetContainer);
       };
     }
 
@@ -5328,6 +5339,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         youtubePlayerRef.current = null;
       }
       if (ytContainerRef.current) ytContainerRef.current.innerHTML = "";
+      if (ytMiniContainerRef.current) ytMiniContainerRef.current.innerHTML = "";
       setYtIsPlaying(false);
       setYtCurrentTime(0);
       setYtDuration(0);
@@ -7683,8 +7695,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (player) {
       try { (player as any)[funcName]?.(...args); } catch (_) {}
     }
-    // Channel 2 — direct postMessage to the YouTube iframe
-    const iframe = ytIframeDirectRef.current ?? (ytContainerRef.current?.querySelector("iframe") as HTMLIFrameElement | null);
+    // Channel 2 — direct postMessage to the YouTube iframe (check both full and mini containers)
+    const iframe = ytIframeDirectRef.current
+      ?? (ytContainerRef.current?.querySelector("iframe") as HTMLIFrameElement | null)
+      ?? (ytMiniContainerRef.current?.querySelector("iframe") as HTMLIFrameElement | null);
     if (iframe?.contentWindow) {
       try {
         iframe.contentWindow.postMessage(
@@ -15821,11 +15835,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               className="relative w-full h-full overflow-hidden bg-black rounded-xl shadow-2xl border border-white/20 cursor-grab active:cursor-grabbing group"
               onMouseDown={handleMiniPlayerMouseDown}
             >
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${activeYoutubeId}?autoplay=1&controls=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full border-0"
+              {/* YT API player mounts here — same player instance as the full view,
+                  just redirected into this container so switching to mini mode never
+                  triggers a fresh iframe load (and avoids YouTube Error 153). */}
+              <div
+                ref={ytMiniContainerRef}
+                className="absolute inset-0 w-full h-full"
                 data-testid="iframe-youtube-mini-player"
               />
               {/* Expand overlay on hover */}
