@@ -4708,6 +4708,38 @@ export async function registerRoutes(
     }
   });
 
+  // ── Book Teacher visibility ───────────────────────────────────────────────
+  app.get("/api/settings/book-teacher", async (_req, res) => {
+    try {
+      const value = await storage.getSetting("book_teacher_hidden");
+      res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=3600");
+      res.json({ visible: value !== "true" });
+    } catch {
+      res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=3600");
+      res.json({ visible: true });
+    }
+  });
+
+  app.get("/api/admin/settings/book-teacher", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const value = await storage.getSetting("book_teacher_hidden");
+      res.json({ hidden: value === "true" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/settings/book-teacher", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { hidden } = req.body;
+      if (typeof hidden !== "boolean") return res.status(400).json({ message: "hidden must be boolean" });
+      await storage.setSetting("book_teacher_hidden", hidden ? "true" : "false");
+      res.json({ ok: true, hidden });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.post("/api/admin/elevate-super", isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser((req.user as any).id);

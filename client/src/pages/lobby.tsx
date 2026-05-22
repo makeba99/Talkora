@@ -1032,6 +1032,12 @@ export default function Lobby() {
     enabled: !!user,
   });
 
+  const { data: bookTeacherSettings } = useQuery<{ visible: boolean }>({
+    queryKey: ["/api/settings/book-teacher"],
+    staleTime: 30_000,
+  });
+  const bookTeacherVisible = bookTeacherSettings?.visible ?? true;
+
   const updateNotifPrefsMutation = useMutation({
     mutationFn: async ({ personId, notifyRoomJoin, notifyDm }: { personId: string; notifyRoomJoin: boolean; notifyDm: boolean }) => {
       await apiRequest("PATCH", `/api/push/notif-prefs/${personId}`, { notifyRoomJoin, notifyDm });
@@ -1542,6 +1548,7 @@ export default function Lobby() {
           <nav aria-label="Site navigation" className="flex items-center gap-1 flex-shrink-0">
             {user ? (
               <>
+                {bookTeacherVisible && (
                 <span className="header-pro-btn-wrap relative inline-flex">
                   <button
                     onClick={() => navigate("/teachers")}
@@ -1566,6 +1573,7 @@ export default function Lobby() {
                     <Anchor className="w-2.5 h-2.5" />
                   </span>
                 </span>
+                )}
                 {isAdminUser && (
                   <button
                     onClick={() => navigate("/admin")}
@@ -1803,6 +1811,7 @@ export default function Lobby() {
               </>
             ) : (
               <>
+                {bookTeacherVisible && (
                 <button
                   onClick={() => navigate("/teachers")}
                   className="neu-btn inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
@@ -1812,6 +1821,7 @@ export default function Lobby() {
                   <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
                   <span className="hidden sm:inline" aria-hidden="true">Book Teacher</span>
                 </button>
+                )}
                 <a
                   href="/api/login"
                   data-testid="button-sign-in"
@@ -2572,14 +2582,14 @@ export default function Lobby() {
           click away without crowding the header. The whole stack hides
           when nothing is pinned, so it is invisible until invited.
           ---------------------------------------------------------------- */}
-      {user && (cornerPinned.bookTeacher
+      {user && ((bookTeacherVisible && cornerPinned.bookTeacher)
         || cornerPinned.messages
         || cornerPinned.notifications
         || cornerPinned.themes
         || cornerPinned.community
         || cornerPinned.orbit) && (
         <div className="corner-pin-stack" aria-label="Pinned shortcuts" data-testid="corner-pin-stack">
-          {cornerPinned.bookTeacher && (
+          {bookTeacherVisible && cornerPinned.bookTeacher && (
             <CornerPinFab
               label="Book Teacher"
               testId="corner-fab-bookteacher"

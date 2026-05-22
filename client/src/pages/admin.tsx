@@ -1917,6 +1917,32 @@ function MaintenanceTab() {
 
   const isActive = data?.active ?? false;
 
+  const { data: btData, isLoading: btLoading, refetch: btRefetch } = useQuery<{ hidden: boolean }>({
+    queryKey: ["/api/admin/settings/book-teacher"],
+  });
+
+  const btMutation = useMutation({
+    mutationFn: async (hidden: boolean) => {
+      const res = await apiRequest("POST", "/api/admin/settings/book-teacher", { hidden });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      btRefetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/settings/book-teacher"] });
+      toast({
+        title: result.hidden ? "Book Teacher hidden" : "Book Teacher visible",
+        description: result.hidden
+          ? "The Book Teacher button is now hidden from all users."
+          : "The Book Teacher button is now visible to all users.",
+      });
+    },
+    onError: () => {
+      toast({ title: "Failed to update Book Teacher visibility", variant: "destructive" });
+    },
+  });
+
+  const isBookTeacherHidden = btData?.hidden ?? false;
+
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
@@ -1976,6 +2002,61 @@ function MaintenanceTab() {
                   <li>The platform checks status every 30 seconds and recovers instantly when you turn it off</li>
                 </ul>
               </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Book Teacher visibility ─────────────────────────────────── */}
+      <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="w-5 h-5 text-neu-orange" />
+            Book Teacher Section
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {btLoading ? (
+            <Skeleton className="h-12 w-full rounded-xl" />
+          ) : (
+            <>
+              <div
+                className="flex items-center justify-between rounded-xl border px-5 py-4"
+                style={{
+                  borderColor: isBookTeacherHidden ? "rgba(239,68,68,0.4)" : "rgba(16,185,129,0.25)",
+                  background: isBookTeacherHidden ? "rgba(239,68,68,0.07)" : "rgba(16,185,129,0.05)",
+                }}
+              >
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-sm">
+                    {isBookTeacherHidden ? (
+                      <span className="text-red-400">Book Teacher is hidden</span>
+                    ) : (
+                      <span className="text-emerald-400">Book Teacher is visible</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isBookTeacherHidden
+                      ? "The Book Teacher button is hidden from all users including guests."
+                      : "The Book Teacher button appears in the header for all users."}
+                  </p>
+                </div>
+                <Switch
+                  checked={isBookTeacherHidden}
+                  onCheckedChange={(v) => btMutation.mutate(v)}
+                  disabled={btMutation.isPending}
+                  data-testid="switch-book-teacher-hidden"
+                />
+              </div>
+
+              {isBookTeacherHidden && (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-300 flex gap-3">
+                  <EyeOff className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>
+                    The Book Teacher button and corner FAB are currently hidden from all users. The <code className="text-xs bg-white/10 px-1 rounded">/teachers</code> page is still accessible via direct URL.
+                  </span>
+                </div>
+              )}
             </>
           )}
         </CardContent>
