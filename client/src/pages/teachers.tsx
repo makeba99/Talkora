@@ -1433,11 +1433,80 @@ export default function TeachersPage() {
 
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
-  useEffect(() => {
-    if (bookTeacherSettings !== undefined && !bookTeacherSettings.visible && !isAdmin) {
-      navigate("/");
-    }
-  }, [bookTeacherSettings, isAdmin, navigate]);
+  if (bookTeacherSettings !== undefined && !bookTeacherSettings.visible && !isAdmin) {
+    return (
+      <div className="min-h-screen neu-canvas flex flex-col items-center justify-center relative overflow-hidden px-4">
+        {/* Ambient glow blobs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div style={{ position: "absolute", top: "-15%", left: "50%", transform: "translateX(-50%)", width: "600px", height: "600px", borderRadius: "50%", background: "radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 70%)" }} />
+          <div style={{ position: "absolute", bottom: "0", right: "-10%", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)" }} />
+        </div>
+
+        {/* Back button */}
+        <button
+          onClick={() => navigate("/")}
+          className="absolute top-6 left-6 neu-btn inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          data-testid="button-teachers-coming-soon-back"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to lobby
+        </button>
+
+        {/* Main content */}
+        <div className="relative z-10 flex flex-col items-center text-center max-w-md gap-6">
+          {/* Icon */}
+          <div
+            className="w-24 h-24 rounded-3xl flex items-center justify-center"
+            style={{
+              background: "linear-gradient(135deg, rgba(249,115,22,0.18) 0%, rgba(139,92,246,0.18) 100%)",
+              border: "1px solid rgba(249,115,22,0.25)",
+              boxShadow: "0 0 40px rgba(249,115,22,0.15), inset 0 1px 0 rgba(255,255,255,0.06)",
+            }}
+          >
+            <GraduationCap className="w-12 h-12 text-neu-orange" />
+          </div>
+
+          {/* Headline */}
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase"
+              style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.25)", color: "hsl(var(--neu-orange-hi))" }}>
+              <Clock className="w-3 h-3" />
+              Coming Soon
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Teacher Booking
+            </h1>
+            <p className="text-muted-foreground text-base leading-relaxed">
+              1-on-1 language lessons with verified tutors are on their way. Check back soon — we're putting the finishing touches on this feature.
+            </p>
+          </div>
+
+          {/* Feature preview pills */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {["Verified tutors", "Live sessions", "All languages", "Any level"].map((tag) => (
+              <span
+                key={tag}
+                className="px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{ background: "rgba(139,92,246,0.10)", border: "1px solid rgba(139,92,246,0.20)", color: "rgba(167,139,250,0.9)" }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <button
+            onClick={() => navigate("/")}
+            className="neu-btn-orange inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm"
+            data-testid="button-teachers-coming-soon-lobby"
+          >
+            <Sparkles className="w-4 h-4" />
+            Browse Voice Rooms
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const { data: fetchedTeachers = [], isLoading } = useQuery<Teacher[]>({
     queryKey: ["/api/teachers"],
