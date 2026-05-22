@@ -1426,6 +1426,19 @@ export default function TeachersPage() {
     experience: "",
   });
 
+  const { data: bookTeacherSettings } = useQuery<{ visible: boolean }>({
+    queryKey: ["/api/settings/book-teacher"],
+    staleTime: 30_000,
+  });
+
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+
+  useEffect(() => {
+    if (bookTeacherSettings !== undefined && !bookTeacherSettings.visible && !isAdmin) {
+      navigate("/");
+    }
+  }, [bookTeacherSettings, isAdmin, navigate]);
+
   const { data: fetchedTeachers = [], isLoading } = useQuery<Teacher[]>({
     queryKey: ["/api/teachers"],
   });
