@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Users, Search, UserPlus, UserCheck, UserMinus, MessageSquare, Phone, StickyNote, X, PlayCircle, Tv2 } from "lucide-react";
+import { Users, Search, UserPlus, UserCheck, UserMinus, MessageSquare, Phone, StickyNote, X, PlayCircle, Tv2, Bell, BellOff, UserX } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -17,6 +17,7 @@ import { useLocation } from "wouter";
 import type { User, Follow, UserBadge } from "@shared/schema";
 import { BADGE_TYPES } from "@shared/constants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 function UserBadgePips({ userId }: { userId: string }) {
   const { data: badges = [] } = useQuery<UserBadge[]>({
@@ -431,6 +432,20 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
     },
   });
 
+  const { data: notifPrefsData = {} } = useQuery<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>>({
+    queryKey: ["/api/push/muted-users"],
+    enabled: !!user,
+  });
+
+  const updateNotifPrefsMutation = useMutation({
+    mutationFn: async ({ userId, notifyRoomJoin, notifyDm }: { userId: string; notifyRoomJoin: boolean; notifyDm: boolean }) => {
+      await apiRequest("PATCH", `/api/push/notif-prefs/${userId}`, { notifyRoomJoin, notifyDm });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/push/muted-users"] });
+    },
+  });
+
   const followingIds = new Set(following.map((f) => f.followingId));
   const followerIds = new Set(followers.map((f) => f.followerId));
 
@@ -630,7 +645,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
               <Button
                 size="icon"
                 variant={isFollowing ? "default" : "ghost"}
-                className={`w-8 h-8 ${isFollowing ? "bg-primary/20 text-primary hover:bg-primary/30" : ""}`}
+                className={`w-8 h-8 transition-all ${isFollowing ? "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 border border-orange-500/30" : ""}`}
                 aria-label={isFollowing ? `Unfollow ${u.username}` : `Follow ${u.username}`}
                 onClick={() =>
                   isFollowing
@@ -647,6 +662,127 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isFollowing ? "Unfollow" : "Follow"}</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFollowerRow = (u: User) => {
+    const isOnline = onlineUsers.has(u.id);
+    const inRoomId = userRooms[u.id];
+    const prefs = notifPrefsData[u.id];
+    const roomJoinOn = prefs?.notifyRoomJoin !== false;
+    const dmOn = prefs?.notifyDm !== false;
+    const anyOn = roomJoinOn || dmOn;
+
+    return (
+      <div
+        key={u.id}
+        className="flex items-center gap-2 p-2 rounded-md hover-elevate"
+        data-testid={`follower-row-${u.id}`}
+      >
+        <button
+          className="relative flex-shrink-0 focus:outline-none"
+          onClick={() => setProfileUser(u)}
+          data-testid={`button-avatar-follower-${u.id}`}
+          aria-label={`View ${getUserDisplayName(u)}'s profile`}
+        >
+          <Avatar className="w-9 h-9 hover:ring-2 hover:ring-primary/50 transition-all rounded-full">
+            <AvatarImage src={u.profileImageUrl || undefined} alt={getUserDisplayName(u)} />
+            <AvatarFallback className="text-sm bg-primary/10 text-primary">
+              {getUserInitials(u)}
+            </AvatarFallback>
+          </Avatar>
+          <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-background ${isOnline ? "bg-status-online" : "bg-status-offline"}`} />
+        </button>
+
+        <button
+          className="flex-1 min-w-0 text-left focus:outline-none"
+          onClick={() => setProfileUser(u)}
+          data-testid={`button-name-follower-${u.id}`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="text-sm font-medium truncate hover:text-primary transition-colors min-w-0">
+              {getUserDisplayName(u)}
+            </p>
+            {inRoomId && (
+              <span className="text-[9px] leading-none px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold uppercase tracking-wide flex-shrink-0">
+                Live
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground truncate">
+            {u.bio || (isOnline ? "Online" : "Offline")}
+          </p>
+          <UserBadgePips userId={u.id} />
+        </button>
+
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {/* Notification prefs popover */}
+          <Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={`w-8 h-8 transition-all ${anyOn ? "text-orange-400 bg-orange-500/10 border border-orange-500/20" : "text-muted-foreground"}`}
+                    aria-label="Notification settings"
+                    data-testid={`button-notif-prefs-${u.id}`}
+                  >
+                    {anyOn ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Notification settings</TooltipContent>
+            </Tooltip>
+            <PopoverContent side="left" align="center" className="w-52 p-3 space-y-2.5">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 flex items-center gap-1">
+                <Bell className="w-3 h-3" /> Notifications from {getUserDisplayName(u)}
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Room joins</span>
+                  <button
+                    onClick={() => updateNotifPrefsMutation.mutate({ userId: u.id, notifyRoomJoin: !roomJoinOn, notifyDm: dmOn })}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${roomJoinOn ? "bg-orange-500" : "bg-muted-foreground/30"}`}
+                    aria-pressed={roomJoinOn}
+                    data-testid={`toggle-notif-room-follower-${u.id}`}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${roomJoinOn ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Direct messages</span>
+                  <button
+                    onClick={() => updateNotifPrefsMutation.mutate({ userId: u.id, notifyRoomJoin: roomJoinOn, notifyDm: !dmOn })}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${dmOn ? "bg-orange-500" : "bg-muted-foreground/30"}`}
+                    aria-pressed={dmOn}
+                    data-testid={`toggle-notif-dm-follower-${u.id}`}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${dmOn ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Remove follower */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="w-8 h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                aria-label={`Remove ${getUserDisplayName(u)} as follower`}
+                onClick={() => removeFollowerMutation.mutate(u.id)}
+                data-testid={`button-remove-follower-row-${u.id}`}
+              >
+                <UserX className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Remove follower</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -809,7 +945,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                       "Be active in rooms — others will discover and follow you."
                     )
                   ) : (
-                    applyFilters(followerUsers).map(renderUser)
+                    applyFilters(followerUsers).map(renderFollowerRow)
                   )}
                 </TabsContent>
               </div>
