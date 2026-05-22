@@ -17,6 +17,7 @@ import {
   SiWhatsapp,
   SiTelegram,
 } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa6";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -40,9 +41,10 @@ type SocialLink = {
 };
 
 const SOCIALS: SocialLink[] = [
-  { name: "Instagram", href: "https://www.instagram.com/joinvextorn/", Icon: SiInstagram, hoverHue: "330 75% 60%" },
-  { name: "TikTok",   href: "https://www.tiktok.com/@joinvextorn",    Icon: SiTiktok,    hoverHue: "180 80% 55%" },
-  { name: "YouTube",  href: "https://www.youtube.com/@vextorn",       Icon: SiYoutube,   hoverHue: "0 85% 55%"   },
+  { name: "Instagram", href: "https://www.instagram.com/joinvextorn/",          Icon: SiInstagram, hoverHue: "330 75% 60%" },
+  { name: "LinkedIn",  href: "https://www.linkedin.com/company/vextorn/",       Icon: FaLinkedin,  hoverHue: "210 80% 55%" },
+  { name: "TikTok",    href: "https://www.tiktok.com/@joinvextorn",             Icon: SiTiktok,    hoverHue: "180 80% 55%" },
+  { name: "YouTube",   href: "https://www.youtube.com/@vextorn",                Icon: SiYoutube,   hoverHue: "0 85% 55%"   },
 ];
 
 type ShareDest = {
