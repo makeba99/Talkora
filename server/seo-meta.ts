@@ -129,7 +129,7 @@ export function renderIndexHtml(
   const template = baseHtml ?? loadTemplate();
   if (!template) return null;
 
-  const fallbackImage = `${origin}/vextorn-icon-512.png`;
+  const fallbackImage = `${origin}/vextorn-og.png`;
   const ogImage = opts.ogImage || fallbackImage;
 
   const eTitle = escapeHtml(opts.title);
