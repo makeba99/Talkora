@@ -29,6 +29,7 @@ import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { playMoodSound } from "@/lib/mood-sounds";
@@ -2413,6 +2414,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const bookScrollRef = useRef<HTMLDivElement | null>(null);
   const lastScrollEmitRef = useRef(0);
   const [unreadChatBadge, setUnreadChatBadge] = useState(0);
+  const [privateUnreadCount, setPrivateUnreadCount] = useState(0);
   const [tabUnreadCount, setTabUnreadCount] = useState(0);
   const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
   const sidePanelTabRef = useRef(sidePanelTab);
@@ -2603,7 +2605,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   useEffect(() => {
     sidePanelTabRef.current = sidePanelTab;
-    if (sidePanelTab === "chat") setUnreadChatBadge(0);
+    if (sidePanelTab === "chat") {
+      setUnreadChatBadge(0);
+      setPrivateUnreadCount(0);
+    }
   }, [sidePanelTab]);
 
   useEffect(() => {
@@ -3875,6 +3880,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       // Increment browser-tab unread count when the tab is backgrounded
       if (document.hidden && (msg as any).type !== "system" && msg.userId !== user?.id) {
         setTabUnreadCount((prev) => prev + 1);
+      }
+      // ── Private message in-room notification ──────────────────────────────
+      // Always fire a toast when someone whispers to you, regardless of whether
+      // the chat panel is open — private messages deserve explicit attention.
+      if (msg.isPrivate && msg.userId !== user?.id) {
+        const senderName = msg.user ? getUserDisplayName(msg.user) : "Someone";
+        const preview = msg.text.startsWith("[img:")
+          ? "📷 Sent you an image"
+          : msg.text.length > 72 ? msg.text.slice(0, 69) + "…" : msg.text;
+        setPrivateUnreadCount((prev) => prev + 1);
+        toast({
+          title: `🔒 Whisper from ${senderName}`,
+          description: preview,
+          duration: 7000,
+          action: (
+            <ToastAction
+              altText="Reply privately"
+              onClick={() => {
+                setSidePanelOpen(true);
+                setSidePanelTab("chat");
+                setPrivateChatToId(msg.userId);
+              }}
+            >
+              Reply
+            </ToastAction>
+          ),
+        });
       }
       // Clear typing indicator as soon as the message arrives
       if (msg.userId !== user?.id) {
@@ -8474,9 +8506,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           >
             <MessageSquare className="w-[20px] h-[20px]" />
           </button>
-          {unreadChatBadge > 0 && (
+          {/* General unread badge — only shown when no private unread (private takes priority) */}
+          {unreadChatBadge > 0 && privateUnreadCount === 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.60), inset 0 1px 0 rgba(255,255,255,0.40)" }}>
               {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
+            </span>
+          )}
+          {/* Private / whisper unread badge — purple, pulsing */}
+          {privateUnreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 animate-pulse bg-purple-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none" style={{ boxShadow: "0 0 8px rgba(168,85,247,0.80), inset 0 1px 0 rgba(255,255,255,0.40)" }} title="Unread private messages">
+              🔒
             </span>
           )}
         </div>
@@ -12832,9 +12871,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   >
                     <LayoutGrid className="w-[18px] h-[18px]" />
                   </button>
-                  {unreadChatBadge > 0 && (
+                  {unreadChatBadge > 0 && privateUnreadCount === 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none z-10" style={{ boxShadow: "0 0 6px rgba(239,68,68,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
                       {unreadChatBadge > 99 ? "99+" : unreadChatBadge}
+                    </span>
+                  )}
+                  {privateUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 animate-pulse bg-purple-500 text-white text-[8px] font-bold rounded-full min-w-[14px] h-3.5 px-0.5 flex items-center justify-center leading-none pointer-events-none z-10" style={{ boxShadow: "0 0 8px rgba(168,85,247,0.80), inset 0 1px 0 rgba(255,255,255,0.40)" }} title="Unread private messages">
+                      🔒
                     </span>
                   )}
                 </div>
