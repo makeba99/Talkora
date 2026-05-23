@@ -595,7 +595,7 @@ function ParticipantCard({
           </div>
 
           {!isMe && (
-            <div className="grid grid-cols-4 gap-2">
+            <div className={`grid gap-2 ${isFollowing ? "grid-cols-5" : "grid-cols-4"}`}>
                <Button variant="outline" size="sm" onClick={() => onNavigateDm && onNavigateDm(p.id)} className="h-12 flex-col text-[10px] leading-tight border-border bg-transparent hover:bg-muted px-1 gap-0.5">
                   <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                   <span className="truncate w-full text-center">PM</span>
@@ -607,6 +607,34 @@ function ParticipantCard({
                   {isFollowing ? <UserCheck className="w-3.5 h-3.5 text-orange-400" /> : <UserPlus className="w-3.5 h-3.5 text-muted-foreground" />}
                   <span className="truncate w-full text-center">{isFollowing ? "Unfollow" : "Follow"}</span>
                </Button>
+               {/* ── Subscribe / room-join notification toggle ─────────────────── */}
+               {/* Only shown when following — orange border = subscribed, muted = off */}
+               {isFollowing && (() => {
+                 const joinOn = notifPrefs?.notifyRoomJoin !== false;
+                 return (
+                   <button
+                     data-testid={`button-subscribe-notif-${p.id}`}
+                     onClick={() => onSetNotifPrefs && onSetNotifPrefs(!joinOn, notifPrefs?.notifyDm !== false)}
+                     title={joinOn ? "Turn off room-join notifications" : "Turn on room-join notifications"}
+                     className="h-12 flex-col text-[10px] leading-tight px-1 gap-0.5 rounded-md flex items-center justify-center w-full transition-all"
+                     style={joinOn ? {
+                       border: "1.5px solid rgba(249,115,22,0.75)",
+                       background: "rgba(249,115,22,0.08)",
+                       color: "rgb(251,146,60)",
+                       boxShadow: "0 0 10px rgba(249,115,22,0.30), inset 0 1px 0 rgba(255,255,255,0.06)",
+                     } : {
+                       border: "1.5px solid rgba(148,163,184,0.18)",
+                       background: "transparent",
+                       color: "rgba(148,163,184,0.55)",
+                     }}
+                   >
+                     {joinOn
+                       ? <Bell className="w-3.5 h-3.5" />
+                       : <BellOff className="w-3.5 h-3.5" />}
+                     <span className="truncate w-full text-center">{joinOn ? "Alert" : "Muted"}</span>
+                   </button>
+                 );
+               })()}
                <Button variant="outline" size="sm" onClick={() => onReconnect && onReconnect(p.id)} className="h-12 flex-col text-[10px] leading-tight border-border bg-transparent hover:bg-muted px-1 gap-0.5">
                   <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
                   <span className="truncate w-full text-center">Reboot</span>
