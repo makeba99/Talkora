@@ -369,7 +369,7 @@ function PeopleDiscoveryCard({
                       notifPrefs?.notifyRoomJoin === false ? true : false,
                       notifPrefs?.notifyDm !== false
                     )}
-                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${notifPrefs?.notifyRoomJoin !== false ? "bg-orange-500/80" : "bg-white/15"}`}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-all focus:outline-none ${notifPrefs?.notifyRoomJoin !== false ? "bg-orange-500 ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-white/20"}`}
                   >
                     <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${notifPrefs?.notifyRoomJoin !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
                   </button>
@@ -384,7 +384,7 @@ function PeopleDiscoveryCard({
                       notifPrefs?.notifyRoomJoin !== false,
                       notifPrefs?.notifyDm === false ? true : false
                     )}
-                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${notifPrefs?.notifyDm !== false ? "bg-orange-500/80" : "bg-white/15"}`}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-all focus:outline-none ${notifPrefs?.notifyDm !== false ? "bg-orange-500 ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-white/20"}`}
                   >
                     <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${notifPrefs?.notifyDm !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
                   </button>
