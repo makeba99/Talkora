@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Users, Settings, Lock, Globe, UserPlus, UserCheck, MessageSquare, Heart, Instagram, Linkedin, Facebook, X, Copy, Bell, Mic, Flame, Plus, Hand } from "lucide-react";
+import { Users, Settings, Lock, Globe, UserPlus, UserCheck, MessageSquare, Heart, Instagram, Linkedin, Facebook, X, Copy, Bell, Mic, Flame, Plus, Hand, Trash2, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ROOM_THEMES } from "@/lib/room-theme-utils";
@@ -725,6 +725,26 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
   const [editOpen, setEditOpen] = useState(false);
 
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const deleteRoomMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/rooms/${room.id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || "Failed to delete room");
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "Room deleted", description: "Your room has been removed." });
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Couldn't delete room", description: err.message || "Please try again.", variant: "destructive" });
+    },
+  });
+
   const levelColor: Record<string, string> = {
     Beginner: "text-amber-300",
     Intermediate: "text-orange-400",
@@ -765,17 +785,51 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
-    <button
-      className="lobby-card-settings-btn lobby-card-settings-btn--owner flex-shrink-0"
-      onClick={(e) => {
-        e.stopPropagation();
-        setEditOpen(true);
-      }}
-      data-testid={`button-room-settings-${room.id}`}
-      aria-label={`Edit settings for room ${room.title}`}
-    >
-      <Settings className="w-3.5 h-3.5" aria-hidden="true" />
-    </button>
+    <Popover open={ownerMenuOpen} onOpenChange={setOwnerMenuOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="lobby-card-settings-btn lobby-card-settings-btn--owner flex-shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          data-testid={`button-room-settings-${room.id}`}
+          aria-label={`Settings for room ${room.title}`}
+        >
+          <Settings className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-48 p-0 border-0 shadow-2xl overflow-hidden"
+        style={{ background: "#1a1f2e" }}
+        align="end"
+      >
+        <div className="flex flex-col py-1">
+          <button
+            className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-sm text-white w-full text-left transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOwnerMenuOpen(false);
+              setEditOpen(true);
+            }}
+            data-testid={`button-room-edit-${room.id}`}
+          >
+            <Pencil className="w-4 h-4 text-white/50" />
+            Edit Settings
+          </button>
+          <div className="border-t border-white/10 mx-3" />
+          <button
+            className="flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 text-sm text-red-400 w-full text-left transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOwnerMenuOpen(false);
+              setDeleteConfirmOpen(true);
+            }}
+            data-testid={`button-room-delete-${room.id}`}
+          >
+            <Trash2 className="w-4 h-4 text-red-400/70" />
+            Delete Room
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
   ) : (() => {
     const ownerUser = participants.find(p => p.id === room.ownerId);
     const ownerName = ownerUser ? getUserDisplayName(ownerUser) : room.ownerId.slice(0, 8).toUpperCase();
@@ -1447,6 +1501,47 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             onClose={() => setEditOpen(false)}
           />
         </Suspense>
+      )}
+
+      {deleteConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.65)" }}
+          onClick={(e) => { e.stopPropagation(); setDeleteConfirmOpen(false); }}
+        >
+          <div
+            className="rounded-xl p-6 shadow-2xl flex flex-col gap-4 w-80"
+            style={{ background: "#1a1f2e", border: "1px solid rgba(255,255,255,0.08)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col gap-1">
+              <p className="text-base font-semibold text-white">Delete Room?</p>
+              <p className="text-sm text-white/55">
+                "<span className="text-white/80">{room.title}</span>" will be permanently deleted and all participants will be removed.
+              </p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                className="px-4 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setDeleteConfirmOpen(false); }}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-500 text-white transition-colors disabled:opacity-50"
+                disabled={deleteRoomMutation.isPending}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteRoomMutation.mutate(undefined, {
+                    onSettled: () => setDeleteConfirmOpen(false),
+                  });
+                }}
+              >
+                {deleteRoomMutation.isPending ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
