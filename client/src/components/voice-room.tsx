@@ -627,7 +627,7 @@ function ParticipantCard({
                       notifPrefs?.notifyRoomJoin === false ? true : false,
                       notifPrefs?.notifyDm !== false
                     )}
-                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${notifPrefs?.notifyRoomJoin !== false ? "bg-orange-500" : "bg-muted-foreground/30"}`}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-all ${notifPrefs?.notifyRoomJoin !== false ? "bg-orange-500 ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-muted-foreground/30"}`}
                     aria-pressed={notifPrefs?.notifyRoomJoin !== false}
                   >
                     <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${notifPrefs?.notifyRoomJoin !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />
@@ -641,7 +641,7 @@ function ParticipantCard({
                       notifPrefs?.notifyRoomJoin !== false,
                       notifPrefs?.notifyDm === false ? true : false
                     )}
-                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${notifPrefs?.notifyDm !== false ? "bg-orange-500" : "bg-muted-foreground/30"}`}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-all ${notifPrefs?.notifyDm !== false ? "bg-orange-500 ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-muted-foreground/30"}`}
                     aria-pressed={notifPrefs?.notifyDm !== false}
                   >
                     <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${notifPrefs?.notifyDm !== false ? "translate-x-3.5" : "translate-x-0.5"}`} />

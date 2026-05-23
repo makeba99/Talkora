@@ -746,7 +746,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                   <span className="text-xs text-muted-foreground">Room joins</span>
                   <button
                     onClick={() => updateNotifPrefsMutation.mutate({ userId: u.id, notifyRoomJoin: !roomJoinOn, notifyDm: dmOn })}
-                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${roomJoinOn ? "bg-orange-500" : "bg-muted-foreground/30"}`}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-all ${roomJoinOn ? "bg-orange-500 ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-muted-foreground/30"}`}
                     aria-pressed={roomJoinOn}
                     data-testid={`toggle-notif-room-follower-${u.id}`}
                   >
@@ -757,7 +757,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                   <span className="text-xs text-muted-foreground">Direct messages</span>
                   <button
                     onClick={() => updateNotifPrefsMutation.mutate({ userId: u.id, notifyRoomJoin: roomJoinOn, notifyDm: !dmOn })}
-                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${dmOn ? "bg-orange-500" : "bg-muted-foreground/30"}`}
+                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-all ${dmOn ? "bg-orange-500 ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-muted-foreground/30"}`}
                     aria-pressed={dmOn}
                     data-testid={`toggle-notif-dm-follower-${u.id}`}
                   >
