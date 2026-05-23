@@ -8644,7 +8644,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
         <div className="chat-scroll-well flex-1 min-h-0">
         <ScrollArea className="h-full" ref={chatScrollRef} onScroll={handleScroll}>
-          <div className="pl-2 pr-3 py-2 min-h-full flex flex-col justify-end">
+          <div className="pl-2 pr-3 py-2 flex flex-col">
+            {/* Spacer — grows to fill any empty space above messages so the
+                first message always appears at the bottom of the viewport.
+                This replaces the fragile "min-h-full + justify-end" pattern
+                which breaks inside Radix ScrollArea's display:table wrapper. */}
+            <div style={{ flex: 1, minHeight: 0 }} aria-hidden="true" />
             {(() => {
               let displayedMessages = showMentionsOnly
                 ? chatMessages.filter(msg => msg.type !== "system" && (msg as any).type !== "deleted" && isMentionedInMessage(msg.text))
