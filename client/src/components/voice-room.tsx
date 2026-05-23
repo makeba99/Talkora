@@ -6464,6 +6464,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const myRole = participantRoles[user?.id || ""] || "";
   const isTroll = myRole === "troll";
   const TROLL_MAX_CHARS = 50;
+  const CHAT_MAX_CHARS = 500;
   const canAssignRoles = isHost || myRole === "co-owner";
 
   // ----- Talk-permission gating -----
@@ -9466,17 +9467,36 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               data-whisper={privateChatToId !== "public"}
               rows={2}
               data-testid="input-room-chat"
-              maxLength={isTroll ? TROLL_MAX_CHARS : undefined}
+              maxLength={isTroll ? TROLL_MAX_CHARS : CHAT_MAX_CHARS}
               style={{ paddingRight: "3.2rem" }}
             />
-            {isTroll && (
-              <div
-                className="absolute bottom-1.5 right-10 text-[9px] font-bold tabular-nums pointer-events-none"
-                style={{ color: chatText.length >= TROLL_MAX_CHARS ? "rgb(248,113,113)" : chatText.length >= TROLL_MAX_CHARS * 0.8 ? "rgb(253,224,71)" : "rgba(255,255,255,0.25)" }}
-              >
-                {chatText.length}/{TROLL_MAX_CHARS}
-              </div>
-            )}
+            {/* Character counter — troll mode always shown; normal mode fades in above 70% */}
+            {(() => {
+              const limit = isTroll ? TROLL_MAX_CHARS : CHAT_MAX_CHARS;
+              const len   = chatText.length;
+              const pct   = len / limit;
+              const show  = isTroll || pct >= 0.70;
+              if (!show) return null;
+              const color = pct >= 1
+                ? "rgb(248,113,113)"
+                : pct >= 0.90
+                ? "rgb(253,224,71)"
+                : pct >= 0.80
+                ? "rgba(253,224,71,0.65)"
+                : "rgba(255,255,255,0.25)";
+              return (
+                <div
+                  className="absolute bottom-1.5 right-10 text-[9px] font-bold tabular-nums pointer-events-none select-none"
+                  style={{
+                    color,
+                    transition: "color 0.2s ease",
+                    opacity: pct >= 0.70 ? 1 : 0,
+                  }}
+                >
+                  {len}/{limit}
+                </div>
+              );
+            })()}
             {/* Send button — always visible, no Enter-only UX trap */}
             <button
               type="submit"
