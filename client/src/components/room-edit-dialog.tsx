@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, X, Upload, Loader2 } from "lucide-react";
+import { Sparkles, X, Upload, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -40,6 +40,26 @@ interface RoomEditDialogProps {
 export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
   const { toast } = useToast();
   const languages = LANGUAGES.filter((l) => l !== "All");
+
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/rooms/${room.id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || "Failed to delete room");
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "Room deleted", description: "Your room has been removed." });
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
+      onClose();
+    },
+    onError: (err: any) => {
+      toast({ title: "Couldn't delete room", description: err.message || "Please try again.", variant: "destructive" });
+    },
+  });
 
   const [editTitle, setEditTitle] = useState(room.title);
   const [editLanguage, setEditLanguage] = useState(room.language);
@@ -150,11 +170,58 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
       >
         {/* Sticky header */}
         <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-border/40">
-          <DialogTitle>Edit Room Settings</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Edit Room Settings</DialogTitle>
+            {!deleteConfirm && (
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(true)}
+                className="flex items-center gap-1.5 text-xs text-destructive/70 hover:text-destructive transition-colors rounded px-2 py-1 hover:bg-destructive/10 mr-7"
+                data-testid={`button-delete-room-header-${room.id}`}
+                aria-label="Delete room"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            )}
+          </div>
         </DialogHeader>
 
+        {/* Delete confirmation overlay */}
+        {deleteConfirm && (
+          <div className="flex flex-col flex-1 items-center justify-center gap-5 px-6 py-10">
+            <Trash2 className="w-10 h-10 text-destructive/60" />
+            <div className="text-center space-y-1">
+              <p className="text-base font-semibold">Delete this room?</p>
+              <p className="text-sm text-muted-foreground">
+                "<span className="text-foreground">{room.title}</span>" will be permanently removed.
+              </p>
+            </div>
+            <div className="flex gap-3 w-full max-w-xs">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setDeleteConfirm(false)}
+                disabled={deleteMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                className="flex-1"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate()}
+              >
+                {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Scrollable body */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <form onSubmit={handleSubmit} className={`flex flex-col flex-1 min-h-0 ${deleteConfirm ? "hidden" : ""}`}>
           <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-4 space-y-4 min-h-0">
             <div className="space-y-2">
               <Label htmlFor="edit-room-title">Room Name</Label>
