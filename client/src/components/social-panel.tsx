@@ -155,9 +155,7 @@ interface UserProfileDialogProps {
   onRemoveFollower: () => void;
   onMessage: () => void;
   onJoinRoom?: () => void;
-  onWatchTogether?: () => void;
   inRoomId?: string;
-  watchingVideoId?: string;
   isOnline: boolean;
   currentUser?: User | null;
 }
@@ -173,15 +171,10 @@ function UserProfileDialog({
   onRemoveFollower,
   onMessage,
   onJoinRoom,
-  onWatchTogether,
   inRoomId,
-  watchingVideoId,
   isOnline,
   currentUser,
 }: UserProfileDialogProps) {
-  const ytThumb = watchingVideoId
-    ? `https://img.youtube.com/vi/${watchingVideoId}/mqdefault.jpg`
-    : null;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -199,19 +192,6 @@ function UserProfileDialog({
             {/* Watcher pip stack: current user's avatar floats above the profile avatar
                 when they are watching this person — mirrors the in-room watcher bubbles */}
             <div className="relative inline-block">
-              {watchingVideoId && currentUser && (
-                <div
-                  className="absolute -top-5 left-1/2 -translate-x-1/2 flex items-center justify-center z-10"
-                  data-testid={`watcher-pip-${u.id}`}
-                >
-                  <Avatar className="w-6 h-6 border-2 border-background shadow-md ring-1 ring-primary/50">
-                    <AvatarImage src={currentUser.profileImageUrl || undefined} alt={getUserDisplayName(currentUser)} />
-                    <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">
-                      {getUserInitials(currentUser)}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-              )}
               <Avatar className="w-16 h-16 border-4 border-background shadow-lg">
                 <AvatarImage src={u.profileImageUrl || undefined} alt={getUserDisplayName(u)} />
                 <AvatarFallback className="text-lg bg-primary/10 text-primary">
@@ -249,55 +229,13 @@ function UserProfileDialog({
             <UserBadgePips userId={u.id} />
           </div>
 
-          {/* Watch Together card — shown when the user is hosting a YouTube video */}
-          {watchingVideoId && inRoomId && (
-            <div className="border border-border/40 rounded-xl overflow-hidden" data-testid={`watch-together-card-${u.id}`}>
-              <div className="relative w-full aspect-video bg-black/60">
-                {ytThumb && (
-                  <img
-                    src={ytThumb}
-                    alt="Currently watching"
-                    width={480}
-                    height={270}
-                    className="w-full h-full object-cover opacity-80"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-black/60 rounded-full p-1.5">
-                    <PlayCircle className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/80 to-transparent">
-                  <div className="flex items-center gap-1">
-                    <Tv2 className="w-3 h-3 text-red-400 shrink-0" />
-                    <span className="text-[10px] text-white/90 font-medium truncate">
-                      {getUserDisplayName(u)} is watching on YouTube
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {onWatchTogether && (
-                <button
-                  className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
-                  onClick={() => { onWatchTogether(); onClose(); }}
-                  data-testid={`button-watch-together-${u.id}`}
-                >
-                  <PlayCircle className="w-3.5 h-3.5" />
-                  Watch Together
-                </button>
-              )}
-            </div>
-          )}
-
           <div className="border-t border-border/40 pt-3">
             <p className="text-[11px] text-muted-foreground mb-2 font-medium uppercase tracking-wide">Private Note</p>
             <UserNotePopover userId={u.id} />
           </div>
 
           <div className="flex gap-2 pt-1">
-            {inRoomId && onJoinRoom && !watchingVideoId && (
+            {inRoomId && onJoinRoom && (
               <Button
                 size="sm"
                 variant="outline"
@@ -391,11 +329,6 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
     refetchInterval: 5000,
   });
 
-  const { data: userWatching = {} } = useQuery<Record<string, { roomId: string; videoId: string }>>({
-    queryKey: ["/api/users/watching"],
-    enabled: !!user,
-    refetchInterval: 5000,
-  });
 
   const followMutation = useMutation({
     mutationFn: async (followingId: string) => {
@@ -520,7 +453,6 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
     const isOnline = onlineUsers.has(u.id);
     const isFollowing = followingIds.has(u.id);
     const inRoomId = userRooms[u.id];
-    const watchingInfo = userWatching[u.id];
 
     return (
       <div
@@ -566,41 +498,19 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                 Live
               </span>
             )}
-            {watchingInfo && (
-              <span className="text-[9px] leading-none px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400 font-semibold uppercase tracking-wide flex-shrink-0 flex items-center gap-0.5">
-                <PlayCircle className="w-2.5 h-2.5" /> Watching
-              </span>
-            )}
           </div>
           {u.bio ? (
             <p className="text-xs text-muted-foreground truncate">{u.bio}</p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              {watchingInfo ? "Watching YouTube" : isOnline ? "Online" : "Offline"}
+              {isOnline ? "Online" : "Offline"}
             </p>
           )}
           <UserBadgePips userId={u.id} />
         </button>
 
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          {watchingInfo && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => handleJoinRoom(watchingInfo.roomId, u.id)}
-                  data-testid={`button-watch-together-list-${u.id}`}
-                  aria-label="Watch together"
-                  className="text-red-400 hover:text-red-300 w-8 h-8"
-                >
-                  <Tv2 className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Watch together</TooltipContent>
-            </Tooltip>
-          )}
-          {inRoomId && !watchingInfo && (
+          {inRoomId && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -973,9 +883,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
             setOpen(false);
           }}
           onJoinRoom={userRooms[profileTarget.id] ? () => handleJoinRoom(userRooms[profileTarget.id]) : undefined}
-          onWatchTogether={userWatching[profileTarget.id] ? () => handleJoinRoom(userWatching[profileTarget.id].roomId, profileTarget.id) : undefined}
           inRoomId={userRooms[profileTarget.id]}
-          watchingVideoId={userWatching[profileTarget.id]?.videoId}
           isOnline={onlineUsers.has(profileTarget.id)}
           currentUser={user}
         />
