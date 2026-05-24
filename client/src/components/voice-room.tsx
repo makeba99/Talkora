@@ -1229,7 +1229,7 @@ function ParticipantCard({
         )}
 
         {/* DM unread badge on participant card */}
-        {!isMe && dmUnreadCount > 0 && (
+        {dmUnreadCount > 0 && (
           <div
             className="absolute top-1 left-1 z-30 flex items-center gap-0.5 pointer-events-none animate-in fade-in zoom-in-75"
             data-testid={`badge-room-dm-unread-${p.id}`}
@@ -14652,7 +14652,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       followingIds={followingIds}
                       followMutation={followMutation}
                       unfollowMutation={unfollowMutation}
-                      onNavigateDm={(userId: string) => setDmUserId(userId)}
+                      onNavigateDm={(userId: string) => { setDmUserId(userId); setDmUnreadCounts(prev => { const next = { ...prev }; delete next[userId]; return next; }); }}
                       user={user}
                       hasActiveYoutube={youtubeHosts.has(p.id)}
                       roomLevel={room.level}
@@ -14686,7 +14686,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onReconnect={handleReconnect}
                       notifPrefs={notifPrefsData?.[p.id] ?? null}
                       onSetNotifPrefs={(notifyRoomJoin: boolean, notifyDm: boolean) => updateNotifPrefsMutation.mutate({ userId: p.id, notifyRoomJoin, notifyDm })}
-                      dmUnreadCount={dmUnreadCounts[p.id] || 0}
+                      dmUnreadCount={isMe ? (Object.values(dmUnreadCounts) as number[]).reduce((s, n) => s + n, 0) : 0}
                       volume={participantVolumes[p.id] ?? 1}
                       onVolumeChange={handleVolumeChange}
                       youtubeVideoId={youtubeHosts.get(p.id) || null}
@@ -16083,6 +16083,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
             <button
               onClick={() => {
+                setDmUnreadCounts(prev => { const next = { ...prev }; delete next[roomDmNotification.fromId]; return next; });
                 setDmUserId(roomDmNotification.fromId);
                 setRoomDmNotification(null);
               }}
