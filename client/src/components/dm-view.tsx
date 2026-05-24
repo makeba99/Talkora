@@ -76,19 +76,37 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   });
 
   /* ── Relationship / permission check ── */
-  const { data: dmStatus, isLoading: dmStatusLoading } = useQuery<DmRelationStatus>({
+  const {
+    data: dmStatus,
+    isLoading: dmStatusLoading,
+    isError: dmStatusError,
+  } = useQuery<DmRelationStatus>({
     queryKey: ["/api/message-requests/status", otherUserId],
     queryFn: async () => {
       const res = await fetch(`/api/message-requests/status/${otherUserId}`, { credentials: "include" });
+      if (!res.ok) throw new Error(`${res.status}`);
       return res.json();
     },
     enabled: !!user && !!otherUserId,
-    refetchInterval: 15000,
+    refetchInterval: 20000,
+    retry: 2,
   });
+
+  // Only block when we have a CONFIRMED successful response showing no relationship.
+  // While loading or errored → optimistically allow chat (server-side gate still enforces real security).
+  const statusConfirmed = !dmStatusLoading && !dmStatusError && dmStatus !== undefined;
+  const isMutual = statusConfirmed ? (dmStatus!.canDm === true) : false;
+  const iFollowThem = statusConfirmed ? (dmStatus!.iFollowThem === true) : false;
+  const theyFollowMe = statusConfirmed ? (dmStatus!.theyFollowMe === true) : false;
+  const sentRequest = statusConfirmed ? dmStatus!.sentRequest : null;
+
+  const canDmFreely = !statusConfirmed || isMutual;
+  const acceptedRequest = iFollowThem && sentRequest?.status === "accepted";
+  const canChat = canDmFreely || acceptedRequest;
 
   const { data: messages = [], isLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", user?.id, otherUserId],
-    enabled: !!user && !!otherUserId && (dmStatus?.canDm === true || (dmStatus?.iFollowThem && dmStatus?.sentRequest?.status === "accepted")),
+    enabled: !!user && !!otherUserId && canChat,
     refetchInterval: 3000,
   });
 
@@ -155,7 +173,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   }, [socket, user, otherUserId]);
 
   useEffect(() => {
-    if (!user || !otherUserId || !dmStatus?.canDm) return;
+    if (!user || !otherUserId || !canChat) return;
     apiRequest("POST", `/api/messages/read/${otherUserId}`).then(() => {
       queryClient.invalidateQueries({ queryKey: ["/api/messages/unread/count"] });
       queryClient.invalidateQueries({ queryKey: ["/api/messages/conversations"] });
@@ -227,24 +245,11 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     return new Date(msg.createdAt).getTime() - new Date(prev.createdAt).getTime() < 2 * 60 * 1000;
   };
 
-  /* ── Derive messaging access from dmStatus ── */
-  const canDmFreely = dmStatus?.canDm === true;
-  const acceptedRequest = dmStatus?.iFollowThem && dmStatus?.sentRequest?.status === "accepted";
-  const canChat = canDmFreely || acceptedRequest;
-
   const renderAccessState = () => {
-    if (dmStatusLoading) {
-      return (
-        <div className="flex flex-col items-center justify-center flex-1 gap-3 px-6 py-12">
-          <div className="w-10 h-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-        </div>
-      );
-    }
-
     const name = getUserDisplayName(otherUser);
 
-    /* Completely blocked — no relationship */
-    if (!dmStatus?.iFollowThem && !dmStatus?.theyFollowMe) {
+    /* Completely blocked — confirmed no relationship */
+    if (!iFollowThem && !theyFollowMe) {
       return (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
           <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(100,85,210,0.10)", border: "1px solid rgba(120,100,255,0.18)" }}>
@@ -261,9 +266,9 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     }
 
     /* I follow them but they don't follow back — can send a request */
-    if (dmStatus?.iFollowThem && !dmStatus?.theyFollowMe) {
-      const pending = dmStatus.sentRequest?.status === "pending";
-      const declined = dmStatus.sentRequest?.status === "declined";
+    if (iFollowThem && !theyFollowMe) {
+      const pending = sentRequest?.status === "pending";
+      const declined = sentRequest?.status === "declined";
 
       if (pending) {
         return (
@@ -309,8 +314,8 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
       );
     }
 
-    /* They follow me but I don't follow them — blocked, tell user to follow back */
-    if (!dmStatus?.iFollowThem && dmStatus?.theyFollowMe) {
+    /* They follow me but I don't follow them — tell user to follow back */
+    if (!iFollowThem && theyFollowMe) {
       return (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
           <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(100,85,210,0.10)", border: "1px solid rgba(120,100,255,0.18)" }}>

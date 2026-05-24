@@ -3202,15 +3202,25 @@ export async function registerRoutes(
 
   app.get("/api/message-requests/status/:userId", isAuthenticated, async (req: any, res) => {
     try {
-      const me = (req.user as any).id;
-      const other = req.params.userId as string;
-      const [iMutual, iFollowThem, theyFollowMe, sentReq, receivedReq] = await Promise.all([
-        storage.isMutualFollow(me, other),
+      const me = String((req.user as any).id);
+      const other = String(req.params.userId);
+
+      const [iFollowThem, theyFollowMe] = await Promise.all([
         storage.isFollowing(me, other),
         storage.isFollowing(other, me),
-        storage.getMessageRequest(me, other),
-        storage.getMessageRequest(other, me),
       ]);
+      const iMutual = iFollowThem && theyFollowMe;
+
+      // Message request lookups — non-fatal; degrade gracefully if table issues
+      let sentReq = null as any;
+      let receivedReq = null as any;
+      try {
+        [sentReq, receivedReq] = await Promise.all([
+          storage.getMessageRequest(me, other),
+          storage.getMessageRequest(other, me),
+        ]);
+      } catch (_) { /* table may not exist yet in some envs */ }
+
       res.json({
         canDm: iMutual,
         isMutual: iMutual,
