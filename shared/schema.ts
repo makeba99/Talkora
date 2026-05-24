@@ -595,6 +595,27 @@ export const emailCampaigns = pgTable("email_campaigns", {
 }));
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
 
+export const messageRequests = pgTable("message_requests", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  fromId: varchar("from_id", { length: 36 }).notNull(),
+  toId: varchar("to_id", { length: 36 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  mrFromIdx: index("mr_from_id_idx").on(table.fromId),
+  mrToIdx: index("mr_to_id_idx").on(table.toId),
+  mrUniqueIdx: uniqueIndex("mr_unique_idx").on(table.fromId, table.toId),
+}));
+
+export const insertMessageRequestSchema = createInsertSchema(messageRequests).pick({
+  fromId: true,
+  toId: true,
+});
+
+export type InsertMessageRequest = z.infer<typeof insertMessageRequestSchema>;
+export type MessageRequest = typeof messageRequests.$inferSelect;
+
 export const notificationMutes = pgTable("notification_mutes", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   muterId: varchar("muter_id", { length: 36 }).notNull(),

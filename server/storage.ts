@@ -60,6 +60,8 @@ import {
   roomJoins,
   emailCampaigns,
   type EmailCampaign,
+  messageRequests,
+  type MessageRequest,
   notificationMutes,
   pushSubscriptions,
   type PushSubscription,
@@ -248,6 +250,13 @@ export interface IStorage {
   incrementCampaignClicks(id: string): Promise<void>;
 
   isFollowing(followerId: string, followingId: string): Promise<boolean>;
+  isMutualFollow(userA: string, userB: string): Promise<boolean>;
+
+  createMessageRequest(fromId: string, toId: string): Promise<MessageRequest>;
+  getMessageRequest(fromId: string, toId: string): Promise<MessageRequest | undefined>;
+  getPendingMessageRequests(toId: string): Promise<MessageRequest[]>;
+  updateMessageRequestStatus(id: string, status: "accepted" | "declined"): Promise<MessageRequest | undefined>;
+  deleteMessageRequest(fromId: string, toId: string): Promise<void>;
 
   savePushSubscription(userId: string, sub: { endpoint: string; p256dh: string; auth: string }): Promise<void>;
   deletePushSubscription(endpoint: string): Promise<void>;
@@ -537,6 +546,58 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(follows.followerId, followerId), eq(follows.followingId, followingId)))
       .limit(1);
     return rows.length > 0;
+  }
+
+  async isMutualFollow(userA: string, userB: string): Promise<boolean> {
+    const [aFollowsB, bFollowsA] = await Promise.all([
+      this.isFollowing(userA, userB),
+      this.isFollowing(userB, userA),
+    ]);
+    return aFollowsB && bFollowsA;
+  }
+
+  async createMessageRequest(fromId: string, toId: string): Promise<MessageRequest> {
+    const [row] = await db
+      .insert(messageRequests)
+      .values({ fromId, toId, status: "pending" })
+      .onConflictDoUpdate({
+        target: [messageRequests.fromId, messageRequests.toId],
+        set: { status: "pending", updatedAt: new Date() },
+      })
+      .returning();
+    return row;
+  }
+
+  async getMessageRequest(fromId: string, toId: string): Promise<MessageRequest | undefined> {
+    const [row] = await db
+      .select()
+      .from(messageRequests)
+      .where(and(eq(messageRequests.fromId, fromId), eq(messageRequests.toId, toId)))
+      .limit(1);
+    return row;
+  }
+
+  async getPendingMessageRequests(toId: string): Promise<MessageRequest[]> {
+    return db
+      .select()
+      .from(messageRequests)
+      .where(and(eq(messageRequests.toId, toId), eq(messageRequests.status, "pending")))
+      .orderBy(desc(messageRequests.createdAt));
+  }
+
+  async updateMessageRequestStatus(id: string, status: "accepted" | "declined"): Promise<MessageRequest | undefined> {
+    const [row] = await db
+      .update(messageRequests)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(messageRequests.id, id))
+      .returning();
+    return row;
+  }
+
+  async deleteMessageRequest(fromId: string, toId: string): Promise<void> {
+    await db
+      .delete(messageRequests)
+      .where(and(eq(messageRequests.fromId, fromId), eq(messageRequests.toId, toId)));
   }
 
   async getFollowers(userId: string): Promise<Follow[]> {

@@ -3184,11 +3184,135 @@ export async function registerRoutes(
 
   const sendMessageBody = insertMessageSchema;
 
+  // ── Message Requests ─────────────────────────────────────────────────────
+
+  app.get("/api/message-requests/pending", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const requests = await storage.getPendingMessageRequests(userId);
+      // Attach sender user data
+      const senderIds = requests.map((r) => r.fromId);
+      const usersMap = senderIds.length > 0 ? await storage.getUsersByIds(senderIds) : new Map();
+      const result = requests.map((r) => ({ ...r, fromUser: usersMap.get(r.fromId) ?? null }));
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/message-requests/status/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const me = (req.user as any).id;
+      const other = req.params.userId as string;
+      const [iMutual, iFollowThem, theyFollowMe, sentReq, receivedReq] = await Promise.all([
+        storage.isMutualFollow(me, other),
+        storage.isFollowing(me, other),
+        storage.isFollowing(other, me),
+        storage.getMessageRequest(me, other),
+        storage.getMessageRequest(other, me),
+      ]);
+      res.json({
+        canDm: iMutual,
+        isMutual: iMutual,
+        iFollowThem,
+        theyFollowMe,
+        sentRequest: sentReq ?? null,
+        receivedRequest: receivedReq ?? null,
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/message-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const me = (req.user as any).id;
+      const { toId } = req.body as { toId: string };
+      if (!toId || toId === me) return res.status(400).json({ message: "Invalid request" });
+
+      // Must follow them (one-way minimum)
+      const doesFollow = await storage.isFollowing(me, toId);
+      if (!doesFollow) return res.status(403).json({ message: "You must follow this user to send a message request." });
+
+      // Already mutual — no request needed
+      const mutual = await storage.isFollowing(toId, me);
+      if (mutual) return res.status(400).json({ message: "You can message this user directly." });
+
+      const request = await storage.createMessageRequest(me, toId);
+
+      // Notify recipient via socket
+      const toSocket = userSockets.get(toId);
+      if (toSocket) {
+        const fromUser = await storage.getUser(me);
+        io.to(toSocket).emit("message_request:new", { ...request, fromUser });
+      }
+
+      res.json(request);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/message-requests/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const me = (req.user as any).id;
+      const { status } = req.body as { status: "accepted" | "declined" };
+      if (!["accepted", "declined"].includes(status)) {
+        return res.status(400).json({ message: "status must be 'accepted' or 'declined'" });
+      }
+
+      const pending = await storage.getPendingMessageRequests(me);
+      const request = pending.find((r) => r.id === req.params.id);
+      if (!request) return res.status(404).json({ message: "Request not found or already actioned" });
+
+      const updated = await storage.updateMessageRequestStatus(req.params.id, status);
+
+      // Notify sender via socket
+      const fromSocket = userSockets.get(request.fromId);
+      if (fromSocket) {
+        io.to(fromSocket).emit("message_request:updated", updated);
+      }
+
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.post("/api/messages", isAuthenticated, messageRateLimiter, async (req, res) => {
     try {
       const parsed = sendMessageBody.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid message data" });
+      }
+
+      // ── Relationship gate ──────────────────────────────────────────────────
+      const senderId = parsed.data.fromId;
+      const recipientId = parsed.data.toId;
+
+      const [senderFollowsRecipient, recipientFollowsSender] = await Promise.all([
+        storage.isFollowing(senderId, recipientId),
+        storage.isFollowing(recipientId, senderId),
+      ]);
+
+      const isMutual = senderFollowsRecipient && recipientFollowsSender;
+
+      if (!isMutual) {
+        // Check if an accepted message request exists
+        if (senderFollowsRecipient) {
+          const req2 = await storage.getMessageRequest(senderId, recipientId);
+          if (!req2 || req2.status !== "accepted") {
+            return res.status(403).json({
+              message: "Send a message request first. The user must accept before you can message them.",
+              code: "REQUEST_REQUIRED",
+            });
+          }
+        } else {
+          return res.status(403).json({
+            message: "You can only message users who mutually follow you.",
+            code: "NO_RELATIONSHIP",
+          });
+        }
       }
 
       const sender = await storage.getUser(parsed.data.fromId);

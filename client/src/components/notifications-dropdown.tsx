@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Award, Bell, Check, Crown, Shield, ShieldAlert, ShieldCheck, Ban, ShieldOff, Palette } from "lucide-react";
+import { AlertTriangle, Award, Bell, Check, Crown, Shield, ShieldAlert, ShieldCheck, Ban, ShieldOff, Palette, MessageCircle, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -22,6 +22,15 @@ interface NotificationsDropdownProps {
   hideTrigger?: boolean;
 }
 
+interface PendingRequest {
+  id: string;
+  fromId: string;
+  toId: string;
+  status: string;
+  createdAt: string;
+  fromUser: User | null;
+}
+
 export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hideTrigger = false }: NotificationsDropdownProps = {}) {
   const { user } = useAuth();
   const { socket } = useSocket();
@@ -31,6 +40,33 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
     queryKey: ["/api/notifications"],
     enabled: !!user,
     refetchInterval: 10000,
+  });
+
+  const { data: pendingRequests = [] } = useQuery<PendingRequest[]>({
+    queryKey: ["/api/message-requests/pending"],
+    queryFn: async () => {
+      const res = await fetch("/api/message-requests/pending", { credentials: "include" });
+      return res.json();
+    },
+    enabled: !!user,
+    refetchInterval: 20000,
+  });
+
+  const respondRequestMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "accepted" | "declined" }) => {
+      const res = await apiRequest("PATCH", `/api/message-requests/${id}`, { status });
+      return res.json();
+    },
+    onSuccess: (_data, variables) => {
+      toast({
+        title: variables.status === "accepted" ? "Request accepted" : "Request declined",
+        description: variables.status === "accepted" ? "You can now exchange messages." : "The request has been declined.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/message-requests/pending"] });
+    },
+    onError: () => {
+      toast({ title: "Action failed", description: "Please try again.", variant: "destructive" });
+    },
   });
 
   const { data: allUsers = [] } = useQuery<User[]>({
@@ -47,7 +83,8 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
     },
   });
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadNotifCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = unreadNotifCount + pendingRequests.length;
   const usersMap = new Map(allUsers.map((u) => [u.id, u]));
 
   useEffect(() => {
@@ -121,14 +158,21 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
       });
     };
 
+    const handleNewMessageRequest = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/message-requests/pending"] });
+      toast({ title: "New message request", description: "Someone wants to message you." });
+    };
+
     socket.on("admin:notification", refreshNotifications);
     socket.on("admin:warning", handleWarning);
     socket.on("admin:broadcast_notification", handleBroadcastNotification);
+    socket.on("message_request:new", handleNewMessageRequest);
 
     return () => {
       socket.off("admin:notification", refreshNotifications);
       socket.off("admin:warning", handleWarning);
       socket.off("admin:broadcast_notification", handleBroadcastNotification);
+      socket.off("message_request:new", handleNewMessageRequest);
     };
   }, [socket, toast]);
 
@@ -231,7 +275,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
       <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between gap-2 p-3 border-b">
           <span className="font-semibold text-sm">Notifications</span>
-          {unreadCount > 0 && (
+          {unreadNotifCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -244,12 +288,68 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-80">
-          {notifications.length === 0 ? (
+        <ScrollArea className="max-h-[420px]">
+          {/* Pending message requests */}
+          {pendingRequests.length > 0 && (
+            <div className="p-2 border-b border-border/50">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60 px-1 pb-1.5 flex items-center gap-1">
+                <MessageCircle className="w-3 h-3" /> Message requests ({pendingRequests.length})
+              </p>
+              <div className="space-y-1">
+                {pendingRequests.map((req) => {
+                  const fromUser = req.fromUser;
+                  const isPending = respondRequestMutation.isPending;
+                  return (
+                    <div
+                      key={req.id}
+                      className="flex items-center gap-2.5 p-2 rounded-md bg-primary/5 border border-primary/10"
+                      data-testid={`message-request-${req.id}`}
+                    >
+                      <Avatar className="w-8 h-8 flex-shrink-0">
+                        <AvatarImage src={fromUser?.profileImageUrl || undefined} alt="" />
+                        <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                          {getUserInitials(fromUser)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium leading-snug truncate">
+                          {getUserDisplayName(fromUser)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">wants to message you</p>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => respondRequestMutation.mutate({ id: req.id, status: "accepted" })}
+                          disabled={isPending}
+                          className="w-6 h-6 rounded-full flex items-center justify-center bg-green-500/15 hover:bg-green-500/25 text-green-400 transition-colors disabled:opacity-50"
+                          data-testid={`button-accept-request-${req.id}`}
+                          title="Accept"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => respondRequestMutation.mutate({ id: req.id, status: "declined" })}
+                          disabled={isPending}
+                          className="w-6 h-6 rounded-full flex items-center justify-center bg-destructive/15 hover:bg-destructive/25 text-destructive/80 transition-colors disabled:opacity-50"
+                          data-testid={`button-decline-request-${req.id}`}
+                          title="Decline"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Regular notifications */}
+          {notifications.length === 0 && pendingRequests.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               No notifications yet
             </p>
-          ) : (
+          ) : notifications.length === 0 ? null : (
             <div className="p-1">
               {notifications.slice(0, 20).map((notif) => {
                 const fromUser = usersMap.get(notif.fromUserId);
