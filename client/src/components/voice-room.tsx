@@ -21,9 +21,9 @@ import {
   Volume2, Copy, Flag, Ban, RefreshCw, Trash2, ChevronUp, ChevronsDown, Maximize2, Minimize2,
   Tv, BookOpen, Gamepad2, ExternalLink, Volume1, ChevronLeft, ChevronRight, CornerUpLeft, Eye, Bell, BellOff, LockKeyhole,
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
-  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
+  BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, SkipBack, Smile,
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, SendHorizontal,
-  Pin, Languages
+  Pin, Languages, Headphones, ListMusic
 } from "lucide-react";
 import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -2482,6 +2482,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [readCatalog, setReadCatalog] = useState<any[]>([]);
   const [readAudiobooks, setReadAudiobooks] = useState<any[]>([]);
   const [readVideos, setReadVideos] = useState<any[]>([]);
+  const [audioPlayer, setAudioPlayer] = useState<{
+    book: any;
+    chapters: Array<{ n: number; title: string; url: string; duration: string | null }>;
+    chapterIdx: number;
+    loading: boolean;
+  } | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [readLoading, setReadLoading] = useState(false);
   const [readingHistory, setReadingHistory] = useState<Array<{ id: string | number; title: string; author: string; coverUrl: string | null; lastReadAt: string }>>(() => {
     try { return JSON.parse(localStorage.getItem("vextorn_reading_history") || "[]"); } catch { return []; }
@@ -8604,6 +8611,35 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
   };
 
+  const handleOpenAudiobook = async (audiobook: any) => {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    setAudioPlayer({ book: audiobook, chapters: [], chapterIdx: 0, loading: true });
+    try {
+      const archiveId = audiobook.archiveId;
+      if (archiveId) {
+        const res = await fetch(`/api/audiobook/chapters?id=${encodeURIComponent(archiveId)}`, { credentials: "include" });
+        const data = await res.json();
+        if (data.chapters?.length > 0) {
+          setAudioPlayer(prev => prev ? { ...prev, chapters: data.chapters, loading: false } : null);
+          return;
+        }
+      }
+      setAudioPlayer(prev => prev ? { ...prev, loading: false } : null);
+    } catch {
+      setAudioPlayer(prev => prev ? { ...prev, loading: false } : null);
+    }
+  };
+
+  const handleAudioChapter = (idx: number) => {
+    setAudioPlayer(prev => prev ? { ...prev, chapterIdx: idx } : null);
+    setTimeout(() => {
+      if (audioRef.current) {
+        audioRef.current.load();
+        audioRef.current.play().catch(() => {});
+      }
+    }, 50);
+  };
+
   const handleTextTranslate = async (text: string) => {
     const clean = text.trim().replace(/\s+/g, " ");
     if (!clean || clean.length < 2) return;
@@ -10988,7 +11024,129 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </div>
         )}
 
-        {selectedBook && showEReader ? (
+        {audioPlayer !== null ? (
+          /* ── In-platform audiobook player ─────────────────────────── */
+          <div className="flex flex-col flex-1 min-h-0">
+            {/* Player header */}
+            <div className="flex items-start gap-2.5 p-3 border-b flex-shrink-0">
+              <div className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: "hsla(var(--neu-orange) / 0.16)", border: "1px solid hsla(var(--neu-orange) / 0.28)" }}>
+                <Headphones className="w-5 h-5" style={{ color: "hsla(var(--neu-orange-hi) / 0.9)" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold line-clamp-2 leading-tight">{audioPlayer.book.title}</p>
+                {audioPlayer.book.author && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{audioPlayer.book.author}</p>
+                )}
+                {audioPlayer.chapters.length > 0 && !audioPlayer.loading && (
+                  <p className="text-[10px] mt-0.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.7)" }}>
+                    Chapter {audioPlayer.chapterIdx + 1} of {audioPlayer.chapters.length}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => { if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; } setAudioPlayer(null); }}
+                className="p-1 rounded hover:opacity-70 transition-opacity flex-shrink-0 mt-0.5"
+                data-testid="button-close-audioplayer"
+                aria-label="Close audio player"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Loading state */}
+            {audioPlayer.loading && (
+              <div className="flex items-center justify-center gap-2 py-8">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Loading chapters…</span>
+              </div>
+            )}
+
+            {/* No chapters fallback */}
+            {!audioPlayer.loading && audioPlayer.chapters.length === 0 && (
+              <div className="p-4 text-center space-y-2">
+                <p className="text-[11px] text-muted-foreground">Chapter audio unavailable for this book.</p>
+                {audioPlayer.book.url && (
+                  <a href={audioPlayer.book.url} target="_blank" rel="noopener noreferrer"
+                    className="text-[11px] text-primary hover:underline inline-flex items-center gap-1">
+                    Open on LibriVox <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Audio controls + chapter list */}
+            {!audioPlayer.loading && audioPlayer.chapters.length > 0 && (
+              <>
+                {/* Controls */}
+                <div className="flex flex-col gap-2 px-3 py-2.5 border-b flex-shrink-0">
+                  <p className="text-[10px] font-medium truncate" style={{ color: "hsla(var(--neu-orange-hi) / 0.85)" }}>
+                    {audioPlayer.chapters[audioPlayer.chapterIdx]?.title}
+                    {audioPlayer.chapters[audioPlayer.chapterIdx]?.duration && (
+                      <span className="text-muted-foreground ml-1">· {audioPlayer.chapters[audioPlayer.chapterIdx].duration}</span>
+                    )}
+                  </p>
+                  <audio
+                    ref={audioRef}
+                    src={audioPlayer.chapters[audioPlayer.chapterIdx]?.url || ""}
+                    controls
+                    onEnded={() => {
+                      if (audioPlayer.chapterIdx < audioPlayer.chapters.length - 1) {
+                        handleAudioChapter(audioPlayer.chapterIdx + 1);
+                      }
+                    }}
+                    preload="metadata"
+                    className="w-full h-8"
+                    style={{ accentColor: "hsla(var(--neu-orange-hi) / 0.9)" }}
+                    data-testid="audio-player-controls"
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => audioPlayer.chapterIdx > 0 && handleAudioChapter(audioPlayer.chapterIdx - 1)}
+                      disabled={audioPlayer.chapterIdx === 0}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                      data-testid="button-prev-chapter"
+                    >
+                      <SkipBack className="w-3 h-3" /> Prev
+                    </button>
+                    <span className="text-[10px] text-muted-foreground">{audioPlayer.chapterIdx + 1} / {audioPlayer.chapters.length}</span>
+                    <button
+                      onClick={() => audioPlayer.chapterIdx < audioPlayer.chapters.length - 1 && handleAudioChapter(audioPlayer.chapterIdx + 1)}
+                      disabled={audioPlayer.chapterIdx === audioPlayer.chapters.length - 1}
+                      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                      data-testid="button-next-chapter"
+                    >
+                      Next <SkipForward className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Chapter list */}
+                <div className="flex items-center gap-1.5 px-3 pt-2 pb-1 flex-shrink-0">
+                  <ListMusic className="w-3 h-3 text-muted-foreground" />
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Chapters</p>
+                </div>
+                <ScrollArea className="flex-1 min-h-0">
+                  <div className="px-3 pb-3 space-y-0.5">
+                    {audioPlayer.chapters.map((ch, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleAudioChapter(i)}
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${i === audioPlayer.chapterIdx ? "bg-orange-500/15 text-orange-300" : "hover:bg-muted/50 text-foreground/80"}`}
+                        data-testid={`button-chapter-${i}`}
+                      >
+                        <span className="text-[9px] w-4 text-center opacity-50 flex-shrink-0">{ch.n}</span>
+                        <span className="text-[11px] flex-1 min-w-0 truncate">{ch.title}</span>
+                        {ch.duration && <span className="text-[9px] text-muted-foreground flex-shrink-0">{ch.duration}</span>}
+                        {i === audioPlayer.chapterIdx && <Volume1 className="w-3 h-3 flex-shrink-0" style={{ color: "hsla(var(--neu-orange-hi) / 0.8)" }} />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </>
+            )}
+          </div>
+        ) : selectedBook && showEReader ? (
           <div className="flex flex-col flex-1 min-h-0 p-3 gap-3">
             <div className="p-3 rounded-xl border space-y-3">
               <div className="flex items-start gap-2">
@@ -11179,29 +11337,28 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 {readAudiobooks.length > 0 && (
                   <div className="space-y-1.5 pt-2" data-testid="section-audiobooks">
                     <p className="text-[10px] font-semibold uppercase tracking-wide px-1 flex items-center gap-1" style={{ color: "hsla(var(--neu-orange-hi) / 0.92)" }}>
-                      <Volume1 className="w-3 h-3" /> Free audiobooks (LibriVox)
+                      <Headphones className="w-3 h-3" /> Free audiobooks — play in room
                     </p>
                     {readAudiobooks.map((a: any) => (
-                      <a
+                      <button
                         key={a.id}
-                        href={a.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
-                        data-testid={`link-audiobook-${a.id}`}
+                        onClick={() => handleOpenAudiobook(a)}
+                        className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
+                        data-testid={`button-audiobook-${a.id}`}
                       >
                         <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{ background: "hsla(var(--neu-orange) / 0.16)", border: "1px solid hsla(var(--neu-orange) / 0.30)" }}>
-                          <Volume1 className="w-5 h-5" style={{ color: "hsla(var(--neu-orange-hi) / 0.92)" }} />
+                          <Headphones className="w-5 h-5" style={{ color: "hsla(var(--neu-orange-hi) / 0.92)" }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold line-clamp-2">{a.title}</p>
                           {a.author && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{a.author}</p>}
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            {a.runtime ? `${a.runtime} • ` : ""}Listen on LibriVox
+                          <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: "hsla(var(--neu-orange-hi) / 0.7)" }}>
+                            <Play className="w-2.5 h-2.5" />
+                            {a.runtime ? `${a.runtime} · ` : ""}Play here
+                            {!a.archiveId && <span className="text-muted-foreground ml-1">(limited)</span>}
                           </p>
                         </div>
-                        <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0 mt-1" />
-                      </a>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -11241,31 +11398,28 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 {readCatalog.length > 0 && (
                   <div className="space-y-1.5 pt-2" data-testid="section-catalog">
                     <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wide px-1 flex items-center gap-1">
-                      {readSearch.trim() ? <><BookOpen className="w-3 h-3" /> More from Open Library</> : <><TrendingUp className="w-3 h-3" /> Trending This Week</>}
+                      {readSearch.trim() ? <><BookOpen className="w-3 h-3" /> Also in catalog</> : <><TrendingUp className="w-3 h-3" /> Trending This Week</>}
                     </p>
                     {readCatalog.map((c: any) => (
-                      <a
+                      <div
                         key={c.key}
-                        href={c.openLibraryUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
-                        data-testid={`link-catalog-${c.key?.replace(/\W/g, '')}`}
+                        className="flex items-start gap-2 p-2 rounded-lg border bg-muted/5"
+                        data-testid={`card-catalog-${c.key?.replace(/\W/g, '')}`}
                       >
                         {c.coverUrl ? (
-                          <img loading="lazy" decoding="async" src={c.coverUrl} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
+                          <img loading="lazy" decoding="async" src={c.coverUrl} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0 bg-muted" />
                         ) : (
-                          <div className="w-12 h-16 rounded bg-muted flex-shrink-0 flex items-center justify-center">
-                            <BookOpen className="w-5 h-5 text-muted-foreground" />
+                          <div className="w-10 h-14 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                            <BookOpen className="w-4 h-4 text-muted-foreground" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold line-clamp-2">{c.title}</p>
                           {c.author && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{c.author}</p>}
-                          {c.year && <p className="text-[10px] text-muted-foreground mt-0.5">{c.year}</p>}
+                          {c.year && <p className="text-[10px] text-muted-foreground/60 mt-0.5">{c.year}</p>}
+                          <p className="text-[9px] text-muted-foreground/40 mt-1">Not available as free text</p>
                         </div>
-                        <ExternalLink className="w-3 h-3 text-muted-foreground flex-shrink-0 mt-1" />
-                      </a>
+                      </div>
                     ))}
                   </div>
                 )}

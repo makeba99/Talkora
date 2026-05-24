@@ -2258,42 +2258,59 @@ export async function registerRoutes(
     }
   });
 
-  // Unified library search: combines free Gutenberg books + Open Library catalog +
-  // LibriVox audiobook fallback + YouTube audiobook/summary suggestions when no
-  // free full-text match is available.
+  // Unified library search — all sources run in parallel for speed.
+  // Sources: Project Gutenberg (free full text) + Open Library catalog +
+  // LibriVox free audiobooks (in-platform player) + YouTube fallback.
+  const _libCache = new Map<string, { ts: number; data: any }>();
+  const _LIB_TTL = 20 * 60 * 1000; // 20 min
+
   app.get("/api/library/search", isAuthenticated, async (req: any, res) => {
     const query = String(req.query.q || "").trim();
     const language = String(req.query.lang || "en").trim().slice(0, 2) || "en";
-    const wantSuggestions = String(req.query.suggest || "1") !== "0";
+    const cacheKey = `${query}|${language}`;
+    const cached = _libCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < _LIB_TTL) return res.json(cached.data);
 
-    const fetchJson = async (url: string, timeoutMs = 6000) => {
+    const safeFetch = async (url: string, ms = 7000) => {
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), timeoutMs);
+      const t = setTimeout(() => ctrl.abort(), ms);
       try {
-        const r = await fetch(url, {
-          signal: ctrl.signal,
-          headers: { "User-Agent": "Vextorn/1.0 (library-search)" },
-        });
-        if (!r.ok) return null;
-        return await r.json();
-      } catch {
-        return null;
-      } finally {
+        const r = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": "Vextorn/1.0 (library)" } });
         clearTimeout(t);
-      }
+        return r.ok ? await r.json() : null;
+      } catch { clearTimeout(t); return null; }
+    };
+
+    const mapLv = (b: any) => {
+      const archiveId = b.url_iarchive
+        ? (b.url_iarchive.match(/archive\.org\/details\/([^/?#]+)/)?.[1] ?? null)
+        : null;
+      return {
+        id: b.id,
+        title: b.title,
+        author: Array.isArray(b.authors) && b.authors.length
+          ? `${b.authors[0].first_name || ""} ${b.authors[0].last_name || ""}`.trim()
+          : null,
+        url: b.url_librivox || b.url_iarchive || null,
+        url_iarchive: b.url_iarchive || null,
+        archiveId,
+        runtime: b.totaltime || null,
+        language: b.language || null,
+      };
     };
 
     try {
-      // 1) Free full text from Project Gutenberg
       const gutendexUrl = query
         ? `https://gutendex.com/books/?search=${encodeURIComponent(query)}&languages=${language}`
         : `https://gutendex.com/books/?sort=popular&languages=${language}`;
-      const gutendex = await fetchJson(gutendexUrl);
-      const books = (gutendex?.results || []).slice(0, 24);
 
-      // If no query — also fetch Open Library trending so users see modern books
+      // Default view: parallel Gutenberg + trending
       if (!query) {
-        const trending = await fetchJson(`https://openlibrary.org/trending/weekly.json?limit=16`);
+        const [gutendex, trending] = await Promise.all([
+          safeFetch(gutendexUrl),
+          safeFetch(`https://openlibrary.org/trending/weekly.json?limit=16`),
+        ]);
+        const books = (gutendex?.results || []).slice(0, 24);
         const trendingBooks = (trending?.works || []).slice(0, 16).map((w: any) => ({
           key: w.key,
           title: w.title,
@@ -2301,84 +2318,113 @@ export async function registerRoutes(
           year: w.first_publish_year || null,
           coverUrl: w.cover_i ? `https://covers.openlibrary.org/b/id/${w.cover_i}-M.jpg` : null,
           openLibraryUrl: `https://openlibrary.org${w.key}`,
-          ratingsAvg: w.ratings_average || null,
-          ratingsCount: w.ratings_count || null,
         }));
-        return res.json({ query, books, openLibrary: trendingBooks, audiobooks: [], videos: [] });
+        const data = { query, books, openLibrary: trendingBooks, audiobooks: [], videos: [] };
+        _libCache.set(cacheKey, { ts: Date.now(), data });
+        return res.json(data);
       }
 
-      // If we have plenty of free books just return them.
-      if (books.length >= 5 || !wantSuggestions) {
-        return res.json({ query, books, openLibrary: [], audiobooks: [], videos: [] });
-      }
+      // All 4 sources run in parallel
+      const [gutR, olR, lvTitleR, lvAuthorR] = await Promise.allSettled([
+        safeFetch(gutendexUrl),
+        safeFetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=8&fields=key,title,author_name,first_publish_year,cover_i,subject`),
+        safeFetch(`https://librivox.org/api/feed/audiobooks/?title=${encodeURIComponent(query)}&format=json&limit=6`),
+        safeFetch(`https://librivox.org/api/feed/audiobooks/?author=${encodeURIComponent(query)}&format=json&limit=4`),
+      ]);
 
-      // 2) Open Library catalog (so users see the book exists even if not free here)
-      const olData = await fetchJson(
-        `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=8&fields=key,title,author_name,first_publish_year,cover_i,subject`
-      );
-      const openLibrary = (olData?.docs || []).slice(0, 8).map((d: any) => ({
-        key: d.key,
-        title: d.title,
-        author: Array.isArray(d.author_name) ? d.author_name.join(", ") : null,
-        year: d.first_publish_year || null,
-        coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : null,
-        openLibraryUrl: `https://openlibrary.org${d.key}`,
-        readUrl: `https://archive.org/details/${(d.key || "").replace("/works/", "")}`,
-      }));
+      const books = ((gutR.status === "fulfilled" ? gutR.value?.results : null) || []).slice(0, 24);
 
-      // 3) Free audiobooks from LibriVox
-      const lvData = await fetchJson(
-        `https://librivox.org/api/feed/audiobooks/?title=${encodeURIComponent(query)}&format=json&limit=6`
-      );
-      let audiobooks = (lvData?.books || []).slice(0, 6).map((b: any) => ({
-        id: b.id,
-        title: b.title,
-        author: Array.isArray(b.authors) && b.authors.length
-          ? `${b.authors[0].first_name || ""} ${b.authors[0].last_name || ""}`.trim()
-          : null,
-        url: b.url_librivox || b.url_iarchive || null,
-        runtime: b.totaltime || null,
-        language: b.language || null,
-      })).filter((a: any) => a.url);
+      const openLibrary = books.length < 5
+        ? ((olR.status === "fulfilled" ? olR.value?.docs : null) || []).slice(0, 8).map((d: any) => ({
+            key: d.key,
+            title: d.title,
+            author: Array.isArray(d.author_name) ? d.author_name.join(", ") : null,
+            year: d.first_publish_year || null,
+            coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : null,
+            openLibraryUrl: `https://openlibrary.org${d.key}`,
+          }))
+        : [];
 
-      // Fallback: also try by author keyword if title search returned nothing
-      if (audiobooks.length === 0) {
-        const lvAuthor = await fetchJson(
-          `https://librivox.org/api/feed/audiobooks/?author=${encodeURIComponent(query)}&format=json&limit=4`
-        );
-        audiobooks = (lvAuthor?.books || []).slice(0, 4).map((b: any) => ({
-          id: b.id,
-          title: b.title,
-          author: Array.isArray(b.authors) && b.authors.length
-            ? `${b.authors[0].first_name || ""} ${b.authors[0].last_name || ""}`.trim()
-            : null,
-          url: b.url_librivox || b.url_iarchive || null,
-          runtime: b.totaltime || null,
-          language: b.language || null,
-        })).filter((a: any) => a.url);
-      }
+      const lvTitleBooks: any[] = (lvTitleR.status === "fulfilled" ? lvTitleR.value?.books : null) || [];
+      const lvAuthorBooks: any[] = lvTitleBooks.length === 0
+        ? ((lvAuthorR.status === "fulfilled" ? lvAuthorR.value?.books : null) || [])
+        : [];
+      const audiobooks = [...lvTitleBooks, ...lvAuthorBooks].slice(0, 6).map(mapLv).filter((a: any) => a.url);
 
-      // 4) YouTube audiobook + summary videos (best-effort, never fatal)
       let videos: any[] = [];
-      try {
-        const ytSearch = await import("youtube-search-api");
-        const ytQuery = `${query} audiobook full`;
-        const yt = await ytSearch.GetListByKeyword(ytQuery, false, 6, [{ type: "video" }]);
-        videos = (yt?.items || []).slice(0, 6).map((v: any) => ({
-          id: v.id,
-          title: v.title,
-          channel: v.channelTitle,
-          thumbnail: v.thumbnail?.thumbnails?.[v.thumbnail.thumbnails.length - 1]?.url || null,
-          url: `https://www.youtube.com/watch?v=${v.id}`,
-        }));
-      } catch (e) {
-        videos = [];
+      if (books.length < 3) {
+        try {
+          const ytSearch = await import("youtube-search-api");
+          const yt = await ytSearch.GetListByKeyword(`${query} audiobook full`, false, 5, [{ type: "video" }]);
+          videos = (yt?.items || []).slice(0, 5).map((v: any) => ({
+            id: v.id, title: v.title, channel: v.channelTitle,
+            thumbnail: v.thumbnail?.thumbnails?.[v.thumbnail.thumbnails.length - 1]?.url || null,
+          }));
+        } catch {}
       }
 
-      res.json({ query, books, openLibrary, audiobooks, videos });
+      const data = { query, books, openLibrary, audiobooks, videos };
+      _libCache.set(cacheKey, { ts: Date.now(), data });
+      res.json(data);
     } catch (err: any) {
       console.error("Library search error:", err);
       res.status(500).json({ message: "Search failed" });
+    }
+  });
+
+  // Fetch LibriVox/archive.org chapter list for in-platform audiobook playback.
+  app.get("/api/audiobook/chapters", isAuthenticated, async (req: any, res) => {
+    const archiveId = String(req.query.id || "").replace(/[^a-zA-Z0-9_.\-]/g, "").slice(0, 200);
+    if (!archiveId) return res.status(400).json({ error: "Missing id" });
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 9000);
+    try {
+      const r = await fetch(`https://archive.org/metadata/${archiveId}`, {
+        signal: ctrl.signal, headers: { "User-Agent": "Vextorn/1.0" },
+      });
+      clearTimeout(t);
+      if (!r.ok) return res.json({ id: archiveId, chapters: [] });
+      const meta = await r.json();
+
+      const allFiles: any[] = (meta.files || []).filter((f: any) => {
+        if (!f.name) return false;
+        const n = f.name.toLowerCase();
+        return (n.endsWith(".mp3") || n.endsWith(".ogg")) && !n.startsWith(".");
+      });
+      const hasHighQ = allFiles.some((f: any) => {
+        const n = f.name.toLowerCase();
+        return !n.includes("_128kb") && !n.includes("_64kb") && !n.includes("64kbps") && !n.includes("_128kbps");
+      });
+      const files = (hasHighQ
+        ? allFiles.filter((f: any) => {
+            const n = f.name.toLowerCase();
+            return !n.includes("_128kb") && !n.includes("_64kb") && !n.includes("64kbps") && !n.includes("_128kbps");
+          })
+        : allFiles
+      ).sort((a: any, b: any) => {
+        const na = parseInt((a.name.match(/(\d+)/) || ["0","0"])[1]) || 0;
+        const nb = parseInt((b.name.match(/(\d+)/) || ["0","0"])[1]) || 0;
+        return na - nb || a.name.localeCompare(b.name);
+      }).slice(0, 150);
+
+      const fmtDur = (secs: any) => {
+        const s = parseFloat(secs);
+        if (!s || isNaN(s)) return null;
+        const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = Math.floor(s % 60);
+        return h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(sc).padStart(2,"0")}` : `${m}:${String(sc).padStart(2,"0")}`;
+      };
+
+      const chapters = files.map((f: any, i: number) => ({
+        n: i + 1,
+        title: (f.title || f.name.replace(/\.(mp3|ogg)$/i, "").replace(/[_-]+/g, " ")).trim() || `Track ${i + 1}`,
+        url: `https://archive.org/download/${archiveId}/${f.name}`,
+        duration: fmtDur(f.length),
+      }));
+
+      res.json({ id: archiveId, chapters });
+    } catch {
+      clearTimeout(t);
+      res.json({ id: archiveId, chapters: [] });
     }
   });
 
