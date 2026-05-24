@@ -1079,82 +1079,70 @@ export default function Lobby() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("presence:online", (userIds: string[]) => {
+    const handlePresenceOnline = (userIds: string[]) => {
       setOnlineUsers(new Set(userIds));
-    });
+    };
 
-    socket.on("presence:update", (data: { userId: string; status: string }) => {
+    const handlePresenceUpdate = (data: { userId: string; status: string }) => {
       setOnlineUsers((prev) => {
         const next = new Set(prev);
         if (data.status === "online") next.add(data.userId);
         else next.delete(data.userId);
         return next;
       });
-    });
+    };
 
-    socket.on(
-      "room:participants-update",
-      (data: { roomId: string; participants: User[] }) => {
-        setRoomParticipants((prev) => ({
-          ...prev,
-          [data.roomId]: data.participants,
-        }));
-      }
-    );
+    const handleRoomParticipantsUpdate = (data: { roomId: string; participants: User[] }) => {
+      setRoomParticipants((prev) => ({
+        ...prev,
+        [data.roomId]: data.participants,
+      }));
+    };
 
-    socket.on("room:created", (newRoom: any) => {
-      // Always prefer setQueryData for instant UI updates. The SSE stream
-      // is the authoritative real-time source — no invalidation needed here.
+    const handleRoomCreated = (newRoom: any) => {
       if (newRoom?.id) {
         queryClient.setQueryData<any[]>(["/api/rooms"], (old) =>
           old ? (old.some(r => r.id === newRoom.id) ? old : [newRoom, ...old]) : [newRoom]
         );
       }
-      // If newRoom has no id (malformed), the SSE broadcastRooms() will
-      // arrive momentarily and correct the cache automatically.
-    });
+    };
 
-    socket.on("room:updated", (updatedRoom: any) => {
+    const handleRoomUpdated = (updatedRoom: any) => {
       if (!updatedRoom?.id) return;
       queryClient.setQueryData<any[]>(["/api/rooms"], (old) => {
         if (!old) return old;
         return old.map(r => r.id === updatedRoom.id ? { ...r, ...updatedRoom } : r);
       });
-    });
+    };
 
-    socket.on(
-      "user:profile-updated",
-      (data: {
-        userId: string;
-        displayName?: string;
-        profileImageUrl?: string | null;
-        avatarRing?: string | null;
-        flairBadge?: string | null;
-        profileDecoration?: string | null;
-      }) => {
-        if (!data?.userId) return;
-        // Patch the user's profile fields in every room they're currently in
-        // so lobby cards refresh avatars/rings/decorations without a reload.
-        setRoomParticipants((prev) => {
-          let changed = false;
-          const next: typeof prev = {};
-          for (const [roomId, parts] of Object.entries(prev)) {
-            const idx = parts.findIndex((p) => p.id === data.userId);
-            if (idx === -1) {
-              next[roomId] = parts;
-            } else {
-              changed = true;
-              const updated = [...parts];
-              updated[idx] = { ...updated[idx], ...data };
-              next[roomId] = updated;
-            }
+    const handleUserProfileUpdated = (data: {
+      userId: string;
+      displayName?: string;
+      profileImageUrl?: string | null;
+      avatarRing?: string | null;
+      flairBadge?: string | null;
+      profileDecoration?: string | null;
+    }) => {
+      if (!data?.userId) return;
+      setRoomParticipants((prev) => {
+        let changed = false;
+        const next: typeof prev = {};
+        for (const [roomId, parts] of Object.entries(prev)) {
+          const idx = parts.findIndex((p) => p.id === data.userId);
+          if (idx === -1) {
+            next[roomId] = parts;
+          } else {
+            changed = true;
+            const updated = [...parts];
+            updated[idx] = { ...updated[idx], ...data };
+            next[roomId] = updated;
           }
-          return changed ? next : prev;
-        });
-      }
-    );
+        }
+        return changed ? next : prev;
+      });
+    };
 
-    socket.on("room:deleted", (data: { roomId: string }) => {
+    const handleRoomDeleted = (data: { roomId: string }) => {
       if (data?.roomId) {
         queryClient.setQueryData<any[]>(["/api/rooms"], (old) =>
           old ? old.filter((r) => r.id !== data.roomId) : old
@@ -1167,62 +1155,73 @@ export default function Lobby() {
       } else {
         queryClient.invalidateQueries({ queryKey: ["/api/rooms"] });
       }
-    });
+    };
 
-    socket.on("room:full", () => {
+    const handleRoomFull = () => {
       toast({
         title: "Room is full",
         description: "This room has reached its maximum capacity. Try another room.",
         variant: "destructive",
       });
-    });
+    };
 
-    socket.on("dm:new", (msg: any) => {
+    const handleDmNew = (msg: any) => {
       if (!msg?.fromId || !msg?.toId) return;
       setDmUnreadCounts(prev => ({ ...prev, [msg.fromId]: (prev[msg.fromId] || 0) + 1 }));
-    });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages/unread/count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages/conversations"] });
+    };
 
-    // Someone knocked on MY room while I'm on the lobby — show Allow/Deny prompt.
-    socket.on("room:knock-request", (data: { roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number }) => {
+    const handleKnockRequest = (data: { roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number }) => {
       if (!data?.fromUserId) return;
       setPendingLobbyKnocks(prev => {
         if (prev.some(k => k.fromUserId === data.fromUserId && k.roomId === data.roomId)) return prev;
         return [...prev, { id: `${data.fromUserId}-${data.ts}`, roomId: data.roomId, fromUserId: data.fromUserId, fromUserName: data.fromUserName, fromUserAvatar: data.fromUserAvatar, ts: data.ts }];
       });
-    });
+    };
 
-    // Host responded to my knock — let me in (or politely turn me away).
-    socket.on("room:knock-allowed", (data: { roomId: string; roomTitle: string }) => {
+    const handleKnockAllowed = (data: { roomId: string; roomTitle: string }) => {
       toast({
         title: "🚪 You're in!",
         description: `${data.roomTitle || "The host"} opened the door — joining now…`,
       });
-      // Auto-redirect into the room. The capacity bypass grant on the server
-      // is one-shot, so we go straight there.
       if (data?.roomId) navigate(`/room/${data.roomId}`);
-    });
+    };
 
-    socket.on("room:knock-denied", (data: { roomId: string; roomTitle: string }) => {
+    const handleKnockDenied = (data: { roomId: string; roomTitle: string }) => {
       toast({
         title: "Knock declined",
         description: `The host of "${data.roomTitle || "the room"}" isn't taking visitors right now.`,
         variant: "destructive",
       });
-    });
+    };
+
+    socket.on("presence:online", handlePresenceOnline);
+    socket.on("presence:update", handlePresenceUpdate);
+    socket.on("room:participants-update", handleRoomParticipantsUpdate);
+    socket.on("room:created", handleRoomCreated);
+    socket.on("room:updated", handleRoomUpdated);
+    socket.on("user:profile-updated", handleUserProfileUpdated);
+    socket.on("room:deleted", handleRoomDeleted);
+    socket.on("room:full", handleRoomFull);
+    socket.on("dm:new", handleDmNew);
+    socket.on("room:knock-request", handleKnockRequest);
+    socket.on("room:knock-allowed", handleKnockAllowed);
+    socket.on("room:knock-denied", handleKnockDenied);
 
     return () => {
-      socket.off("presence:online");
-      socket.off("presence:update");
-      socket.off("room:participants-update");
-      socket.off("room:created");
-      socket.off("room:updated");
-      socket.off("room:deleted");
-      socket.off("user:profile-updated");
-      socket.off("room:full");
-      socket.off("room:knock-request");
-      socket.off("room:knock-allowed");
-      socket.off("room:knock-denied");
-      socket.off("dm:new");
+      socket.off("presence:online", handlePresenceOnline);
+      socket.off("presence:update", handlePresenceUpdate);
+      socket.off("room:participants-update", handleRoomParticipantsUpdate);
+      socket.off("room:created", handleRoomCreated);
+      socket.off("room:updated", handleRoomUpdated);
+      socket.off("room:deleted", handleRoomDeleted);
+      socket.off("user:profile-updated", handleUserProfileUpdated);
+      socket.off("room:full", handleRoomFull);
+      socket.off("dm:new", handleDmNew);
+      socket.off("room:knock-request", handleKnockRequest);
+      socket.off("room:knock-allowed", handleKnockAllowed);
+      socket.off("room:knock-denied", handleKnockDenied);
     };
   }, [socket, toast]);
 
