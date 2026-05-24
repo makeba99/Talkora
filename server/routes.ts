@@ -6837,6 +6837,21 @@ export async function registerRoutes(
       socket.to(data.roomId).emit("room:typing-stop", { userId: data.userId });
     });
 
+    // DM typing indicators — relay to the recipient's socket only
+    socket.on("dm:typing", (data: { toId: string; fromId: string }) => {
+      const recipientSocketId = userSockets.get(data.toId);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("dm:typing", { fromId: data.fromId });
+      }
+    });
+
+    socket.on("dm:typing-stop", (data: { toId: string; fromId: string }) => {
+      const recipientSocketId = userSockets.get(data.toId);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("dm:typing-stop", { fromId: data.fromId });
+      }
+    });
+
     socket.on("room:clear-chat-global", async (data: { roomId: string; clearedBy: string }) => {
       try {
         const room = await storage.getRoom(data.roomId);

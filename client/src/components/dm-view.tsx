@@ -172,15 +172,25 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
         queryClient.invalidateQueries({ queryKey: ["/api/message-requests/status", otherUserId] });
       }
     };
+    const handleDmTyping = (data: { fromId: string }) => {
+      if (data.fromId === otherUserId) setIsOtherTyping(true);
+    };
+    const handleDmTypingStop = (data: { fromId: string }) => {
+      if (data.fromId === otherUserId) setIsOtherTyping(false);
+    };
     socket.on("dm:new", handleNewMessage);
     socket.on("dm:read", handleRead);
     socket.on("message_request:updated", handleRequestUpdated);
     socket.on("user:followed", handleFollowed);
+    socket.on("dm:typing", handleDmTyping);
+    socket.on("dm:typing-stop", handleDmTypingStop);
     return () => {
       socket.off("dm:new", handleNewMessage);
       socket.off("dm:read", handleRead);
       socket.off("message_request:updated", handleRequestUpdated);
       socket.off("user:followed", handleFollowed);
+      socket.off("dm:typing", handleDmTyping);
+      socket.off("dm:typing-stop", handleDmTypingStop);
     };
   }, [socket, user, otherUserId]);
 
@@ -200,6 +210,9 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingEmittedRef = useRef(false);
 
   const handleScroll = () => {
     if (scrollRef.current) {
@@ -232,9 +245,30 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     }
   };
 
+  const emitTypingStop = () => {
+    if (socket && user && isTypingEmittedRef.current) {
+      socket.emit("dm:typing-stop", { toId: otherUserId, fromId: user.id });
+      isTypingEmittedRef.current = false;
+    }
+  };
+
+  const handleTyping = () => {
+    if (!socket || !user || !canChat) return;
+    if (!isTypingEmittedRef.current) {
+      socket.emit("dm:typing", { toId: otherUserId, fromId: user.id });
+      isTypingEmittedRef.current = true;
+    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      emitTypingStop();
+    }, 2500);
+  };
+
   const handleSend = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!text.trim()) return;
+    emitTypingStop();
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     sendMutation.mutate(text.trim());
     setText("");
   };
@@ -530,6 +564,23 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
             </div>
           </ScrollArea>
 
+          {/* Typing indicator */}
+          {isOtherTyping && (
+            <div className="flex items-center gap-2 px-3 py-1.5" data-testid="dm-typing-indicator">
+              <Avatar className="w-5 h-5 flex-shrink-0">
+                <AvatarImage src={otherUser?.profileImageUrl || undefined} alt="" />
+                <AvatarFallback className="text-[8px] font-bold" style={{ background: "linear-gradient(135deg,#4c3dcc,#7c5af0)", color: "#fff" }}>
+                  {getUserInitials(otherUser) || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex items-center gap-[3px] px-2.5 py-1.5 rounded-2xl" style={{ background: "rgba(100,85,210,0.13)", border: "1px solid rgba(120,100,255,0.14)" }}>
+                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "rgba(160,148,255,0.75)", animationDelay: "0ms", animationDuration: "900ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "rgba(160,148,255,0.75)", animationDelay: "160ms", animationDuration: "900ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "rgba(160,148,255,0.75)", animationDelay: "320ms", animationDuration: "900ms" }} />
+              </div>
+            </div>
+          )}
+
           {/* Input area */}
           <form onSubmit={handleSend} className="dm-input-dock">
             <div className="dm-tools-row">
@@ -540,7 +591,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
             <div className="dm-input-wrap">
               <Input
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => { setText(e.target.value); handleTyping(); }}
                 aria-label="Type a message"
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) handleSend(); }}
                 onPaste={async (e) => {
