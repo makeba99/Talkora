@@ -12141,7 +12141,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   );
 
   return (
-    <div className="flex h-full relative overflow-hidden" style={getRoomThemeStyle(currentTheme)}>
+    <div className="flex flex-1 min-h-0 w-full relative overflow-hidden" style={getRoomThemeStyle(currentTheme)}>
       <RoomThemeOverlay themeId={currentTheme} discoSceneIdx={discoOverlaySceneIdx} onDiscoAdvance={handleDiscoAdvance} />
 
 

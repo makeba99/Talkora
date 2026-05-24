@@ -1,13 +1,84 @@
+import { Component, type ReactNode } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { VoiceRoom } from "@/components/voice-room";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { LogIn, MonitorX, ArrowLeft } from "lucide-react";
+import { LogIn, MonitorX, ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useRoomTabGuard } from "@/hooks/use-room-tab-guard";
 import type { Room } from "@shared/schema";
+
+class VoiceRoomErrorBoundary extends Component<
+  { children: ReactNode; onReset: () => void },
+  { error: Error | null }
+> {
+  constructor(props: { children: ReactNode; onReset: () => void }) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: { componentStack: string }) {
+    console.error("[VoiceRoom] Render error:", error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center space-y-4 max-w-sm">
+            <div className="flex justify-center">
+              <div className="rounded-full bg-red-500/15 p-4">
+                <AlertTriangle className="w-8 h-8 text-red-400" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold">Something went wrong</h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                The room encountered an unexpected error. Try refreshing to rejoin.
+              </p>
+              {this.state.error.message && (
+                <p className="text-xs text-muted-foreground/60 font-mono bg-muted/30 rounded px-3 py-2 text-left break-all">
+                  {this.state.error.message}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button
+                onClick={() => {
+                  this.setState({ error: null });
+                  this.props.onReset();
+                }}
+                data-testid="button-retry-room"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  try { window.close(); } catch (_) {}
+                  setTimeout(() => { window.location.href = "/"; }, 200);
+                }}
+                data-testid="button-back-lobby-error"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Lobby
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 export default function RoomPage() {
   const params = useParams<{ id: string }>();
@@ -16,7 +87,7 @@ export default function RoomPage() {
   const accessKey = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("key") : null;
   const watchUserId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("watch") || undefined : undefined;
 
-  const { data: room, isLoading, isError } = useQuery<Room>({
+  const { data: room, isLoading, isError, refetch } = useQuery<Room>({
     queryKey: ["/api/rooms", params.id, accessKey],
     enabled: !!params.id,
     queryFn: async () => {
@@ -124,18 +195,20 @@ export default function RoomPage() {
   }
 
   return (
-    <VoiceRoom
-      room={room}
-      watchUserId={watchUserId}
-      onLeave={(reason) => {
-        if (reason === "joined-another-room") {
-          window.close();
-          setTimeout(() => { window.location.href = "/"; }, 300);
-          return;
-        }
-        if (window.opener) window.close();
-        else navigate("/");
-      }}
-    />
+    <VoiceRoomErrorBoundary onReset={() => refetch()}>
+      <VoiceRoom
+        room={room}
+        watchUserId={watchUserId}
+        onLeave={(reason) => {
+          if (reason === "joined-another-room") {
+            window.close();
+            setTimeout(() => { window.location.href = "/"; }, 300);
+            return;
+          }
+          if (window.opener) window.close();
+          else navigate("/");
+        }}
+      />
+    </VoiceRoomErrorBoundary>
   );
 }
