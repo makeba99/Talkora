@@ -397,6 +397,7 @@ function ParticipantCard({
   onReport,
   onClearChatGlobal,
   onClearChatLocal,
+  onClearUserChat,
   onReconnect,
   volume,
   onVolumeChange,
@@ -694,6 +695,15 @@ function ParticipantCard({
                </Button>
                <Button variant="outline" size="sm" onClick={() => onClearChatGlobal && onClearChatGlobal(true)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
                   <Trash2 className="w-3.5 h-3.5 mr-1" /> Clear Chat
+               </Button>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => onClearUserChat && onClearUserChat(p.id)}
+                 className="col-span-2 h-8 text-xs border-rose-700/40 bg-rose-950/20 hover:bg-rose-900/30 text-rose-400 hover:text-rose-300 px-1"
+                 data-testid={`button-clear-user-chat-${p.id}`}
+               >
+                 <Trash2 className="w-3.5 h-3.5 mr-1" /> Clear {getUserDisplayName(p)}'s Messages
                </Button>
             </div>
           )}
@@ -6523,14 +6533,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
   };
 
+  const handleClearUserChat = (targetUserId: string) => {
+    socket?.emit("room:clear-user-chat", { roomId: room.id, clearedBy: user?.id, targetUserId });
+  };
+
   useEffect(() => {
     if (!socket) return;
     const globalClearHandler = () => {
       setChatMessages([]);
       toast({ title: "Chat cleared by moderator." });
     };
+    const userClearHandler = ({ targetUserId }: { targetUserId: string }) => {
+      setChatMessages(prev => prev.filter(m => m.userId !== targetUserId));
+      toast({ title: "Messages removed", description: "A participant's messages were removed by a moderator." });
+    };
     socket.on("room:chat-cleared-global", globalClearHandler);
-    return () => { socket.off("room:chat-cleared-global", globalClearHandler); };
+    socket.on("room:user-chat-cleared", userClearHandler);
+    return () => {
+      socket.off("room:chat-cleared-global", globalClearHandler);
+      socket.off("room:user-chat-cleared", userClearHandler);
+    };
   }, [socket, toast]);
 
   const handleVolumeChange = (targetUserId: string, value: number) => {
@@ -14524,6 +14546,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onReport={handleReport}
                       onClearChatGlobal={handleClearChat}
                       onClearChatLocal={() => setChatMessages([])}
+                      onClearUserChat={handleClearUserChat}
                       onReconnect={handleReconnect}
                       notifPrefs={notifPrefsData?.[p.id] ?? null}
                       onSetNotifPrefs={(notifyRoomJoin: boolean, notifyDm: boolean) => updateNotifPrefsMutation.mutate({ userId: p.id, notifyRoomJoin, notifyDm })}

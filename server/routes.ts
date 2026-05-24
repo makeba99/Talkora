@@ -6869,6 +6869,24 @@ export async function registerRoutes(
       }
     });
 
+    // Clear a single participant's messages from the room chat
+    socket.on("room:clear-user-chat", async (data: { roomId: string; clearedBy: string; targetUserId: string }) => {
+      try {
+        const room = await storage.getRoom(data.roomId);
+        if (!room) return;
+        const roles = roomRoles.get(data.roomId);
+        const userRole = roles?.get(data.clearedBy);
+        // Only owner or co-owner may clear another user's messages
+        if (room.ownerId !== data.clearedBy && userRole !== "co-owner") return;
+        // Cannot clear the room owner's messages unless you ARE the owner
+        const targetRole = roles?.get(data.targetUserId);
+        if (data.targetUserId === room.ownerId && data.clearedBy !== room.ownerId) return;
+        io.to(data.roomId).emit("room:user-chat-cleared", { targetUserId: data.targetUserId });
+      } catch (err) {
+        console.error("Error clearing user chat:", err);
+      }
+    });
+
     socket.on("room:pin-message", async (data: { roomId: string; message: any; pinnedBy: string; pinnedByName: string }) => {
       try {
         if (!currentUserId) return;
