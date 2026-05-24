@@ -2258,6 +2258,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [uploadingWelcomeMedia, setUploadingWelcomeMedia] = useState(false);
   const [dmUserId, setDmUserId] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
   const [grammarSuggestions, setGrammarSuggestions] = useState<GrammarSuggestion[]>([]);
   const [grammarDismissedIds, setGrammarDismissedIds] = useState<Set<string>>(new Set());
   const [grammarUndo, setGrammarUndo] = useState<string | null>(null);
@@ -2518,6 +2519,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [privateUnreadCount, setPrivateUnreadCount] = useState(0);
   const [tabUnreadCount, setTabUnreadCount] = useState(0);
   const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (dmUserId) {
+      setDmUnreadCounts(prev => { const next = { ...prev }; delete next[dmUserId]; return next; });
+    }
+  }, [dmUserId]);
+
   const sidePanelTabRef = useRef(sidePanelTab);
   const ytSyncTimeRef = useRef<number>(0);
   const ytBufferTimerRef = useRef<number | null>(null);

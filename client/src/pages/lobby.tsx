@@ -186,6 +186,7 @@ function PeopleDiscoveryCard({
   languages = [],
   notifPrefs,
   onSetNotifPrefs,
+  dmUnreadCount = 0,
 }: {
   person: User;
   followerCount: number;
@@ -205,6 +206,7 @@ function PeopleDiscoveryCard({
   languages?: string[];
   notifPrefs?: { notifyRoomJoin: boolean; notifyDm: boolean } | null;
   onSetNotifPrefs?: (notifyRoomJoin: boolean, notifyDm: boolean) => void;
+  dmUnreadCount?: number;
 }) {
   const { toast } = useToast();
   const name = getUserName(person);
@@ -345,12 +347,25 @@ function PeopleDiscoveryCard({
             <button
               onClick={onTalk}
               disabled={isCurrentUser || (!isOnline && !currentRoomId)}
-              className="neu-people-btn-primary disabled:opacity-45 disabled:cursor-not-allowed"
+              className="neu-people-btn-primary disabled:opacity-45 disabled:cursor-not-allowed relative"
               data-testid={`button-talk-discovery-${person.id}`}
-              aria-label={isCurrentUser ? undefined : currentRoomId ? `Join ${name}'s room` : `Message ${name}`}
+              aria-label={isCurrentUser ? undefined : currentRoomId ? `Join ${name}'s room` : `Message ${name}${dmUnreadCount > 0 ? ` (${dmUnreadCount} unread)` : ""}`}
             >
               <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {isCurrentUser ? "You" : currentRoomId ? "Talk" : "Message"}
+              {dmUnreadCount > 0 && !isCurrentUser && !currentRoomId && (
+                <span
+                  className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold text-white leading-none"
+                  style={{
+                    background: "linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",
+                    boxShadow: "0 0 8px rgba(239,68,68,0.65), 0 0 16px rgba(239,68,68,0.3)",
+                    border: "1.5px solid rgba(255,255,255,0.2)",
+                  }}
+                  data-testid={`badge-dm-unread-people-${person.id}`}
+                >
+                  {dmUnreadCount > 9 ? "9+" : dmUnreadCount}
+                </span>
+              )}
             </button>
           </div>
           {isFollowing && !isCurrentUser && (
@@ -462,7 +477,13 @@ export default function Lobby() {
   const [activeDiscovery, setActiveDiscovery] = useState<DiscoveryFilter>("rooms");
   const [speakerVotes, setSpeakerVotes] = useState<Set<string>>(new Set());
   const [dmUserId, setDmUserId] = useState<string | null>(null);
+  const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
   const [commentTargetUser, setCommentTargetUser] = useState<{ user: any; name: string } | null>(null);
+
+  const openDm = (userId: string) => {
+    setDmUserId(userId);
+    setDmUnreadCounts(prev => { const next = { ...prev }; delete next[userId]; return next; });
+  };
   const [roomParticipants, setRoomParticipants] = useState<
     Record<string, User[]>
   >({});
@@ -1156,6 +1177,11 @@ export default function Lobby() {
       });
     });
 
+    socket.on("dm:new", (msg: any) => {
+      if (!msg?.fromId || !msg?.toId) return;
+      setDmUnreadCounts(prev => ({ ...prev, [msg.fromId]: (prev[msg.fromId] || 0) + 1 }));
+    });
+
     // Someone knocked on MY room while I'm on the lobby — show Allow/Deny prompt.
     socket.on("room:knock-request", (data: { roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number }) => {
       if (!data?.fromUserId) return;
@@ -1196,6 +1222,7 @@ export default function Lobby() {
       socket.off("room:knock-request");
       socket.off("room:knock-allowed");
       socket.off("room:knock-denied");
+      socket.off("dm:new");
     };
   }, [socket, toast]);
 
@@ -1596,7 +1623,7 @@ export default function Lobby() {
                   {socialOpen && (
                     <SocialPanel
                       onlineUsers={onlineUsers}
-                      onOpenDm={(userId) => setDmUserId(userId)}
+                      onOpenDm={(userId) => openDm(userId)}
                       open={socialOpen}
                       onOpenChange={setSocialOpen}
                       hideTrigger
@@ -1606,7 +1633,7 @@ export default function Lobby() {
                 <Suspense fallback={null}>
                   {messagesOpen && (
                     <MessagesDropdown
-                      onOpenDm={(userId) => setDmUserId(userId)}
+                      onOpenDm={(userId) => openDm(userId)}
                       open={messagesOpen}
                       onOpenChange={setMessagesOpen}
                       hideTrigger
@@ -2343,13 +2370,14 @@ export default function Lobby() {
                         onComment={() => {
                           setCommentTargetUser({ user: person, name: getUserName(person) });
                         }}
+                        dmUnreadCount={dmUnreadCounts[person.id] ?? 0}
                         onTalk={() => {
                           if (!user) { toast({ title: "Sign in to message", description: "Create an account to send messages." }); return; }
                           if (currentRoomId) {
                             handleJoinRoom(currentRoomId);
                             return;
                           }
-                          if (!isSamplePerson) setDmUserId(person.id);
+                          if (!isSamplePerson) openDm(person.id);
                           else toast({ title: "This is a demo user", description: "Sign in and meet real language learners!" });
                         }}
                       />
@@ -2456,7 +2484,7 @@ export default function Lobby() {
                     room={room}
                     participants={mergedParticipants[room.id] || []}
                     onJoin={handleJoinRoom}
-                    onOpenDm={(userId) => setDmUserId(userId)}
+                    onOpenDm={(userId) => openDm(userId)}
                     isOwner={room.ownerId === user?.id}
                     isLoggedIn={!!user}
                     voteCount={isSample ? liveVoteCounts[room.id] ?? 0 : (voteData?.counts?.[room.id] || 0)}
