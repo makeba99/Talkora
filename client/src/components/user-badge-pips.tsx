@@ -1,0 +1,50 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { BADGE_TYPES } from "@shared/constants";
+import type { UserBadge } from "@shared/schema";
+
+export function UserBadgePips({
+  badges = [],
+  userId,
+  compact = false,
+}: {
+  badges?: UserBadge[];
+  userId?: string;
+  compact?: boolean;
+}) {
+  if (!badges.length) return null;
+  const displayed = badges.slice(0, compact ? 2 : 4);
+  return (
+    <div className={`flex items-center justify-center gap-0.5 ${compact ? "mt-0" : "mt-0.5"}`} data-testid={`badges-user-${userId || "unknown"}`}>
+      {displayed.map((badge) => {
+        const def = BADGE_TYPES[badge.badgeType as keyof typeof BADGE_TYPES];
+        if (!def) return null;
+        return (
+          <Tooltip key={badge.id}>
+            <TooltipTrigger asChild>
+              <span
+                className={`${compact ? "text-[10px] w-[18px] h-[18px]" : "text-[12px] w-6 h-6"} inline-flex items-center justify-center rounded-full cursor-default transition-transform duration-150 hover:scale-110`}
+                style={{
+                  background: `radial-gradient(ellipse at 35% 30%, ${def.color}38 0%, ${def.color}14 60%, ${def.color}08 100%)`,
+                  border: `1px solid ${def.color}50`,
+                  boxShadow: `0 2px 8px ${def.color}30, inset 0 1px 0 ${def.color}40, inset 0 -1px 0 ${def.color}18, 0 0 0 1px ${def.color}18`,
+                  filter: `drop-shadow(0 0 4px ${def.color}40)`,
+                }}
+                data-testid={`badge-pip-${badge.id}`}
+              >
+                {def.emoji}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs font-semibold">
+              {def.emoji} {def.label}
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
+      {badges.length > displayed.length && (
+        <span className="text-[9px] text-white/50 font-semibold" data-testid={`text-badge-more-${userId || "unknown"}`}>
+          +{badges.length - displayed.length}
+        </span>
+      )}
+    </div>
+  );
+}
