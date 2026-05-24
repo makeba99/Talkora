@@ -2428,6 +2428,88 @@ export async function registerRoutes(
     }
   });
 
+  // Find free-text version of a book — tries Gutenberg, then Wikisource
+  app.get("/api/book/find-text", isAuthenticated, async (req: any, res) => {
+    const title = String(req.query.title || "").trim().slice(0, 200);
+    const author = String(req.query.author || "").trim().slice(0, 100);
+    if (!title) return res.status(400).json({ found: false });
+
+    const safeFetch = async (url: string, ms = 6000) => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const r = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": "Vextorn/1.0" } });
+        clearTimeout(t);
+        return r.ok ? await r.json() : null;
+      } catch { clearTimeout(t); return null; }
+    };
+
+    // 1) Try Gutenberg search
+    const q = author ? `${title} ${author}` : title;
+    const gut = await safeFetch(`https://gutendex.com/books/?search=${encodeURIComponent(q)}&languages=en`);
+    const gutBooks = (gut?.results || []).filter((b: any) => {
+      const f = b.formats || {};
+      return f["text/plain; charset=utf-8"] || f["text/plain; charset=us-ascii"] || f["text/plain"];
+    });
+    if (gutBooks.length > 0) {
+      return res.json({ found: true, source: "gutenberg", book: gutBooks[0] });
+    }
+
+    // 2) Try Wikisource
+    const ws = await safeFetch(
+      `https://en.wikisource.org/w/api.php?action=opensearch&search=${encodeURIComponent(title)}&limit=3&namespace=0&format=json`
+    );
+    if (ws?.[1]?.length > 0) {
+      return res.json({ found: true, source: "wikisource", wikisourceTitle: ws[1][0] });
+    }
+
+    return res.json({ found: false });
+  });
+
+  // Fetch and clean text from Wikisource
+  app.get("/api/book/wikisource", isAuthenticated, async (req: any, res) => {
+    const title = String(req.query.title || "").trim().slice(0, 300);
+    if (!title) return res.status(400).json({ message: "Missing title" });
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 9000);
+    try {
+      const r = await fetch(
+        `https://en.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&format=json&disablelimitreport=1`,
+        { signal: ctrl.signal, headers: { "User-Agent": "Vextorn/1.0" } }
+      );
+      clearTimeout(t);
+      if (!r.ok) return res.status(404).json({ message: "Not found on Wikisource" });
+      const data = await r.json();
+      const html: string = data.parse?.text?.["*"] || "";
+      if (!html) return res.status(404).json({ message: "No text content" });
+
+      const text = html
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/p>/gi, "\n\n")
+        .replace(/<\/div>/gi, "\n")
+        .replace(/<\/li>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#\d+;/g, " ")
+        .replace(/\[\d+\]/g, "")
+        .replace(/\n{4,}/g, "\n\n\n")
+        .trim()
+        .slice(0, 14000);
+
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.send(text);
+    } catch {
+      clearTimeout(t);
+      res.status(500).json({ message: "Failed to fetch from Wikisource" });
+    }
+  });
+
   app.get("/api/book/text", isAuthenticated, async (req: any, res) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ message: "Missing url" });

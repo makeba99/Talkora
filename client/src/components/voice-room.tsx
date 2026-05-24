@@ -8640,6 +8640,66 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }, 50);
   };
 
+  const handleOpenCatalogBook = async (catalogBook: any) => {
+    if (activeYoutubeId) handleStopYoutube();
+    setSelectedBook({ ...catalogBook, _isCatalog: true });
+    setBookText("");
+    setWordInfo(null);
+    setBookLoading(true);
+    setShowEReader(true);
+    try {
+      const title = encodeURIComponent(catalogBook.title || "");
+      const author = encodeURIComponent(catalogBook.author || "");
+      const findRes = await fetch(`/api/book/find-text?title=${title}&author=${author}`, { credentials: "include" });
+      if (findRes.ok) {
+        const findData = await findRes.json();
+        if (findData.found && findData.source === "gutenberg" && findData.book) {
+          const gutBook = findData.book;
+          setSelectedBook({ ...gutBook, _isCatalog: false });
+          const formats = gutBook.formats || {};
+          const textUrl = formats["text/plain; charset=utf-8"] || formats["text/plain; charset=us-ascii"] || formats["text/plain"];
+          if (textUrl) {
+            const textRes = await fetch(`/api/book/text?url=${encodeURIComponent(textUrl)}`);
+            if (textRes.ok) {
+              const text = await textRes.text();
+              const startIdx = text.indexOf("*** START OF") > -1
+                ? text.indexOf("\n", text.indexOf("*** START OF")) + 1
+                : text.indexOf("***\r\n\r\n") > -1 ? text.indexOf("***\r\n\r\n") + 6 : 0;
+              setBookText(text.slice(startIdx, startIdx + 12000));
+              setBookLoading(false);
+              return;
+            }
+          }
+        }
+        if (findData.found && findData.source === "wikisource" && findData.wikisourceTitle) {
+          const wsRes = await fetch(`/api/book/wikisource?title=${encodeURIComponent(findData.wikisourceTitle)}`);
+          if (wsRes.ok) {
+            const text = await wsRes.text();
+            setBookText(text);
+            setBookLoading(false);
+            return;
+          }
+        }
+      }
+      setBookText(
+        `"${catalogBook.title}"` +
+        (catalogBook.author ? `\nby ${catalogBook.author}` : "") +
+        (catalogBook.year ? `  (${catalogBook.year})` : "") +
+        `\n\n─────────────────────────\n\n` +
+        `This title is not available as free text in our library.\n\n` +
+        `It may be available through:\n` +
+        `  • Your local public library\n` +
+        `  • An online lending service (e.g. Open Library borrow)\n` +
+        `  • Purchase from a bookstore\n\n` +
+        `Tip: search for a similar public-domain title using the search bar above.`
+      );
+    } catch {
+      setBookText("Could not look up this book. Please try again.");
+    } finally {
+      setBookLoading(false);
+    }
+  };
+
   const handleTextTranslate = async (text: string) => {
     const clean = text.trim().replace(/\s+/g, " ");
     if (!clean || clean.length < 2) return;
@@ -11150,8 +11210,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <div className="flex flex-col flex-1 min-h-0 p-3 gap-3">
             <div className="p-3 rounded-xl border space-y-3">
               <div className="flex items-start gap-2">
-                {selectedBook.formats?.["image/jpeg"] ? (
-                  <img loading="lazy" decoding="async" src={selectedBook.formats["image/jpeg"]} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0 bg-muted" />
+                {(selectedBook.formats?.["image/jpeg"] || selectedBook.coverUrl) ? (
+                  <img loading="lazy" decoding="async" src={selectedBook.formats?.["image/jpeg"] || selectedBook.coverUrl} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0 bg-muted" />
                 ) : (
                   <div className="w-10 h-14 rounded bg-muted flex-shrink-0 flex items-center justify-center">
                     <BookOpen className="w-4 h-4 text-muted-foreground" />
@@ -11160,7 +11220,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold leading-tight line-clamp-2">{selectedBook.title}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                    {selectedBook.authors?.map((a: any) => a.name).join(", ")}
+                    {selectedBook.authors?.map((a: any) => a.name).join(", ") || selectedBook.author}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 font-medium">
@@ -11401,9 +11461,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {readSearch.trim() ? <><BookOpen className="w-3 h-3" /> Also in catalog</> : <><TrendingUp className="w-3 h-3" /> Trending This Week</>}
                     </p>
                     {readCatalog.map((c: any) => (
-                      <div
+                      <button
                         key={c.key}
-                        className="flex items-start gap-2 p-2 rounded-lg border bg-muted/5"
+                        onClick={() => handleOpenCatalogBook(c)}
+                        className="w-full flex items-start gap-2 p-2 rounded-lg border bg-muted/5 hover:bg-muted/20 transition-colors text-left"
                         data-testid={`card-catalog-${c.key?.replace(/\W/g, '')}`}
                       >
                         {c.coverUrl ? (
@@ -11417,9 +11478,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           <p className="text-xs font-semibold line-clamp-2">{c.title}</p>
                           {c.author && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{c.author}</p>}
                           {c.year && <p className="text-[10px] text-muted-foreground/60 mt-0.5">{c.year}</p>}
-                          <p className="text-[9px] text-muted-foreground/40 mt-1">Not available as free text</p>
+                          <p className="text-[9px] mt-1" style={{ color: "hsla(var(--neu-orange-hi) / 0.5)" }}>Tap to open</p>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
