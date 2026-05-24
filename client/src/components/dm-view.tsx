@@ -162,13 +162,25 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     const handleRequestUpdated = () => {
       queryClient.invalidateQueries({ queryKey: ["/api/message-requests/status", otherUserId] });
     };
+    // Real-time follow detection: if either party follows the other while the
+    // DM is open, immediately re-check mutual status so the UI upgrades from
+    // "Follow back to chat" → full chat without closing and reopening.
+    const handleFollowed = (data: { followerId: string; followingId: string }) => {
+      const involves = data.followerId === otherUserId || data.followingId === otherUserId ||
+                       data.followerId === user?.id   || data.followingId === user?.id;
+      if (involves) {
+        queryClient.invalidateQueries({ queryKey: ["/api/message-requests/status", otherUserId] });
+      }
+    };
     socket.on("dm:new", handleNewMessage);
     socket.on("dm:read", handleRead);
     socket.on("message_request:updated", handleRequestUpdated);
+    socket.on("user:followed", handleFollowed);
     return () => {
       socket.off("dm:new", handleNewMessage);
       socket.off("dm:read", handleRead);
       socket.off("message_request:updated", handleRequestUpdated);
+      socket.off("user:followed", handleFollowed);
     };
   }, [socket, user, otherUserId]);
 

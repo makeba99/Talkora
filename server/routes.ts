@@ -3429,6 +3429,14 @@ export async function registerRoutes(
         type: "follow",
       });
 
+      // Real-time follow event — lets any open DM view instantly upgrade
+      // from "Follow back to chat" to the full chat UI without a page reload.
+      const followedSocketId = userSockets.get(parsed.data.followingId);
+      const followerSocketId = userSockets.get(parsed.data.followerId);
+      const followPayload = { followerId: parsed.data.followerId, followingId: parsed.data.followingId };
+      if (followedSocketId) io.to(followedSocketId).emit("user:followed", followPayload);
+      if (followerSocketId) io.to(followerSocketId).emit("user:followed", followPayload);
+
       // Push notification to the followed user if the follow is not mutual
       // (i.e. the person being followed hasn't followed back yet)
       (async () => {
