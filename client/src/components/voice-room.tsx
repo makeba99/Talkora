@@ -486,8 +486,8 @@ function ParticipantCard({
           <Settings className="w-4 h-4 text-white/80 drop-shadow-md hover:text-white" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0 bg-card border-border text-card-foreground shadow-xl" align="end" avoidCollisions onClick={(e) => e.stopPropagation()} onInteractOutside={(e) => { const target = e.target as HTMLElement; if (target?.closest('[data-radix-popper-content-wrapper]')) e.preventDefault(); }}>
-        <div className="flex flex-col p-3 gap-3">
+      <PopoverContent className="w-[min(18rem,calc(100vw-1rem))] p-0 bg-card border-border text-card-foreground shadow-xl" align="end" avoidCollisions collisionPadding={8} onClick={(e) => e.stopPropagation()} onInteractOutside={(e) => { const target = e.target as HTMLElement; if (target?.closest('[data-radix-popper-content-wrapper]')) e.preventDefault(); }}>
+        <div className="flex flex-col p-3 gap-3 max-h-[85vh] overflow-y-auto">
           <div className="flex gap-3 items-start">
              <Avatar className="w-16 h-16 rounded-md border border-border flex-shrink-0">
                 <AvatarImage src={p.profileImageUrl || undefined} alt="" />
