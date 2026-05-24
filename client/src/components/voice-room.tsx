@@ -5889,15 +5889,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               {(isMuted && !canUseTalkControls)
                 ? (
                   <span className="relative flex items-center justify-center">
-                    <Mic className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                    <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                     <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
                   </span>
                 )
                 : isMuted
-                ? <Mic className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                ? <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                 : (
                   <span className="relative flex items-center justify-center">
-                    <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                    <Mic className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                     <span className="absolute -top-[3px] -right-[3px] w-[7px] h-[7px] rounded-full bg-green-400 border border-black/30 shadow-sm" />
                   </span>
                 )
