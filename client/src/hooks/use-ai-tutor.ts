@@ -310,6 +310,30 @@ export function useAiTutor(deps: AiTutorDeps) {
     sttRef.current?.stopBargeIn();
   }, []);
 
+  // ── Request queue processor ───────────────────────────────────────────────
+  // Drains aiQueueRef one item at a time. Called after each sendAiMessage
+  // completes so multiple users are answered sequentially, never simultaneously.
+  const processNextQueued = useCallback(() => {
+    if (queueProcessingRef.current) return;
+    if (aiQueueRef.current.length === 0) return;
+    if (!activeRef.current) return;
+    queueProcessingRef.current = true;
+    const next = aiQueueRef.current.shift()!;
+    // Prefix the text with the asker's name so the AI knows who asked
+    const prefixed = next.fromUsername
+      ? `[${next.fromUsername} asks]: ${next.text}`
+      : next.text;
+    addDebug("info", `Queue: sending question from ${next.fromUsername || "someone"}`);
+    // Use a promise chain so we process the next item only after this one is done
+    Promise.resolve().then(() => sendAiMessageRef.current?.(prefixed)).finally(() => {
+      queueProcessingRef.current = false;
+      // Check if more items arrived while we were processing
+      if (aiQueueRef.current.length > 0) {
+        setTimeout(processNextQueued, 200);
+      }
+    });
+  }, [addDebug]);
+
   // ── Send message to AI (streaming pipeline) ───────────────────────────────
   const sendAiMessage = useCallback(async (text: string) => {
     if (!text.trim() || loadingRef.current) return;
@@ -456,30 +480,6 @@ export function useAiTutor(deps: AiTutorDeps) {
   // Keep latest-version refs in sync so STT callbacks never call a stale closure
   useEffect(() => { sendAiMessageRef.current = sendAiMessage; }, [sendAiMessage]);
   useEffect(() => { interruptAiRef.current = interruptAi; }, [interruptAi]);
-
-  // ── Request queue processor ───────────────────────────────────────────────
-  // Drains aiQueueRef one item at a time. Called after each sendAiMessage
-  // completes so multiple users are answered sequentially, never simultaneously.
-  const processNextQueued = useCallback(() => {
-    if (queueProcessingRef.current) return;
-    if (aiQueueRef.current.length === 0) return;
-    if (!activeRef.current) return;
-    queueProcessingRef.current = true;
-    const next = aiQueueRef.current.shift()!;
-    // Prefix the text with the asker's name so the AI knows who asked
-    const prefixed = next.fromUsername
-      ? `[${next.fromUsername} asks]: ${next.text}`
-      : next.text;
-    addDebug("info", `Queue: sending question from ${next.fromUsername || "someone"}`);
-    // Use a promise chain so we process the next item only after this one is done
-    Promise.resolve().then(() => sendAiMessageRef.current?.(prefixed)).finally(() => {
-      queueProcessingRef.current = false;
-      // Check if more items arrived while we were processing
-      if (aiQueueRef.current.length > 0) {
-        setTimeout(processNextQueued, 200);
-      }
-    });
-  }, [addDebug]);
 
   // Enqueue a question from another room participant
   const enqueueAiRequest = useCallback((text: string, fromUsername?: string) => {
