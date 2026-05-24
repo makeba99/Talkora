@@ -90,6 +90,30 @@ const NEUMO_PRESSED = `inset 5px 5px 12px ${NEUMO_SHADOW_DARK}, inset -5px -5px 
 const NEUMO_SMALL_REST = `4px 4px 10px ${NEUMO_SHADOW_DARK}, -4px -4px 10px ${NEUMO_SHADOW_LIGHT}`;
 const NEUMO_INSET_SMALL = `inset 3px 3px 7px ${NEUMO_SHADOW_DARK}, inset -3px -3px 7px ${NEUMO_SHADOW_LIGHT}`;
 
+const TRANSLATE_LANGUAGES: { code: string; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "es", label: "Spanish" },
+  { code: "fr", label: "French" },
+  { code: "de", label: "German" },
+  { code: "it", label: "Italian" },
+  { code: "pt", label: "Portuguese" },
+  { code: "ru", label: "Russian" },
+  { code: "ar", label: "Arabic" },
+  { code: "zh", label: "Chinese" },
+  { code: "ja", label: "Japanese" },
+  { code: "ko", label: "Korean" },
+  { code: "hi", label: "Hindi" },
+  { code: "tr", label: "Turkish" },
+  { code: "hy", label: "Armenian" },
+  { code: "nl", label: "Dutch" },
+  { code: "pl", label: "Polish" },
+  { code: "uk", label: "Ukrainian" },
+  { code: "vi", label: "Vietnamese" },
+  { code: "id", label: "Indonesian" },
+  { code: "th", label: "Thai" },
+  { code: "sv", label: "Swedish" },
+];
+
 // Layered avatar: outer color halo + raised neumorphic disc + inset color-tinted well.
 // Gives every persona that "glowing orb" look from the reference design.
 function NeumorphicAvatarRing(props: {
@@ -2125,6 +2149,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
   const [chatText, setChatText] = useState("");
   const [autoTranslate, setAutoTranslate] = useState(false);
+  const [autoTranslateTarget, setAutoTranslateTarget] = useState<string>(() => localStorage.getItem("vx-auto-translate-target") || "en");
+  const autoTranslateTargetRef = useRef(autoTranslateTarget);
   const [autoTranslatePreview, setAutoTranslatePreview] = useState<string | null>(null);
   const [isAutoTranslating, setIsAutoTranslating] = useState(false);
   const autoTranslateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2512,6 +2538,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   useEffect(() => { aiTutorActiveRef.current = aiState.active; }, [aiState.active]);
   useEffect(() => { aiPersonaNameRef.current = aiPersonaName; }, [aiPersonaName]);
   useEffect(() => { welcomeUserRef.current = welcomeUser; }, [welcomeUser]);
+  useEffect(() => { autoTranslateTargetRef.current = autoTranslateTarget; }, [autoTranslateTarget]);
 
   // Bridge: when the Eva TTS engine fails (ElevenLabs unreachable), surface
   // a clear toast so the user knows ElevenLabs is unreachable rather than
@@ -8315,12 +8342,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const translateToEnglish = async (text: string): Promise<string> => {
     const clean = text.trim();
     if (!clean || clean.length < 2) return clean;
+    const target = autoTranslateTargetRef.current || "en";
     try {
       const res = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=autodetect|en`
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=autodetect|${target}`
       );
       const data = await res.json();
       const translated: string = data.responseData?.translatedText || clean;
+      // MyMemory returns this error when source === target (e.g. typing English → translate to English)
+      if (translated.toUpperCase().includes("PLEASE SELECT") || translated.trim() === clean.trim()) return clean;
       return translated;
     } catch {
       return clean;
@@ -9714,11 +9744,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <span className="text-[10px]" style={{ color: "rgba(148,163,184,0.6)" }}>Translating…</span>
               ) : autoTranslatePreview ? (
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                  <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "rgba(56,189,248,0.55)" }}>Will send as</span>
+                  <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "rgba(56,189,248,0.55)" }}>
+                    Will send as ({TRANSLATE_LANGUAGES.find(l => l.code === autoTranslateTarget)?.label ?? autoTranslateTarget})
+                  </span>
                   <span className="text-[11px] leading-snug break-words" style={{ color: "rgba(226,232,240,0.85)" }}>{autoTranslatePreview}</span>
                 </div>
               ) : (
-                <span className="text-[10px]" style={{ color: "rgba(148,163,184,0.5)" }}>No translation needed</span>
+                <span className="text-[10px]" style={{ color: "rgba(148,163,184,0.5)" }}>No translation needed — will send as-is</span>
               )}
             </div>
           )}
@@ -10257,30 +10289,58 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 }
               }} />
 
-              {/* Auto-translate to English toggle */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAutoTranslate(v => !v);
+              {/* Auto-translate toggle + target language picker */}
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAutoTranslate(v => !v);
+                        setAutoTranslatePreview(null);
+                        setIsAutoTranslating(false);
+                        if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current);
+                      }}
+                      className="room-tool-btn"
+                      data-active={autoTranslate}
+                      data-testid="button-auto-translate-toggle"
+                      aria-label={autoTranslate ? "Disable auto-translate" : "Enable auto-translate"}
+                      aria-pressed={autoTranslate}
+                    >
+                      <Languages className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={6} className="text-[11px]">
+                    {autoTranslate
+                      ? `Auto-translate ON → ${TRANSLATE_LANGUAGES.find(l => l.code === autoTranslateTarget)?.label ?? autoTranslateTarget} — click to disable`
+                      : "Translate messages before sending"}
+                  </TooltipContent>
+                </Tooltip>
+                {autoTranslate && (
+                  <select
+                    value={autoTranslateTarget}
+                    onChange={e => {
+                      setAutoTranslateTarget(e.target.value);
+                      localStorage.setItem("vx-auto-translate-target", e.target.value);
                       setAutoTranslatePreview(null);
-                      setIsAutoTranslating(false);
-                      if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current);
                     }}
-                    className="room-tool-btn"
-                    data-active={autoTranslate}
-                    data-testid="button-auto-translate-toggle"
-                    aria-label={autoTranslate ? "Disable auto-translate" : "Enable auto-translate to English"}
-                    aria-pressed={autoTranslate}
+                    className="h-6 text-[10px] rounded-md px-1 border cursor-pointer outline-none focus:ring-1 focus:ring-sky-400/40 transition-all"
+                    style={{
+                      background: "rgba(30,41,59,0.85)",
+                      color: "rgba(148,213,252,0.9)",
+                      borderColor: "rgba(56,189,248,0.3)",
+                      maxWidth: "90px",
+                    }}
+                    data-testid="select-auto-translate-target"
+                    aria-label="Translate to language"
+                    title="Translate to language"
                   >
-                    <Languages className="w-3.5 h-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={6} className="text-[11px]">
-                  {autoTranslate ? "Auto-translate ON — click to disable" : "Translate to English before sending"}
-                </TooltipContent>
-              </Tooltip>
+                    {TRANSLATE_LANGUAGES.map(l => (
+                      <option key={l.code} value={l.code}>→ {l.label}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
           </div>
         </form>
