@@ -5882,22 +5882,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               onClick={toggleMute}
               disabled={micError || (isMuted && !canUseTalkControls)}
               data-testid="button-toggle-mute"
-              title={(isMuted && !canUseTalkControls) ? talkLockReason : (isMuted ? "Unmute" : "Mute")}
+              title={(isMuted && !canUseTalkControls) ? talkLockReason : (isMuted ? "Unmute mic" : "Mute mic")}
               className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
               style={isMuted ? ghostStyle : micLiveStyle}
             >
               {(isMuted && !canUseTalkControls)
                 ? (
                   <span className="relative flex items-center justify-center">
-                    <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                    <Mic className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                     <Lock className="absolute -bottom-[2px] -right-[2px] w-[8px] h-[8px] text-rose-300" />
                   </span>
                 )
                 : isMuted
-                ? <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                ? <Mic className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                 : (
                   <span className="relative flex items-center justify-center">
-                    <Mic className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
+                    <MicOff className="w-[15px] h-[15px] sm:w-[18px] sm:h-[18px]" />
                     <span className="absolute -top-[3px] -right-[3px] w-[7px] h-[7px] rounded-full bg-green-400 border border-black/30 shadow-sm" />
                   </span>
                 )
@@ -5932,7 +5932,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </Popover>
           </div>
           <span className={labelBase} style={isMuted ? { color: "rgba(255,255,255,0.32)" } : { color: "rgba(74,222,128,0.82)" }}>
-            {isMuted ? "Unmute" : "Live"}
+            {isMuted ? "Unmute" : "Mute"}
           </span>
         </div>
 
@@ -8457,9 +8457,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket?.emit("room:book", { roomId: room.id, book: null });
       setBookReaders(new Set());
       setBookHostId(null);
-    } else if (isFollowingBook) {
+    } else {
+      if (isFollowingBook) {
+        socket?.emit("room:book-watching", { roomId: room.id, watching: false });
+      }
       setIsFollowingBook(false);
-      socket?.emit("room:book-watching", { roomId: room.id, watching: false });
       setBookReaders(prev => { const n = new Set(prev); n.delete(user?.id || ""); return n; });
     }
   };
