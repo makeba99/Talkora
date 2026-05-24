@@ -53,6 +53,12 @@ const FEMALE_INTROS = [
   "Afi K reporting in. What do you mean huh — what are we doing today, hmm?",
 ];
 
+// Persona-queue item — requests from other room participants
+interface AiQueueItem {
+  text: string;
+  fromUsername?: string;
+}
+
 const AFIK_WELCOME_TEMPLATES = [
   "[SYSTEM: a new user named {name} just joined the room — give them a warm flirty welcome by name in 1-2 sentences and maybe invite them to sing or chat]",
   "[SYSTEM: {name} just walked into the room — welcome them in your charming Afi K voice in 1-2 sentences]",
@@ -148,6 +154,9 @@ export function useAiTutor(deps: AiTutorDeps) {
   // Latest-version refs prevent stale closures in STT/TTS callbacks
   const sendAiMessageRef = useRef<((text: string) => void) | null>(null);
   const interruptAiRef = useRef<(() => void) | null>(null);
+  // ── Request queue — handles questions from other room participants ─────────
+  const aiQueueRef = useRef<AiQueueItem[]>([]);
+  const queueProcessingRef = useRef(false);
 
   // Keep refs in sync with state
   useEffect(() => { activeRef.current = aiActive; }, [aiActive]);
@@ -436,13 +445,53 @@ export function useAiTutor(deps: AiTutorDeps) {
         if (activeRef.current && !speakingRef.current && !loadingRef.current) {
           sttRef.current?.startListening();
         }
+        // Auto-drain queue — process next queued question if any
+        if (aiQueueRef.current.length > 0) {
+          setTimeout(processNextQueued, 600);
+        }
       }, 1000);
     }
-  }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi]);
+  }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi, processNextQueued]);
 
   // Keep latest-version refs in sync so STT callbacks never call a stale closure
   useEffect(() => { sendAiMessageRef.current = sendAiMessage; }, [sendAiMessage]);
   useEffect(() => { interruptAiRef.current = interruptAi; }, [interruptAi]);
+
+  // ── Request queue processor ───────────────────────────────────────────────
+  // Drains aiQueueRef one item at a time. Called after each sendAiMessage
+  // completes so multiple users are answered sequentially, never simultaneously.
+  const processNextQueued = useCallback(() => {
+    if (queueProcessingRef.current) return;
+    if (aiQueueRef.current.length === 0) return;
+    if (!activeRef.current) return;
+    queueProcessingRef.current = true;
+    const next = aiQueueRef.current.shift()!;
+    // Prefix the text with the asker's name so the AI knows who asked
+    const prefixed = next.fromUsername
+      ? `[${next.fromUsername} asks]: ${next.text}`
+      : next.text;
+    addDebug("info", `Queue: sending question from ${next.fromUsername || "someone"}`);
+    // Use a promise chain so we process the next item only after this one is done
+    Promise.resolve().then(() => sendAiMessageRef.current?.(prefixed)).finally(() => {
+      queueProcessingRef.current = false;
+      // Check if more items arrived while we were processing
+      if (aiQueueRef.current.length > 0) {
+        setTimeout(processNextQueued, 200);
+      }
+    });
+  }, [addDebug]);
+
+  // Enqueue a question from another room participant
+  const enqueueAiRequest = useCallback((text: string, fromUsername?: string) => {
+    if (!activeRef.current || !text.trim()) return;
+    aiQueueRef.current.push({ text: text.trim(), fromUsername });
+    addDebug("info", `Queued question from ${fromUsername || "participant"} (queue size: ${aiQueueRef.current.length})`);
+    // If AI is idle, start processing immediately
+    if (!loadingRef.current && !speakingRef.current) {
+      processNextQueued();
+    }
+    // Otherwise it will auto-drain after the current response finishes
+  }, [addDebug, processNextQueued]);
 
   // ── Start with a specific persona (voice + name, locked for session) ──────
   const startWithPersona = useCallback((voice: VoicePersona, pName: string) => {
@@ -523,8 +572,10 @@ export function useAiTutor(deps: AiTutorDeps) {
       setAiConversation([introMsg]);
       setTimeout(() => ttsRef.current?.enqueue(intro), 300);
     } else {
-      // Stop session — unlock persona
+      // Stop session — unlock persona and drain queue
       personaLockedRef.current = false;
+      aiQueueRef.current = [];
+      queueProcessingRef.current = false;
       sttRef.current?.stopAll();
       ttsRef.current?.cancel();
       abortRef.current?.abort();
@@ -613,11 +664,18 @@ export function useAiTutor(deps: AiTutorDeps) {
       observeSpeakText(data.text, data.voice || "Female", data.speed || 0.7, data.voiceId);
     };
 
+    // ── room:ai-ask — a non-owner participant asks the AI a question ──────────
+    // Only the session owner receives this (server routes it to the owner's socket).
+    const onAiAsk = (data: { fromUserId: string; fromUsername: string; question: string }) => {
+      enqueueAiRequest(data.question, data.fromUsername);
+    };
+
     socket.on("room:ai-tutor-state", onState);
     socket.on("room:ai-tutor-busy", onBusy);
     socket.on("room:ai-tutor-disabled", onDisabled);
     socket.on("room:ai-tutor-enabled-changed", onEnabledChanged);
     socket.on("room:ai-tutor-message", onMessage);
+    socket.on("room:ai-ask", onAiAsk);
 
     return () => {
       socket.off("room:ai-tutor-state", onState);
@@ -625,8 +683,9 @@ export function useAiTutor(deps: AiTutorDeps) {
       socket.off("room:ai-tutor-disabled", onDisabled);
       socket.off("room:ai-tutor-enabled-changed", onEnabledChanged);
       socket.off("room:ai-tutor-message", onMessage);
+      socket.off("room:ai-ask", onAiAsk);
     };
-  }, [socket, userId, addDebug, toggleAiTutor, observeSpeakText]);
+  }, [socket, userId, addDebug, toggleAiTutor, observeSpeakText, enqueueAiRequest]);
 
   // ── Assembled state containers ────────────────────────────────────────────
   const aiState: AiState = {
@@ -700,5 +759,6 @@ export function useAiTutor(deps: AiTutorDeps) {
     interruptAi,
     welcomeUser,
     addDebug,
+    enqueueAiRequest,
   };
 }

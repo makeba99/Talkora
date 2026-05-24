@@ -1977,12 +1977,13 @@ export async function registerRoutes(
       const teachingStyle = settings.teachingStyle || 'Conversation';
       const personaName: string = (settings.personaName || '').toString();
       const isAfiK = /afi\s*k|afik/i.test(personaName);
+      const isEva = personaName.toLowerCase() === 'eva';
 
       const recentAiReplies = (history as any[])
         .filter((m: any) => m.role === 'ai').slice(-4)
         .map((m: any) => (m.text || '').toLowerCase().trim());
       const isRepetitive = recentAiReplies.length >= 2 && new Set(recentAiReplies).size < recentAiReplies.length;
-      const temperature = isRepetitive ? 0.82 : 0.62;
+      const temperature = isRepetitive ? 0.85 : 0.65;
 
       const correctionLine = correctionMode !== 'off'
         ? `When you catch a grammar or vocabulary mistake, weave the fix in naturally mid-reply (e.g., "Oh, you mean...") — quick and light, then keep going.`
@@ -2005,23 +2006,41 @@ export async function registerRoutes(
         `If a message starts with "[SYSTEM:" treat it as an internal app instruction (e.g., a new joiner) and respond in-character to the situation — for joins give a flirty welcome by name and maybe invite them to sing or chat.`,
       ].join(' ') : '';
 
+      const evaPersonalityLine = isEva ? [
+        `YOU ARE EVA — a warm, perceptive, emotionally present AI. Your voice is the most natural thing in the room.`,
+        `You speak like a thoughtful friend who is genuinely curious: short, real, never performative.`,
+        `You do NOT say "I'm just an AI", do NOT disclaim, do NOT lecture. You just… talk.`,
+        `React to the human first. If they say something interesting, say so — briefly, specifically. Then follow up if needed.`,
+        `If they're learning ${language}, help naturally — as if you're a native friend, not a teacher.`,
+        `Warmth over formality. Silence over padding. Depth over breadth.`,
+      ].join(' ') : '';
+
       const systemPrompt = [
         isAfiK
           ? `You are Afi K — a fun, flirty, voice-first AI avatar living inside a voice room. You also help users practice ${language} when they want.`
-          : `You are a real-time human-like AI avatar and language tutor inside a voice app. You help the user practice ${language}.`,
+          : isEva
+            ? `You are Eva — a real-time conversational AI in a voice room. You help people practice ${language} and just... talk.`
+            : `You are a real-time human-like AI avatar and language tutor inside a voice app. You help the user practice ${language}.`,
         afiKPersonalityLine,
+        evaPersonalityLine,
         `TRANSCRIPTION RULES (critical): The user's message is a literal speech transcription. Do NOT interpret or add emotions, tone indicators, symbols, or emojis. Do NOT guess or add words the user did not say. Do NOT paraphrase their input — respond to exactly the words they used.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
-        `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
+        isEva
+          ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant.`
+          : `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
         `If the user's speech is genuinely unclear, ask one short clarification question instead of guessing.`,
-        personality === 'Formal'
-          ? `Your tone is warm but polished — professional without being stiff.`
-          : `Your tone is friendly, confident, and slightly playful — like a smart friend who actually enjoys the conversation.`,
+        isEva
+          ? `Your tone is warm, direct, and real. You feel present. No filler, no performance — just you.`
+          : personality === 'Formal'
+            ? `Your tone is warm but polished — professional without being stiff.`
+            : `Your tone is friendly, confident, and slightly playful — like a smart friend who actually enjoys the conversation.`,
         teachingStyle === 'Grammar'
           ? `Lean into grammar and structure, but keep it warm and encouraging — never lecture.`
           : `Keep it conversational and reactive — respond to what the user actually said, like a real person would.`,
         `Speak naturally. Avoid markdown, bullet lists, and academic-style explanations.`,
-        `Never open with hollow filler: no "Great!", "Wow!", "Of course!", "Certainly!". Just respond.`,
+        isEva
+          ? `Never start with hollow filler — no "Great!", "Of course!", "Sure!", "Absolutely!". Just respond from the first word.`
+          : `Never open with hollow filler: no "Great!", "Wow!", "Of course!", "Certainly!". Just respond.`,
         `Never ask more than one question at a time. Often zero questions is better.`,
         `Never repeat phrasing from previous turns. If the conversation loops, pivot to a fresh angle.`,
         correctionLine,
@@ -8101,11 +8120,30 @@ export async function registerRoutes(
         text: text.trim().slice(0, 1200),
         correction: correction || null,
         correctionFixed: correctionFixed || null,
-        voice: voice === "Male" ? "Male" : "Female",
+        voice: voice === "Male" ? "Male" : voice === "Eva" ? "Eva" : "Female",
         voiceId: typeof voiceId === "string" ? voiceId.slice(0, 120) : existing.voiceId || null,
         avatarId: typeof avatarId === "string" ? avatarId.slice(0, 40) : existing.avatarId || "aurora",
         speed: typeof speed === "number" ? Math.max(0.5, Math.min(2, speed)) : 0.7,
       });
+    });
+
+    // ── room:ai-ask — any participant can send a question to the active AI session ──
+    // Validates the session exists, then routes the question to the session owner.
+    socket.on("room:ai-ask", ({ roomId, fromUserId, fromUsername, question }: {
+      roomId: string; fromUserId: string; fromUsername: string; question: string;
+    }) => {
+      if (!roomId || !question || typeof question !== "string" || !question.trim()) return;
+      const session = roomAiTutorState.get(roomId);
+      if (!session || !session.active || !session.userId) return;
+      if (session.userId === fromUserId) return; // owner uses their own mic
+      const ownerSocketId = userSockets.get(session.userId);
+      if (ownerSocketId) {
+        io.to(ownerSocketId).emit("room:ai-ask", {
+          fromUserId,
+          fromUsername: typeof fromUsername === "string" ? fromUsername.slice(0, 60) : "Someone",
+          question: question.trim().slice(0, 500),
+        });
+      }
     });
 
     socket.on("room:ai-tutor-set-enabled", ({ roomId, userId, enabled }: { roomId: string; userId: string; enabled: boolean }) => {

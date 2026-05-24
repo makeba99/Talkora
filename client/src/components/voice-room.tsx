@@ -2096,6 +2096,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   // ── AI Tutor (modular: STT / TTS / Stream / Avatar) ──────────────────────
   const [aiPersonaPickerOpen, setAiPersonaPickerOpen] = useState(false);
+  const [askAiText, setAskAiText] = useState("");
+  const [askAiOpen, setAskAiOpen] = useState(false);
 
   const {
     aiState,
@@ -2116,6 +2118,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     interruptAi,
     welcomeUser,
     addDebug: addAiDebugEntry,
+    enqueueAiRequest,
   } = useAiTutor({
     socket,
     roomId: room.id,
@@ -2699,6 +2702,28 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const isAiTutorOwner = aiTutorActive || roomAiTutorSession.userId === user?.id;
   const aiTutorVisible = aiTutorActive || (!!roomAiTutorSession.active && roomAiTutorSession.userId !== user?.id);
+
+  // Close "Ask AI" input when the session ends
+  useEffect(() => {
+    if (!roomAiTutorSession.active && !aiTutorActive) {
+      setAskAiOpen(false);
+      setAskAiText("");
+    }
+  }, [roomAiTutorSession.active, aiTutorActive]);
+
+  const handleSendAskAi = useCallback(() => {
+    const q = askAiText.trim();
+    if (!q || !socket) return;
+    const myName = user ? (user.displayName || user.firstName || user.email || "Someone") : "Someone";
+    socket.emit("room:ai-ask", {
+      roomId: room.id,
+      fromUserId: user?.id ?? "",
+      fromUsername: myName,
+      question: q,
+    });
+    setAskAiText("");
+    setAskAiOpen(false);
+  }, [askAiText, socket, room.id, user]);
   const aiTutorDisplaySpeaking = isAiTutorOwner ? aiTutorSpeaking : roomAiTutorSession.speaking;
   const aiTutorDisplayListening = isAiTutorOwner ? aiListening : (!!roomAiTutorSession.active && !roomAiTutorSession.speaking);
   const aiTutorDisplayName = roomAiTutorSession.userId && roomAiTutorSession.userId !== user?.id
@@ -15319,7 +15344,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                 {/* Persona cards (dark neumorphic) */}
                 <div className="flex flex-col gap-4 w-full">
-                  {/* Female — Afi K */}
+                  {/* Afi K — Funny, flirty, browser voice */}
                   <NeumorphicPersonaCard
                     testId="button-persona-female"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Female", "Afi K"); }}
@@ -15330,39 +15355,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     accentColor="rgba(255,140,210,0.90)"
                   />
 
-                  {/* Male — Dude Lebowski */}
-                  <NeumorphicPersonaCard
-                    testId="button-persona-male"
-                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Dude"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="120,180,255" content={<span className="text-2xl font-light leading-none" style={{ color: "rgba(180,215,255,0.98)", textShadow: "0 0 10px rgba(120,180,255,0.55)" }}>♂</span>} />}
-                    name="Dude Lebowski"
-                    description="Laid-back · conversational · easy-going"
-                    nameColor="rgba(150,195,255,0.95)"
-                    accentColor="rgba(120,180,255,0.90)"
-                  />
-
-                  {/* Eva — ElevenLabs (detailed AI portrait, neumorphic ring) */}
+                  {/* Eva — ElevenLabs, warm & emotionally present */}
                   <NeumorphicPersonaCard
                     testId="button-persona-eva"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Eva"); }}
                     avatar={<NeumorphicAvatarRing glowRgb="0,225,255" intense content={<img loading="lazy" decoding="async" src={evaAvatarUrl} alt="Eva avatar" className="w-full h-full object-cover rounded-full" data-testid="img-eva-avatar" />} />}
                     name="Eva"
-                    badge="NEW AI"
-                    description="ElevenLabs · Natural & expressive"
+                    badge="BEST AI"
+                    description="ElevenLabs · Warm · Emotionally present"
                     nameColor="rgba(160,235,255,0.97)"
                     accentColor="rgba(0,225,255,0.95)"
-                  />
-
-                  {/* Flex — Street-smart, hype, high energy */}
-                  <NeumorphicPersonaCard
-                    testId="button-persona-flex"
-                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Flex"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="255,180,0" content={<span className="text-2xl font-black leading-none" style={{ color: "rgba(255,210,80,0.98)", textShadow: "0 0 12px rgba(255,180,0,0.70)" }}>F</span>} />}
-                    name="Flex"
-                    badge="🔥"
-                    description="Street-smart · hype · high energy"
-                    nameColor="rgba(255,210,80,0.97)"
-                    accentColor="rgba(255,180,0,0.90)"
                   />
                 </div>
 
@@ -15581,6 +15583,62 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     >
                       Dismiss
                     </button>}
+
+                    {/* Ask AI — visible to non-owners when an AI session is active */}
+                    {!isAiTutorOwner && roomAiTutorSession.active && (
+                      <div className="flex flex-col items-center gap-2 mt-2">
+                        {askAiOpen ? (
+                          <div className="flex items-center gap-1.5" style={{ pointerEvents: "auto" }}>
+                            <input
+                              className="rounded-full text-[12px] px-3 py-1.5 outline-none w-[160px] sm:w-[200px]"
+                              style={{
+                                background: "rgba(8,18,48,0.88)",
+                                border: "1.5px solid rgba(0,225,255,0.40)",
+                                color: "rgba(230,240,255,0.95)",
+                              }}
+                              value={askAiText}
+                              onChange={e => setAskAiText(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter" && askAiText.trim()) handleSendAskAi(); }}
+                              placeholder="Ask something…"
+                              autoFocus
+                              data-testid="input-ask-ai"
+                            />
+                            <button
+                              onClick={handleSendAskAi}
+                              disabled={!askAiText.trim()}
+                              data-testid="button-ask-ai-send"
+                              className="flex items-center justify-center w-7 h-7 rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-40"
+                              style={{ background: "rgba(0,180,255,0.75)", border: "1.5px solid rgba(0,225,255,0.55)" }}
+                            >
+                              <Send className="w-3.5 h-3.5" style={{ color: "#fff" }} />
+                            </button>
+                            <button
+                              onClick={() => { setAskAiOpen(false); setAskAiText(""); }}
+                              data-testid="button-ask-ai-cancel"
+                              className="flex items-center justify-center w-7 h-7 rounded-full transition-all hover:scale-105 active:scale-95"
+                              style={{ background: "rgba(40,20,60,0.70)", border: "1px solid rgba(255,255,255,0.12)" }}
+                            >
+                              <X className="w-3.5 h-3.5" style={{ color: "rgba(200,180,255,0.80)" }} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setAskAiOpen(true)}
+                            data-testid="button-ask-ai-open"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all hover:scale-105 active:scale-95"
+                            style={{
+                              background: "rgba(0,60,140,0.65)",
+                              border: "1.5px solid rgba(0,225,255,0.35)",
+                              color: "rgba(160,235,255,0.92)",
+                              backdropFilter: "blur(8px)",
+                            }}
+                          >
+                            <BrainCircuit className="w-3.5 h-3.5" />
+                            Ask AI
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
