@@ -268,10 +268,15 @@ interface ChatMessage {
   badgeQuote?: string;
 }
 
+const BAR_COUNT = 24;
+
 function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const tRef = useRef<number>(0);
+  const smoothRef = useRef<Float32Array>(new Float32Array(BAR_COUNT).fill(0));
+  const peaksRef = useRef<Float32Array>(new Float32Array(BAR_COUNT).fill(0));
+  const peakTimersRef = useRef<Float32Array>(new Float32Array(BAR_COUNT).fill(0));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -281,67 +286,91 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
 
     const W = canvas.width;
     const H = canvas.height;
+    const BAR_W = 4;
+    const GAP = 2.5;
+    const TOTAL_W = BAR_COUNT * BAR_W + (BAR_COUNT - 1) * GAP;
+    const originX = (W - TOTAL_W) / 2;
     const dataArray = analyserNode ? new Uint8Array(analyserNode.frequencyBinCount) : null;
-
-    /* Three layered sine waves: amber (primary), violet (mid), cyan (deep) */
-    const LAYERS = [
-      { r: 251, g: 146, b:  60, alpha: 0.92, lw: 2.2, blur: 12, speed: 0.072, freq: 2.0, ampMul: 0.90 },
-      { r: 167, g: 139, b: 250, alpha: 0.58, lw: 1.5, blur:  7, speed: 0.052, freq: 3.2, ampMul: 0.62 },
-      { r:   6, g: 182, b: 212, alpha: 0.34, lw: 1.0, blur:  5, speed: 0.032, freq: 1.5, ampMul: 0.40 },
-    ];
-
-    const STEPS = 44;
+    const smooth = smoothRef.current;
+    const peaks = peaksRef.current;
+    const peakTimers = peakTimersRef.current;
 
     const draw = () => {
       const t = tRef.current++;
       ctx.clearRect(0, 0, W, H);
 
-      let level = 0;
       if (analyserNode && dataArray) {
         analyserNode.getByteFrequencyData(dataArray);
-        let sum = 0;
-        const cap = Math.min(56, dataArray.length);
-        for (let i = 0; i < cap; i++) sum += dataArray[i];
-        level = sum / cap / 255;
-      } else {
-        /* Gentle idle pulse when no live audio */
-        level = 0.18 + Math.sin(t * 0.038) * 0.055;
       }
 
-      for (let li = 0; li < LAYERS.length; li++) {
-        const L = LAYERS[li];
-        const phase = t * L.speed + li * Math.PI * 0.68;
+      for (let i = 0; i < BAR_COUNT; i++) {
+        let target: number;
+
+        if (analyserNode && dataArray) {
+          /* Map each bar to a slice of the voice-frequency spectrum (0–80 bins) */
+          const binLo = Math.floor((i / BAR_COUNT) * Math.min(80, dataArray.length - 1));
+          const binHi = Math.floor(((i + 1) / BAR_COUNT) * Math.min(80, dataArray.length - 1));
+          let sum = 0;
+          const n = Math.max(1, binHi - binLo);
+          for (let b = binLo; b < binHi; b++) sum += dataArray[b];
+          target = sum / n / 255;
+        } else {
+          /* Idle: gentle two-phase breathing ripple */
+          const p = t * 0.022 + i * 0.38;
+          target = 0.07 + Math.sin(p) * 0.035 + Math.sin(p * 1.9 + i * 0.5) * 0.022;
+        }
+
+        /* Asymmetric lerp — snappy rise, smooth fall */
+        const lerpRate = target > smooth[i] ? 0.52 : 0.10;
+        smooth[i] += lerpRate * (target - smooth[i]);
+
+        /* Peak hold + slow fall */
+        if (smooth[i] >= peaks[i]) {
+          peaks[i] = smooth[i];
+          peakTimers[i] = 38;
+        } else {
+          peakTimers[i]--;
+          if (peakTimers[i] <= 0) {
+            peaks[i] = Math.max(peaks[i] - 0.007, smooth[i]);
+          }
+        }
+
+        const barH = Math.max(2.5, smooth[i] * (H - 8));
+        const x = originX + i * (BAR_W + GAP);
+        const yTop = H - barH - 3;
+
+        /* Gradient: amber at base → violet at tip */
+        const grad = ctx.createLinearGradient(x, yTop + barH, x, yTop);
+        grad.addColorStop(0,   "rgba(251,146,60,0.90)");  // amber-400
+        grad.addColorStop(0.55,"rgba(251,146,60,0.78)");
+        grad.addColorStop(1,   "rgba(167,139,250,0.92)"); // violet-400
 
         ctx.save();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "rgba(251,146,60,0.55)";
+        ctx.fillStyle = grad;
+
+        /* Rounded-top bar */
+        const r = Math.min(BAR_W / 2, barH / 2);
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(${L.r},${L.g},${L.b},${L.alpha})`;
-        ctx.lineWidth = L.lw;
-        ctx.shadowBlur = L.blur;
-        ctx.shadowColor = `rgba(${L.r},${L.g},${L.b},0.60)`;
+        ctx.moveTo(x, yTop + barH);
+        ctx.lineTo(x + BAR_W, yTop + barH);
+        ctx.lineTo(x + BAR_W, yTop + r);
+        ctx.quadraticCurveTo(x + BAR_W, yTop, x + BAR_W - r, yTop);
+        ctx.quadraticCurveTo(x, yTop, x, yTop + r);
+        ctx.lineTo(x, yTop + barH);
+        ctx.closePath();
+        ctx.fill();
 
-        const pts: [number, number][] = [];
-        for (let i = 0; i <= STEPS; i++) {
-          const x = (i / STEPS) * W;
-          let amp: number;
-          if (analyserNode && dataArray) {
-            const bin = Math.floor((i / STEPS) * Math.min(56, dataArray.length - 1));
-            amp = (dataArray[bin] / 255) * H * L.ampMul;
-          } else {
-            amp = level * H * L.ampMul;
-          }
-          const y = H / 2 + Math.sin((x / W) * Math.PI * L.freq + phase) * Math.max(1.2, amp);
-          pts.push([x, y]);
+        /* Peak dot — violet spark that holds at the high watermark */
+        if (peaks[i] > 0.06 && peakTimers[i] > 0) {
+          const peakY = H - peaks[i] * (H - 8) - 3 - 2;
+          ctx.shadowBlur = 7;
+          ctx.shadowColor = "rgba(167,139,250,0.85)";
+          ctx.fillStyle = "rgba(192,168,255,0.95)";
+          ctx.fillRect(x, peakY, BAR_W, 1.5);
         }
 
-        /* Smooth bezier through all points */
-        ctx.moveTo(pts[0][0], pts[0][1]);
-        for (let i = 1; i < pts.length - 1; i++) {
-          const mx = (pts[i][0] + pts[i + 1][0]) / 2;
-          const my = (pts[i][1] + pts[i + 1][1]) / 2;
-          ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
-        }
-        ctx.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
-        ctx.stroke();
         ctx.restore();
       }
 
@@ -353,12 +382,12 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
   }, [analyserNode]);
 
   return (
-    <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
+    <div className="absolute bottom-3 left-0 right-0 flex justify-center z-20 pointer-events-none">
       <canvas
         ref={canvasRef}
-        width={104}
-        height={30}
-        className="opacity-96"
+        width={172}
+        height={44}
+        className="opacity-[0.97]"
         data-testid="waveform-canvas"
       />
     </div>
