@@ -387,11 +387,11 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
   );
 
   const followingUsers = allUsers.filter(
-    (u) => u.id !== user?.id && followingIds.has(u.id)
+    (u) => u.id !== user?.id && followingIds.has(u.id) && !followerIds.has(u.id)
   );
 
   const followerUsers = allUsers.filter(
-    (u) => u.id !== user?.id && followerIds.has(u.id)
+    (u) => u.id !== user?.id && followerIds.has(u.id) && !followingIds.has(u.id)
   );
 
   const connectedUserIds = new Set([...Array.from(followingIds), ...Array.from(followerIds)]);
@@ -808,7 +808,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                 {tabPill("Following", followingCount, activeTab === "following")}
               </TabsTrigger>
               <TabsTrigger value="followers" className="text-[11px] rounded-full data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-followers">
-                {tabPill("Fans", followersCount, activeTab === "followers")}
+                {tabPill("Followers", followersCount, activeTab === "followers")}
               </TabsTrigger>
             </TabsList>
 
