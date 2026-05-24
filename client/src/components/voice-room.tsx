@@ -1281,14 +1281,19 @@ function ParticipantCard({
           </div>
         )}
 
-        {/* DM unread badge on participant card */}
+        {/* DM unread badge on participant card — clickable, opens DM */}
         {dmUnreadCount > 0 && (
-          <div
-            className="absolute top-1 left-1 z-30 flex items-center gap-0.5 pointer-events-none animate-in fade-in zoom-in-75"
+          <button
+            className="absolute top-1 left-1 z-30 flex items-center gap-0.5 animate-in fade-in zoom-in-75 pointer-events-auto cursor-pointer"
             data-testid={`badge-room-dm-unread-${p.id}`}
+            title="Open message"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onNavigateDm) onNavigateDm(dmFirstUnreadSenderId ?? p.id);
+            }}
           >
             <div
-              className="flex items-center gap-0.5 px-1 py-0.5 rounded-full text-white font-bold"
+              className="flex items-center gap-0.5 px-1 py-0.5 rounded-full text-white font-bold hover:scale-110 transition-transform active:scale-95"
               style={{
                 background: "linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",
                 boxShadow: "0 0 8px rgba(239,68,68,0.6), 0 0 16px rgba(239,68,68,0.3)",
@@ -1301,7 +1306,7 @@ function ParticipantCard({
               <MessageSquare style={{ width: 8, height: 8 }} />
               <span>{dmUnreadCount > 9 ? "9+" : dmUnreadCount}</span>
             </div>
-          </div>
+          </button>
         )}
 
         {gearPopover}
@@ -15021,7 +15026,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onReconnect={handleReconnect}
                       notifPrefs={notifPrefsData?.[p.id] ?? null}
                       onSetNotifPrefs={(notifyRoomJoin: boolean, notifyDm: boolean) => updateNotifPrefsMutation.mutate({ userId: p.id, notifyRoomJoin, notifyDm })}
-                      dmUnreadCount={isMe ? (Object.values(dmUnreadCounts) as number[]).reduce((s, n) => s + n, 0) : 0}
+                      dmUnreadCount={isMe
+                        ? (Object.values(dmUnreadCounts) as number[]).reduce((s, n) => s + n, 0)
+                        : (dmUnreadCounts[p.id] || 0)}
+                      dmFirstUnreadSenderId={isMe
+                        ? (Object.entries(dmUnreadCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null)
+                        : p.id}
                       volume={participantVolumes[p.id] ?? 1}
                       onVolumeChange={handleVolumeChange}
                       youtubeVideoId={youtubeHosts.get(p.id) || null}
