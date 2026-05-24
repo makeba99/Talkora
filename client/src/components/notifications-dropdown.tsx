@@ -163,16 +163,22 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
       toast({ title: "New message request", description: "Someone wants to message you." });
     };
 
+    const handleNotificationNew = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    };
+
     socket.on("admin:notification", refreshNotifications);
     socket.on("admin:warning", handleWarning);
     socket.on("admin:broadcast_notification", handleBroadcastNotification);
     socket.on("message_request:new", handleNewMessageRequest);
+    socket.on("notification:new", handleNotificationNew);
 
     return () => {
       socket.off("admin:notification", refreshNotifications);
       socket.off("admin:warning", handleWarning);
       socket.off("admin:broadcast_notification", handleBroadcastNotification);
       socket.off("message_request:new", handleNewMessageRequest);
+      socket.off("notification:new", handleNotificationNew);
     };
   }, [socket, toast]);
 

@@ -423,6 +423,7 @@ function ParticipantCard({
   fillMode = false,
   notifPrefs,
   onSetNotifPrefs,
+  dmUnreadCount = 0,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -1214,6 +1215,29 @@ function ParticipantCard({
                    <BookOpen className="w-3 h-3 text-white" />
                 </div>
              )}
+          </div>
+        )}
+
+        {/* DM unread badge on participant card */}
+        {!isMe && dmUnreadCount > 0 && (
+          <div
+            className="absolute top-1 left-1 z-30 flex items-center gap-0.5 pointer-events-none animate-in fade-in zoom-in-75"
+            data-testid={`badge-room-dm-unread-${p.id}`}
+          >
+            <div
+              className="flex items-center gap-0.5 px-1 py-0.5 rounded-full text-white font-bold"
+              style={{
+                background: "linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",
+                boxShadow: "0 0 8px rgba(239,68,68,0.6), 0 0 16px rgba(239,68,68,0.3)",
+                fontSize: "9px",
+                lineHeight: 1,
+                minWidth: "16px",
+                border: "1px solid rgba(255,255,255,0.22)",
+              }}
+            >
+              <MessageSquare style={{ width: 8, height: 8 }} />
+              <span>{dmUnreadCount > 9 ? "9+" : dmUnreadCount}</span>
+            </div>
           </div>
         )}
 
@@ -14503,6 +14527,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onReconnect={handleReconnect}
                       notifPrefs={notifPrefsData?.[p.id] ?? null}
                       onSetNotifPrefs={(notifyRoomJoin: boolean, notifyDm: boolean) => updateNotifPrefsMutation.mutate({ userId: p.id, notifyRoomJoin, notifyDm })}
+                      dmUnreadCount={dmUnreadCounts[p.id] || 0}
                       volume={participantVolumes[p.id] ?? 1}
                       onVolumeChange={handleVolumeChange}
                       youtubeVideoId={youtubeHosts.get(p.id) || null}

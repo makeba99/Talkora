@@ -3436,6 +3436,8 @@ export async function registerRoutes(
       const followPayload = { followerId: parsed.data.followerId, followingId: parsed.data.followingId };
       if (followedSocketId) io.to(followedSocketId).emit("user:followed", followPayload);
       if (followerSocketId) io.to(followerSocketId).emit("user:followed", followPayload);
+      // Notify the followed user's notifications dropdown in real-time
+      if (followedSocketId) io.to(followedSocketId).emit("notification:new", { type: "follow" });
 
       // Push notification to the followed user if the follow is not mutual
       // (i.e. the person being followed hasn't followed back yet)
