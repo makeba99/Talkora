@@ -14087,49 +14087,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               }
               data-testid="media-main-ereader"
             >
-              {/* Drag-to-resize handle — only shown when not fullscreen */}
-              {!eReaderFullscreen && (
-                <div
-                  className="flex-shrink-0 h-3 flex items-center justify-center cursor-ns-resize group/resize-reader hover:bg-black/10 transition-colors"
-                  data-testid="ereader-resize-handle"
-                  title="Drag to resize"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    const startY = e.clientY;
-                    const container = e.currentTarget.parentElement!;
-                    const startH = container.getBoundingClientRect().height;
-                    const onMove = (me: MouseEvent) => {
-                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
-                      setEReaderHeight(Math.max(200, Math.min(outerH - 60, startH - (me.clientY - startY))));
-                    };
-                    const onUp = () => {
-                      window.removeEventListener("mousemove", onMove);
-                      window.removeEventListener("mouseup", onUp);
-                    };
-                    window.addEventListener("mousemove", onMove);
-                    window.addEventListener("mouseup", onUp);
-                  }}
-                  onTouchStart={(e) => {
-                    const touch = e.touches[0];
-                    const startY = touch.clientY;
-                    const container = e.currentTarget.parentElement!;
-                    const startH = container.getBoundingClientRect().height;
-                    const onMove = (te: TouchEvent) => {
-                      const t = te.touches[0];
-                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
-                      setEReaderHeight(Math.max(200, Math.min(outerH - 60, startH - (t.clientY - startY))));
-                    };
-                    const onUp = () => {
-                      window.removeEventListener("touchmove", onMove);
-                      window.removeEventListener("touchend", onUp);
-                    };
-                    window.addEventListener("touchmove", onMove, { passive: true });
-                    window.addEventListener("touchend", onUp);
-                  }}
-                >
-                  <div className="w-10 h-1 rounded-full bg-current opacity-20 group-hover/resize-reader:opacity-50 transition-opacity" />
-                </div>
-              )}
 
               {/* Reader toolbar */}
               <div
@@ -14326,6 +14283,55 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   )}
                 </div>
               </div>
+
+              {/* Drag-to-resize handle at the bottom — drag DOWN to make reader taller */}
+              {!eReaderFullscreen && (
+                <div
+                  className="flex-shrink-0 h-4 flex items-center justify-center cursor-s-resize group/resize-reader select-none"
+                  data-testid="ereader-resize-handle"
+                  title="Drag down to expand reader"
+                  style={{
+                    background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#e8e8e8" : "#111111",
+                    borderTop: `1px solid ${eReaderTheme === "dark" ? "#333" : "#d4c4a0"}`,
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startY = e.clientY;
+                    const container = e.currentTarget.parentElement!;
+                    const startH = container.getBoundingClientRect().height;
+                    const onMove = (me: MouseEvent) => {
+                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                      setEReaderHeight(Math.max(200, Math.min(outerH - 60, startH + (me.clientY - startY))));
+                    };
+                    const onUp = () => {
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
+                  onTouchStart={(e) => {
+                    const touch = e.touches[0];
+                    const startY = touch.clientY;
+                    const container = e.currentTarget.parentElement!;
+                    const startH = container.getBoundingClientRect().height;
+                    const onMove = (te: TouchEvent) => {
+                      const t = te.touches[0];
+                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                      setEReaderHeight(Math.max(200, Math.min(outerH - 60, startH + (t.clientY - startY))));
+                    };
+                    const onUp = () => {
+                      window.removeEventListener("touchmove", onMove);
+                      window.removeEventListener("touchend", onUp);
+                    };
+                    window.addEventListener("touchmove", onMove, { passive: false });
+                    window.addEventListener("touchend", onUp);
+                  }}
+                >
+                  <div className="w-12 h-1 rounded-full opacity-30 group-hover/resize-reader:opacity-70 transition-opacity"
+                    style={{ background: eReaderTheme === "dark" ? "#d4c9b0" : "#8b6914" }} />
+                </div>
+              )}
             </div>
           )}
 
