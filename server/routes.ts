@@ -2529,6 +2529,9 @@ export async function registerRoutes(
     }
   });
 
+  const _bookTextCache = new Map<string, { ts: number; text: string }>();
+  const BOOK_TEXT_TTL = 2 * 60 * 60 * 1000;
+
   app.get("/api/book/text", isAuthenticated, async (req: any, res) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ message: "Missing url" });
@@ -2538,13 +2541,34 @@ export async function registerRoutes(
     if (!allowed.some(h => hostname === h || hostname.endsWith("." + h))) {
       return res.status(403).json({ message: "URL not allowed" });
     }
+    const cached = _bookTextCache.get(url);
+    if (cached && Date.now() - cached.ts < BOOK_TEXT_TTL) {
+      res.setHeader("Content-Type", "text/plain; charset=utf-8");
+      res.setHeader("X-Cache", "HIT");
+      return res.send(cached.text);
+    }
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 12000);
     try {
-      const response = await fetch(url, { headers: { "User-Agent": "Vextorn/1.0 (+https://vextorn.replit.app)" } });
+      const response = await fetch(url, {
+        signal: ctrl.signal,
+        headers: { "User-Agent": "Vextorn/1.0 (+https://vextorn.replit.app)" },
+      });
+      clearTimeout(timeout);
       if (!response.ok) return res.status(response.status).json({ message: "Upstream error" });
       const text = await response.text();
+      if (text && text.length > 100) {
+        _bookTextCache.set(url, { ts: Date.now(), text });
+        if (_bookTextCache.size > 200) {
+          const oldest = [..._bookTextCache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+          _bookTextCache.delete(oldest[0]);
+        }
+      }
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.send(text);
     } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === "AbortError") return res.status(504).json({ message: "Book fetch timed out" });
       console.error("Book proxy error:", err);
       res.status(500).json({ message: "Failed to fetch book" });
     }

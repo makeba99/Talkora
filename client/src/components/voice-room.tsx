@@ -8634,17 +8634,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
     try {
       const formats = book.formats || {};
-      const textUrl = formats["text/plain; charset=utf-8"] || formats["text/plain; charset=us-ascii"] || formats["text/plain"];
-      if (!textUrl) throw new Error("No text");
-      const res = await fetch(`/api/book/text?url=${encodeURIComponent(textUrl)}`);
-      if (!res.ok) throw new Error("Fetch failed");
-      const text = await res.text();
-      const startIdx = text.indexOf("*** START OF") > -1
-        ? text.indexOf("\n", text.indexOf("*** START OF")) + 1
-        : text.indexOf("***\r\n\r\n") > -1 ? text.indexOf("***\r\n\r\n") + 6 : 0;
-      setBookText(text.slice(startIdx, startIdx + 12000));
-    } catch { setBookText("Could not load the book text. Try another title."); }
-    finally { setBookLoading(false); }
+      const textUrl =
+        formats["text/plain; charset=utf-8"] ||
+        formats["text/plain; charset=us-ascii"] ||
+        formats["text/plain"];
+      if (!textUrl) throw new Error("No text URL available for this book.");
+      const res = await fetch(`/api/book/text?url=${encodeURIComponent(textUrl)}`, { credentials: "include" });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const rawText = await res.text();
+      if (!rawText || rawText.length < 50) throw new Error("Empty response from server");
+      let startIdx = 0;
+      const startMarker = rawText.indexOf("*** START OF");
+      if (startMarker > -1) {
+        const lineEnd = rawText.indexOf("\n", startMarker);
+        startIdx = lineEnd > -1 ? lineEnd + 1 : startMarker;
+        const extraNewlines = rawText.slice(startIdx).match(/^[\r\n]*/)?.[0].length ?? 0;
+        startIdx += extraNewlines;
+      } else {
+        const altMarker = rawText.indexOf("***\r\n\r\n");
+        if (altMarker > -1) startIdx = altMarker + 6;
+      }
+      const extracted = rawText.slice(startIdx, startIdx + 20000).trim();
+      if (!extracted) throw new Error("No readable text found after header");
+      setBookText(extracted);
+    } catch (err: any) {
+      setBookText("Could not load this book. Please try another title.");
+    } finally {
+      setBookLoading(false);
+    }
   };
 
   const handleJoinReadTogether = async (book: any) => {
@@ -11409,7 +11426,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </div>
                 )}
 
-                {readBooks.length === 0 && readCatalog.length === 0 && readAudiobooks.length === 0 && readVideos.length === 0 && !readLoading && readingHistory.length === 0 && (
+                {readBooks.length === 0 && readAudiobooks.length === 0 && readVideos.length === 0 && !readLoading && readingHistory.length === 0 && (
                   <div className="text-center py-8 space-y-2 text-muted-foreground">
                     <BookOpen className="w-8 h-8 mx-auto opacity-30" />
                     <p className="text-xs">No matches. Try a different search.</p>
@@ -11450,9 +11467,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </button>
                 ))}
 
-                {readSearch.trim() && readBooks.length === 0 && (readCatalog.length > 0 || readAudiobooks.length > 0 || readVideos.length > 0) && (
+                {readSearch.trim() && readBooks.length === 0 && (readAudiobooks.length > 0 || readVideos.length > 0) && (
                   <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5 text-[11px] text-amber-200/90" data-testid="text-no-free-text">
-                    No free full text for "<strong>{readSearch}</strong>" — here are some related audiobooks, videos, and catalog matches you can open in a new tab.
+                    No free full text for "<strong>{readSearch}</strong>" — here are some related audiobooks and videos.
                   </div>
                 )}
 
@@ -11517,35 +11534,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </div>
                 )}
 
-                {readCatalog.length > 0 && (
-                  <div className="space-y-1.5 pt-2" data-testid="section-catalog">
-                    <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wide px-1 flex items-center gap-1">
-                      {readSearch.trim() ? <><BookOpen className="w-3 h-3" /> Also in catalog</> : <><TrendingUp className="w-3 h-3" /> Trending This Week</>}
-                    </p>
-                    {readCatalog.map((c: any) => (
-                      <button
-                        key={c.key}
-                        onClick={() => handleOpenCatalogBook(c)}
-                        className="w-full flex items-start gap-2 p-2 rounded-lg border bg-muted/5 hover:bg-muted/20 transition-colors text-left"
-                        data-testid={`card-catalog-${c.key?.replace(/\W/g, '')}`}
-                      >
-                        {c.coverUrl ? (
-                          <img loading="lazy" decoding="async" src={c.coverUrl} alt="" className="w-10 h-14 rounded object-cover flex-shrink-0 bg-muted" />
-                        ) : (
-                          <div className="w-10 h-14 rounded bg-muted flex-shrink-0 flex items-center justify-center">
-                            <BookOpen className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold line-clamp-2">{c.title}</p>
-                          {c.author && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{c.author}</p>}
-                          {c.year && <p className="text-[10px] text-muted-foreground/60 mt-0.5">{c.year}</p>}
-                          <p className="text-[9px] mt-1" style={{ color: "hsla(var(--neu-orange-hi) / 0.5)" }}>Tap to open</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             </ScrollArea>
           </div>
@@ -14137,10 +14125,62 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 ? { background: eReaderTheme === "sepia" ? "#f5ead5" : eReaderTheme === "light" ? "#ffffff" : "#1a1a1a", color: eReaderTheme === "dark" ? "#d4c9b0" : "#1a1008" }
                 : eReaderHeight
                   ? { height: eReaderHeight, flexShrink: 0, background: eReaderTheme === "sepia" ? "#f5ead5" : eReaderTheme === "light" ? "#ffffff" : "#1a1a1a", color: eReaderTheme === "dark" ? "#d4c9b0" : "#1a1008" }
-                  : { flex: 1, minHeight: 0, background: eReaderTheme === "sepia" ? "#f5ead5" : eReaderTheme === "light" ? "#ffffff" : "#1a1a1a", color: eReaderTheme === "dark" ? "#d4c9b0" : "#1a1008" }
+                  : { height: 320, flexShrink: 0, background: eReaderTheme === "sepia" ? "#f5ead5" : eReaderTheme === "light" ? "#ffffff" : "#1a1a1a", color: eReaderTheme === "dark" ? "#d4c9b0" : "#1a1008" }
               }
               data-testid="media-main-ereader"
             >
+
+              {/* Drag-to-resize handle at the TOP — drag UP to make reader taller */}
+              {!eReaderFullscreen && (
+                <div
+                  className="flex-shrink-0 h-5 flex items-center justify-center cursor-n-resize group/resize-reader select-none z-10"
+                  data-testid="ereader-resize-handle"
+                  title="Drag up to expand reader"
+                  style={{
+                    background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#e8e8e8" : "#111111",
+                    borderTop: `2px solid ${eReaderTheme === "dark" ? "#555" : "#b8a880"}`,
+                    borderBottom: `1px solid ${eReaderTheme === "dark" ? "#333" : "#d4c4a0"}`,
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startY = e.clientY;
+                    const container = e.currentTarget.parentElement!;
+                    const startH = container.getBoundingClientRect().height;
+                    const onMove = (me: MouseEvent) => {
+                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                      const delta = startY - me.clientY;
+                      setEReaderHeight(Math.max(160, Math.min(outerH - 80, startH + delta)));
+                    };
+                    const onUp = () => {
+                      window.removeEventListener("mousemove", onMove);
+                      window.removeEventListener("mouseup", onUp);
+                    };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
+                  onTouchStart={(e) => {
+                    const touch = e.touches[0];
+                    const startY = touch.clientY;
+                    const container = e.currentTarget.parentElement!;
+                    const startH = container.getBoundingClientRect().height;
+                    const onMove = (te: TouchEvent) => {
+                      const t = te.touches[0];
+                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                      const delta = startY - t.clientY;
+                      setEReaderHeight(Math.max(160, Math.min(outerH - 80, startH + delta)));
+                    };
+                    const onUp = () => {
+                      window.removeEventListener("touchmove", onMove);
+                      window.removeEventListener("touchend", onUp);
+                    };
+                    window.addEventListener("touchmove", onMove, { passive: false });
+                    window.addEventListener("touchend", onUp);
+                  }}
+                >
+                  <div className="w-16 h-1 rounded-full opacity-40 group-hover/resize-reader:opacity-80 transition-opacity"
+                    style={{ background: eReaderTheme === "dark" ? "#d4c9b0" : "#8b6914" }} />
+                </div>
+              )}
 
               {/* Reader toolbar */}
               <div
@@ -14338,54 +14378,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               </div>
 
-              {/* Drag-to-resize handle at the bottom — drag DOWN to make reader taller */}
-              {!eReaderFullscreen && (
-                <div
-                  className="flex-shrink-0 h-4 flex items-center justify-center cursor-s-resize group/resize-reader select-none"
-                  data-testid="ereader-resize-handle"
-                  title="Drag down to expand reader"
-                  style={{
-                    background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#e8e8e8" : "#111111",
-                    borderTop: `1px solid ${eReaderTheme === "dark" ? "#333" : "#d4c4a0"}`,
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    const startY = e.clientY;
-                    const container = e.currentTarget.parentElement!;
-                    const startH = container.getBoundingClientRect().height;
-                    const onMove = (me: MouseEvent) => {
-                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
-                      setEReaderHeight(Math.max(200, Math.min(outerH - 60, startH + (me.clientY - startY))));
-                    };
-                    const onUp = () => {
-                      window.removeEventListener("mousemove", onMove);
-                      window.removeEventListener("mouseup", onUp);
-                    };
-                    window.addEventListener("mousemove", onMove);
-                    window.addEventListener("mouseup", onUp);
-                  }}
-                  onTouchStart={(e) => {
-                    const touch = e.touches[0];
-                    const startY = touch.clientY;
-                    const container = e.currentTarget.parentElement!;
-                    const startH = container.getBoundingClientRect().height;
-                    const onMove = (te: TouchEvent) => {
-                      const t = te.touches[0];
-                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
-                      setEReaderHeight(Math.max(200, Math.min(outerH - 60, startH + (t.clientY - startY))));
-                    };
-                    const onUp = () => {
-                      window.removeEventListener("touchmove", onMove);
-                      window.removeEventListener("touchend", onUp);
-                    };
-                    window.addEventListener("touchmove", onMove, { passive: false });
-                    window.addEventListener("touchend", onUp);
-                  }}
-                >
-                  <div className="w-12 h-1 rounded-full opacity-30 group-hover/resize-reader:opacity-70 transition-opacity"
-                    style={{ background: eReaderTheme === "dark" ? "#d4c9b0" : "#8b6914" }} />
-                </div>
-              )}
             </div>
           )}
 
