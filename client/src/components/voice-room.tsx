@@ -2245,6 +2245,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [replyingTo, setReplyingTo] = useState<{ id: string; userId: string; userName: string; text: string } | null>(null);
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   const [reactPopoverMsgId, setReactPopoverMsgId] = useState<string | null>(null);
+  const [chatContextMenu, setChatContextMenu] = useState<{ msgId: string; msgUserId: string; x: number; y: number; isOwn: boolean; canDelete: boolean } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [justReactedMsgId, setJustReactedMsgId] = useState<string | null>(null);
   const [morePopoverMsgId, setMorePopoverMsgId] = useState<string | null>(null);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
@@ -6537,6 +6539,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket?.emit("room:clear-user-chat", { roomId: room.id, clearedBy: user?.id, targetUserId });
   };
 
+  // Dismiss context menu on outside click or scroll
+  useEffect(() => {
+    if (!chatContextMenu) return;
+    const dismiss = () => setChatContextMenu(null);
+    window.addEventListener("click", dismiss, { capture: true });
+    window.addEventListener("keydown", dismiss, { capture: true });
+    window.addEventListener("scroll", dismiss, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener("click", dismiss, { capture: true });
+      window.removeEventListener("keydown", dismiss, { capture: true });
+      window.removeEventListener("scroll", dismiss, { capture: true });
+    };
+  }, [chatContextMenu]);
+
   useEffect(() => {
     if (!socket) return;
     const globalClearHandler = () => {
@@ -9099,6 +9115,36 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     data-highlighted={highlightedMsgId === msg.id ? "true" : undefined}
                     data-just-reacted={justReactedMsgId === msg.id ? "true" : undefined}
                     data-testid={`room-chat-${msg.id}`}
+                    onContextMenu={(e) => {
+                      if (msg.type === "deleted" || (msg as any).type === "system") return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const pad = 8;
+                      const menuW = 200;
+                      const menuH = 160;
+                      const x = Math.min(e.clientX + pad, window.innerWidth - menuW - pad);
+                      const y = Math.min(e.clientY + pad, window.innerHeight - menuH - pad);
+                      setChatContextMenu({ msgId: msg.id, msgUserId: msg.userId, x, y, isOwn, canDelete: canDeleteMsg });
+                    }}
+                    onTouchStart={(e) => {
+                      if (msg.type === "deleted" || (msg as any).type === "system") return;
+                      const touch = e.touches[0];
+                      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+                      longPressTimerRef.current = setTimeout(() => {
+                        const pad = 8;
+                        const menuW = 200;
+                        const menuH = 160;
+                        const x = Math.min(touch.clientX + pad, window.innerWidth - menuW - pad);
+                        const y = Math.min(touch.clientY - menuH - pad, window.innerHeight - menuH - pad);
+                        setChatContextMenu({ msgId: msg.id, msgUserId: msg.userId, x, y, isOwn, canDelete: canDeleteMsg });
+                      }, 500);
+                    }}
+                    onTouchEnd={() => {
+                      if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+                    }}
+                    onTouchMove={() => {
+                      if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+                    }}
                   >
                     {/* Bubble layout — own=right, others=left */}
                     {/* Bubble column — avatar lives inside card header */}
@@ -9563,6 +9609,96 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <span>{getUserDisplayName(p)}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Right-click / long-press context menu for individual messages */}
+          {chatContextMenu && (
+            <div
+              className="fixed z-[9999] rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-100"
+              style={{
+                top: chatContextMenu.y,
+                left: chatContextMenu.x,
+                minWidth: 192,
+                background: "rgba(13,14,26,0.97)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                backdropFilter: "blur(16px)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+              data-testid="chat-context-menu"
+            >
+              {/* Reply */}
+              <button
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-slate-200 hover:bg-white/8 transition-colors text-left"
+                data-testid="ctx-reply"
+                onClick={() => {
+                  const msg = chatMessages.find(m => m.id === chatContextMenu.msgId);
+                  if (msg) {
+                    const msgUser = participants.find(p => p.id === msg.userId);
+                    setReplyingTo({ id: msg.id, userId: msg.userId, userName: getUserDisplayName(msgUser) || "Unknown", text: msg.text });
+                    chatInputRef.current?.focus();
+                  }
+                  setChatContextMenu(null);
+                }}
+              >
+                <CornerUpLeft className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                Reply
+              </button>
+
+              {/* Copy text */}
+              <button
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-slate-200 hover:bg-white/8 transition-colors text-left"
+                data-testid="ctx-copy"
+                onClick={() => {
+                  const msg = chatMessages.find(m => m.id === chatContextMenu.msgId);
+                  if (msg?.text) navigator.clipboard.writeText(msg.text).catch(() => {});
+                  setChatContextMenu(null);
+                  toast({ title: "Copied to clipboard" });
+                }}
+              >
+                <Copy className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                Copy Text
+              </button>
+
+              {/* Pin / Unpin — host / co-owner */}
+              {(isHost || participantRoles[user?.id || ""] === "co-owner") && (
+                <button
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-slate-200 hover:bg-white/8 transition-colors text-left"
+                  data-testid="ctx-pin"
+                  onClick={() => {
+                    const msg = chatMessages.find(m => m.id === chatContextMenu.msgId);
+                    if (!msg) { setChatContextMenu(null); return; }
+                    if (pinnedMessage?.message?.id === msg.id) {
+                      socket?.emit("room:unpin-message", { roomId: room.id });
+                    } else {
+                      socket?.emit("room:pin-message", { roomId: room.id, message: msg, pinnedBy: user?.id, pinnedByName: getUserDisplayName(user) || "Host" });
+                    }
+                    setChatContextMenu(null);
+                  }}
+                >
+                  <Pin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  {pinnedMessage?.message?.id === chatContextMenu.msgId ? "Unpin Message" : "Pin Message"}
+                </button>
+              )}
+
+              {/* Delete — own or mod */}
+              {chatContextMenu.canDelete && (
+                <>
+                  <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "2px 0" }} />
+                  <button
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-rose-400 hover:bg-rose-500/12 transition-colors text-left font-medium"
+                    data-testid="ctx-delete"
+                    onClick={() => {
+                      socket?.emit("room:chat-delete", { roomId: room.id, messageId: chatContextMenu.msgId, deletedBy: user!.id, messageUserId: chatContextMenu.msgUserId });
+                      setChatMessages(prev => prev.map(m => m.id === chatContextMenu.msgId ? { ...m, text: "This message was deleted.", type: "deleted" as any, reactions: {}, replyTo: null } : m));
+                      setChatContextMenu(null);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 flex-shrink-0" />
+                    {chatContextMenu.isOwn ? "Delete Message" : "Delete (mod)"}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
