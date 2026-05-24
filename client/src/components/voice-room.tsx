@@ -268,15 +268,15 @@ interface ChatMessage {
   badgeQuote?: string;
 }
 
-const BAR_COUNT = 24;
+const BAR_COUNT = 20;
 
 function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const tRef = useRef<number>(0);
-  const smoothRef = useRef<Float32Array>(new Float32Array(BAR_COUNT).fill(0));
-  const peaksRef = useRef<Float32Array>(new Float32Array(BAR_COUNT).fill(0));
-  const peakTimersRef = useRef<Float32Array>(new Float32Array(BAR_COUNT).fill(0));
+  /* smooth[i] is normalised 0..1 where 0.5 = centre/silence */
+  const smoothRef = useRef<Float32Array>(new Float32Array(BAR_COUNT).fill(0.5));
+  const volSmoothRef = useRef<number>(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -286,93 +286,133 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
 
     const W = canvas.width;
     const H = canvas.height;
+    const CY = H / 2;           // centre line
     const BAR_W = 4;
-    const GAP = 2.5;
+    const GAP = 2;
     const TOTAL_W = BAR_COUNT * BAR_W + (BAR_COUNT - 1) * GAP;
     const originX = (W - TOTAL_W) / 2;
-    const dataArray = analyserNode ? new Uint8Array(analyserNode.frequencyBinCount) : null;
+    const MAX_HALF = CY - 3;    // max bar half-height in px
+
+    /* Tune the analyser for snappier voice response */
+    if (analyserNode) {
+      analyserNode.smoothingTimeConstant = 0.60;
+    }
+
+    const tdBuf  = analyserNode ? new Uint8Array(analyserNode.fftSize) : null;
+    const freqBuf = analyserNode ? new Uint8Array(analyserNode.frequencyBinCount) : null;
     const smooth = smoothRef.current;
-    const peaks = peaksRef.current;
-    const peakTimers = peakTimersRef.current;
+
+    const roundedBar = (x: number, y: number, w: number, h: number, r: number) => {
+      /* rounded rect helper (top-rounded if h < 0, bottom-rounded if h > 0) */
+      if (h < 0) {
+        const top = y + h, bot = y;
+        ctx.beginPath();
+        ctx.moveTo(x, bot);
+        ctx.lineTo(x + w, bot);
+        ctx.lineTo(x + w, top + r);
+        ctx.quadraticCurveTo(x + w, top, x + w - r, top);
+        ctx.quadraticCurveTo(x, top, x, top + r);
+        ctx.lineTo(x, bot);
+        ctx.closePath();
+      } else {
+        const top = y, bot = y + h;
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x + w, top);
+        ctx.lineTo(x + w, bot - r);
+        ctx.quadraticCurveTo(x + w, bot, x + w - r, bot);
+        ctx.quadraticCurveTo(x, bot, x, bot - r);
+        ctx.lineTo(x, top);
+        ctx.closePath();
+      }
+    };
 
     const draw = () => {
       const t = tRef.current++;
       ctx.clearRect(0, 0, W, H);
 
-      if (analyserNode && dataArray) {
-        analyserNode.getByteFrequencyData(dataArray);
+      /* -- Pull fresh audio data -- */
+      if (analyserNode && tdBuf)   analyserNode.getByteTimeDomainData(tdBuf);
+      if (analyserNode && freqBuf) analyserNode.getByteFrequencyData(freqBuf);
+
+      /* Overall RMS volume across voice-freq range (drives glow) */
+      let vol = 0;
+      if (freqBuf) {
+        const maxBin = Math.min(28, freqBuf.length);
+        let sumSq = 0;
+        for (let b = 1; b < maxBin; b++) sumSq += (freqBuf[b] / 255) ** 2;
+        vol = Math.sqrt(sumSq / (maxBin - 1));
       }
+      volSmoothRef.current += (vol - volSmoothRef.current) * 0.25;
+      const vSmooth = volSmoothRef.current;
 
+      /* -- Draw bars -- */
       for (let i = 0; i < BAR_COUNT; i++) {
-        let target: number;
+        let targetNorm: number;
 
-        if (analyserNode && dataArray) {
-          /* Map each bar to a slice of the voice-frequency spectrum (0–80 bins) */
-          const binLo = Math.floor((i / BAR_COUNT) * Math.min(80, dataArray.length - 1));
-          const binHi = Math.floor(((i + 1) / BAR_COUNT) * Math.min(80, dataArray.length - 1));
-          let sum = 0;
-          const n = Math.max(1, binHi - binLo);
-          for (let b = binLo; b < binHi; b++) sum += dataArray[b];
-          target = sum / n / 255;
+        if (analyserNode && tdBuf && tdBuf.length > 0) {
+          /* Sample the time-domain waveform at evenly-spaced points.
+             tdBuf values: 128 = silence, >128 = positive, <128 = negative.
+             We spread across 80% of the buffer to catch a stable segment. */
+          const idx = Math.floor(0.1 * tdBuf.length + (i / (BAR_COUNT - 1)) * 0.8 * (tdBuf.length - 1));
+          targetNorm = tdBuf[Math.min(idx, tdBuf.length - 1)] / 255; // 0..1, 0.5=silence
         } else {
-          /* Idle: gentle two-phase breathing ripple */
-          const p = t * 0.022 + i * 0.38;
-          target = 0.07 + Math.sin(p) * 0.035 + Math.sin(p * 1.9 + i * 0.5) * 0.022;
+          /* Idle breathing ripple when no analyser */
+          const p = t * 0.024 + i * 0.44;
+          targetNorm = 0.5 + Math.sin(p) * 0.055 + Math.sin(p * 1.87 + i * 0.52) * 0.03;
         }
 
-        /* Asymmetric lerp — snappy rise, smooth fall */
-        const lerpRate = target > smooth[i] ? 0.52 : 0.10;
-        smooth[i] += lerpRate * (target - smooth[i]);
+        /* Smooth: faster attack, slower decay */
+        const diff = targetNorm - smooth[i];
+        const rate = Math.abs(diff) > 0.05 ? 0.55 : 0.16;
+        smooth[i] += diff * rate;
 
-        /* Peak hold + slow fall */
-        if (smooth[i] >= peaks[i]) {
-          peaks[i] = smooth[i];
-          peakTimers[i] = 38;
-        } else {
-          peakTimers[i]--;
-          if (peakTimers[i] <= 0) {
-            peaks[i] = Math.max(peaks[i] - 0.007, smooth[i]);
-          }
-        }
-
-        const barH = Math.max(2.5, smooth[i] * (H - 8));
+        /* Deviation from centre: positive → bar goes UP, negative → DOWN */
+        const dev = smooth[i] - 0.5;
+        const barH = Math.max(1.5, Math.abs(dev) * MAX_HALF * 2.2);
         const x = originX + i * (BAR_W + GAP);
-        const yTop = H - barH - 3;
-
-        /* Gradient: amber at base → violet at tip */
-        const grad = ctx.createLinearGradient(x, yTop + barH, x, yTop);
-        grad.addColorStop(0,   "rgba(251,146,60,0.90)");  // amber-400
-        grad.addColorStop(0.55,"rgba(251,146,60,0.78)");
-        grad.addColorStop(1,   "rgba(167,139,250,0.92)"); // violet-400
+        const r = Math.min(BAR_W / 2, barH / 2);
+        const goesUp = dev >= 0;
 
         ctx.save();
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = "rgba(251,146,60,0.55)";
-        ctx.fillStyle = grad;
+        ctx.shadowBlur = 5 + vSmooth * 18;
+        ctx.shadowColor = goesUp
+          ? `rgba(167,139,250,${0.5 + vSmooth * 0.5})`
+          : `rgba(251,146,60,${0.5 + vSmooth * 0.5})`;
 
-        /* Rounded-top bar */
-        const r = Math.min(BAR_W / 2, barH / 2);
-        ctx.beginPath();
-        ctx.moveTo(x, yTop + barH);
-        ctx.lineTo(x + BAR_W, yTop + barH);
-        ctx.lineTo(x + BAR_W, yTop + r);
-        ctx.quadraticCurveTo(x + BAR_W, yTop, x + BAR_W - r, yTop);
-        ctx.quadraticCurveTo(x, yTop, x, yTop + r);
-        ctx.lineTo(x, yTop + barH);
-        ctx.closePath();
-        ctx.fill();
-
-        /* Peak dot — violet spark that holds at the high watermark */
-        if (peaks[i] > 0.06 && peakTimers[i] > 0) {
-          const peakY = H - peaks[i] * (H - 8) - 3 - 2;
-          ctx.shadowBlur = 7;
-          ctx.shadowColor = "rgba(167,139,250,0.85)";
-          ctx.fillStyle = "rgba(192,168,255,0.95)";
-          ctx.fillRect(x, peakY, BAR_W, 1.5);
+        if (goesUp) {
+          /* Upward bar: amber base → violet tip */
+          const gr = ctx.createLinearGradient(x, CY, x, CY - barH);
+          gr.addColorStop(0, `rgba(251,146,60,${0.78 + vSmooth * 0.18})`);
+          gr.addColorStop(0.6, `rgba(196,130,220,${0.82 + vSmooth * 0.15})`);
+          gr.addColorStop(1, `rgba(167,139,250,${0.92 + vSmooth * 0.08})`);
+          ctx.fillStyle = gr;
+          roundedBar(x, CY, BAR_W, -barH, r);
+          ctx.fill();
+        } else {
+          /* Downward bar: amber base → warm-coral tip */
+          const gr = ctx.createLinearGradient(x, CY, x, CY + barH);
+          gr.addColorStop(0, `rgba(251,146,60,${0.78 + vSmooth * 0.18})`);
+          gr.addColorStop(0.6, `rgba(251,120,80,${0.82 + vSmooth * 0.15})`);
+          gr.addColorStop(1, `rgba(239,68,68,${0.88 + vSmooth * 0.12})`);
+          ctx.fillStyle = gr;
+          roundedBar(x, CY, BAR_W, barH, r);
+          ctx.fill();
         }
 
         ctx.restore();
       }
+
+      /* Subtle centre line */
+      ctx.save();
+      ctx.globalAlpha = 0.10 + vSmooth * 0.12;
+      ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(originX, CY);
+      ctx.lineTo(originX + TOTAL_W, CY);
+      ctx.stroke();
+      ctx.restore();
 
       animRef.current = requestAnimationFrame(draw);
     };
@@ -382,12 +422,12 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
   }, [analyserNode]);
 
   return (
-    <div className="absolute bottom-3 left-0 right-0 flex justify-center z-20 pointer-events-none">
+    <div className="absolute bottom-[34px] left-0 right-0 flex justify-center z-20 pointer-events-none">
       <canvas
         ref={canvasRef}
-        width={172}
-        height={44}
-        className="opacity-[0.97]"
+        width={130}
+        height={46}
+        className="opacity-[0.95]"
         data-testid="waveform-canvas"
       />
     </div>
