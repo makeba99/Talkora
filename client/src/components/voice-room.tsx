@@ -13703,7 +13703,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           {/* ── Movie Player (Internet Archive embed) ── */}
           {activeMovieId && showMovie && (
             <div
-              className="bg-black relative flex flex-col overflow-hidden"
+              className="bg-black relative flex flex-col overflow-hidden group/movieplayer"
               style={moviePlayerHeight ? { height: moviePlayerHeight, flexShrink: 0 } : { flex: 1, minHeight: 0 }}
               data-testid="media-main-movie"
             >
@@ -13720,7 +13720,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               )}
               {/* Title bar — revealed on hover */}
               <div
-                className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2.5 opacity-0 hover:opacity-100 transition-opacity duration-200"
+                className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2.5 opacity-0 group-hover/movieplayer:opacity-100 pointer-events-none group-hover/movieplayer:pointer-events-auto transition-opacity duration-200"
                 style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)" }}
               >
                 <div className="flex items-center gap-2">
@@ -13764,7 +13764,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
               {/* Host sync controls — play/pause so watchers stay in sync */}
               {user?.id === movieStartedBy && (
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-25 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full border border-white/15 px-3 py-1.5 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-auto" data-testid="movie-host-sync-controls">
+                <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-25 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full border border-white/15 px-3 py-1.5 opacity-0 group-hover/movieplayer:opacity-100 pointer-events-none group-hover/movieplayer:pointer-events-auto transition-opacity duration-200" data-testid="movie-host-sync-controls">
                   <span className="text-white/50 text-[10px] font-medium select-none">Sync controls</span>
                   {movieHostPlaying ? (
                     <button
@@ -13795,7 +13795,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <button
                   type="button"
                   onClick={handleMovieResync}
-                  className="absolute bottom-8 left-3 z-25 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 hover:bg-black/90 border border-white/15 text-white text-xs font-medium transition-colors opacity-0 hover:opacity-100 backdrop-blur-sm"
+                  className="absolute bottom-14 left-3 z-25 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 hover:bg-black/90 border border-white/15 text-white text-xs font-medium transition-colors opacity-0 group-hover/movieplayer:opacity-100 pointer-events-none group-hover/movieplayer:pointer-events-auto backdrop-blur-sm"
                   data-testid="button-movie-resync"
                   title="Jump to where the host currently is"
                 >
@@ -13805,7 +13805,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
               {/* Reactions toggle + collapsible emoji picker — hidden by default, tap smiley to reveal */}
               <div
-                className="absolute right-3 bottom-6 z-20 flex items-center gap-2"
+                className="absolute right-3 bottom-14 z-20 flex items-center gap-2 pointer-events-none group-hover/movieplayer:pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 {movieReactionsOpen && (
