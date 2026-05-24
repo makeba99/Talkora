@@ -23,7 +23,7 @@ import {
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, Smile,
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, SendHorizontal,
-  Pin
+  Pin, Languages
 } from "lucide-react";
 import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -2090,6 +2090,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; msgId: string } | null>(null);
   const [chatText, setChatText] = useState("");
+  const [autoTranslate, setAutoTranslate] = useState(false);
+  const [autoTranslatePreview, setAutoTranslatePreview] = useState<string | null>(null);
+  const [isAutoTranslating, setIsAutoTranslating] = useState(false);
+  const autoTranslateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [chatMessageColor, setChatMessageColor] = useState(() => localStorage.getItem("connect2talk-chat-color") ?? "");
   const [chatCardColor, setChatCardColor] = useState(() => localStorage.getItem("connect2talk-chat-card-color") ?? "");
   const [privateChatToId, setPrivateChatToId] = useState<string>("public");
@@ -8185,6 +8189,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         socket.emit("room:typing-stop", { roomId: room.id, userId: user.id });
       }
     }
+    // Auto-translate preview — debounced 900ms so it doesn't fire on every keystroke
+    if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current);
+    if (autoTranslate && val.trim().length >= 2) {
+      setIsAutoTranslating(true);
+      autoTranslateTimerRef.current = setTimeout(async () => {
+        const translated = await translateToEnglish(val);
+        setAutoTranslatePreview(translated !== val.trim() ? translated : null);
+        setIsAutoTranslating(false);
+      }, 900);
+    } else {
+      setAutoTranslatePreview(null);
+      setIsAutoTranslating(false);
+    }
   };
 
   const insertMention = (p: Participant) => {
@@ -8233,7 +8250,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return "Chat is restricted in this room.";
   })();
 
-  const handleSendChat = (e: React.FormEvent) => {
+  const translateToEnglish = async (text: string): Promise<string> => {
+    const clean = text.trim();
+    if (!clean || clean.length < 2) return clean;
+    try {
+      const res = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=autodetect|en`
+      );
+      const data = await res.json();
+      const translated: string = data.responseData?.translatedText || clean;
+      return translated;
+    } catch {
+      return clean;
+    }
+  };
+
+  const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mentionQuery !== null && mentionFilteredParticipants.length > 0) {
       insertMention(mentionFilteredParticipants[mentionIndex]);
@@ -8254,10 +8286,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       typingEmitTimerRef.current = null;
     }
     socket.emit("room:typing-stop", { roomId: room.id, userId: user.id });
+
+    let textToSend = chatText.trim();
+    if (autoTranslate) {
+      if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current);
+      setAutoTranslatePreview(null);
+      setIsAutoTranslating(true);
+      try {
+        textToSend = await translateToEnglish(textToSend);
+      } finally {
+        setIsAutoTranslating(false);
+      }
+    }
+
     socket.emit("room:chat", {
       roomId: room.id,
       userId: user.id,
-      text: chatText.trim(),
+      text: textToSend,
       messageColor: chatMessageColor,
       cardColor: chatCardColor,
       privateToId: privateChatToId === "public" ? null : privateChatToId,
@@ -8265,6 +8310,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     });
     import("@/lib/sound-fx").then((s) => s.sfxSend()).catch(() => {});
     setChatText("");
+    setAutoTranslatePreview(null);
     setMentionQuery(null);
     setReplyingTo(null);
   };
@@ -9474,6 +9520,27 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
+          {/* Auto-translate preview strip */}
+          {autoTranslate && chatText.trim().length >= 2 && (
+            <div
+              className="mx-1 mb-1 px-2.5 py-1.5 rounded-lg flex items-start gap-2 animate-in fade-in slide-in-from-bottom-1"
+              style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.18)" }}
+              data-testid="auto-translate-preview"
+            >
+              <Languages className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "rgba(56,189,248,0.75)" }} />
+              {isAutoTranslating ? (
+                <span className="text-[10px]" style={{ color: "rgba(148,163,184,0.6)" }}>Translating…</span>
+              ) : autoTranslatePreview ? (
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: "rgba(56,189,248,0.55)" }}>Will send as</span>
+                  <span className="text-[11px] leading-snug break-words" style={{ color: "rgba(226,232,240,0.85)" }}>{autoTranslatePreview}</span>
+                </div>
+              ) : (
+                <span className="text-[10px]" style={{ color: "rgba(148,163,184,0.5)" }}>No translation needed</span>
+              )}
+            </div>
+          )}
+
           <div className="relative">
             {!isAtBottom && (
               <button
@@ -10007,6 +10074,31 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   setReplyingTo(null);
                 }
               }} />
+
+              {/* Auto-translate to English toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAutoTranslate(v => !v);
+                      setAutoTranslatePreview(null);
+                      setIsAutoTranslating(false);
+                      if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current);
+                    }}
+                    className="room-tool-btn"
+                    data-active={autoTranslate}
+                    data-testid="button-auto-translate-toggle"
+                    aria-label={autoTranslate ? "Disable auto-translate" : "Enable auto-translate to English"}
+                    aria-pressed={autoTranslate}
+                  >
+                    <Languages className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={6} className="text-[11px]">
+                  {autoTranslate ? "Auto-translate ON — click to disable" : "Translate to English before sending"}
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </form>
