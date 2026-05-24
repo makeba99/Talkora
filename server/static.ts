@@ -1,0 +1,451 @@
+import express, { type Express, type Request, type Response } from "express";
+import fs from "fs";
+import path from "path";
+import zlib from "zlib";
+
+/**
+ * Build a transformed copy of `index.html` plus a precomputed `Link` header
+ * value that pre-warms the LCP critical path:
+ *
+ *  - Vite already injects `<link rel="modulepreload">` for chunks the entry
+ *    statically imports, but the lobby (the LCP route) is `lazy()`-loaded,
+ *    so the browser only discovers it AFTER React mounts. That costs an
+ *    extra round-trip on first paint.
+ *  - We scan `dist/public/assets/` for the lobby chunk + critical vendor
+ *    chunks + the entry CSS, inject `<link rel="modulepreload">` tags into
+ *    `<head>`, and emit a matching `Link:` HTTP header so the browser can
+ *    start fetching them in parallel with HTML parsing.
+ *
+ * Done once at startup — every request just serves the cached buffer + header.
+ */
+function precomputeIndexHtml(distPath: string): { html: string; linkHeader: string; htmlBr: Buffer | null; htmlGz: Buffer | null } | null {
+  const indexPath = path.join(distPath, "index.html");
+  const assetsDir = path.join(distPath, "assets");
+  if (!fs.existsSync(indexPath) || !fs.existsSync(assetsDir)) return null;
+
+  let html: string;
+  try {
+    html = fs.readFileSync(indexPath, "utf8");
+  } catch {
+    return null;
+  }
+
+  let assetFiles: string[];
+  try {
+    assetFiles = fs.readdirSync(assetsDir);
+  } catch {
+    return null;
+  }
+
+  // Match the lazy-loaded chunks that sit on the LCP critical path. The
+  // names come from the route imports in client/src/App.tsx and the
+  // manualChunks split in vite.config.ts. Anything not on the LCP path
+  // (admin, dm, room, teachers, payment-methods, charts/emoji/chess) is
+  // intentionally excluded so we don't waste bandwidth pre-warming chunks
+  // the user may never visit.
+  //
+  // NOTE: react-vendor includes React, react-dom, Radix, react-query, and
+  // wouter (merged to prevent React.forwardRef race on cold boot — anything
+  // that touches React.* at module-eval time MUST live in the same chunk
+  // as React itself). query-vendor and radix-vendor no longer exist as
+  // separate chunks. framer-motion (motion-vendor) and react-hook-form
+  // (form-vendor) were intentionally split OUT of react-vendor because
+  // they are only consumed by lazy children (badge-announcement and
+  // lobby/teacher forms respectively) — preloading them on the LCP path
+  // would burn ~100 kB of bandwidth for users who never trigger those
+  // code paths, so they are NOT listed below.
+  // socket-vendor is intentionally excluded: SocketLayer is now lazy-loaded
+  // and only fetched when a user authenticates. Unauthenticated page loads
+  // (Lighthouse, crawlers, first-visit) never download socket.io-client.
+  // Priority-ordered patterns: entries listed first get earlier slots in the
+  // HTTP Link header (the browser fetches Link entries before parsing HTML).
+  // Each pattern is tagged with its rank; we sort matches by rank so the
+  // most critical chunks always appear first regardless of filesystem order.
+  const criticalScriptPatterns: Array<{ re: RegExp; rank: number; label: string }> = [
+    // Entry module must be rank -2 so it is the very first item in the Link
+    // header. The browser discovers the Vite entry <script type="module"> only
+    // after parsing the HTML body — that adds one full RTT of sequential
+    // latency (602 ms on throttled 4G). Preloading it in the Link header means
+    // the browser starts fetching it alongside HTML, eliminating the chain.
+    { re: /^index-[\w-]+\.js$/,          rank: -2, label: "vite entry module" },
+    // floating-vendor is a dep of react-vendor: @floating-ui/core, /dom, and
+    // /utils are pure positioning-math libs (no React). They must evaluate
+    // BEFORE react-vendor (which imports them via @floating-ui/react), so they
+    // must be preloaded at an even earlier rank than react-vendor.
+    { re: /^floating-vendor-[\w-]+\.js$/, rank: -1, label: "@floating-ui core/dom/utils" },
+    { re: /^react-vendor-[\w-]+\.js$/,   rank: 0, label: "react + react-dom + radix-ui" },
+    { re: /^query-vendor-[\w-]+\.js$/,   rank: 1, label: "react-query + query-core" },
+    { re: /^lobby-[\w-]+\.js$/,          rank: 2, label: "LCP route" },
+    { re: /^ui-components-[\w-]+\.js$/,  rank: 4, label: "shadcn UI wrappers" },
+    { re: /^icons-vendor-[\w-]+\.js$/,   rank: 5, label: "lucide-react lobby icons" },
+    { re: /^app-constants-[\w-]+\.js$/,  rank: 6, label: "shared constants" },
+    { re: /^room-card-[\w-]+\.js$/,      rank: 7, label: "room card (if split)" },
+  ];
+  const criticalStylePatterns: RegExp[] = [
+    /^index-[\w-]+\.css$/,            // entry CSS
+    /^lobby-[\w-]+\.css$/,            // route-level CSS, if cssCodeSplit emits one
+  ];
+
+  // Collect matches with their priority rank so we can sort them.
+  const scriptEntries: Array<{ href: string; rank: number }> = [];
+  const styleHrefs: string[] = [];
+
+  for (const file of assetFiles) {
+    const match = criticalScriptPatterns.find(({ re }) => re.test(file));
+    if (match) {
+      scriptEntries.push({ href: `/assets/${file}`, rank: match.rank });
+    } else if (criticalStylePatterns.some((re) => re.test(file))) {
+      styleHrefs.push(`/assets/${file}`);
+    }
+  }
+  // Sort by rank so the most critical chunks appear first in Link header.
+  scriptEntries.sort((a, b) => a.rank - b.rank);
+  const scriptHrefs = scriptEntries.map((e) => e.href);
+
+  // De-duplicate against any preload Vite already emitted into the HTML so
+  // we don't ship two preload tags for the same file.
+  const alreadyPreloaded = new Set<string>();
+  const preloadRe = /<link[^>]+href=["']([^"']+)["'][^>]*rel=["'](?:modulepreload|preload|stylesheet)["']/gi;
+  const preloadRe2 = /<link[^>]+rel=["'](?:modulepreload|preload|stylesheet)["'][^>]*href=["']([^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = preloadRe.exec(html)) !== null) alreadyPreloaded.add(m[1]);
+  while ((m = preloadRe2.exec(html)) !== null) alreadyPreloaded.add(m[1]);
+
+  const newScripts = scriptHrefs.filter((h) => !alreadyPreloaded.has(h));
+  const newStyles = styleHrefs.filter((h) => !alreadyPreloaded.has(h));
+
+  // Inject the missing modulepreload/style tags right before </head>. Order
+  // doesn't matter for fetch priority — the browser starts the requests as
+  // soon as it sees them in the parser stream.
+  if (newScripts.length || newStyles.length) {
+    const injection = [
+      ...newScripts.map((h) => `    <link rel="modulepreload" href="${h}" crossorigin />`),
+      ...newStyles.map((h) => `    <link rel="preload" href="${h}" as="style" />`),
+    ].join("\n");
+    html = html.replace(/<\/head>/i, `${injection}\n  </head>`);
+  }
+
+  // ── Non-blocking CSS ─────────────────────────────────────────────────────
+  // Convert Vite's injected <link rel="stylesheet"> to a preload so it no
+  // longer blocks first paint. The trick: change rel to "preload" so the
+  // browser starts fetching immediately without blocking, then a tiny inline
+  // <script> (NOT an onload= attribute — that's blocked by script-src-attr
+  // 'none') sets rel back to "stylesheet" after the parser sees it. Because
+  // a stylesheet applied via JavaScript is never render-blocking, the first
+  // paint happens before the CSS arrives — only the critical inline <style>
+  // needs to render the skeleton. The CSS file lands within ~40 ms (it was
+  // already preloaded in the Link header), so the FOUC window is imperceptible.
+  // <noscript> ensures degraded environments still receive the stylesheet.
+  //
+  // crossorigin="" is intentionally omitted: same-origin stylesheets must be
+  // fetched with credentials-mode "include" (the default for plain <link>).
+  // Adding crossorigin switches to credentials-mode "same-origin" — a
+  // mismatch that triggers the "preload not used" browser warning. Keeping
+  // both the preload tag and the final stylesheet tag without crossorigin
+  // ensures the credentials mode matches and the preload is consumed.
+  html = html.replace(
+    /(<link\b([^>]*?\s)?rel="stylesheet"([^>]*?\s)?href="(\/assets\/index-[^"]+\.css)"[^>]*>)/gi,
+    (fullTag, _m, _b, _c, _href) => {
+      const preloadTag = fullTag
+        .replace(/\s*crossorigin(?:="[^"]*")?\s*/gi, " ")
+        .replace(/rel="stylesheet"/, 'rel="preload" as="style" id="_vxtcss"');
+      const noXoTag = fullTag.replace(/\s*crossorigin(?:="[^"]*")?\s*/gi, " ");
+      return [
+        preloadTag,
+        `<script>!function(){var e=document.getElementById('_vxtcss');if(e)e.rel='stylesheet'}()</script>`,
+        `<noscript>${noXoTag}</noscript>`,
+      ].join("\n    ");
+    },
+  );
+
+  // Ensure the entry module script gets `fetchpriority="high"`. Vite *may*
+  // preserve the attribute from our source index.html when it rewrites the
+  // script's src to the hashed bundle path, but if any plugin in the chain
+  // strips it we want it back — it tells the browser to prioritize the
+  // LCP-blocking JS over any other discovered resources on the page.
+  html = html.replace(
+    /<script\b([^>]*?)\s+src=("[^"]+\/assets\/index-[\w-]+\.js")([^>]*)><\/script>/i,
+    (match, before, src, after) => {
+      if (/fetchpriority\s*=/i.test(match)) return match;
+      return `<script${before} src=${src}${after} fetchpriority="high"></script>`;
+    },
+  );
+
+  // Build the Link HTTP header — this beats the in-HTML link tags by a
+  // round-trip because the browser sees it (via 103 Early Hints or the 200
+  // response headers) before HTML parsing even starts.
+  // Total budget: ~12 entries × ~130 B = ~1.6 KB, well under typical 8 KB
+  // header limits.
+  // Order:
+  //  1. LCP-critical API fetches first — rooms data determines when the
+  //     overlay dismisses and the room-card text (LCP candidate) appears.
+  //  2. Font — needed for any text paint; must arrive before first CSS parse.
+  //  3. JS chunks in priority rank order (entry → lobby → react-vendor → ui).
+  //  4. CSS last (already made non-blocking, so less urgent).
+  const API_ROOMS    = `</api/rooms>; rel=preload; as=fetch; crossorigin=use-credentials`;
+  const API_AUTH     = `</api/auth/user>; rel=preload; as=fetch; crossorigin=use-credentials`;
+  // ICON_PRELOAD removed: the LCP anchor image is now inlined as a base64
+  // SVG data URI in index.html so the browser never issues a network request
+  // for it. Keeping a Link preload for a data URI is a no-op and wastes a
+  // header slot that could go to a font or script chunk.
+  const FONT_PRELOAD = `</fonts/space-grotesk-latin.woff2>; rel=preload; as=font; type=font/woff2; crossorigin`;
+  const headerEntries: string[] = [API_ROOMS, API_AUTH, FONT_PRELOAD];
+  for (const h of [...scriptHrefs].slice(0, 10)) {
+    headerEntries.push(`<${h}>; rel=modulepreload; crossorigin`);
+  }
+  for (const h of [...styleHrefs].slice(0, 1)) {
+    headerEntries.push(`<${h}>; rel=preload; as=style`);
+  }
+  const linkHeader = headerEntries.join(", ");
+
+  // Pre-compress the HTML document at startup so sendIndex can serve the
+  // compressed bytes directly without any per-request CPU cost. Brotli q11
+  // (max quality, text mode) is the best ratio we can achieve — it runs
+  // once at boot so latency doesn't matter. Gzip z9 is the fallback for
+  // clients that don't advertise br. Together these eliminate the "Document
+  // request latency" Lighthouse audit by removing runtime compression from
+  // the hot path entirely.
+  const htmlBuf = Buffer.from(html, "utf8");
+  let htmlBr: Buffer | null = null;
+  let htmlGz: Buffer | null = null;
+  try {
+    htmlBr = zlib.brotliCompressSync(htmlBuf, {
+      params: {
+        [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+        [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
+      },
+    });
+  } catch { /* fall back to runtime compression */ }
+  try {
+    htmlGz = zlib.gzipSync(htmlBuf, { level: 9 });
+  } catch { /* fall back to runtime compression */ }
+
+  // Pre-strip the /api/rooms and /api/announcements fetch-preload hints so
+  // the SSR injection path can use this cached string directly instead of
+  // running regex replacements on every request.
+  const htmlNoApiPreloads = html
+    .replace(/\s*<link[^>]+href="\/api\/rooms"[^>]*>\s*/g, "\n    ")
+    .replace(/\s*<link[^>]+href="\/api\/announcements"[^>]*>\s*/g, "\n    ");
+
+  return { html, htmlNoApiPreloads, linkHeader, htmlBr, htmlGz };
+}
+
+// Minimal MIME table for the precompressed-asset handler. The runtime
+// compression middleware bypasses any response that already has a
+// Content-Encoding header set, so this handler can safely set the encoding
+// and let express.static (or our SPA fallback) handle the rest.
+const MIME_BY_EXT: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".mjs": "application/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".ico": "image/x-icon",
+};
+
+// Cached reference to the precomputed index.html so that route handlers
+// registered before serveStatic() can still base their meta-injection on the
+// fully-transformed HTML (CSS async, modulepreload injections, etc.) rather
+// than the raw on-disk template. Set during serveStatic() initialisation.
+let _precomputedHtml: string | null = null;
+
+/** Returns the fully-transformed index.html built at startup, or null in dev. */
+export function getPrecomputedHtml(): string | null {
+  return _precomputedHtml;
+}
+
+type SSRDataProvider = () => Promise<Record<string, unknown>>;
+
+export function serveStatic(app: Express, getSSRData?: SSRDataProvider) {
+  const distPath = path.resolve(__dirname, "public");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+    );
+  }
+
+  const precomputed = precomputeIndexHtml(distPath);
+  _precomputedHtml = precomputed?.html ?? null;
+
+  // Pre-compressed asset handler. At build time we emit `<file>.br` (Brotli
+  // q11) and `<file>.gz` (gzip 9) next to every text asset in dist/public/.
+  // When the client supports `br` or `gzip`, we serve the pre-encoded copy
+  // directly — skipping runtime compression entirely AND using a higher
+  // compression ratio than any live encoder can afford. Free LCP win.
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") return next();
+    const accept = String(req.headers["accept-encoding"] || "");
+    let encoding: "br" | "gzip" | null = null;
+    if (/\bbr\b/i.test(accept)) encoding = "br";
+    else if (/\bgzip\b/i.test(accept)) encoding = "gzip";
+    if (!encoding) return next();
+
+    // Resolve the requested path safely (no `..` traversal).
+    const reqPath = decodeURIComponent(req.path);
+    if (reqPath.includes("\0")) return next();
+    const fullPath = path.join(distPath, reqPath);
+    if (!fullPath.startsWith(distPath + path.sep) && fullPath !== distPath) {
+      return next();
+    }
+    // index.html is served via the precomputed-HTML buffer below, not from
+    // disk — skip it here so we don't ship a stale pre-compressed copy.
+    if (reqPath === "/" || reqPath.endsWith("/index.html")) return next();
+
+    const ext = path.extname(reqPath).toLowerCase();
+    const mime = MIME_BY_EXT[ext];
+    if (!mime) return next();
+
+    const compressedPath = fullPath + (encoding === "br" ? ".br" : ".gz");
+    if (!fs.existsSync(compressedPath)) return next();
+
+    res.setHeader("Content-Type", mime);
+    res.setHeader("Content-Encoding", encoding);
+    res.setHeader("Vary", "Accept-Encoding");
+    // Cache headers mirror the live express.static handler so the precompressed
+    // path doesn't get a different TTL than the uncompressed path.
+    if (reqPath.startsWith("/assets/")) {
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      // Lighthouse Best Practices: same-origin CORP on hashed assets removes
+      // the "ensure CSP is effective" related cross-origin warnings and is
+      // safe because /assets/ is only ever loaded by our own pages.
+      res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+    } else if (reqPath.endsWith(".html") || reqPath.endsWith("sw.js")) {
+      res.setHeader("Cache-Control", "no-cache");
+    } else {
+      res.setHeader("Cache-Control", "public, max-age=31536000, must-revalidate");
+    }
+    res.sendFile(compressedPath);
+  });
+
+  // Fast path for index.html: serve the in-memory transformed copy and emit
+  // the precomputed Link header. We register this BEFORE express.static so
+  // it wins for the bare `/` request and the SPA catch-all below.
+  //
+  // When pre-compressed buffers are available we write them directly to the
+  // socket, bypassing the runtime `compression` middleware entirely. This
+  // removes the per-request Brotli/gzip CPU cost from the critical path and
+  // eliminates the "Document request latency" Lighthouse audit on mobile.
+  // Setting Content-Encoding before res.end() prevents the middleware from
+  // double-compressing the already-encoded bytes.
+  const sendIndex = async (req: Request, res: Response) => {
+    // HTTP 103 Early Hints: fire the Link preload hints before the full 200
+    // response is ready. The browser starts fetching JS/CSS chunks in parallel
+    // with our response serialisation — saves one full RTT on cold navigations.
+    // writeEarlyHints is available in Node 18.11+ and is a no-op on HTTP/1.0
+    // or in environments that don't support informational responses.
+    if (precomputed?.linkHeader) {
+      try {
+        (res as any).writeEarlyHints?.({ link: precomputed.linkHeader });
+      } catch { /* not supported — continue normally */ }
+    }
+
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    if (precomputed?.linkHeader) {
+      res.setHeader("Link", precomputed.linkHeader);
+    }
+
+    // Data-injection SSR: if a provider is available, fetch the initial
+    // lobby data (rooms + announcements) and embed it as a <script> tag
+    // in the HTML. The client reads window.__SSR_DATA__ and pre-populates
+    // the TanStack Query cache BEFORE React mounts, eliminating the
+    // /api/rooms and /api/announcements round-trips entirely (~150 ms
+    // savings on throttled mobile). The compression middleware (already
+    // mounted globally) will gzip/brotli the modified HTML automatically.
+    if (getSSRData && precomputed?.html) {
+      try {
+        const data = await getSSRData();
+        // Escape </script> sequences so the embedded JSON can't break out
+        // of the script tag even if a room title contains "</script>".
+        const json = JSON.stringify(data).replace(/<\/script>/gi, "<\\/script>");
+        const script = `<script id="__ssr__">window.__SSR_DATA__=${json};</script>`;
+        // Use the pre-stripped HTML (computed once at startup) to avoid
+        // per-request regex. SSR data pre-populates TanStack Query
+        // (staleTime:Infinity) so /api/rooms and /api/announcements preloads
+        // are never consumed — stripping them eliminates the Lighthouse
+        // "preloaded but not used" penalty and saves two wasted network fetches.
+        const baseHtml = precomputed.htmlNoApiPreloads ?? precomputed.html;
+        const html = baseHtml.replace("</body>", `${script}\n</body>`);
+        res.send(html);
+        return;
+      } catch {
+        // SSR data fetch failed — fall through to serve static HTML.
+      }
+    }
+
+    const accept = String(req.headers["accept-encoding"] || "");
+    if (precomputed?.htmlBr && /\bbr\b/i.test(accept)) {
+      res.setHeader("Content-Encoding", "br");
+      res.setHeader("Vary", "Accept-Encoding");
+      res.end(precomputed.htmlBr);
+      return;
+    }
+    if (precomputed?.htmlGz && /\bgzip\b/i.test(accept)) {
+      res.setHeader("Content-Encoding", "gzip");
+      res.setHeader("Vary", "Accept-Encoding");
+      res.end(precomputed.htmlGz);
+      return;
+    }
+    if (precomputed?.html) {
+      res.send(precomputed.html);
+    } else {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    }
+  };
+
+  app.get("/", sendIndex);
+  app.get("/index.html", sendIndex);
+
+  app.use(
+    express.static(distPath, {
+      // Skip serving index.html via the static handler — we handle it above
+      // so we always emit the Link header and the precomputed buffer.
+      index: false,
+      setHeaders: (res, filePath) => {
+        // Vite emits hashed filenames into /assets/, so they are safe to cache
+        // forever — any change ships a new hash. This makes repeat visits
+        // near-instant and dramatically improves LCP/FCP on returning users.
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          // CORP same-origin: hashed Vite output is only loaded by our own
+          // pages, so locking it down lifts Lighthouse Best Practices.
+          res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+          return;
+        }
+        // Avatar portraits (/avatars/*.jpg) are content-stable: the filename
+        // encodes gender+number and the files never change. Cache indefinitely
+        // so repeat visits and SW pre-cache serve them without revalidation.
+        if (filePath.includes(`${path.sep}avatars${path.sep}`)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
+        // index.html, robots.txt, sitemap.xml and the SW must always
+        // revalidate so users and crawlers pick up new builds/sitemaps as
+        // soon as we ship them.
+        if (
+          filePath.endsWith(".html") ||
+          filePath.endsWith("sw.js") ||
+          filePath.endsWith("robots.txt") ||
+          filePath.endsWith("sitemap.xml")
+        ) {
+          res.setHeader("Cache-Control", "no-cache");
+          return;
+        }
+        // Static branding (favicons, manifest, theme images, app icons).
+        // These rarely change and are content-stable, so cache for 1 year
+        // (the maximum that satisfies Lighthouse's "use efficient cache
+        // lifetimes" audit). The service worker's CACHE_VERSION bump and
+        // any URL change ship a new copy regardless.
+        res.setHeader("Cache-Control", "public, max-age=31536000, must-revalidate");
+      },
+    }),
+  );
+
+  // SPA catch-all: anything else falls back to the (precomputed) index.html.
+  app.use("/{*path}", sendIndex);
+}
