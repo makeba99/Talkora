@@ -1669,6 +1669,64 @@ export async function registerRoutes(
     res.json(searchMoviesCurated(q2));
   });
 
+  app.get("/api/movies/info", async (req: any, res) => {
+    const id = ((req.query.id as string) || "").trim();
+    if (!id) return res.status(400).json({ error: "Missing id" });
+    const cacheKey = `movies:info:${id}`;
+    const cached = externalCache.get(cacheKey);
+    if (cached) return res.json(cached);
+    try {
+      const resp = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!resp.ok) throw new Error("Not found");
+      const data = await resp.json();
+      const files: any[] = data.files || [];
+      const preferredFormats = ["512Kb MPEG4", "h.264", "MPEG4"];
+      let videoFile: any = null;
+      for (const fmt of preferredFormats) {
+        videoFile = files.find((f: any) => f.format === fmt && /\.(mp4|m4v)$/i.test(f.name));
+        if (videoFile) break;
+      }
+      if (!videoFile) videoFile = files.find((f: any) => /\.(mp4|m4v|webm)$/i.test(f.name));
+      const subtitleFiles = files.filter((f: any) =>
+        f.format === "SubRip" || f.format === "Web Video Text Tracks" || /\.(srt|vtt)$/i.test(f.name)
+      );
+      const videoUrl = videoFile
+        ? `https://archive.org/download/${encodeURIComponent(id)}/${encodeURIComponent(videoFile.name)}`
+        : null;
+      const subtitles = subtitleFiles.slice(0, 5).map((f: any, i: number) => ({
+        url: `https://archive.org/download/${encodeURIComponent(id)}/${encodeURIComponent(f.name)}`,
+        label: (f.name.replace(/\.[^.]+$/, "") || `Track ${i + 1}`).slice(0, 40),
+        srcLang: f.language || "en",
+      }));
+      const result = { videoUrl, subtitles };
+      if (videoUrl) externalCache.set(cacheKey, result);
+      return res.json(result);
+    } catch {
+      return res.status(500).json({ error: "Failed to fetch movie info" });
+    }
+  });
+
+  app.get("/api/movies/subtitle-proxy", async (req: any, res) => {
+    const url = ((req.query.url as string) || "").trim();
+    if (!url || !url.startsWith("https://archive.org/")) return res.status(400).end();
+    try {
+      const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!resp.ok) return res.status(resp.status).end();
+      const text = await resp.text();
+      let vtt = text;
+      if (!text.trimStart().startsWith("WEBVTT")) {
+        vtt = "WEBVTT\n\n" + text.replace(/\r\n/g, "\n").replace(/(\d+:\d+:\d+),(\d+)/g, "$1.$2");
+      }
+      res.setHeader("Content-Type", "text/vtt");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      return res.end(vtt);
+    } catch {
+      return res.status(500).end();
+    }
+  });
+
   // ── AI Tutor model routing ─────────────────────────────────────────────────
   // Uses OpenAI (gpt-4o) when configured; falls back to context-aware canned replies.
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
