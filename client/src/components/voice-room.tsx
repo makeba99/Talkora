@@ -2241,6 +2241,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const room = roomData;
   const [isMuted, setIsMuted] = useState(true);
   const isMutedRef = useRef(true);
+  // Stores the latest RMS level from the VoiceProcessor meter worklet.
+  // Updated in the onLevelMeter callback (fires ~18 ms, before the destination
+  // output track, so it reads real mic audio regardless of mute state).
+  const micRmsRef = useRef<number>(0);
   const [handRaised, setHandRaised] = useState(false);
   // Mood reactions — when any participant fires a mood emoji from the picker,
   // we keep their currently-active emoji here keyed by userId. The floating
@@ -3635,7 +3639,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (!voiceProcessorRef.current) {
         voiceProcessorRef.current = new VoiceProcessor(audioContextRef.current);
       }
-      voiceProcessorRef.current.onLevelMeter = (rms, peak) => setMicLevel({ rms, peak });
+      voiceProcessorRef.current.onLevelMeter = (rms, peak) => {
+        setMicLevel({ rms, peak });
+        micRmsRef.current = rms;
+      };
       processedStream = await voiceProcessorRef.current.process(
         stream, presetId,
         enhancementEnabledRef.current,
@@ -3840,12 +3847,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         });
 
         // ── Emit local speaking transitions to the server ─────────────────
-        // Each client detects ONLY its own mic level and emits a transition
-        // event. The server relays it to all other participants. Remote users'
-        // speaking state is set exclusively by those socket events (below).
-        // This is the only cross-browser reliable approach — Safari/Firefox
-        // may block AudioContext analysis of remote WebRTC streams entirely.
-        const localNowSpeaking = currentlySpeaking.has(user.id);
+        // Use the VoiceProcessor meter RMS (fires from the worklet before the
+        // muted destination output) rather than analysing processedStream —
+        // processedStream tracks are disabled when muted so the analyser would
+        // always read 0. micRmsRef is always the true mic level; we apply the
+        // mute gate manually via isMutedRef.current.
+        const localNowSpeaking = !isMutedRef.current && micRmsRef.current > 0.02;
         if (localNowSpeaking !== prevLocalSpeakingRef.current) {
           prevLocalSpeakingRef.current = localNowSpeaking;
           socket.emit("room:speaking", {
