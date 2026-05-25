@@ -435,115 +435,110 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
 }
 
 /* ── MicVoiceBar ──────────────────────────────────────────────────────────────
-   Full-card equalizer overlay — bars grow from the very bottom up to the top.
-   SILENT  → canvas completely blank.
-   SPEAKING→ bars rise from bottom, cyan→indigo→amber gradient, red tip when loud.
-   Snappy: fast attack (0.92) + fast decay (0.32). Threshold 0.018 = very sensitive. */
-const MIC_BAR_COUNT  = 22;    // bars across full card width
-const MIC_BAR_GAP    = 2;     // px gap between bars
-const MIC_VOL_THRESH = 0.018; // very low noise floor — catches quiet speech
+   Vertical stacked-segment VU meter — discrete blocks grow upward in a column.
+   Replaces the mic icon when mic is open. Shown in bottom-right of each card.
+   SILENT  → only dim ghost segments visible (inactive state).
+   SPEAKING→ segments light up from bottom to top; red at the top when loud.
+   Very fast: attack 0.92, decay 0.30, threshold 0.015. */
+const VU_SEGS      = 12;   // number of stacked segments
+const VU_SEG_GAP   = 2;    // px gap between segments
+const VU_THRESH    = 0.015; // very sensitive noise floor
 
 function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
-  const barsRef   = useRef<Float32Array>(new Float32Array(MIC_BAR_COUNT));
+  const levelRef  = useRef<number>(0); // smoothed 0..1 volume level
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    /* Sync canvas pixel resolution to its CSS size every frame */
-    const syncSize = () => {
-      const w = canvas.offsetWidth;
-      const h = canvas.offsetHeight;
-      if (w > 0 && canvas.width  !== w) canvas.width  = w;
-      if (h > 0 && canvas.height !== h) canvas.height = h;
-    };
-    syncSize();
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     if (analyserNode) {
-      analyserNode.smoothingTimeConstant = 0.0; // own per-bar smoothing for fastest response
+      analyserNode.smoothingTimeConstant = 0.0;
       analyserNode.fftSize = 256;
     }
 
-    const freqBuf    = analyserNode ? new Uint8Array(analyserNode.frequencyBinCount) : null;
-    const binCount   = analyserNode ? analyserNode.frequencyBinCount : 128;
-    const binsPerBar = Math.max(1, Math.floor(binCount / MIC_BAR_COUNT));
-    const bars       = barsRef.current;
+    const freqBuf = analyserNode ? new Uint8Array(analyserNode.frequencyBinCount) : null;
+
+    /* Segment colors bottom→top: cyan, teal, indigo, amber, orange, red */
+    const segColor = (seg: number, lit: boolean): string => {
+      const frac = seg / (VU_SEGS - 1); // 0=bottom, 1=top
+      let r: number, g: number, b: number;
+      if (frac < 0.50) {
+        // cyan → indigo
+        r = Math.round(34  + frac / 0.50 * 65);
+        g = Math.round(211 - frac / 0.50 * 109);
+        b = Math.round(238 + frac / 0.50 * 3);
+      } else if (frac < 0.75) {
+        // indigo → amber
+        const t = (frac - 0.50) / 0.25;
+        r = Math.round(99  + t * 152);
+        g = Math.round(102 + t * 44);
+        b = Math.round(241 - t * 181);
+      } else {
+        // amber → red
+        const t = (frac - 0.75) / 0.25;
+        r = Math.round(251 - t * 12);
+        g = Math.round(146 - t * 146);
+        b = Math.round(60  - t * 60);
+      }
+      const alpha = lit ? 0.95 : 0.10;
+      return `rgba(${r},${g},${b},${alpha})`;
+    };
 
     const draw = () => {
-      syncSize();
       const W = canvas.width;
       const H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
+      /* Compute overall RMS across voice-freq bins */
+      let raw = 0;
       if (analyserNode && freqBuf) {
         analyserNode.getByteFrequencyData(freqBuf);
+        const maxBin = Math.min(40, freqBuf.length);
+        let sumSq = 0;
+        for (let b = 1; b < maxBin; b++) sumSq += (freqBuf[b] / 255) ** 2;
+        raw = Math.pow(Math.sqrt(sumSq / (maxBin - 1)), 0.45); // boost quiet speech
       }
 
-      const barW = Math.max(1, (W - (MIC_BAR_COUNT - 1) * MIC_BAR_GAP) / MIC_BAR_COUNT);
-      let anySpeaking = false;
+      /* Smooth: very fast attack, fast decay */
+      const prev = levelRef.current;
+      levelRef.current = prev + (raw - prev) * (raw > prev ? 0.92 : 0.30);
+      const level = levelRef.current;
 
-      /* Compute smoothed volume for each bar — very fast response */
-      for (let i = 0; i < MIC_BAR_COUNT; i++) {
-        let raw = 0;
-        if (analyserNode && freqBuf) {
-          const start = i * binsPerBar + 1; // skip DC bin
-          const end   = Math.min(start + binsPerBar, freqBuf.length);
-          let sum = 0;
-          for (let b = start; b < end; b++) sum += freqBuf[b];
-          raw = Math.pow(sum / ((end - start) * 255), 0.45); // aggressive sqrt boost for quiet speech
-        }
-        /* Very fast attack (0.92), fast decay (0.32) */
-        const prev = bars[i];
-        bars[i] = prev + (raw - prev) * (raw > prev ? 0.92 : 0.32);
-        if (bars[i] > MIC_VOL_THRESH) anySpeaking = true;
-      }
+      /* How many segments are lit */
+      const normalized = Math.max(0, Math.min(1, (level - VU_THRESH) / (1 - VU_THRESH)));
+      const litCount   = Math.round(normalized * VU_SEGS);
 
-      /* Completely silent — skip drawing */
-      if (!anySpeaking) {
-        rafRef.current = requestAnimationFrame(draw);
-        return;
-      }
+      /* Segment dimensions */
+      const segH = Math.max(2, (H - (VU_SEGS - 1) * VU_SEG_GAP) / VU_SEGS);
+      const r    = Math.min(W / 2, 2);
 
-      /* Draw each bar from bottom up — full card height */
-      for (let i = 0; i < MIC_BAR_COUNT; i++) {
-        const vol = bars[i];
-        if (vol < MIC_VOL_THRESH) continue;
-
-        const mapped = Math.min(1, (vol - MIC_VOL_THRESH) / (1 - MIC_VOL_THRESH));
-        const barH   = Math.max(2, mapped * H);
-        const x      = i * (barW + MIC_BAR_GAP);
-        const y      = H - barH;
-        const r      = Math.min(barW / 2, 3);
-
-        /* Gradient per bar: cyan at base → indigo mid → amber upper → red tip when loud */
-        const loudFrac = Math.max(0, (mapped - 0.70) / 0.30); // 0..1 only when top 30% is reached
-        const gr = ctx.createLinearGradient(x, H, x, y);
-        gr.addColorStop(0,   `rgba(34,211,238,0.55)`);                              // cyan base
-        gr.addColorStop(0.4, `rgba(99,102,241,0.50)`);                              // indigo mid
-        gr.addColorStop(0.72,`rgba(251,146,60,0.52)`);                              // amber upper
-        gr.addColorStop(1.0, `rgba(239,68,68,${0.25 + loudFrac * 0.70})`);         // red tip — bright when loud
+      for (let s = 0; s < VU_SEGS; s++) {
+        /* s=0 is bottom segment, s=VU_SEGS-1 is top */
+        const lit = s < litCount;
+        const y   = H - (s + 1) * segH - s * VU_SEG_GAP; // top-left y of segment
 
         ctx.save();
-        /* Glow: cyan when quiet, red when loud */
-        ctx.shadowBlur  = 3 + mapped * 14;
-        ctx.shadowColor = loudFrac > 0.3
-          ? `rgba(239,68,68,${0.5 + loudFrac * 0.5})`
-          : `rgba(34,211,238,0.45)`;
-        ctx.fillStyle   = gr;
+        if (lit) {
+          ctx.shadowBlur  = s >= VU_SEGS - 3 ? 8 : 4;
+          ctx.shadowColor = segColor(s, true).replace(/[\d.]+\)$/, "0.8)");
+        }
+        ctx.fillStyle = segColor(s, lit);
 
-        /* Rounded top corners, flat bottom flush with card edge */
+        /* Rounded rectangle */
         ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + barW - r, y);
-        ctx.arcTo(x + barW, y, x + barW, y + r, r);
-        ctx.lineTo(x + barW, H);
-        ctx.lineTo(x,        H);
-        ctx.arcTo(x,         y, x + r,    y,     r);
+        ctx.moveTo(r, y);
+        ctx.lineTo(W - r, y);
+        ctx.arcTo(W, y,     W, y + r,        r);
+        ctx.lineTo(W, y + segH - r);
+        ctx.arcTo(W, y + segH, W - r, y + segH, r);
+        ctx.lineTo(r,  y + segH);
+        ctx.arcTo(0,  y + segH, 0, y + segH - r, r);
+        ctx.lineTo(0,  y + r);
+        ctx.arcTo(0,  y,        r, y,            r);
         ctx.closePath();
         ctx.fill();
         ctx.restore();
@@ -559,7 +554,9 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none block"
+      width={12}
+      height={VU_SEGS * 5 + (VU_SEGS - 1) * VU_SEG_GAP}
+      className="pointer-events-none block"
       data-testid="mic-voice-bar"
     />
   );
@@ -1562,8 +1559,8 @@ function ParticipantCard({
               <MicOff className="w-4 h-4 text-white/80" />
             </div>
           ) : (
-            /* Live mic: full-card equalizer — bars grow from bottom to top */
-            <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+            /* Live mic: stacked VU meter in bottom-right corner, replaces mic icon */
+            <div className="absolute bottom-1 right-1 z-20 pointer-events-none">
               <MicVoiceBar analyserNode={analyserNode} />
             </div>
           )
