@@ -1518,16 +1518,36 @@ export async function registerRoutes(
 
       const ytSearch = await import("youtube-search-api");
       const results = await ytSearch.GetListByKeyword(query, false, 30);
+
+      // Helper: extract a valid video ID whether item.id is a plain string or
+      // an object like { videoId: "...", kind: "youtube#video" }.
+      const extractId = (item: any): string | null => {
+        const raw = item?.id;
+        if (!raw) return null;
+        if (typeof raw === "string" && /^[A-Za-z0-9_-]{8,13}$/.test(raw)) return raw;
+        if (typeof raw === "object" && typeof raw.videoId === "string") return raw.videoId;
+        return null;
+      };
+
       const candidates = (results.items || [])
-        .filter((item: any) => item.type === "video" && item.id)
+        .filter((item: any) => {
+          const vid = extractId(item);
+          if (!vid) return false;
+          // If type is present, skip non-video types (playlists, channels, etc.)
+          if (item.type && item.type !== "video") return false;
+          return true;
+        })
         .slice(0, 25)
-        .map((item: any) => ({
-          id: item.id,
-          title: item.title || "",
-          thumbnail: item.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`,
-          channelTitle: item.channelTitle || "",
-          duration: item.length?.simpleText || "",
-        }));
+        .map((item: any) => {
+          const videoId = extractId(item)!;
+          return {
+            id: videoId,
+            title: item.title || "",
+            thumbnail: item.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
+            channelTitle: item.channelTitle || "",
+            duration: item.length?.simpleText || "",
+          };
+        });
 
       const top = candidates.slice(0, 8);
       externalCache.set(cacheKey, top, 10 * 60_000); // cache 10 min
