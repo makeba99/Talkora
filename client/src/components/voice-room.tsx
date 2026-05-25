@@ -879,10 +879,10 @@ function ParticipantCard({
                       notifPrefs?.notifyRoomJoin === false ? true : false,
                       notifPrefs?.notifyDm !== false
                     )}
-                    className={`relative inline-flex h-5 w-10 flex-shrink-0 items-center rounded-full transition-all duration-200 ${notifPrefs?.notifyRoomJoin !== false ? "bg-emerald-500 ring-2 ring-emerald-400/60 shadow-[0_0_10px_rgba(52,211,153,0.55)]" : "bg-red-600/70 ring-2 ring-red-500/40 shadow-[0_0_8px_rgba(239,68,68,0.4)]"}`}
+                    className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-150 select-none ${notifPrefs?.notifyRoomJoin !== false ? "bg-emerald-500 text-white shadow-[0_0_8px_rgba(52,211,153,0.7)]" : "bg-red-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.7)]"}`}
                     aria-pressed={notifPrefs?.notifyRoomJoin !== false}
                   >
-                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-md transition-transform duration-200 ${notifPrefs?.notifyRoomJoin !== false ? "translate-x-5" : "translate-x-0.5"}`} />
+                    {notifPrefs?.notifyRoomJoin !== false ? "ON" : "OFF"}
                   </button>
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -893,10 +893,10 @@ function ParticipantCard({
                       notifPrefs?.notifyRoomJoin !== false,
                       notifPrefs?.notifyDm === false ? true : false
                     )}
-                    className={`relative inline-flex h-5 w-10 flex-shrink-0 items-center rounded-full transition-all duration-200 ${notifPrefs?.notifyDm !== false ? "bg-emerald-500 ring-2 ring-emerald-400/60 shadow-[0_0_10px_rgba(52,211,153,0.55)]" : "bg-red-600/70 ring-2 ring-red-500/40 shadow-[0_0_8px_rgba(239,68,68,0.4)]"}`}
+                    className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide transition-all duration-150 select-none ${notifPrefs?.notifyDm !== false ? "bg-emerald-500 text-white shadow-[0_0_8px_rgba(52,211,153,0.7)]" : "bg-red-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.7)]"}`}
                     aria-pressed={notifPrefs?.notifyDm !== false}
                   >
-                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-md transition-transform duration-200 ${notifPrefs?.notifyDm !== false ? "translate-x-5" : "translate-x-0.5"}`} />
+                    {notifPrefs?.notifyDm !== false ? "ON" : "OFF"}
                   </button>
                 </div>
               </div>
