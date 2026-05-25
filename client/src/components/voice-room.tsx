@@ -2730,6 +2730,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [ytArticleUrl, setYtArticleUrl] = useState("");
   const [ytArticleLoading, setYtArticleLoading] = useState(false);
   const [ytArticleError, setYtArticleError] = useState("");
+  /* YouTube read-search */
+  const [ytReadSearch, setYtReadSearch] = useState("");
+  const [ytReadResults, setYtReadResults] = useState<Array<{ id: string; title: string; thumbnail: string; channelTitle: string; duration: string }>>([]);
+  const [ytReadSearchLoading, setYtReadSearchLoading] = useState(false);
   const [readingHistory, setReadingHistory] = useState<Array<{ id: string | number; title: string; author: string; coverUrl: string | null; lastReadAt: string }>>(() => {
     try { return JSON.parse(localStorage.getItem("vextorn_reading_history") || "[]"); } catch { return []; }
   });
@@ -5092,9 +5096,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [socket, user, activeYoutubeId, room.id]);
 
   useEffect(() => {
-    if (sidePanelTab === "read" && readBooks.length === 0 && !readLoading) {
-      loadDefaultBooks();
-    }
+    /* no-op: books load only on explicit search */
   }, [sidePanelTab]);
 
   useEffect(() => {
@@ -8835,23 +8837,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } catch { setReadBooks([]); } finally { setReadLoading(false); }
   };
 
-  const handleYtToArticle = async () => {
-    const url = ytArticleUrl.trim();
-    if (!url) return;
+  const handleYtToArticle = async (videoId: string) => {
+    if (!videoId) return;
     setYtArticleLoading(true);
     setYtArticleError("");
     try {
-      const res = await fetch(`/api/yt-to-article?url=${encodeURIComponent(url)}`, { credentials: "include" });
+      const res = await fetch(`/api/yt-to-article?url=${encodeURIComponent(videoId)}`, { credentials: "include" });
       const data = await res.json();
       if (!res.ok) { setYtArticleError(data.message || "Could not extract article"); return; }
-      /* Open the article in the e-reader using the selectedBook / bookText flow */
       setSelectedBook({ title: data.title, authors: [{ name: "YouTube Transcript" }], _isYtArticle: true });
       setBookText(data.text);
       setWordInfo(null);
       setShowEReader(true);
-      setYtArticleUrl("");
+      setYtReadResults([]);
+      setYtReadSearch("");
     } catch { setYtArticleError("Failed to connect. Please try again."); }
     finally { setYtArticleLoading(false); }
+  };
+
+  const searchYtRead = async (q: string) => {
+    if (!q.trim()) { setYtReadResults([]); return; }
+    setYtReadSearchLoading(true);
+    setYtArticleError("");
+    try {
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(q)}`, { credentials: "include" });
+      const data = await res.json();
+      setYtReadResults(Array.isArray(data) ? data.slice(0, 8) : []);
+    } catch { setYtReadResults([]); }
+    finally { setYtReadSearchLoading(false); }
   };
 
   const loadDiscovery = async () => {
@@ -8875,7 +8888,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setReadCatalog([]);
       setReadAudiobooks([]);
       setReadVideos([]);
-      loadDefaultBooks();
       return;
     }
     setReadLoading(true);
@@ -11672,59 +11684,50 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
             <div className="p-3 pb-2 border-b flex-shrink-0 space-y-2">
+              {/* Book search */}
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={readSearch}
-                    onChange={(e) => setReadSearch(e.target.value)}
-                    placeholder="Search by title, author, or topic…"
+                    onChange={(e) => { setReadSearch(e.target.value); if (!e.target.value.trim()) setReadBooks([]); }}
+                    placeholder="Search books by title or author…"
                     className="pl-8 text-sm"
                     onKeyDown={(e) => { if (e.key === "Enter") searchGutenberg(readSearch); }}
+                    data-testid="input-book-search"
                   />
                 </div>
-                <Button size="sm" onClick={() => searchGutenberg(readSearch)} disabled={readLoading || !readSearch.trim()}>
+                <Button size="sm" onClick={() => searchGutenberg(readSearch)} disabled={readLoading || !readSearch.trim()} data-testid="button-book-search">
                   {readLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {["English", "Mystery", "Romance", "Self-help", "History", "Science", "Philosophy", "Adventure"].map(genre => (
-                  <button
-                    key={genre}
-                    onClick={() => { setReadSearch(genre); searchGutenberg(genre); }}
-                    className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-border/60 bg-muted/30 hover:bg-muted/70 hover:border-border transition-colors"
-                    data-testid={`chip-genre-${genre.toLowerCase()}`}
-                  >
-                    {genre}
-                  </button>
-                ))}
-              </div>
-              {/* ── YouTube → Readable Article ── */}
-              <div className="pt-1 space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.85)" }}>
+              {/* YouTube search */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.80)" }}>
                   <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
-                  Read from YouTube Video
+                  Read from YouTube
                 </p>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
+                    <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
                     <Input
-                      value={ytArticleUrl}
-                      onChange={(e) => { setYtArticleUrl(e.target.value); setYtArticleError(""); }}
-                      placeholder="Paste a YouTube video URL…"
-                      className="text-xs pr-2"
-                      onKeyDown={(e) => { if (e.key === "Enter") handleYtToArticle(); }}
-                      data-testid="input-yt-article-url"
+                      value={ytReadSearch}
+                      onChange={(e) => { setYtReadSearch(e.target.value); setYtArticleError(""); if (!e.target.value.trim()) setYtReadResults([]); }}
+                      placeholder="Search YouTube videos to read…"
+                      className="pl-7 text-xs"
+                      onKeyDown={(e) => { if (e.key === "Enter") searchYtRead(ytReadSearch); }}
+                      data-testid="input-yt-read-search"
                     />
                   </div>
                   <Button
                     size="sm"
-                    onClick={handleYtToArticle}
-                    disabled={ytArticleLoading || !ytArticleUrl.trim()}
-                    data-testid="button-yt-article-go"
-                    style={{ background: "hsla(var(--neu-orange) / 0.20)", borderColor: "hsla(var(--neu-orange) / 0.35)", color: "hsla(var(--neu-orange-hi) / 0.95)" }}
-                    className="border hover:opacity-90 transition-opacity"
+                    onClick={() => searchYtRead(ytReadSearch)}
+                    disabled={ytReadSearchLoading || !ytReadSearch.trim()}
+                    data-testid="button-yt-read-search"
+                    style={{ background: "hsla(var(--neu-orange) / 0.18)", borderColor: "hsla(var(--neu-orange) / 0.32)", color: "hsla(var(--neu-orange-hi) / 0.92)" }}
+                    className="border hover:opacity-90 transition-opacity flex-shrink-0"
                   >
-                    {ytArticleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Read"}
+                    {ytReadSearchLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Search"}
                   </Button>
                 </div>
                 {ytArticleError && (
@@ -11734,13 +11737,55 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
             <ScrollArea className="flex-1 min-h-0">
               <div className="p-3 space-y-2">
-                {readLoading && (
+                {(readLoading || ytReadSearchLoading) && (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 )}
+
+                {/* YouTube video search results */}
+                {ytReadResults.length > 0 && !ytReadSearchLoading && (
+                  <div className="space-y-1.5 pb-1" data-testid="section-yt-results">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 flex items-center gap-1">
+                      <svg className="w-3 h-3 flex-shrink-0 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                      Click a video to read its transcript
+                    </p>
+                    {ytReadResults.map((v) => (
+                      <button
+                        key={v.id}
+                        onClick={() => handleYtToArticle(v.id)}
+                        disabled={ytArticleLoading}
+                        className="w-full flex items-start gap-2.5 p-2 rounded-lg border border-border/50 hover:bg-muted/40 text-left transition-colors group disabled:opacity-50"
+                        data-testid={`button-yt-result-${v.id}`}
+                      >
+                        <div className="relative flex-shrink-0 w-16 h-10 rounded overflow-hidden bg-muted">
+                          <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="w-full h-full object-cover" />
+                          {ytArticleLoading ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                              <Loader2 className="w-3 h-3 animate-spin text-white" />
+                            </div>
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <BookOpen className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-semibold line-clamp-2 leading-tight">{v.title}</p>
+                          {v.channelTitle && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{v.channelTitle}</p>}
+                          {v.duration && <p className="text-[9px] text-muted-foreground/60 mt-0.5">{v.duration}</p>}
+                        </div>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => { setYtReadResults([]); setYtReadSearch(""); }}
+                      className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground w-full text-center pt-0.5 transition-colors"
+                    >Clear results</button>
+                  </div>
+                )}
+
                 {/* Reading History */}
-                {readingHistory.length > 0 && !readSearch.trim() && readBooks.length === 0 && !readLoading && (
+                {readingHistory.length > 0 && !readSearch.trim() && readBooks.length === 0 && ytReadResults.length === 0 && !readLoading && (
                   <div className="space-y-1.5 pb-2" data-testid="section-reading-history">
                     <div className="flex items-center justify-between px-1">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
@@ -11767,92 +11812,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         </div>
                       </div>
                     ))}
-                    <button onClick={loadDefaultBooks} className="text-[11px] text-primary hover:underline w-full text-center pt-1" data-testid="link-browse-new">Browse new books →</button>
                   </div>
                 )}
 
-                {readBooks.length === 0 && readAudiobooks.length === 0 && readVideos.length === 0 && !readLoading && readingHistory.length === 0 && (() => {
-                  /* Auto-trigger discovery the first time this state is visible */
-                  if (!discoveryLoading && discoveryBooks.length === 0 && discoveryAudiobooks.length === 0) {
-                    setTimeout(loadDiscovery, 0);
-                  }
-                  return (
-                    <div className="space-y-4" data-testid="section-discovery">
-                      {/* Subtle "no exact match" notice only when there was a search */}
-                      {readSearch.trim() && (
-                        <div className="flex items-center gap-2 px-1 pt-1">
-                          <div className="flex-1 h-px bg-border/40" />
-                          <p className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
-                            No exact matches for "{readSearch}"
-                          </p>
-                          <div className="flex-1 h-px bg-border/40" />
-                        </div>
-                      )}
-
-                      {discoveryLoading && (
-                        <div className="flex items-center justify-center py-6">
-                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground/50" />
-                        </div>
-                      )}
-
-                      {/* ── Section 1: Free readable books ── */}
-                      {discoveryBooks.length > 0 && (
-                        <div className="space-y-2" data-testid="section-discovery-books">
-                          <div className="flex items-center gap-2 px-1">
-                            <BookOpen className="w-3.5 h-3.5 text-emerald-400/80" />
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400/90">
-                              Free Books — Read Now
-                            </p>
-                            <span className="text-[9px] text-muted-foreground/50 ml-auto">Project Gutenberg</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {discoveryBooks.map((book: any) => (
-                              <button
-                                key={book.id}
-                                onClick={() => loadBookText(book)}
-                                className="flex flex-col rounded-lg border border-border/50 bg-muted/10 hover:bg-muted/40 hover:border-emerald-500/30 transition-all text-left overflow-hidden group"
-                                data-testid={`button-discovery-book-${book.id}`}
-                              >
-                                {book.formats?.["image/jpeg"] ? (
-                                  <img
-                                    loading="lazy"
-                                    decoding="async"
-                                    src={book.formats["image/jpeg"]}
-                                    alt=""
-                                    className="w-full h-24 object-cover bg-muted group-hover:scale-[1.02] transition-transform duration-200"
-                                  />
-                                ) : (
-                                  <div className="w-full h-24 bg-muted/30 flex items-center justify-center">
-                                    <BookOpen className="w-6 h-6 text-muted-foreground/40" />
-                                  </div>
-                                )}
-                                <div className="p-1.5 flex-1">
-                                  <p className="text-[10px] font-semibold line-clamp-2 leading-tight">{book.title}</p>
-                                  <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
-                                    {book.authors?.map((a: any) => a.name).join(", ")}
-                                  </p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Fallback if discovery also returned nothing */}
-                      {!discoveryLoading && discoveryBooks.length === 0 && (
-                        <div className="text-center py-6 text-muted-foreground/50">
-                          <p className="text-[11px]">Try one of the genre filters above</p>
-                        </div>
-                      )}
+                {/* Empty state — no searches done yet */}
+                {readBooks.length === 0 && ytReadResults.length === 0 && !readLoading && !ytReadSearchLoading && readingHistory.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-10 gap-3 text-center" data-testid="section-empty-state">
+                    <div className="w-10 h-10 rounded-full bg-muted/40 flex items-center justify-center">
+                      <BookOpen className="w-5 h-5 text-muted-foreground/50" />
                     </div>
-                  );
-                })()}
-                {readBooks.length > 0 && !readSearch.trim() && (
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pb-1">📚 Free Classics (Project Gutenberg)</p>
+                    <div className="space-y-1">
+                      <p className="text-[12px] font-medium text-muted-foreground/80">
+                        {readSearch.trim() ? `No books found for "${readSearch}"` : "Search for a book or video to read"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/50">
+                        Books from Project Gutenberg · Videos from YouTube
+                      </p>
+                    </div>
+                  </div>
                 )}
-                {readBooks.length > 0 && readSearch.trim() && (
+
+                {readBooks.length > 0 && (
                   <p className="text-[10px] font-semibold text-emerald-400/90 uppercase tracking-wide px-1 pb-1 flex items-center gap-1" data-testid="text-section-free">
-                    <BookOpen className="w-3 h-3" /> Read free now
+                    <BookOpen className="w-3 h-3" /> Free books — Project Gutenberg
                   </p>
                 )}
                 {readBooks.map((book: any) => (
