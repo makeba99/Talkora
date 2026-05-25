@@ -15276,7 +15276,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     : 999;
                   const isPoetry = lines.length >= 3 && avgLen < 55;
                   return (
-                  <div className="h-full overflow-y-auto overflow-x-hidden px-4 sm:px-10 md:px-16 py-4 sm:py-7 flex flex-col justify-center">
+                  <div className="h-full overflow-hidden px-4 sm:px-10 md:px-16 py-4 sm:py-7 flex flex-col justify-center">
                     <div className="w-full max-w-2xl mx-auto">
                       <div
                         className="leading-relaxed whitespace-pre-wrap select-text"
@@ -15359,6 +15359,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#e8e8e8" : "#111111",
                     borderTop: `1px solid ${eReaderTheme === "dark" ? "#333" : "#d4c4a0"}`,
                     borderBottom: `2px solid ${eReaderTheme === "dark" ? "#555" : "#b8a880"}`,
+                    touchAction: "none",
                   }}
                   onMouseDown={(e) => {
                     e.preventDefault();
