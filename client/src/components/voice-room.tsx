@@ -2797,6 +2797,32 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [eReaderFontSize, setEReaderFontSize] = useState(16);
   const [eReaderHeight, setEReaderHeight] = useState<number | null>(null);
   const [eReaderFullscreen, setEReaderFullscreen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // ── Paginate book text into pages of ~280 words (scales with font size) ──────
+  const bookPages = useMemo(() => {
+    if (!bookText) return [] as string[];
+    const wordsPerPage = Math.max(120, Math.round(280 * (16 / eReaderFontSize)));
+    const paragraphs = bookText.split(/\n{2,}/).filter(p => p.trim().length > 0);
+    if (paragraphs.length === 0) return [bookText];
+    const pages: string[] = [];
+    let page = "";
+    let pageWords = 0;
+    for (const para of paragraphs) {
+      const w = para.trim().split(/\s+/).length;
+      if (pageWords + w > wordsPerPage && page) {
+        pages.push(page.trim());
+        page = para;
+        pageWords = w;
+      } else {
+        page += (page ? "\n\n" : "") + para;
+        pageWords += w;
+      }
+    }
+    if (page.trim()) pages.push(page.trim());
+    return pages.length > 0 ? pages : [bookText];
+  }, [bookText, eReaderFontSize]);
+
   const [translationLang, setTranslationLang] = useState<string>(() => {
     const m: Record<string, string> = { Spanish:"es", French:"fr", German:"de", Arabic:"ar", Japanese:"ja", Korean:"ko", Chinese:"zh", Portuguese:"pt", Hindi:"hi", Italian:"it", Russian:"ru", Turkish:"tr", Dutch:"nl", Polish:"pl", Vietnamese:"vi", Indonesian:"id", Thai:"th" };
     return m[(room as any).language] || "es";
@@ -4653,11 +4679,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     });
 
-    socket.on("room:book-scroll", (data: { scrollPct: number }) => {
+    socket.on("room:book-scroll", (data: { scrollPct?: number; page?: number }) => {
+      if (data.page != null) {
+        setCurrentPage(data.page);
+        return;
+      }
       const el = bookScrollRef.current;
       if (!el) return;
       const maxScroll = el.scrollHeight - el.clientHeight;
-      if (maxScroll > 0) {
+      if (maxScroll > 0 && data.scrollPct != null) {
         el.scrollTop = data.scrollPct * maxScroll;
       }
     });
@@ -8980,8 +9010,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } catch { /* silent */ }
   };
 
-  const handleYtToArticle = async (videoId: string) => {
+  const handleYtToArticle = async (videoId: string, durationStr = "") => {
     if (!videoId) return;
+
+    // Warn the user if the video is long before starting
+    if (durationStr) {
+      const parts = durationStr.split(":").map(Number).reverse();
+      const totalMins = (parts[2] || 0) * 60 + (parts[1] || 0) + (parts[0] || 0) / 60;
+      if (totalMins > 20) {
+        toast({
+          title: "Long video detected",
+          description: `"${durationStr}" — extracting the transcript may take up to 30 seconds. Starting now…`,
+          duration: 8000,
+        });
+      }
+    }
+
     setYtArticleLoading(true);
     setYtArticleError("");
     setYtConvertStep(1);
@@ -9009,6 +9053,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const bookObj = { title: data.title, authors: [{ name: "YouTube" }], _isYtArticle: true, videoId, thumbnailUrl: thumb };
       setSelectedBook(bookObj);
       setBookText(data.text);
+      setCurrentPage(1);
       setWordInfo(null);
       setShowEReader(true);
       setYtReadResults([]);
@@ -9127,6 +9172,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
     setSelectedBook(book);
     setBookText("");
+    setCurrentPage(1);
     setWordInfo(null);
     setBookLoading(true);
     setShowEReader(true);
@@ -9175,9 +9221,31 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     await loadBookText(book, true);
   };
 
+  const goToPage = useCallback((page: number) => {
+    if (!bookPages.length) return;
+    const p = Math.max(1, Math.min(bookPages.length, page));
+    setCurrentPage(p);
+    if (bookHostId === user?.id && socket) {
+      socket.emit("room:book-scroll", { roomId: room.id, page: p });
+    }
+  }, [bookPages.length, bookHostId, user?.id, socket, room.id]);
+
+  useEffect(() => {
+    if (!showEReader) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowRight" || e.key === "PageDown") goToPage(currentPage + 1);
+      if (e.key === "ArrowLeft"  || e.key === "PageUp")   goToPage(currentPage - 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showEReader, currentPage, goToPage]);
+
   const handleCloseBook = () => {
     setSelectedBook(null);
     setBookText("");
+    setCurrentPage(1);
     setWordInfo(null);
     setShowEReader(false);
     const amIBookHost = bookHostId === user?.id;
@@ -12047,7 +12115,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {ytReadResults.map((v) => (
                         <button
                           key={v.id}
-                          onClick={() => handleYtToArticle(v.id)}
+                          onClick={() => handleYtToArticle(v.id, v.duration)}
                           disabled={ytArticleLoading}
                           className="w-full flex items-start gap-2.5 p-2 rounded-lg border border-border/50 hover:bg-muted/40 text-left transition-colors group disabled:opacity-50"
                           data-testid={`button-yt-result-${v.id}`}
@@ -14989,32 +15057,79 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               )}
 
-              {/* Book text */}
+              {/* Paginated book content */}
               <div
-                ref={bookScrollRef}
-                className="flex-1 min-h-0 overflow-y-auto"
+                className="flex-1 min-h-0 overflow-hidden flex flex-col"
                 onMouseUp={handleReaderMouseUp}
               >
-                <div className="mx-auto max-w-2xl px-8 py-8">
-                  {bookLoading && (
-                    <div className="flex items-center justify-center py-16">
+                {/* Page text area */}
+                <div className="flex-1 min-h-0 overflow-hidden relative">
+                  {bookLoading ? (
+                    <div className="flex items-center justify-center h-full">
                       <Loader2 className="w-6 h-6 animate-spin opacity-40" />
                     </div>
-                  )}
-                  {!bookLoading && bookText && (
-                    <div
-                      className="leading-relaxed whitespace-pre-wrap cursor-text"
-                      style={{ fontSize: eReaderFontSize, lineHeight: 1.8, letterSpacing: "0.01em" }}
-                    >
-                      {bookText}
+                  ) : bookPages.length > 0 ? (
+                    <div className="h-full overflow-hidden px-10 pt-7 pb-3">
+                      <div
+                        className="leading-relaxed whitespace-pre-wrap select-text overflow-hidden h-full"
+                        style={{
+                          fontSize: eReaderFontSize,
+                          lineHeight: 1.9,
+                          fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
+                          letterSpacing: "0.02em",
+                          color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
+                        }}
+                      >
+                        {bookPages[currentPage - 1]}
+                      </div>
                     </div>
-                  )}
-                  {!bookLoading && !bookText && (
-                    <div className="flex items-center justify-center py-16 opacity-50">
-                      <p className="text-sm">Could not load book content. Try another title.</p>
+                  ) : (
+                    <div className="flex items-center justify-center h-full opacity-50">
+                      <p className="text-sm" style={{ fontFamily: "Georgia, serif" }}>Could not load content. Try another title.</p>
                     </div>
                   )}
                 </div>
+
+                {/* Page navigation */}
+                {!bookLoading && bookPages.length > 0 && (
+                  <div
+                    className="flex-shrink-0 flex items-center justify-between px-6 py-2 border-t select-none"
+                    style={{
+                      background: eReaderTheme === "sepia" ? "#e8d9bc" : eReaderTheme === "light" ? "#ececec" : "#0f0f0f",
+                      borderColor: eReaderTheme === "dark" ? "#333" : "#c8b488",
+                    }}
+                  >
+                    <button
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage <= 1}
+                      className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all disabled:opacity-25 hover:opacity-70"
+                      style={{ color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a" }}
+                      data-testid="button-ereader-prev-page"
+                      title="Previous page (← key)"
+                    >
+                      <ChevronLeft className="w-3 h-3" /> Prev
+                    </button>
+
+                    <span
+                      className="text-[11px] font-medium opacity-50"
+                      style={{ fontFamily: "Georgia, 'Palatino Linotype', serif" }}
+                      data-testid="text-ereader-page-info"
+                    >
+                      {currentPage} / {bookPages.length}
+                    </span>
+
+                    <button
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage >= bookPages.length}
+                      className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all disabled:opacity-25 hover:opacity-70"
+                      style={{ color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a" }}
+                      data-testid="button-ereader-next-page"
+                      title="Next page (→ key)"
+                    >
+                      Next <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Drag-to-resize handle at the BOTTOM — drag DOWN to grow, drag UP to shrink */}

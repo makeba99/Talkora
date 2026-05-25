@@ -8359,12 +8359,14 @@ export async function registerRoutes(
       }
     });
 
-    socket.on("room:book-scroll", (data: { roomId: string; scrollPct: number }) => {
+    socket.on("room:book-scroll", (data: { roomId: string; scrollPct?: number; page?: number }) => {
       if (!currentUserId) return;
       const state = roomBookState.get(data.roomId);
       if (!state || state.hostId !== currentUserId) return;
-      state.scrollPct = data.scrollPct;
-      socket.to(data.roomId).emit("room:book-scroll", { scrollPct: data.scrollPct });
+      const relay: Record<string, unknown> = {};
+      if (data.scrollPct != null) { state.scrollPct = data.scrollPct; relay.scrollPct = data.scrollPct; }
+      if (data.page != null) relay.page = data.page;
+      if (Object.keys(relay).length > 0) socket.to(data.roomId).emit("room:book-scroll", relay);
     });
 
     socket.on("room:book-watching", (data: { roomId: string; watching: boolean }) => {
