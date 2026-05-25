@@ -3895,12 +3895,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         });
 
         // ── Emit local speaking transitions to the server ─────────────────
-        // Use the VoiceProcessor meter RMS (fires from the worklet before the
-        // muted destination output) rather than analysing processedStream —
-        // processedStream tracks are disabled when muted so the analyser would
-        // always read 0. micRmsRef is always the true mic level; we apply the
-        // mute gate manually via isMutedRef.current.
-        const localNowSpeaking = !isMutedRef.current && micRmsRef.current > 0.02;
+        // Primary: VoiceProcessor worklet RMS — pre-mute, most accurate.
+        // Fallback: local analyser frequency average — same data that drives
+        // the local voice bar UI; guarantees broadcast works even when the
+        // AudioWorklet is unavailable (e.g. older browsers) and micRmsRef
+        // stays 0 while the analyser still shows voice activity.
+        // currentlySpeaking already contains user.id when their analyser avg > 10
+        // and they are not muted, so reusing it costs zero extra work.
+        const localNowSpeaking = !isMutedRef.current && (micRmsRef.current > 0.02 || currentlySpeaking.has(user.id));
         if (localNowSpeaking !== prevLocalSpeakingRef.current) {
           prevLocalSpeakingRef.current = localNowSpeaking;
           socket.emit("room:speaking", {
