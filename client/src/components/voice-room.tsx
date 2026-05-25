@@ -8369,13 +8369,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return;
     }
 
-    // If clicked participant is reading and we're not yet reading, join the read session
-    if (isClickingOther && bookReaders.has(peerId) && sharedBook && !showEReader) {
-      handleJoinReadTogether(sharedBook);
-      setSidePanelOpen(true);
-      setSidePanelTab("read");
-      return;
-    }
+
 
     // If the clicked participant is sharing their screen, open the screen
     // viewer for me — same one-tap flow as joining a YouTube watch party.
