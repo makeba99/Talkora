@@ -2228,6 +2228,11 @@ const DJ_SPOT_COLS = [
   "255,0,80",    // hot pink
 ];
 
+/* Module-level cache so books appear instantly on re-visit within the same session */
+let _cachedDefaultBooks: any[] | null = null;
+let _cachedDefaultBooksTs = 0;
+const DEFAULT_BOOKS_TTL = 10 * 60 * 1000; // 10 min
+
 export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomProps) {
   const { socket } = useSocket();
   const { user } = useAuth();
@@ -2721,6 +2726,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [readLoading, setReadLoading] = useState(false);
+  /* YouTube → Readable Article */
+  const [ytArticleUrl, setYtArticleUrl] = useState("");
+  const [ytArticleLoading, setYtArticleLoading] = useState(false);
+  const [ytArticleError, setYtArticleError] = useState("");
   const [readingHistory, setReadingHistory] = useState<Array<{ id: string | number; title: string; author: string; coverUrl: string | null; lastReadAt: string }>>(() => {
     try { return JSON.parse(localStorage.getItem("vextorn_reading_history") || "[]"); } catch { return []; }
   });
@@ -8808,15 +8817,41 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const loadDefaultBooks = async () => {
     if (readBooks.length > 0 || readLoading) return;
+    /* Show cached books immediately — no loading spinner */
+    if (_cachedDefaultBooks && Date.now() - _cachedDefaultBooksTs < DEFAULT_BOOKS_TTL) {
+      setReadBooks(_cachedDefaultBooks);
+      setReadCatalog([]); setReadAudiobooks([]); setReadVideos([]);
+      return;
+    }
     setReadLoading(true);
     try {
       const res = await fetch(`/api/library/search`, { credentials: "include" });
       const data = await res.json();
-      setReadBooks(data.books || []);
-      setReadCatalog([]);
-      setReadAudiobooks([]);
-      setReadVideos([]);
+      const books = data.books || [];
+      _cachedDefaultBooks = books;
+      _cachedDefaultBooksTs = Date.now();
+      setReadBooks(books);
+      setReadCatalog([]); setReadAudiobooks([]); setReadVideos([]);
     } catch { setReadBooks([]); } finally { setReadLoading(false); }
+  };
+
+  const handleYtToArticle = async () => {
+    const url = ytArticleUrl.trim();
+    if (!url) return;
+    setYtArticleLoading(true);
+    setYtArticleError("");
+    try {
+      const res = await fetch(`/api/yt-to-article?url=${encodeURIComponent(url)}`, { credentials: "include" });
+      const data = await res.json();
+      if (!res.ok) { setYtArticleError(data.message || "Could not extract article"); return; }
+      /* Open the article in the e-reader using the selectedBook / bookText flow */
+      setSelectedBook({ title: data.title, authors: [{ name: "YouTube Transcript" }], _isYtArticle: true });
+      setBookText(data.text);
+      setWordInfo(null);
+      setShowEReader(true);
+      setYtArticleUrl("");
+    } catch { setYtArticleError("Failed to connect. Please try again."); }
+    finally { setYtArticleLoading(false); }
   };
 
   const loadDiscovery = async () => {
@@ -11664,6 +11699,38 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </button>
                 ))}
               </div>
+              {/* ── YouTube → Readable Article ── */}
+              <div className="pt-1 space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.85)" }}>
+                  <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                  Read from YouTube Video
+                </p>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      value={ytArticleUrl}
+                      onChange={(e) => { setYtArticleUrl(e.target.value); setYtArticleError(""); }}
+                      placeholder="Paste a YouTube video URL…"
+                      className="text-xs pr-2"
+                      onKeyDown={(e) => { if (e.key === "Enter") handleYtToArticle(); }}
+                      data-testid="input-yt-article-url"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleYtToArticle}
+                    disabled={ytArticleLoading || !ytArticleUrl.trim()}
+                    data-testid="button-yt-article-go"
+                    style={{ background: "hsla(var(--neu-orange) / 0.20)", borderColor: "hsla(var(--neu-orange) / 0.35)", color: "hsla(var(--neu-orange-hi) / 0.95)" }}
+                    className="border hover:opacity-90 transition-opacity"
+                  >
+                    {ytArticleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Read"}
+                  </Button>
+                </div>
+                {ytArticleError && (
+                  <p className="text-[10px] text-red-400/90 px-0.5" data-testid="text-yt-article-error">{ytArticleError}</p>
+                )}
+              </div>
             </div>
             <ScrollArea className="flex-1 min-h-0">
               <div className="p-3 space-y-2">
@@ -11771,46 +11838,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         </div>
                       )}
 
-                      {/* ── Section 2: Free audiobooks ── */}
-                      {discoveryAudiobooks.length > 0 && (
-                        <div className="space-y-2" data-testid="section-discovery-audiobooks">
-                          <div className="flex items-center gap-2 px-1">
-                            <Headphones className="w-3.5 h-3.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.85)" }} />
-                            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "hsla(var(--neu-orange-hi) / 0.90)" }}>
-                              Free Audiobooks — Play in Room
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            {discoveryAudiobooks.map((a: any) => (
-                              <button
-                                key={a.id}
-                                onClick={() => handleOpenAudiobook(a)}
-                                className="w-full flex items-center gap-2.5 p-2 rounded-lg border border-border/50 hover:bg-muted/40 text-left transition-colors group"
-                                data-testid={`button-discovery-audiobook-${a.id}`}
-                              >
-                                <div
-                                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform"
-                                  style={{ background: "hsla(var(--neu-orange) / 0.14)", border: "1px solid hsla(var(--neu-orange) / 0.28)" }}
-                                >
-                                  <Headphones className="w-4 h-4" style={{ color: "hsla(var(--neu-orange-hi) / 0.88)" }} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] font-semibold line-clamp-1">{a.title}</p>
-                                  {a.author && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{a.author}</p>}
-                                </div>
-                                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "hsla(var(--neu-orange) / 0.20)" }}>
-                                  <svg className="w-2.5 h-2.5 ml-0.5" fill="currentColor" viewBox="0 0 8 10" style={{ color: "hsla(var(--neu-orange-hi) / 0.88)" }}>
-                                    <path d="M0 0l8 5-8 5z" />
-                                  </svg>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Fallback if discovery also returned nothing */}
-                      {!discoveryLoading && discoveryBooks.length === 0 && discoveryAudiobooks.length === 0 && (
+                      {!discoveryLoading && discoveryBooks.length === 0 && (
                         <div className="text-center py-6 text-muted-foreground/50">
                           <p className="text-[11px]">Try one of the genre filters above</p>
                         </div>
@@ -11852,72 +11881,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </button>
                 ))}
 
-                {readSearch.trim() && readBooks.length === 0 && (readAudiobooks.length > 0 || readVideos.length > 0) && (
-                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5 text-[11px] text-amber-200/90" data-testid="text-no-free-text">
-                    No free full text for "<strong>{readSearch}</strong>" — here are some related audiobooks and videos.
-                  </div>
-                )}
-
-                {readAudiobooks.length > 0 && (
-                  <div className="space-y-1.5 pt-2" data-testid="section-audiobooks">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide px-1 flex items-center gap-1" style={{ color: "hsla(var(--neu-orange-hi) / 0.92)" }}>
-                      <Headphones className="w-3 h-3" /> Free audiobooks — play in room
-                    </p>
-                    {readAudiobooks.map((a: any) => (
-                      <button
-                        key={a.id}
-                        onClick={() => handleOpenAudiobook(a)}
-                        className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
-                        data-testid={`button-audiobook-${a.id}`}
-                      >
-                        <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{ background: "hsla(var(--neu-orange) / 0.16)", border: "1px solid hsla(var(--neu-orange) / 0.30)" }}>
-                          <Headphones className="w-5 h-5" style={{ color: "hsla(var(--neu-orange-hi) / 0.92)" }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold line-clamp-2">{a.title}</p>
-                          {a.author && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{a.author}</p>}
-                          <p className="text-[10px] mt-1 flex items-center gap-1" style={{ color: "hsla(var(--neu-orange-hi) / 0.7)" }}>
-                            <Play className="w-2.5 h-2.5" />
-                            {a.runtime ? `${a.runtime} · ` : ""}Play here
-                            {!a.archiveId && <span className="text-muted-foreground ml-1">(limited)</span>}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {readVideos.length > 0 && (
-                  <div className="space-y-1.5 pt-2" data-testid="section-videos">
-                    <p className="text-[10px] font-semibold text-red-400/90 uppercase tracking-wide px-1 flex items-center gap-1">
-                      <Tv className="w-3 h-3" /> Watch on YouTube
-                    </p>
-                    {readVideos.map((v: any) => (
-                      <button
-                        key={v.id}
-                        onClick={() => {
-                          setSidePanelTab("youtube");
-                          handleSelectYoutubeVideo(v.id);
-                        }}
-                        className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
-                        data-testid={`button-video-${v.id}`}
-                      >
-                        {v.thumbnail ? (
-                          <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="w-16 h-10 rounded object-cover flex-shrink-0 bg-muted" />
-                        ) : (
-                          <div className="w-16 h-10 rounded bg-muted flex-shrink-0 flex items-center justify-center">
-                            <Tv className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold line-clamp-2">{v.title}</p>
-                          {v.channel && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{v.channel}</p>}
-                          <p className="text-[10px] text-red-400/80 mt-0.5">▶ Play in room</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
 
               </div>
             </ScrollArea>

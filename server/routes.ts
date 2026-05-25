@@ -2574,6 +2574,101 @@ export async function registerRoutes(
     }
   });
 
+  /* ── YouTube → Readable Article ──────────────────────────────────────────
+     Fetches auto-generated captions from a YouTube video and formats them as a
+     readable article.  Uses the InnerTube caption API — no npm package needed. */
+  const _ytArticleCache = new Map<string, { ts: number; title: string; text: string }>();
+  const YT_ARTICLE_TTL = 30 * 60 * 1000; // 30 min
+
+  function extractYtId(input: string): string | null {
+    const patterns = [
+      /(?:youtu\.be\/)([A-Za-z0-9_-]{11})/,
+      /(?:youtube\.com\/watch\?.*v=)([A-Za-z0-9_-]{11})/,
+      /(?:youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,
+      /^([A-Za-z0-9_-]{11})$/,
+    ];
+    for (const p of patterns) {
+      const m = input.match(p);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  app.get("/api/yt-to-article", isAuthenticated, async (req: any, res) => {
+    const url = (req.query.url as string || "").trim();
+    const videoId = extractYtId(url);
+    if (!videoId) return res.status(400).json({ message: "Invalid YouTube URL" });
+
+    const cached = _ytArticleCache.get(videoId);
+    if (cached && Date.now() - cached.ts < YT_ARTICLE_TTL) {
+      return res.json({ title: cached.title, text: cached.text });
+    }
+
+    try {
+      /* Step 1: get page HTML to find caption track URL */
+      const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; Vextorn/1.0)",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+      if (!pageRes.ok) return res.status(502).json({ message: "Could not load video page" });
+      const html = await pageRes.text();
+
+      /* Extract title */
+      const titleMatch = html.match(/"title":"([^"]+)"/);
+      const title = titleMatch ? titleMatch[1].replace(/\\u0026/g, "&").replace(/\\"/g, '"') : `YouTube Video (${videoId})`;
+
+      /* Extract playerCaptionsTracklistRenderer */
+      const captionMatch = html.match(/"captionTracks":\[(\{.*?\})\]/);
+      let captionUrl: string | null = null;
+      if (captionMatch) {
+        const baseUrlMatch = captionMatch[1].match(/"baseUrl":"([^"]+)"/);
+        if (baseUrlMatch) captionUrl = baseUrlMatch[1].replace(/\\u0026/g, "&");
+      }
+
+      if (!captionUrl) {
+        return res.status(422).json({ message: "No captions available for this video. Try a video with auto-captions enabled." });
+      }
+
+      /* Step 2: fetch the caption XML */
+      const capRes = await fetch(captionUrl + "&fmt=json3", {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Vextorn/1.0)" },
+      });
+      if (!capRes.ok) return res.status(502).json({ message: "Could not load captions" });
+
+      const capJson: any = await capRes.json();
+      const events: any[] = capJson?.events || [];
+
+      /* Step 3: build readable paragraphs from caption segments */
+      const words: string[] = [];
+      for (const ev of events) {
+        if (!ev.segs) continue;
+        for (const seg of ev.segs) {
+          if (seg.utf8 && seg.utf8.trim() && seg.utf8 !== "\n") {
+            words.push(seg.utf8.trim());
+          }
+        }
+      }
+
+      /* Group every ~15 words into a sentence, every ~120 words into a paragraph */
+      const WORDS_PER_PARA = 120;
+      const chunks: string[] = [];
+      for (let i = 0; i < words.length; i += WORDS_PER_PARA) {
+        chunks.push(words.slice(i, i + WORDS_PER_PARA).join(" "));
+      }
+      const text = chunks.join("\n\n");
+
+      if (!text) return res.status(422).json({ message: "No readable content found in captions" });
+
+      _ytArticleCache.set(videoId, { ts: Date.now(), title, text });
+      return res.json({ title, text });
+    } catch (err: any) {
+      console.error("YT article error:", err);
+      return res.status(500).json({ message: "Failed to extract article" });
+    }
+  });
+
   app.get("/api/users", isAuthenticated, async (_req, res) => {
     try {
       const users = await storage.getAllUsers();
