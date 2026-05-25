@@ -435,20 +435,21 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
 }
 
 /* ── MicVoiceBar ──────────────────────────────────────────────────────────────
-   Vertical stacked-segment VU meter — sits flush at bottom-right of card.
-   SILENT  → completely invisible (nothing drawn at all).
-   SPEAKING→ lit segments rise from bottom; soft cyan→violet→red gradient.
-   Gate: open at 0.072, close at 0.038 — immune to WebRTC background noise. */
-const VU_SEGS       = 10;    // number of stacked segments
-const VU_SEG_GAP    = 2;     // px gap between segments
-const VU_OPEN_GATE  = 0.072; // level must exceed this to start showing bars
-const VU_CLOSE_GATE = 0.038; // level must fall below this to hide bars again
+   Tiny vertical VU meter — 7 slender segments, flush bottom-right of card.
+   Uses TIME-DOMAIN RMS (deviation from 128) — truly silent streams = 0,
+   so background WebRTC noise cannot trigger bars. Hysteresis gate prevents
+   flicker at the boundary. Smaller, gentler, more modern look. */
+const VU_SEGS       = 7;    // slim column of segments
+const VU_SEG_H      = 3;    // px height of each segment
+const VU_SEG_GAP    = 2;    // px gap between segments
+const VU_OPEN_GATE  = 0.07; // RMS fraction to open gate (~9% deviation = real voice)
+const VU_CLOSE_GATE = 0.03; // RMS fraction to close gate
 
 function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const rafRef     = useRef<number>(0);
-  const levelRef   = useRef<number>(0);
-  const gateOpen   = useRef<boolean>(false); // hysteresis gate state
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef    = useRef<number>(0);
+  const levelRef  = useRef<number>(0);
+  const gateOpen  = useRef<boolean>(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -457,24 +458,25 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
     if (!ctx) return;
 
     if (analyserNode) {
+      analyserNode.fftSize = 512;
       analyserNode.smoothingTimeConstant = 0.0;
-      analyserNode.fftSize = 256;
     }
 
-    const freqBuf = analyserNode ? new Uint8Array(analyserNode.frequencyBinCount) : null;
+    /* Time-domain buffer: silence = all 128, signal = deviation from 128 */
+    const timeBuf = analyserNode ? new Uint8Array(analyserNode.fftSize) : null;
 
-    /* Soft gradient palette per segment index, bottom→top */
+    /* Gentle 7-stop palette: soft cyan → periwinkle → lavender → rose */
     const segRGB = (s: number): [number, number, number] => {
-      const frac = s / (VU_SEGS - 1);
-      if (frac < 0.45) {
-        const t = frac / 0.45;
-        return [Math.round(56 + t * 14), Math.round(189 - t * 40), Math.round(248 - t * 18)];
-      } else if (frac < 0.75) {
-        const t = (frac - 0.45) / 0.30;
-        return [Math.round(70 + t * 100), Math.round(149 - t * 80), Math.round(230 - t * 55)];
+      const f = s / (VU_SEGS - 1);
+      if (f < 0.35) {
+        const t = f / 0.35;
+        return [Math.round(80  + t * 40),  Math.round(200 - t * 50), Math.round(240 - t * 20)];
+      } else if (f < 0.70) {
+        const t = (f - 0.35) / 0.35;
+        return [Math.round(120 + t * 60),  Math.round(150 - t * 60), Math.round(220 + t * 10)];
       } else {
-        const t = (frac - 0.75) / 0.25;
-        return [Math.round(170 + t * 69), Math.round(69 - t * 69), Math.round(175 - t * 145)];
+        const t = (f - 0.70) / 0.30;
+        return [Math.round(180 + t * 55),  Math.round(90  - t * 60), Math.round(230 - t * 90)];
       }
     };
 
@@ -483,62 +485,55 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
       const H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
-      /* Compute RMS across voice-freq bins (300 Hz–4 kHz range) */
+      /* Time-domain RMS: how far samples deviate from the silence midpoint */
       let raw = 0;
-      if (analyserNode && freqBuf) {
-        analyserNode.getByteFrequencyData(freqBuf);
-        const sr      = analyserNode.context.sampleRate;
-        const binHz   = sr / analyserNode.fftSize;
-        const loB     = Math.max(1, Math.round(300  / binHz));
-        const hiB     = Math.min(freqBuf.length - 1, Math.round(4000 / binHz));
+      if (analyserNode && timeBuf) {
+        analyserNode.getByteTimeDomainData(timeBuf);
         let sumSq = 0;
-        for (let b = loB; b <= hiB; b++) sumSq += (freqBuf[b] / 255) ** 2;
-        raw = Math.pow(Math.sqrt(sumSq / (hiB - loB + 1)), 0.50);
+        for (let i = 0; i < timeBuf.length; i++) {
+          const d = (timeBuf[i] - 128) / 128; // -1..1, 0 = true silence
+          sumSq += d * d;
+        }
+        raw = Math.sqrt(sumSq / timeBuf.length); // 0..1
       }
 
-      /* Fast attack (0.85), slower decay (0.22) */
+      /* Attack fast (0.80), decay slow (0.18) — feels natural, not jittery */
       const prev = levelRef.current;
-      levelRef.current = prev + (raw - prev) * (raw > prev ? 0.85 : 0.22);
+      levelRef.current = prev + (raw - prev) * (raw > prev ? 0.80 : 0.18);
       const level = levelRef.current;
 
-      /* Hysteresis gate: open when loud enough, close when quiet enough */
+      /* Hysteresis: open gate when voice detected, close when quiet again */
       if (!gateOpen.current && level >= VU_OPEN_GATE)  gateOpen.current = true;
       if ( gateOpen.current && level <  VU_CLOSE_GATE) gateOpen.current = false;
 
-      /* Draw nothing when gate is closed */
       if (!gateOpen.current) {
         rafRef.current = requestAnimationFrame(draw);
         return;
       }
 
-      const normalized = Math.min(1, (level - VU_CLOSE_GATE) / (1 - VU_CLOSE_GATE));
+      const normalized = Math.min(1, (level - VU_CLOSE_GATE) / (VU_OPEN_GATE * 6 - VU_CLOSE_GATE));
       const litCount   = Math.max(1, Math.round(normalized * VU_SEGS));
-      const segH = Math.max(3, (H - (VU_SEGS - 1) * VU_SEG_GAP) / VU_SEGS);
-      const r    = Math.min(W / 2, 2);
+      const r          = 1.5;
 
-      /* Only draw lit segments — unlit = invisible */
       for (let s = 0; s < litCount; s++) {
         const [rc, gc, bc] = segRGB(s);
-        /* Top segments slightly more opaque for punch */
-        const alpha  = 0.70 + (s / (VU_SEGS - 1)) * 0.28;
-        const y      = H - (s + 1) * segH - s * VU_SEG_GAP;
+        const alpha = 0.55 + (s / (VU_SEGS - 1)) * 0.35; // 0.55→0.90
+        const y     = H - (s + 1) * VU_SEG_H - s * VU_SEG_GAP;
 
         ctx.save();
-        /* Gentle glow — stronger at top (loud segments) */
-        ctx.shadowBlur  = 2 + (s / (VU_SEGS - 1)) * 10;
-        ctx.shadowColor = `rgba(${rc},${gc},${bc},0.65)`;
-        ctx.fillStyle   = `rgba(${rc},${gc},${bc},${alpha})`;
-
+        ctx.shadowBlur  = 3 + (s / (VU_SEGS - 1)) * 6;
+        ctx.shadowColor = `rgba(${rc},${gc},${bc},0.45)`;
+        ctx.fillStyle   = `rgba(${rc},${gc},${bc},${alpha.toFixed(2)})`;
         ctx.beginPath();
         ctx.moveTo(r, y);
         ctx.lineTo(W - r, y);
-        ctx.arcTo(W, y,          W, y + r,         r);
-        ctx.lineTo(W, y + segH - r);
-        ctx.arcTo(W, y + segH,   W - r, y + segH,  r);
-        ctx.lineTo(r, y + segH);
-        ctx.arcTo(0, y + segH,   0, y + segH - r,  r);
+        ctx.arcTo(W, y,              W, y + r,              r);
+        ctx.lineTo(W, y + VU_SEG_H - r);
+        ctx.arcTo(W, y + VU_SEG_H,  W - r, y + VU_SEG_H,  r);
+        ctx.lineTo(r, y + VU_SEG_H);
+        ctx.arcTo(0, y + VU_SEG_H,  0, y + VU_SEG_H - r,  r);
         ctx.lineTo(0, y + r);
-        ctx.arcTo(0, y,          r, y,              r);
+        ctx.arcTo(0, y,              r, y,                  r);
         ctx.closePath();
         ctx.fill();
         ctx.restore();
@@ -551,11 +546,12 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
     return () => cancelAnimationFrame(rafRef.current);
   }, [analyserNode]);
 
+  const H = VU_SEGS * VU_SEG_H + (VU_SEGS - 1) * VU_SEG_GAP; // 7*3 + 6*2 = 33px
   return (
     <canvas
       ref={canvasRef}
-      width={11}
-      height={VU_SEGS * 6 + (VU_SEGS - 1) * VU_SEG_GAP}
+      width={8}
+      height={H}
       className="pointer-events-none block"
       data-testid="mic-voice-bar"
     />
