@@ -54,15 +54,15 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/messages/conversations"],
     enabled: !!user,
-    refetchInterval: 8000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: unreadData } = useQuery<{ count: number }>({
     queryKey: ["/api/messages/unread/count"],
     enabled: !!user,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: allUsers = [] } = useQuery<User[]>({
@@ -77,8 +77,8 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
       return res.json();
     },
     enabled: !!user,
-    refetchInterval: 8000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   const respondMutation = useMutation({

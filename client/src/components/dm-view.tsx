@@ -107,7 +107,7 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   const { data: messages = [], isLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", user?.id, otherUserId],
     enabled: !!user && !!otherUserId && canChat,
-    refetchInterval: 3000,
+    refetchInterval: 30000,
   });
 
   /* ── Send message request ── */

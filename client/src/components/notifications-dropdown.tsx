@@ -39,8 +39,8 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
     enabled: !!user,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: pendingRequests = [] } = useQuery<PendingRequest[]>({
@@ -50,8 +50,8 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
       return res.json();
     },
     enabled: !!user,
-    refetchInterval: 8000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 
   const respondRequestMutation = useMutation({
