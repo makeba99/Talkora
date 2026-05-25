@@ -445,11 +445,12 @@ const VU_SEG_GAP    = 2;    // px gap between segments
 const VU_OPEN_GATE  = 0.07; // RMS fraction to open gate (~9% deviation = real voice)
 const VU_CLOSE_GATE = 0.03; // RMS fraction to close gate
 
-function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
+function MicVoiceBar({ analyserNode, isSpeaking }: { analyserNode?: AnalyserNode; isSpeaking?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
   const levelRef  = useRef<number>(0);
   const gateOpen  = useRef<boolean>(false);
+  const tSimRef   = useRef<number>(0); // simulated time for fallback animation
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -480,46 +481,12 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
       }
     };
 
-    const draw = () => {
-      const W = canvas.width;
-      const H = canvas.height;
-      ctx.clearRect(0, 0, W, H);
-
-      /* Time-domain RMS: how far samples deviate from the silence midpoint */
-      let raw = 0;
-      if (analyserNode && timeBuf) {
-        analyserNode.getByteTimeDomainData(timeBuf);
-        let sumSq = 0;
-        for (let i = 0; i < timeBuf.length; i++) {
-          const d = (timeBuf[i] - 128) / 128; // -1..1, 0 = true silence
-          sumSq += d * d;
-        }
-        raw = Math.sqrt(sumSq / timeBuf.length); // 0..1
-      }
-
-      /* Attack fast (0.80), decay slow (0.18) — feels natural, not jittery */
-      const prev = levelRef.current;
-      levelRef.current = prev + (raw - prev) * (raw > prev ? 0.80 : 0.18);
-      const level = levelRef.current;
-
-      /* Hysteresis: open gate when voice detected, close when quiet again */
-      if (!gateOpen.current && level >= VU_OPEN_GATE)  gateOpen.current = true;
-      if ( gateOpen.current && level <  VU_CLOSE_GATE) gateOpen.current = false;
-
-      if (!gateOpen.current) {
-        rafRef.current = requestAnimationFrame(draw);
-        return;
-      }
-
-      const normalized = Math.min(1, (level - VU_CLOSE_GATE) / (VU_OPEN_GATE * 6 - VU_CLOSE_GATE));
-      const litCount   = Math.max(1, Math.round(normalized * VU_SEGS));
-      const r          = 1.5;
-
+    const drawSegs = (litCount: number, W: number, H: number) => {
+      const r = 1.5;
       for (let s = 0; s < litCount; s++) {
         const [rc, gc, bc] = segRGB(s);
-        const alpha = 0.55 + (s / (VU_SEGS - 1)) * 0.35; // 0.55→0.90
+        const alpha = 0.55 + (s / (VU_SEGS - 1)) * 0.35;
         const y     = H - (s + 1) * VU_SEG_H - s * VU_SEG_GAP;
-
         ctx.save();
         ctx.shadowBlur  = 3 + (s / (VU_SEGS - 1)) * 6;
         ctx.shadowColor = `rgba(${rc},${gc},${bc},0.45)`;
@@ -538,13 +505,58 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
         ctx.fill();
         ctx.restore();
       }
+    };
+
+    const draw = () => {
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      /* Time-domain RMS: how far samples deviate from the silence midpoint */
+      let raw = 0;
+      if (analyserNode && timeBuf) {
+        analyserNode.getByteTimeDomainData(timeBuf);
+        let sumSq = 0;
+        for (let i = 0; i < timeBuf.length; i++) {
+          const d = (timeBuf[i] - 128) / 128;
+          sumSq += d * d;
+        }
+        raw = Math.sqrt(sumSq / timeBuf.length);
+      }
+
+      /* Attack fast (0.80), decay slow (0.18) */
+      const prev = levelRef.current;
+      levelRef.current = prev + (raw - prev) * (raw > prev ? 0.80 : 0.18);
+      const level = levelRef.current;
+
+      /* Hysteresis: open gate when voice detected, close when quiet again */
+      if (!gateOpen.current && level >= VU_OPEN_GATE)  gateOpen.current = true;
+      if ( gateOpen.current && level <  VU_CLOSE_GATE) gateOpen.current = false;
+
+      if (!gateOpen.current) {
+        /* Fallback: if no analyser but isSpeaking (socket event says so), show
+           a gentle breathing animation so remote users are visually indicated */
+        if (isSpeaking && !analyserNode) {
+          const t = tSimRef.current++ * 0.035;
+          const simLevel = 0.18 + Math.abs(Math.sin(t * 1.7)) * 0.32 + Math.abs(Math.sin(t * 2.9 + 1.2)) * 0.14;
+          const normalized = Math.min(1, (simLevel - VU_CLOSE_GATE) / (VU_OPEN_GATE * 6 - VU_CLOSE_GATE));
+          const litCount = Math.max(1, Math.round(normalized * VU_SEGS));
+          drawSegs(litCount, W, H);
+        }
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      const normalized = Math.min(1, (level - VU_CLOSE_GATE) / (VU_OPEN_GATE * 6 - VU_CLOSE_GATE));
+      const litCount   = Math.max(1, Math.round(normalized * VU_SEGS));
+      drawSegs(litCount, W, H);
 
       rafRef.current = requestAnimationFrame(draw);
     };
 
     draw();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [analyserNode]);
+  }, [analyserNode, isSpeaking]);
 
   const H = VU_SEGS * VU_SEG_H + (VU_SEGS - 1) * VU_SEG_GAP; // 7*3 + 6*2 = 33px
   return (
@@ -1559,7 +1571,7 @@ function ParticipantCard({
           ) : (
             /* Live mic: stacked VU meter flush at bottom-right, replaces mic icon */
             <div className="absolute bottom-0 right-1 z-20 pointer-events-none">
-              <MicVoiceBar analyserNode={analyserNode} />
+              <MicVoiceBar analyserNode={analyserNode} isSpeaking={isSpeaking} />
             </div>
           )
         )}
@@ -2920,6 +2932,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analysersRef = useRef<Map<string, AnalyserNode>>(new Map());
+  // Bumped whenever an analyser is added or removed so participant cards re-render
+  // and pick up the fresh AnalyserNode from analysersRef (which is a ref, not state).
+  const [analyserVersion, setAnalyserVersion] = useState(0);
 
   useEffect(() => {
     setRoomData(roomProp);
@@ -3356,6 +3371,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       audioElements.current.delete(peerId);
     }
     analysersRef.current.delete(peerId);
+    setAnalyserVersion(v => v + 1);
     videoSenders.current.delete(peerId);
     screenSenders.current.delete(peerId);
     remoteVideoStreams.current.delete(peerId);
@@ -3428,6 +3444,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 analyser.fftSize = 256;
                 source.connect(analyser);
                 analysersRef.current.set(peerId, analyser);
+                setAnalyserVersion(v => v + 1);
              } catch(e) {}
           }
         } else if (track.kind === "video") {
@@ -3601,6 +3618,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         analyser.fftSize = 256;
         source.connect(analyser);
         analysersRef.current.set(user.id, analyser);
+        setAnalyserVersion(v => v + 1);
       } catch (e) {}
     }
   }, [user]);
@@ -15635,7 +15653,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       localVideoFlipped={isMe ? cameraFacing === "user" : false}
                       isBlocked={isBlockedUser}
                       onUnblock={handleUnblock}
-                      analyserNode={analysersRef.current.get(p.id)}
+                      analyserNode={analyserVersion >= 0 ? analysersRef.current.get(p.id) : undefined}
                       mood={djModeActive ? undefined : participantMoods[p.id]}
                       onClearMood={isMe ? clearMyMood : undefined}
                       hasActiveMovie={movieHosts.has(p.id)}
