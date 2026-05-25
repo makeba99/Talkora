@@ -14030,23 +14030,30 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
         <div className="flex-1 flex flex-col overflow-hidden relative" style={{ paddingBottom: ((activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId) ? 210 : 0 }}>
 
-          {focusedUserId && !(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && (!isVideoOn || miniCameraMode) && !remoteVideoUserId && (
-            <div className="flex-1 min-h-0 relative flex items-center justify-center p-4 cursor-pointer" onClick={() => { setFocusedUserId(null); setMiniCameraMode(false); setMiniPlayerMode(false); }}>
-               <div className="w-[40vw] max-w-[160px] sm:max-w-[200px] aspect-square relative rounded-full overflow-hidden shadow-2xl flex flex-col items-center justify-center cursor-default transition-all duration-300 pointer-events-none" onClick={(e) => e.stopPropagation()}>
+          {focusedUserId && !(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && (!isVideoOn || miniCameraMode) && !remoteVideoUserId && (() => {
+            const _isOverlay = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || !!(room as any).hologramVideoUrl || (currentTheme && currentTheme !== "none");
+            return (
+              <div
+                className="flex-1 min-h-0 relative flex items-center justify-center p-4 cursor-pointer"
+                style={_isOverlay ? { paddingBottom: "clamp(160px, 22vh, 220px)" } : undefined}
+                onClick={() => { setFocusedUserId(null); setMiniCameraMode(false); setMiniPlayerMode(false); }}
+              >
+                <div className="w-[40vw] max-w-[160px] sm:max-w-[200px] aspect-square relative rounded-full overflow-hidden shadow-2xl flex flex-col items-center justify-center cursor-default transition-all duration-300 pointer-events-none" onClick={(e) => e.stopPropagation()}>
                   {(() => {
-                     const fP = focusedUserId ? participantById.get(focusedUserId) : undefined;
-                     if (!fP) return null;
-                     return fP.profileImageUrl ? (
-                       <img loading="lazy" decoding="async" src={fP.profileImageUrl} alt={getUserDisplayName(fP)} className="w-full h-full object-cover pointer-events-auto" />
-                     ) : (
-                       <div className="w-full h-full bg-slate-800 flex items-center justify-center pointer-events-auto">
-                          <span className="text-7xl font-bold bg-transparent text-primary">{getUserInitials(fP as Participant)}</span>
-                       </div>
-                     );
+                    const fP = focusedUserId ? participantById.get(focusedUserId) : undefined;
+                    if (!fP) return null;
+                    return fP.profileImageUrl ? (
+                      <img loading="lazy" decoding="async" src={fP.profileImageUrl} alt={getUserDisplayName(fP)} className="w-full h-full object-cover pointer-events-auto" />
+                    ) : (
+                      <div className="w-full h-full bg-slate-800 flex items-center justify-center pointer-events-auto">
+                        <span className="text-7xl font-bold bg-transparent text-primary">{getUserInitials(fP as Participant)}</span>
+                      </div>
+                    );
                   })()}
-               </div>
-            </div>
-          )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Watcher preview is intentionally NOT auto-shown. Watchers in the room
               see nothing extra in the main media area when a host plays a video —
