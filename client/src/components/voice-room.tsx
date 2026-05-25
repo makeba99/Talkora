@@ -435,18 +435,17 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
 }
 
 /* ── MicVoiceBar ──────────────────────────────────────────────────────────────
-   6 vertical bars side-by-side. Each bar's HEIGHT grows bottom→top in
-   proportion to its frequency-band amplitude — classic DJ / spectrum-analyzer
-   look. Shown for ALL participants: active speakers get real WebAudio data,
-   muted/idle participants get a slow sinusoidal bounce at reduced opacity.
-   Canvas is 34 × 16 px so it fits neatly in the bottom-right icon slot. */
+   6 vertical pill-bars arranged horizontally. Each bar's HEIGHT grows
+   bottom→top — classic spectrum-analyzer look, shown only for unmuted users.
+   Idle breathing animation plays when no live analyser is available yet.
+   Canvas is 36 × 18 px; glow fires only when volume is detected. */
 const MIC_BARS = 6;
 
-function MicVoiceBar({ analyserNode, isMuted }: { analyserNode?: AnalyserNode; isMuted?: boolean }) {
+function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
   const tRef      = useRef<number>(0);
-  const levelsRef = useRef<Float32Array>(new Float32Array(MIC_BARS).fill(0.15));
+  const levelsRef = useRef<Float32Array>(new Float32Array(MIC_BARS).fill(0.12));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -454,38 +453,38 @@ function MicVoiceBar({ analyserNode, isMuted }: { analyserNode?: AnalyserNode; i
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.width;   // 34
-    const H = canvas.height;  // 16
+    const W = canvas.width;   // 36
+    const H = canvas.height;  // 18
 
-    /* Layout: 6 columns, each BAR_W wide with GAP between — centered in canvas */
+    /* 6 bars × 4px wide, 2px gap, centered */
     const BAR_W   = 4;
-    const GAP     = 1;
-    const TOTAL_W = MIC_BARS * BAR_W + (MIC_BARS - 1) * GAP; // = 29
-    const OX      = Math.floor((W - TOTAL_W) / 2);            // left offset
+    const GAP     = 2;
+    const TOTAL_W = MIC_BARS * BAR_W + (MIC_BARS - 1) * GAP; // = 34
+    const OX      = Math.floor((W - TOTAL_W) / 2);
     const MAX_H   = H;
-    const MIN_H   = 2;                                         // always visible
+    const MIN_H   = 2;
 
-    /* Only configure the analyser when the mic is live */
-    if (analyserNode && !isMuted) {
+    if (analyserNode) {
       analyserNode.smoothingTimeConstant = 0.65;
       analyserNode.fftSize = 256;
     }
 
-    const freqBuf = analyserNode && !isMuted
+    const freqBuf = analyserNode
       ? new Uint8Array(analyserNode.frequencyBinCount)
       : null;
     const levels = levelsRef.current;
 
-    /* Rounded-rectangle helper (top corners only) */
-    const fillRoundedTop = (x: number, y: number, w: number, h: number, r: number) => {
-      const cr = Math.min(r, w / 2, h);
+    /* Full pill (all corners rounded) */
+    const pill = (x: number, y: number, w: number, h: number, r: number) => {
+      const cr = Math.min(r, w / 2, h / 2);
       ctx.beginPath();
       ctx.moveTo(x + cr, y);
       ctx.lineTo(x + w - cr, y);
-      ctx.arcTo(x + w, y, x + w, y + cr, cr);
-      ctx.lineTo(x + w, y + h);
-      ctx.lineTo(x, y + h);
-      ctx.arcTo(x, y, x + cr, y, cr);
+      ctx.arcTo(x + w, y,     x + w, y + cr,     cr);
+      ctx.arcTo(x + w, y + h, x + w - cr, y + h, cr);
+      ctx.lineTo(x + cr, y + h);
+      ctx.arcTo(x,     y + h, x, y + h - cr,     cr);
+      ctx.arcTo(x,     y,     x + cr, y,          cr);
       ctx.closePath();
       ctx.fill();
     };
@@ -496,59 +495,58 @@ function MicVoiceBar({ analyserNode, isMuted }: { analyserNode?: AnalyserNode; i
 
       let vol = 0;
 
-      if (!isMuted && analyserNode && freqBuf) {
-        /* Real audio: spread 6 bars across the vocal range ~85 Hz – 4 kHz */
+      if (analyserNode && freqBuf) {
+        /* Real audio: vocal range ~85 Hz – 4 kHz across 6 bands */
         analyserNode.getByteFrequencyData(freqBuf);
         const loB = 1, hiB = Math.min(22, freqBuf.length - 1);
         for (let i = 0; i < MIC_BARS; i++) {
           const bin     = Math.round(loB + (i / (MIC_BARS - 1)) * (hiB - loB));
           const raw     = freqBuf[Math.min(bin, freqBuf.length - 1)] / 255;
-          const boosted = Math.pow(raw, 0.45);           // lift quiet speech
+          const boosted = Math.pow(raw, 0.45);
           const target  = Math.max(0.08, boosted);
           const diff    = target - levels[i];
-          /* Fast attack (0.55), slow decay (0.10) → snappy upward jumps */
-          levels[i] += diff * (diff > 0 ? 0.55 : 0.10);
-          vol += levels[i];
+          levels[i]    += diff * (diff > 0 ? 0.55 : 0.10); // fast attack, slow decay
+          vol          += levels[i];
         }
         vol /= MIC_BARS;
       } else {
-        /* Idle / muted bounce: each bar follows a shifted sine so they ripple */
+        /* Idle breathing ripple — gentle sine wave per bar */
         for (let i = 0; i < MIC_BARS; i++) {
-          const phase = t * 0.055 + i * 0.75;
-          levels[i] = 0.12
-            + Math.abs(Math.sin(phase))         * 0.28
-            + Math.abs(Math.sin(phase * 1.9 + i * 0.4)) * 0.10;
+          const p = t * 0.045 + i * 0.68;
+          levels[i] = 0.10
+            + Math.abs(Math.sin(p))              * 0.22
+            + Math.abs(Math.sin(p * 1.7 + 0.4)) * 0.08;
         }
-        vol = 0.20;
+        vol = 0.18;
       }
 
-      const mutedAlpha = isMuted ? 0.35 : 1.0;
+      const isSpeaking = vol > 0.22; // glow threshold
 
       for (let i = 0; i < MIC_BARS; i++) {
         const lvl  = Math.max(0, Math.min(1, levels[i]));
         const barH = Math.max(MIN_H, lvl * MAX_H);
         const x    = OX + i * (BAR_W + GAP);
-        const y    = H - barH;          // grow from bottom up
+        const y    = H - barH;
 
-        /* Dim track (full-height ghost bar) */
+        /* Ghost track */
         ctx.save();
-        ctx.fillStyle = `rgba(255,255,255,${0.07 * mutedAlpha})`;
-        fillRoundedTop(x, 0, BAR_W, H, 2);
+        ctx.fillStyle = "rgba(255,255,255,0.10)";
+        pill(x, 0, BAR_W, H, 2);
         ctx.restore();
 
-        /* Live fill: amber (bottom) → violet (top) */
+        /* Amber → violet gradient fill */
         const gr = ctx.createLinearGradient(0, H, 0, 0);
-        gr.addColorStop(0,   `rgba(251,146,60,${(0.80 + vol * 0.18) * mutedAlpha})`);
-        gr.addColorStop(0.5, `rgba(196,130,220,${(0.85 + vol * 0.12) * mutedAlpha})`);
-        gr.addColorStop(1,   `rgba(139,92,246,${(0.92 + vol * 0.08) * mutedAlpha})`);
+        gr.addColorStop(0,   `rgba(251,146,60,${0.78 + vol * 0.20})`);
+        gr.addColorStop(0.5, `rgba(192,132,252,${0.84 + vol * 0.14})`);
+        gr.addColorStop(1,   `rgba(124,58,237,${0.92 + vol * 0.08})`);
 
         ctx.save();
-        if (!isMuted) {
-          ctx.shadowBlur  = 3 + vol * 10;
-          ctx.shadowColor = `rgba(167,139,250,${0.45 + vol * 0.40})`;
+        if (isSpeaking) {
+          ctx.shadowBlur  = 4 + vol * 12;
+          ctx.shadowColor = `rgba(167,139,250,${0.50 + vol * 0.38})`;
         }
         ctx.fillStyle = gr;
-        fillRoundedTop(x, y, BAR_W, barH, 2);
+        pill(x, y, BAR_W, barH, 2);
         ctx.restore();
       }
 
@@ -557,13 +555,13 @@ function MicVoiceBar({ analyserNode, isMuted }: { analyserNode?: AnalyserNode; i
 
     draw();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [analyserNode, isMuted]);
+  }, [analyserNode]);
 
   return (
     <canvas
       ref={canvasRef}
-      width={34}
-      height={16}
+      width={36}
+      height={18}
       className="opacity-95 pointer-events-none"
       data-testid="mic-voice-bar"
     />
@@ -1562,9 +1560,13 @@ function ParticipantCard({
 
         {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && !avatarGifUrl && (
           <div className="absolute bottom-1 right-1 z-20 drop-shadow-md flex items-center justify-center">
-            {/* Voice bars shown for ALL participants — muted users get a dimmed
-                idle bounce so the visualizer is always visible in the room. */}
-            <MicVoiceBar analyserNode={analyserNode} isMuted={!!p.isMuted} />
+            {p.isMuted ? (
+              /* Muted: static icon — no wave bars shown */
+              <MicOff className="w-4 h-4 text-white/80" />
+            ) : (
+              /* Live mic: animated spectrum bars, glow only when speaking */
+              <MicVoiceBar analyserNode={analyserNode} />
+            )}
           </div>
         )}
 
