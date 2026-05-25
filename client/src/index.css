@@ -125,6 +125,12 @@
   50% { opacity: 0.9; transform: scaleX(1.05); }
 }
 
+@keyframes movie-bar-slide {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
 .ai-float {
   animation: aiFloat 3.5s ease-in-out infinite;
   /* Promote to its own GPU compositor layer so the float animation never

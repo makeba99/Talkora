@@ -23,7 +23,7 @@ import {
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, SkipBack, Smile,
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, SendHorizontal,
-  Pin, Languages, Headphones, ListMusic
+  Pin, Languages, Headphones, ListMusic, Captions
 } from "lucide-react";
 import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -2476,6 +2476,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [moviePlayingByHost, setMoviePlayingByHost] = useState<Map<string, boolean>>(new Map());
   const [movieHostPlaying, setMovieHostPlaying] = useState(true);
   const [movieSyncKey, setMovieSyncKey] = useState(0);
+  const [movieElapsedDisplay, setMovieElapsedDisplay] = useState(0);
+  const [movieSubsOpen, setMovieSubsOpen] = useState(false);
+  const [movieSettingsOpen, setMovieSettingsOpen] = useState(false);
+  const [movieMuted, setMovieMuted] = useState(false);
   const [popularMovies, setPopularMovies] = useState<any[]>([]);
   const [popularMoviesLoading, setPopularMoviesLoading] = useState(false);
   const dailyModernMovieRef = useRef<{ dayKey: string; movieId: string | null }>({ dayKey: "", movieId: null });
@@ -8255,6 +8259,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setMovieSyncKey(k => k + 1);
     }
   };
+
+  useEffect(() => {
+    if (!showMovie || !activeMovieId) { setMovieElapsedDisplay(0); return; }
+    const id = setInterval(() => { setMovieElapsedDisplay(movieHostElapsedRef.current); }, 500);
+    return () => clearInterval(id);
+  }, [showMovie, activeMovieId]);
 
   const loadPopularMovies = useCallback(async () => {
     if (popularMovies.length > 0) return;
@@ -14580,51 +14590,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               style={moviePlayerHeight ? { height: moviePlayerHeight, flexShrink: 0 } : { flex: 1, minHeight: 0 }}
               data-testid="media-main-movie"
             >
-              {/* Always-visible close X for non-host watchers */}
-              {user?.id !== movieStartedBy && (
-                <button
-                  onClick={() => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false }); }}
-                  className="absolute top-2 right-2 z-30 w-7 h-7 rounded-full bg-black/70 hover:bg-red-500/80 text-white flex items-center justify-center border border-white/20 shadow-md transition-colors"
-                  data-testid="button-close-movie-self"
-                  title="Close movie (just for me)"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-              {/* Title bar — revealed on hover */}
+              {/* Title bar — hover-revealed gradient overlay */}
               <div
-                className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2.5 opacity-0 group-hover/movieplayer:opacity-100 pointer-events-none group-hover/movieplayer:pointer-events-auto transition-opacity duration-200"
-                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)" }}
+                className="absolute top-0 left-0 right-0 z-20 flex items-center gap-2 px-4 py-3 opacity-0 group-hover/movieplayer:opacity-100 pointer-events-none group-hover/movieplayer:pointer-events-auto transition-opacity duration-200"
+                style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, transparent 100%)" }}
               >
-                <div className="flex items-center gap-2">
-                  <Film className="w-4 h-4 text-violet-400" />
-                  <span className="text-white text-sm font-semibold truncate max-w-xs">{activeMovieTitle}</span>
-                  {movieStartedBy && movieStartedBy !== user?.id && (() => {
-                    const host = movieStartedBy ? participantById.get(movieStartedBy) : undefined;
-                    return host ? (
-                      <span className="text-white/50 text-xs">shared by {getUserDisplayName(host)}</span>
-                    ) : null;
-                  })()}
-                </div>
-                {user?.id === movieStartedBy ? (
-                  <button
-                    onClick={handleStopMovie}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/80 hover:bg-red-500 text-white text-xs font-medium transition-colors"
-                    data-testid="button-stop-movie-main"
-                  >
-                    <StopCircle className="w-3 h-3" /> Stop
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false }); }}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs font-medium transition-colors"
-                    data-testid="button-hide-movie-main"
-                  >
-                    <X className="w-3 h-3" /> Hide
-                  </button>
-                )}
+                <Film className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                <span className="text-white text-sm font-semibold truncate">{activeMovieTitle}</span>
+                {movieStartedBy && movieStartedBy !== user?.id && (() => {
+                  const host = participantById.get(movieStartedBy);
+                  return host ? (
+                    <span className="text-white/40 text-xs shrink-0">· shared by {getUserDisplayName(host)}</span>
+                  ) : null;
+                })()}
               </div>
-              {/* Internet Archive embed — confirmed embeddable, no Cloudflare blocking */}
+
+              {/* Internet Archive embed */}
               <iframe
                 key={`${activeMovieId}_${movieStartOffset}_${movieSyncKey}`}
                 src={`https://archive.org/embed/${encodeURIComponent(activeMovieId)}${movieStartOffset > 0 ? `?start=${movieStartOffset}&autoplay=1` : "?autoplay=1"}`}
@@ -14635,104 +14616,250 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 data-testid="iframe-movie-player"
               />
 
-              {/* Host sync controls — play/pause so watchers stay in sync */}
-              {user?.id === movieStartedBy && (
-                <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-25 flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full border border-white/15 px-3 py-1.5 opacity-0 group-hover/movieplayer:opacity-100 pointer-events-none group-hover/movieplayer:pointer-events-auto transition-opacity duration-200" data-testid="movie-host-sync-controls">
-                  <span className="text-white/50 text-[10px] font-medium select-none">Sync controls</span>
-                  {movieHostPlaying ? (
-                    <button
-                      type="button"
-                      onClick={handleMoviePause}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-medium transition-colors"
-                      data-testid="button-movie-host-pause"
-                      title="Pause for all watchers"
-                    >
-                      <span className="w-3 h-3 flex items-center justify-center">⏸</span> Pause All
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleMoviePlay}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/80 hover:bg-violet-500 text-white text-xs font-medium transition-colors"
-                      data-testid="button-movie-host-play"
-                      title="Resume for all watchers"
-                    >
-                      <span className="w-3 h-3 flex items-center justify-center">▶</span> Resume All
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Watcher resync button */}
-              {user?.id !== movieStartedBy && (
-                <button
-                  type="button"
-                  onClick={handleMovieResync}
-                  className="absolute bottom-14 left-3 z-25 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 hover:bg-black/90 border border-white/15 text-white text-xs font-medium transition-colors opacity-0 group-hover/movieplayer:opacity-100 pointer-events-none group-hover/movieplayer:pointer-events-auto backdrop-blur-sm"
-                  data-testid="button-movie-resync"
-                  title="Jump to where the host currently is"
-                >
-                  ↺ Resync
-                </button>
-              )}
-
-              {/* Reactions toggle + collapsible emoji picker — hidden by default, tap smiley to reveal */}
+              {/* ─────────────────────────────────────────────────────────────────
+                  REDESIGNED BOTTOM CONTROL BAR
+                  Layout: [■ Stop] [▶/⏸] [━━━━ time ━━━━] [🔊] [CC] [⚙] [😊] ··· [✕]
+              ───────────────────────────────────────────────────────────────── */}
               <div
-                className="absolute right-3 bottom-14 z-20 flex items-center gap-2 pointer-events-none group-hover/movieplayer:pointer-events-auto"
+                className="absolute bottom-0 left-0 right-0 z-30"
+                data-testid="movie-control-bar"
                 onClick={(e) => e.stopPropagation()}
               >
-                {movieReactionsOpen && (
-                  <div
-                    className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm rounded-full border border-white/15 px-2 py-1.5 shadow-lg animate-in fade-in slide-in-from-right-2 duration-200"
-                    data-testid="movie-reactions-panel"
-                  >
-                    {["❤️", "🍿", "😂", "😮", "👏", "🔥", "🤯"].map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => { if (socket) socket.emit("room:movie-reaction", { roomId: room.id, emoji }); }}
-                        className="w-7 h-7 rounded-full hover:bg-white/15 flex items-center justify-center text-base transition-transform hover:scale-125 active:scale-90"
-                        title={`Send ${emoji}`}
-                        data-testid={`button-movie-react-${emoji}`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setMovieReactionsOpen((v) => !v)}
-                  className={`w-9 h-9 rounded-full backdrop-blur-sm border flex items-center justify-center shadow-lg transition-colors ${movieReactionsOpen ? "bg-violet-500/85 border-violet-300/50 text-white" : "bg-black/65 border-white/15 text-white hover:bg-white/20"}`}
-                  title={movieReactionsOpen ? "Hide reactions" : "Show reactions"}
-                  data-testid="button-movie-reactions-toggle"
+                {/* Resize drag handle at very top of bar */}
+                <div
+                  className="flex items-center justify-center h-3 cursor-ns-resize group/resize-movie transition-colors hover:bg-white/8"
+                  data-testid="movie-player-resize-handle"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startY = e.clientY;
+                    const container = e.currentTarget.parentElement!.parentElement!;
+                    const startH = container.getBoundingClientRect().height;
+                    const onMove = (me: MouseEvent) => {
+                      const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
+                      setMoviePlayerHeight(Math.max(180, Math.min(outerH - 80, startH + (me.clientY - startY))));
+                    };
+                    const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+                    window.addEventListener("mousemove", onMove);
+                    window.addEventListener("mouseup", onUp);
+                  }}
                 >
-                  {movieReactionsOpen ? <X className="w-4 h-4" /> : <Smile className="w-4 h-4" />}
-                </button>
-              </div>
+                  <div className="w-10 h-0.5 rounded-full bg-white/20 group-hover/resize-movie:bg-white/55 transition-colors" />
+                </div>
 
-              {/* Resize handle */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center z-30 cursor-ns-resize group/resize-movie hover:bg-white/10 transition-colors"
-                data-testid="movie-player-resize-handle"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  const startY = e.clientY;
-                  const container = e.currentTarget.parentElement!;
-                  const startH = container.getBoundingClientRect().height;
-                  const onMove = (me: MouseEvent) => {
-                    const outerH = container.parentElement?.getBoundingClientRect().height ?? 600;
-                    setMoviePlayerHeight(Math.max(180, Math.min(outerH - 80, startH + (me.clientY - startY))));
-                  };
-                  const onUp = () => {
-                    window.removeEventListener("mousemove", onMove);
-                    window.removeEventListener("mouseup", onUp);
-                  };
-                  window.addEventListener("mousemove", onMove);
-                  window.addEventListener("mouseup", onUp);
-                }}
-              >
-                <div className="w-14 h-1 rounded-full bg-white/25 group-hover/resize-movie:bg-white/60 transition-colors" />
+                {/* Main row */}
+                <div
+                  className="flex items-center gap-1 px-2 pb-2.5 pt-1"
+                  style={{ background: "linear-gradient(to top, rgba(4,4,10,0.98) 0%, rgba(4,4,10,0.80) 100%)" }}
+                >
+                  {/* ── LEFT: Stop + Play/Pause ── */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {/* Stop */}
+                    <button
+                      type="button"
+                      onClick={user?.id === movieStartedBy
+                        ? handleStopMovie
+                        : () => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false }); }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white/55 hover:text-red-400 hover:bg-red-500/14 transition-all duration-150 active:scale-90"
+                      title={user?.id === movieStartedBy ? "Stop movie for everyone" : "Stop watching"}
+                      data-testid="button-movie-stop"
+                    >
+                      <StopCircle className="w-[17px] h-[17px]" />
+                    </button>
+
+                    {/* Play / Pause — host syncs all; watcher resyncs */}
+                    {user?.id === movieStartedBy ? (
+                      movieHostPlaying ? (
+                        <button
+                          type="button"
+                          onClick={handleMoviePause}
+                          className="w-9 h-9 rounded-xl flex items-center justify-center text-white hover:bg-white/12 transition-all duration-150 active:scale-90"
+                          title="Pause for all watchers"
+                          data-testid="button-movie-pause"
+                        >
+                          <Pause className="w-[18px] h-[18px]" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleMoviePlay}
+                          className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/25 transition-all duration-150 active:scale-90"
+                          title="Resume for all watchers"
+                          data-testid="button-movie-play"
+                        >
+                          <Play className="w-[17px] h-[17px] ml-0.5" />
+                        </button>
+                      )
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleMovieResync}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white/55 hover:text-white hover:bg-white/12 transition-all duration-150 active:scale-90"
+                        title="Resync to host's current position"
+                        data-testid="button-movie-resync-bar"
+                      >
+                        <RotateCcw className="w-[15px] h-[15px]" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* ── DIVIDER ── */}
+                  <div className="w-px h-5 bg-white/10 shrink-0 mx-1" />
+
+                  {/* ── CENTRE: Elapsed time + progress track ── */}
+                  <div className="flex-1 flex items-center gap-2.5 min-w-0">
+                    <span className="text-white/45 text-[11px] font-mono tabular-nums shrink-0 select-none">
+                      {(() => {
+                        const secs = user?.id === movieStartedBy
+                          ? movieElapsedDisplay
+                          : Math.floor(movieCurrentTimeByHost.get(movieStartedBy ?? "") ?? movieElapsedDisplay);
+                        const m = Math.floor(secs / 60);
+                        const s = secs % 60;
+                        return `${m}:${String(s).padStart(2, "0")}`;
+                      })()}
+                    </span>
+                    {/* Track — indeterminate pulse (total duration unknown for archive.org) */}
+                    <div
+                      className="flex-1 h-[3px] rounded-full bg-white/10 overflow-hidden min-w-0 relative"
+                      title="Elapsed playback time"
+                    >
+                      <div
+                        className={`h-full rounded-full transition-all duration-1000 ${
+                          movieHostPlaying || user?.id !== movieStartedBy
+                            ? "bg-gradient-to-r from-amber-600/80 via-amber-400 to-amber-500/80"
+                            : "bg-white/25"
+                        }`}
+                        style={{ width: "100%", transform: "translateX(-88%)", animation: (movieHostPlaying || user?.id !== movieStartedBy) ? "movie-bar-slide 2.8s ease-in-out infinite" : "none" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── DIVIDER ── */}
+                  <div className="w-px h-5 bg-white/10 shrink-0 mx-1" />
+
+                  {/* ── RIGHT: Volume + CC + Settings + Reactions + X ── */}
+                  <div className="flex items-center gap-0.5 shrink-0">
+
+                    {/* Volume */}
+                    <button
+                      type="button"
+                      onClick={() => setMovieMuted(v => !v)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10 transition-all duration-150 active:scale-90"
+                      title={movieMuted ? "Unmute" : "Mute"}
+                      data-testid="button-movie-mute"
+                    >
+                      {movieMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+
+                    {/* Subtitles (CC) */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => { setMovieSubsOpen(v => !v); setMovieSettingsOpen(false); setMovieReactionsOpen(false); }}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 ${movieSubsOpen ? "text-amber-400 bg-amber-500/15" : "text-white/55 hover:text-white hover:bg-white/10"}`}
+                        title="Subtitles / CC"
+                        data-testid="button-movie-subtitles"
+                      >
+                        <Captions className="w-4 h-4" />
+                      </button>
+                      {movieSubsOpen && (
+                        <div className="absolute bottom-full right-0 mb-2 w-56 rounded-xl bg-[#0d0d14]/96 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/70 p-3 animate-in fade-in slide-in-from-bottom-2 duration-150" data-testid="movie-subs-menu">
+                          <p className="text-white/75 text-[11px] font-semibold uppercase tracking-wider mb-2.5 px-0.5">Subtitles</p>
+                          <div className="space-y-0.5">
+                            <div className="flex items-start gap-2.5 px-2.5 py-2 rounded-lg bg-white/5 border border-white/6">
+                              <div className="w-1.5 h-1.5 rounded-full bg-amber-400/90 mt-1 shrink-0" />
+                              <span className="text-white/60 text-xs leading-snug">Use the <span className="text-white/80 font-medium">CC button</span> inside the player to enable subtitles</span>
+                            </div>
+                            <div className="flex items-start gap-2.5 px-2.5 py-2 rounded-lg">
+                              <div className="w-1.5 h-1.5 rounded-full bg-white/18 mt-1 shrink-0" />
+                              <span className="text-white/38 text-xs leading-snug">Captions powered by Internet Archive</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Settings */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => { setMovieSettingsOpen(v => !v); setMovieSubsOpen(false); setMovieReactionsOpen(false); }}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 ${movieSettingsOpen ? "text-amber-400 bg-amber-500/15" : "text-white/55 hover:text-white hover:bg-white/10"}`}
+                        title="Settings"
+                        data-testid="button-movie-settings"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                      {movieSettingsOpen && (
+                        <div className="absolute bottom-full right-0 mb-2 w-48 rounded-xl bg-[#0d0d14]/96 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/70 p-2 animate-in fade-in slide-in-from-bottom-2 duration-150" data-testid="movie-settings-menu">
+                          <p className="text-white/75 text-[11px] font-semibold uppercase tracking-wider px-2 py-1 mb-0.5">Playback</p>
+                          {user?.id !== movieStartedBy && (
+                            <button
+                              type="button"
+                              onClick={() => { handleMovieResync(); setMovieSettingsOpen(false); }}
+                              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-white/65 hover:bg-white/8 hover:text-white transition-colors text-left"
+                              data-testid="button-movie-resync-settings"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5 shrink-0" /> Resync to host
+                            </button>
+                          )}
+                          {user?.id === movieStartedBy && (
+                            <button
+                              type="button"
+                              onClick={() => { handleStopMovie(); setMovieSettingsOpen(false); }}
+                              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-red-400/85 hover:bg-red-500/10 hover:text-red-400 transition-colors text-left"
+                              data-testid="button-movie-stop-settings"
+                            >
+                              <StopCircle className="w-3.5 h-3.5 shrink-0" /> End for everyone
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reactions */}
+                    <div className="relative">
+                      {movieReactionsOpen && (
+                        <div className="absolute bottom-full right-0 mb-2 flex items-center gap-1 bg-[#0d0d14]/96 backdrop-blur-xl rounded-full border border-white/10 px-2 py-1.5 shadow-2xl shadow-black/70 animate-in fade-in slide-in-from-bottom-2 duration-150" data-testid="movie-reactions-panel">
+                          {["❤️", "🍿", "😂", "😮", "👏", "🔥", "🤯"].map((emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => { if (socket) socket.emit("room:movie-reaction", { roomId: room.id, emoji }); }}
+                              className="w-7 h-7 rounded-full hover:bg-white/12 flex items-center justify-center text-sm transition-transform hover:scale-125 active:scale-90"
+                              title={`React ${emoji}`}
+                              data-testid={`button-movie-react-${emoji}`}
+                            >{emoji}</button>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => { setMovieReactionsOpen(v => !v); setMovieSubsOpen(false); setMovieSettingsOpen(false); }}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 ${movieReactionsOpen ? "text-amber-400 bg-amber-500/15" : "text-white/55 hover:text-white hover:bg-white/10"}`}
+                        title={movieReactionsOpen ? "Hide reactions" : "Reactions"}
+                        data-testid="button-movie-reactions-toggle"
+                      >
+                        <Smile className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Divider before X */}
+                    <div className="w-px h-5 bg-white/10 mx-1" />
+
+                    {/* X Close */}
+                    <button
+                      type="button"
+                      onClick={user?.id === movieStartedBy
+                        ? handleStopMovie
+                        : () => { setShowMovie(false); setActiveMovieId(null); setMovieStartedBy(null); socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false }); }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white/45 hover:text-white hover:bg-white/10 transition-all duration-150 active:scale-90"
+                      title={user?.id === movieStartedBy ? "End movie for everyone" : "Close player"}
+                      data-testid="button-movie-close-bar"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
