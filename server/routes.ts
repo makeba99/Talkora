@@ -2575,16 +2575,18 @@ export async function registerRoutes(
   });
 
   /* ── YouTube → Readable Article ──────────────────────────────────────────
-     Fetches auto-generated captions from a YouTube video and formats them as a
-     readable article.  Uses the InnerTube caption API — no npm package needed. */
-  const _ytArticleCache = new Map<string, { ts: number; title: string; text: string }>();
+     Extracts the full transcript from a YouTube video and formats it as a
+     readable article. Uses youtube-transcript as the primary strategy with
+     robust page-scraping fallbacks. */
+  const _ytArticleCache = new Map<string, { ts: number; title: string; text: string; thumbnailUrl?: string }>();
   const YT_ARTICLE_TTL = 30 * 60 * 1000; // 30 min
 
   function extractYtId(input: string): string | null {
     const patterns = [
       /(?:youtu\.be\/)([A-Za-z0-9_-]{11})/,
-      /(?:youtube\.com\/watch\?.*v=)([A-Za-z0-9_-]{11})/,
+      /(?:[?&]v=)([A-Za-z0-9_-]{11})/,
       /(?:youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/,
+      /(?:youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/,
       /^([A-Za-z0-9_-]{11})$/,
     ];
     for (const p of patterns) {
@@ -2594,6 +2596,56 @@ export async function registerRoutes(
     return null;
   }
 
+  // Helper: convert a flat array of transcript segments → readable paragraphs
+  function segmentsToArticle(segments: Array<{ text: string }>): string {
+    const NOISE = /^\s*\[.*?\]\s*$|^\s*\(.*?\)\s*$/;
+    const words: string[] = [];
+    for (const seg of segments) {
+      const cleaned = (seg.text || "")
+        .replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+        .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+        .trim();
+      if (!cleaned || NOISE.test(cleaned)) continue;
+      words.push(...cleaned.split(/\s+/).filter(Boolean));
+    }
+    const WORDS_PER_PARA = 120;
+    const paragraphs: string[] = [];
+    for (let i = 0; i < words.length; i += WORDS_PER_PARA) {
+      paragraphs.push(words.slice(i, i + WORDS_PER_PARA).join(" "));
+    }
+    return paragraphs.join("\n\n");
+  }
+
+  // Helper: convert InnerTube caption events → article text
+  function eventsToArticle(events: any[]): string {
+    const segs: Array<{ text: string }> = [];
+    for (const ev of events) {
+      if (!ev.segs) continue;
+      for (const seg of ev.segs) {
+        const t = (seg.utf8 || "").trim();
+        if (t && t !== "\n") segs.push({ text: t });
+      }
+    }
+    return segmentsToArticle(segs);
+  }
+
+  // Helper: timed fetch with abort
+  const timedFetch = async (url: string, opts: RequestInit = {}, ms = 12000) => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const r = await fetch(url, { ...opts, signal: ctrl.signal });
+      clearTimeout(t);
+      return r;
+    } catch (e) { clearTimeout(t); throw e; }
+  };
+
+  const YT_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  };
+
   app.get("/api/yt-to-article", isAuthenticated, async (req: any, res) => {
     const url = (req.query.url as string || "").trim();
     const videoId = extractYtId(url);
@@ -2601,149 +2653,228 @@ export async function registerRoutes(
 
     const cached = _ytArticleCache.get(videoId);
     if (cached && Date.now() - cached.ts < YT_ARTICLE_TTL) {
-      return res.json({ title: cached.title, text: cached.text });
+      return res.json({ title: cached.title, text: cached.text, thumbnailUrl: cached.thumbnailUrl });
     }
-
-    // Helper: convert caption events array → readable article text
-    function eventsToArticle(events: any[]): string {
-      const words: string[] = [];
-      for (const ev of events) {
-        if (!ev.segs) continue;
-        for (const seg of ev.segs) {
-          const w = (seg.utf8 || "").trim();
-          if (w && w !== "\n" && w !== "[Music]" && w !== "[Applause]") words.push(w);
-        }
-      }
-      const WORDS_PER_PARA = 120;
-      const chunks: string[] = [];
-      for (let i = 0; i < words.length; i += WORDS_PER_PARA) {
-        chunks.push(words.slice(i, i + WORDS_PER_PARA).join(" "));
-      }
-      return chunks.join("\n\n");
-    }
-
-    // Helper: timed fetch with abort
-    const timedFetch = async (url: string, opts: RequestInit = {}, ms = 10000) => {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), ms);
-      try {
-        const r = await fetch(url, { ...opts, signal: ctrl.signal });
-        clearTimeout(t);
-        return r;
-      } catch (e) { clearTimeout(t); throw e; }
-    };
-
-    const HEADERS = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    };
 
     let title = `YouTube Video (${videoId})`;
-    let captionUrl: string | null = null;
+    const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+    // Helper: fetch oEmbed title (no API key needed)
+    const fetchTitle = async (): Promise<string> => {
+      try {
+        const r = await timedFetch(
+          `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+          { headers: YT_HEADERS }, 5000
+        );
+        if (r.ok) {
+          const oe: any = await r.json();
+          if (oe?.title) return oe.title;
+        }
+      } catch { /* fallback to default */ }
+      return title;
+    };
 
     try {
-      // ── Strategy A: Direct timedtext API (simplest, most reliable) ──────────
-      // YouTube exposes /api/timedtext for auto-generated captions without needing
-      // to scrape the page. Try English first, then auto-generated.
+      // ── Strategy A: youtube-transcript npm package (most reliable) ────────────
+      try {
+        const { YoutubeTranscript } = await import("youtube-transcript");
+        const segments: Array<{ text: string }> = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
+        if (segments && segments.length > 10) {
+          const text = segmentsToArticle(segments);
+          if (text.length >= 100) {
+            title = await fetchTitle();
+            _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+            return res.json({ title, text, thumbnailUrl });
+          }
+        }
+      } catch (e: any) {
+        // If language not found, try without lang preference
+        try {
+          const { YoutubeTranscript } = await import("youtube-transcript");
+          const segments: Array<{ text: string }> = await YoutubeTranscript.fetchTranscript(videoId);
+          if (segments && segments.length > 10) {
+            const text = segmentsToArticle(segments);
+            if (text.length >= 100) {
+              title = await fetchTitle();
+              _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+              return res.json({ title, text, thumbnailUrl });
+            }
+          }
+        } catch { /* fall through to strategy B */ }
+      }
+
+      // ── Strategy B: InnerTube timedtext API ───────────────────────────────────
       const timedTextVariants = [
         `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
         `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-US&fmt=json3`,
         `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=json3`,
+        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&tlang=en&fmt=json3`,
       ];
-
       for (const ttUrl of timedTextVariants) {
         try {
-          const r = await timedFetch(ttUrl, { headers: HEADERS }, 7000);
+          const r = await timedFetch(ttUrl, { headers: YT_HEADERS }, 8000);
           if (!r.ok) continue;
-          const rawText = await r.text();
-          if (!rawText || rawText.trim().length < 20) continue;
+          const raw = await r.text();
+          if (!raw || raw.trim().length < 20) continue;
           let json: any = null;
-          try { json = JSON.parse(rawText); } catch (e) { /* not JSON */ }
+          try { json = JSON.parse(raw); } catch { continue; }
           if (!json?.events || json.events.length <= 10) continue;
           const text = eventsToArticle(json.events);
           if (text.length < 100) continue;
-          // Fetch title via oEmbed (no API key needed)
-          try {
-            const oEmbed = await timedFetch(
-              `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
-              { headers: HEADERS }, 5000
-            );
-            if (oEmbed.ok) {
-              const oe: any = await oEmbed.json();
-              if (oe.title) title = oe.title;
-            }
-          } catch (e) { /* title stays as default */ }
-          _ytArticleCache.set(videoId, { ts: Date.now(), title, text });
-          return res.json({ title, text });
-        } catch (e) { /* try next variant */ }
+          title = await fetchTitle();
+          _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+          return res.json({ title, text, thumbnailUrl });
+        } catch { /* try next */ }
       }
 
-      // ── Strategy B: Scrape the watch page for caption tracks ─────────────────
-      const pageRes = await timedFetch(`https://www.youtube.com/watch?v=${videoId}`, { headers: HEADERS }, 12000);
-      if (!pageRes.ok) return res.status(502).json({ message: "Could not load the YouTube video page. Please try again." });
+      // ── Strategy C: Scrape watch page for captionTracks ───────────────────────
+      const pageRes = await timedFetch(
+        `https://www.youtube.com/watch?v=${videoId}`,
+        { headers: YT_HEADERS }, 15000
+      );
+      if (!pageRes.ok) {
+        return res.status(502).json({ message: "Could not reach YouTube. Please try again in a moment." });
+      }
       const html = await pageRes.text();
 
-      // Extract title from multiple patterns
-      const titlePatterns = [
-        /"title":"([^"\\]{3,200})"/,
-        /<title>([^<]+)<\/title>/,
-      ];
+      // Extract title
+      const titlePatterns = [/"title":"([^"\\]{3,200})(?:\\[^"\\]|[^"\\])*?"/, /<title>([^<]+)<\/title>/];
       for (const p of titlePatterns) {
         const m = html.match(p);
         if (m?.[1]) {
-          title = m[1].replace(/\\u0026/g, "&").replace(/\\"/g, '"').replace(/ - YouTube$/, "").trim();
-          if (title.length > 3) break;
+          const t = m[1].replace(/\\u0026/g, "&").replace(/\\"/g, '"').replace(/\\n/g, " ")
+            .replace(/ - YouTube$/, "").trim();
+          if (t.length > 3) { title = t; break; }
         }
       }
 
-      // Extract ALL caption tracks (not just the first), prefer English
-      const captionBlockMatch = html.match(/"captionTracks":\[([^\]]+)\]/);
-      if (captionBlockMatch) {
-        const block = captionBlockMatch[1];
-        const allBaseUrls: Array<{ url: string; lang: string }> = [];
-        const trackRegex = /"baseUrl":"(https?:[^"]+)","name".*?"languageCode":"([^"]+)"/g;
-        let m;
-        while ((m = trackRegex.exec(block)) !== null) {
-          allBaseUrls.push({ url: m[1].replace(/\\u0026/g, "&"), lang: m[2] });
-        }
-        // Fallback: just grab all baseUrls in order
-        if (allBaseUrls.length === 0) {
-          const simpleRegex = /"baseUrl":"(https?:[^"]+)"/g;
-          while ((m = simpleRegex.exec(block)) !== null) {
-            allBaseUrls.push({ url: m[1].replace(/\\u0026/g, "&"), lang: "??" });
+      // Find the JSON blob containing captionTracks more robustly
+      let captionUrl: string | null = null;
+      const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.{100,}?\});(?:\s*var\s|\s*window\[)/s)
+        || html.match(/ytInitialPlayerResponse\s*=\s*(\{.+\})\s*;\s*(?:var |window\.)/);
+
+      if (playerResponseMatch?.[1]) {
+        try {
+          const playerData = JSON.parse(playerResponseMatch[1]);
+          const tracks: any[] = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+          const sorted = tracks.sort((a: any, b: any) => {
+            const aEn = (a.languageCode || "").startsWith("en") ? 0 : 1;
+            const bEn = (b.languageCode || "").startsWith("en") ? 0 : 1;
+            return aEn - bEn;
+          });
+          captionUrl = sorted[0]?.baseUrl?.replace(/\\u0026/g, "&") || null;
+        } catch { /* fall through to regex */ }
+      }
+
+      if (!captionUrl) {
+        // Regex fallback
+        const blockMatch = html.match(/"captionTracks":\[(.{10,}?)\](?=,\s*"(?:audioTracks|translationLanguages)")/s)
+          || html.match(/"captionTracks":\[([^\]]{10,})\]/);
+        if (blockMatch) {
+          const block = blockMatch[1];
+          const allTracks: Array<{ url: string; lang: string }> = [];
+          const rx = /"baseUrl":"(https?:[^"]+)"[^}]*?"languageCode":"([^"]+)"/g;
+          let m: RegExpExecArray | null;
+          while ((m = rx.exec(block)) !== null) {
+            allTracks.push({ url: m[1].replace(/\\u0026/g, "&"), lang: m[2] });
           }
+          if (allTracks.length === 0) {
+            const rx2 = /"baseUrl":"(https?:\/\/[^"]+timedtext[^"]+)"/g;
+            while ((m = rx2.exec(html)) !== null) {
+              allTracks.push({ url: m[1].replace(/\\u0026/g, "&"), lang: "??" });
+            }
+          }
+          const preferred = allTracks.sort((a, b) =>
+            (a.lang.startsWith("en") ? 0 : 1) - (b.lang.startsWith("en") ? 0 : 1)
+          );
+          captionUrl = preferred[0]?.url || null;
         }
-        // Sort: English first
-        const preferred = allBaseUrls.sort((a, b) => {
-          const aEn = a.lang.startsWith("en") ? 0 : 1;
-          const bEn = b.lang.startsWith("en") ? 0 : 1;
-          return aEn - bEn;
-        });
-        captionUrl = preferred[0]?.url || null;
       }
 
       if (!captionUrl) {
         return res.status(422).json({
-          message: "No captions found for this video. Try a video that has subtitles or auto-captions (CC) enabled."
+          message: "No captions available for this video. Try a video with subtitles or auto-captions (CC) enabled."
         });
       }
 
-      const capRes = await timedFetch(captionUrl + "&fmt=json3", { headers: HEADERS }, 8000);
+      const capRes = await timedFetch(captionUrl + (captionUrl.includes("fmt=") ? "" : "&fmt=json3"), { headers: YT_HEADERS }, 10000);
       if (!capRes.ok) return res.status(502).json({ message: "Could not download captions. Please try another video." });
 
       const capJson: any = await capRes.json();
       const text = eventsToArticle(capJson?.events || []);
       if (!text || text.length < 50) {
-        return res.status(422).json({ message: "Captions found but they appear to be empty. Try a different video." });
+        return res.status(422).json({ message: "Captions appear empty for this video. Try a different one." });
       }
 
-      _ytArticleCache.set(videoId, { ts: Date.now(), title, text });
-      return res.json({ title, text });
+      _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+      return res.json({ title, text, thumbnailUrl });
 
     } catch (err: any) {
       console.error("[yt-to-article] error:", err?.message || err);
-      return res.status(500).json({ message: "Failed to extract article. Please try again or choose a different video." });
+      return res.status(500).json({ message: "Failed to extract transcript. Please try again or choose a different video." });
+    }
+  });
+
+  // ── Saved Articles CRUD ────────────────────────────────────────────────────
+  app.get("/api/saved-articles", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id || (req.user as any).claims?.sub;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const { db } = await import("./db");
+      const { savedArticles } = await import("@shared/schema");
+      const { eq, desc } = await import("drizzle-orm");
+      const articles = await db
+        .select()
+        .from(savedArticles)
+        .where(eq(savedArticles.userId, userId))
+        .orderBy(desc(savedArticles.createdAt))
+        .limit(50);
+      res.json(articles);
+    } catch (err: any) {
+      console.error("[saved-articles] GET error:", err?.message);
+      res.status(500).json({ message: "Failed to load saved articles" });
+    }
+  });
+
+  app.post("/api/saved-articles", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id || (req.user as any).claims?.sub;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const { title, content, source = "youtube", sourceUrl, videoId, thumbnailUrl } = req.body;
+      if (!title?.trim() || !content?.trim()) {
+        return res.status(400).json({ message: "Title and content are required" });
+      }
+      const { db } = await import("./db");
+      const { savedArticles } = await import("@shared/schema");
+      const [article] = await db.insert(savedArticles).values({
+        userId,
+        title: title.trim().slice(0, 500),
+        content: content.slice(0, 200000),
+        source,
+        sourceUrl: sourceUrl || null,
+        videoId: videoId || null,
+        thumbnailUrl: thumbnailUrl || null,
+      }).returning();
+      res.json(article);
+    } catch (err: any) {
+      console.error("[saved-articles] POST error:", err?.message);
+      res.status(500).json({ message: "Failed to save article" });
+    }
+  });
+
+  app.delete("/api/saved-articles/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id || (req.user as any).claims?.sub;
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const { db } = await import("./db");
+      const { savedArticles } = await import("@shared/schema");
+      const { eq, and } = await import("drizzle-orm");
+      await db.delete(savedArticles)
+        .where(and(eq(savedArticles.id, req.params.id), eq(savedArticles.userId, userId)));
+      res.json({ ok: true });
+    } catch (err: any) {
+      console.error("[saved-articles] DELETE error:", err?.message);
+      res.status(500).json({ message: "Failed to delete article" });
     }
   });
 

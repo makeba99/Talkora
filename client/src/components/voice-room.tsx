@@ -2745,6 +2745,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [readingHistory, setReadingHistory] = useState<Array<{ id: string | number; title: string; author: string; coverUrl: string | null; lastReadAt: string }>>(() => {
     try { return JSON.parse(localStorage.getItem("vextorn_reading_history") || "[]"); } catch { return []; }
   });
+  const [savedArticles, setSavedArticles] = useState<Array<{ id: string; title: string; content: string; source: string; sourceUrl: string | null; videoId: string | null; thumbnailUrl: string | null; createdAt: string }>>([]);
+  const [savedArticlesLoaded, setSavedArticlesLoaded] = useState(false);
+  const [savingArticle, setSavingArticle] = useState(false);
+  const [articleSaved, setArticleSaved] = useState(false);
+  const [ytDirectUrl, setYtDirectUrl] = useState("");
+  const [currentYtThumbnail, setCurrentYtThumbnail] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<any | null>(null);
   const [bookText, setBookText] = useState("");
   const [bookLoading, setBookLoading] = useState(false);
@@ -5137,8 +5143,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [socket, user, activeYoutubeId, room.id]);
 
   useEffect(() => {
-    if (sidePanelTab === "read" && readBooks.length === 0 && !readLoading && readingHistory.length === 0) {
-      loadDefaultBooks();
+    if (sidePanelTab === "read") {
+      if (readBooks.length === 0 && !readLoading) loadDefaultBooks();
+      if (!savedArticlesLoaded) loadSavedArticles();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sidePanelTab]);
@@ -8881,11 +8888,56 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } catch { setReadBooks([]); } finally { setReadLoading(false); }
   };
 
+  const loadSavedArticles = async () => {
+    if (savedArticlesLoaded) return;
+    try {
+      const res = await fetch("/api/saved-articles", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedArticles(Array.isArray(data) ? data : []);
+      }
+    } catch { /* silent */ } finally { setSavedArticlesLoaded(true); }
+  };
+
+  const saveCurrentArticle = async () => {
+    if (!selectedBook || !bookText || savingArticle) return;
+    setSavingArticle(true);
+    try {
+      const res = await fetch("/api/saved-articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: selectedBook.title,
+          content: bookText,
+          source: "youtube",
+          sourceUrl: selectedBook.videoId ? `https://www.youtube.com/watch?v=${selectedBook.videoId}` : null,
+          videoId: selectedBook.videoId || null,
+          thumbnailUrl: currentYtThumbnail || null,
+        }),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setSavedArticles(prev => [saved, ...prev]);
+        setArticleSaved(true);
+      }
+    } catch { /* silent */ } finally { setSavingArticle(false); }
+  };
+
+  const deleteSavedArticle = async (id: string) => {
+    try {
+      await fetch(`/api/saved-articles/${id}`, { method: "DELETE", credentials: "include" });
+      setSavedArticles(prev => prev.filter(a => a.id !== id));
+    } catch { /* silent */ }
+  };
+
   const handleYtToArticle = async (videoId: string) => {
     if (!videoId) return;
     setYtArticleLoading(true);
     setYtArticleError("");
     setYtConvertStep(1);
+    setArticleSaved(false);
+    setCurrentYtThumbnail(null);
 
     // Simulate visible preparation steps so the user sees progress
     const step2Timer = setTimeout(() => setYtConvertStep(2), 900);
@@ -8901,15 +8953,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         return;
       }
       setYtConvertStep(3);
-      await new Promise(r => setTimeout(r, 400)); // brief "Building article…" flash
+      await new Promise(r => setTimeout(r, 400));
 
-      const bookObj = { title: data.title, authors: [{ name: "YouTube" }], _isYtArticle: true, videoId };
+      const thumb = data.thumbnailUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+      setCurrentYtThumbnail(thumb);
+      const bookObj = { title: data.title, authors: [{ name: "YouTube" }], _isYtArticle: true, videoId, thumbnailUrl: thumb };
       setSelectedBook(bookObj);
       setBookText(data.text);
       setWordInfo(null);
       setShowEReader(true);
       setYtReadResults([]);
       setYtReadSearch("");
+      setYtDirectUrl("");
       setYtConvertStep(0);
 
       // Share article with the room so others can join reading
@@ -11742,6 +11797,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               </div>
             </div>
+            {selectedBook?._isYtArticle && (
+              <Button
+                size="sm"
+                className="w-full"
+                disabled={savingArticle || articleSaved}
+                onClick={saveCurrentArticle}
+                style={articleSaved ? { background: "hsla(var(--neu-green, 142 76% 36%) / 0.18)", borderColor: "hsla(var(--neu-green, 142 76% 36%) / 0.4)", color: "#22c55e" } : {}}
+              >
+                {savingArticle ? (
+                  <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</>
+                ) : articleSaved ? (
+                  <><svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>Saved to Library</>
+                ) : (
+                  <><BookOpen className="w-3.5 h-3.5 mr-1.5" />Save to My Library</>
+                )}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -11771,19 +11843,44 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   {readLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
                 </Button>
               </div>
-              {/* YouTube search */}
+              {/* YouTube section */}
               <div className="space-y-1.5">
                 <p className="text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.80)" }}>
                   <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
                   Read from YouTube
                 </p>
+                {/* Direct URL paste */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <svg className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-red-400/70" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                    <Input
+                      value={ytDirectUrl}
+                      onChange={(e) => { setYtDirectUrl(e.target.value); setYtArticleError(""); }}
+                      placeholder="Paste YouTube URL to extract transcript…"
+                      className="pl-7 text-xs"
+                      onKeyDown={(e) => { if (e.key === "Enter" && ytDirectUrl.trim()) handleYtToArticle(ytDirectUrl.trim()); }}
+                      data-testid="input-yt-direct-url"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleYtToArticle(ytDirectUrl.trim())}
+                    disabled={ytArticleLoading || !ytDirectUrl.trim()}
+                    data-testid="button-yt-extract"
+                    style={{ background: "hsla(var(--neu-orange) / 0.18)", borderColor: "hsla(var(--neu-orange) / 0.32)", color: "hsla(var(--neu-orange-hi) / 0.92)" }}
+                    className="border hover:opacity-90 transition-opacity flex-shrink-0"
+                  >
+                    {ytArticleLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Read"}
+                  </Button>
+                </div>
+                {/* YouTube search */}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
                     <Input
                       value={ytReadSearch}
                       onChange={(e) => { setYtReadSearch(e.target.value); setYtArticleError(""); if (!e.target.value.trim()) setYtReadResults([]); }}
-                      placeholder="Search YouTube videos to read…"
+                      placeholder="Or search YouTube videos to read…"
                       className="pl-7 text-xs"
                       onKeyDown={(e) => { if (e.key === "Enter") searchYtRead(ytReadSearch); }}
                       data-testid="input-yt-read-search"
@@ -11794,7 +11891,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     onClick={() => searchYtRead(ytReadSearch)}
                     disabled={ytReadSearchLoading || !ytReadSearch.trim()}
                     data-testid="button-yt-read-search"
-                    style={{ background: "hsla(var(--neu-orange) / 0.18)", borderColor: "hsla(var(--neu-orange) / 0.32)", color: "hsla(var(--neu-orange-hi) / 0.92)" }}
+                    style={{ background: "hsla(var(--neu-orange) / 0.10)", borderColor: "hsla(var(--neu-orange) / 0.25)", color: "hsla(var(--neu-orange-hi) / 0.80)" }}
                     className="border hover:opacity-90 transition-opacity flex-shrink-0"
                   >
                     {ytReadSearchLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Search"}
@@ -11891,6 +11988,58 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </div>
                 )}
 
+                {/* Saved Articles (YouTube extracts) */}
+                {savedArticles.length > 0 && !readSearch.trim() && ytReadResults.length === 0 && (
+                  <div className="space-y-1.5 pb-2" data-testid="section-saved-articles">
+                    <div className="flex items-center justify-between px-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.80)" }}>
+                        <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                        My Saved Articles
+                      </p>
+                    </div>
+                    {savedArticles.map((article) => (
+                      <div
+                        key={article.id}
+                        className="w-full flex items-start gap-2 p-2 rounded-lg border border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 text-left transition-colors group"
+                      >
+                        <button
+                          className="flex items-start gap-2 flex-1 min-w-0 text-left"
+                          onClick={() => {
+                            const bookObj = { title: article.title, authors: [{ name: "YouTube" }], _isYtArticle: true, videoId: article.videoId, thumbnailUrl: article.thumbnailUrl };
+                            setSelectedBook(bookObj);
+                            setBookText(article.content);
+                            setCurrentYtThumbnail(article.thumbnailUrl);
+                            setArticleSaved(true);
+                            setWordInfo(null);
+                            setShowEReader(true);
+                          }}
+                        >
+                          {article.thumbnailUrl ? (
+                            <img loading="lazy" decoding="async" src={article.thumbnailUrl} alt="" className="w-14 h-10 rounded object-cover flex-shrink-0 bg-muted" />
+                          ) : (
+                            <div className="w-14 h-10 rounded flex-shrink-0 flex items-center justify-center" style={{ background: "hsla(var(--neu-orange)/0.12)" }}>
+                              <svg className="w-4 h-4 text-orange-400/60" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold line-clamp-2 leading-tight">{article.title}</p>
+                            <p className="text-[9px] text-muted-foreground mt-0.5">
+                              {new Date(article.createdAt).toLocaleDateString()} · {Math.ceil(article.content.split(" ").length / 200)} min read
+                            </p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => deleteSavedArticle(article.id)}
+                          className="p-1 rounded opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-red-400 flex-shrink-0 mt-0.5"
+                          aria-label="Delete article"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Reading History */}
                 {readingHistory.length > 0 && !readSearch.trim() && readBooks.length === 0 && ytReadResults.length === 0 && !readLoading && (
                   <div className="space-y-1.5 pb-2" data-testid="section-reading-history">
@@ -11922,53 +12071,56 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </div>
                 )}
 
-                {/* Empty state — no searches done yet */}
-                {readBooks.length === 0 && ytReadResults.length === 0 && !readLoading && !ytReadSearchLoading && readingHistory.length === 0 && (
+                {/* Pre-loaded classics — always shown when no search is active */}
+                {readBooks.length > 0 && ytReadResults.length === 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold text-emerald-400/90 uppercase tracking-wide px-1 pb-0.5 flex items-center gap-1" data-testid="text-section-free">
+                      <BookOpen className="w-3 h-3" /> Free Classics — Project Gutenberg
+                    </p>
+                    {readBooks.map((book: any) => (
+                      <button
+                        key={book.id}
+                        onClick={() => loadBookText(book)}
+                        className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
+                        data-testid={`button-book-${book.id}`}
+                      >
+                        {book.formats?.["image/jpeg"] ? (
+                          <img loading="lazy" decoding="async" src={book.formats["image/jpeg"]} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
+                        ) : (
+                          <div className="w-12 h-16 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                            <BookOpen className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold line-clamp-2">{book.title}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                            {book.authors?.map((a: any) => a.name).join(", ")}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {book.download_count?.toLocaleString()} downloads
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty state — only shown when truly nothing is available */}
+                {readBooks.length === 0 && ytReadResults.length === 0 && savedArticles.length === 0 && !readLoading && !ytReadSearchLoading && readingHistory.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-10 gap-3 text-center" data-testid="section-empty-state">
                     <div className="w-10 h-10 rounded-full bg-muted/40 flex items-center justify-center">
                       <BookOpen className="w-5 h-5 text-muted-foreground/50" />
                     </div>
                     <div className="space-y-1">
                       <p className="text-[12px] font-medium text-muted-foreground/80">
-                        {readSearch.trim() ? `No books found for "${readSearch}"` : "Search for a book or video to read"}
+                        {readSearch.trim() ? `No books found for "${readSearch}"` : "Loading your library…"}
                       </p>
                       <p className="text-[10px] text-muted-foreground/50">
-                        Books from Project Gutenberg · Videos from YouTube
+                        Books from Project Gutenberg · Paste a YouTube URL above
                       </p>
                     </div>
                   </div>
                 )}
-
-                {readBooks.length > 0 && (
-                  <p className="text-[10px] font-semibold text-emerald-400/90 uppercase tracking-wide px-1 pb-1 flex items-center gap-1" data-testid="text-section-free">
-                    <BookOpen className="w-3 h-3" /> Free books — Project Gutenberg
-                  </p>
-                )}
-                {readBooks.map((book: any) => (
-                  <button
-                    key={book.id}
-                    onClick={() => loadBookText(book)}
-                    className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
-                    data-testid={`button-book-${book.id}`}
-                  >
-                    {book.formats?.["image/jpeg"] ? (
-                      <img loading="lazy" decoding="async" src={book.formats["image/jpeg"]} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
-                    ) : (
-                      <div className="w-12 h-16 rounded bg-muted flex-shrink-0 flex items-center justify-center">
-                        <BookOpen className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold line-clamp-2">{book.title}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                        {book.authors?.map((a: any) => a.name).join(", ")}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {book.download_count?.toLocaleString()} downloads
-                      </p>
-                    </div>
-                  </button>
-                ))}
 
 
               </div>

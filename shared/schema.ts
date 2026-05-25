@@ -616,6 +616,33 @@ export const insertMessageRequestSchema = createInsertSchema(messageRequests).pi
 export type InsertMessageRequest = z.infer<typeof insertMessageRequestSchema>;
 export type MessageRequest = typeof messageRequests.$inferSelect;
 
+export const savedArticles = pgTable("saved_articles", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  source: varchar("source", { length: 20 }).notNull().default("youtube"),
+  sourceUrl: text("source_url"),
+  videoId: varchar("video_id", { length: 20 }),
+  thumbnailUrl: text("thumbnail_url"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  saUserIdx: index("saved_articles_user_id_idx").on(table.userId),
+  saCreatedAtIdx: index("saved_articles_created_at_idx").on(table.createdAt),
+}));
+
+export const insertSavedArticleSchema = createInsertSchema(savedArticles).pick({
+  title: true,
+  content: true,
+  source: true,
+  sourceUrl: true,
+  videoId: true,
+  thumbnailUrl: true,
+});
+
+export type InsertSavedArticle = z.infer<typeof insertSavedArticleSchema>;
+export type SavedArticle = typeof savedArticles.$inferSelect;
+
 export const notificationMutes = pgTable("notification_mutes", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   muterId: varchar("muter_id", { length: 36 }).notNull(),
