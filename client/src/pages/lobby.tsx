@@ -1167,9 +1167,26 @@ export default function Lobby() {
 
     const handleDmNew = (msg: any) => {
       if (!msg?.fromId || !msg?.toId) return;
-      setDmUnreadCounts(prev => ({ ...prev, [msg.fromId]: (prev[msg.fromId] || 0) + 1 }));
+      // Only bump unread count when WE are the recipient, not the sender
+      if (msg.toId === user?.id) {
+        setDmUnreadCounts(prev => ({ ...prev, [msg.fromId]: (prev[msg.fromId] || 0) + 1 }));
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/messages/unread/count"] });
       queryClient.invalidateQueries({ queryKey: ["/api/messages/conversations"] });
+    };
+
+    /* Real-time notification badge refresh — fired by the server when someone
+       follows you, awards a badge, or sends an admin event. Without this the
+       lobby badge only updates on manual refresh or when the notifications
+       dropdown happens to be open. */
+    const handleNotificationNew = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    };
+
+    /* user:followed fires for both follower and followee — invalidate so the
+       followee's notification badge lights up immediately. */
+    const handleUserFollowed = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
     };
 
     const handleKnockRequest = (data: { roomId: string; fromUserId: string; fromUserName: string; fromUserAvatar: string | null; ts: number }) => {
@@ -1205,6 +1222,8 @@ export default function Lobby() {
     socket.on("room:deleted", handleRoomDeleted);
     socket.on("room:full", handleRoomFull);
     socket.on("dm:new", handleDmNew);
+    socket.on("notification:new", handleNotificationNew);
+    socket.on("user:followed", handleUserFollowed);
     socket.on("room:knock-request", handleKnockRequest);
     socket.on("room:knock-allowed", handleKnockAllowed);
     socket.on("room:knock-denied", handleKnockDenied);
@@ -1219,6 +1238,8 @@ export default function Lobby() {
       socket.off("user:profile-updated", handleUserProfileUpdated);
       socket.off("room:full", handleRoomFull);
       socket.off("dm:new", handleDmNew);
+      socket.off("notification:new", handleNotificationNew);
+      socket.off("user:followed", handleUserFollowed);
       socket.off("room:knock-request", handleKnockRequest);
       socket.off("room:knock-allowed", handleKnockAllowed);
       socket.off("room:knock-denied", handleKnockDenied);
