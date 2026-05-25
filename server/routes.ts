@@ -2610,7 +2610,9 @@ export async function registerRoutes(
       });
       clearTimeout(timeout);
       if (!response.ok) return res.status(response.status).json({ message: "Upstream error" });
-      const text = await response.text();
+      const raw = await response.text();
+      // Normalize Windows CRLF → LF so paragraph splitting (\n{2,}) works correctly
+      const text = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
       if (text && text.length > 100) {
         _bookTextCache.set(url, { ts: Date.now(), text });
         if (_bookTextCache.size > 200) {

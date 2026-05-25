@@ -2814,7 +2814,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const bookPages = useMemo(() => {
     if (!bookText) return [] as string[];
     const wordsPerPage = Math.max(120, Math.round(280 * (16 / eReaderFontSize)));
-    const paragraphs = bookText.split(/\n{2,}/).filter(p => p.trim().length > 0);
+    // Normalize Windows CRLF → LF before splitting (Gutenberg .txt files use \r\n)
+    const normalized = bookText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const paragraphs = normalized.split(/\n{2,}/).filter(p => p.trim().length > 0);
     if (paragraphs.length === 0) return [bookText];
     const pages: string[] = [];
     let page = "";
