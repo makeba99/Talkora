@@ -14536,9 +14536,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 }}
               >
                 <button
-                  onClick={() => setShowEReader(false)}
+                  onClick={handleCloseBook}
                   className="flex-shrink-0 p-1 rounded hover:opacity-70 transition-opacity"
-                  title="Close reader"
+                  title="Close book"
                 >
                   <X className="w-4 h-4" />
                 </button>
