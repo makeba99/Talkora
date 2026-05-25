@@ -435,102 +435,112 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
 }
 
 /* ── MicVoiceBar ──────────────────────────────────────────────────────────────
-   Segmented VU-meter column: up to 9 pill-segments rising from the bottom.
-   SILENT → canvas is completely empty (no ghost bars, no idle animation).
-   SPEAKING → segments climb upward from the bottom with a glowing gradient.
-   Canvas: 8 × 32 px. Sits at bottom-right of participant card. */
-const MIC_SEGS   = 9;    // maximum segments
-const SEG_H      = 3;    // segment height px
-const SEG_GAP    = 1;    // gap between segments px
-const SEG_W      = 8;    // column width px
-const VOL_THRESH = 0.13; // noise floor — below this nothing lights up
+   Full-width horizontal equalizer at the very bottom edge of the participant card.
+   SILENT  → canvas completely blank (zero bars, no idle animation).
+   SPEAKING→ 16 vertical bars rise upward, cyan-teal → violet gradient with glow.
+   Snappy: fast attack (0.88) + fast decay (0.40). Threshold 0.05 = very sensitive. */
+const MIC_BAR_COUNT  = 16;   // number of bars across the width
+const MIC_BAR_GAP    = 1;    // px gap between bars
+const MIC_BAR_MAX_H  = 13;   // max bar height px
+const MIC_VOL_THRESH = 0.05; // noise floor — lower = more sensitive
 
 function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
-  const volRef    = useRef<number>(0);
+  const barsRef   = useRef<Float32Array>(new Float32Array(MIC_BAR_COUNT));
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    /* Sync canvas pixel resolution to its CSS width */
+    const syncSize = () => {
+      const w = canvas.offsetWidth;
+      if (w > 0 && canvas.width !== w) canvas.width = w;
+    };
+    syncSize();
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.width;
-    const H = canvas.height;
-
     if (analyserNode) {
-      analyserNode.smoothingTimeConstant = 0.65;
+      analyserNode.smoothingTimeConstant = 0.0; // own per-bar smoothing
       analyserNode.fftSize = 256;
     }
 
-    const freqBuf = analyserNode
-      ? new Uint8Array(analyserNode.frequencyBinCount)
-      : null;
-
-    /* Pill helper — fully rounded rectangle */
-    const pill = (x: number, y: number, w: number, h: number) => {
-      const r = Math.min(h / 2, w / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.arcTo(x + w, y,     x + w, y + r,     r);
-      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-      ctx.lineTo(x + r, y + h);
-      ctx.arcTo(x,     y + h, x, y + h - r,     r);
-      ctx.arcTo(x,     y,     x + r, y,          r);
-      ctx.closePath();
-      ctx.fill();
-    };
+    const freqBuf    = analyserNode ? new Uint8Array(analyserNode.frequencyBinCount) : null;
+    const binCount   = analyserNode ? analyserNode.frequencyBinCount : 128;
+    const binsPerBar = Math.max(1, Math.floor(binCount / MIC_BAR_COUNT));
+    const bars       = barsRef.current;
 
     const draw = () => {
+      syncSize();
+      const W = canvas.width;
+      const H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
-      /* --- read real audio --- */
-      let rawVol = 0;
       if (analyserNode && freqBuf) {
         analyserNode.getByteFrequencyData(freqBuf);
-        const loB = 1, hiB = Math.min(22, freqBuf.length - 1);
-        let sum = 0;
-        for (let b = loB; b <= hiB; b++) sum += freqBuf[b];
-        rawVol = sum / ((hiB - loB + 1) * 255);
-        rawVol = Math.pow(rawVol, 0.42);  // boost quiet speech
       }
-      /* No analyser → no audio → rawVol stays 0, canvas stays blank */
 
-      /* Smooth: fast attack, very slow decay so bars fade gracefully */
-      const prev = volRef.current;
-      volRef.current = prev + (rawVol - prev) * (rawVol > prev ? 0.60 : 0.08);
-      const vol = volRef.current;
+      const barW = Math.max(1, (W - (MIC_BAR_COUNT - 1) * MIC_BAR_GAP) / MIC_BAR_COUNT);
+      let anySpeaking = false;
 
-      /* Completely silent — draw nothing */
-      if (vol < VOL_THRESH) {
+      /* Compute smoothed volume for each bar */
+      for (let i = 0; i < MIC_BAR_COUNT; i++) {
+        let raw = 0;
+        if (analyserNode && freqBuf) {
+          const start = i * binsPerBar + 1; // skip DC bin
+          const end   = Math.min(start + binsPerBar, freqBuf.length);
+          let sum = 0;
+          for (let b = start; b < end; b++) sum += freqBuf[b];
+          raw = Math.pow(sum / ((end - start) * 255), 0.5); // sqrt boost for quiet speech
+        }
+        /* Fast attack, fast decay */
+        const prev = bars[i];
+        bars[i] = prev + (raw - prev) * (raw > prev ? 0.88 : 0.40);
+        if (bars[i] > MIC_VOL_THRESH) anySpeaking = true;
+      }
+
+      /* Completely silent — skip drawing */
+      if (!anySpeaking) {
         rafRef.current = requestAnimationFrame(draw);
         return;
       }
 
-      /* Map vol (thresh…1) → segment count (1…MIC_SEGS) */
-      const mapped   = (vol - VOL_THRESH) / (1 - VOL_THRESH);
-      const litCount = Math.max(1, Math.round(mapped * MIC_SEGS));
-      const cx       = Math.floor((W - SEG_W) / 2);
-      const baseY    = H - 1;  // bottom anchor
+      /* Draw each bar from bottom up */
+      for (let i = 0; i < MIC_BAR_COUNT; i++) {
+        const vol = bars[i];
+        if (vol < MIC_VOL_THRESH) continue;
 
-      for (let s = 0; s < litCount; s++) {
-        const y    = baseY - (s + 1) * SEG_H - s * SEG_GAP;
-        const frac = s / (MIC_SEGS - 1);  // 0 = bottom, 1 = top
+        const mapped = (vol - MIC_VOL_THRESH) / (1 - MIC_VOL_THRESH);
+        const barH   = Math.max(1, mapped * (H - 1));
+        const x      = i * (barW + MIC_BAR_GAP);
+        const y      = H - barH;
+        const frac   = i / (MIC_BAR_COUNT - 1); // 0=left, 1=right colour shift
 
-        /* Colour: cyan-teal at bottom → violet at top */
-        const rC = Math.round(34  + frac * (139 - 34));
-        const gC = Math.round(211 + frac * (92  - 211));
-        const bC = Math.round(238 + frac * (246 - 238));
-        const alpha = 0.80 + mapped * 0.18;
+        /* Cyan-teal on left → violet on right */
+        const rC    = Math.round(34  + frac * 105);
+        const gC    = Math.round(211 - frac * 119);
+        const bC    = Math.round(238 + frac * 8);
+        const alpha = 0.78 + mapped * 0.22;
 
         ctx.save();
-        /* Glow gets stronger toward the top */
-        ctx.shadowBlur  = 4 + frac * 8 + mapped * 6;
-        ctx.shadowColor = `rgba(${rC},${gC},${bC},${0.55 + mapped * 0.35})`;
+        ctx.shadowBlur  = 2 + mapped * 9;
+        ctx.shadowColor = `rgba(${rC},${gC},${bC},0.75)`;
         ctx.fillStyle   = `rgba(${rC},${gC},${bC},${alpha})`;
-        pill(cx, y, SEG_W, SEG_H);
+
+        /* Rounded top corners only */
+        const r = Math.min(barW / 2, 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + barW - r, y);
+        ctx.arcTo(x + barW, y,   x + barW, y + r, r);
+        ctx.lineTo(x + barW, H);
+        ctx.lineTo(x,        H);
+        ctx.arcTo(x,         y,   x + r,    y,     r);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
       }
 
@@ -541,13 +551,11 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
     return () => cancelAnimationFrame(rafRef.current);
   }, [analyserNode]);
 
-  const canvasH = MIC_SEGS * SEG_H + (MIC_SEGS - 1) * SEG_GAP + 2; // = 38
   return (
     <canvas
       ref={canvasRef}
-      width={SEG_W}
-      height={canvasH}
-      className="opacity-95 pointer-events-none"
+      className="w-full pointer-events-none block"
+      height={MIC_BAR_MAX_H}
       data-testid="mic-voice-bar"
     />
   );
@@ -1544,15 +1552,17 @@ function ParticipantCard({
         ) : null)}
 
         {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && !avatarGifUrl && (
-          <div className="absolute bottom-1 right-1 z-20 drop-shadow-md flex items-center justify-center">
-            {p.isMuted ? (
-              /* Muted: static icon — no wave bars shown */
+          p.isMuted ? (
+            /* Muted: mic-off icon in corner */
+            <div className="absolute bottom-1 right-1 z-20 drop-shadow-md">
               <MicOff className="w-4 h-4 text-white/80" />
-            ) : (
-              /* Live mic: animated spectrum bars, glow only when speaking */
+            </div>
+          ) : (
+            /* Live mic: full-width equalizer flush with bottom edge */
+            <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none overflow-hidden">
               <MicVoiceBar analyserNode={analyserNode} />
-            )}
-          </div>
+            </div>
+          )
         )}
 
         {/* Note: the old static "raise hand" badge here has been replaced by
