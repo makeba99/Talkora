@@ -534,9 +534,14 @@ function MicVoiceBar({ analyserNode, isSpeaking }: { analyserNode?: AnalyserNode
       if ( gateOpen.current && level <  VU_CLOSE_GATE) gateOpen.current = false;
 
       if (!gateOpen.current) {
-        /* Fallback: if no analyser but isSpeaking (socket event says so), show
-           a gentle breathing animation so remote users are visually indicated */
-        if (isSpeaking && !analyserNode) {
+        /* Fallback: if the socket says this user is speaking but the local gate
+           hasn't opened yet (analyser level too low, AudioContext suspended, or
+           timing lag on remote streams), show a breathing animation so ALL
+           participants see the speaking indicator — not just the speaker.
+           Dropping the "!analyserNode" guard is the key fix: remote users have
+           an analyserNode connected to the incoming WebRTC stream, so the old
+           condition was always false for them and the bar never appeared. */
+        if (isSpeaking) {
           const t = tSimRef.current++ * 0.035;
           const simLevel = 0.18 + Math.abs(Math.sin(t * 1.7)) * 0.32 + Math.abs(Math.sin(t * 2.9 + 1.2)) * 0.14;
           const normalized = Math.min(1, (simLevel - VU_CLOSE_GATE) / (VU_OPEN_GATE * 6 - VU_CLOSE_GATE));
