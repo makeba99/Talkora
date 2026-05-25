@@ -15093,7 +15093,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
               {/* Reader toolbar */}
               <div
-                className="flex items-center gap-2 px-3 py-2 border-b flex-shrink-0 flex-wrap"
+                className="flex items-center gap-2 px-3 py-2 border-b flex-shrink-0 flex-wrap gap-y-1.5"
                 style={{
                   background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#f0f0f0" : "#111111",
                   borderColor: eReaderTheme === "dark" ? "#333" : "#d4c4a0",
@@ -15107,9 +15107,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <X className="w-4 h-4" />
                 </button>
                 <BookOpen className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
-                <span className="text-xs font-semibold truncate flex-1 min-w-0 max-w-[160px]">{selectedBook.title}</span>
+                <span className="text-xs font-semibold truncate flex-1 min-w-0 max-w-[120px] sm:max-w-[200px]">{selectedBook.title}</span>
 
-                <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                <div className="flex items-center gap-1 ml-auto flex-shrink-0 flex-wrap justify-end">
                   {/* Font size */}
                   <button onClick={() => setEReaderFontSize(s => Math.max(12, s - 2))} className="px-1.5 py-0.5 rounded text-xs font-bold hover:opacity-70 transition-opacity" title="Smaller">A−</button>
                   <span className="text-[10px] opacity-60 w-7 text-center">{eReaderFontSize}</span>
@@ -15268,22 +15268,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="w-6 h-6 animate-spin opacity-40" />
                   </div>
-                ) : bookPages.length > 0 ? (
-                  <div className="h-full overflow-hidden px-16 py-7 flex flex-col justify-center">
-                    <div
-                      className="leading-relaxed whitespace-pre-wrap select-text"
-                      style={{
-                        fontSize: eReaderFontSize,
-                        lineHeight: 1.9,
-                        fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
-                        letterSpacing: "0.02em",
-                        color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
-                      }}
-                    >
-                      {bookPages[currentPage - 1]}
+                ) : bookPages.length > 0 ? (() => {
+                  const pageText = bookPages[currentPage - 1] || "";
+                  const lines = pageText.split("\n").filter(l => l.trim().length > 0);
+                  const avgLen = lines.length > 0
+                    ? lines.reduce((s, l) => s + l.trim().length, 0) / lines.length
+                    : 999;
+                  const isPoetry = lines.length >= 3 && avgLen < 55;
+                  return (
+                  <div className="h-full overflow-y-auto overflow-x-hidden px-4 sm:px-10 md:px-16 py-4 sm:py-7 flex flex-col justify-center">
+                    <div className="w-full max-w-2xl mx-auto">
+                      <div
+                        className="leading-relaxed whitespace-pre-wrap select-text"
+                        style={{
+                          fontSize: eReaderFontSize,
+                          lineHeight: 1.9,
+                          fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
+                          letterSpacing: "0.02em",
+                          color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
+                          textAlign: isPoetry ? "center" : "left",
+                        }}
+                      >
+                        {pageText}
+                      </div>
                     </div>
                   </div>
-                ) : (
+                  );
+                })() : (
                   <div className="flex items-center justify-center h-full opacity-50">
                     <p className="text-sm" style={{ fontFamily: "Georgia, serif" }}>Could not load content. Try another title.</p>
                   </div>
