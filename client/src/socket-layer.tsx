@@ -47,6 +47,9 @@ function GlobalSocketEvents() {
 
     const handleMessageRequestNew = () => {
       queryClient.invalidateQueries({ queryKey: ["/api/message-requests/pending"] });
+      /* Also invalidate notifications so the bell badge updates immediately —
+         the NotificationsDropdown shows pending requests in its unread count. */
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
     };
 
     const handleMessageRequestUpdated = () => {
@@ -54,14 +57,38 @@ function GlobalSocketEvents() {
       queryClient.invalidateQueries({ queryKey: ["/api/messages/conversations"] });
     };
 
+    /* ── Notification badge real-time refresh ────────────────────────────────
+       These handlers were previously only in lobby.tsx / NotificationsDropdown
+       (conditionally mounted). Moving them here ensures the bell badge and
+       notification list update instantly for every page, even when those
+       components are not rendered. */
+    const invalidateNotifications = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    };
+
+    const handleAdminNotification = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    };
+
     socket.on("dm:new", handleDmNew);
     socket.on("message_request:new", handleMessageRequestNew);
     socket.on("message_request:updated", handleMessageRequestUpdated);
+    socket.on("notification:new", invalidateNotifications);
+    socket.on("user:followed", invalidateNotifications);
+    socket.on("admin:notification", handleAdminNotification);
+    socket.on("admin:warning", invalidateNotifications);
+    socket.on("admin:broadcast_notification", invalidateNotifications);
 
     return () => {
       socket.off("dm:new", handleDmNew);
       socket.off("message_request:new", handleMessageRequestNew);
       socket.off("message_request:updated", handleMessageRequestUpdated);
+      socket.off("notification:new", invalidateNotifications);
+      socket.off("user:followed", invalidateNotifications);
+      socket.off("admin:notification", handleAdminNotification);
+      socket.off("admin:warning", invalidateNotifications);
+      socket.off("admin:broadcast_notification", invalidateNotifications);
     };
   }, [socket, user]);
 
