@@ -2597,75 +2597,153 @@ export async function registerRoutes(
   app.get("/api/yt-to-article", isAuthenticated, async (req: any, res) => {
     const url = (req.query.url as string || "").trim();
     const videoId = extractYtId(url);
-    if (!videoId) return res.status(400).json({ message: "Invalid YouTube URL" });
+    if (!videoId) return res.status(400).json({ message: "Invalid YouTube URL or video ID" });
 
     const cached = _ytArticleCache.get(videoId);
     if (cached && Date.now() - cached.ts < YT_ARTICLE_TTL) {
       return res.json({ title: cached.title, text: cached.text });
     }
 
-    try {
-      /* Step 1: get page HTML to find caption track URL */
-      const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; Vextorn/1.0)",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-      });
-      if (!pageRes.ok) return res.status(502).json({ message: "Could not load video page" });
-      const html = await pageRes.text();
-
-      /* Extract title */
-      const titleMatch = html.match(/"title":"([^"]+)"/);
-      const title = titleMatch ? titleMatch[1].replace(/\\u0026/g, "&").replace(/\\"/g, '"') : `YouTube Video (${videoId})`;
-
-      /* Extract playerCaptionsTracklistRenderer */
-      const captionMatch = html.match(/"captionTracks":\[(\{.*?\})\]/);
-      let captionUrl: string | null = null;
-      if (captionMatch) {
-        const baseUrlMatch = captionMatch[1].match(/"baseUrl":"([^"]+)"/);
-        if (baseUrlMatch) captionUrl = baseUrlMatch[1].replace(/\\u0026/g, "&");
-      }
-
-      if (!captionUrl) {
-        return res.status(422).json({ message: "No captions available for this video. Try a video with auto-captions enabled." });
-      }
-
-      /* Step 2: fetch the caption XML */
-      const capRes = await fetch(captionUrl + "&fmt=json3", {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; Vextorn/1.0)" },
-      });
-      if (!capRes.ok) return res.status(502).json({ message: "Could not load captions" });
-
-      const capJson: any = await capRes.json();
-      const events: any[] = capJson?.events || [];
-
-      /* Step 3: build readable paragraphs from caption segments */
+    // Helper: convert caption events array → readable article text
+    function eventsToArticle(events: any[]): string {
       const words: string[] = [];
       for (const ev of events) {
         if (!ev.segs) continue;
         for (const seg of ev.segs) {
-          if (seg.utf8 && seg.utf8.trim() && seg.utf8 !== "\n") {
-            words.push(seg.utf8.trim());
-          }
+          const w = (seg.utf8 || "").trim();
+          if (w && w !== "\n" && w !== "[Music]" && w !== "[Applause]") words.push(w);
         }
       }
-
-      /* Group every ~15 words into a sentence, every ~120 words into a paragraph */
       const WORDS_PER_PARA = 120;
       const chunks: string[] = [];
       for (let i = 0; i < words.length; i += WORDS_PER_PARA) {
         chunks.push(words.slice(i, i + WORDS_PER_PARA).join(" "));
       }
-      const text = chunks.join("\n\n");
+      return chunks.join("\n\n");
+    }
 
-      if (!text) return res.status(422).json({ message: "No readable content found in captions" });
+    // Helper: timed fetch with abort
+    const timedFetch = async (url: string, opts: RequestInit = {}, ms = 10000) => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const r = await fetch(url, { ...opts, signal: ctrl.signal });
+        clearTimeout(t);
+        return r;
+      } catch (e) { clearTimeout(t); throw e; }
+    };
+
+    const HEADERS = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    };
+
+    let title = `YouTube Video (${videoId})`;
+    let captionUrl: string | null = null;
+
+    try {
+      // ── Strategy A: Direct timedtext API (simplest, most reliable) ──────────
+      // YouTube exposes /api/timedtext for auto-generated captions without needing
+      // to scrape the page. Try English first, then auto-generated.
+      const timedTextVariants = [
+        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
+        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-US&fmt=json3`,
+        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=json3`,
+      ];
+
+      for (const ttUrl of timedTextVariants) {
+        try {
+          const r = await timedFetch(ttUrl, { headers: HEADERS }, 7000);
+          if (r.ok) {
+            const json: any = await r.json();
+            if (json?.events?.length > 10) {
+              const text = eventsToArticle(json.events);
+              if (text.length > 100) {
+                // Fetch title separately via oEmbed (no API key needed)
+                try {
+                  const oEmbed = await timedFetch(
+                    `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+                    { headers: HEADERS }, 5000
+                  );
+                  if (oEmbed.ok) {
+                    const oe: any = await oEmbed.json();
+                    if (oe.title) title = oe.title;
+                  }
+                } catch {}
+                _ytArticleCache.set(videoId, { ts: Date.now(), title, text });
+                return res.json({ title, text });
+              }
+            }
+          }
+        } catch {}
+      }
+
+      // ── Strategy B: Scrape the watch page for caption tracks ─────────────────
+      const pageRes = await timedFetch(`https://www.youtube.com/watch?v=${videoId}`, { headers: HEADERS }, 12000);
+      if (!pageRes.ok) return res.status(502).json({ message: "Could not load the YouTube video page. Please try again." });
+      const html = await pageRes.text();
+
+      // Extract title from multiple patterns
+      const titlePatterns = [
+        /"title":"([^"\\]{3,200})"/,
+        /<title>([^<]+)<\/title>/,
+      ];
+      for (const p of titlePatterns) {
+        const m = html.match(p);
+        if (m?.[1]) {
+          title = m[1].replace(/\\u0026/g, "&").replace(/\\"/g, '"').replace(/ - YouTube$/, "").trim();
+          if (title.length > 3) break;
+        }
+      }
+
+      // Extract ALL caption tracks (not just the first), prefer English
+      const captionBlockMatch = html.match(/"captionTracks":\[([^\]]+)\]/);
+      if (captionBlockMatch) {
+        const block = captionBlockMatch[1];
+        const allBaseUrls: Array<{ url: string; lang: string }> = [];
+        const trackRegex = /"baseUrl":"(https?:[^"]+)","name".*?"languageCode":"([^"]+)"/g;
+        let m;
+        while ((m = trackRegex.exec(block)) !== null) {
+          allBaseUrls.push({ url: m[1].replace(/\\u0026/g, "&"), lang: m[2] });
+        }
+        // Fallback: just grab all baseUrls in order
+        if (allBaseUrls.length === 0) {
+          const simpleRegex = /"baseUrl":"(https?:[^"]+)"/g;
+          while ((m = simpleRegex.exec(block)) !== null) {
+            allBaseUrls.push({ url: m[1].replace(/\\u0026/g, "&"), lang: "??" });
+          }
+        }
+        // Sort: English first
+        const preferred = allBaseUrls.sort((a, b) => {
+          const aEn = a.lang.startsWith("en") ? 0 : 1;
+          const bEn = b.lang.startsWith("en") ? 0 : 1;
+          return aEn - bEn;
+        });
+        captionUrl = preferred[0]?.url || null;
+      }
+
+      if (!captionUrl) {
+        return res.status(422).json({
+          message: "No captions found for this video. Try a video that has subtitles or auto-captions (CC) enabled."
+        });
+      }
+
+      const capRes = await timedFetch(captionUrl + "&fmt=json3", { headers: HEADERS }, 8000);
+      if (!capRes.ok) return res.status(502).json({ message: "Could not download captions. Please try another video." });
+
+      const capJson: any = await capRes.json();
+      const text = eventsToArticle(capJson?.events || []);
+      if (!text || text.length < 50) {
+        return res.status(422).json({ message: "Captions found but they appear to be empty. Try a different video." });
+      }
 
       _ytArticleCache.set(videoId, { ts: Date.now(), title, text });
       return res.json({ title, text });
+
     } catch (err: any) {
-      console.error("YT article error:", err);
-      return res.status(500).json({ message: "Failed to extract article" });
+      console.error("[yt-to-article] error:", err?.message || err);
+      return res.status(500).json({ message: "Failed to extract article. Please try again or choose a different video." });
     }
   });
 

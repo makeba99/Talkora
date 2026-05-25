@@ -2730,6 +2730,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [ytArticleUrl, setYtArticleUrl] = useState("");
   const [ytArticleLoading, setYtArticleLoading] = useState(false);
   const [ytArticleError, setYtArticleError] = useState("");
+  const [ytConvertStep, setYtConvertStep] = useState(0); // 0=idle 1=connecting 2=captions 3=building
   /* YouTube read-search */
   const [ytReadSearch, setYtReadSearch] = useState("");
   const [ytReadResults, setYtReadResults] = useState<Array<{ id: string; title: string; thumbnail: string; channelTitle: string; duration: string }>>([]);
@@ -5096,7 +5097,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [socket, user, activeYoutubeId, room.id]);
 
   useEffect(() => {
-    /* no-op: books load only on explicit search */
+    if (sidePanelTab === "read" && readBooks.length === 0 && !readLoading && readingHistory.length === 0) {
+      loadDefaultBooks();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sidePanelTab]);
 
   useEffect(() => {
@@ -8841,17 +8845,43 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (!videoId) return;
     setYtArticleLoading(true);
     setYtArticleError("");
+    setYtConvertStep(1);
+
+    // Simulate visible preparation steps so the user sees progress
+    const step2Timer = setTimeout(() => setYtConvertStep(2), 900);
+    const step3Timer = setTimeout(() => setYtConvertStep(3), 2200);
+
     try {
       const res = await fetch(`/api/yt-to-article?url=${encodeURIComponent(videoId)}`, { credentials: "include" });
       const data = await res.json();
-      if (!res.ok) { setYtArticleError(data.message || "Could not extract article"); return; }
-      setSelectedBook({ title: data.title, authors: [{ name: "YouTube Transcript" }], _isYtArticle: true });
+      clearTimeout(step2Timer); clearTimeout(step3Timer);
+      if (!res.ok) {
+        setYtArticleError(data.message || "Could not extract article");
+        setYtConvertStep(0);
+        return;
+      }
+      setYtConvertStep(3);
+      await new Promise(r => setTimeout(r, 400)); // brief "Building article…" flash
+
+      const bookObj = { title: data.title, authors: [{ name: "YouTube" }], _isYtArticle: true, videoId };
+      setSelectedBook(bookObj);
       setBookText(data.text);
       setWordInfo(null);
       setShowEReader(true);
       setYtReadResults([]);
       setYtReadSearch("");
-    } catch { setYtArticleError("Failed to connect. Please try again."); }
+      setYtConvertStep(0);
+
+      // Share article with the room so others can join reading
+      if (activeYoutubeId) handleStopYoutube();
+      socket?.emit("room:book", { roomId: room.id, book: bookObj });
+      setBookReaders(prev => { const n = new Set(prev); n.add(user?.id || ""); return n; });
+      setBookHostId(user?.id || null);
+    } catch {
+      clearTimeout(step2Timer); clearTimeout(step3Timer);
+      setYtArticleError("Failed to connect. Please try again.");
+      setYtConvertStep(0);
+    }
     finally { setYtArticleLoading(false); }
   };
 
@@ -11735,6 +11765,43 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 )}
               </div>
             </div>
+
+            {/* YouTube conversion preparation progress */}
+            {ytArticleLoading && (
+              <div className="mx-3 mt-2 mb-0 p-3 rounded-xl border border-orange-500/25 bg-orange-500/5 space-y-2.5 flex-shrink-0" data-testid="section-yt-converting">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" style={{ color: "hsla(var(--neu-orange-hi)/0.85)" }} />
+                  <p className="text-[11px] font-semibold" style={{ color: "hsla(var(--neu-orange-hi)/0.9)" }}>
+                    {ytConvertStep === 1 ? "Connecting to YouTube…" : ytConvertStep === 2 ? "Extracting captions…" : "Building article…"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  {[
+                    { step: 1, label: "Fetch video info" },
+                    { step: 2, label: "Extract captions" },
+                    { step: 3, label: "Build readable article" },
+                  ].map(({ step, label }) => (
+                    <div key={step} className="flex items-center gap-2">
+                      <div className={`w-3.5 h-3.5 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${ytConvertStep > step ? "bg-green-500" : ytConvertStep === step ? "bg-orange-400 animate-pulse" : "bg-muted/40"}`}>
+                        {ytConvertStep > step && <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
+                      </div>
+                      <p className={`text-[10px] transition-colors ${ytConvertStep >= step ? "text-foreground/80" : "text-muted-foreground/40"}`}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="w-full h-1 rounded-full bg-muted/30 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${ytConvertStep === 1 ? 15 : ytConvertStep === 2 ? 55 : 90}%`,
+                      background: "linear-gradient(90deg, hsla(var(--neu-orange)/0.7), hsla(var(--neu-orange-hi)/0.9))",
+                    }}
+                  />
+                </div>
+                <p className="text-[9px] text-muted-foreground/50 text-center">This may take a few seconds</p>
+              </div>
+            )}
+
             <ScrollArea className="flex-1 min-h-0">
               <div className="p-3 space-y-2">
                 {(readLoading || ytReadSearchLoading) && (
