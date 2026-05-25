@@ -15172,16 +15172,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               data-testid="media-main-ereader"
             >
 
-              {/* Drag-to-resize handle at the TOP — drag UP to grow, drag DOWN to shrink */}
+              {/* Drag-to-resize handle at the BOTTOM — drag DOWN to grow, drag UP to shrink */}
               {!eReaderFullscreen && (
                 <div
-                  className="flex-shrink-0 h-4 flex items-center justify-center cursor-n-resize group/resize-reader select-none z-10"
+                  className="flex-shrink-0 h-5 flex items-center justify-center cursor-s-resize group/resize-reader select-none z-10"
                   data-testid="ereader-resize-handle"
-                  title="Drag up to expand · Drag down to shrink"
+                  title="Drag down to expand · Drag up to shrink"
                   style={{
                     background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#e8e8e8" : "#111111",
-                    borderTop: `2px solid ${eReaderTheme === "dark" ? "#555" : "#b8a880"}`,
-                    borderBottom: `1px solid ${eReaderTheme === "dark" ? "#333" : "#d4c4a0"}`,
+                    borderTop: `1px solid ${eReaderTheme === "dark" ? "#333" : "#d4c4a0"}`,
+                    borderBottom: `2px solid ${eReaderTheme === "dark" ? "#555" : "#b8a880"}`,
                     touchAction: "none",
                   }}
                   onMouseDown={(e) => {
@@ -15192,7 +15192,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     const onMove = (me: MouseEvent) => {
                       const outerH = container.parentElement?.getBoundingClientRect().height ?? window.innerHeight;
                       const delta = me.clientY - startY;
-                      setEReaderHeight(Math.max(140, Math.min(outerH - 60, startH - delta)));
+                      setEReaderHeight(Math.max(140, Math.min(outerH - 60, startH + delta)));
                     };
                     const onUp = () => {
                       window.removeEventListener("mousemove", onMove);
@@ -15212,7 +15212,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       const t = te.touches[0];
                       const outerH = container.parentElement?.getBoundingClientRect().height ?? window.innerHeight;
                       const delta = t.clientY - startY;
-                      setEReaderHeight(Math.max(140, Math.min(outerH - 60, startH - delta)));
+                      setEReaderHeight(Math.max(140, Math.min(outerH - 60, startH + delta)));
                     };
                     const onUp = () => {
                       document.removeEventListener("touchmove", onMove);
@@ -15223,7 +15223,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   }}
                 >
                   <div
-                    className="w-16 h-1 rounded-full opacity-40 group-hover/resize-reader:opacity-80 transition-opacity"
+                    className="w-20 h-1.5 rounded-full opacity-50 group-hover/resize-reader:opacity-90 transition-opacity"
                     style={{ background: eReaderTheme === "dark" ? "#d4c9b0" : "#8b6914" }}
                   />
                 </div>
