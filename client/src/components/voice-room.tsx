@@ -8834,10 +8834,30 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     try {
       const res = await fetch(`/api/library/search?q=${encodeURIComponent(query)}`, { credentials: "include" });
       const data = await res.json();
-      setReadBooks(data.books || []);
-      setReadCatalog(data.openLibrary || []);
-      setReadAudiobooks(data.audiobooks || []);
-      setReadVideos(data.videos || []);
+      const books = data.books || [];
+      const audiobooks = data.audiobooks || [];
+      const videos = data.videos || [];
+      // If the search returned nothing at all, fall back to popular books so the
+      // view is never empty — clear the search term so the "Popular Classics" heading shows.
+      if (books.length === 0 && audiobooks.length === 0 && videos.length === 0) {
+        setReadBooks([]);
+        setReadCatalog([]);
+        setReadAudiobooks([]);
+        setReadVideos([]);
+        setReadSearch("");
+        // loadDefaultBooks guard checks readBooks.length > 0; reset it first then call
+        const fallbackRes = await fetch(`/api/library/search`, { credentials: "include" });
+        const fallbackData = await fallbackRes.json();
+        setReadBooks(fallbackData.books || []);
+        setReadCatalog([]);
+        setReadAudiobooks([]);
+        setReadVideos([]);
+      } else {
+        setReadBooks(books);
+        setReadCatalog(data.openLibrary || []);
+        setReadAudiobooks(audiobooks);
+        setReadVideos(videos);
+      }
     } catch {
       setReadBooks([]); setReadCatalog([]); setReadAudiobooks([]); setReadVideos([]);
     } finally { setReadLoading(false); }

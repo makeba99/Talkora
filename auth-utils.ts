@@ -2127,7 +2127,16 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
     try {
       const res = await fetch(`https://gutendex.com/books/?search=${encodeURIComponent(query)}&languages=en`);
       const data = await res.json();
-      setReadBooks(data.results || []);
+      const results = data.results || [];
+      if (results.length === 0) {
+        // No matches for this query — fall back to popular books so the view is never empty
+        const fallbackRes = await fetch(`https://gutendex.com/books/?sort=popular&languages=en`);
+        const fallbackData = await fallbackRes.json();
+        setReadBooks(fallbackData.results || []);
+        setReadSearch("");
+      } else {
+        setReadBooks(results);
+      }
     } catch { setReadBooks([]); } finally { setReadLoading(false); }
   };
 
@@ -2753,6 +2762,17 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                   {readLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
                 </Button>
               </div>
+              <div className="flex flex-wrap gap-1.5 pt-2">
+                {["English", "Mystery", "Romance", "Self-help", "History", "Science", "Philosophy", "Adventure"].map(genre => (
+                  <button
+                    key={genre}
+                    onClick={() => { setReadSearch(genre); searchGutenberg(genre); }}
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-border/60 bg-muted/30 hover:bg-muted/70 hover:border-border transition-colors"
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
             </div>
             <ScrollArea className="flex-1 min-h-0">
               <div className="p-3 space-y-2">
@@ -2764,7 +2784,7 @@ export function VoiceRoom({ room: roomProp, onLeave }: VoiceRoomProps) {
                 {readBooks.length === 0 && !readLoading && (
                   <div className="text-center py-8 space-y-2 text-muted-foreground">
                     <BookOpen className="w-8 h-8 mx-auto opacity-30" />
-                    <p className="text-xs">No books found. Try a different search.</p>
+                    <p className="text-xs">Pick a genre above or search for a title.</p>
                     <button onClick={loadDefaultBooks} className="text-xs text-primary hover:underline">Browse bestsellers</button>
                   </div>
                 )}
