@@ -651,6 +651,7 @@ function ParticipantCard({
   notifPrefs,
   onSetNotifPrefs,
   dmUnreadCount = 0,
+  dmFirstUnreadSenderId = null,
 }: any) {
   const showVideoIcon = isMe ? isVideoOn : (p.hasVideo || hasRemoteVideo);
   const showYoutubeIcon = hasActiveYoutube;
@@ -1454,36 +1455,54 @@ function ParticipantCard({
           </div>
         )}
 
-        {/* DM unread badge on participant card — clickable, opens DM.
-            Only the receiver sees this badge (sender check is in handleRoomDm).
-            Shape matches the reference design: red rounded-square with a
-            speech-bubble icon and unread count. */}
-        {dmUnreadCount > 0 && (
-          <button
-            className="absolute top-1 left-1 z-30 animate-in fade-in zoom-in-75 pointer-events-auto cursor-pointer"
-            data-testid={`badge-room-dm-unread-${p.id}`}
-            title={`${dmUnreadCount} unread message${dmUnreadCount !== 1 ? "s" : ""} — click to open`}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onNavigateDm) onNavigateDm(dmFirstUnreadSenderId ?? p.id);
-            }}
-          >
-            <div
-              className="flex items-center gap-[3px] px-[5px] py-[3px] rounded text-white font-bold hover:scale-110 transition-transform active:scale-95"
-              style={{
-                background: "linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",
-                boxShadow: "0 0 8px rgba(239,68,68,0.7), 0 0 16px rgba(239,68,68,0.35)",
-                fontSize: "10px",
-                lineHeight: 1,
-                minWidth: "20px",
-                border: "1.5px solid rgba(255,255,255,0.28)",
+        {/* DM unread badge on participant card — only shown on the current user's
+            own card so they can see all incoming DMs in one place. Displays the
+            sender's name and count; clicking opens the DM thread. */}
+        {isMe && dmUnreadCount > 0 && (() => {
+          const sender = dmFirstUnreadSenderId
+            ? allParticipants?.find((p2: any) => p2.id === dmFirstUnreadSenderId)
+            : null;
+          const senderName = sender ? getUserDisplayName(sender) : null;
+          return (
+            <button
+              className="absolute top-1 left-1 z-30 animate-in fade-in zoom-in-75 pointer-events-auto cursor-pointer flex flex-col items-center gap-[2px]"
+              data-testid={`badge-room-dm-unread-${p.id}`}
+              title={`${dmUnreadCount} unread message${dmUnreadCount !== 1 ? "s" : ""}${senderName ? ` from ${senderName}` : ""} — click to open`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onNavigateDm) onNavigateDm(dmFirstUnreadSenderId ?? p.id);
               }}
             >
-              <MessageSquare style={{ width: 10, height: 10, flexShrink: 0 }} />
-              <span style={{ fontVariantNumeric: "tabular-nums" }}>{dmUnreadCount > 9 ? "9+" : dmUnreadCount}</span>
-            </div>
-          </button>
-        )}
+              <div
+                className="flex items-center gap-[3px] px-[5px] py-[3px] rounded text-white font-bold hover:scale-110 transition-transform active:scale-95"
+                style={{
+                  background: "linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",
+                  boxShadow: "0 0 8px rgba(239,68,68,0.7), 0 0 16px rgba(239,68,68,0.35)",
+                  fontSize: "10px",
+                  lineHeight: 1,
+                  minWidth: "20px",
+                  border: "1.5px solid rgba(255,255,255,0.28)",
+                }}
+              >
+                <MessageSquare style={{ width: 10, height: 10, flexShrink: 0 }} />
+                <span style={{ fontVariantNumeric: "tabular-nums" }}>{dmUnreadCount > 9 ? "9+" : dmUnreadCount}</span>
+              </div>
+              {senderName && (
+                <div
+                  className="px-[4px] py-[1px] rounded text-white font-semibold leading-none truncate max-w-[64px]"
+                  style={{
+                    background: "rgba(0,0,0,0.72)",
+                    fontSize: "8px",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  {senderName}
+                </div>
+              )}
+            </button>
+          );
+        })()}
 
         {gearPopover}
 
