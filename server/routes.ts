@@ -3176,7 +3176,15 @@ export async function registerRoutes(
 
       const existingRooms = await storage.getRoomsByOwner(ownerId);
       if (existingRooms.length > 0) {
-        return res.status(400).json({ message: "You can only host one room at a time. Please close your existing room first." });
+        const activeRooms = existingRooms.filter((r) => (r.activeUsers ?? 0) > 0);
+        if (activeRooms.length > 0) {
+          return res.status(400).json({ message: "You can only host one room at a time. Please close your existing room first." });
+        }
+        // All existing rooms are empty (activeUsers=0) — they're stuck in the
+        // deletion grace window but are invisible in the lobby. Delete them now
+        // so the user isn't permanently blocked from creating a new room.
+        await Promise.all(existingRooms.map((r) => storage.deleteRoom(r.id)));
+        broadcastRooms().catch(() => {});
       }
 
       const room = await storage.createRoom({
@@ -3602,12 +3610,9 @@ export async function registerRoutes(
 
       const request = await storage.createMessageRequest(me, toId);
 
-      // Notify recipient via socket
-      const toSocket = userSockets.get(toId);
-      if (toSocket) {
-        const fromUser = await storage.getUser(me);
-        io.to(toSocket).emit("message_request:new", { ...request, fromUser });
-      }
+      // Notify recipient via socket (all their tabs via personal room)
+      const fromUser = await storage.getUser(me);
+      io.to(`user:${toId}`).emit("message_request:new", { ...request, fromUser });
 
       res.json(request);
     } catch (err: any) {
@@ -3629,11 +3634,8 @@ export async function registerRoutes(
 
       const updated = await storage.updateMessageRequestStatus(req.params.id, status);
 
-      // Notify sender via socket
-      const fromSocket = userSockets.get(request.fromId);
-      if (fromSocket) {
-        io.to(fromSocket).emit("message_request:updated", updated);
-      }
+      // Notify sender via socket (all their tabs via personal room)
+      io.to(`user:${request.fromId}`).emit("message_request:updated", updated);
 
       res.json(updated);
     } catch (err: any) {
@@ -3701,16 +3703,11 @@ export async function registerRoutes(
       }
 
       const msg = await storage.createMessage(parsed.data);
-      const toSocketId = userSockets.get(parsed.data.toId);
-      if (toSocketId) {
-        io.to(toSocketId).emit("dm:new", msg);
-      }
-      const fromSocketId = userSockets.get(parsed.data.fromId);
-      if (fromSocketId) {
-        io.to(fromSocketId).emit("dm:new", msg);
-      }
-      // Push notification to recipient if they're not connected via socket
-      if (!toSocketId) {
+      // Deliver to all open tabs of both sender and recipient via personal rooms
+      io.to(`user:${parsed.data.toId}`).emit("dm:new", msg);
+      io.to(`user:${parsed.data.fromId}`).emit("dm:new", msg);
+      // Web push only if the recipient is fully offline (no socket at all)
+      if (!userSockets.has(parsed.data.toId)) {
         const dmSender = await storage.getUser(parsed.data.fromId);
         void notifyDmPush(parsed.data.fromId, parsed.data.toId, dmSender);
       }
@@ -3783,13 +3780,11 @@ export async function registerRoutes(
 
       // Real-time follow event — lets any open DM view instantly upgrade
       // from "Follow back to chat" to the full chat UI without a page reload.
-      const followedSocketId = userSockets.get(parsed.data.followingId);
-      const followerSocketId = userSockets.get(parsed.data.followerId);
       const followPayload = { followerId: parsed.data.followerId, followingId: parsed.data.followingId };
-      if (followedSocketId) io.to(followedSocketId).emit("user:followed", followPayload);
-      if (followerSocketId) io.to(followerSocketId).emit("user:followed", followPayload);
-      // Notify the followed user's notifications dropdown in real-time
-      if (followedSocketId) io.to(followedSocketId).emit("notification:new", { type: "follow" });
+      // Deliver to all open tabs via personal rooms so both lobby and room tabs update
+      io.to(`user:${parsed.data.followingId}`).emit("user:followed", followPayload);
+      io.to(`user:${parsed.data.followerId}`).emit("user:followed", followPayload);
+      io.to(`user:${parsed.data.followingId}`).emit("notification:new", { type: "follow" });
 
       // Push notification to the followed user if the follow is not mutual
       // (i.e. the person being followed hasn't followed back yet)
@@ -6322,6 +6317,11 @@ export async function registerRoutes(
 
       onlineUsers.add(userId);
       userSockets.set(userId, socket.id);
+      // Join a personal room so ALL of this user's open tabs receive targeted
+      // socket events (notifications, DMs, admin actions). Without this, only
+      // the tab whose socket ID is in userSockets gets the event; other tabs
+      // miss it and wait for the 60-second refetch interval instead.
+      socket.join(`user:${userId}`);
       await storage.updateUserStatus(userId, "online");
       io.emit("presence:update", { userId, status: "online" });
       socket.emit("presence:online", Array.from(onlineUsers));

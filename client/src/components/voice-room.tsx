@@ -3840,10 +3840,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         });
 
         // ── Emit local speaking transitions to the server ─────────────────
-        // Each client is responsible only for broadcasting its OWN mic level.
-        // The server relays the event to all other room participants, which is
-        // the only cross-browser reliable way to show speaking indicators
-        // (Safari/Firefox may block AudioContext analysis of remote streams).
+        // Each client detects ONLY its own mic level and emits a transition
+        // event. The server relays it to all other participants. Remote users'
+        // speaking state is set exclusively by those socket events (below).
+        // This is the only cross-browser reliable approach — Safari/Firefox
+        // may block AudioContext analysis of remote WebRTC streams entirely.
         const localNowSpeaking = currentlySpeaking.has(user.id);
         if (localNowSpeaking !== prevLocalSpeakingRef.current) {
           prevLocalSpeakingRef.current = localNowSpeaking;
@@ -3853,14 +3854,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             isSpeaking: localNowSpeaking,
           });
         }
-        
+
+        // ── Update LOCAL user's speaking state only ────────────────────────
+        // DO NOT replace the whole set here — that would overwrite speaking
+        // states received for remote users via room:speaking socket events.
+        // Only toggle the current user's own entry based on the local analyser.
         setSpeakingUsers(prev => {
-          if (prev.size !== currentlySpeaking.size) return currentlySpeaking;
-          let changed = false;
-          prev.forEach((id) => {
-             if (!currentlySpeaking.has(id)) { changed = true; }
-          });
-          return changed ? currentlySpeaking : prev;
+          const wasLocal = prev.has(user.id);
+          if (wasLocal === localNowSpeaking) return prev;
+          const next = new Set(prev);
+          if (localNowSpeaking) next.add(user.id);
+          else next.delete(user.id);
+          speakingUsersRef.current = next;
+          return next;
         });
       }
       animationFrameId = requestAnimationFrame(checkAudioLevels);
@@ -3991,6 +3997,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         return next;
       });
       cleanupPeer(data.userId);
+      // Clear the departed user's speaking indicator — if they disconnected
+      // abruptly they may never have sent isSpeaking:false, leaving a stale ring.
+      setSpeakingUsers((prev) => {
+        if (!prev.has(data.userId)) return prev;
+        const next = new Set(prev);
+        next.delete(data.userId);
+        speakingUsersRef.current = next;
+        return next;
+      });
       setAvailableScreenUsers((prev) => { const n = new Set(prev); n.delete(data.userId); return n; });
       setAvailableVideoUsers((prev) => { const n = new Set(prev); n.delete(data.userId); return n; });
       setRemoteScreenShareUserId((prev) => prev === data.userId ? null : prev);
