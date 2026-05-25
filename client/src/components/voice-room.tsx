@@ -435,21 +435,20 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
 }
 
 /* ── MicVoiceBar ──────────────────────────────────────────────────────────────
-   Segmented VU-meter column: 10 small pill-segments stacked bottom→top.
-   Each segment lights up based on the smoothed volume level so they appear
-   to "raise up" with the voice — lower segments are always on, upper ones
-   only activate when loud enough. Shown only for unmuted users.
-   Canvas: 10 × 38 px (narrow column that fits the bottom-right slot). */
-const MIC_SEGS   = 10;   // total segments in the column
-const SEG_H      = 3;    // height of each segment px (canvas units)
+   Segmented VU-meter column: up to 9 pill-segments rising from the bottom.
+   SILENT → canvas is completely empty (no ghost bars, no idle animation).
+   SPEAKING → segments climb upward from the bottom with a glowing gradient.
+   Canvas: 8 × 32 px. Sits at bottom-right of participant card. */
+const MIC_SEGS   = 9;    // maximum segments
+const SEG_H      = 3;    // segment height px
 const SEG_GAP    = 1;    // gap between segments px
-const SEG_W      = 10;   // column width px
+const SEG_W      = 8;    // column width px
+const VOL_THRESH = 0.13; // noise floor — below this nothing lights up
 
 function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
-  const tRef      = useRef<number>(0);
-  const volRef    = useRef<number>(0.05);  // smoothed volume 0-1
+  const volRef    = useRef<number>(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -457,11 +456,11 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.width;   // 10
-    const H = canvas.height;  // 38
+    const W = canvas.width;
+    const H = canvas.height;
 
     if (analyserNode) {
-      analyserNode.smoothingTimeConstant = 0.60;
+      analyserNode.smoothingTimeConstant = 0.65;
       analyserNode.fftSize = 256;
     }
 
@@ -469,85 +468,70 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
       ? new Uint8Array(analyserNode.frequencyBinCount)
       : null;
 
-    /* Full pill helper */
+    /* Pill helper — fully rounded rectangle */
     const pill = (x: number, y: number, w: number, h: number) => {
       const r = Math.min(h / 2, w / 2);
       ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.lineTo(x + w - r, y);
-      ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.arcTo(x + w, y,     x + w, y + r,     r);
       ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
       ctx.lineTo(x + r, y + h);
-      ctx.arcTo(x, y + h, x, y + h - r, r);
-      ctx.arcTo(x, y, x + r, y, r);
+      ctx.arcTo(x,     y + h, x, y + h - r,     r);
+      ctx.arcTo(x,     y,     x + r, y,          r);
       ctx.closePath();
       ctx.fill();
     };
 
     const draw = () => {
-      const t = tRef.current++;
       ctx.clearRect(0, 0, W, H);
 
+      /* --- read real audio --- */
       let rawVol = 0;
-
       if (analyserNode && freqBuf) {
         analyserNode.getByteFrequencyData(freqBuf);
-        /* Average vocal range bins: ~85 Hz – 4 kHz */
         const loB = 1, hiB = Math.min(22, freqBuf.length - 1);
         let sum = 0;
         for (let b = loB; b <= hiB; b++) sum += freqBuf[b];
         rawVol = sum / ((hiB - loB + 1) * 255);
-        rawVol = Math.pow(rawVol, 0.45);       // lift quiet speech
-      } else {
-        /* Idle: gentle sinusoidal breath, peaks around 30-40% */
-        rawVol = 0.08 + Math.abs(Math.sin(t * 0.040)) * 0.26
-                      + Math.abs(Math.sin(t * 0.073)) * 0.10;
+        rawVol = Math.pow(rawVol, 0.42);  // boost quiet speech
       }
+      /* No analyser → no audio → rawVol stays 0, canvas stays blank */
 
-      /* Smooth: fast attack, slow decay */
+      /* Smooth: fast attack, very slow decay so bars fade gracefully */
       const prev = volRef.current;
-      volRef.current = prev + (rawVol - prev) * (rawVol > prev ? 0.55 : 0.12);
+      volRef.current = prev + (rawVol - prev) * (rawVol > prev ? 0.60 : 0.08);
       const vol = volRef.current;
 
-      /* How many segments are "lit" (bottom is always 1) */
-      const litCount = Math.max(1, Math.round(vol * MIC_SEGS));
-      const isSpeaking = vol > 0.28;
+      /* Completely silent — draw nothing */
+      if (vol < VOL_THRESH) {
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
 
-      /* Total stack height */
-      const STACK = MIC_SEGS * SEG_H + (MIC_SEGS - 1) * SEG_GAP;
-      const baseY = H - 1;   // bottom anchor
+      /* Map vol (thresh…1) → segment count (1…MIC_SEGS) */
+      const mapped   = (vol - VOL_THRESH) / (1 - VOL_THRESH);
+      const litCount = Math.max(1, Math.round(mapped * MIC_SEGS));
+      const cx       = Math.floor((W - SEG_W) / 2);
+      const baseY    = H - 1;  // bottom anchor
 
-      for (let s = 0; s < MIC_SEGS; s++) {
-        /* s=0 is bottom segment, s=MIC_SEGS-1 is top */
-        const y = baseY - (s + 1) * SEG_H - s * SEG_GAP;
-        const x = Math.floor((W - SEG_W) / 2);
-        const lit = s < litCount;
+      for (let s = 0; s < litCount; s++) {
+        const y    = baseY - (s + 1) * SEG_H - s * SEG_GAP;
+        const frac = s / (MIC_SEGS - 1);  // 0 = bottom, 1 = top
 
-        /* t = 0 (bottom) → 1 (top) for gradient colour */
-        const frac = s / (MIC_SEGS - 1);
+        /* Colour: cyan-teal at bottom → violet at top */
+        const rC = Math.round(34  + frac * (139 - 34));
+        const gC = Math.round(211 + frac * (92  - 211));
+        const bC = Math.round(238 + frac * (246 - 238));
+        const alpha = 0.80 + mapped * 0.18;
 
-        if (lit) {
-          /* Amber at bottom → violet at top */
-          const r = Math.round(251 - frac * (251 - 124));
-          const g = Math.round(146 - frac * (146 - 58));
-          const b = Math.round(60  + frac * (237 - 60));
-          const alpha = 0.82 + vol * 0.16;
-
-          ctx.save();
-          if (isSpeaking) {
-            ctx.shadowBlur  = 3 + vol * 9;
-            ctx.shadowColor = `rgba(${r},${g},${b},${0.55 + vol * 0.35})`;
-          }
-          ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
-          pill(x, y, SEG_W, SEG_H);
-          ctx.restore();
-        } else {
-          /* Dim ghost segment */
-          ctx.save();
-          ctx.fillStyle = "rgba(255,255,255,0.09)";
-          pill(x, y, SEG_W, SEG_H);
-          ctx.restore();
-        }
+        ctx.save();
+        /* Glow gets stronger toward the top */
+        ctx.shadowBlur  = 4 + frac * 8 + mapped * 6;
+        ctx.shadowColor = `rgba(${rC},${gC},${bC},${0.55 + mapped * 0.35})`;
+        ctx.fillStyle   = `rgba(${rC},${gC},${bC},${alpha})`;
+        pill(cx, y, SEG_W, SEG_H);
+        ctx.restore();
       }
 
       rafRef.current = requestAnimationFrame(draw);
@@ -557,11 +541,12 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
     return () => cancelAnimationFrame(rafRef.current);
   }, [analyserNode]);
 
+  const canvasH = MIC_SEGS * SEG_H + (MIC_SEGS - 1) * SEG_GAP + 2; // = 38
   return (
     <canvas
       ref={canvasRef}
       width={SEG_W}
-      height={MIC_SEGS * SEG_H + (MIC_SEGS - 1) * SEG_GAP + 2}
+      height={canvasH}
       className="opacity-95 pointer-events-none"
       data-testid="mic-voice-bar"
     />
