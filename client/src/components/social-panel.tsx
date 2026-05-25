@@ -656,22 +656,22 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
                   <span className="text-xs text-muted-foreground">Room joins</span>
                   <button
                     onClick={() => updateNotifPrefsMutation.mutate({ userId: u.id, notifyRoomJoin: !roomJoinOn, notifyDm: dmOn })}
-                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-all ${roomJoinOn ? "bg-orange-500 ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-muted-foreground/30"}`}
+                    className={`relative inline-flex h-5 w-10 flex-shrink-0 items-center rounded-full transition-all duration-200 ${roomJoinOn ? "bg-emerald-500 ring-2 ring-emerald-400/60 shadow-[0_0_10px_rgba(52,211,153,0.55)]" : "bg-red-600/70 ring-2 ring-red-500/40 shadow-[0_0_8px_rgba(239,68,68,0.4)]"}`}
                     aria-pressed={roomJoinOn}
                     data-testid={`toggle-notif-room-follower-${u.id}`}
                   >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${roomJoinOn ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-md transition-transform duration-200 ${roomJoinOn ? "translate-x-5" : "translate-x-0.5"}`} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">Direct messages</span>
                   <button
                     onClick={() => updateNotifPrefsMutation.mutate({ userId: u.id, notifyRoomJoin: roomJoinOn, notifyDm: !dmOn })}
-                    className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-all ${dmOn ? "bg-orange-500 ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(249,115,22,0.5)]" : "bg-muted-foreground/30"}`}
+                    className={`relative inline-flex h-5 w-10 flex-shrink-0 items-center rounded-full transition-all duration-200 ${dmOn ? "bg-emerald-500 ring-2 ring-emerald-400/60 shadow-[0_0_10px_rgba(52,211,153,0.55)]" : "bg-red-600/70 ring-2 ring-red-500/40 shadow-[0_0_8px_rgba(239,68,68,0.4)]"}`}
                     aria-pressed={dmOn}
                     data-testid={`toggle-notif-dm-follower-${u.id}`}
                   >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${dmOn ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-md transition-transform duration-200 ${dmOn ? "translate-x-5" : "translate-x-0.5"}`} />
                   </button>
                 </div>
               </div>
