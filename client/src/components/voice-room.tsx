@@ -2245,6 +2245,22 @@ let _cachedDefaultBooks: any[] | null = null;
 let _cachedDefaultBooksTs = 0;
 const DEFAULT_BOOKS_TTL = 10 * 60 * 1000; // 10 min
 
+/* ── Instant classics — shown immediately without any API call ───────────── */
+const INSTANT_BOOKS = [
+  { id: 1342, title: "Pride and Prejudice", authors: [{ name: "Jane Austen" }], download_count: 94736, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/1342/pg1342.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/1342/pg1342.cover.medium.jpg" } },
+  { id: 11,   title: "Alice's Adventures in Wonderland", authors: [{ name: "Lewis Carroll" }], download_count: 43025, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/11/pg11.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/11/pg11.cover.medium.jpg" } },
+  { id: 84,   title: "Frankenstein", authors: [{ name: "Mary Wollstonecraft Shelley" }], download_count: 31620, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/84/pg84.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/84/pg84.cover.medium.jpg" } },
+  { id: 1661, title: "The Adventures of Sherlock Holmes", authors: [{ name: "Arthur Conan Doyle" }], download_count: 29021, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/1661/pg1661.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/1661/pg1661.cover.medium.jpg" } },
+  { id: 174,  title: "The Picture of Dorian Gray", authors: [{ name: "Oscar Wilde" }], download_count: 24522, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/174/pg174.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/174/pg174.cover.medium.jpg" } },
+  { id: 345,  title: "Dracula", authors: [{ name: "Bram Stoker" }], download_count: 28455, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/345/pg345.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/345/pg345.cover.medium.jpg" } },
+  { id: 76,   title: "Adventures of Huckleberry Finn", authors: [{ name: "Mark Twain" }], download_count: 17203, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/76/pg76.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/76/pg76.cover.medium.jpg" } },
+  { id: 98,   title: "A Tale of Two Cities", authors: [{ name: "Charles Dickens" }], download_count: 22015, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/98/pg98.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/98/pg98.cover.medium.jpg" } },
+  { id: 2701, title: "Moby Dick; Or, The Whale", authors: [{ name: "Herman Melville" }], download_count: 15628, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/2701/pg2701.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/2701/pg2701.cover.medium.jpg" } },
+  { id: 1513, title: "Romeo and Juliet", authors: [{ name: "William Shakespeare" }], download_count: 16543, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/1513/pg1513.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/1513/pg1513.cover.medium.jpg" } },
+  { id: 5200, title: "Metamorphosis", authors: [{ name: "Franz Kafka" }], download_count: 18246, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/5200/pg5200.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/5200/pg5200.cover.medium.jpg" } },
+  { id: 1184, title: "The Count of Monte Cristo", authors: [{ name: "Alexandre Dumas" }], download_count: 17412, formats: { "text/plain; charset=utf-8": "https://www.gutenberg.org/cache/epub/1184/pg1184.txt", "image/jpeg": "https://www.gutenberg.org/cache/epub/1184/pg1184.cover.medium.jpg" } },
+];
+
 export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomProps) {
   const { socket } = useSocket();
   const { user } = useAuth();
@@ -2754,7 +2770,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [ytReadSearch, setYtReadSearch] = useState("");
   const [ytReadResults, setYtReadResults] = useState<Array<{ id: string; title: string; thumbnail: string; channelTitle: string; duration: string }>>([]);
   const [ytReadSearchLoading, setYtReadSearchLoading] = useState(false);
-  const [readingHistory, setReadingHistory] = useState<Array<{ id: string | number; title: string; author: string; coverUrl: string | null; lastReadAt: string }>>(() => {
+  const [readingHistory, setReadingHistory] = useState<Array<{ id: string | number; title: string; author: string; coverUrl: string | null; lastReadAt: string; formats?: Record<string, string>; _isYtArticle?: boolean; content?: string; videoId?: string | null; thumbnailUrl?: string | null }>>(() => {
     try { return JSON.parse(localStorage.getItem("vextorn_reading_history") || "[]"); } catch { return []; }
   });
   const [savedArticles, setSavedArticles] = useState<Array<{ id: string; title: string; content: string; source: string; sourceUrl: string | null; videoId: string | null; thumbnailUrl: string | null; createdAt: string }>>([]);
@@ -2763,6 +2779,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [articleSaved, setArticleSaved] = useState(false);
   const [ytDirectUrl, setYtDirectUrl] = useState("");
   const [currentYtThumbnail, setCurrentYtThumbnail] = useState<string | null>(null);
+  const [libraryTab, setLibraryTab] = useState<"library" | "saved" | "history">("library");
+  const [historyFilter, setHistoryFilter] = useState("");
   const [selectedBook, setSelectedBook] = useState<any | null>(null);
   const [bookText, setBookText] = useState("");
   const [bookLoading, setBookLoading] = useState(false);
@@ -8887,23 +8905,28 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   };
 
   const loadDefaultBooks = async () => {
-    if (readBooks.length > 0 || readLoading) return;
-    /* Show cached books immediately — no loading spinner */
-    if (_cachedDefaultBooks && Date.now() - _cachedDefaultBooksTs < DEFAULT_BOOKS_TTL) {
-      setReadBooks(_cachedDefaultBooks);
+    if (readLoading) return;
+    /* 1. Seed with instant classics — zero latency, shown immediately */
+    if (readBooks.length === 0) {
+      if (_cachedDefaultBooks && Date.now() - _cachedDefaultBooksTs < DEFAULT_BOOKS_TTL) {
+        setReadBooks(_cachedDefaultBooks);
+        setReadCatalog([]); setReadAudiobooks([]); setReadVideos([]);
+        return;
+      }
+      setReadBooks(INSTANT_BOOKS as any[]);
       setReadCatalog([]); setReadAudiobooks([]); setReadVideos([]);
-      return;
     }
-    setReadLoading(true);
+    /* 2. Fetch Gutenberg API in background to get richer/updated list */
     try {
       const res = await fetch(`/api/library/search`, { credentials: "include" });
       const data = await res.json();
-      const books = data.books || [];
-      _cachedDefaultBooks = books;
-      _cachedDefaultBooksTs = Date.now();
-      setReadBooks(books);
-      setReadCatalog([]); setReadAudiobooks([]); setReadVideos([]);
-    } catch { setReadBooks([]); } finally { setReadLoading(false); }
+      const apiBooks = data.books || [];
+      if (apiBooks.length > 0) {
+        _cachedDefaultBooks = apiBooks;
+        _cachedDefaultBooksTs = Date.now();
+        setReadBooks(apiBooks);
+      }
+    } catch { /* silently keep the instant list */ }
   };
 
   const loadSavedArticles = async () => {
@@ -9068,15 +9091,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const saveToReadingHistory = (book: any) => {
     const entry = {
-      id: book.id,
+      id: book._isYtArticle ? `yt-${book.videoId || book.title}` : String(book.id),
       title: book.title,
       author: book.authors?.map((a: any) => a.name).join(", ") || "",
-      coverUrl: book.formats?.["image/jpeg"] || null,
+      coverUrl: book.formats?.["image/jpeg"] || book.thumbnailUrl || null,
       lastReadAt: new Date().toISOString(),
+      formats: book.formats || undefined,
+      _isYtArticle: book._isYtArticle || false,
+      videoId: book.videoId || null,
+      thumbnailUrl: book.thumbnailUrl || null,
     };
     setReadingHistory(prev => {
       const filtered = prev.filter(h => h.id !== entry.id);
-      const updated = [entry, ...filtered].slice(0, 10);
+      const updated = [entry, ...filtered].slice(0, 20);
       try { localStorage.setItem("vextorn_reading_history", JSON.stringify(updated)); } catch {}
       return updated;
     });
@@ -11843,6 +11870,37 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
+            {/* ── Library tab switcher ───────────────────────────────── */}
+            <div className="flex items-center gap-0.5 px-3 pt-2.5 pb-0 flex-shrink-0">
+              {([
+                ["library", "Library", <BookOpen key="lib" className="w-3 h-3" />],
+                ["saved", "Saved", <svg key="sav" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>],
+                ["history", "History", <Clock key="his" className="w-3 h-3" />],
+              ] as [string, string, React.ReactNode][]).map(([tab, label, icon]) => (
+                <button
+                  key={tab}
+                  onClick={() => setLibraryTab(tab as "library" | "saved" | "history")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-t-md text-[11px] font-semibold transition-all flex-1 justify-center"
+                  style={libraryTab === tab
+                    ? { background: "hsla(var(--neu-orange)/0.14)", color: "hsla(var(--neu-orange-hi)/0.92)", borderBottom: "2px solid hsla(var(--neu-orange)/0.7)" }
+                    : { color: "hsla(var(--foreground)/0.45)", borderBottom: "2px solid transparent" }
+                  }
+                  data-testid={`tab-library-${tab}`}
+                >
+                  {icon}{label}
+                  {tab === "saved" && savedArticles.length > 0 && (
+                    <span className="ml-0.5 rounded-full px-1 text-[9px] font-bold" style={{ background: "hsla(var(--neu-orange)/0.22)", color: "hsla(var(--neu-orange-hi)/0.9)" }}>{savedArticles.length}</span>
+                  )}
+                  {tab === "history" && readingHistory.length > 0 && (
+                    <span className="ml-0.5 rounded-full px-1 text-[9px] font-bold" style={{ background: "hsla(220 14% 50%/0.18)", color: "hsla(var(--muted-foreground)/0.8)" }}>{readingHistory.length}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="border-b flex-shrink-0 mb-0" />
+
+            {/* ── Library tab: book search + YouTube search inputs ───────── */}
+            {libraryTab === "library" && (
             <div className="p-3 pb-2 border-b flex-shrink-0 space-y-2">
               {/* Book search */}
               <div className="flex gap-2">
@@ -11850,7 +11908,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={readSearch}
-                    onChange={(e) => { setReadSearch(e.target.value); if (!e.target.value.trim()) setReadBooks([]); }}
+                    onChange={(e) => { setReadSearch(e.target.value); if (!e.target.value.trim()) { setReadBooks([]); loadDefaultBooks(); } }}
                     placeholder="Search books by title or author…"
                     className="pl-8 text-sm"
                     onKeyDown={(e) => { if (e.key === "Enter") searchGutenberg(readSearch); }}
@@ -11920,6 +11978,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 )}
               </div>
             </div>
+            )}
 
             {/* YouTube conversion preparation progress */}
             {ytArticleLoading && (
@@ -11957,192 +12016,196 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               </div>
             )}
 
-            <ScrollArea className="flex-1 min-h-0">
-              <div className="p-3 space-y-2">
-                {(readLoading || ytReadSearchLoading) && (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  </div>
-                )}
-
-                {/* YouTube video search results */}
-                {ytReadResults.length > 0 && !ytReadSearchLoading && (
-                  <div className="space-y-1.5 pb-1" data-testid="section-yt-results">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 flex items-center gap-1">
-                      <svg className="w-3 h-3 flex-shrink-0 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
-                      Click a video to read its transcript
-                    </p>
-                    {ytReadResults.map((v) => (
-                      <button
-                        key={v.id}
-                        onClick={() => handleYtToArticle(v.id)}
-                        disabled={ytArticleLoading}
-                        className="w-full flex items-start gap-2.5 p-2 rounded-lg border border-border/50 hover:bg-muted/40 text-left transition-colors group disabled:opacity-50"
-                        data-testid={`button-yt-result-${v.id}`}
-                      >
-                        <div className="relative flex-shrink-0 w-16 h-10 rounded overflow-hidden bg-muted">
-                          <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="w-full h-full object-cover" />
-                          {ytArticleLoading ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                              <Loader2 className="w-3 h-3 animate-spin text-white" />
-                            </div>
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <BookOpen className="w-3.5 h-3.5 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold line-clamp-2 leading-tight">{v.title}</p>
-                          {v.channelTitle && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{v.channelTitle}</p>}
-                          {v.duration && <p className="text-[9px] text-muted-foreground/60 mt-0.5">{v.duration}</p>}
-                        </div>
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => { setYtReadResults([]); setYtReadSearch(""); }}
-                      className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground w-full text-center pt-0.5 transition-colors"
-                    >Clear results</button>
-                  </div>
-                )}
-
-                {/* Saved Articles (YouTube extracts) */}
-                {savedArticles.length > 0 && !readSearch.trim() && ytReadResults.length === 0 && (
-                  <div className="space-y-1.5 pb-2" data-testid="section-saved-articles">
-                    <div className="flex items-center justify-between px-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.80)" }}>
-                        <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
-                        My Saved Articles
-                      </p>
+            {/* ── Library tab: YT search results + books ─────────────── */}
+            {libraryTab === "library" && (
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="p-3 space-y-2">
+                  {(readLoading || ytReadSearchLoading) && (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                     </div>
-                    {savedArticles.map((article) => (
-                      <div
-                        key={article.id}
-                        className="w-full flex items-start gap-2 p-2 rounded-lg border border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 text-left transition-colors group"
-                      >
+                  )}
+                  {ytReadResults.length > 0 && !ytReadSearchLoading && (
+                    <div className="space-y-1.5 pb-1" data-testid="section-yt-results">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 flex items-center gap-1">
+                        <svg className="w-3 h-3 flex-shrink-0 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                        Click a video to read its transcript
+                      </p>
+                      {ytReadResults.map((v) => (
                         <button
-                          className="flex items-start gap-2 flex-1 min-w-0 text-left"
-                          onClick={() => {
-                            const bookObj = { title: article.title, authors: [{ name: "YouTube" }], _isYtArticle: true, videoId: article.videoId, thumbnailUrl: article.thumbnailUrl };
-                            setSelectedBook(bookObj);
-                            setBookText(article.content);
-                            setCurrentYtThumbnail(article.thumbnailUrl);
-                            setArticleSaved(true);
-                            setWordInfo(null);
-                            setShowEReader(true);
-                          }}
+                          key={v.id}
+                          onClick={() => handleYtToArticle(v.id)}
+                          disabled={ytArticleLoading}
+                          className="w-full flex items-start gap-2.5 p-2 rounded-lg border border-border/50 hover:bg-muted/40 text-left transition-colors group disabled:opacity-50"
+                          data-testid={`button-yt-result-${v.id}`}
                         >
-                          {article.thumbnailUrl ? (
-                            <img loading="lazy" decoding="async" src={article.thumbnailUrl} alt="" className="w-14 h-10 rounded object-cover flex-shrink-0 bg-muted" />
+                          <div className="relative flex-shrink-0 w-16 h-10 rounded overflow-hidden bg-muted">
+                            <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="w-full h-full object-cover" />
+                            {ytArticleLoading ? (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/50"><Loader2 className="w-3 h-3 animate-spin text-white" /></div>
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity"><BookOpen className="w-3.5 h-3.5 text-white" /></div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold line-clamp-2 leading-tight">{v.title}</p>
+                            {v.channelTitle && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{v.channelTitle}</p>}
+                            {v.duration && <p className="text-[9px] text-muted-foreground/60 mt-0.5">{v.duration}</p>}
+                          </div>
+                        </button>
+                      ))}
+                      <button onClick={() => { setYtReadResults([]); setYtReadSearch(""); }} className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground w-full text-center pt-0.5 transition-colors">Clear results</button>
+                    </div>
+                  )}
+                  {readBooks.length > 0 && ytReadResults.length === 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-semibold text-emerald-400/90 uppercase tracking-wide px-1 pb-0.5 flex items-center gap-1" data-testid="text-section-free">
+                        <BookOpen className="w-3 h-3" /> Free Classics — Project Gutenberg
+                      </p>
+                      {readBooks.map((book: any) => (
+                        <button key={book.id} onClick={() => loadBookText(book)} className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors" data-testid={`button-book-${book.id}`}>
+                          {book.formats?.["image/jpeg"] ? (
+                            <img loading="lazy" decoding="async" src={book.formats["image/jpeg"]} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
                           ) : (
-                            <div className="w-14 h-10 rounded flex-shrink-0 flex items-center justify-center" style={{ background: "hsla(var(--neu-orange)/0.12)" }}>
-                              <svg className="w-4 h-4 text-orange-400/60" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
-                            </div>
+                            <div className="w-12 h-16 rounded bg-muted flex-shrink-0 flex items-center justify-center"><BookOpen className="w-5 h-5 text-muted-foreground" /></div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-semibold line-clamp-2 leading-tight">{article.title}</p>
-                            <p className="text-[9px] text-muted-foreground mt-0.5">
-                              {new Date(article.createdAt).toLocaleDateString()} · {Math.ceil(article.content.split(" ").length / 200)} min read
-                            </p>
+                            <p className="text-xs font-semibold line-clamp-2">{book.title}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{book.authors?.map((a: any) => a.name).join(", ")}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">{book.download_count?.toLocaleString()} downloads</p>
                           </div>
                         </button>
-                        <button
-                          onClick={() => deleteSavedArticle(article.id)}
-                          className="p-1 rounded opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-red-400 flex-shrink-0 mt-0.5"
-                          aria-label="Delete article"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {readBooks.length === 0 && ytReadResults.length === 0 && !readLoading && !ytReadSearchLoading && (
+                    <div className="flex flex-col items-center justify-center py-10 gap-3 text-center" data-testid="section-empty-state">
+                      <div className="w-10 h-10 rounded-full bg-muted/40 flex items-center justify-center"><BookOpen className="w-5 h-5 text-muted-foreground/50" /></div>
+                      <div className="space-y-1">
+                        <p className="text-[12px] font-medium text-muted-foreground/80">{readSearch.trim() ? `No books found for "${readSearch}"` : "Searching library…"}</p>
+                        <p className="text-[10px] text-muted-foreground/50">Books from Project Gutenberg</p>
                       </div>
-                    ))}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+
+            {/* ── Saved tab: YouTube articles ──────────────────────────── */}
+            {libraryTab === "saved" && (
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="p-3 space-y-2">
+                  {savedArticles.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "hsla(var(--neu-orange)/0.10)" }}>
+                        <svg className="w-5 h-5" style={{ color: "hsla(var(--neu-orange-hi)/0.50)" }} viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[12px] font-medium text-muted-foreground/80">No saved articles yet</p>
+                        <p className="text-[10px] text-muted-foreground/50">Extract a YouTube transcript and save it for later</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5" data-testid="section-saved-articles">
+                      {savedArticles.map((article) => (
+                        <div key={article.id} className="w-full flex items-start gap-2 p-2 rounded-lg border border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 text-left transition-colors group">
+                          <button
+                            className="flex items-start gap-2 flex-1 min-w-0 text-left"
+                            onClick={() => {
+                              const bookObj = { title: article.title, authors: [{ name: "YouTube" }], _isYtArticle: true, videoId: article.videoId, thumbnailUrl: article.thumbnailUrl };
+                              setSelectedBook(bookObj);
+                              setBookText(article.content);
+                              setCurrentYtThumbnail(article.thumbnailUrl);
+                              setArticleSaved(true);
+                              setWordInfo(null);
+                              setShowEReader(true);
+                              saveToReadingHistory({ ...bookObj, coverUrl: article.thumbnailUrl });
+                            }}
+                          >
+                            {article.thumbnailUrl ? (
+                              <img loading="lazy" decoding="async" src={article.thumbnailUrl} alt="" className="w-14 h-10 rounded object-cover flex-shrink-0 bg-muted" />
+                            ) : (
+                              <div className="w-14 h-10 rounded flex-shrink-0 flex items-center justify-center" style={{ background: "hsla(var(--neu-orange)/0.12)" }}>
+                                <svg className="w-4 h-4 text-orange-400/60" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-semibold line-clamp-2 leading-tight">{article.title}</p>
+                              <p className="text-[9px] text-muted-foreground mt-0.5">{new Date(article.createdAt).toLocaleDateString()} · {Math.ceil(article.content.split(" ").length / 200)} min read</p>
+                            </div>
+                          </button>
+                          <button onClick={() => deleteSavedArticle(article.id)} className="p-1 rounded opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-red-400 flex-shrink-0 mt-0.5" aria-label="Delete article">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+
+            {/* ── History tab: all read items with filter ───────────────── */}
+            {libraryTab === "history" && (
+              <div className="flex flex-col flex-1 min-h-0">
+                {readingHistory.length > 0 && (
+                  <div className="px-3 pt-2.5 pb-2 flex-shrink-0 flex items-center gap-2 border-b">
+                    <div className="relative flex-1">
+                      <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                      <Input value={historyFilter} onChange={(e) => setHistoryFilter(e.target.value)} placeholder="Filter history…" className="pl-6 text-xs h-7" data-testid="input-history-filter" />
+                    </div>
+                    <button onClick={() => { setReadingHistory([]); try { localStorage.removeItem("vextorn_reading_history"); } catch {} }} className="text-[9px] text-muted-foreground/50 hover:text-red-400 transition-colors flex-shrink-0" data-testid="button-clear-history">Clear all</button>
                   </div>
                 )}
-
-                {/* Reading History */}
-                {readingHistory.length > 0 && !readSearch.trim() && readBooks.length === 0 && ytReadResults.length === 0 && !readLoading && (
-                  <div className="space-y-1.5 pb-2" data-testid="section-reading-history">
-                    <div className="flex items-center justify-between px-1">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Recently Read
-                      </p>
-                      <button
-                        onClick={() => { setReadingHistory([]); try { localStorage.removeItem("vextorn_reading_history"); } catch {} }}
-                        className="text-[9px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                      >Clear</button>
-                    </div>
-                    {readingHistory.map((h) => (
-                      <div key={h.id} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/10 opacity-80 hover:opacity-100 transition-opacity">
-                        {h.coverUrl ? (
-                          <img loading="lazy" decoding="async" src={h.coverUrl} alt="" className="w-8 h-11 rounded object-cover flex-shrink-0 bg-muted" />
-                        ) : (
-                          <div className="w-8 h-11 rounded bg-muted flex-shrink-0 flex items-center justify-center">
-                            <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-medium line-clamp-2 leading-tight">{h.title}</p>
-                          {h.author && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{h.author}</p>}
-                          <p className="text-[9px] text-muted-foreground/60 mt-0.5">{new Date(h.lastReadAt).toLocaleDateString()}</p>
+                <ScrollArea className="flex-1 min-h-0">
+                  <div className="p-3 space-y-1.5" data-testid="section-reading-history">
+                    {readingHistory.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+                        <div className="w-10 h-10 rounded-full bg-muted/40 flex items-center justify-center"><Clock className="w-5 h-5 text-muted-foreground/50" /></div>
+                        <div className="space-y-1">
+                          <p className="text-[12px] font-medium text-muted-foreground/80">No reading history yet</p>
+                          <p className="text-[10px] text-muted-foreground/50">Books and articles you open will appear here</p>
                         </div>
                       </div>
-                    ))}
+                    ) : (
+                      readingHistory
+                        .filter(h => !historyFilter.trim() || h.title.toLowerCase().includes(historyFilter.toLowerCase()) || (h.author || "").toLowerCase().includes(historyFilter.toLowerCase()))
+                        .map((h) => (
+                          <button
+                            key={h.id}
+                            className="w-full flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/40 text-left transition-colors group"
+                            onClick={() => {
+                              if (h._isYtArticle) { setLibraryTab("saved"); }
+                              else if (h.formats) { loadBookText({ ...h, id: h.id, authors: [{ name: h.author }] }); }
+                            }}
+                            data-testid={`button-history-${h.id}`}
+                          >
+                            {h.coverUrl || h.thumbnailUrl ? (
+                              <img loading="lazy" decoding="async" src={(h.coverUrl || h.thumbnailUrl) as string} alt="" className="w-8 h-11 rounded object-cover flex-shrink-0 bg-muted" />
+                            ) : (
+                              <div className="w-8 h-11 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                                {h._isYtArticle
+                                  ? <svg className="w-3.5 h-3.5 text-red-400/60" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+                                  : <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                                }
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-medium line-clamp-2 leading-tight">{h.title}</p>
+                              {h.author && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{h.author}</p>}
+                              <p className="text-[9px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5 inline" />{new Date(h.lastReadAt).toLocaleDateString()}
+                                {h._isYtArticle && <span className="ml-1 rounded px-1 text-[8px] text-red-400/70 border border-red-400/20">YT</span>}
+                              </p>
+                            </div>
+                            {(h.formats || h._isYtArticle) && <ChevronRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-muted-foreground/70 flex-shrink-0 transition-colors" />}
+                          </button>
+                        ))
+                    )}
                   </div>
-                )}
-
-                {/* Pre-loaded classics — always shown when no search is active */}
-                {readBooks.length > 0 && ytReadResults.length === 0 && (
-                  <div className="space-y-1.5">
-                    <p className="text-[10px] font-semibold text-emerald-400/90 uppercase tracking-wide px-1 pb-0.5 flex items-center gap-1" data-testid="text-section-free">
-                      <BookOpen className="w-3 h-3" /> Free Classics — Project Gutenberg
-                    </p>
-                    {readBooks.map((book: any) => (
-                      <button
-                        key={book.id}
-                        onClick={() => loadBookText(book)}
-                        className="w-full flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/50 text-left transition-colors"
-                        data-testid={`button-book-${book.id}`}
-                      >
-                        {book.formats?.["image/jpeg"] ? (
-                          <img loading="lazy" decoding="async" src={book.formats["image/jpeg"]} alt="" className="w-12 h-16 rounded object-cover flex-shrink-0 bg-muted" />
-                        ) : (
-                          <div className="w-12 h-16 rounded bg-muted flex-shrink-0 flex items-center justify-center">
-                            <BookOpen className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold line-clamp-2">{book.title}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                            {book.authors?.map((a: any) => a.name).join(", ")}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            {book.download_count?.toLocaleString()} downloads
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Empty state — only shown when truly nothing is available */}
-                {readBooks.length === 0 && ytReadResults.length === 0 && savedArticles.length === 0 && !readLoading && !ytReadSearchLoading && readingHistory.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-10 gap-3 text-center" data-testid="section-empty-state">
-                    <div className="w-10 h-10 rounded-full bg-muted/40 flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-muted-foreground/50" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[12px] font-medium text-muted-foreground/80">
-                        {readSearch.trim() ? `No books found for "${readSearch}"` : "Loading your library…"}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground/50">
-                        Books from Project Gutenberg · Paste a YouTube URL above
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-
+                </ScrollArea>
               </div>
-            </ScrollArea>
+            )}
           </div>
         )}
       </div>
