@@ -12115,7 +12115,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {ytReadResults.map((v) => (
                         <button
                           key={v.id}
-                          onClick={() => handleYtToArticle(v.id, v.duration)}
+                          onClick={() => handleYtToArticle(`https://www.youtube.com/watch?v=${v.id}`, v.duration)}
                           disabled={ytArticleLoading}
                           className="w-full flex items-start gap-2.5 p-2 rounded-lg border border-border/50 hover:bg-muted/40 text-left transition-colors group disabled:opacity-50"
                           data-testid={`button-yt-result-${v.id}`}
