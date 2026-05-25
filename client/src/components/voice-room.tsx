@@ -2597,6 +2597,24 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [tabUnreadCount, setTabUnreadCount] = useState(0);
   const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
 
+  /* Seed per-sender unread counts from the server on mount so badges
+     appear on participant cards even for DMs received before this session. */
+  useEffect(() => {
+    if (!user) return;
+    fetch("/api/messages/conversations", { credentials: "include" })
+      .then(r => r.ok ? r.json() : [])
+      .then((convos: { otherUserId: string; unreadCount: number }[]) => {
+        const seed: Record<string, number> = {};
+        for (const c of convos) {
+          if (c.unreadCount > 0) seed[c.otherUserId] = c.unreadCount;
+        }
+        if (Object.keys(seed).length > 0) {
+          setDmUnreadCounts(prev => ({ ...seed, ...prev }));
+        }
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
   useEffect(() => {
     if (dmUserId) {
       setDmUnreadCounts(prev => { const next = { ...prev }; delete next[dmUserId]; return next; });
