@@ -9039,7 +9039,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const results = Array.isArray(data) ? data.slice(0, 8) : [];
       setYtReadResults(results);
       if (results.length === 0) {
-        setYtArticleError("No videos with captions found for that search. Try different keywords.");
+        setYtArticleError("No videos found for that search. Try different keywords.");
       }
     } catch { setYtReadResults([]); }
     finally { setYtReadSearchLoading(false); }
@@ -12035,14 +12035,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   {(readLoading || ytReadSearchLoading) && (
                     <div className="flex flex-col items-center justify-center py-8 gap-2">
                       <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                      {ytReadSearchLoading && <p className="text-[10px] text-muted-foreground/60">Checking which videos have captions…</p>}
+                      {ytReadSearchLoading && <p className="text-[10px] text-muted-foreground/60">Searching YouTube…</p>}
                     </div>
                   )}
                   {ytReadResults.length > 0 && !ytReadSearchLoading && (
                     <div className="space-y-1.5 pb-1" data-testid="section-yt-results">
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 flex items-center gap-1">
                         <svg className="w-3 h-3 flex-shrink-0 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
-                        Caption-verified — click to read
+                        Videos — click to read
                       </p>
                       {ytReadResults.map((v) => (
                         <button
@@ -12054,7 +12054,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         >
                           <div className="relative flex-shrink-0 w-16 h-10 rounded overflow-hidden bg-muted">
                             <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="w-full h-full object-cover" />
-                            <span className="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[8px] font-bold px-0.5 rounded leading-tight">CC</span>
                             {ytArticleLoading ? (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/50"><Loader2 className="w-3 h-3 animate-spin text-white" /></div>
                             ) : (
