@@ -438,15 +438,17 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
    Vertical stacked-segment VU meter — sits flush at bottom-right of card.
    SILENT  → completely invisible (nothing drawn at all).
    SPEAKING→ lit segments rise from bottom; soft cyan→violet→red gradient.
-   Fast: attack 0.88, decay 0.28, threshold 0.018. */
-const VU_SEGS    = 10;    // number of stacked segments
-const VU_SEG_GAP = 2;     // px gap between segments
-const VU_THRESH  = 0.018; // very sensitive noise floor
+   Gate: open at 0.072, close at 0.038 — immune to WebRTC background noise. */
+const VU_SEGS       = 10;    // number of stacked segments
+const VU_SEG_GAP    = 2;     // px gap between segments
+const VU_OPEN_GATE  = 0.072; // level must exceed this to start showing bars
+const VU_CLOSE_GATE = 0.038; // level must fall below this to hide bars again
 
 function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef    = useRef<number>(0);
-  const levelRef  = useRef<number>(0);
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
+  const rafRef     = useRef<number>(0);
+  const levelRef   = useRef<number>(0);
+  const gateOpen   = useRef<boolean>(false); // hysteresis gate state
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -465,15 +467,12 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
     const segRGB = (s: number): [number, number, number] => {
       const frac = s / (VU_SEGS - 1);
       if (frac < 0.45) {
-        // soft cyan → sky blue
         const t = frac / 0.45;
         return [Math.round(56 + t * 14), Math.round(189 - t * 40), Math.round(248 - t * 18)];
       } else if (frac < 0.75) {
-        // sky → violet
         const t = (frac - 0.45) / 0.30;
         return [Math.round(70 + t * 100), Math.round(149 - t * 80), Math.round(230 - t * 55)];
       } else {
-        // violet → warm red
         const t = (frac - 0.75) / 0.25;
         return [Math.round(170 + t * 69), Math.round(69 - t * 69), Math.round(175 - t * 145)];
       }
@@ -484,28 +483,35 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
       const H = canvas.height;
       ctx.clearRect(0, 0, W, H);
 
-      /* Compute overall RMS across voice-freq bins */
+      /* Compute RMS across voice-freq bins (300 Hz–4 kHz range) */
       let raw = 0;
       if (analyserNode && freqBuf) {
         analyserNode.getByteFrequencyData(freqBuf);
-        const maxBin = Math.min(40, freqBuf.length);
+        const sr      = analyserNode.context.sampleRate;
+        const binHz   = sr / analyserNode.fftSize;
+        const loB     = Math.max(1, Math.round(300  / binHz));
+        const hiB     = Math.min(freqBuf.length - 1, Math.round(4000 / binHz));
         let sumSq = 0;
-        for (let b = 1; b < maxBin; b++) sumSq += (freqBuf[b] / 255) ** 2;
-        raw = Math.pow(Math.sqrt(sumSq / (maxBin - 1)), 0.45);
+        for (let b = loB; b <= hiB; b++) sumSq += (freqBuf[b] / 255) ** 2;
+        raw = Math.pow(Math.sqrt(sumSq / (hiB - loB + 1)), 0.50);
       }
 
-      /* Fast attack, fast decay */
+      /* Fast attack (0.85), slower decay (0.22) */
       const prev = levelRef.current;
-      levelRef.current = prev + (raw - prev) * (raw > prev ? 0.88 : 0.28);
+      levelRef.current = prev + (raw - prev) * (raw > prev ? 0.85 : 0.22);
       const level = levelRef.current;
 
-      /* Completely silent — draw nothing */
-      if (level < VU_THRESH) {
+      /* Hysteresis gate: open when loud enough, close when quiet enough */
+      if (!gateOpen.current && level >= VU_OPEN_GATE)  gateOpen.current = true;
+      if ( gateOpen.current && level <  VU_CLOSE_GATE) gateOpen.current = false;
+
+      /* Draw nothing when gate is closed */
+      if (!gateOpen.current) {
         rafRef.current = requestAnimationFrame(draw);
         return;
       }
 
-      const normalized = Math.min(1, (level - VU_THRESH) / (1 - VU_THRESH));
+      const normalized = Math.min(1, (level - VU_CLOSE_GATE) / (1 - VU_CLOSE_GATE));
       const litCount   = Math.max(1, Math.round(normalized * VU_SEGS));
       const segH = Math.max(3, (H - (VU_SEGS - 1) * VU_SEG_GAP) / VU_SEGS);
       const r    = Math.min(W / 2, 2);
