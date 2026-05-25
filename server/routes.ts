@@ -2635,6 +2635,52 @@ export async function registerRoutes(
   const _ytArticleCache = new Map<string, { ts: number; title: string; text: string; thumbnailUrl?: string }>();
   const YT_ARTICLE_TTL = 30 * 60 * 1000; // 30 min
 
+  // ── YouTube cookie jar ────────────────────────────────────────────────────
+  // YouTube detects datacenter IPs and hides caption tracks unless requests
+  // carry browser-like cookies (CONSENT, SOCS, VISITOR_INFO1_LIVE, etc.).
+  // We warm these cookies once at first use and refresh them every 30 min.
+  let _ytCookieCache: { ts: number; cookie: string } | null = null;
+  const YT_COOKIE_TTL = 30 * 60 * 1000;
+
+  const getYtCookies = async (): Promise<string> => {
+    if (_ytCookieCache && Date.now() - _ytCookieCache.ts < YT_COOKIE_TTL) {
+      return _ytCookieCache.cookie;
+    }
+    try {
+      // Fetch consent page to get initial cookies that bypass consent gate
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch("https://www.youtube.com/", {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        signal: ctrl.signal,
+        redirect: "follow",
+      });
+      clearTimeout(t);
+      const setCookieHeaders = r.headers.getSetCookie?.() || [];
+      const rawCookies = setCookieHeaders
+        .map((h: string) => h.split(";")[0].trim())
+        .filter(Boolean);
+      // Always include SOCS=CAI to accept all cookies (bypasses consent modal)
+      if (!rawCookies.some((c: string) => c.startsWith("SOCS="))) {
+        rawCookies.push("SOCS=CAI");
+      }
+      if (!rawCookies.some((c: string) => c.startsWith("CONSENT="))) {
+        rawCookies.push("CONSENT=YES+cb");
+      }
+      const cookie = rawCookies.join("; ");
+      _ytCookieCache = { ts: Date.now(), cookie };
+      return cookie;
+    } catch {
+      const fallback = "SOCS=CAI; CONSENT=YES+cb";
+      _ytCookieCache = { ts: Date.now(), cookie: fallback };
+      return fallback;
+    }
+  };
+
   function extractYtId(input: string): string | null {
     const patterns = [
       /(?:youtu\.be\/)([A-Za-z0-9_-]{11})/,
@@ -2729,69 +2775,150 @@ export async function registerRoutes(
     };
 
     try {
-      // ── Strategy A: youtube-transcript npm package (most reliable) ────────────
+      // ── Strategy A0: ANDROID_VR InnerTube (best bypass rate from server IPs) ──
+      // The ANDROID_VR InnerTube client (Oculus Quest) returns OK + signed caption
+      // track URLs for videos with accessible captions, even from datacenter IPs.
+      // Returns signed timedtext URLs that work without further auth.
+      const vrBody = {
+        context: {
+          client: {
+            clientName: "ANDROID_VR",
+            clientVersion: "1.57.29",
+            deviceMake: "Oculus",
+            deviceModel: "Quest 3",
+            androidSdkVersion: 32,
+            hl: "en",
+            gl: "US",
+            timeZone: "UTC",
+            utcOffsetMinutes: 0,
+          },
+        },
+        videoId,
+        racyCheckOk: true,
+        contentCheckOk: true,
+      };
       try {
-        const { YoutubeTranscript } = await import("youtube-transcript");
-        const segments: Array<{ text: string }> = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
-        if (segments && segments.length > 10) {
-          const text = segmentsToArticle(segments);
-          if (text.length >= 100) {
-            title = await fetchTitle();
-            _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
-            return res.json({ title, text, thumbnailUrl });
+        const vrRes = await timedFetch(
+          "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "User-Agent": "com.google.android.apps.youtube.vr.oculus/1.57.29 (Linux; U; Android 12L; eureka-user Build/SP1A.210812.016) gzip",
+              "X-YouTube-Client-Name": "28",
+              "X-YouTube-Client-Version": "1.57.29",
+            },
+            body: JSON.stringify(vrBody),
+          }, 12000
+        );
+        if (vrRes.ok) {
+          const vrData: any = await vrRes.json();
+          if (vrData?.playabilityStatus?.status === "OK") {
+            const tracks: any[] = vrData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+            if (tracks.length > 0) {
+              // Prefer manual EN > any EN > any language; skip ASR (auto-generated) if manual exists
+              const manual = tracks.filter((t: any) => !t.kind || t.kind !== "asr");
+              const pool = manual.length > 0 ? manual : tracks;
+              const enTrack = pool.find((t: any) => t.languageCode === "en") || pool.find((t: any) => t.languageCode?.startsWith("en")) || pool[0];
+              if (enTrack?.baseUrl) {
+                // Try JSON3 first (structured), fall back to XML
+                const capRes = await timedFetch(`${enTrack.baseUrl}&fmt=json3`, {}, 10000);
+                if (capRes.ok) {
+                  const raw = await capRes.text();
+                  // The signed timedtext URL always returns XML timedtext format 3
+                  // which uses <p t="..." d="...">text</p> tags — NOT <text> tags.
+                  // Parse both <p> and legacy <text> formats for maximum compatibility.
+                  const parseTimedtextXml = (xml: string): Array<{ text: string }> => {
+                    const segs: Array<{ text: string }> = [];
+                    // Format 3: <p t="ms" d="ms">text content</p>
+                    for (const m of xml.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)) {
+                      const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'")
+                        .replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+                      if (t) segs.push({ text: t });
+                    }
+                    // Legacy format: <text start="..." dur="...">text</text>
+                    if (segs.length === 0) {
+                      for (const m of xml.matchAll(/<text[^>]*>([^<]*)<\/text>/g)) {
+                        const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'")
+                          .replace(/&quot;/g, '"').trim();
+                        if (t) segs.push({ text: t });
+                      }
+                    }
+                    return segs;
+                  };
+                  const xmlSegs = parseTimedtextXml(raw);
+                  const text = segmentsToArticle(xmlSegs);
+                  if (text && text.length >= 10) {
+                    title = await fetchTitle();
+                    _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+                    return res.json({ title, text, thumbnailUrl });
+                  }
+                }
+              }
+            }
           }
         }
-      } catch (e: any) {
-        // If language not found, try without lang preference
+      } catch { /* fall through to next strategy */ }
+
+      // ── Strategy A: youtube-transcript npm package with cookie-enriched fetch ─
+      // YouTube detects datacenter IPs and hides caption tracks for anonymous
+      // requests. Passing real browser cookies (SOCS, CONSENT, VISITOR_INFO1_LIVE)
+      // makes the request look like a browser and restores transcript access.
+      // We try English-specific first, then any language as fallback.
+      const cookieStr = await getYtCookies().catch(() => "SOCS=CAI; CONSENT=YES+cb");
+      const cookieFetch = (url: string | URL | Request, init?: RequestInit) =>
+        fetch(url, {
+          ...init,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Cookie": cookieStr,
+            ...(init?.headers as Record<string, string> || {}),
+          },
+        });
+
+      const tryYtTranscript = async (opts?: { lang: string }) => {
+        const { YoutubeTranscript } = await import("youtube-transcript");
+        const config: any = { fetch: cookieFetch, ...(opts || {}) };
+        return await YoutubeTranscript.fetchTranscript(videoId, config);
+      };
+
+      for (const opts of [{ lang: "en" }, undefined] as Array<{ lang: string } | undefined>) {
         try {
-          const { YoutubeTranscript } = await import("youtube-transcript");
-          const segments: Array<{ text: string }> = await YoutubeTranscript.fetchTranscript(videoId);
-          if (segments && segments.length > 10) {
+          const segments = await tryYtTranscript(opts);
+          if (segments && segments.length >= 1) {
             const text = segmentsToArticle(segments);
-            if (text.length >= 100) {
+            if (text.length >= 10) {
               title = await fetchTitle();
               _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
               return res.json({ title, text, thumbnailUrl });
             }
           }
-        } catch { /* fall through to strategy B */ }
+        } catch { /* try next option */ }
       }
 
-      // ── Strategy B: InnerTube timedtext API ───────────────────────────────────
-      const timedTextVariants = [
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en-US&fmt=json3`,
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=json3`,
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&tlang=en&fmt=json3`,
-      ];
-      for (const ttUrl of timedTextVariants) {
-        try {
-          const r = await timedFetch(ttUrl, { headers: YT_HEADERS }, 8000);
-          if (!r.ok) continue;
-          const raw = await r.text();
-          if (!raw || raw.trim().length < 20) continue;
-          let json: any = null;
-          try { json = JSON.parse(raw); } catch { continue; }
-          if (!json?.events || json.events.length <= 10) continue;
-          const text = eventsToArticle(json.events);
-          if (text.length < 100) continue;
-          title = await fetchTitle();
-          _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
-          return res.json({ title, text, thumbnailUrl });
-        } catch { /* try next */ }
-      }
-
-      // ── Strategy C: Scrape watch page for captionTracks ───────────────────────
+      // ── Strategy B: Scrape the watch page with cookies + scan for timedtext URLs
+      // Cookies obtained in Strategy A are reused here to get the browser-like
+      // page response that includes captionTracks in ytInitialPlayerResponse.
       const pageRes = await timedFetch(
         `https://www.youtube.com/watch?v=${videoId}`,
-        { headers: YT_HEADERS }, 15000
+        {
+          headers: {
+            ...YT_HEADERS,
+            "Cookie": cookieStr,
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Upgrade-Insecure-Requests": "1",
+          },
+        }, 15000
       );
       if (!pageRes.ok) {
         return res.status(502).json({ message: "Could not reach YouTube. Please try again in a moment." });
       }
       const html = await pageRes.text();
 
-      // Extract title
+      // Extract title from page
       const titlePatterns = [/"title":"([^"\\]{3,200})(?:\\[^"\\]|[^"\\])*?"/, /<title>([^<]+)<\/title>/];
       for (const p of titlePatterns) {
         const m = html.match(p);
@@ -2802,61 +2929,92 @@ export async function registerRoutes(
         }
       }
 
-      // Find the JSON blob containing captionTracks more robustly
+      // ── Direct timedtext URL scan (robust — no JSON parsing needed) ────────────
+      // YouTube embeds the caption track baseUrl values in the serialised page JS.
+      // We capture every "baseUrl":"…timedtext…" pattern in the entire HTML and
+      // also capture the adjacent "languageCode":"…" so we can prefer English.
       let captionUrl: string | null = null;
-      const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.{100,}?\});(?:\s*var\s|\s*window\[)/s)
-        || html.match(/ytInitialPlayerResponse\s*=\s*(\{.+\})\s*;\s*(?:var |window\.)/);
+      {
+        const allTracks: Array<{ url: string; lang: string }> = [];
 
-      if (playerResponseMatch?.[1]) {
-        try {
-          const playerData = JSON.parse(playerResponseMatch[1]);
-          const tracks: any[] = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-          const sorted = tracks.sort((a: any, b: any) => {
-            const aEn = (a.languageCode || "").startsWith("en") ? 0 : 1;
-            const bEn = (b.languageCode || "").startsWith("en") ? 0 : 1;
-            return aEn - bEn;
-          });
-          captionUrl = sorted[0]?.baseUrl?.replace(/\\u0026/g, "&") || null;
-        } catch { /* fall through to regex */ }
-      }
-
-      if (!captionUrl) {
-        // Regex fallback
-        const blockMatch = html.match(/"captionTracks":\[(.{10,}?)\](?=,\s*"(?:audioTracks|translationLanguages)")/s)
-          || html.match(/"captionTracks":\[([^\]]{10,})\]/);
-        if (blockMatch) {
-          const block = blockMatch[1];
-          const allTracks: Array<{ url: string; lang: string }> = [];
-          const rx = /"baseUrl":"(https?:[^"]+)"[^}]*?"languageCode":"([^"]+)"/g;
-          let m: RegExpExecArray | null;
-          while ((m = rx.exec(block)) !== null) {
-            allTracks.push({ url: m[1].replace(/\\u0026/g, "&"), lang: m[2] });
-          }
-          if (allTracks.length === 0) {
-            const rx2 = /"baseUrl":"(https?:\/\/[^"]+timedtext[^"]+)"/g;
-            while ((m = rx2.exec(html)) !== null) {
-              allTracks.push({ url: m[1].replace(/\\u0026/g, "&"), lang: "??" });
-            }
-          }
-          const preferred = allTracks.sort((a, b) =>
-            (a.lang.startsWith("en") ? 0 : 1) - (b.lang.startsWith("en") ? 0 : 1)
-          );
-          captionUrl = preferred[0]?.url || null;
+        // Primary scan: find baseUrl + nearby languageCode in the same JSON segment
+        const rx = /"baseUrl":"(https?:\/\/[^"]*timedtext[^"]*)"(?:[^{}]{0,300}?"languageCode":"([^"]+)")?/g;
+        let m: RegExpExecArray | null;
+        while ((m = rx.exec(html)) !== null) {
+          const url = m[1].replace(/\\u0026/g, "&").replace(/\\\//g, "/");
+          const lang = m[2] || (() => {
+            const lm = url.match(/[?&]lang=([^&]+)/);
+            return lm?.[1] || "??";
+          })();
+          allTracks.push({ url, lang });
         }
+
+        // Fallback scan: any timedtext URL in the page (catches edge cases)
+        if (allTracks.length === 0) {
+          const rx2 = /"(https?:\/\/[^"]*timedtext[^"]*)"/g;
+          while ((m = rx2.exec(html)) !== null) {
+            const url = m[1].replace(/\\u0026/g, "&").replace(/\\\//g, "/");
+            const lm = url.match(/[?&]lang=([^&]+)/);
+            allTracks.push({ url, lang: lm?.[1] || "??" });
+          }
+        }
+
+        // Prefer English; among ties prefer manual over auto (kind=asr is auto)
+        const ranked = allTracks.sort((a, b) => {
+          const aEn = a.lang.startsWith("en") ? 0 : 1;
+          const bEn = b.lang.startsWith("en") ? 0 : 1;
+          if (aEn !== bEn) return aEn - bEn;
+          const aAuto = a.url.includes("kind=asr") ? 1 : 0;
+          const bAuto = b.url.includes("kind=asr") ? 1 : 0;
+          return aAuto - bAuto;
+        });
+        captionUrl = ranked[0]?.url || null;
       }
 
       if (!captionUrl) {
         return res.status(422).json({
-          message: "No captions available for this video. Try a video with subtitles or auto-captions (CC) enabled."
+          message: "YouTube is restricting transcript access for this video from our server. Try a different video — ones with manually uploaded English subtitles (CC icon in YouTube) tend to work best."
         });
       }
 
-      const capRes = await timedFetch(captionUrl + (captionUrl.includes("fmt=") ? "" : "&fmt=json3"), { headers: YT_HEADERS }, 10000);
-      if (!capRes.ok) return res.status(502).json({ message: "Could not download captions. Please try another video." });
+      // Fetch the caption data — prefer json3 format for structured events
+      const capUrl = captionUrl.includes("fmt=") ? captionUrl : `${captionUrl}&fmt=json3`;
+      const capRes = await timedFetch(capUrl, { headers: YT_HEADERS }, 12000);
+      if (!capRes.ok) {
+        // Try xml format as last resort
+        const xmlUrl = captionUrl.replace(/&fmt=[^&]+/, "") + "&fmt=xml";
+        const xmlRes = await timedFetch(xmlUrl, { headers: YT_HEADERS }, 10000);
+        if (!xmlRes.ok) return res.status(502).json({ message: "Could not download captions. Please try another video." });
+        const xmlText = await xmlRes.text();
+        // Parse simple <text> tags from XML caption format
+        const xmlSegs = [...xmlText.matchAll(/<text[^>]*>([^<]*)<\/text>/g)]
+          .map(m => ({ text: m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim() }));
+        const text = segmentsToArticle(xmlSegs);
+        if (!text || text.length < 10) return res.status(422).json({ message: "Captions appear empty for this video. Try a different one." });
+        _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+        return res.json({ title, text, thumbnailUrl });
+      }
 
-      const capJson: any = await capRes.json();
-      const text = eventsToArticle(capJson?.events || []);
-      if (!text || text.length < 50) {
+      const capContentType = capRes.headers.get("content-type") || "";
+      let text = "";
+      if (capContentType.includes("json") || capUrl.includes("fmt=json3")) {
+        try {
+          const capJson: any = await capRes.json();
+          text = eventsToArticle(capJson?.events || []);
+        } catch {
+          const raw = await capRes.text();
+          const xmlSegs = [...raw.matchAll(/<text[^>]*>([^<]*)<\/text>/g)]
+            .map(m => ({ text: m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim() }));
+          text = segmentsToArticle(xmlSegs);
+        }
+      } else {
+        const raw = await capRes.text();
+        const xmlSegs = [...raw.matchAll(/<text[^>]*>([^<]*)<\/text>/g)]
+          .map(m => ({ text: m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim() }));
+        text = segmentsToArticle(xmlSegs);
+      }
+
+      if (!text || text.length < 10) {
         return res.status(422).json({ message: "Captions appear empty for this video. Try a different one." });
       }
 
@@ -2865,7 +3023,10 @@ export async function registerRoutes(
 
     } catch (err: any) {
       console.error("[yt-to-article] error:", err?.message || err);
-      return res.status(500).json({ message: "Failed to extract transcript. Please try again or choose a different video." });
+      const msg = err?.message?.includes("Too Many") || err?.message?.includes("captcha")
+        ? "YouTube is rate-limiting this server. Please try again in a few minutes."
+        : "Failed to extract transcript. YouTube may be restricting access — try a video with manually uploaded English subtitles.";
+      return res.status(500).json({ message: msg });
     }
   });
 
