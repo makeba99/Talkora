@@ -7996,12 +7996,15 @@ export async function registerRoutes(
       if (!participants || !participants.has(currentUserId)) return;
       if (data.book) {
         roomBookState.set(data.roomId, { book: data.book, hostId: currentUserId, scrollPct: 0, watchers: new Set([currentUserId]) });
+        // Include the authoritative watcher list (just the host at session start) so
+        // every client resets bookReaders instead of accumulating old-session entries.
+        io.to(data.roomId).emit("room:book", { book: data.book, hostId: currentUserId, scrollPct: 0, watchers: [currentUserId] });
       } else {
         if (roomBookState.get(data.roomId)?.hostId === currentUserId) {
           roomBookState.delete(data.roomId);
         }
+        io.to(data.roomId).emit("room:book", { book: null, hostId: null, scrollPct: 0, watchers: [] });
       }
-      io.to(data.roomId).emit("room:book", { book: data.book, hostId: data.book ? currentUserId : null, scrollPct: 0 });
     });
 
     socket.on("room:book-scroll", (data: { roomId: string; scrollPct: number }) => {

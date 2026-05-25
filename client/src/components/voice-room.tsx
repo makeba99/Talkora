@@ -4371,18 +4371,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         if (data.hostId !== user.id) {
           setBookHostId(data.hostId);
           setSharedBook(data.book);
+          // A new book session just started — reset follow state so stale
+          // isFollowingBook from a previous session doesn't gate the close emit.
+          setIsFollowingBook(false);
         }
-        // Populate bookReaders from the authoritative watcher list when available
+        // Always reset bookReaders to the authoritative list from the server.
+        // Using additive logic here caused old-session watcher IDs to linger
+        // in bookReaders when a new session replaced the previous one.
         if (data.watchers && data.watchers.length > 0) {
           setBookReaders(new Set(data.watchers));
         } else if (data.hostId !== user.id) {
-          setBookReaders(prev => { const n = new Set(prev); n.add(data.hostId!); return n; });
+          // Fallback (legacy server): reset to just the new host.
+          setBookReaders(new Set([data.hostId]));
         }
       } else if (!data.book) {
         setBookHostId(null);
         setSharedBook(null);
         setIsFollowingBook(false);
         setBookReaders(new Set());
+        // Close the e-reader for everyone except the host who triggered the close
+        // (they already closed it locally in handleCloseBook before emitting).
         if (data.hostId !== user.id) {
           setShowEReader(false);
           setSelectedBook(null);
@@ -8764,9 +8772,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setBookReaders(new Set());
       setBookHostId(null);
     } else {
-      if (isFollowingBook) {
-        socket?.emit("room:book-watching", { roomId: room.id, watching: false });
-      }
+      // Always notify the server when a non-host closes the reader.
+      // The old `if (isFollowingBook)` gate caused the emit to be skipped
+      // whenever isFollowingBook was stale (e.g. a new session had started
+      // mid-session), leaving this user's badge visible on everyone else's
+      // client until they disconnected from the room entirely.
+      socket?.emit("room:book-watching", { roomId: room.id, watching: false });
       setIsFollowingBook(false);
       setBookReaders(prev => { const n = new Set(prev); n.delete(user?.id || ""); return n; });
     }
