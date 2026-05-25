@@ -435,17 +435,21 @@ function WaveformCanvas({ analyserNode }: { analyserNode?: AnalyserNode }) {
 }
 
 /* ── MicVoiceBar ──────────────────────────────────────────────────────────────
-   6 vertical pill-bars arranged horizontally. Each bar's HEIGHT grows
-   bottom→top — classic spectrum-analyzer look, shown only for unmuted users.
-   Idle breathing animation plays when no live analyser is available yet.
-   Canvas is 36 × 18 px; glow fires only when volume is detected. */
-const MIC_BARS = 6;
+   Segmented VU-meter column: 10 small pill-segments stacked bottom→top.
+   Each segment lights up based on the smoothed volume level so they appear
+   to "raise up" with the voice — lower segments are always on, upper ones
+   only activate when loud enough. Shown only for unmuted users.
+   Canvas: 10 × 38 px (narrow column that fits the bottom-right slot). */
+const MIC_SEGS   = 10;   // total segments in the column
+const SEG_H      = 3;    // height of each segment px (canvas units)
+const SEG_GAP    = 1;    // gap between segments px
+const SEG_W      = 10;   // column width px
 
 function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef    = useRef<number>(0);
   const tRef      = useRef<number>(0);
-  const levelsRef = useRef<Float32Array>(new Float32Array(MIC_BARS).fill(0.12));
+  const volRef    = useRef<number>(0.05);  // smoothed volume 0-1
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -453,38 +457,29 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const W = canvas.width;   // 36
-    const H = canvas.height;  // 18
-
-    /* 6 bars × 4px wide, 2px gap, centered */
-    const BAR_W   = 4;
-    const GAP     = 2;
-    const TOTAL_W = MIC_BARS * BAR_W + (MIC_BARS - 1) * GAP; // = 34
-    const OX      = Math.floor((W - TOTAL_W) / 2);
-    const MAX_H   = H;
-    const MIN_H   = 2;
+    const W = canvas.width;   // 10
+    const H = canvas.height;  // 38
 
     if (analyserNode) {
-      analyserNode.smoothingTimeConstant = 0.65;
+      analyserNode.smoothingTimeConstant = 0.60;
       analyserNode.fftSize = 256;
     }
 
     const freqBuf = analyserNode
       ? new Uint8Array(analyserNode.frequencyBinCount)
       : null;
-    const levels = levelsRef.current;
 
-    /* Full pill (all corners rounded) */
-    const pill = (x: number, y: number, w: number, h: number, r: number) => {
-      const cr = Math.min(r, w / 2, h / 2);
+    /* Full pill helper */
+    const pill = (x: number, y: number, w: number, h: number) => {
+      const r = Math.min(h / 2, w / 2);
       ctx.beginPath();
-      ctx.moveTo(x + cr, y);
-      ctx.lineTo(x + w - cr, y);
-      ctx.arcTo(x + w, y,     x + w, y + cr,     cr);
-      ctx.arcTo(x + w, y + h, x + w - cr, y + h, cr);
-      ctx.lineTo(x + cr, y + h);
-      ctx.arcTo(x,     y + h, x, y + h - cr,     cr);
-      ctx.arcTo(x,     y,     x + cr, y,          cr);
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h);
+      ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.arcTo(x, y, x + r, y, r);
       ctx.closePath();
       ctx.fill();
     };
@@ -493,61 +488,66 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
       const t = tRef.current++;
       ctx.clearRect(0, 0, W, H);
 
-      let vol = 0;
+      let rawVol = 0;
 
       if (analyserNode && freqBuf) {
-        /* Real audio: vocal range ~85 Hz – 4 kHz across 6 bands */
         analyserNode.getByteFrequencyData(freqBuf);
+        /* Average vocal range bins: ~85 Hz – 4 kHz */
         const loB = 1, hiB = Math.min(22, freqBuf.length - 1);
-        for (let i = 0; i < MIC_BARS; i++) {
-          const bin     = Math.round(loB + (i / (MIC_BARS - 1)) * (hiB - loB));
-          const raw     = freqBuf[Math.min(bin, freqBuf.length - 1)] / 255;
-          const boosted = Math.pow(raw, 0.45);
-          const target  = Math.max(0.08, boosted);
-          const diff    = target - levels[i];
-          levels[i]    += diff * (diff > 0 ? 0.55 : 0.10); // fast attack, slow decay
-          vol          += levels[i];
-        }
-        vol /= MIC_BARS;
+        let sum = 0;
+        for (let b = loB; b <= hiB; b++) sum += freqBuf[b];
+        rawVol = sum / ((hiB - loB + 1) * 255);
+        rawVol = Math.pow(rawVol, 0.45);       // lift quiet speech
       } else {
-        /* Idle breathing ripple — gentle sine wave per bar */
-        for (let i = 0; i < MIC_BARS; i++) {
-          const p = t * 0.045 + i * 0.68;
-          levels[i] = 0.10
-            + Math.abs(Math.sin(p))              * 0.22
-            + Math.abs(Math.sin(p * 1.7 + 0.4)) * 0.08;
-        }
-        vol = 0.18;
+        /* Idle: gentle sinusoidal breath, peaks around 30-40% */
+        rawVol = 0.08 + Math.abs(Math.sin(t * 0.040)) * 0.26
+                      + Math.abs(Math.sin(t * 0.073)) * 0.10;
       }
 
-      const isSpeaking = vol > 0.22; // glow threshold
+      /* Smooth: fast attack, slow decay */
+      const prev = volRef.current;
+      volRef.current = prev + (rawVol - prev) * (rawVol > prev ? 0.55 : 0.12);
+      const vol = volRef.current;
 
-      for (let i = 0; i < MIC_BARS; i++) {
-        const lvl  = Math.max(0, Math.min(1, levels[i]));
-        const barH = Math.max(MIN_H, lvl * MAX_H);
-        const x    = OX + i * (BAR_W + GAP);
-        const y    = H - barH;
+      /* How many segments are "lit" (bottom is always 1) */
+      const litCount = Math.max(1, Math.round(vol * MIC_SEGS));
+      const isSpeaking = vol > 0.28;
 
-        /* Ghost track */
-        ctx.save();
-        ctx.fillStyle = "rgba(255,255,255,0.10)";
-        pill(x, 0, BAR_W, H, 2);
-        ctx.restore();
+      /* Total stack height */
+      const STACK = MIC_SEGS * SEG_H + (MIC_SEGS - 1) * SEG_GAP;
+      const baseY = H - 1;   // bottom anchor
 
-        /* Amber → violet gradient fill */
-        const gr = ctx.createLinearGradient(0, H, 0, 0);
-        gr.addColorStop(0,   `rgba(251,146,60,${0.78 + vol * 0.20})`);
-        gr.addColorStop(0.5, `rgba(192,132,252,${0.84 + vol * 0.14})`);
-        gr.addColorStop(1,   `rgba(124,58,237,${0.92 + vol * 0.08})`);
+      for (let s = 0; s < MIC_SEGS; s++) {
+        /* s=0 is bottom segment, s=MIC_SEGS-1 is top */
+        const y = baseY - (s + 1) * SEG_H - s * SEG_GAP;
+        const x = Math.floor((W - SEG_W) / 2);
+        const lit = s < litCount;
 
-        ctx.save();
-        if (isSpeaking) {
-          ctx.shadowBlur  = 4 + vol * 12;
-          ctx.shadowColor = `rgba(167,139,250,${0.50 + vol * 0.38})`;
+        /* t = 0 (bottom) → 1 (top) for gradient colour */
+        const frac = s / (MIC_SEGS - 1);
+
+        if (lit) {
+          /* Amber at bottom → violet at top */
+          const r = Math.round(251 - frac * (251 - 124));
+          const g = Math.round(146 - frac * (146 - 58));
+          const b = Math.round(60  + frac * (237 - 60));
+          const alpha = 0.82 + vol * 0.16;
+
+          ctx.save();
+          if (isSpeaking) {
+            ctx.shadowBlur  = 3 + vol * 9;
+            ctx.shadowColor = `rgba(${r},${g},${b},${0.55 + vol * 0.35})`;
+          }
+          ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+          pill(x, y, SEG_W, SEG_H);
+          ctx.restore();
+        } else {
+          /* Dim ghost segment */
+          ctx.save();
+          ctx.fillStyle = "rgba(255,255,255,0.09)";
+          pill(x, y, SEG_W, SEG_H);
+          ctx.restore();
         }
-        ctx.fillStyle = gr;
-        pill(x, y, BAR_W, barH, 2);
-        ctx.restore();
       }
 
       rafRef.current = requestAnimationFrame(draw);
@@ -560,8 +560,8 @@ function MicVoiceBar({ analyserNode }: { analyserNode?: AnalyserNode }) {
   return (
     <canvas
       ref={canvasRef}
-      width={36}
-      height={18}
+      width={SEG_W}
+      height={MIC_SEGS * SEG_H + (MIC_SEGS - 1) * SEG_GAP + 2}
       className="opacity-95 pointer-events-none"
       data-testid="mic-voice-bar"
     />
