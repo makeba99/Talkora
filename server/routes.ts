@@ -3325,10 +3325,18 @@ export async function registerRoutes(
     try {
       const userId = (req.user as any).id;
       await storage.markConversationRead(userId, req.params.otherUserId);
-      // Notify the original sender (otherUserId) that their messages have been seen
+      // Notify the original sender that their messages have been seen
       const senderSocketId = userSockets.get(req.params.otherUserId);
       if (senderSocketId) {
         io.to(senderSocketId).emit("dm:read", { readerId: userId });
+      }
+      // Notify the reader themselves (all their connected tabs/voice-room windows)
+      // so that any open room's participant-card badge clears immediately, even
+      // if the messages were read from the lobby header rather than from inside
+      // the room's DM panel.
+      const readerSocketId = userSockets.get(userId);
+      if (readerSocketId) {
+        io.to(readerSocketId).emit("dm:read-self", { otherUserId: req.params.otherUserId });
       }
       res.json({ success: true });
     } catch (err: any) {

@@ -1321,30 +1321,33 @@ function ParticipantCard({
           </div>
         )}
 
-        {/* DM unread badge on participant card — clickable, opens DM */}
+        {/* DM unread badge on participant card — clickable, opens DM.
+            Only the receiver sees this badge (sender check is in handleRoomDm).
+            Shape matches the reference design: red rounded-square with a
+            speech-bubble icon and unread count. */}
         {dmUnreadCount > 0 && (
           <button
-            className="absolute top-1 left-1 z-30 flex items-center gap-0.5 animate-in fade-in zoom-in-75 pointer-events-auto cursor-pointer"
+            className="absolute top-1 left-1 z-30 animate-in fade-in zoom-in-75 pointer-events-auto cursor-pointer"
             data-testid={`badge-room-dm-unread-${p.id}`}
-            title="Open message"
+            title={`${dmUnreadCount} unread message${dmUnreadCount !== 1 ? "s" : ""} — click to open`}
             onClick={(e) => {
               e.stopPropagation();
               if (onNavigateDm) onNavigateDm(dmFirstUnreadSenderId ?? p.id);
             }}
           >
             <div
-              className="flex items-center gap-0.5 px-1 py-0.5 rounded-full text-white font-bold hover:scale-110 transition-transform active:scale-95"
+              className="flex items-center gap-[3px] px-[5px] py-[3px] rounded text-white font-bold hover:scale-110 transition-transform active:scale-95"
               style={{
                 background: "linear-gradient(135deg,#ef4444 0%,#dc2626 100%)",
-                boxShadow: "0 0 8px rgba(239,68,68,0.6), 0 0 16px rgba(239,68,68,0.3)",
-                fontSize: "9px",
+                boxShadow: "0 0 8px rgba(239,68,68,0.7), 0 0 16px rgba(239,68,68,0.35)",
+                fontSize: "10px",
                 lineHeight: 1,
-                minWidth: "16px",
-                border: "1px solid rgba(255,255,255,0.22)",
+                minWidth: "20px",
+                border: "1.5px solid rgba(255,255,255,0.28)",
               }}
             >
-              <MessageSquare style={{ width: 8, height: 8 }} />
-              <span>{dmUnreadCount > 9 ? "9+" : dmUnreadCount}</span>
+              <MessageSquare style={{ width: 10, height: 10, flexShrink: 0 }} />
+              <span style={{ fontVariantNumeric: "tabular-nums" }}>{dmUnreadCount > 9 ? "9+" : dmUnreadCount}</span>
             </div>
           </button>
         )}
@@ -4847,18 +4850,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (msg.fromId === user.id) return;
       if (msg.toId !== user.id) return;
       if (blockedIdsRef.current.has(msg.fromId) || foreverBlockedIdsRef.current.has(msg.fromId)) return;
+      // Don't badge if the DM panel is already open for this sender
+      if (dmUserId === msg.fromId) return;
       const fromUser = participants.find(p => p.id === msg.fromId) as User | undefined;
       if (roomDmTimerRef.current) clearTimeout(roomDmTimerRef.current);
       setRoomDmNotification({ fromId: msg.fromId, text: msg.text, fromUser });
       roomDmTimerRef.current = setTimeout(() => setRoomDmNotification(null), 7000);
       setDmUnreadCounts(prev => ({ ...prev, [msg.fromId]: (prev[msg.fromId] || 0) + 1 }));
     };
+    // Clears a sender's badge when messages are read from anywhere — the lobby
+    // header, the room's own DM panel, or another open tab. The server emits
+    // "dm:read-self" to the reader's socket whenever POST /api/messages/read/:id
+    // is called, regardless of which surface triggered the read.
+    const handleDmReadSelf = (data: { otherUserId: string }) => {
+      setDmUnreadCounts(prev => {
+        if (!prev[data.otherUserId]) return prev;
+        const next = { ...prev };
+        delete next[data.otherUserId];
+        return next;
+      });
+    };
     socket.on("dm:new", handleRoomDm);
+    socket.on("dm:read-self", handleDmReadSelf);
     return () => {
       socket.off("dm:new", handleRoomDm);
+      socket.off("dm:read-self", handleDmReadSelf);
       if (roomDmTimerRef.current) clearTimeout(roomDmTimerRef.current);
     };
-  }, [socket, user, participants]);
+  }, [socket, user, participants, dmUserId]);
 
   useEffect(() => {
     if (!socket || !user) return;
