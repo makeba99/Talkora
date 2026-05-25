@@ -2696,6 +2696,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [readCatalog, setReadCatalog] = useState<any[]>([]);
   const [readAudiobooks, setReadAudiobooks] = useState<any[]>([]);
   const [readVideos, setReadVideos] = useState<any[]>([]);
+  /* Discovery content — shown when a search returns zero results */
+  const [discoveryBooks, setDiscoveryBooks] = useState<any[]>([]);
+  const [discoveryAudiobooks, setDiscoveryAudiobooks] = useState<any[]>([]);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [audioPlayer, setAudioPlayer] = useState<{
     book: any;
     chapters: Array<{ n: number; title: string; url: string; duration: string | null }>;
@@ -8802,6 +8806,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } catch { setReadBooks([]); } finally { setReadLoading(false); }
   };
 
+  const loadDiscovery = async () => {
+    if (discoveryBooks.length > 0 || discoveryLoading) return;
+    setDiscoveryLoading(true);
+    try {
+      /* Fetch popular books and audiobooks in parallel */
+      const [booksRes, audioRes] = await Promise.all([
+        fetch(`/api/library/search`, { credentials: "include" }),
+        fetch(`/api/library/search?q=classic+literature`, { credentials: "include" }),
+      ]);
+      const [booksData, audioData] = await Promise.all([booksRes.json(), audioRes.json()]);
+      setDiscoveryBooks((booksData.books || []).slice(0, 6));
+      setDiscoveryAudiobooks((audioData.audiobooks || []).slice(0, 4));
+    } catch { /* silent — UI stays empty */ } finally { setDiscoveryLoading(false); }
+  };
+
   const searchGutenberg = async (query: string) => {
     if (!query.trim()) {
       setReadBooks([]);
@@ -11652,13 +11671,120 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </div>
                 )}
 
-                {readBooks.length === 0 && readAudiobooks.length === 0 && readVideos.length === 0 && !readLoading && readingHistory.length === 0 && (
-                  <div className="text-center py-8 space-y-2 text-muted-foreground">
-                    <BookOpen className="w-8 h-8 mx-auto opacity-30" />
-                    <p className="text-xs">No matches. Try a different search.</p>
-                    <button onClick={loadDefaultBooks} className="text-xs text-primary hover:underline" data-testid="link-browse-bestsellers">Browse bestsellers</button>
-                  </div>
-                )}
+                {readBooks.length === 0 && readAudiobooks.length === 0 && readVideos.length === 0 && !readLoading && readingHistory.length === 0 && (() => {
+                  /* Auto-trigger discovery the first time this state is visible */
+                  if (!discoveryLoading && discoveryBooks.length === 0 && discoveryAudiobooks.length === 0) {
+                    setTimeout(loadDiscovery, 0);
+                  }
+                  return (
+                    <div className="space-y-4" data-testid="section-discovery">
+                      {/* Subtle "no exact match" notice only when there was a search */}
+                      {readSearch.trim() && (
+                        <div className="flex items-center gap-2 px-1 pt-1">
+                          <div className="flex-1 h-px bg-border/40" />
+                          <p className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
+                            No exact matches for "{readSearch}"
+                          </p>
+                          <div className="flex-1 h-px bg-border/40" />
+                        </div>
+                      )}
+
+                      {discoveryLoading && (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground/50" />
+                        </div>
+                      )}
+
+                      {/* ── Section 1: Free readable books ── */}
+                      {discoveryBooks.length > 0 && (
+                        <div className="space-y-2" data-testid="section-discovery-books">
+                          <div className="flex items-center gap-2 px-1">
+                            <BookOpen className="w-3.5 h-3.5 text-emerald-400/80" />
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400/90">
+                              Free Books — Read Now
+                            </p>
+                            <span className="text-[9px] text-muted-foreground/50 ml-auto">Project Gutenberg</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {discoveryBooks.map((book: any) => (
+                              <button
+                                key={book.id}
+                                onClick={() => loadBookText(book)}
+                                className="flex flex-col rounded-lg border border-border/50 bg-muted/10 hover:bg-muted/40 hover:border-emerald-500/30 transition-all text-left overflow-hidden group"
+                                data-testid={`button-discovery-book-${book.id}`}
+                              >
+                                {book.formats?.["image/jpeg"] ? (
+                                  <img
+                                    loading="lazy"
+                                    decoding="async"
+                                    src={book.formats["image/jpeg"]}
+                                    alt=""
+                                    className="w-full h-24 object-cover bg-muted group-hover:scale-[1.02] transition-transform duration-200"
+                                  />
+                                ) : (
+                                  <div className="w-full h-24 bg-muted/30 flex items-center justify-center">
+                                    <BookOpen className="w-6 h-6 text-muted-foreground/40" />
+                                  </div>
+                                )}
+                                <div className="p-1.5 flex-1">
+                                  <p className="text-[10px] font-semibold line-clamp-2 leading-tight">{book.title}</p>
+                                  <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
+                                    {book.authors?.map((a: any) => a.name).join(", ")}
+                                  </p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Section 2: Free audiobooks ── */}
+                      {discoveryAudiobooks.length > 0 && (
+                        <div className="space-y-2" data-testid="section-discovery-audiobooks">
+                          <div className="flex items-center gap-2 px-1">
+                            <Headphones className="w-3.5 h-3.5" style={{ color: "hsla(var(--neu-orange-hi) / 0.85)" }} />
+                            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "hsla(var(--neu-orange-hi) / 0.90)" }}>
+                              Free Audiobooks — Play in Room
+                            </p>
+                          </div>
+                          <div className="space-y-1.5">
+                            {discoveryAudiobooks.map((a: any) => (
+                              <button
+                                key={a.id}
+                                onClick={() => handleOpenAudiobook(a)}
+                                className="w-full flex items-center gap-2.5 p-2 rounded-lg border border-border/50 hover:bg-muted/40 text-left transition-colors group"
+                                data-testid={`button-discovery-audiobook-${a.id}`}
+                              >
+                                <div
+                                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform"
+                                  style={{ background: "hsla(var(--neu-orange) / 0.14)", border: "1px solid hsla(var(--neu-orange) / 0.28)" }}
+                                >
+                                  <Headphones className="w-4 h-4" style={{ color: "hsla(var(--neu-orange-hi) / 0.88)" }} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] font-semibold line-clamp-1">{a.title}</p>
+                                  {a.author && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{a.author}</p>}
+                                </div>
+                                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "hsla(var(--neu-orange) / 0.20)" }}>
+                                  <svg className="w-2.5 h-2.5 ml-0.5" fill="currentColor" viewBox="0 0 8 10" style={{ color: "hsla(var(--neu-orange-hi) / 0.88)" }}>
+                                    <path d="M0 0l8 5-8 5z" />
+                                  </svg>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fallback if discovery also returned nothing */}
+                      {!discoveryLoading && discoveryBooks.length === 0 && discoveryAudiobooks.length === 0 && (
+                        <div className="text-center py-6 text-muted-foreground/50">
+                          <p className="text-[11px]">Try one of the genre filters above</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {readBooks.length > 0 && !readSearch.trim() && (
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pb-1">📚 Free Classics (Project Gutenberg)</p>
                 )}
