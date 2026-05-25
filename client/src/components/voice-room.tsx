@@ -15059,76 +15059,80 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
               {/* Paginated book content */}
               <div
-                className="flex-1 min-h-0 overflow-hidden flex flex-col"
+                className="flex-1 min-h-0 overflow-hidden relative"
                 onMouseUp={handleReaderMouseUp}
               >
-                {/* Page text area */}
-                <div className="flex-1 min-h-0 overflow-hidden relative">
-                  {bookLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <Loader2 className="w-6 h-6 animate-spin opacity-40" />
+                {bookLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="w-6 h-6 animate-spin opacity-40" />
+                  </div>
+                ) : bookPages.length > 0 ? (
+                  <div className="h-full overflow-hidden px-16 pt-7 pb-8">
+                    <div
+                      className="leading-relaxed whitespace-pre-wrap select-text overflow-hidden h-full"
+                      style={{
+                        fontSize: eReaderFontSize,
+                        lineHeight: 1.9,
+                        fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
+                        letterSpacing: "0.02em",
+                        color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
+                      }}
+                    >
+                      {bookPages[currentPage - 1]}
                     </div>
-                  ) : bookPages.length > 0 ? (
-                    <div className="h-full overflow-hidden px-10 pt-7 pb-3">
-                      <div
-                        className="leading-relaxed whitespace-pre-wrap select-text overflow-hidden h-full"
-                        style={{
-                          fontSize: eReaderFontSize,
-                          lineHeight: 1.9,
-                          fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
-                          letterSpacing: "0.02em",
-                          color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
-                        }}
-                      >
-                        {bookPages[currentPage - 1]}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full opacity-50">
-                      <p className="text-sm" style={{ fontFamily: "Georgia, serif" }}>Could not load content. Try another title.</p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full opacity-50">
+                    <p className="text-sm" style={{ fontFamily: "Georgia, serif" }}>Could not load content. Try another title.</p>
+                  </div>
+                )}
 
-                {/* Page navigation */}
+                {/* Side navigation arrows — vertically centred */}
                 {!bookLoading && bookPages.length > 0 && (
-                  <div
-                    className="flex-shrink-0 flex items-center justify-between px-6 py-2 border-t select-none"
-                    style={{
-                      background: eReaderTheme === "sepia" ? "#e8d9bc" : eReaderTheme === "light" ? "#ececec" : "#0f0f0f",
-                      borderColor: eReaderTheme === "dark" ? "#333" : "#c8b488",
-                    }}
-                  >
+                  <>
                     <button
                       onClick={() => goToPage(currentPage - 1)}
                       disabled={currentPage <= 1}
-                      className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all disabled:opacity-25 hover:opacity-70"
-                      style={{ color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a" }}
+                      className="absolute left-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none hover:scale-110 select-none"
+                      style={{
+                        background: eReaderTheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                        boxShadow: eReaderTheme === "dark" ? "0 0 0 1px rgba(255,255,255,0.08)" : "0 0 0 1px rgba(0,0,0,0.08)",
+                      }}
                       data-testid="button-ereader-prev-page"
                       title="Previous page (← key)"
                     >
-                      <ChevronLeft className="w-3 h-3" /> Prev
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
-
-                    <span
-                      className="text-[11px] font-medium opacity-50"
-                      style={{ fontFamily: "Georgia, 'Palatino Linotype', serif" }}
-                      data-testid="text-ereader-page-info"
-                    >
-                      {currentPage} / {bookPages.length}
-                    </span>
 
                     <button
                       onClick={() => goToPage(currentPage + 1)}
                       disabled={currentPage >= bookPages.length}
-                      className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all disabled:opacity-25 hover:opacity-70"
-                      style={{ color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a" }}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none hover:scale-110 select-none"
+                      style={{
+                        background: eReaderTheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                        boxShadow: eReaderTheme === "dark" ? "0 0 0 1px rgba(255,255,255,0.08)" : "0 0 0 1px rgba(0,0,0,0.08)",
+                      }}
                       data-testid="button-ereader-next-page"
                       title="Next page (→ key)"
                     >
-                      Next <ChevronRight className="w-3 h-3" />
+                      <ChevronRight className="w-4 h-4" />
                     </button>
-                  </div>
+
+                    {/* Page counter — subtle, bottom-centre */}
+                    <div
+                      className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-medium select-none pointer-events-none"
+                      style={{
+                        fontFamily: "Georgia, 'Palatino Linotype', serif",
+                        color: eReaderTheme === "dark" ? "rgba(200,184,144,0.4)" : "rgba(90,60,20,0.35)",
+                        letterSpacing: "0.08em",
+                      }}
+                      data-testid="text-ereader-page-info"
+                    >
+                      {currentPage} / {bookPages.length}
+                    </div>
+                  </>
                 )}
               </div>
 
