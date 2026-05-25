@@ -1504,6 +1504,81 @@ export async function registerRoutes(
     }
   });
 
+  // Caption-filtered YouTube search — only returns videos that have captions/transcripts
+  // available (manual subtitles or auto-generated CC). Used by the Read Together feature
+  // so users never land on a video that can't be converted to an article.
+  app.get("/api/youtube/read-search", isAuthenticated, async (req: any, res) => {
+    try {
+      const query = (req.query.q as string || "").trim();
+      if (!query) return res.json([]);
+
+      const cacheKey = `yt:read-search:${query.toLowerCase()}`;
+      const cached = externalCache.get(cacheKey);
+      if (cached) return res.json(cached);
+
+      const ytSearch = await import("youtube-search-api");
+      const results = await ytSearch.GetListByKeyword(query, false, 30);
+      const candidates = (results.items || [])
+        .filter((item: any) => item.type === "video" && item.id)
+        .slice(0, 25)
+        .map((item: any) => ({
+          id: item.id,
+          title: item.title || "",
+          thumbnail: item.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${item.id}/mqdefault.jpg`,
+          channelTitle: item.channelTitle || "",
+          duration: item.length?.simpleText || "",
+        }));
+
+      // Check captions in parallel (batches of 8 to avoid rate-limiting).
+      // We probe the YouTube timedtext API — it returns a non-empty JSON3 body
+      // when captions exist and an empty/error body when they don't.
+      const hasCaptions = async (videoId: string): Promise<boolean> => {
+        const probes = [
+          `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
+          `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=json3`,
+          `https://www.youtube.com/api/timedtext?v=${videoId}&fmt=json3`,
+        ];
+        const ttHeaders = {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9",
+        };
+        for (const url of probes) {
+          try {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 4000);
+            const r = await fetch(url, { headers: ttHeaders, signal: ctrl.signal });
+            clearTimeout(t);
+            if (!r.ok) continue;
+            const raw = await r.text();
+            if (!raw || raw.trim().length < 20) continue;
+            // A valid json3 caption track has "events" with segments
+            let json: any = null;
+            try { json = JSON.parse(raw); } catch { continue; }
+            if (json?.events && json.events.length > 5) return true;
+          } catch { /* try next probe */ }
+        }
+        return false;
+      };
+
+      // Process candidates in parallel batches of 8
+      const withCaptions: typeof candidates = [];
+      for (let i = 0; i < candidates.length && withCaptions.length < 8; i += 8) {
+        const batch = candidates.slice(i, i + 8);
+        const checks = await Promise.all(batch.map(v => hasCaptions(v.id)));
+        for (let j = 0; j < batch.length; j++) {
+          if (checks[j]) withCaptions.push(batch[j]);
+          if (withCaptions.length >= 8) break;
+        }
+      }
+
+      externalCache.set(cacheKey, withCaptions, 10 * 60_000); // cache 10 min
+      res.json(withCaptions);
+    } catch (err: any) {
+      console.error("YouTube read-search error:", err);
+      res.status(500).json({ message: "Failed to search YouTube" });
+    }
+  });
+
   app.get("/api/youtube/suggestions", isAuthenticated, async (req: any, res) => {
     try {
       const q = (req.query.q as string || "").trim();
