@@ -2772,6 +2772,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [ytArticleLoading, setYtArticleLoading] = useState(false);
   const [ytArticleError, setYtArticleError] = useState("");
   const [ytConvertStep, setYtConvertStep] = useState(0); // 0=idle 1=connecting 2=captions 3=building
+  const [ytConvertingId, setYtConvertingId] = useState<string | null>(null);
   /* YouTube read-search */
   const [ytReadSearch, setYtReadSearch] = useState("");
   const [ytReadResults, setYtReadResults] = useState<Array<{ id: string; title: string; thumbnail: string; channelTitle: string; duration: string }>>([]);
@@ -9010,7 +9011,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     } catch { /* silent */ }
   };
 
-  const handleYtToArticle = async (videoId: string, durationStr = "") => {
+  const handleYtToArticle = async (videoId: string, durationStr = "", sourceId?: string) => {
     if (!videoId) return;
 
     // Warn the user if the video is long before starting
@@ -9029,6 +9030,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setYtArticleLoading(true);
     setYtArticleError("");
     setYtConvertStep(1);
+    setYtConvertingId(sourceId || videoId);
     setArticleSaved(false);
     setCurrentYtThumbnail(null);
 
@@ -9071,22 +9073,32 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setYtArticleError("Failed to connect. Please try again.");
       setYtConvertStep(0);
     }
-    finally { setYtArticleLoading(false); }
+    finally { setYtArticleLoading(false); setYtConvertingId(null); }
   };
 
   const searchYtRead = async (q: string) => {
     if (!q.trim()) { setYtReadResults([]); return; }
     setYtReadSearchLoading(true);
     setYtArticleError("");
+    // Always surface results in the library tab
+    setLibraryTab("library");
     try {
       const res = await fetch(`/api/youtube/read-search?q=${encodeURIComponent(q)}`, { credentials: "include" });
+      if (!res.ok) {
+        setYtArticleError("YouTube search failed. Please try again.");
+        setYtReadResults([]);
+        return;
+      }
       const data = await res.json();
       const results = Array.isArray(data) ? data.slice(0, 8) : [];
       setYtReadResults(results);
       if (results.length === 0) {
         setYtArticleError("No videos found for that search. Try different keywords.");
       }
-    } catch { setYtReadResults([]); }
+    } catch {
+      setYtReadResults([]);
+      setYtArticleError("Could not reach YouTube. Check your connection and try again.");
+    }
     finally { setYtReadSearchLoading(false); }
   };
 
@@ -12112,29 +12124,42 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         <svg className="w-3 h-3 flex-shrink-0 text-red-400" viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
                         Videos — click to read
                       </p>
-                      {ytReadResults.map((v) => (
+                      {ytReadResults.map((v) => {
+                        const isThisConverting = ytConvertingId === v.id;
+                        const isOtherConverting = ytArticleLoading && !isThisConverting;
+                        return (
                         <button
                           key={v.id}
-                          onClick={() => handleYtToArticle(`https://www.youtube.com/watch?v=${v.id}`, v.duration)}
+                          onClick={() => {
+                            if (!ytArticleLoading) {
+                              setYtArticleError("");
+                              handleYtToArticle(`https://www.youtube.com/watch?v=${v.id}`, v.duration, v.id);
+                            }
+                          }}
                           disabled={ytArticleLoading}
                           className="w-full flex items-start gap-2.5 p-2 rounded-lg border border-border/50 hover:bg-muted/40 text-left transition-colors group disabled:opacity-50"
+                          style={isThisConverting ? { borderColor: "hsla(var(--neu-orange)/0.5)", background: "hsla(var(--neu-orange)/0.06)" } : undefined}
                           data-testid={`button-yt-result-${v.id}`}
                         >
                           <div className="relative flex-shrink-0 w-16 h-10 rounded overflow-hidden bg-muted">
                             <img loading="lazy" decoding="async" src={v.thumbnail} alt="" className="w-full h-full object-cover" />
-                            {ytArticleLoading ? (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/50"><Loader2 className="w-3 h-3 animate-spin text-white" /></div>
-                            ) : (
+                            {isThisConverting ? (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/60"><Loader2 className="w-3 h-3 animate-spin text-white" /></div>
+                            ) : isOtherConverting ? null : (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity"><BookOpen className="w-3.5 h-3.5 text-white" /></div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[11px] font-semibold line-clamp-2 leading-tight">{v.title}</p>
                             {v.channelTitle && <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{v.channelTitle}</p>}
-                            {v.duration && <p className="text-[9px] text-muted-foreground/60 mt-0.5">{v.duration}</p>}
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {v.duration && <p className="text-[9px] text-muted-foreground/60">{v.duration}</p>}
+                              {isThisConverting && <p className="text-[9px]" style={{ color: "hsla(var(--neu-orange-hi)/0.85)" }}>Converting…</p>}
+                            </div>
                           </div>
                         </button>
-                      ))}
+                        );
+                      })}
                       <button onClick={() => { setYtReadResults([]); setYtReadSearch(""); }} className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground w-full text-center pt-0.5 transition-colors">Clear results</button>
                     </div>
                   )}
