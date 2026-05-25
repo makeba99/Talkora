@@ -15269,9 +15269,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <Loader2 className="w-6 h-6 animate-spin opacity-40" />
                   </div>
                 ) : bookPages.length > 0 ? (
-                  <div className="h-full overflow-hidden px-16 pt-7 pb-8">
+                  <div className="h-full overflow-hidden px-16 py-7 flex flex-col justify-center">
                     <div
-                      className="leading-relaxed whitespace-pre-wrap select-text overflow-hidden h-full"
+                      className="leading-relaxed whitespace-pre-wrap select-text"
                       style={{
                         fontSize: eReaderFontSize,
                         lineHeight: 1.9,
