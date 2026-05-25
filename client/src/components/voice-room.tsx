@@ -2309,6 +2309,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [participants]);
   const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
   const speakingUsersRef = useRef<Set<string>>(new Set());
+  // Tracks the last emitted speaking state for the LOCAL user so we only
+  // fire room:speaking events on transitions (not every 100ms frame).
+  const prevLocalSpeakingRef = useRef<boolean>(false);
   const [micError, setMicError] = useState(false);
   const [showMicHelp, setShowMicHelp] = useState(false);
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceInfo[]>([]);
@@ -3835,6 +3838,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
              }
           }
         });
+
+        // ── Emit local speaking transitions to the server ─────────────────
+        // Each client is responsible only for broadcasting its OWN mic level.
+        // The server relays the event to all other room participants, which is
+        // the only cross-browser reliable way to show speaking indicators
+        // (Safari/Firefox may block AudioContext analysis of remote streams).
+        const localNowSpeaking = currentlySpeaking.has(user.id);
+        if (localNowSpeaking !== prevLocalSpeakingRef.current) {
+          prevLocalSpeakingRef.current = localNowSpeaking;
+          socket.emit("room:speaking", {
+            roomId: room.id,
+            userId: user.id,
+            isSpeaking: localNowSpeaking,
+          });
+        }
         
         setSpeakingUsers(prev => {
           if (prev.size !== currentlySpeaking.size) return currentlySpeaking;

@@ -2655,28 +2655,28 @@ export async function registerRoutes(
       for (const ttUrl of timedTextVariants) {
         try {
           const r = await timedFetch(ttUrl, { headers: HEADERS }, 7000);
-          if (r.ok) {
-            const json: any = await r.json();
-            if (json?.events?.length > 10) {
-              const text = eventsToArticle(json.events);
-              if (text.length > 100) {
-                // Fetch title separately via oEmbed (no API key needed)
-                try {
-                  const oEmbed = await timedFetch(
-                    `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
-                    { headers: HEADERS }, 5000
-                  );
-                  if (oEmbed.ok) {
-                    const oe: any = await oEmbed.json();
-                    if (oe.title) title = oe.title;
-                  }
-                } catch {}
-                _ytArticleCache.set(videoId, { ts: Date.now(), title, text });
-                return res.json({ title, text });
-              }
+          if (!r.ok) continue;
+          const rawText = await r.text();
+          if (!rawText || rawText.trim().length < 20) continue;
+          let json: any = null;
+          try { json = JSON.parse(rawText); } catch (e) { /* not JSON */ }
+          if (!json?.events || json.events.length <= 10) continue;
+          const text = eventsToArticle(json.events);
+          if (text.length < 100) continue;
+          // Fetch title via oEmbed (no API key needed)
+          try {
+            const oEmbed = await timedFetch(
+              `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+              { headers: HEADERS }, 5000
+            );
+            if (oEmbed.ok) {
+              const oe: any = await oEmbed.json();
+              if (oe.title) title = oe.title;
             }
-          }
-        } catch {}
+          } catch (e) { /* title stays as default */ }
+          _ytArticleCache.set(videoId, { ts: Date.now(), title, text });
+          return res.json({ title, text });
+        } catch (e) { /* try next variant */ }
       }
 
       // ── Strategy B: Scrape the watch page for caption tracks ─────────────────
@@ -6594,6 +6594,20 @@ export async function registerRoutes(
       io.to(data.roomId).emit("room:mute-update", {
         userId: data.userId,
         isMuted: data.isMuted,
+      });
+    });
+
+    // Voice activity relay — each client detects its OWN mic level and emits
+    // this event. The server relays it to all other participants in the room.
+    // Using server relay (rather than relying on each client analysing remote
+    // WebRTC streams) ensures the indicator works on every browser including
+    // Safari/Firefox which may restrict AudioContext for remote media streams.
+    socket.on("room:speaking", (data: { roomId: string; userId: string; isSpeaking: boolean }) => {
+      if (!data?.roomId || !data?.userId) return;
+      // Relay to everyone EXCEPT the sender (they already know they're speaking)
+      socket.to(data.roomId).emit("room:speaking", {
+        userId: data.userId,
+        isSpeaking: data.isSpeaking,
       });
     });
 
