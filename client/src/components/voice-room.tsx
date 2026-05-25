@@ -15730,7 +15730,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       localVideoFlipped={isMe ? cameraFacing === "user" : false}
                       isBlocked={isBlockedUser}
                       onUnblock={handleUnblock}
-                      analyserNode={isMe && analyserVersion >= 0 ? analysersRef.current.get(p.id) : undefined}
+                      analyserNode={analyserVersion >= 0 ? analysersRef.current.get(p.id) : undefined}
                       mood={djModeActive ? undefined : participantMoods[p.id]}
                       onClearMood={isMe ? clearMyMood : undefined}
                       hasActiveMovie={movieHosts.has(p.id)}
