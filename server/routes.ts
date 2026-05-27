@@ -5865,12 +5865,13 @@ export async function registerRoutes(
   }
 
   // Grace period for an empty room before it's auto-deleted.
-  // 25s covers network blips, mobile-app backgrounding, and quick re-joins
-  // without letting truly-abandoned rooms linger on the lobby forever.
-  const ROOM_EMPTY_GRACE_MS = 25_000;
+  // 60s covers network blips, mobile-app backgrounding, tab sleeping, and
+  // quick re-joins without letting truly-abandoned rooms linger forever.
+  const ROOM_EMPTY_GRACE_MS = 60_000;
   // Grace at server startup — clients need to socket-reconnect and re-emit
-  // `room:join` to repopulate the in-memory participants map.
-  const ROOM_STARTUP_GRACE_MS = 60_000;
+  // `room:join` to repopulate the in-memory participants map. 90s is generous
+  // for slow mobile reconnects and Replit cold-start latency.
+  const ROOM_STARTUP_GRACE_MS = 90_000;
   // Grace for a brand-new room — the creator still needs to read the toast,
   // scroll to their room card, and click "Join & Talk". 5 minutes is generous
   // enough for any user flow without letting abandoned created rooms pile up.
@@ -5881,15 +5882,27 @@ export async function registerRoutes(
     const timer = setTimeout(async () => {
       try {
         const participants = roomParticipants.get(roomId);
-        // Double-check the room is still empty AND has no live socket
-        // connections claiming it before we destroy it.
-        if (!participants || participants.size === 0) {
+        // Triple-check before destroying:
+        // 1. In-memory participants map is empty
+        // 2. Socket.IO adapter has no live sockets subscribed to this room
+        //    (catches reconnecting sockets that haven't re-emitted room:join yet)
+        // 3. No user claims this room as their current room
+        const adapterRoom = (io.sockets.adapter.rooms as Map<string, Set<string>>).get(roomId);
+        const adapterSize = adapterRoom ? adapterRoom.size : 0;
+        const claimedByUser = Array.from(userCurrentRoom.entries()).some(([, rId]) => rId === roomId);
+
+        if ((!participants || participants.size === 0) && adapterSize === 0 && !claimedByUser) {
           await storage.deleteRoom(roomId);
           roomParticipants.delete(roomId);
           roomDeleteTimers.delete(roomId);
           io.emit("room:deleted", { roomId });
           broadcastRooms().catch(() => {});
           console.log(`[room-cleanup] Deleted empty room ${roomId} after ${Math.round(graceMs / 1000)}s grace`);
+        } else {
+          // Room still has activity — cancel (don't re-schedule; a future leave
+          // or disconnect will call startRoomDeleteTimer again if needed).
+          roomDeleteTimers.delete(roomId);
+          console.log(`[room-cleanup] Skipped deletion of ${roomId}: participants=${participants?.size ?? 0} adapterSockets=${adapterSize} claimedByUser=${claimedByUser}`);
         }
       } catch (err) {
         console.error("Error auto-deleting room:", err);
@@ -8892,6 +8905,11 @@ export async function registerRoutes(
 
             const currentSocketId = userSockets.get(disconnectingUserId);
             if (currentSocketId && currentSocketId !== socket.id) {
+              // User reconnected with a new socket before the grace expired — safe.
+              return;
+            }
+            // Extra guard: check if the new socket is actually connected.
+            if (currentSocketId && io.sockets.sockets.get(currentSocketId)?.connected) {
               return;
             }
 
@@ -8980,7 +8998,10 @@ export async function registerRoutes(
                 }
               }
             }
-          }, 40000);
+          // 90 seconds: covers mobile network switches (WiFi → 4G), tab sleep,
+          // Replit proxy hiccups, and slow re-connections without being so long
+          // that abandoned users linger visibly in the room for minutes.
+          }, 90000);
           disconnectTimers.set(timerId, timer);
         }
       }
@@ -8988,11 +9009,12 @@ export async function registerRoutes(
   });
 
   // ── Ghost-user reconciliation ─────────────────────────────────────────────
-  // Periodically sweep onlineUsers and userSockets for entries whose socket
-  // is no longer connected. This catches edge-cases where the disconnect
-  // event was lost or a timer was cleared prematurely, preventing users from
-  // appearing permanently online/invisible to others.
-  setInterval(() => {
+  // Periodically sweep onlineUsers, userSockets, and roomParticipants for
+  // entries whose socket is no longer connected. This catches edge-cases where
+  // the disconnect event was lost or a timer was cleared prematurely, preventing
+  // users from appearing permanently online/invisible to others, and orphaned
+  // room participants keeping rooms alive forever.
+  setInterval(async () => {
     for (const [userId, socketId] of Array.from(userSockets.entries())) {
       const sock = io.sockets.sockets.get(socketId);
       if (!sock || !sock.connected) {
@@ -9014,6 +9036,33 @@ export async function registerRoutes(
         onlineUsers.delete(userId);
         storage.updateUserStatus(userId, "offline").catch(() => {});
         io.emit("presence:update", { userId, status: "offline" });
+      }
+    }
+
+    // ── Orphaned room-participant reconciliation ───────────────────────────
+    // Sweep all in-memory room participant maps and remove any user whose
+    // socket is dead and has no pending disconnect grace timer. This prevents
+    // ghost participants from keeping a room alive indefinitely after a silent
+    // connection drop that the disconnect event never fired for.
+    for (const [roomId, participants] of Array.from(roomParticipants.entries())) {
+      for (const userId of Array.from(participants.keys())) {
+        const timerId = `${userId}-disconnect`;
+        if (disconnectTimers.has(timerId)) continue; // grace timer pending — leave it
+        const socketId = userSockets.get(userId);
+        const sock = socketId ? io.sockets.sockets.get(socketId) : undefined;
+        if (!sock || !sock.connected) {
+          // Double-check: user still claims this room via userCurrentRoom
+          if (userCurrentRoom.get(userId) === roomId) userCurrentRoom.delete(userId);
+          participants.delete(userId);
+          console.log(`[ghost-sweep] Removed orphaned participant ${userId} from room ${roomId}`);
+          const remaining = Array.from(participants.values());
+          storage.updateRoomActiveUsers(roomId, remaining.length).catch(() => {});
+          io.to(roomId).emit("room:user-left", { userId, participants: remaining, displayName: null });
+          io.emit("room:participants-update", { roomId, participants: remaining });
+          if (remaining.length === 0) {
+            startRoomDeleteTimer(roomId);
+          }
+        }
       }
     }
   }, 60000);
