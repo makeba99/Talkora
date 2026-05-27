@@ -2478,13 +2478,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [movieHostPlaying, setMovieHostPlaying] = useState(true);
   const [movieSyncKey, setMovieSyncKey] = useState(0);
   const [movieElapsedDisplay, setMovieElapsedDisplay] = useState(0);
-  const [movieSubsOpen, setMovieSubsOpen] = useState(false);
   const [movieSettingsOpen, setMovieSettingsOpen] = useState(false);
-  const [movieMuted, setMovieMuted] = useState(false);
-  const movieVideoRef = useRef<HTMLVideoElement>(null);
-  const [movieDirectUrl, setMovieDirectUrl] = useState<string | null>(null);
-  const [movieDirectLoading, setMovieDirectLoading] = useState(false);
-  const [movieSubtitleTracks, setMovieSubtitleTracks] = useState<Array<{url: string; label: string; srcLang: string}>>([]);
   const [movieActiveSubLang, setMovieActiveSubLang] = useState<string>("");
   const [movieDuration, setMovieDuration] = useState(0);
   const [popularMovies, setPopularMovies] = useState<any[]>([]);
@@ -2660,22 +2654,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   useEffect(() => { if (activeMovieId) setMoviePlayerHeight(null); }, [activeMovieId]);
 
   useEffect(() => {
-    if (!activeMovieId) { setMovieDirectUrl(null); setMovieSubtitleTracks([]); setMovieDuration(0); setMovieActiveSubLang(""); return; }
-    setMovieDirectLoading(true);
-    setMovieDirectUrl(null);
-    fetch(`/api/movies/info?id=${encodeURIComponent(activeMovieId)}`, { credentials: "include" })
-      .then(r => r.json())
-      .then(data => { setMovieDirectUrl(data.videoUrl || null); setMovieSubtitleTracks(data.subtitles || []); })
-      .catch(() => setMovieDirectUrl(null))
-      .finally(() => setMovieDirectLoading(false));
+    if (!activeMovieId) { setMovieDuration(0); setMovieActiveSubLang(""); return; }
+    // We use archive.org/embed iframe — no direct URL fetch needed.
+    // Clear the host timer so the elapsed counter takes over.
+    if (movieHostTimerRef.current) { clearInterval(movieHostTimerRef.current); movieHostTimerRef.current = null; }
   }, [activeMovieId]);
-
-  useEffect(() => {
-    if (movieDirectUrl && movieHostTimerRef.current) {
-      clearInterval(movieHostTimerRef.current);
-      movieHostTimerRef.current = null;
-    }
-  }, [movieDirectUrl]);
   const ytSlotRef = useRef<HTMLDivElement | null>(null);
   const [ytSlotRect, setYtSlotRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   // Per-host watch-party state. Each user can host their own YouTube video,
@@ -4605,18 +4588,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setMovieCurrentTimeByHost(prev => { const n = new Map(prev); n.set(data.hostId, data.time!); return n; });
       }
       setMoviePlayingByHost(prev => { const n = new Map(prev); n.set(data.hostId, data.action === "play"); return n; });
-      // If we're actively watching this host, resync our player
+      // If we're actively watching this host, resync our iframe player
       if (movieStartedByRef.current === data.hostId && typeof data.time === "number") {
         const newOffset = Math.floor(data.time);
-        const v = movieVideoRef.current;
-        if (v) {
-          v.currentTime = newOffset;
-          if (data.action === "play") v.play().catch(() => {});
-          else v.pause();
-        } else {
-          setMovieStartOffset(newOffset);
-          setMovieSyncKey(k => k + 1);
-        }
+        setMovieStartOffset(newOffset);
+        setMovieSyncKey(k => k + 1);
       }
     });
 
@@ -8451,29 +8427,27 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   };
 
   const handleMoviePause = () => {
-    if (movieVideoRef.current) movieVideoRef.current.pause();
     movieHostPlayingRef2.current = false;
     setMovieHostPlaying(false);
-    const t = movieVideoRef.current ? Math.floor(movieVideoRef.current.currentTime) : movieHostElapsedRef.current;
+    const t = movieHostElapsedRef.current;
     socket?.emit("room:movie-state", { roomId: room.id, action: "pause", time: t, ts: Date.now() });
   };
 
   const handleMoviePlay = () => {
-    const t = movieVideoRef.current ? Math.floor(movieVideoRef.current.currentTime) : movieHostElapsedRef.current;
-    if (movieVideoRef.current) { movieVideoRef.current.currentTime = t; movieVideoRef.current.play().catch(() => {}); }
+    const t = movieHostElapsedRef.current;
     movieHostPlayingRef2.current = true;
     setMovieHostPlaying(true);
+    setMovieStartOffset(t);
+    setMovieSyncKey(k => k + 1);
     socket?.emit("room:movie-state", { roomId: room.id, action: "play", time: t, ts: Date.now() });
-    if (!movieVideoRef.current) { setMovieStartOffset(t); setMovieSyncKey(k => k + 1); }
   };
 
   const handleMovieResync = () => {
     if (!movieStartedBy) return;
     const currentTime = movieCurrentTimeByHost.get(movieStartedBy);
     if (typeof currentTime === "number") {
-      const v = movieVideoRef.current;
-      if (v) { v.currentTime = Math.floor(currentTime); v.play().catch(() => {}); }
-      else { setMovieStartOffset(Math.floor(currentTime)); setMovieSyncKey(k => k + 1); }
+      setMovieStartOffset(Math.floor(currentTime));
+      setMovieSyncKey(k => k + 1);
     }
   };
 
@@ -14781,55 +14755,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 })()}
               </div>
 
-              {/* Direct video player */}
-              {movieDirectLoading ? (
-                <div className="flex-1 flex items-center justify-center bg-black min-h-0">
-                  <Loader2 className="w-8 h-8 animate-spin text-white/30" />
-                </div>
-              ) : movieDirectUrl ? (
-                <video
-                  ref={movieVideoRef}
-                  key={`${activeMovieId}_${movieStartOffset}_${movieSyncKey}`}
-                  src={movieDirectUrl}
-                  className="flex-1 w-full min-h-0 object-contain bg-black"
-                  crossOrigin="anonymous"
-                  autoPlay
-                  muted={movieMuted}
-                  onLoadedMetadata={() => {
-                    const v = movieVideoRef.current;
-                    if (!v) return;
-                    setMovieDuration(Math.floor(v.duration) || 0);
-                    if (movieStartOffset > 0) v.currentTime = movieStartOffset;
-                    if (!movieHostPlaying && user?.id !== movieStartedBy) v.pause();
-                  }}
-                  onTimeUpdate={() => {
-                    const v = movieVideoRef.current;
-                    if (!v) return;
-                    movieHostElapsedRef.current = Math.floor(v.currentTime);
-                  }}
-                  data-testid="video-movie-player"
-                >
-                  {movieSubtitleTracks.map(track => (
-                    <track
-                      key={track.url}
-                      kind="subtitles"
-                      src={`/api/movies/subtitle-proxy?url=${encodeURIComponent(track.url)}`}
-                      srcLang={track.srcLang}
-                      label={track.label}
-                    />
-                  ))}
-                </video>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 bg-black p-6 min-h-0">
-                  <Film className="w-10 h-10 text-white/20" />
-                  <p className="text-white/40 text-sm text-center leading-snug">This film isn't available for direct playback.<br/>Try opening it on Archive.org for full access.</p>
-                  <a
-                    href={`https://archive.org/details/${activeMovieId}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="text-violet-400 hover:text-violet-300 text-xs underline transition-colors"
-                  >Open on Archive.org ↗</a>
-                </div>
-              )}
+              {/* Archive.org native embed iframe — full player with volume, CC, fullscreen */}
+              <iframe
+                key={`${activeMovieId}_${movieStartOffset}_${movieSyncKey}`}
+                src={`https://archive.org/embed/${encodeURIComponent(activeMovieId ?? "")}?autoplay=1&start=${movieStartOffset}`}
+                className="flex-1 w-full min-h-0 border-0 bg-black"
+                style={{ display: "block" }}
+                allowFullScreen
+                allow="autoplay; fullscreen"
+                title={activeMovieTitle || "Movie"}
+                data-testid="video-movie-player"
+              />
 
               {/* ─────────────────────────────────────────────────────────────────
                   REDESIGNED BOTTOM CONTROL BAR
@@ -14951,66 +14887,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   {/* ── DIVIDER ── */}
                   <div className="w-px h-5 bg-white/10 shrink-0 mx-1" />
 
-                  {/* ── RIGHT: Volume + CC + Settings + Reactions + X ── */}
+                  {/* ── RIGHT: Settings + Reactions + X ── */}
                   <div className="flex items-center gap-0.5 shrink-0">
-
-                    {/* Volume */}
-                    <button
-                      type="button"
-                      onClick={() => setMovieMuted(v => !v)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10 transition-all duration-150 active:scale-90"
-                      title={movieMuted ? "Unmute" : "Mute"}
-                      data-testid="button-movie-mute"
-                    >
-                      {movieMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                    </button>
-
-                    {/* Subtitles (CC) */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => { setMovieSubsOpen(v => !v); setMovieSettingsOpen(false); setMovieReactionsOpen(false); }}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 ${movieSubsOpen ? "text-amber-400 bg-amber-500/15" : "text-white/55 hover:text-white hover:bg-white/10"}`}
-                        title="Subtitles / CC"
-                        data-testid="button-movie-subtitles"
-                      >
-                        <Captions className="w-4 h-4" />
-                      </button>
-                      {movieSubsOpen && (
-                        <div className="absolute bottom-full right-0 mb-2 w-52 rounded-xl bg-[#0d0d14]/96 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/70 p-2 animate-in fade-in slide-in-from-bottom-2 duration-150" data-testid="movie-subs-menu">
-                          <p className="text-white/75 text-[11px] font-semibold uppercase tracking-wider px-2 py-1 mb-0.5">Subtitles</p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMovieActiveSubLang("");
-                              if (movieVideoRef.current) Array.from(movieVideoRef.current.textTracks).forEach(t => { t.mode = "disabled"; });
-                              setMovieSubsOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-colors ${movieActiveSubLang === "" ? "bg-amber-500/15 text-amber-400" : "text-white/55 hover:bg-white/8 hover:text-white"}`}
-                          >Off</button>
-                          {movieSubtitleTracks.length > 0 ? movieSubtitleTracks.map(track => (
-                            <button
-                              key={track.url}
-                              type="button"
-                              onClick={() => {
-                                setMovieActiveSubLang(track.srcLang);
-                                if (movieVideoRef.current) Array.from(movieVideoRef.current.textTracks).forEach(t => { t.mode = t.label === track.label ? "showing" : "disabled"; });
-                                setMovieSubsOpen(false);
-                              }}
-                              className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-colors ${movieActiveSubLang === track.srcLang ? "bg-amber-500/15 text-amber-400" : "text-white/55 hover:bg-white/8 hover:text-white"}`}
-                            >{track.label}</button>
-                          )) : (
-                            <div className="px-2.5 py-2 text-white/35 text-xs leading-snug">No subtitles available for this film</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
 
                     {/* Settings */}
                     <div className="relative">
                       <button
                         type="button"
-                        onClick={() => { setMovieSettingsOpen(v => !v); setMovieSubsOpen(false); setMovieReactionsOpen(false); }}
+                        onClick={() => { setMovieSettingsOpen(v => !v); setMovieReactionsOpen(false); }}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 ${movieSettingsOpen ? "text-amber-400 bg-amber-500/15" : "text-white/55 hover:text-white hover:bg-white/10"}`}
                         title="Settings"
                         data-testid="button-movie-settings"
@@ -15062,7 +14946,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       )}
                       <button
                         type="button"
-                        onClick={() => { setMovieReactionsOpen(v => !v); setMovieSubsOpen(false); setMovieSettingsOpen(false); }}
+                        onClick={() => { setMovieReactionsOpen(v => !v); setMovieSettingsOpen(false); }}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-90 ${movieReactionsOpen ? "text-amber-400 bg-amber-500/15" : "text-white/55 hover:text-white hover:bg-white/10"}`}
                         title={movieReactionsOpen ? "Hide reactions" : "Reactions"}
                         data-testid="button-movie-reactions-toggle"
