@@ -14801,17 +14801,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </button>
                 </div>
 
-                {/* X — hide panel locally (others keep watching) */}
+                {/* X — close for everyone (host) or hide locally (non-host) */}
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowMovie(false);
-                    if (user?.id !== movieStartedBy) {
-                      socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false });
-                    }
-                  }}
+                  onClick={handleStopMovie}
                   className="w-7 h-7 flex-shrink-0 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all duration-150 active:scale-90"
-                  title={user?.id === movieStartedBy ? "Hide player (others keep watching — use side panel to stop for everyone)" : "Hide for me"}
+                  title={user?.id === movieStartedBy ? "Close for everyone" : "Hide for me"}
                   data-testid="button-movie-close"
                 >
                   <X className="w-4 h-4" />
