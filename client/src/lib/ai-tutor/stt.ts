@@ -22,6 +22,132 @@ import { SPEECH_LANG_MAP } from "./types";
 /** Pure-filler transcript pattern — recognized but carries no real content */
 export const FILLER_ONLY_PATTERN = /^(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+)(\s+(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+))*\.?$/i;
 
+/**
+ * Wake-word pattern. Matches any of:
+ *   "hey AI / hey A.I. / hey tutor / hey Afi / hey Afi K / hey Eva / hey Dude / hey agent"
+ *   "ok AI / okay AI / yo AI / hi AI"
+ *   "wake up AI / wake up tutor"
+ *
+ * Returns a capturing group for any text spoken AFTER the trigger phrase so it
+ * can be sent directly as the first user message.
+ */
+export const WAKE_PATTERN =
+  /\b(?:hey|hi|ok|okay|yo|wake\s+up)\s+(?:ai|a\.i\.?|tutor|afi(?:\s*k)?|eva|dude|agent)\b[,!.]?\s*(.*)/i;
+
+/**
+ * WakeWordDetector — a lightweight always-on background listener.
+ *
+ * Runs a separate SpeechRecognition session in continuous mode while the AI is
+ * inactive. When the user says a wake phrase ("hey AI", "hey tutor", …) it fires
+ * onWake with any additional text spoken after the phrase (e.g. "hey AI what's up"
+ * → afterText = "what's up").
+ *
+ * Lifecycle:
+ *   start()  — begin background listening (idempotent)
+ *   stop()   — tear down the session (idempotent)
+ *
+ * The detector stops itself immediately after a wake event so the primary STT
+ * engine can take over without competing for the microphone.
+ */
+export class WakeWordDetector {
+  private rec: any = null;
+  private lang = "en-US";
+  private _active = false;
+  private restartTimer: ReturnType<typeof setTimeout> | null = null;
+  private onWake: (afterText: string) => void;
+  private onStatusChange: (listening: boolean) => void;
+
+  constructor(
+    onWake: (afterText: string) => void,
+    onStatusChange: (listening: boolean) => void
+  ) {
+    this.onWake = onWake;
+    this.onStatusChange = onStatusChange;
+  }
+
+  get isActive() {
+    return this._active;
+  }
+
+  setLanguage(lang: string) {
+    this.lang = lang;
+  }
+
+  start() {
+    if (!SpeechRec) return;
+    if (this._active) return;
+    this._active = true;
+    this._launch();
+  }
+
+  stop() {
+    this._active = false;
+    if (this.restartTimer) { clearTimeout(this.restartTimer); this.restartTimer = null; }
+    try { this.rec?.abort(); } catch {}
+    this.rec = null;
+    this.onStatusChange(false);
+  }
+
+  private _launch() {
+    if (!SpeechRec || !this._active) return;
+
+    try { this.rec?.abort(); } catch {}
+    const rec = new SpeechRec();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    rec.lang = this.lang;
+    this.rec = rec;
+
+    rec.onstart = () => { this.onStatusChange(true); };
+
+    rec.onresult = (e: any) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript.trim();
+        if (!transcript) continue;
+        const match = WAKE_PATTERN.exec(transcript);
+        if (match) {
+          const afterText = (match[1] || "").trim();
+          // Stop before firing so the primary STT can open the mic cleanly
+          this.stop();
+          this.onWake(afterText);
+          return;
+        }
+      }
+    };
+
+    rec.onerror = (e: any) => {
+      const err = e?.error || "";
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        this._active = false;
+        this.onStatusChange(false);
+        return;
+      }
+      if (err === "aborted") return;
+      this._scheduleRestart(1500);
+    };
+
+    rec.onend = () => {
+      if (this._active) this._scheduleRestart(500);
+      else this.onStatusChange(false);
+    };
+
+    try {
+      rec.start();
+    } catch {
+      this._scheduleRestart(1500);
+    }
+  }
+
+  private _scheduleRestart(ms: number) {
+    if (this.restartTimer) clearTimeout(this.restartTimer);
+    this.restartTimer = setTimeout(() => {
+      this.restartTimer = null;
+      if (this._active) this._launch();
+    }, ms);
+  }
+}
+
 export type SttCallbacks = {
   onInterim: (text: string) => void;
   onFinal: (text: string) => void;

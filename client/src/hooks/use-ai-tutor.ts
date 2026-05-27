@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractSentences } from "@/lib/ai-tutor/tts";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
-import { SttEngine, FILLER_ONLY_PATTERN } from "@/lib/ai-tutor/stt";
+import { SttEngine, WakeWordDetector, FILLER_ONLY_PATTERN } from "@/lib/ai-tutor/stt";
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
 import { streamTokens, fetchBufferedReply } from "@/lib/ai-tutor/stream";
 import {
@@ -141,6 +141,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const [voiceInterimText, setVoiceInterimText] = useState<string | null>(null);
   const [voiceBargeInActive, setVoiceBargeInActive] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
+  const [wakeListening, setWakeListening] = useState(false);
 
   // ── Lipsync State ─────────────────────────────────────────────────────────
   const [currentViseme, setCurrentViseme] = useState<Viseme>("rest");
@@ -157,6 +158,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   // ── Request queue — handles questions from other room participants ─────────
   const aiQueueRef = useRef<AiQueueItem[]>([]);
   const queueProcessingRef = useRef(false);
+  // ── Wake word detector ref ────────────────────────────────────────────────
+  const wakeWordRef = useRef<WakeWordDetector | null>(null);
+  // Stable ref so the wake callback never has a stale closure over toggleAiTutor
+  const toggleAiTutorRef = useRef<(() => void) | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => { activeRef.current = aiActive; }, [aiActive]);
@@ -580,6 +585,10 @@ export function useAiTutor(deps: AiTutorDeps) {
     addDebug("info", `Session started with persona: ${pName} (${voice})`);
   }, [aiActive, socket, roomId, userId, username, aiSettings, addDebug]);
 
+  // ── Keep toggleAiTutorRef in sync (wake callback uses this to avoid stale closure) ──
+  // Must be placed AFTER toggleAiTutor is defined below.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   // ── Toggle AI Tutor session (stop only — use startWithPersona to start) ──
   const toggleAiTutor = useCallback(() => {
     if (!aiActive) {
@@ -625,6 +634,9 @@ export function useAiTutor(deps: AiTutorDeps) {
     }
   }, [aiActive, socket, roomId, userId, username, aiSettings]);
 
+  // Keep the wake callback's ref current every time toggleAiTutor is recreated
+  useEffect(() => { toggleAiTutorRef.current = toggleAiTutor; }, [toggleAiTutor]);
+
   // ── Observe AI message from another user in the room ─────────────────────
   // Uses the same factory so observers hear the same voice the active
   // speaker is hearing.
@@ -638,6 +650,59 @@ export function useAiTutor(deps: AiTutorDeps) {
     engine.configure(voice as VoicePersona, speed, voiceId);
     engine.enqueue(text);
   }, []);
+
+  // ── Wake word detector — lifecycle ───────────────────────────────────────
+  // Created once. Starts passively when AI is inactive so users can say
+  // "hey AI" / "hey tutor" / "hey Eva" / etc. to activate hands-free.
+  // Stops as soon as AI becomes active (primary STT takes over the mic).
+  useEffect(() => {
+    const detector = new WakeWordDetector(
+      // onWake — fired when a trigger phrase is detected
+      (afterText: string) => {
+        addDebug("info", `Wake word detected${afterText ? ` — "${afterText}"` : ""}`);
+        // Activate AI using whatever persona the user last selected
+        toggleAiTutorRef.current?.();
+        // If the user already asked something in the same breath, queue it up
+        // after a short delay to let the intro TTS start first
+        if (afterText) {
+          setTimeout(() => {
+            sendAiMessageRef.current?.(afterText);
+          }, 1800);
+        }
+      },
+      // onStatusChange — keeps the UI indicator in sync
+      (listening: boolean) => setWakeListening(listening)
+    );
+    wakeWordRef.current = detector;
+    return () => {
+      detector.stop();
+      wakeWordRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount-once — detector is stable, callbacks use refs
+
+  // toggleAiTutorRef is assigned below after the function is defined (see the
+  // useEffect that depends on [toggleAiTutor]).  The placeholder keeps ESLint happy.
+
+  // Start / stop the wake word detector based on AI active state
+  useEffect(() => {
+    if (aiActive) {
+      // AI is now active — wake word detector is no longer needed
+      wakeWordRef.current?.stop();
+    } else {
+      // AI is inactive — start the background wake word listener
+      wakeWordRef.current?.start();
+    }
+  }, [aiActive]);
+
+  // Keep wake detector language in sync with room language changes
+  useEffect(() => {
+    wakeWordRef.current?.setLanguage(
+      // Re-use the same lang map as SttEngine (already resolved in sttRef via setLanguage)
+      // We just call setLanguage on the detector; it will apply on next restart
+      roomLanguage
+    );
+  }, [roomLanguage]);
 
   // ── Start listening after AI active toggle ────────────────────────────────
   useEffect(() => {
@@ -741,6 +806,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     interimText: voiceInterimText,
     bargeInActive: voiceBargeInActive,
     micError,
+    wakeListening,
   };
 
   const mediaState: MediaState = {

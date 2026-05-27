@@ -2325,6 +2325,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const aiTutorLoading = aiState.loading;
   const aiListening = voiceState.listening;
   const aiMicError = voiceState.micError;
+  const aiWakeListening = voiceState.wakeListening;
   const aiTutorControlOpen = aiState.controlOpen;
   const setAiTutorControlOpen = setAiControlOpen;
   const aiChatPanelOpen = aiState.chatPanelOpen;
@@ -6853,6 +6854,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <span className={labelBase} style={{ color: aiTutorActive ? "hsl(var(--neu-orange-hi) / 0.95)" : "hsl(var(--neu-orange-hi) / 0.72)" }}>
             {aiTutorActive ? aiPersonaName : "AI Tutor"}
           </span>
+          {/* Wake word hint — visible only when AI is inactive and background listener is running */}
+          {!aiTutorActive && aiWakeListening && (
+            <span
+              className="flex items-center gap-1 text-[9px] font-medium tracking-wide leading-none select-none"
+              style={{ color: "rgba(255,200,80,0.60)", whiteSpace: "nowrap" }}
+            >
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ background: "rgba(255,200,80,0.70)", boxShadow: "0 0 4px rgba(255,200,80,0.55)", animation: "pulse 1.6s ease-in-out infinite" }}
+              />
+              say "hey AI"
+            </span>
+          )}
         </div>}
 
         <div className="mx-0.5 h-7 sm:h-10 w-px self-center" style={{ background: "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.11) 50%, transparent 100%)" }} />
