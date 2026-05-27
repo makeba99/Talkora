@@ -4587,9 +4587,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (typeof data.time === "number") {
         setMovieCurrentTimeByHost(prev => { const n = new Map(prev); n.set(data.hostId, data.time!); return n; });
       }
-      setMoviePlayingByHost(prev => { const n = new Map(prev); n.set(data.hostId, data.action === "play"); return n; });
-      // If we're actively watching this host, resync our iframe player
-      if (movieStartedByRef.current === data.hostId && typeof data.time === "number") {
+      if (data.action !== "tick") {
+        setMoviePlayingByHost(prev => { const n = new Map(prev); n.set(data.hostId, data.action === "play"); return n; });
+      }
+      // tick: only update stored time so Resync button has data — do NOT reload iframe
+      // play/pause: also force-rebuild the iframe at the synced position
+      if (movieStartedByRef.current === data.hostId && typeof data.time === "number" && data.action !== "tick") {
         const newOffset = Math.floor(data.time);
         setMovieStartOffset(newOffset);
         setMovieSyncKey(k => k + 1);
@@ -8394,12 +8397,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return next;
     });
     socket?.emit("room:movie", { roomId: room.id, movieId, movieTitle: movie.title, posterPath: movie.poster || "" });
-    // Start host-side elapsed timer for sync
+    // Start host-side elapsed timer for sync — increments every 1s,
+    // broadcasts current time to watchers every 5s so Resync always works.
     movieHostElapsedRef.current = 0;
     movieHostPlayingRef2.current = true;
     if (movieHostTimerRef.current) clearInterval(movieHostTimerRef.current);
+    let _ticksSinceLastBroadcast = 0;
     movieHostTimerRef.current = setInterval(() => {
-      if (movieHostPlayingRef2.current) movieHostElapsedRef.current += 1;
+      if (movieHostPlayingRef2.current) {
+        movieHostElapsedRef.current += 1;
+        _ticksSinceLastBroadcast += 1;
+        if (_ticksSinceLastBroadcast >= 5) {
+          _ticksSinceLastBroadcast = 0;
+          socket?.emit("room:movie-state", {
+            roomId: room.id,
+            action: "tick",
+            time: movieHostElapsedRef.current,
+            ts: Date.now(),
+          });
+        }
+      }
     }, 1000);
     setMovieSearch("");
     setMovieResults([]);
