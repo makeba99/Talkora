@@ -118,40 +118,59 @@ export async function getViewerCounts(streamId: string): Promise<{
 // ── FFmpeg ───────────────────────────────────────────────────────────────────
 
 function buildFfmpegArgs(twitchKey?: string, youtubeKey?: string): string[] {
-  // Input: fragmented WebM piped from browser MediaRecorder.
-  // -analyzeduration 0 -probesize 32  → skip probing (we know the format), start fast
+  // Input: fragmented WebM piped from browser MediaRecorder (250 ms timeslice).
+  // -analyzeduration 2000000 -probesize 1048576  → enough to parse WebM codec headers
+  //   reliably without perceptible latency (the 250 ms timeslice means the first
+  //   chunk arrives quickly, so probing is cheap).
   // -fflags +discardcorrupt+genpts+nobuffer+flush_packets
   //   discardcorrupt → survive malformed packets from network hiccups
   //   genpts         → generate missing PTS (MediaRecorder chunks may omit them)
-  //   nobuffer+flush_packets → minimize latency
-  // -flags low_delay → low-latency throughout the pipeline
+  //   nobuffer+flush_packets → minimize end-to-end latency
+  // -thread_queue_size 512 → prevent input starvation when the OS scheduler
+  //   delays the read thread (common on throttled Replit containers).
   const inputArgs = [
-    "-analyzeduration", "0",
-    "-probesize", "32",
+    "-analyzeduration", "2000000",
+    "-probesize", "1048576",
     "-fflags", "+discardcorrupt+genpts+nobuffer+flush_packets",
-    "-flags", "low_delay",
+    "-thread_queue_size", "512",
     "-f", "webm",
     "-i", "pipe:0",
   ];
+  // H.264 Main profile @ level 4.2:
+  //   - Main profile gives ~10-15 % better quality than Baseline at the same
+  //     bitrate (CABAC entropy coding), and YouTube accepts it on all devices.
+  //   - Level 4.2 supports up to 1080p60, removing the 720p@10 Mbps cap that
+  //     Baseline/3.1 imposed.
+  // -b:v 4000k / -maxrate 6000k / -bufsize 8000k:
+  //   YouTube recommends 4-6 Mbps for 1080p30; 6 Mbps ceiling with an 8 Mbps
+  //   VBV buffer lets the encoder burst on high-motion frames without violating
+  //   the RTMP ingest limits.
+  // -preset faster: one step above veryfast — ~8 % better SSIM with only ~15 %
+  //   more CPU, well within budget for a 1280×720/1080p30 encode.
+  // -x264opts: locks GOP to exactly 2 seconds (keyint=60 at 30 fps) with no
+  //   scene-cut keyframes, which is required for stable YouTube RTMP ingest.
   const videoArgs = [
     "-c:v", "libx264",
-    "-preset", "veryfast",
+    "-preset", "faster",
     "-tune", "zerolatency",
-    "-profile:v", "baseline",  // widest YouTube compatibility
-    "-level", "3.1",
-    "-b:v", "2500k",
-    "-maxrate", "2500k",
-    "-bufsize", "5000k",
+    "-profile:v", "main",
+    "-level", "4.2",
+    "-b:v", "4000k",
+    "-maxrate", "6000k",
+    "-bufsize", "8000k",
     "-pix_fmt", "yuv420p",
-    "-g", "60",               // 2-second keyframe interval at 30fps (YouTube requirement)
+    "-g", "60",
     "-keyint_min", "60",
-    "-sc_threshold", "0",     // disable scene-change keyframes (keeps GOP stable)
+    "-sc_threshold", "0",
+    "-x264opts", "keyint=60:min-keyint=60:no-scenecut",
   ];
+  // AAC 160 kbps stereo — YouTube recommends ≥ 128 kbps; 160 kbps gives
+  // noticeably cleaner voice audio at minimal extra bandwidth cost.
   const audioArgs = [
     "-c:a", "aac",
-    "-b:a", "128k",
+    "-b:a", "160k",
     "-ar", "44100",
-    "-ac", "2",               // stereo
+    "-ac", "2",
   ];
 
   const outputs: string[] = [];

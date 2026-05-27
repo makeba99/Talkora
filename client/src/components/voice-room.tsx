@@ -7298,7 +7298,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (glCaptureMode === "tab") {
       try {
         tabCaptureStream = await (navigator.mediaDevices as any).getDisplayMedia({
-          video: { frameRate: 30, displaySurface: "browser" },
+          video: {
+            frameRate: { ideal: 30, max: 30 },
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            displaySurface: "browser",
+          },
           audio: false,
           preferCurrentTab: true,
           selfBrowserSurface: "include",
@@ -7608,9 +7613,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     const { streamId } = await startRes.json();
     setGlStreamId(streamId);
 
-    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
-      ? "video/webm;codecs=vp8,opus" : "video/webm";
-    const mr = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 2_500_000 });
+    // Codec priority: VP9 > VP8 > plain WebM.
+    // VP9 delivers significantly better quality than VP8 at the same bitrate
+    // (≈ 30–50 % bitrate saving for equivalent visual quality). FFmpeg can
+    // transcode either to H.264 for RTMP ingest.
+    const mimeType =
+      MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+        ? "video/webm;codecs=vp9,opus"
+        : MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
+        ? "video/webm;codecs=vp8,opus"
+        : "video/webm";
+    // 4 Mbps matches the FFmpeg -b:v target on the server side. Giving the
+    // browser encoder a matching ceiling ensures it actually produces enough
+    // data for FFmpeg to fill the RTMP pipe at 4 Mbps.
+    const mr = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 4_000_000 });
     glMediaRecorderRef.current = mr;
 
     // Helper: stop everything and surface an error message to the user
@@ -7665,7 +7681,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       glCanvasRef.current = null;
     };
 
-    mr.start(1500);
+    // 250 ms timeslice: feeds FFmpeg 4× per second instead of once every 1.5 s.
+    // The old 1500 ms value left FFmpeg's stdin pipe starved for ~1.3 s between
+    // bursts, causing the encoder to produce near-zero output (≈138 Kbps) and
+    // YouTube to warn about low bitrate. At 250 ms the data flow is continuous,
+    // letting FFmpeg sustain the full 4 Mbps target.
+    mr.start(250);
     setGlStatus("live"); setGlDuration(0); setGlViewers(null);
     glDurationRef.current = setInterval(() => setGlDuration(d => d+1), 1000);
 
