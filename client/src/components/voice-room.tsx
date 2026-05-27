@@ -7276,11 +7276,59 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (s?.getAudioTracks().length) try { audioCtx.createMediaStreamSource(s).connect(audioDest); } catch {}
     });
 
-    // ── Video: canvas renderer — draws the real room (participants, camera
-    //    feeds, speaking states, avatars) with no browser permission dialog ──
+    // ── Video: tab capture — streams the actual room UI exactly as rendered ──
+    // getDisplayMedia is the only browser API that captures real HTML/CSS/WebGL.
+    // With preferCurrentTab + selfBrowserSurface the browser dialog pre-selects
+    // this tab so the user just has to click "Share" (one extra click).
+    let tabCaptureStream: MediaStream | null = null;
+    try {
+      const capW = glQuality === "480p" ? 854 : glQuality === "720p" ? 1280 : 1920;
+      const capH = glQuality === "480p" ? 480 : glQuality === "720p" ? 720  : 1080;
+      tabCaptureStream = await (navigator.mediaDevices as any).getDisplayMedia({
+        video: {
+          frameRate: { ideal: 30, max: 30 },
+          width: { ideal: capW, min: Math.min(capW, 854) },
+          height: { ideal: capH, min: Math.min(capH, 480) },
+          displaySurface: "browser",
+        },
+        audio: false,
+        preferCurrentTab: true,
+        selfBrowserSurface: "include",
+        surfaceSwitching: "exclude",
+        systemAudio: "exclude",
+      });
+      glTabStreamRef.current = tabCaptureStream;
+      // Build a pass-through canvas so preview snapshots work (same as before)
+      const previewCanvas = document.createElement("canvas");
+      previewCanvas.width = 1280; previewCanvas.height = 720;
+      glCanvasRef.current = previewCanvas;
+      const pCtx = previewCanvas.getContext("2d")!;
+      const tabVid = document.createElement("video");
+      tabVid.srcObject = tabCaptureStream; tabVid.muted = true; tabVid.autoplay = true; tabVid.playsInline = true;
+      tabVid.play().catch(() => {});
+      const renderPreview = () => {
+        if (tabVid.readyState >= 2) pCtx.drawImage(tabVid, 0, 0, 1280, 720);
+        glRafRef.current = requestAnimationFrame(renderPreview);
+      };
+      renderPreview();
+      // If user stops screen share from browser UI, treat it as end-stream
+      tabCaptureStream.getVideoTracks()[0]?.addEventListener("ended", () => {
+        if (glMediaRecorderRef.current?.state !== "inactive") stopGoLive();
+      });
+    } catch (err: any) {
+      audioCtx.close().catch(() => {}); glAudioCtxRef.current = null;
+      micStream?.getTracks().forEach(t => t.stop());
+      if (err?.name === "NotAllowedError") {
+        setGlStatus("error"); setGlError("Screen capture was denied. Click 'Go Live' again and select this tab from the browser dialog.");
+      } else {
+        setGlStatus("error"); setGlError("Could not start screen capture. Please try again.");
+      }
+      return;
+    }
+
+    // Canvas used only for preview snapshots (already set above)
     const canvas = document.createElement("canvas");
     canvas.width = 1280; canvas.height = 720;
-    glCanvasRef.current = canvas;
     const c = canvas.getContext("2d")!;
 
     // ── Avatar image cache ────────────────────────────────────────────────
@@ -7511,13 +7559,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       c.textBaseline="alphabetic";
     };
 
-    // Canvas render loop — draws the real room at 30 fps
-    let t0 = Date.now();
-    const loop = () => { drawFrame(Math.floor((Date.now()-t0)/1000)); glRafRef.current = requestAnimationFrame(loop); };
-    loop();
-
     // Combine video + mixed audio → MediaRecorder → FFmpeg → RTMP
-    const videoTracks = canvas.captureStream(30).getVideoTracks();
+    // Tab capture stream carries the real room video track directly.
+    const videoTracks = tabCaptureStream.getVideoTracks();
     const combined = new MediaStream([...videoTracks, ...audioDest.stream.getAudioTracks()]);
 
     // Start server-side FFmpeg
@@ -12898,14 +12942,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           {(glStatus === "idle" || glStatus === "error") && (<>
 
             {/* Broadcast mode info */}
-            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 space-y-1.5">
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 space-y-2">
               <div className="flex items-center gap-2">
                 <MonitorPlay className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
-                <p className="text-[11px] font-semibold text-white/80">Live Room Broadcast</p>
+                <p className="text-[11px] font-semibold text-white/80">Broadcast this room live</p>
               </div>
-              <p className="text-[9px] text-white/35 leading-relaxed">
-                Instantly streams the real room — participant avatars, camera feeds, speaking states, and animations. No browser permission needed.
+              <p className="text-[9px] text-white/40 leading-relaxed">
+                Streams the actual room exactly as it looks — real profiles, camera feeds, animations.
               </p>
+              <div className="flex items-start gap-2 rounded-lg bg-amber-500/[0.07] border border-amber-500/20 px-2.5 py-2">
+                <span className="text-amber-400 text-[13px] leading-none mt-0.5">①</span>
+                <p className="text-[9px] text-amber-300/70 leading-relaxed">
+                  Your browser will show a share dialog. Select <span className="text-amber-300 font-semibold">this tab</span> and click <span className="text-amber-300 font-semibold">Share</span> to go live.
+                </p>
+              </div>
             </div>
 
             {/* Quality selector */}
