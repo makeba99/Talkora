@@ -7190,31 +7190,50 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     try {
       const capW = glQuality === "480p" ? 854 : glQuality === "720p" ? 1280 : 1920;
       const capH = glQuality === "480p" ? 480 : glQuality === "720p" ? 720  : 1080;
-      tabCaptureStream = await (navigator.mediaDevices as any).getDisplayMedia({
-        video: {
-          frameRate: { ideal: 30, max: 30 },
-          width: { ideal: capW, min: Math.min(capW, 854) },
-          height: { ideal: capH, min: Math.min(capH, 480) },
-          // Restrict picker to browser tabs only (no screens/windows)
-          displaySurface: "browser",
-        },
-        audio: false,
-        // preferCurrentTab causes Chrome to show a minimal "Share this tab?"
-        // prompt pre-selected to the current tab — user just clicks Share.
-        preferCurrentTab: true,
-        // Include current tab in the surface list
-        selfBrowserSurface: "include",
-        // Exclude monitors/screens from the picker completely
-        monitorTypeSurfaces: "exclude",
-        // Prevent switching to a different surface mid-stream
-        surfaceSwitching: "exclude",
-        systemAudio: "exclude",
-      });
+
+      // Try with Chrome-specific constraints first (shows a minimal "Share this tab?" prompt).
+      // Fall back to simpler constraints for Firefox / Safari / other browsers where the
+      // advanced options throw TypeError / NotSupportedError / OverconstrainedError.
+      const tryCapture = async (): Promise<MediaStream> => {
+        // First attempt: full Chrome-specific constraints
+        try {
+          return await (navigator.mediaDevices as any).getDisplayMedia({
+            video: {
+              frameRate: { ideal: 30, max: 30 },
+              width: { ideal: capW, min: Math.min(capW, 854) },
+              height: { ideal: capH, min: Math.min(capH, 480) },
+              displaySurface: "browser",
+            },
+            audio: false,
+            preferCurrentTab: true,
+            selfBrowserSurface: "include",
+            monitorTypeSurfaces: "exclude",
+            surfaceSwitching: "exclude",
+            systemAudio: "exclude",
+          });
+        } catch (firstErr: any) {
+          // Don't fall back if the user explicitly denied or dismissed
+          if (firstErr?.name === "NotAllowedError" || firstErr?.name === "AbortError") throw firstErr;
+          // Second attempt: basic video constraints (works on Firefox/Safari)
+          try {
+            return await navigator.mediaDevices.getDisplayMedia({
+              video: { frameRate: { ideal: 30 }, width: { ideal: capW }, height: { ideal: capH } },
+              audio: false,
+            });
+          } catch (secondErr: any) {
+            if (secondErr?.name === "NotAllowedError" || secondErr?.name === "AbortError") throw secondErr;
+            // Third attempt: minimal — just ask for any video
+            return await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+          }
+        }
+      };
+
+      tabCaptureStream = await tryCapture();
     } catch (err: any) {
-      if (err?.name === "NotAllowedError") {
-        setGlStatus("error"); setGlError("Screen capture was denied. Click 'Go Live' again and select this tab from the browser dialog.");
+      if (err?.name === "NotAllowedError" || err?.name === "AbortError") {
+        setGlStatus("error"); setGlError("Screen capture was denied. Click 'Go Live' again and select your screen or tab from the browser dialog.");
       } else {
-        setGlStatus("error"); setGlError("Could not start screen capture. Please try again.");
+        setGlStatus("error"); setGlError("Could not start screen capture. Make sure you're using Chrome, Firefox, or Edge, and the page is served over HTTPS.");
       }
       return;
     }
