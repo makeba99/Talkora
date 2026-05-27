@@ -1509,6 +1509,20 @@ html {
 .animate-scale-in       { animation: scale-in 0.35s cubic-bezier(.22,.68,0,1.2) both; }
 .animate-float-up       { animation: float-up 4s ease-in-out infinite; }
 
+/* ── Go Live streaming preview animations ───────────────────────────────── */
+@keyframes glBarBounce {
+  from { transform: scaleY(0.35); }
+  to   { transform: scaleY(1); }
+}
+@keyframes glRingPulse {
+  0%   { transform: scale(0.88); opacity: 0.75; }
+  100% { transform: scale(1.5);  opacity: 0; }
+}
+@keyframes glSpeakingCardGlow {
+  0%   { box-shadow: 0 0 8px rgba(255,140,0,0.10), inset 0 0 0 1px rgba(255,165,60,0.15); }
+  100% { box-shadow: 0 0 18px rgba(255,140,0,0.22), inset 0 0 0 1px rgba(255,165,60,0.30); }
+}
+
 /* ambient hero orbs */
 .hero-orb {
   position: absolute;
