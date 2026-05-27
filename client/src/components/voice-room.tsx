@@ -2783,6 +2783,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [glVidPlaying, setGlVidPlaying] = useState(true);
   const [glPreviewDataUrl, setGlPreviewDataUrl] = useState<string | null>(null);
   const glPreviewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [glCaptureMode, setGlCaptureMode] = useState<"tab" | "canvas">("tab");
+  const glTabStreamRef = useRef<MediaStream | null>(null);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -7291,10 +7293,51 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       if (s?.getAudioTracks().length) try { audioCtx.createMediaStreamSource(s).connect(audioDest); } catch {}
     });
 
-    // ── Video: canvas rendering of the room — no screen-share dialog needed ───
+    // ── Video: tab capture (exact room) or canvas fallback ────────────────────
+    let tabCaptureStream: MediaStream | null = null;
+    if (glCaptureMode === "tab") {
+      try {
+        tabCaptureStream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: { frameRate: 30, displaySurface: "browser" },
+          audio: false,
+          preferCurrentTab: true,
+          selfBrowserSurface: "include",
+          surfaceSwitching: "exclude",
+          systemAudio: "exclude",
+        });
+        glTabStreamRef.current = tabCaptureStream;
+        // Build a pass-through canvas for preview snapshots from the tab video
+        const previewCanvas = document.createElement("canvas");
+        previewCanvas.width = 1280; previewCanvas.height = 720;
+        glCanvasRef.current = previewCanvas;
+        const pCtx = previewCanvas.getContext("2d")!;
+        const tabVid = document.createElement("video");
+        tabVid.srcObject = tabCaptureStream; tabVid.muted = true; tabVid.autoplay = true; tabVid.playsInline = true;
+        tabVid.play().catch(() => {});
+        const renderPreview = () => {
+          if (tabVid.readyState >= 2) pCtx.drawImage(tabVid, 0, 0, 1280, 720);
+          glRafRef.current = requestAnimationFrame(renderPreview);
+        };
+        renderPreview();
+        // If user stops screen share from browser UI, treat it as end-stream
+        tabCaptureStream.getVideoTracks()[0]?.addEventListener("ended", () => {
+          if (glMediaRecorderRef.current?.state !== "inactive") stopGoLive();
+        });
+      } catch (err: any) {
+        // User denied or browser doesn't support → fall through to canvas
+        tabCaptureStream = null;
+        glTabStreamRef.current = null;
+        if (err?.name === "NotAllowedError") {
+          audioCtx.close().catch(() => {}); glAudioCtxRef.current = null;
+          micStream?.getTracks().forEach(t => t.stop());
+          setGlStatus("error"); setGlError("Screen capture was denied. Switch to Canvas mode or allow the permission and try again."); return;
+        }
+      }
+    }
+
     const canvas = document.createElement("canvas");
     canvas.width = 1280; canvas.height = 720;
-    glCanvasRef.current = canvas;
+    if (!tabCaptureStream) glCanvasRef.current = canvas;
     const c = canvas.getContext("2d")!;
 
     // ── Avatar image cache ────────────────────────────────────────────────
@@ -7525,13 +7568,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       c.textBaseline="alphabetic";
     };
 
-    let t0 = Date.now();
-    const loop = () => { drawFrame(Math.floor((Date.now()-t0)/1000)); glRafRef.current = requestAnimationFrame(loop); };
-    loop();
+    // Only run canvas loop when NOT using tab capture
+    if (!tabCaptureStream) {
+      let t0 = Date.now();
+      const loop = () => { drawFrame(Math.floor((Date.now()-t0)/1000)); glRafRef.current = requestAnimationFrame(loop); };
+      loop();
+    }
 
-    // Combine canvas video + mixed audio → MediaRecorder → FFmpeg → RTMP
-    const canvasStream = canvas.captureStream(30);
-    const combined = new MediaStream([...canvasStream.getVideoTracks(), ...audioDest.stream.getAudioTracks()]);
+    // Combine video + mixed audio → MediaRecorder → FFmpeg → RTMP
+    const videoTracks = tabCaptureStream
+      ? tabCaptureStream.getVideoTracks()
+      : canvas.captureStream(30).getVideoTracks();
+    const combined = new MediaStream([...videoTracks, ...audioDest.stream.getAudioTracks()]);
 
     // Start server-side FFmpeg
     let startRes: Response;
@@ -7643,7 +7691,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     };
     pollViewers();
     glViewerPollRef.current = setInterval(pollViewers, 30_000);
-  }, [goLivePlatform, glTwitchKey, glYoutubeKey, glTwitchUsername, glYoutubeChannelId, room.id, room.title, room.language]);
+  }, [goLivePlatform, glTwitchKey, glYoutubeKey, glTwitchUsername, glYoutubeChannelId, room.id, room.title, room.language, glCaptureMode]);
 
   const stopGoLive = useCallback(async (sid?: string) => {
     const id = sid ?? glStreamId;
@@ -7651,6 +7699,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       glMediaRecorderRef.current.stop(); // triggers mr.onstop → cleans up audioCtx + RAF
     }
     glMediaRecorderRef.current = null;
+    // Stop tab capture tracks if active
+    if (glTabStreamRef.current) { glTabStreamRef.current.getTracks().forEach(t => t.stop()); glTabStreamRef.current = null; }
     // Fallback cleanup if onstop didn't fire
     if (glRafRef.current) { cancelAnimationFrame(glRafRef.current); glRafRef.current = null; }
     if (glAudioCtxRef.current) { glAudioCtxRef.current.close().catch(()=>{}); glAudioCtxRef.current = null; }
@@ -12695,6 +12745,48 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
 
           {(glStatus === "idle" || glStatus === "error") && (<>
+
+            {/* Capture mode toggle */}
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 space-y-2">
+              <p className="text-[10px] font-bold text-white/45 uppercase tracking-wider">What to stream</p>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => setGlCaptureMode("tab")}
+                  className="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-semibold transition-all duration-150 text-left flex flex-col gap-0.5"
+                  style={glCaptureMode === "tab"
+                    ? { background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)", color: "#fc8181" }
+                    : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}
+                  data-testid="button-gl-mode-tab"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <MonitorPlay className="w-3.5 h-3.5 flex-shrink-0" />
+                    Broadcast Room
+                    {glCaptureMode === "tab" && <span className="ml-auto text-[9px] font-bold tracking-wide opacity-70">✓</span>}
+                  </span>
+                  <span className="text-[9px] opacity-55 font-normal leading-tight pl-5">Streams exactly what you see — real profiles, video, animations</span>
+                </button>
+                <button
+                  onClick={() => setGlCaptureMode("canvas")}
+                  className="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-semibold transition-all duration-150 text-left flex flex-col gap-0.5"
+                  style={glCaptureMode === "canvas"
+                    ? { background: "rgba(99,102,241,0.18)", border: "1px solid rgba(99,102,241,0.35)", color: "#a5b4fc" }
+                    : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}
+                  data-testid="button-gl-mode-canvas"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <LayoutGrid className="w-3.5 h-3.5 flex-shrink-0" />
+                    Canvas Overlay
+                    {glCaptureMode === "canvas" && <span className="ml-auto text-[9px] font-bold tracking-wide opacity-70">✓</span>}
+                  </span>
+                  <span className="text-[9px] opacity-55 font-normal leading-tight pl-5">Custom branded frame with avatars — no permission needed</span>
+                </button>
+              </div>
+              {glCaptureMode === "tab" && (
+                <p className="text-[9px] text-white/30 leading-relaxed">
+                  Your browser will ask which tab to share. Select <span className="text-white/55 font-semibold">this tab</span> to broadcast the room exactly as it appears.
+                </p>
+              )}
+            </div>
 
             {/* Platform picker */}
             <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
