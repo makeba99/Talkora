@@ -15508,14 +15508,43 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               )}
 
-              {/* Book content — wrapper provides the positioning context for arrows so
-                   top:50% resolves against the VISIBLE height, not the scroll height.
-                   Previously the arrows lived inside the overflow-y-auto div; when content
-                   exceeded the visible area top:50% pushed them far below the viewport. */}
-              <div className="flex-1 min-h-0 relative">
+              {/* Book content — 3-column flex layout: [prev-btn | scroll-content | next-btn]
+                   Arrows live in their own flex columns so they are NEVER covered by the
+                   scroll area regardless of panel size. Absolute positioning was replaced
+                   because the w-full h-full scroll div captured pointer events on top of
+                   the absolutely-positioned buttons when the panel was resized. */}
+              <div className="flex-1 min-h-0 flex flex-row">
+                {/* Prev-page arrow column */}
+                <div className="flex-shrink-0 flex items-center justify-center w-8">
+                  {!bookLoading && bookPages.length > 0 && (
+                    <button
+                      onClick={() => { goToPage(currentPage - 1); }}
+                      disabled={currentPage <= 1}
+                      className="flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-90 hover:scale-110 select-none"
+                      style={{
+                        background: eReaderTheme === "dark"
+                          ? "rgba(30,24,14,0.82)"
+                          : eReaderTheme === "sepia"
+                          ? "rgba(236,224,197,0.92)"
+                          : "rgba(255,255,255,0.88)",
+                        border: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.18)" : "rgba(0,0,0,0.10)"}`,
+                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                        backdropFilter: "blur(6px)",
+                        boxShadow: eReaderTheme === "dark"
+                          ? "0 2px 12px rgba(0,0,0,0.55)"
+                          : "0 2px 10px rgba(0,0,0,0.14)",
+                      }}
+                      data-testid="button-ereader-prev-page"
+                      title="Previous page (← key)"
+                    >
+                      <ChevronLeft className="w-4 h-4 flex-shrink-0" />
+                    </button>
+                  )}
+                </div>
+
                 {/* Scrollable page content */}
                 <div
-                  className="w-full h-full overflow-y-auto"
+                  className="flex-1 min-w-0 h-full overflow-y-auto"
                   style={{ scrollbarWidth: "thin", scrollbarColor: eReaderTheme === "dark" ? "#444 #1a1a1a" : "#c4b48a #f5ead5" }}
                   onMouseUp={handleReaderMouseUp}
                   data-testid="ereader-content-area"
@@ -15532,7 +15561,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     const avgLen = lines.length > 0 ? lines.reduce((s, l) => s + l.trim().length, 0) / lines.length : 999;
                     const isPoetry = lines.length >= 3 && avgLen < 55;
                     return (
-                      <div className="px-4 sm:px-10 md:px-16 py-5">
+                      <div className="px-4 py-5">
                         <div className="w-full max-w-2xl mx-auto">
                           <div
                             className="leading-relaxed whitespace-pre-wrap select-text"
@@ -15557,37 +15586,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   )}
                 </div>
 
-                {/* Floating side-arrow navigation — anchored to the VISIBLE container,
-                     not the scroll content, so they stay centred at all reader heights */}
-                {!bookLoading && bookPages.length > 0 && (
-                  <>
-                    <button
-                      onClick={() => { goToPage(currentPage - 1); }}
-                      disabled={currentPage <= 1}
-                      className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-90 hover:scale-110 select-none"
-                      style={{
-                        background: eReaderTheme === "dark"
-                          ? "rgba(30,24,14,0.82)"
-                          : eReaderTheme === "sepia"
-                          ? "rgba(236,224,197,0.92)"
-                          : "rgba(255,255,255,0.88)",
-                        border: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.18)" : "rgba(0,0,0,0.10)"}`,
-                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
-                        backdropFilter: "blur(6px)",
-                        boxShadow: eReaderTheme === "dark"
-                          ? "0 2px 12px rgba(0,0,0,0.55)"
-                          : "0 2px 10px rgba(0,0,0,0.14)",
-                      }}
-                      data-testid="button-ereader-prev-page"
-                      title="Previous page (← key)"
-                    >
-                      <ChevronLeft className="w-4 h-4 flex-shrink-0" />
-                    </button>
-
+                {/* Next-page arrow column */}
+                <div className="flex-shrink-0 flex items-center justify-center w-8">
+                  {!bookLoading && bookPages.length > 0 && (
                     <button
                       onClick={() => { goToPage(currentPage + 1); }}
                       disabled={currentPage >= bookPages.length}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-90 hover:scale-110 select-none"
+                      className="flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-90 hover:scale-110 select-none"
                       style={{
                         background: eReaderTheme === "dark"
                           ? "rgba(30,24,14,0.82)"
@@ -15606,8 +15611,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     >
                       <ChevronRight className="w-4 h-4 flex-shrink-0" />
                     </button>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Bottom status bar — page counter + mode toggle only */}
