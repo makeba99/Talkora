@@ -9165,6 +9165,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
   }, [bookPages.length, bookHostId, user?.id, socket, room.id]);
 
+  // Clamp eReaderHeight when the window is resized smaller so the panel never
+  // overflows and covers the participant profile cards above it.
+  useEffect(() => {
+    if (!showEReader) return;
+    const onResize = () => {
+      setEReaderHeight(prev => {
+        if (prev === null) return null;
+        // Keep panel within 60% of viewport height, minimum 140px
+        const max = Math.max(140, Math.floor(window.innerHeight * 0.6));
+        return prev > max ? max : prev;
+      });
+    };
+    window.addEventListener("resize", onResize, { passive: true });
+    onResize(); // clamp immediately on mount in case window already shrank
+    return () => window.removeEventListener("resize", onResize);
+  }, [showEReader]);
+
   // Bug 2 fix: when bookPages is recomputed (new book loaded or font size changed),
   // clamp currentPage to valid bounds. This handles the race where a watcher receives
   // a room:book-scroll event BEFORE their bookText has finished loading — the socket
@@ -15287,27 +15304,38 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               )}
 
               {/* Book content — 3-column flex layout: [prev-btn | scroll-content | next-btn]
-                   Arrows are full-height columns so they're always tappable on any screen. */}
+                   Arrows live in their own flex columns so they are NEVER covered by the
+                   scroll area regardless of panel size. min-h-[48px] guarantees the arrow
+                   columns always have enough vertical space to be clickable even when the
+                   panel is dragged very small. */}
               <div className="flex-1 min-h-0 flex flex-row" style={{ minHeight: 48 }}>
-                {/* Prev-page arrow column — full height, always tappable */}
-                <button
-                  onClick={() => { goToPage(currentPage - 1); }}
-                  disabled={!bookPages.length || bookLoading || currentPage <= 1}
-                  className="flex-shrink-0 flex items-center justify-center w-10 h-full transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-95 select-none"
-                  style={{
-                    background: eReaderTheme === "dark"
-                      ? "rgba(26,20,10,0.55)"
-                      : eReaderTheme === "sepia"
-                      ? "rgba(236,224,197,0.65)"
-                      : "rgba(248,248,248,0.65)",
-                    borderRight: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.10)" : "rgba(0,0,0,0.06)"}`,
-                    color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
-                  }}
-                  data-testid="button-ereader-prev-page"
-                  title="Previous page (← key)"
-                >
-                  <ChevronLeft className="w-5 h-5 flex-shrink-0" />
-                </button>
+                {/* Prev-page arrow column */}
+                <div className="flex-shrink-0 flex items-center justify-center w-8">
+                  {!bookLoading && bookPages.length > 0 && (
+                    <button
+                      onClick={() => { goToPage(currentPage - 1); }}
+                      disabled={currentPage <= 1}
+                      className="flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-90 hover:scale-110 select-none"
+                      style={{
+                        background: eReaderTheme === "dark"
+                          ? "rgba(30,24,14,0.82)"
+                          : eReaderTheme === "sepia"
+                          ? "rgba(236,224,197,0.92)"
+                          : "rgba(255,255,255,0.88)",
+                        border: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.18)" : "rgba(0,0,0,0.10)"}`,
+                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                        backdropFilter: "blur(6px)",
+                        boxShadow: eReaderTheme === "dark"
+                          ? "0 2px 12px rgba(0,0,0,0.55)"
+                          : "0 2px 10px rgba(0,0,0,0.14)",
+                      }}
+                      data-testid="button-ereader-prev-page"
+                      title="Previous page (← key)"
+                    >
+                      <ChevronLeft className="w-4 h-4 flex-shrink-0" />
+                    </button>
+                  )}
+                </div>
 
                 {/* Scrollable page content */}
                 <div
@@ -15354,25 +15382,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   )}
                 </div>
 
-                {/* Next-page arrow column — full height, always tappable */}
-                <button
-                  onClick={() => { goToPage(currentPage + 1); }}
-                  disabled={!bookPages.length || bookLoading || currentPage >= bookPages.length}
-                  className="flex-shrink-0 flex items-center justify-center w-10 h-full transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-95 select-none"
-                  style={{
-                    background: eReaderTheme === "dark"
-                      ? "rgba(26,20,10,0.55)"
-                      : eReaderTheme === "sepia"
-                      ? "rgba(236,224,197,0.65)"
-                      : "rgba(248,248,248,0.65)",
-                    borderLeft: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.10)" : "rgba(0,0,0,0.06)"}`,
-                    color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
-                  }}
-                  data-testid="button-ereader-next-page"
-                  title="Next page (→ key)"
-                >
-                  <ChevronRight className="w-5 h-5 flex-shrink-0" />
-                </button>
+                {/* Next-page arrow column */}
+                <div className="flex-shrink-0 flex items-center justify-center w-8">
+                  {!bookLoading && bookPages.length > 0 && (
+                    <button
+                      onClick={() => { goToPage(currentPage + 1); }}
+                      disabled={currentPage >= bookPages.length}
+                      className="flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-90 hover:scale-110 select-none"
+                      style={{
+                        background: eReaderTheme === "dark"
+                          ? "rgba(30,24,14,0.82)"
+                          : eReaderTheme === "sepia"
+                          ? "rgba(236,224,197,0.92)"
+                          : "rgba(255,255,255,0.88)",
+                        border: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.18)" : "rgba(0,0,0,0.10)"}`,
+                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                        backdropFilter: "blur(6px)",
+                        boxShadow: eReaderTheme === "dark"
+                          ? "0 2px 12px rgba(0,0,0,0.55)"
+                          : "0 2px 10px rgba(0,0,0,0.14)",
+                      }}
+                      data-testid="button-ereader-next-page"
+                      title="Next page (→ key)"
+                    >
+                      <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Bottom status bar — page counter + mode toggle only */}
