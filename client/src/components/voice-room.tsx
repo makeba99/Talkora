@@ -12879,120 +12879,59 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                 </a>
-                {/* Step-by-step visual guide */}
-                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 space-y-1.5">
-                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-wider mb-1">How to find your stream key:</p>
-                  {[
-                    { n: "1", text: 'Click "Go Live" in YouTube Studio (top right)' },
-                    { n: "2", text: 'Choose "Streaming software" tab' },
-                    { n: "3", text: 'Click "Copy" next to Stream Key' },
-                    { n: "4", text: "Come back here and paste it below" },
-                  ].map(({ n, text }) => (
-                    <div key={n} className="flex items-start gap-2">
-                      <span className="flex-shrink-0 w-4 h-4 rounded-full bg-red-600/30 text-red-400 text-[9px] font-bold flex items-center justify-center mt-0.5">{n}</span>
-                      <p className="text-[10px] text-white/55 leading-snug">{text}</p>
-                    </div>
-                  ))}
-                </div>
-                {/* Screen-recording-style video player — always works, no external embed needed */}
+                {/* Real screenshot step carousel */}
                 {(() => {
-                  const TOTAL = 36;
-                  const scene = Math.min(3, Math.floor(glVidTime / 9));
-                  const progress = (glVidTime / TOTAL) * 100;
-                  const fmtT = (s: number) => `0:${String(Math.min(s, 35)).padStart(2, "0")}`;
-                  const ytLogoPath = "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z";
-                  const sceneContent = [
-                    // Scene 0: YouTube Studio → Create → Go Live
-                    <div key="s0" style={{ background: "#fff", height: "100%", fontFamily: "system-ui,sans-serif", overflow: "hidden" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", borderBottom: "1px solid #e5e5e5", background: "#fff" }}>
-                        <svg viewBox="0 0 24 24" width={12} height={12} style={{ fill: "#ff0000", flexShrink: 0 }}><path d={ytLogoPath}/></svg>
-                        <span style={{ color: "#444", fontSize: 7, fontWeight: 700 }}>YouTube Studio</span>
-                        <div style={{ flex: 1 }} />
-                        <div style={{ position: "relative" }}>
-                          <div style={{ background: "#065fd4", color: "#fff", borderRadius: 3, padding: "2px 7px", fontSize: 7, fontWeight: 700, boxShadow: "0 0 0 3px rgba(6,95,212,0.25)", cursor: "pointer" }}>+ Create ▾</div>
-                          <div style={{ position: "absolute", top: "110%", right: 0, background: "#fff", border: "1px solid #ddd", borderRadius: 4, minWidth: 80, boxShadow: "0 3px 10px rgba(0,0,0,0.18)", zIndex: 10 }}>
-                            <div style={{ padding: "4px 10px", color: "#333", fontSize: 7, fontWeight: 700, background: "#e8f0fe", borderRadius: "4px 4px 0 0" }}>📡 Go Live</div>
-                            <div style={{ padding: "4px 10px", color: "#888", fontSize: 7 }}>⬆ Upload</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ padding: "5px 8px 2px", background: "#fffde7", borderBottom: "1px solid #fff9c4" }}>
-                        <span style={{ fontSize: 7, color: "#795548", fontWeight: 600 }}>① Click "+ Create" in the top-right, then select "Go Live"</span>
-                      </div>
-                      <div style={{ padding: "4px 8px", display: "flex", gap: 8, color: "#888", fontSize: 6 }}>
-                        <span>📊 Dashboard</span><span>📝 Content</span><span style={{ color: "#065fd4", fontWeight: 700 }}>📡 Live</span>
-                      </div>
-                    </div>,
-                    // Scene 1: Choose Streaming software
-                    <div key="s1" style={{ background: "#f5f5f5", height: "100%", fontFamily: "system-ui,sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "4px 8px" }}>
-                      <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 6, padding: "6px 8px", width: "100%", boxShadow: "0 1px 5px rgba(0,0,0,0.08)" }}>
-                        <div style={{ fontSize: 7, fontWeight: 700, color: "#222", marginBottom: 5 }}>How do you want to go live?</div>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          <div style={{ flex: 1, padding: "4px 4px", border: "1px solid #e0e0e0", borderRadius: 4, textAlign: "center", color: "#888", fontSize: 6 }}>📷 Webcam</div>
-                          <div style={{ flex: 1, padding: "4px 4px", border: "2px solid #065fd4", borderRadius: 4, textAlign: "center", color: "#065fd4", fontSize: 6, fontWeight: 700, background: "#e8f0fe" }}>💻 Streaming software</div>
-                        </div>
-                        <div style={{ fontSize: 6, color: "#065fd4", textAlign: "right", marginTop: 3 }}>② Select this tab ↑</div>
-                      </div>
-                    </div>,
-                    // Scene 2: Stream key → Copy
-                    <div key="s2" style={{ background: "#fff", height: "100%", fontFamily: "system-ui,sans-serif", display: "flex", flexDirection: "column", justifyContent: "center", padding: "4px 8px", gap: 3 }}>
-                      <div style={{ padding: "3px 8px", background: "#fffde7", borderRadius: 3, marginBottom: 2 }}>
-                        <span style={{ fontSize: 6, color: "#795548", fontWeight: 600 }}>③ Find "Stream key" — click Copy to copy it</span>
-                      </div>
-                      <div style={{ fontSize: 7, color: "#555" }}>Stream name</div>
-                      <div style={{ background: "#f5f5f5", borderRadius: 3, padding: "2px 6px", fontSize: 7, color: "#333", border: "1px solid #ddd", marginBottom: 2 }}>My Stream</div>
-                      <div style={{ fontSize: 7, color: "#555" }}>Stream key <span style={{ color: "#999", fontSize: 6 }}>(keep private)</span></div>
-                      <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-                        <div style={{ flex: 1, background: "#f5f5f5", borderRadius: 3, padding: "2px 6px", fontSize: 7, border: "1px solid #ddd", letterSpacing: 2, color: "#555" }}>••••••••••••</div>
-                        <div style={{ background: "#065fd4", color: "#fff", borderRadius: 3, padding: "3px 10px", fontSize: 7, fontWeight: 700, boxShadow: "0 0 0 3px rgba(6,95,212,0.3)", whiteSpace: "nowrap", cursor: "pointer" }}>Copy ←</div>
-                      </div>
-                    </div>,
-                    // Scene 3: Copied!
-                    <div key="s3" style={{ background: "#fff", height: "100%", fontFamily: "system-ui,sans-serif", display: "flex", flexDirection: "column", justifyContent: "center", padding: "4px 8px", gap: 3 }}>
-                      <div style={{ fontSize: 7, color: "#555" }}>Stream name</div>
-                      <div style={{ background: "#f5f5f5", borderRadius: 3, padding: "2px 6px", fontSize: 7, color: "#333", border: "1px solid #ddd", marginBottom: 2 }}>My Stream</div>
-                      <div style={{ fontSize: 7, color: "#555" }}>Stream key <span style={{ color: "#999", fontSize: 6 }}>(keep private)</span></div>
-                      <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-                        <div style={{ flex: 1, background: "#f5f5f5", borderRadius: 3, padding: "2px 6px", fontSize: 7, border: "1px solid #ddd", letterSpacing: 2, color: "#555" }}>••••••••••••</div>
-                        <div style={{ background: "#1a7f37", color: "#fff", borderRadius: 3, padding: "3px 10px", fontSize: 7, fontWeight: 700, whiteSpace: "nowrap" }}>✓ Copied!</div>
-                      </div>
-                      <div style={{ textAlign: "center", marginTop: 3, fontSize: 7, color: "#1a7f37", fontWeight: 700 }}>④ Now paste it into Vextorn below ↓</div>
-                    </div>,
+                  const step = Math.min(2, Math.floor(glVidTime / 12));
+                  const steps = [
+                    { img: "/yt-studio-overview.png", title: "Open YouTube Studio → Go Live", desc: 'Click the live streaming icon (📡) in the left sidebar of YouTube Studio', objPos: "top left" },
+                    { img: "/yt-studio-copy-key.png",  title: "Copy your stream key",           desc: 'Click the copy button (📋) shown by the red arrow, next to "Stream key: Default stream"', objPos: "top right" },
+                    { img: "/yt-paste-key.png",        title: "Come back & paste it here",      desc: 'Return to this tab and paste your key into the field below to start streaming', objPos: "center" },
                   ];
                   return (
-                    <div className="rounded-xl overflow-hidden border border-white/[0.08]" style={{ background: "#0a0a0a" }}>
-                      {/* "Screen" — the simulated recording content */}
-                      <div style={{ height: 112, overflow: "hidden", position: "relative", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                        <div style={{ width: "100%", height: "100%", transition: "opacity 0.3s" }}>
-                          {sceneContent[scene]}
-                        </div>
-                        <div style={{ position: "absolute", top: 4, left: 5, background: "rgba(0,0,0,0.55)", borderRadius: 3, padding: "1px 5px", display: "flex", alignItems: "center", gap: 3 }}>
-                          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#ff4444", animation: "pulse 1.5s infinite" }} />
-                          <span style={{ color: "#fff", fontSize: 6, fontWeight: 600 }}>SCREEN RECORDING</span>
+                    <div className="rounded-xl border border-white/[0.08] overflow-hidden" style={{ background: "rgba(0,0,0,0.35)" }}>
+                      <div className="relative" style={{ height: 112 }}>
+                        <img
+                          src={steps[step].img}
+                          alt={steps[step].title}
+                          className="w-full h-full object-cover transition-opacity duration-300"
+                          style={{ objectPosition: steps[step].objPos }}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                        <div className="absolute top-1.5 left-1.5 bg-red-600/90 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md tracking-wide">
+                          STEP {step + 1} / 3
                         </div>
                       </div>
-                      {/* Controls bar */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", background: "#111" }}>
-                        <button
-                          onClick={() => setGlVidPlaying(v => !v)}
-                          style={{ color: "#fff", background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: 0, lineHeight: 1, flexShrink: 0 }}
-                          aria-label={glVidPlaying ? "Pause" : "Play"}
-                        >{glVidPlaying ? "⏸" : "▶"}</button>
-                        <div
-                          style={{ flex: 1, height: 3, background: "#333", borderRadius: 2, cursor: "pointer", position: "relative" }}
-                          onClick={(e) => {
-                            const r = e.currentTarget.getBoundingClientRect();
-                            setGlVidTime(Math.round(((e.clientX - r.left) / r.width) * TOTAL));
-                          }}
-                        >
-                          <div style={{ width: `${progress}%`, height: "100%", background: "#ff0000", borderRadius: 2, transition: "width 0.9s linear" }} />
+                      <div className="p-2 space-y-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                        <p className="text-[11px] font-semibold text-white/85 leading-tight">{steps[step].title}</p>
+                        <p className="text-[9px] text-white/50 leading-relaxed">{steps[step].desc}</p>
+                        <div className="flex items-center justify-between pt-0.5">
+                          <div className="flex gap-1.5">
+                            {[0, 1, 2].map(i => (
+                              <button
+                                key={i}
+                                onClick={() => setGlVidTime(i * 12)}
+                                className="transition-all duration-200"
+                                style={{ width: step === i ? 14 : 6, height: 6, borderRadius: 3, background: step === i ? "#ef4444" : "rgba(255,255,255,0.2)" }}
+                                aria-label={`Go to step ${i + 1}`}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => setGlVidTime(Math.max(0, (step - 1) * 12))}
+                              disabled={step === 0}
+                              className="text-[9px] px-2 py-0.5 rounded border transition-all disabled:opacity-20"
+                              style={{ borderColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)" }}
+                            >← Back</button>
+                            <button
+                              onClick={() => setGlVidTime(Math.min(24, (step + 1) * 12))}
+                              disabled={step === 2}
+                              className="text-[9px] px-2 py-0.5 rounded border transition-all disabled:opacity-20"
+                              style={{ borderColor: "rgba(239,68,68,0.3)", color: "rgba(239,68,68,0.8)" }}
+                            >Next →</button>
+                          </div>
                         </div>
-                        <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 7, whiteSpace: "nowrap", flexShrink: 0 }}>{fmtT(glVidTime)} / 0:35</span>
-                      </div>
-                      {/* Footer with title + open link */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 8px 4px" }}>
-                        <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 7 }}>YouTube Studio — How to find your Stream Key</span>
-                        <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.25)", fontSize: 7 }}>Open Studio ↗</a>
                       </div>
                     </div>
                   );
@@ -13578,105 +13517,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </span>
                   <ExternalLink className="w-4 h-4 opacity-70" />
                 </a>
-                {/* Step-by-step visual guide */}
-                <div className="rounded-xl border bg-muted/20 p-3 space-y-2">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">How to find your stream key:</p>
+                {/* Real screenshot guide — all 3 steps visible at once */}
+                <div className="rounded-xl border overflow-hidden" style={{ background: "rgba(0,0,0,0.2)" }}>
+                  <div className="px-3 py-2 border-b" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">How to find your stream key</p>
+                  </div>
                   {[
-                    { n: "1", text: 'Click "Go Live" in YouTube Studio (top right)' },
-                    { n: "2", text: 'Select the "Streaming software" tab' },
-                    { n: "3", text: 'Click "Copy" next to your Stream key' },
-                    { n: "4", text: "Come back here and paste it in the field below" },
-                  ].map(({ n, text }) => (
-                    <div key={n} className="flex items-start gap-2.5">
+                    { n: "1", img: "/yt-studio-overview.png", title: "Open YouTube Studio → Go Live", desc: 'Click the live streaming icon (📡) in the left sidebar', objPos: "top left" },
+                    { n: "2", img: "/yt-studio-copy-key.png",  title: "Copy your stream key",           desc: 'Click the copy button (📋) shown by the red arrow, next to "Stream key: Default stream"', objPos: "top right" },
+                    { n: "3", img: "/yt-paste-key.png",        title: "Paste it below",                 desc: 'Return to this tab and paste your key in the field below', objPos: "center" },
+                  ].map(({ n, img, title, desc, objPos }) => (
+                    <div key={n} className="flex gap-3 px-3 py-2.5 border-b last:border-0" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-600/20 text-red-400 text-[10px] font-bold flex items-center justify-center mt-0.5 border border-red-600/30">{n}</span>
-                      <p className="text-xs text-muted-foreground leading-snug">{text}</p>
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <p className="text-xs font-semibold text-foreground leading-tight">{title}</p>
+                        <img
+                          src={img}
+                          alt={title}
+                          className="w-full rounded-lg border object-cover"
+                          style={{ height: 90, objectPosition: objPos, borderColor: "rgba(255,255,255,0.1)" }}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                        <p className="text-[10px] text-muted-foreground leading-snug">{desc}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-                {/* Screen-recording-style video player (dialog size) */}
-                {(() => {
-                  const TOTAL = 36;
-                  const scene = Math.min(3, Math.floor(glVidTime / 9));
-                  const progress = (glVidTime / TOTAL) * 100;
-                  const fmtT = (s: number) => `0:${String(Math.min(s, 35)).padStart(2, "0")}`;
-                  const ytLogoPath = "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z";
-                  const sceneContent = [
-                    <div key="d0" style={{ background: "#fff", height: "100%", fontFamily: "system-ui,sans-serif", overflow: "hidden" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderBottom: "1px solid #e5e5e5" }}>
-                        <svg viewBox="0 0 24 24" width={14} height={14} style={{ fill: "#ff0000", flexShrink: 0 }}><path d={ytLogoPath}/></svg>
-                        <span style={{ color: "#444", fontSize: 9, fontWeight: 700 }}>YouTube Studio</span>
-                        <div style={{ flex: 1 }} />
-                        <div style={{ position: "relative" }}>
-                          <div style={{ background: "#065fd4", color: "#fff", borderRadius: 4, padding: "3px 10px", fontSize: 8, fontWeight: 700, boxShadow: "0 0 0 3px rgba(6,95,212,0.25)" }}>+ Create ▾</div>
-                          <div style={{ position: "absolute", top: "115%", right: 0, background: "#fff", border: "1px solid #ddd", borderRadius: 5, minWidth: 100, boxShadow: "0 4px 14px rgba(0,0,0,0.15)", zIndex: 10 }}>
-                            <div style={{ padding: "5px 12px", color: "#065fd4", fontSize: 8, fontWeight: 700, background: "#e8f0fe", borderRadius: "5px 5px 0 0" }}>📡 Go Live</div>
-                            <div style={{ padding: "5px 12px", color: "#888", fontSize: 8 }}>⬆ Upload video</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ padding: "6px 10px", background: "#fffde7", borderBottom: "1px solid #fff9c4" }}>
-                        <span style={{ fontSize: 8, color: "#795548", fontWeight: 600 }}>① Click "+ Create" top-right → then click "Go Live"</span>
-                      </div>
-                      <div style={{ padding: "5px 10px", display: "flex", gap: 12, color: "#888", fontSize: 8 }}>
-                        <span>📊 Dashboard</span><span>📝 Content</span><span style={{ color: "#065fd4", fontWeight: 700 }}>📡 Live</span>
-                      </div>
-                    </div>,
-                    <div key="d1" style={{ background: "#f5f5f5", height: "100%", fontFamily: "system-ui,sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "6px 12px" }}>
-                      <div style={{ background: "#fff", border: "1px solid #e0e0e0", borderRadius: 8, padding: "8px 10px", width: "100%", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: "#222", marginBottom: 6 }}>How do you want to go live?</div>
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <div style={{ flex: 1, padding: "5px", border: "1px solid #e0e0e0", borderRadius: 5, textAlign: "center", color: "#888", fontSize: 8 }}>📷 Webcam</div>
-                          <div style={{ flex: 1, padding: "5px", border: "2.5px solid #065fd4", borderRadius: 5, textAlign: "center", color: "#065fd4", fontSize: 8, fontWeight: 700, background: "#e8f0fe" }}>💻 Streaming software ✓</div>
-                        </div>
-                        <div style={{ fontSize: 8, color: "#065fd4", textAlign: "right", marginTop: 4, fontWeight: 600 }}>② Select "Streaming software" ↑</div>
-                      </div>
-                    </div>,
-                    <div key="d2" style={{ background: "#fff", height: "100%", fontFamily: "system-ui,sans-serif", display: "flex", flexDirection: "column", justifyContent: "center", padding: "6px 12px", gap: 4 }}>
-                      <div style={{ padding: "4px 8px", background: "#fffde7", borderRadius: 4, marginBottom: 3 }}>
-                        <span style={{ fontSize: 8, color: "#795548", fontWeight: 600 }}>③ Find "Stream key" — click Copy to copy it</span>
-                      </div>
-                      <div style={{ fontSize: 8, color: "#555" }}>Stream name</div>
-                      <div style={{ background: "#f5f5f5", borderRadius: 4, padding: "3px 8px", fontSize: 8, color: "#333", border: "1px solid #ddd", marginBottom: 3 }}>My Vextorn Stream</div>
-                      <div style={{ fontSize: 8, color: "#555" }}>Stream key <span style={{ color: "#999", fontSize: 7 }}>(keep private)</span></div>
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                        <div style={{ flex: 1, background: "#f5f5f5", borderRadius: 4, padding: "3px 8px", fontSize: 8, border: "1px solid #ddd", letterSpacing: 3, color: "#555" }}>••••••••••••••</div>
-                        <div style={{ background: "#065fd4", color: "#fff", borderRadius: 4, padding: "4px 14px", fontSize: 8, fontWeight: 700, boxShadow: "0 0 0 3px rgba(6,95,212,0.3)", cursor: "pointer", whiteSpace: "nowrap" }}>Copy ←</div>
-                      </div>
-                    </div>,
-                    <div key="d3" style={{ background: "#fff", height: "100%", fontFamily: "system-ui,sans-serif", display: "flex", flexDirection: "column", justifyContent: "center", padding: "6px 12px", gap: 4 }}>
-                      <div style={{ fontSize: 8, color: "#555" }}>Stream name</div>
-                      <div style={{ background: "#f5f5f5", borderRadius: 4, padding: "3px 8px", fontSize: 8, color: "#333", border: "1px solid #ddd", marginBottom: 3 }}>My Vextorn Stream</div>
-                      <div style={{ fontSize: 8, color: "#555" }}>Stream key <span style={{ color: "#999", fontSize: 7 }}>(keep private)</span></div>
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                        <div style={{ flex: 1, background: "#f5f5f5", borderRadius: 4, padding: "3px 8px", fontSize: 8, border: "1px solid #ddd", letterSpacing: 3, color: "#555" }}>••••••••••••••</div>
-                        <div style={{ background: "#1a7f37", color: "#fff", borderRadius: 4, padding: "4px 14px", fontSize: 8, fontWeight: 700, whiteSpace: "nowrap" }}>✓ Copied!</div>
-                      </div>
-                      <div style={{ textAlign: "center", marginTop: 5, fontSize: 9, color: "#1a7f37", fontWeight: 700 }}>④ Paste the key into Vextorn below ↓</div>
-                    </div>,
-                  ];
-                  return (
-                    <div className="rounded-xl overflow-hidden border" style={{ background: "#0a0a0a" }}>
-                      <div style={{ height: 138, overflow: "hidden", position: "relative", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                        <div style={{ width: "100%", height: "100%", transition: "opacity 0.3s" }}>{sceneContent[scene]}</div>
-                        <div style={{ position: "absolute", top: 5, left: 6, background: "rgba(0,0,0,0.6)", borderRadius: 3, padding: "2px 6px", display: "flex", alignItems: "center", gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ff4444" }} />
-                          <span style={{ color: "#fff", fontSize: 7, fontWeight: 600 }}>SCREEN RECORDING</span>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 10px", background: "#111" }}>
-                        <button onClick={() => setGlVidPlaying(v => !v)} style={{ color: "#fff", background: "none", border: "none", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1, flexShrink: 0 }} aria-label={glVidPlaying ? "Pause" : "Play"}>{glVidPlaying ? "⏸" : "▶"}</button>
-                        <div style={{ flex: 1, height: 3, background: "#333", borderRadius: 2, cursor: "pointer", position: "relative" }} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setGlVidTime(Math.round(((e.clientX - r.left) / r.width) * TOTAL)); }}>
-                          <div style={{ width: `${progress}%`, height: "100%", background: "#ff0000", borderRadius: 2, transition: "width 0.9s linear" }} />
-                        </div>
-                        <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{fmtT(glVidTime)} / 0:35</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 10px 5px" }}>
-                        <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 8 }}>YouTube Studio — How to find your Stream Key</span>
-                        <a href="https://studio.youtube.com/channel/UC/livestreaming" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.25)", fontSize: 8 }}>Open Studio ↗</a>
-                      </div>
-                    </div>
-                  );
-                })()}
                 {glWaitingForKey && (
                   <p className="text-[11px] text-amber-500 text-center animate-pulse font-medium">
                     ✓ Stream key copied? Paste it below to go live!
