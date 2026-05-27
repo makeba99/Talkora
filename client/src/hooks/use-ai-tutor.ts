@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractSentences } from "@/lib/ai-tutor/tts";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
-import { SttEngine } from "@/lib/ai-tutor/stt";
+import { SttEngine, FILLER_ONLY_PATTERN } from "@/lib/ai-tutor/stt";
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
 import { streamTokens, fetchBufferedReply } from "@/lib/ai-tutor/stream";
 import {
@@ -202,9 +202,9 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: false });
-    // 500ms delay — lets room echo fully fade before reopening the mic
+    // 300ms delay — lets room echo fade while keeping the turnaround snappy
     if (activeRef.current && !loadingRef.current) {
-      setTimeout(() => sttRef.current?.startListening(), 500);
+      setTimeout(() => sttRef.current?.startListening(), 300);
     }
   }, [socket, roomId, userId]);
 
@@ -249,19 +249,28 @@ export function useAiTutor(deps: AiTutorDeps) {
     addDebug("info", "Barge-in detected — interrupting AI.");
     setVoiceBargeInActive(false);
     interruptAiRef.current?.();
-    // 600ms — lets room echo fade so the mic doesn't immediately re-capture AI audio
+    // 400ms — lets room echo fade while keeping response snappy
     setTimeout(() => {
       if (activeRef.current && !speakingRef.current && !loadingRef.current) {
         sttRef.current?.startListening();
       }
-    }, 600);
+    }, 400);
   }, [addDebug]);
 
   const onFinalTranscript = useCallback((text: string) => {
     const trimmed = text.trim();
-    // Ignore fragments shorter than 3 characters — these are almost always echo
-    // artifacts or noise picked up right after the AI finishes speaking
+    // Ignore fragments shorter than 3 characters — almost always echo artifacts
     if (trimmed.length < 3) return;
+    // Ignore pure filler transcripts (um, uh, hmm…) — no real content to send
+    if (FILLER_ONLY_PATTERN.test(trimmed)) {
+      addDebug("info", `Filler filtered: "${trimmed}" — restarting mic`);
+      setTimeout(() => {
+        if (activeRef.current && !speakingRef.current && !loadingRef.current) {
+          sttRef.current?.startListening();
+        }
+      }, 200);
+      return;
+    }
     setVoiceInterimText(null);
     setVoiceListening(false);
     addDebug("info", `Recognized: "${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…" : ""}"`);
@@ -281,6 +290,26 @@ export function useAiTutor(deps: AiTutorDeps) {
         onError: msg => {
           addDebug("error", `STT: ${msg}`);
           setMicError(msg);
+          // Speak critical errors so the user knows what happened
+          if (activeRef.current) {
+            if (/denied/i.test(msg)) {
+              ttsRef.current?.enqueue("I can't hear you — please allow microphone access in your browser settings.");
+            } else if (/network/i.test(msg)) {
+              ttsRef.current?.enqueue("I'm having trouble hearing you. Check your connection?");
+            }
+          }
+        },
+        onNoSpeechExtended: () => {
+          if (!activeRef.current || speakingRef.current || loadingRef.current) return;
+          const SILENCE_REMINDERS = [
+            "Still there? Just say something whenever you're ready.",
+            "I'm here — take your time.",
+            "No rush. Talk to me whenever you like.",
+          ];
+          const pick = SILENCE_REMINDERS[Math.floor(Math.random() * SILENCE_REMINDERS.length)];
+          addDebug("info", "Extended silence — speaking reminder");
+          sttRef.current?.resetNoSpeechCount();
+          ttsRef.current?.enqueue(pick);
         },
       },
       {
@@ -547,7 +576,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     const intro = intros[Math.floor(Math.random() * intros.length)];
     const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
     setAiConversation([introMsg]);
-    setTimeout(() => ttsRef.current?.enqueue(intro), 300);
+    setTimeout(() => ttsRef.current?.enqueue(intro), 150);
     addDebug("info", `Session started with persona: ${pName} (${voice})`);
   }, [aiActive, socket, roomId, userId, username, aiSettings, addDebug]);
 
@@ -570,7 +599,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       const intro = intros[Math.floor(Math.random() * intros.length)];
       const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
       setAiConversation([introMsg]);
-      setTimeout(() => ttsRef.current?.enqueue(intro), 300);
+      setTimeout(() => ttsRef.current?.enqueue(intro), 150);
     } else {
       // Stop session — unlock persona and drain queue
       personaLockedRef.current = false;
@@ -614,10 +643,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => {
     if (aiActive) {
       activeRef.current = true;
-      // 250ms — gives the intro TTS time to start, then mic activates immediately after
+      // 100ms — gives the intro TTS a single tick to start before the mic opens
       setTimeout(() => {
         if (activeRef.current && !speakingRef.current) sttRef.current?.startListening();
-      }, 250);
+      }, 100);
     } else {
       activeRef.current = false;
       sttRef.current?.stopAll();

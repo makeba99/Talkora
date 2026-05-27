@@ -1,9 +1,9 @@
 /**
  * STT Module — Web Speech API wrapper with barge-in support.
  *
- * Primary recognizer: runs in CONTINUOUS mode with a 500ms silence timer.
+ * Primary recognizer: runs in CONTINUOUS mode with a 400ms silence timer.
  *   - Continuous mode captures fast speech and long sentences without cutting off.
- *   - A silence timer (500ms after last speech activity) flushes the accumulated buffer.
+ *   - A silence timer (400ms after last speech activity) flushes the accumulated buffer.
  *   - "lastInterim" fallback: Chrome often skips isFinal for short utterances and
  *     fires onend directly — we capture the best interim result seen and use it as
  *     the user's message when no isFinal data was collected.
@@ -11,10 +11,16 @@
  * Barge-in recognizer: lightweight always-on mic that detects voice while AI is
  *   speaking and cancels the TTS pipeline. Two guards prevent echo loops:
  *   1. 1800ms grace period after AI starts speaking.
- *   2. Minimum 3 words to trigger (single words are almost always echo artifacts).
+ *   2. Minimum 2 words to trigger (single words are almost always echo artifacts).
+ *
+ * No-speech extended: after 6 consecutive no-speech events (~30s of silence),
+ *   fires onNoSpeechExtended so the hook can speak a reminder to the user.
  */
 
 import { SPEECH_LANG_MAP } from "./types";
+
+/** Pure-filler transcript pattern — recognized but carries no real content */
+export const FILLER_ONLY_PATTERN = /^(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+)(\s+(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+))*\.?$/i;
 
 export type SttCallbacks = {
   onInterim: (text: string) => void;
@@ -23,6 +29,8 @@ export type SttCallbacks = {
   onStop: () => void;
   onBargeIn: () => void;
   onError?: (msg: string) => void;
+  /** Fired after ~30 s of continuous silence (6 no-speech events). */
+  onNoSpeechExtended?: () => void;
 };
 
 const SpeechRec: any =
@@ -44,6 +52,10 @@ export class SttEngine {
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
   private silenceTimer: ReturnType<typeof setTimeout> | null = null;
   private micDenied = false;
+  /** Consecutive no-speech events — resets on any real transcript. */
+  private noSpeechCount = 0;
+  /** How many consecutive no-speech events before firing onNoSpeechExtended. */
+  private static readonly NO_SPEECH_EXTENDED_THRESHOLD = 6;
 
   constructor(
     callbacks: SttCallbacks,
@@ -105,27 +117,24 @@ export class SttEngine {
     this.primary = rec;
 
     let finalBuffer = "";
-    // Best interim result seen this session — used as fallback when Chrome ends a
-    // short utterance session without sending any isFinal=true events.
     let lastInterim = "";
-    // Set to true by onerror so onend doesn't schedule a second competing restart.
     let errorHandled = false;
 
-    // Flush accumulated speech to the AI after 500ms of silence.
+    // Flush accumulated speech after 400ms of silence (tighter than the old 500ms).
     const flush = () => {
       this.clearSilenceTimer();
-      // Use finals first; fall back to the best interim Chrome sent before ending.
       const text = (finalBuffer || lastInterim).trim();
       finalBuffer = "";
       lastInterim = "";
       if (text && this.activeRef.current && !this.loadingRef.current) {
+        this.noSpeechCount = 0; // real speech — reset the silence counter
         this.callbacks.onFinal(text);
       }
     };
 
     const resetSilence = () => {
       this.clearSilenceTimer();
-      this.silenceTimer = setTimeout(flush, 500);
+      this.silenceTimer = setTimeout(flush, 400);
     };
 
     rec.onstart = () => {
@@ -140,14 +149,13 @@ export class SttEngine {
           const word = result[0].transcript.trim();
           if (word) {
             finalBuffer += (finalBuffer ? " " : "") + word;
-            lastInterim = ""; // finals arrived — clear the interim fallback
+            lastInterim = "";
             resetSilence();
           }
         } else {
           interim += result[0].transcript;
         }
       }
-      // Always track the latest interim so onend can use it if isFinal never arrives.
       if (interim.trim()) lastInterim = interim.trim();
 
       const display = (finalBuffer + (interim ? " " + interim : "")).trim();
@@ -167,17 +175,19 @@ export class SttEngine {
       }
 
       if (err === "aborted") {
-        // Intentional abort from stopListening() — don't restart from here.
         errorHandled = true;
         return;
       }
 
       this.callbacks.onStop();
-      errorHandled = true; // onend fires right after — skip its restart logic.
+      errorHandled = true;
 
       if (err === "no-speech") {
-        // No speech detected — restart after a short pause to keep session alive.
-        // 300ms prevents a tight spin loop if Chrome keeps ending immediately.
+        this.noSpeechCount++;
+        if (this.noSpeechCount >= SttEngine.NO_SPEECH_EXTENDED_THRESHOLD) {
+          this.noSpeechCount = 0;
+          this.callbacks.onNoSpeechExtended?.();
+        }
         this.scheduleRestart(300);
         return;
       }
@@ -195,21 +205,18 @@ export class SttEngine {
     rec.onend = () => {
       this.clearSilenceTimer();
 
-      // onerror already handled this — don't double-fire onStop or overwrite the timer.
       if (errorHandled) return;
 
-      // Use finals first; fall back to best interim seen (Chrome short-utterance path).
       const text = (finalBuffer || lastInterim).trim();
       finalBuffer = "";
       lastInterim = "";
 
       this.callbacks.onStop();
       if (text && this.activeRef.current && !this.loadingRef.current) {
+        this.noSpeechCount = 0;
         this.callbacks.onFinal(text);
-        // sendAiMessage will restart listening after the AI responds.
         return;
       }
-      // Session ended with no speech — restart after a short pause.
       this.scheduleRestart(300);
     };
 
@@ -225,7 +232,7 @@ export class SttEngine {
    * Start barge-in detector: runs while AI is speaking.
    * Two guards prevent the AI's own voice (echo from speakers) from triggering a loop:
    *   1. 1800ms grace period — ignore all audio for the first 1.8s of AI speech.
-   *   2. Minimum 3 words — single words/syllables are almost always echo artifacts.
+   *   2. Minimum 2 words — single words/syllables are almost always echo artifacts.
    */
   startBargeIn() {
     if (!SpeechRec || this.micDenied) return;
@@ -249,7 +256,8 @@ export class SttEngine {
           sum + r[0].transcript.trim().split(/\s+/).filter(Boolean).length,
         0
       );
-      if (wordCount >= 3) {
+      // 2-word threshold (was 3) — more responsive while still blocking single-word echo
+      if (wordCount >= 2) {
         this.callbacks.onBargeIn();
         this.stopBargeIn();
       }
@@ -282,5 +290,10 @@ export class SttEngine {
   /** Reset mic-denied state (e.g. after user grants permission) */
   resetMicDenied() {
     this.micDenied = false;
+  }
+
+  /** Reset the no-speech counter (e.g. after AI speaks a reminder) */
+  resetNoSpeechCount() {
+    this.noSpeechCount = 0;
   }
 }
