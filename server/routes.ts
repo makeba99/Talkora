@@ -1729,7 +1729,7 @@ export async function registerRoutes(
 
   // ── AI Tutor model routing ─────────────────────────────────────────────────
   // Uses OpenAI (gpt-4o) when configured; falls back to context-aware canned replies.
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const OPENAI_API_KEY = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
 
   async function callAiModel(
     systemPrompt: string,
@@ -1753,7 +1753,8 @@ export async function registerRoutes(
       temperature,
       response_format: { type: 'json_object' },
     };
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1';
+    const r = await fetch(`${openaiBaseUrl}/chat/completions`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -2225,7 +2226,8 @@ export async function registerRoutes(
       let streamed = false;
 
       if (OPENAI_API_KEY) {
-        streamed = await streamTokens('openai', 'gpt-4o', 'https://api.openai.com/v1', OPENAI_API_KEY);
+        const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1';
+        streamed = await streamTokens('openai', 'gpt-4o', openaiBaseUrl, OPENAI_API_KEY);
       }
 
       const model = 'gpt-4o';
