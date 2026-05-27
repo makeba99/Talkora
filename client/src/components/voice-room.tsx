@@ -11796,6 +11796,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <Loader2 className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 animate-spin" />
               )}
             </div>
+            {activeMovieId && user?.id === movieStartedBy && !showMovie && (
+              <button
+                onClick={() => setShowMovie(true)}
+                data-testid="button-reopen-movie-panel"
+                className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-400 text-[11px] font-semibold hover:bg-violet-500/25 transition-colors"
+              >
+                <Film className="w-3.5 h-3.5" />
+                Re-open player (others are still watching)
+              </button>
+            )}
             {activeMovieId && user?.id === movieStartedBy && (
               <button
                 onClick={handleStopMovie}
@@ -15024,7 +15034,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </button>
                 </div>
 
-                {/* X — hide panel locally */}
+                {/* X — hide panel locally (others keep watching) */}
                 <button
                   type="button"
                   onClick={() => {
@@ -15033,8 +15043,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       socket?.emit("room:movie-watching", { roomId: room.id, hostId: movieStartedBy, watching: false });
                     }
                   }}
-                  className="w-7 h-7 flex-shrink-0 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-red-500/25 transition-all duration-150 active:scale-90"
-                  title="Hide player"
+                  className="w-7 h-7 flex-shrink-0 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all duration-150 active:scale-90"
+                  title={user?.id === movieStartedBy ? "Hide player (others keep watching — use side panel to stop for everyone)" : "Hide for me"}
                   data-testid="button-movie-close"
                 >
                   <X className="w-4 h-4" />
