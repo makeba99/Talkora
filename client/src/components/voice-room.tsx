@@ -15570,50 +15570,57 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               )}
 
-              {/* Book content — scrollable within each page */}
-              <div
-                className="flex-1 min-h-0 overflow-y-auto relative"
-                style={{ scrollbarWidth: "thin", scrollbarColor: eReaderTheme === "dark" ? "#444 #1a1a1a" : "#c4b48a #f5ead5" }}
-                onMouseUp={handleReaderMouseUp}
-                data-testid="ereader-content-area"
-              >
-                {bookLoading ? (
-                  <div className="flex items-center justify-center h-full min-h-[80px]">
-                    <Loader2 className="w-6 h-6 animate-spin opacity-40" />
-                  </div>
-                ) : bookPages.length > 0 ? (() => {
-                  const visibleText = eReaderScrollMode
-                    ? bookPages.slice(currentPage - 1, currentPage + 4).join("\n\n───\n\n")
-                    : (bookPages[currentPage - 1] || "");
-                  const lines = visibleText.split("\n").filter(l => l.trim().length > 0);
-                  const avgLen = lines.length > 0 ? lines.reduce((s, l) => s + l.trim().length, 0) / lines.length : 999;
-                  const isPoetry = lines.length >= 3 && avgLen < 55;
-                  return (
-                    <div className="px-4 sm:px-10 md:px-16 py-5">
-                      <div className="w-full max-w-2xl mx-auto">
-                        <div
-                          className="leading-relaxed whitespace-pre-wrap select-text"
-                          style={{
-                            fontSize: eReaderFontSize,
-                            lineHeight: 1.9,
-                            fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
-                            letterSpacing: "0.02em",
-                            color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
-                            textAlign: isPoetry ? "center" : "left",
-                          }}
-                        >
-                          {visibleText}
+              {/* Book content — wrapper provides the positioning context for arrows so
+                   top:50% resolves against the VISIBLE height, not the scroll height.
+                   Previously the arrows lived inside the overflow-y-auto div; when content
+                   exceeded the visible area top:50% pushed them far below the viewport. */}
+              <div className="flex-1 min-h-0 relative">
+                {/* Scrollable page content */}
+                <div
+                  className="w-full h-full overflow-y-auto"
+                  style={{ scrollbarWidth: "thin", scrollbarColor: eReaderTheme === "dark" ? "#444 #1a1a1a" : "#c4b48a #f5ead5" }}
+                  onMouseUp={handleReaderMouseUp}
+                  data-testid="ereader-content-area"
+                >
+                  {bookLoading ? (
+                    <div className="flex items-center justify-center h-full min-h-[80px]">
+                      <Loader2 className="w-6 h-6 animate-spin opacity-40" />
+                    </div>
+                  ) : bookPages.length > 0 ? (() => {
+                    const visibleText = eReaderScrollMode
+                      ? bookPages.slice(currentPage - 1, currentPage + 4).join("\n\n───\n\n")
+                      : (bookPages[currentPage - 1] || "");
+                    const lines = visibleText.split("\n").filter(l => l.trim().length > 0);
+                    const avgLen = lines.length > 0 ? lines.reduce((s, l) => s + l.trim().length, 0) / lines.length : 999;
+                    const isPoetry = lines.length >= 3 && avgLen < 55;
+                    return (
+                      <div className="px-4 sm:px-10 md:px-16 py-5">
+                        <div className="w-full max-w-2xl mx-auto">
+                          <div
+                            className="leading-relaxed whitespace-pre-wrap select-text"
+                            style={{
+                              fontSize: eReaderFontSize,
+                              lineHeight: 1.9,
+                              fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
+                              letterSpacing: "0.02em",
+                              color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
+                              textAlign: isPoetry ? "center" : "left",
+                            }}
+                          >
+                            {visibleText}
+                          </div>
                         </div>
                       </div>
+                    );
+                  })() : (
+                    <div className="flex items-center justify-center h-full min-h-[80px] opacity-50">
+                      <p className="text-sm" style={{ fontFamily: "Georgia, serif" }}>Could not load content. Try another title.</p>
                     </div>
-                  );
-                })() : (
-                  <div className="flex items-center justify-center h-full min-h-[80px] opacity-50">
-                    <p className="text-sm" style={{ fontFamily: "Georgia, serif" }}>Could not load content. Try another title.</p>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {/* Floating side-arrow navigation — always visible, vertically centred */}
+                {/* Floating side-arrow navigation — anchored to the VISIBLE container,
+                     not the scroll content, so they stay centred at all reader heights */}
                 {!bookLoading && bookPages.length > 0 && (
                   <>
                     <button
