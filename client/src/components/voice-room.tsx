@@ -7321,7 +7321,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         if (err?.name === "NotAllowedError") {
           audioCtx.close().catch(() => {}); glAudioCtxRef.current = null;
           micStream?.getTracks().forEach(t => t.stop());
-          setGlStatus("error"); setGlError("Screen capture was denied. Switch to Canvas mode or allow the permission and try again."); return;
+          setGlStatus("error"); setGlError("Screen capture was denied. Please allow the permission and try again."); return;
         }
       }
     }
@@ -12949,46 +12949,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
           {(glStatus === "idle" || glStatus === "error") && (<>
 
-            {/* Capture mode toggle */}
-            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 space-y-2">
-              <p className="text-[10px] font-bold text-white/45 uppercase tracking-wider">What to stream</p>
-              <div className="flex gap-1.5">
-                <button
-                  onClick={() => setGlCaptureMode("tab")}
-                  className="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-semibold transition-all duration-150 text-left flex flex-col gap-0.5"
-                  style={glCaptureMode === "tab"
-                    ? { background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)", color: "#fc8181" }
-                    : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}
-                  data-testid="button-gl-mode-tab"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <MonitorPlay className="w-3.5 h-3.5 flex-shrink-0" />
-                    Broadcast Room
-                    {glCaptureMode === "tab" && <span className="ml-auto text-[9px] font-bold tracking-wide opacity-70">✓</span>}
-                  </span>
-                  <span className="text-[9px] opacity-55 font-normal leading-tight pl-5">Streams exactly what you see — real profiles, video, animations</span>
-                </button>
-                <button
-                  onClick={() => setGlCaptureMode("canvas")}
-                  className="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-semibold transition-all duration-150 text-left flex flex-col gap-0.5"
-                  style={glCaptureMode === "canvas"
-                    ? { background: "rgba(99,102,241,0.18)", border: "1px solid rgba(99,102,241,0.35)", color: "#a5b4fc" }
-                    : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}
-                  data-testid="button-gl-mode-canvas"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <LayoutGrid className="w-3.5 h-3.5 flex-shrink-0" />
-                    Canvas Overlay
-                    {glCaptureMode === "canvas" && <span className="ml-auto text-[9px] font-bold tracking-wide opacity-70">✓</span>}
-                  </span>
-                  <span className="text-[9px] opacity-55 font-normal leading-tight pl-5">Custom branded frame with avatars — no permission needed</span>
-                </button>
+            {/* Broadcast mode info */}
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <MonitorPlay className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                <p className="text-[11px] font-semibold text-white/80">Broadcast Room</p>
               </div>
-              {glCaptureMode === "tab" && (
-                <p className="text-[9px] text-white/30 leading-relaxed">
-                  Your browser will ask which tab to share. Select <span className="text-white/55 font-semibold">this tab</span> to broadcast the room exactly as it appears.
-                </p>
-              )}
+              <p className="text-[9px] text-white/35 leading-relaxed">
+                Streams exactly what you see — real profiles, video, and animations. Your browser will ask which tab to share. Select <span className="text-white/55 font-semibold">this tab</span> to go live.
+              </p>
             </div>
 
             {/* Quality selector */}
