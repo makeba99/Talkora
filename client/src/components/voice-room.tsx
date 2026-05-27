@@ -1156,91 +1156,6 @@ function ParticipantCard({
               </div>
             </div>
           </>
-        ) : hasActiveMovie ? (
-          <>
-            {moviePosterPath ? (
-            <img
-              src={moviePosterPath}
-              alt="Movie poster"
-              loading="lazy"
-              decoding="async"
-              width={300}
-              height={450}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-violet-900 to-indigo-900 flex items-center justify-center">
-                <Film className="w-10 h-10 text-violet-300/70" />
-              </div>
-            )}
-            {/* Gradient scrim */}
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none z-[24]" />
-            {/* Profile strip — always visible at bottom */}
-            <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
-              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
-                {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} className="w-full h-full object-cover" style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }} />
-                ) : (
-                  <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                    <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <div className="flex items-center gap-1 min-w-0">
-                  {isRoomOwner && <Crown className="w-2.5 h-2.5 text-yellow-300 flex-shrink-0" />}
-                  <span className="text-[10px] font-semibold text-white leading-tight truncate drop-shadow-md">
-                    {isMe ? "You" : getUserDisplayName(p)}
-                  </span>
-                </div>
-                <span className="text-[8px] text-white/60 leading-none truncate">{roomLevel}</span>
-              </div>
-              <div className="flex-shrink-0 opacity-80">
-                {p.isMuted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
-              </div>
-            </div>
-          </>
-        ) : isMovieWatcherBadge ? (
-          <>
-            {watchingMoviePoster ? (
-              <img
-                src={watchingMoviePoster}
-                alt="Movie poster"
-                loading="lazy"
-                decoding="async"
-                width={300}
-                height={450}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-violet-900 to-indigo-900 flex items-center justify-center">
-                <Film className="w-10 h-10 text-violet-300/70" />
-              </div>
-            )}
-            {/* Gradient scrim */}
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none z-[24]" />
-            {/* Profile strip — always visible at bottom */}
-            <div className="absolute inset-x-0 bottom-0 z-[26] flex items-center gap-1.5 px-1.5 pb-2 pt-1">
-              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/70 shadow-lg flex-shrink-0">
-                {p.profileImageUrl ? (
-                  <img src={p.profileImageUrl} alt={getUserDisplayName(p)} width={36} height={36} className="w-full h-full object-cover" style={{ imageRendering: "auto", backfaceVisibility: "hidden", transform: "translateZ(0)" }} />
-                ) : (
-                  <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                    <span className="text-[9px] font-bold text-white">{getUserInitials(p)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-[10px] font-semibold text-white leading-tight truncate drop-shadow-md">
-                  {isMe ? "You" : getUserDisplayName(p)}
-                </span>
-                <span className="text-[8px] text-white/60 leading-none truncate">{roomLevel}</span>
-              </div>
-              <div className="flex-shrink-0 opacity-80">
-                {p.isMuted ? <MicOff className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
-              </div>
-            </div>
-          </>
         ) : remoteVideoStream ? (
           <>
             <RemoteVideoPreview stream={remoteVideoStream} className={isMe && localVideoFlipped ? "scale-x-[-1]" : ""} />
@@ -1524,7 +1439,7 @@ function ParticipantCard({
         {gearPopover}
 
 
-        {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && (isRoomOwner ? (
+        {!(hasActiveYoutube && youtubeVideoId) && (isRoomOwner ? (
           <div
             className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
             style={{
@@ -1574,7 +1489,7 @@ function ParticipantCard({
           </div>
         ) : null)}
 
-        {!(hasActiveYoutube && youtubeVideoId) && !hasActiveMovie && !(isMovieWatcherBadge && watchingMoviePoster) && !avatarGifUrl && (
+        {!(hasActiveYoutube && youtubeVideoId) && !avatarGifUrl && (
           p.isMuted ? (
             /* Muted: mic-off icon in corner */
             <div className="absolute bottom-1 right-1 z-20 drop-shadow-md">
@@ -8200,6 +8115,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const handleStopMovie = () => {
     const wasMyOwnHost = !!user?.id && movieStartedByRef.current === user.id;
+    const hostIdToStop = movieStartedByRef.current;
     setActiveMovieId(null);
     setActiveMovieTitle("");
     setActiveMoviePoster("");
@@ -8208,14 +8124,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (movieHostTimerRef.current) { clearInterval(movieHostTimerRef.current); movieHostTimerRef.current = null; }
     movieHostElapsedRef.current = 0;
     movieHostPlayingRef2.current = false;
-    if (wasMyOwnHost) {
+    if (wasMyOwnHost && user?.id) {
       setMovieHosts(prev => {
         const next = new Map(prev);
         next.delete(user!.id);
         return next;
       });
-      socket?.emit("room:movie", { roomId: room.id, movieId: null });
     }
+    socket?.emit("room:movie", { roomId: room.id, movieId: null, hostId: hostIdToStop });
   };
 
   const handleMoviePause = () => {
