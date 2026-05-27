@@ -105,6 +105,7 @@ function loadSavedAiSettings(): AiTutorSettings {
       avatarId: ["aurora", "ember", "nova", "onyx"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
       speed: typeof parsed.speed === "number" ? Math.max(0.5, Math.min(2, parsed.speed)) : DEFAULT_AI_SETTINGS.speed,
       tone: typeof parsed.tone === "number" ? Math.max(0, Math.min(1, parsed.tone)) : DEFAULT_AI_SETTINGS.tone,
+      wakeWordEnabled: typeof parsed.wakeWordEnabled === "boolean" ? parsed.wakeWordEnabled : DEFAULT_AI_SETTINGS.wakeWordEnabled,
     };
   } catch {
     return DEFAULT_AI_SETTINGS;
@@ -684,16 +685,16 @@ export function useAiTutor(deps: AiTutorDeps) {
   // toggleAiTutorRef is assigned below after the function is defined (see the
   // useEffect that depends on [toggleAiTutor]).  The placeholder keeps ESLint happy.
 
-  // Start / stop the wake word detector based on AI active state
+  // Start / stop the wake word detector based on AI active state and user preference
   useEffect(() => {
-    if (aiActive) {
-      // AI is now active — wake word detector is no longer needed
+    if (aiActive || !aiSettings.wakeWordEnabled) {
+      // AI is already active, or user disabled the wake word feature — stop detector
       wakeWordRef.current?.stop();
     } else {
-      // AI is inactive — start the background wake word listener
+      // AI is inactive and wake word is enabled — start the background listener
       wakeWordRef.current?.start();
     }
-  }, [aiActive]);
+  }, [aiActive, aiSettings.wakeWordEnabled]);
 
   // Keep wake detector language in sync with room language changes
   useEffect(() => {

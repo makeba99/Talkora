@@ -17192,6 +17192,36 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   </div>
 
+                  {/* Wake Word — hands-free activation toggle */}
+                  <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+                    <div>
+                      <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,255,255,0.70)" }}>Hands-Free</span>
+                      <span className="text-[9px] leading-tight block mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                        {aiTutorSettings.wakeWordEnabled ? `Say "hey AI" to activate` : "Wake word disabled"}
+                      </span>
+                    </div>
+                    <div
+                      className="w-9 h-5 rounded-full relative cursor-pointer transition-colors flex-shrink-0"
+                      style={{
+                        background: aiTutorSettings.wakeWordEnabled
+                          ? "linear-gradient(90deg, rgba(255,180,60,0.85) 0%, rgba(255,140,30,0.80) 100%)"
+                          : "rgba(80,80,100,0.50)",
+                        border: "1px solid rgba(255,255,255,0.15)",
+                      }}
+                      onClick={() => setAiTutorSettings(s => ({ ...s, wakeWordEnabled: !s.wakeWordEnabled }))}
+                      data-testid="toggle-wake-word"
+                    >
+                      <div
+                        className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
+                        style={{
+                          background: "rgba(255,255,255,0.95)",
+                          left: aiTutorSettings.wakeWordEnabled ? "calc(100% - 18px)" : "2px",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   {/* Host-only: Enable/Disable AI Tutor for room */}
                   {isHost && (
                     <div

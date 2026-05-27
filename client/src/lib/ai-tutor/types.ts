@@ -12,6 +12,8 @@ export interface AiTutorSettings {
   speed: number;
   tone: number;
   personaName?: string;
+  /** When true the background wake-word listener is active (default on). */
+  wakeWordEnabled: boolean;
 }
 
 export interface ConversationEntry {
@@ -103,4 +105,5 @@ export const DEFAULT_AI_SETTINGS: AiTutorSettings = {
   avatarId: "aurora",
   speed: 0.7,
   tone: 0.7,
+  wakeWordEnabled: true,
 };
