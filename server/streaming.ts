@@ -117,7 +117,22 @@ export async function getViewerCounts(streamId: string): Promise<{
 
 // ── FFmpeg ───────────────────────────────────────────────────────────────────
 
-function buildFfmpegArgs(twitchKey?: string, youtubeKey?: string): string[] {
+export type StreamQuality = "480p" | "720p" | "1080p";
+
+interface QualityPreset {
+  videoBitrate: string;
+  maxrate: string;
+  bufsize: string;
+  scaleFilter: string | null;
+}
+
+const QUALITY_PRESETS: Record<StreamQuality, QualityPreset> = {
+  "480p":  { videoBitrate: "1500k", maxrate: "2500k",  bufsize: "4000k",  scaleFilter: "scale=854:480:flags=lanczos"   },
+  "720p":  { videoBitrate: "3000k", maxrate: "4500k",  bufsize: "6000k",  scaleFilter: "scale=1280:720:flags=lanczos"  },
+  "1080p": { videoBitrate: "5000k", maxrate: "7000k",  bufsize: "10000k", scaleFilter: null                             },
+};
+
+function buildFfmpegArgs(twitchKey?: string, youtubeKey?: string, quality: StreamQuality = "720p"): string[] {
   // Input: fragmented WebM piped from browser MediaRecorder (250 ms timeslice).
   // -analyzeduration 2000000 -probesize 1048576  → enough to parse WebM codec headers
   //   reliably without perceptible latency (the 250 ms timeslice means the first
@@ -136,17 +151,18 @@ function buildFfmpegArgs(twitchKey?: string, youtubeKey?: string): string[] {
     "-f", "webm",
     "-i", "pipe:0",
   ];
-  // H.264 Main profile @ level 4.2:
+  const preset = QUALITY_PRESETS[quality];
+  // H.264 Main profile @ level 4.2 across all quality tiers:
   //   - Main profile gives ~10-15 % better quality than Baseline at the same
   //     bitrate (CABAC entropy coding), and YouTube accepts it on all devices.
   //   - Level 4.2 supports up to 1080p60, removing the 720p@10 Mbps cap that
   //     Baseline/3.1 imposed.
-  // -b:v 4000k / -maxrate 6000k / -bufsize 8000k:
-  //   YouTube recommends 4-6 Mbps for 1080p30; 6 Mbps ceiling with an 8 Mbps
-  //   VBV buffer lets the encoder burst on high-motion frames without violating
-  //   the RTMP ingest limits.
+  // Bitrates come from the quality preset selected by the user:
+  //   480p → 1500k / 2500k / 4000k   (slow connections / mobile)
+  //   720p → 3000k / 4500k / 6000k   (balanced default)
+  //   1080p→ 5000k / 7000k / 10000k  (fast fibre / cable)
   // -preset faster: one step above veryfast — ~8 % better SSIM with only ~15 %
-  //   more CPU, well within budget for a 1280×720/1080p30 encode.
+  //   more CPU, well within budget for a 1080p30 encode.
   // -x264opts: locks GOP to exactly 2 seconds (keyint=60 at 30 fps) with no
   //   scene-cut keyframes, which is required for stable YouTube RTMP ingest.
   const videoArgs = [
@@ -155,9 +171,10 @@ function buildFfmpegArgs(twitchKey?: string, youtubeKey?: string): string[] {
     "-tune", "zerolatency",
     "-profile:v", "main",
     "-level", "4.2",
-    "-b:v", "4000k",
-    "-maxrate", "6000k",
-    "-bufsize", "8000k",
+    ...(preset.scaleFilter ? ["-vf", preset.scaleFilter] : []),
+    "-b:v", preset.videoBitrate,
+    "-maxrate", preset.maxrate,
+    "-bufsize", preset.bufsize,
     "-pix_fmt", "yuv420p",
     "-g", "60",
     "-keyint_min", "60",
@@ -196,13 +213,14 @@ export function startStream(opts: {
   youtubeKey?: string;
   twitchUsername?: string;
   youtubeChannelId?: string;
+  quality?: StreamQuality;
 }): { ok: boolean; error?: string } {
-  const { streamId, userId, roomId, twitchKey, youtubeKey, twitchUsername, youtubeChannelId } = opts;
+  const { streamId, userId, roomId, twitchKey, youtubeKey, twitchUsername, youtubeChannelId, quality = "720p" } = opts;
   if (!twitchKey && !youtubeKey) return { ok: false, error: "At least one stream key required" };
   if (activeSessions.has(streamId)) return { ok: false, error: "Stream already active" };
   if (!checkFfmpeg()) return { ok: false, error: "FFmpeg is not installed on this server. Streaming is unavailable." };
 
-  const args = buildFfmpegArgs(twitchKey, youtubeKey);
+  const args = buildFfmpegArgs(twitchKey, youtubeKey, quality);
   let proc: ChildProcessWithoutNullStreams;
   try {
     proc = spawn("ffmpeg", args, { stdio: ["pipe", "pipe", "pipe"] });

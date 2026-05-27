@@ -2784,6 +2784,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [glPreviewDataUrl, setGlPreviewDataUrl] = useState<string | null>(null);
   const glPreviewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [glCaptureMode, setGlCaptureMode] = useState<"tab" | "canvas">("tab");
+  const [glQuality, setGlQuality] = useState<"480p" | "720p" | "1080p">("720p");
   const glTabStreamRef = useRef<MediaStream | null>(null);
 
   const [readSearch, setReadSearch] = useState("");
@@ -7297,11 +7298,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     let tabCaptureStream: MediaStream | null = null;
     if (glCaptureMode === "tab") {
       try {
+        const capW = glQuality === "480p" ? 854 : glQuality === "720p" ? 1280 : 1920;
+        const capH = glQuality === "480p" ? 480 : glQuality === "720p" ? 720  : 1080;
         tabCaptureStream = await (navigator.mediaDevices as any).getDisplayMedia({
           video: {
             frameRate: { ideal: 30, max: 30 },
-            width: { ideal: 1920, min: 1280 },
-            height: { ideal: 1080, min: 720 },
+            width: { ideal: capW, min: Math.min(capW, 854) },
+            height: { ideal: capH, min: Math.min(capH, 480) },
             displaySurface: "browser",
           },
           audio: false,
@@ -7595,6 +7598,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           twitchKey: twitchKey || undefined, youtubeKey: youtubeKey || undefined,
           roomId: room.id, twitchUsername: glTwitchUsername.trim() || undefined,
           youtubeChannelId: glYoutubeChannelId.trim() || undefined,
+          quality: glQuality,
         }),
       });
     } catch {
@@ -7623,10 +7627,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         : MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
         ? "video/webm;codecs=vp8,opus"
         : "video/webm";
-    // 4 Mbps matches the FFmpeg -b:v target on the server side. Giving the
-    // browser encoder a matching ceiling ensures it actually produces enough
-    // data for FFmpeg to fill the RTMP pipe at 4 Mbps.
-    const mr = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 4_000_000 });
+    // Browser bitrate matches the FFmpeg -b:v target for the selected quality.
+    // Giving the encoder the same ceiling ensures it produces enough data for
+    // FFmpeg to actually hit the RTMP target without padding.
+    const qualityBitrate = glQuality === "480p" ? 1_500_000 : glQuality === "1080p" ? 5_000_000 : 3_000_000;
+    const mr = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: qualityBitrate });
     glMediaRecorderRef.current = mr;
 
     // Helper: stop everything and surface an error message to the user
@@ -12809,6 +12814,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               )}
             </div>
 
+            {/* Quality selector */}
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 space-y-2">
+              <p className="text-[10px] font-bold text-white/45 uppercase tracking-wider">Stream quality</p>
+              <div className="flex gap-1.5">
+                {([
+                  { v: "480p" as const, label: "480p", sub: "1.5 Mbps · slow WiFi" },
+                  { v: "720p" as const, label: "720p", sub: "3 Mbps · balanced" },
+                  { v: "1080p" as const, label: "1080p", sub: "5 Mbps · fibre/cable" },
+                ] as const).map(({ v, label, sub }) => (
+                  <button
+                    key={v}
+                    onClick={() => setGlQuality(v)}
+                    className="flex-1 py-2 px-2 rounded-lg text-[11px] font-semibold transition-all duration-150 text-left flex flex-col gap-0.5"
+                    style={glQuality === v
+                      ? { background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.35)", color: "#fcd34d" }
+                      : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)" }}
+                    data-testid={`button-gl-quality-${v}`}
+                  >
+                    <span className="flex items-center gap-1">
+                      {label}
+                      {glQuality === v && <span className="ml-auto text-[9px] font-bold tracking-wide opacity-70">✓</span>}
+                    </span>
+                    <span className="text-[9px] opacity-55 font-normal leading-tight">{sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Platform picker */}
             <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.07]">
               {(["youtube", "twitch", "both"] as const).map((p) => (
@@ -13484,6 +13517,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
 
           {(glStatus === "idle" || glStatus === "error") && (<>
+            {/* Quality selector */}
+            <div className="rounded-xl border bg-muted/20 p-3 space-y-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Stream quality</p>
+              <div className="flex gap-2">
+                {([
+                  { v: "480p" as const, label: "480p", sub: "1.5 Mbps · slow WiFi" },
+                  { v: "720p" as const, label: "720p", sub: "3 Mbps · balanced" },
+                  { v: "1080p" as const, label: "1080p", sub: "5 Mbps · fibre/cable" },
+                ] as const).map(({ v, label, sub }) => (
+                  <button
+                    key={v}
+                    onClick={() => setGlQuality(v)}
+                    className="flex-1 py-2 px-2.5 rounded-lg text-xs font-semibold transition-all duration-150 text-left flex flex-col gap-0.5 border"
+                    style={glQuality === v
+                      ? { background: "rgba(251,191,36,0.12)", borderColor: "rgba(251,191,36,0.4)", color: "#fbbf24" }
+                      : { background: "transparent", borderColor: "rgba(255,255,255,0.1)", color: "var(--muted-foreground)" }}
+                    data-testid={`button-gl-quality-dialog-${v}`}
+                  >
+                    <span className="flex items-center gap-1">
+                      {label}
+                      {glQuality === v && <span className="ml-auto text-[9px] font-bold opacity-70">✓</span>}
+                    </span>
+                    <span className="text-[10px] opacity-60 font-normal">{sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Platform selector */}
             <div className="flex gap-1 p-1 rounded-xl bg-muted/40 border">
               {(["youtube", "twitch", "both"] as const).map((p) => (

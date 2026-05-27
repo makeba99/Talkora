@@ -3262,12 +3262,13 @@ export async function registerRoutes(
   // ── Direct Streaming (RTMP relay via FFmpeg) ─────────────────────────────
   app.post("/api/stream/start", isAuthenticated, apiRateLimiter, async (req: any, res) => {
     try {
-      const { twitchKey, youtubeKey, roomId, twitchUsername, youtubeChannelId } = req.body;
+      const { twitchKey, youtubeKey, roomId, twitchUsername, youtubeChannelId, quality } = req.body;
       const userId = req.user?.id?.toString();
       if (!userId) return res.status(401).json({ message: "Not authenticated" });
       if (!twitchKey && !youtubeKey) return res.status(400).json({ message: "Provide at least one stream key" });
       const streamId = `${userId}-${Date.now()}`;
-      const result = startStream({ streamId, userId, roomId: roomId || "", twitchKey, youtubeKey, twitchUsername, youtubeChannelId });
+      const safeQuality = ["480p", "720p", "1080p"].includes(quality) ? quality : "720p";
+      const result = startStream({ streamId, userId, roomId: roomId || "", twitchKey, youtubeKey, twitchUsername, youtubeChannelId, quality: safeQuality });
       if (!result.ok) return res.status(500).json({ message: result.error });
       res.json({ streamId });
     } catch (err: any) {
