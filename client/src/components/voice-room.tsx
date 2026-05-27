@@ -15337,10 +15337,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               )}
 
-              {/* Reader toolbar */}
+              {/* Reader toolbar — flex-nowrap + overflow-x-auto so the toolbar never
+                   wraps to a second row. Wrapping consumed vertical space from the
+                   flex-1 content row (where the arrows live), collapsing it to 0px
+                   on small/resized panels and making the arrows unclickable. */}
               <div
-                className="flex items-center gap-2 px-3 py-2 border-b flex-shrink-0 flex-wrap gap-y-1.5"
+                className="flex items-center gap-2 px-3 py-2 border-b flex-shrink-0 flex-nowrap overflow-x-auto"
                 style={{
+                  scrollbarWidth: "none",
                   background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#f0f0f0" : "#111111",
                   borderColor: eReaderTheme === "dark" ? "#333" : "#d4c4a0",
                 }}
@@ -15355,7 +15359,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <BookOpen className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
                 <span className="text-xs font-semibold truncate flex-1 min-w-0 max-w-[120px] sm:max-w-[200px]">{selectedBook.title}</span>
 
-                <div className="flex items-center gap-1 ml-auto flex-shrink-0 flex-wrap justify-end">
+                <div className="flex items-center gap-1 ml-auto flex-shrink-0 flex-nowrap justify-end">
                   {/* Font size */}
                   <button onClick={() => setEReaderFontSize(s => Math.max(12, s - 2))} className="px-1.5 py-0.5 rounded text-xs font-bold hover:opacity-70 transition-opacity" title="Smaller">A−</button>
                   <span className="text-[10px] opacity-60 w-7 text-center">{eReaderFontSize}</span>
@@ -15545,10 +15549,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
               {/* Book content — 3-column flex layout: [prev-btn | scroll-content | next-btn]
                    Arrows live in their own flex columns so they are NEVER covered by the
-                   scroll area regardless of panel size. Absolute positioning was replaced
-                   because the w-full h-full scroll div captured pointer events on top of
-                   the absolutely-positioned buttons when the panel was resized. */}
-              <div className="flex-1 min-h-0 flex flex-row">
+                   scroll area regardless of panel size. min-h-[48px] guarantees the arrow
+                   columns always have enough vertical space to be clickable even when the
+                   panel is dragged very small. */}
+              <div className="flex-1 min-h-0 flex flex-row" style={{ minHeight: 48 }}>
                 {/* Prev-page arrow column */}
                 <div className="flex-shrink-0 flex items-center justify-center w-8">
                   {!bookLoading && bookPages.length > 0 && (
