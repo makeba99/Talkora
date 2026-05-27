@@ -2747,7 +2747,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [glShowYoutubeKey, setGlShowYoutubeKey] = useState(false);
   const [glTwitchUsername, setGlTwitchUsername] = useState("");
   const [glYoutubeChannelId, setGlYoutubeChannelId] = useState("");
-  const [glStatus, setGlStatus] = useState<"idle" | "connecting" | "live" | "error">("idle");
+  const [glStatus, setGlStatus] = useState<"idle" | "preparing" | "connecting" | "live" | "error">("idle");
   const [glStreamId, setGlStreamId] = useState<string | null>(null);
   const [glError, setGlError] = useState<string | null>(null);
   const [glDuration, setGlDuration] = useState(0);
@@ -7259,8 +7259,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (goLivePlatform === "twitch" && !twitchKey) { toast({ title: "Paste your Twitch stream key first", variant: "destructive" }); return; }
     if (goLivePlatform === "both" && !twitchKey && !youtubeKey) { toast({ title: "Enter at least one stream key", variant: "destructive" }); return; }
 
-    setGlStatus("connecting");
+    // Show the "preparing" overlay first so the user reads the instruction
+    // before the browser dialog fires. React needs one frame to commit.
+    setGlStatus("preparing");
     setGlError(null);
+    await new Promise<void>(r => setTimeout(r, 350));
+    // Still preparing (user didn't cancel)? Continue.
+    setGlStatus("connecting");
 
     // ── Audio: mic (optional) + all room peer streams mixed together ──────────
     let micStream: MediaStream | null = null;
@@ -12780,6 +12785,47 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
+          {/* ── "Preparing" overlay: shown while browser dialog is about to appear ── */}
+          {glStatus === "preparing" && (
+            <div className="flex flex-col items-center gap-4 py-5 px-3 text-center">
+              {/* Animated pulsing room icon */}
+              <div className="relative flex items-center justify-center">
+                <span className="absolute w-16 h-16 rounded-full animate-ping" style={{ background: "rgba(239,68,68,0.15)" }} />
+                <span className="absolute w-20 h-20 rounded-full animate-ping" style={{ background: "rgba(239,68,68,0.07)", animationDelay: "0.3s" }} />
+                <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "rgba(239,68,68,0.18)", border: "2px solid rgba(239,68,68,0.4)" }}>
+                  <MonitorPlay className="w-6 h-6 text-red-400" />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[13px] font-bold text-white/90">A dialog is about to appear</p>
+                <p className="text-[11px] text-white/45 leading-relaxed">Your browser will ask what to share.<br />Follow the steps below:</p>
+              </div>
+
+              {/* Step-by-step visual guide */}
+              <div className="w-full space-y-2 text-left">
+                <div className="flex items-center gap-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)" }}>
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold text-red-300" style={{ background: "rgba(239,68,68,0.25)" }}>1</span>
+                  <div>
+                    <p className="text-[11px] font-semibold text-white/85">Select <span className="text-red-300">"This Tab"</span></p>
+                    <p className="text-[9px] text-white/40">Not a window or your entire screen</p>
+                  </div>
+                  <span className="ml-auto text-lg">🖥️</span>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white/50" style={{ background: "rgba(255,255,255,0.10)" }}>2</span>
+                  <div>
+                    <p className="text-[11px] font-semibold text-white/85">Click <span className="text-white/70">"Share"</span></p>
+                    <p className="text-[9px] text-white/40">The room goes live instantly</p>
+                  </div>
+                  <span className="ml-auto text-lg">🔴</span>
+                </div>
+              </div>
+
+              <p className="text-[9px] text-white/25 animate-pulse">Opening dialog…</p>
+            </div>
+          )}
+
           {glStatus === "connecting" && (
             <div className="flex flex-col items-center gap-3 py-4">
               <Loader2 className="w-8 h-8 animate-spin text-red-400" />
@@ -13158,19 +13204,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             {/* Go Live button */}
             <button
               onClick={() => { setGlWaitingForKey(null); startGoLive(); }}
-              className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              disabled={glStatus === "preparing" || glStatus === "connecting"}
+              className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
               style={{
-                background: goLivePlatform === "twitch"
-                  ? "linear-gradient(135deg,rgba(145,70,255,0.9),rgba(100,40,200,0.9))"
-                  : goLivePlatform === "youtube"
-                    ? "linear-gradient(135deg,rgba(239,68,68,0.9),rgba(180,30,30,0.9))"
-                    : "linear-gradient(135deg,rgba(239,68,68,0.8),rgba(145,70,255,0.8))",
+                background: glStatus === "preparing" || glStatus === "connecting"
+                  ? "rgba(100,100,120,0.5)"
+                  : goLivePlatform === "twitch"
+                    ? "linear-gradient(135deg,rgba(145,70,255,0.9),rgba(100,40,200,0.9))"
+                    : goLivePlatform === "youtube"
+                      ? "linear-gradient(135deg,rgba(239,68,68,0.9),rgba(180,30,30,0.9))"
+                      : "linear-gradient(135deg,rgba(239,68,68,0.8),rgba(145,70,255,0.8))",
                 border: "1px solid rgba(255,255,255,0.12)",
                 boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
               }}
             >
-              <Radio className="w-4 h-4" />
-              {goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
+              {glStatus === "preparing" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
+              {glStatus === "preparing" ? "Opening dialog…" : glStatus === "connecting" ? "Connecting…" : goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
             </button>
 
             {/* Optional: viewer count */}
@@ -13565,6 +13614,35 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
+          {/* ── "Preparing" overlay in dialog ── */}
+          {glStatus === "preparing" && (
+            <div className="flex flex-col items-center gap-4 py-5 px-2 text-center">
+              <div className="relative flex items-center justify-center">
+                <span className="absolute w-16 h-16 rounded-full animate-ping" style={{ background: "rgba(239,68,68,0.15)" }} />
+                <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "rgba(239,68,68,0.18)", border: "2px solid rgba(239,68,68,0.4)" }}>
+                  <MonitorPlay className="w-6 h-6 text-red-400" />
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-bold">A dialog is about to appear</p>
+                <p className="text-xs text-muted-foreground mt-1">Follow the two steps:</p>
+              </div>
+              <div className="w-full space-y-2 text-left">
+                <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 border border-red-500/30" style={{ background: "rgba(239,68,68,0.08)" }}>
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold text-red-400 bg-red-500/20">1</span>
+                  <div><p className="text-sm font-semibold">Select <span className="text-red-400">"This Tab"</span></p><p className="text-xs text-muted-foreground">Not a window or entire screen</p></div>
+                  <span className="ml-auto">🖥️</span>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 border">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold text-muted-foreground bg-muted">2</span>
+                  <div><p className="text-sm font-semibold">Click <span className="text-foreground">"Share"</span></p><p className="text-xs text-muted-foreground">The room goes live instantly</p></div>
+                  <span className="ml-auto">🔴</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground/50 animate-pulse">Opening dialog…</p>
+            </div>
+          )}
+
           {glStatus === "connecting" && (
             <div className="flex flex-col items-center gap-3 py-4">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -13798,17 +13876,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
             <Button
               className="w-full font-bold text-white"
+              disabled={glStatus === "preparing" || glStatus === "connecting"}
               style={{
-                background: goLivePlatform === "twitch"
-                  ? "linear-gradient(135deg,#9146ff,#6523b0)"
-                  : goLivePlatform === "youtube"
-                    ? "linear-gradient(135deg,#ef4444,#b91c1c)"
-                    : "linear-gradient(135deg,#ef4444 0%,#9146ff 100%)",
+                background: glStatus === "preparing" || glStatus === "connecting"
+                  ? undefined
+                  : goLivePlatform === "twitch"
+                    ? "linear-gradient(135deg,#9146ff,#6523b0)"
+                    : goLivePlatform === "youtube"
+                      ? "linear-gradient(135deg,#ef4444,#b91c1c)"
+                      : "linear-gradient(135deg,#ef4444 0%,#9146ff 100%)",
               }}
               onClick={() => { setGlWaitingForKey(null); startGoLive(); }}
             >
-              <Radio className="w-4 h-4 mr-2" />
-              {goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
+              {glStatus === "preparing" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
+              {glStatus === "preparing" ? "Opening dialog…" : glStatus === "connecting" ? "Connecting…" : goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
             </Button>
           </>)}
         </DialogContent>
