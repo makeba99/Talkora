@@ -23,7 +23,7 @@ import {
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, SkipBack, Smile,
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, SendHorizontal,
-  Pin, Languages, Headphones, ListMusic, Captions
+  Pin, Languages, Headphones, ListMusic, Captions, AlignJustify
 } from "lucide-react";
 import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -2833,6 +2833,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [eReaderHeight, setEReaderHeight] = useState<number | null>(null);
   const [eReaderFullscreen, setEReaderFullscreen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [eReaderScrollMode, setEReaderScrollMode] = useState(false);
 
   // ── Paginate book text into pages of ~280 words (scales with font size) ──────
   const bookPages = useMemo(() => {
@@ -15397,95 +15398,120 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               )}
 
-              {/* Paginated book content */}
+              {/* Book content — scrollable within each page */}
               <div
-                className="flex-1 min-h-0 overflow-hidden relative"
+                className="flex-1 min-h-0 overflow-y-auto relative"
+                style={{ scrollbarWidth: "thin", scrollbarColor: eReaderTheme === "dark" ? "#444 #1a1a1a" : "#c4b48a #f5ead5" }}
                 onMouseUp={handleReaderMouseUp}
+                data-testid="ereader-content-area"
               >
                 {bookLoading ? (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center justify-center h-full min-h-[80px]">
                     <Loader2 className="w-6 h-6 animate-spin opacity-40" />
                   </div>
                 ) : bookPages.length > 0 ? (() => {
-                  const pageText = bookPages[currentPage - 1] || "";
-                  const lines = pageText.split("\n").filter(l => l.trim().length > 0);
-                  const avgLen = lines.length > 0
-                    ? lines.reduce((s, l) => s + l.trim().length, 0) / lines.length
-                    : 999;
+                  const visibleText = eReaderScrollMode
+                    ? bookPages.slice(currentPage - 1, currentPage + 4).join("\n\n───\n\n")
+                    : (bookPages[currentPage - 1] || "");
+                  const lines = visibleText.split("\n").filter(l => l.trim().length > 0);
+                  const avgLen = lines.length > 0 ? lines.reduce((s, l) => s + l.trim().length, 0) / lines.length : 999;
                   const isPoetry = lines.length >= 3 && avgLen < 55;
                   return (
-                  <div className="h-full overflow-hidden px-4 sm:px-10 md:px-16 py-4 sm:py-7 flex flex-col justify-center">
-                    <div className="w-full max-w-2xl mx-auto">
-                      <div
-                        className="leading-relaxed whitespace-pre-wrap select-text"
-                        style={{
-                          fontSize: eReaderFontSize,
-                          lineHeight: 1.9,
-                          fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
-                          letterSpacing: "0.02em",
-                          color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
-                          textAlign: isPoetry ? "center" : "left",
-                        }}
-                      >
-                        {pageText}
+                    <div className="px-4 sm:px-10 md:px-16 py-5">
+                      <div className="w-full max-w-2xl mx-auto">
+                        <div
+                          className="leading-relaxed whitespace-pre-wrap select-text"
+                          style={{
+                            fontSize: eReaderFontSize,
+                            lineHeight: 1.9,
+                            fontFamily: "Georgia, 'Palatino Linotype', Palatino, 'Times New Roman', serif",
+                            letterSpacing: "0.02em",
+                            color: eReaderTheme === "dark" ? "#d4c9b0" : eReaderTheme === "sepia" ? "#3a2a14" : "#1a1008",
+                            textAlign: isPoetry ? "center" : "left",
+                          }}
+                        >
+                          {visibleText}
+                        </div>
                       </div>
                     </div>
-                  </div>
                   );
                 })() : (
-                  <div className="flex items-center justify-center h-full opacity-50">
+                  <div className="flex items-center justify-center h-full min-h-[80px] opacity-50">
                     <p className="text-sm" style={{ fontFamily: "Georgia, serif" }}>Could not load content. Try another title.</p>
                   </div>
                 )}
+              </div>
 
-                {/* Side navigation arrows — vertically centred */}
-                {!bookLoading && bookPages.length > 0 && (
-                  <>
-                    <button
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      className="absolute left-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none hover:scale-110 select-none"
-                      style={{
-                        background: eReaderTheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
-                        boxShadow: eReaderTheme === "dark" ? "0 0 0 1px rgba(255,255,255,0.08)" : "0 0 0 1px rgba(0,0,0,0.08)",
-                      }}
-                      data-testid="button-ereader-prev-page"
-                      title="Previous page (← key)"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
+              {/* Bottom nav bar — always visible outside overflow area */}
+              {!bookLoading && bookPages.length > 0 && (
+                <div
+                  className="flex-shrink-0 flex items-center justify-between px-3 py-1.5 border-t select-none"
+                  style={{
+                    background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#efefef" : "#111111",
+                    borderColor: eReaderTheme === "dark" ? "#333" : "#d4c4a0",
+                  }}
+                >
+                  {/* Prev */}
+                  <button
+                    onClick={() => { goToPage(currentPage - 1); }}
+                    disabled={currentPage <= 1}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-150 disabled:opacity-25 disabled:pointer-events-none active:scale-95"
+                    style={{
+                      background: eReaderTheme === "dark" ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)",
+                      color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                    }}
+                    data-testid="button-ereader-prev-page"
+                    title="Previous page (← key)"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                  </button>
 
-                    <button
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage >= bookPages.length}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none hover:scale-110 select-none"
-                      style={{
-                        background: eReaderTheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
-                        boxShadow: eReaderTheme === "dark" ? "0 0 0 1px rgba(255,255,255,0.08)" : "0 0 0 1px rgba(0,0,0,0.08)",
-                      }}
-                      data-testid="button-ereader-next-page"
-                      title="Next page (→ key)"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-
-                    {/* Page counter — subtle, bottom-centre */}
-                    <div
-                      className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-medium select-none pointer-events-none"
-                      style={{
-                        fontFamily: "Georgia, 'Palatino Linotype', serif",
-                        color: eReaderTheme === "dark" ? "rgba(200,184,144,0.4)" : "rgba(90,60,20,0.35)",
-                        letterSpacing: "0.08em",
-                      }}
+                  {/* Centre: page counter + scroll mode toggle */}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-[10px] font-medium tabular-nums"
+                      style={{ color: eReaderTheme === "dark" ? "rgba(200,184,144,0.55)" : "rgba(90,60,20,0.45)", letterSpacing: "0.06em", fontFamily: "Georgia, serif" }}
                       data-testid="text-ereader-page-info"
                     >
                       {currentPage} / {bookPages.length}
-                    </div>
-                  </>
-                )}
-              </div>
+                    </span>
+                    {/* Scroll / Page mode toggle */}
+                    <button
+                      onClick={() => setEReaderScrollMode(v => !v)}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all"
+                      style={{
+                        background: eReaderScrollMode
+                          ? (eReaderTheme === "dark" ? "rgba(180,140,60,0.25)" : "rgba(139,105,20,0.15)")
+                          : (eReaderTheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"),
+                        color: eReaderScrollMode
+                          ? (eReaderTheme === "dark" ? "#e6a830" : "#7a4e10")
+                          : (eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a"),
+                        border: `1px solid ${eReaderScrollMode ? (eReaderTheme === "dark" ? "rgba(200,150,40,0.3)" : "rgba(139,105,20,0.25)") : "transparent"}`,
+                      }}
+                      title={eReaderScrollMode ? "Switch to page mode" : "Switch to scroll mode"}
+                      data-testid="button-ereader-mode-toggle"
+                    >
+                      {eReaderScrollMode ? <AlignJustify className="w-3 h-3" /> : <BookOpen className="w-3 h-3" />}
+                      {eReaderScrollMode ? "Scroll" : "Pages"}
+                    </button>
+                  </div>
+
+                  {/* Next */}
+                  <button
+                    onClick={() => { goToPage(currentPage + 1); }}
+                    disabled={currentPage >= bookPages.length}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-150 disabled:opacity-25 disabled:pointer-events-none active:scale-95"
+                    style={{
+                      background: eReaderTheme === "dark" ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)",
+                      color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                    }}
+                    data-testid="button-ereader-next-page"
+                    title="Next page (→ key)"
+                  >
+                    Next <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
 
 
             </div>
