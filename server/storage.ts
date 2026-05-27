@@ -294,6 +294,11 @@ export interface IStorage {
   getThemeOrders(status?: string): Promise<Array<ThemeOrder & { userDisplayName: string | null; userEmail: string | null }>>;
   getUserThemeOrders(userId: string): Promise<ThemeOrder[]>;
   reviewThemeOrder(id: string, status: "approved" | "denied", adminNote: string | null, reviewedBy: string): Promise<ThemeOrder | undefined>;
+
+  getBookBookmark(userId: string, bookId: string): Promise<import("@shared/schema").BookBookmark | undefined>;
+  upsertBookBookmark(data: import("@shared/schema").InsertBookBookmark & { userId: string }): Promise<import("@shared/schema").BookBookmark>;
+  deleteBookBookmark(userId: string, bookId: string): Promise<void>;
+  getUserBookBookmarks(userId: string): Promise<import("@shared/schema").BookBookmark[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2113,6 +2118,38 @@ export class DatabaseStorage implements IStorage {
       .where(eq(themeOrders.id, id))
       .returning();
     return row;
+  }
+
+  async getBookBookmark(userId: string, bookId: string) {
+    const { bookBookmarks } = await import("@shared/schema");
+    const [row] = await db.select().from(bookBookmarks)
+      .where(and(eq(bookBookmarks.userId, userId), eq(bookBookmarks.bookId, bookId)));
+    return row;
+  }
+
+  async upsertBookBookmark(data: import("@shared/schema").InsertBookBookmark & { userId: string }) {
+    const { bookBookmarks } = await import("@shared/schema");
+    const [row] = await db.insert(bookBookmarks)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [bookBookmarks.userId, bookBookmarks.bookId],
+        set: { page: data.page, totalPages: data.totalPages, savedAt: new Date() },
+      })
+      .returning();
+    return row;
+  }
+
+  async deleteBookBookmark(userId: string, bookId: string) {
+    const { bookBookmarks } = await import("@shared/schema");
+    await db.delete(bookBookmarks)
+      .where(and(eq(bookBookmarks.userId, userId), eq(bookBookmarks.bookId, bookId)));
+  }
+
+  async getUserBookBookmarks(userId: string) {
+    const { bookBookmarks } = await import("@shared/schema");
+    return db.select().from(bookBookmarks)
+      .where(eq(bookBookmarks.userId, userId))
+      .orderBy(desc(bookBookmarks.savedAt));
   }
 }
 

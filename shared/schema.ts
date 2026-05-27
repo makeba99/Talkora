@@ -643,6 +643,25 @@ export const insertSavedArticleSchema = createInsertSchema(savedArticles).pick({
 export type InsertSavedArticle = z.infer<typeof insertSavedArticleSchema>;
 export type SavedArticle = typeof savedArticles.$inferSelect;
 
+export const bookBookmarks = pgTable("book_bookmarks", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  bookId: varchar("book_id", { length: 200 }).notNull(),
+  bookTitle: text("book_title").notNull(),
+  bookAuthor: text("book_author").notNull().default(""),
+  page: integer("page").notNull(),
+  totalPages: integer("total_pages").notNull().default(0),
+  textUrl: text("text_url").notNull().default(""),
+  savedAt: timestamp("saved_at").notNull().defaultNow(),
+}, (table) => ({
+  bbUserIdx: index("bb_user_id_idx").on(table.userId),
+  bbUniqueIdx: uniqueIndex("bb_unique_idx").on(table.userId, table.bookId),
+}));
+
+export const insertBookBookmarkSchema = createInsertSchema(bookBookmarks).omit({ id: true, savedAt: true });
+export type InsertBookBookmark = z.infer<typeof insertBookBookmarkSchema>;
+export type BookBookmark = typeof bookBookmarks.$inferSelect;
+
 export const notificationMutes = pgTable("notification_mutes", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   muterId: varchar("muter_id", { length: 36 }).notNull(),

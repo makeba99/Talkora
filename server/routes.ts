@@ -2688,6 +2688,64 @@ export async function registerRoutes(
     }
   });
 
+  /* ── Book Bookmarks ───────────────────────────────────────────────────────
+     Persist a user's reading position for a specific book across sessions.
+     bookId is the Gutenberg numeric id (as string) or book title when no id. */
+
+  app.get("/api/book/bookmark", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const bookId = req.query.bookId as string;
+      if (!bookId) return res.status(400).json({ message: "Missing bookId" });
+      const bookmark = await storage.getBookBookmark(userId, bookId);
+      res.json(bookmark || null);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch bookmark" });
+    }
+  });
+
+  app.get("/api/book/bookmarks", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const bookmarks = await storage.getUserBookBookmarks(userId);
+      res.json(bookmarks);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch bookmarks" });
+    }
+  });
+
+  app.post("/api/book/bookmark", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { bookId, bookTitle, bookAuthor, page, totalPages, textUrl } = req.body;
+      if (!bookId || !bookTitle || page == null) return res.status(400).json({ message: "Missing required fields" });
+      const bookmark = await storage.upsertBookBookmark({
+        userId,
+        bookId: String(bookId),
+        bookTitle: String(bookTitle),
+        bookAuthor: bookAuthor ? String(bookAuthor) : "",
+        page: Number(page),
+        totalPages: Number(totalPages) || 0,
+        textUrl: textUrl ? String(textUrl) : "",
+      });
+      res.json(bookmark);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to save bookmark" });
+    }
+  });
+
+  app.delete("/api/book/bookmark", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const bookId = req.query.bookId as string;
+      if (!bookId) return res.status(400).json({ message: "Missing bookId" });
+      await storage.deleteBookBookmark(userId, bookId);
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to delete bookmark" });
+    }
+  });
+
   /* ── YouTube → Readable Article ──────────────────────────────────────────
      Extracts the full transcript from a YouTube video and formats it as a
      readable article. Uses youtube-transcript as the primary strategy with

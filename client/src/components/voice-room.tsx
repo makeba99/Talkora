@@ -23,7 +23,8 @@ import {
   AtSign, TrendingUp, StopCircle, Clock, LayoutGrid, Radio, UsersRound, AlertTriangle, EyeOff, Image as ImageIcon,
   BrainCircuit, Lightbulb, ChevronDown, RotateCcw, ListVideo, Zap, Lock, ThumbsUp, ThumbsDown, SkipForward, SkipBack, Smile,
   Sparkles, Upload, MonitorPlay, Megaphone, Film, Star, AudioLines, CheckCheck, Wand2, SendHorizontal,
-  Pin, Languages, Headphones, ListMusic, Captions, AlignJustify
+  Pin, Languages, Headphones, ListMusic, Captions, AlignJustify,
+  Bookmark, BookmarkCheck
 } from "lucide-react";
 import { SiInstagram, SiFacebook } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
@@ -2821,6 +2822,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [eReaderFullscreen, setEReaderFullscreen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [eReaderScrollMode, setEReaderScrollMode] = useState(false);
+  const [bookmarkPage, setBookmarkPage] = useState<number | null>(null);
+  const [bookmarkSaving, setBookmarkSaving] = useState(false);
+  const [bookmarkJustSaved, setBookmarkJustSaved] = useState(false);
 
   // ── Paginate book text into pages of ~280 words (scales with font size) ──────
   const bookPages = useMemo(() => {
@@ -9493,12 +9497,69 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return () => window.removeEventListener("keydown", onKey);
   }, [showEReader, currentPage, goToPage]);
 
+  // ── Book bookmark helpers ──────────────────────────────────────────────────
+
+  // Derive a stable bookId: prefer numeric Gutenberg id, fall back to title slug
+  const currentBookId = selectedBook
+    ? String(selectedBook.id || selectedBook.title || "").slice(0, 200)
+    : null;
+
+  // Load bookmark whenever a new book is opened
+  useEffect(() => {
+    if (!currentBookId || !user?.id) { setBookmarkPage(null); return; }
+    setBookmarkPage(null);
+    fetch(`/api/book/bookmark?bookId=${encodeURIComponent(currentBookId)}`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.page) setBookmarkPage(data.page); })
+      .catch(() => {});
+  }, [currentBookId, user?.id]);
+
+  const saveBookmark = useCallback(async () => {
+    if (!currentBookId || !selectedBook) return;
+    setBookmarkSaving(true);
+    try {
+      const authors = selectedBook.authors?.map((a: any) => a.name).join(", ") || "";
+      const textUrl = selectedBook.formats?.["text/plain; charset=utf-8"]
+        || selectedBook.formats?.["text/plain"]
+        || selectedBook.gutenbergUrl || "";
+      await fetch("/api/book/bookmark", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookId: currentBookId,
+          bookTitle: selectedBook.title || "",
+          bookAuthor: authors,
+          page: currentPage,
+          totalPages: bookPages.length,
+          textUrl,
+        }),
+      });
+      setBookmarkPage(currentPage);
+      setBookmarkJustSaved(true);
+      setTimeout(() => setBookmarkJustSaved(false), 2000);
+    } catch {}
+    setBookmarkSaving(false);
+  }, [currentBookId, selectedBook, currentPage, bookPages.length]);
+
+  const removeBookmark = useCallback(async () => {
+    if (!currentBookId) return;
+    try {
+      await fetch(`/api/book/bookmark?bookId=${encodeURIComponent(currentBookId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      setBookmarkPage(null);
+    } catch {}
+  }, [currentBookId]);
+
   const handleCloseBook = () => {
     setSelectedBook(null);
     setBookText("");
     setCurrentPage(1);
     setWordInfo(null);
     setShowEReader(false);
+    setBookmarkPage(null);
     const amIBookHost = bookHostId === user?.id;
     if (amIBookHost) {
       socket?.emit("room:book", { roomId: room.id, book: null });
@@ -15425,6 +15486,44 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <button onClick={() => setEReaderFontSize(s => Math.max(12, s - 2))} className="px-1.5 py-0.5 rounded text-xs font-bold hover:opacity-70 transition-opacity" title="Smaller">A−</button>
                   <span className="text-[10px] opacity-60 w-7 text-center">{eReaderFontSize}</span>
                   <button onClick={() => setEReaderFontSize(s => Math.min(28, s + 2))} className="px-1.5 py-0.5 rounded text-xs font-bold hover:opacity-70 transition-opacity" title="Larger">A+</button>
+                  {/* Bookmark — save / update / remove reading position */}
+                  <button
+                    onClick={() => bookmarkPage === currentPage ? removeBookmark() : saveBookmark()}
+                    disabled={bookmarkSaving}
+                    className="relative p-1 rounded hover:opacity-80 transition-all ml-0.5"
+                    title={
+                      bookmarkPage === currentPage
+                        ? "Remove bookmark from this page"
+                        : bookmarkPage
+                        ? `Update bookmark (was p.${bookmarkPage})`
+                        : "Bookmark this page"
+                    }
+                    data-testid="button-ereader-bookmark"
+                  >
+                    {bookmarkSaving ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : bookmarkPage === currentPage ? (
+                      <BookmarkCheck
+                        className="w-3.5 h-3.5"
+                        style={{ color: eReaderTheme === "dark" ? "#e6a830" : "#8b6914" }}
+                      />
+                    ) : (
+                      <Bookmark className="w-3.5 h-3.5 opacity-60" />
+                    )}
+                    {bookmarkJustSaved && (
+                      <span
+                        className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold whitespace-nowrap px-1.5 py-0.5 rounded-full pointer-events-none"
+                        style={{
+                          background: eReaderTheme === "dark" ? "rgba(30,22,8,0.92)" : "rgba(255,248,224,0.96)",
+                          color: eReaderTheme === "dark" ? "#e6a830" : "#7a4e10",
+                          border: `1px solid ${eReaderTheme === "dark" ? "rgba(230,168,48,0.35)" : "rgba(139,105,20,0.25)"}`,
+                        }}
+                      >
+                        Saved!
+                      </span>
+                    )}
+                  </button>
+
                   {/* Fullscreen / collapse toggle */}
                   <button
                     onClick={() => { setEReaderFullscreen(v => !v); setEReaderHeight(null); }}
@@ -15688,6 +15787,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   >
                     {currentPage} / {bookPages.length}
                   </span>
+
+                  {/* Jump-to-bookmark pill — only shown when a bookmark exists on a different page */}
+                  {bookmarkPage !== null && bookmarkPage !== currentPage && (
+                    <button
+                      onClick={() => goToPage(bookmarkPage)}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all"
+                      style={{
+                        background: eReaderTheme === "dark" ? "rgba(180,140,60,0.22)" : "rgba(139,105,20,0.12)",
+                        color: eReaderTheme === "dark" ? "#e6a830" : "#7a4e10",
+                        border: `1px solid ${eReaderTheme === "dark" ? "rgba(200,150,40,0.3)" : "rgba(139,105,20,0.22)"}`,
+                      }}
+                      title={`Jump to your bookmark on page ${bookmarkPage}`}
+                      data-testid="button-ereader-jump-bookmark"
+                    >
+                      <BookmarkCheck className="w-2.5 h-2.5 flex-shrink-0" />
+                      p.{bookmarkPage}
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setEReaderScrollMode(v => !v)}
                     className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all"
