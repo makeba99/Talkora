@@ -2777,6 +2777,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const roomDmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bookScrollRef = useRef<HTMLDivElement | null>(null);
   const lastScrollEmitRef = useRef(0);
+  const [readerAutoScroll, setReaderAutoScroll] = useState(true);
+  const autoScrollRafRef = useRef<number | null>(null);
+  const autoScrollPausedByUserRef = useRef(false);
   const [unreadChatBadge, setUnreadChatBadge] = useState(0);
   const [privateUnreadCount, setPrivateUnreadCount] = useState(0);
   const [tabUnreadCount, setTabUnreadCount] = useState(0);
@@ -9184,6 +9187,54 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return () => window.removeEventListener("keydown", onKey);
   }, [showEReader, currentPage, goToPage]);
 
+  // Auto-scroll: slowly scroll the reader content down. Pauses when the user
+  // manually scrolls/touches. Resets to top and restarts on every page change.
+  useEffect(() => {
+    const el = bookScrollRef.current;
+    if (!el || !showEReader || !bookPages.length || !readerAutoScroll) return;
+
+    // Scroll to top of new page
+    el.scrollTop = 0;
+    autoScrollPausedByUserRef.current = false;
+
+    const SPEED = 38; // px per second — slow, comfortable reading pace
+    let lastTime: number | null = null;
+
+    const tick = (now: number) => {
+      if (autoScrollPausedByUserRef.current) return;
+      if (lastTime !== null) {
+        const dt = (now - lastTime) / 1000;
+        el.scrollTop += SPEED * dt;
+        if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
+          autoScrollPausedByUserRef.current = true;
+          return;
+        }
+      }
+      lastTime = now;
+      autoScrollRafRef.current = requestAnimationFrame(tick);
+    };
+    autoScrollRafRef.current = requestAnimationFrame(tick);
+
+    const pauseByUser = () => {
+      autoScrollPausedByUserRef.current = true;
+      if (autoScrollRafRef.current) {
+        cancelAnimationFrame(autoScrollRafRef.current);
+        autoScrollRafRef.current = null;
+      }
+    };
+
+    el.addEventListener("wheel", pauseByUser, { passive: true });
+    el.addEventListener("touchstart", pauseByUser, { passive: true });
+    el.addEventListener("mousedown", pauseByUser, { passive: true });
+
+    return () => {
+      if (autoScrollRafRef.current) { cancelAnimationFrame(autoScrollRafRef.current); autoScrollRafRef.current = null; }
+      el.removeEventListener("wheel", pauseByUser);
+      el.removeEventListener("touchstart", pauseByUser);
+      el.removeEventListener("mousedown", pauseByUser);
+    };
+  }, [showEReader, bookPages.length, currentPage, readerAutoScroll]);
+
   // ── Book bookmark helpers ──────────────────────────────────────────────────
 
   // Derive a stable bookId: prefer numeric Gutenberg id, fall back to title slug
@@ -15236,41 +15287,31 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               )}
 
               {/* Book content — 3-column flex layout: [prev-btn | scroll-content | next-btn]
-                   Arrows live in their own flex columns so they are NEVER covered by the
-                   scroll area regardless of panel size. min-h-[48px] guarantees the arrow
-                   columns always have enough vertical space to be clickable even when the
-                   panel is dragged very small. */}
+                   Arrows are full-height columns so they're always tappable on any screen. */}
               <div className="flex-1 min-h-0 flex flex-row" style={{ minHeight: 48 }}>
-                {/* Prev-page arrow column */}
-                <div className="flex-shrink-0 flex items-center justify-center w-8">
-                  {!bookLoading && bookPages.length > 0 && (
-                    <button
-                      onClick={() => { goToPage(currentPage - 1); }}
-                      disabled={currentPage <= 1}
-                      className="flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-90 hover:scale-110 select-none"
-                      style={{
-                        background: eReaderTheme === "dark"
-                          ? "rgba(30,24,14,0.82)"
-                          : eReaderTheme === "sepia"
-                          ? "rgba(236,224,197,0.92)"
-                          : "rgba(255,255,255,0.88)",
-                        border: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.18)" : "rgba(0,0,0,0.10)"}`,
-                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
-                        backdropFilter: "blur(6px)",
-                        boxShadow: eReaderTheme === "dark"
-                          ? "0 2px 12px rgba(0,0,0,0.55)"
-                          : "0 2px 10px rgba(0,0,0,0.14)",
-                      }}
-                      data-testid="button-ereader-prev-page"
-                      title="Previous page (← key)"
-                    >
-                      <ChevronLeft className="w-4 h-4 flex-shrink-0" />
-                    </button>
-                  )}
-                </div>
+                {/* Prev-page arrow column — full height, always tappable */}
+                <button
+                  onClick={() => { goToPage(currentPage - 1); }}
+                  disabled={!bookPages.length || bookLoading || currentPage <= 1}
+                  className="flex-shrink-0 flex items-center justify-center w-10 h-full transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-95 select-none"
+                  style={{
+                    background: eReaderTheme === "dark"
+                      ? "rgba(26,20,10,0.55)"
+                      : eReaderTheme === "sepia"
+                      ? "rgba(236,224,197,0.65)"
+                      : "rgba(248,248,248,0.65)",
+                    borderRight: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.10)" : "rgba(0,0,0,0.06)"}`,
+                    color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                  }}
+                  data-testid="button-ereader-prev-page"
+                  title="Previous page (← key)"
+                >
+                  <ChevronLeft className="w-5 h-5 flex-shrink-0" />
+                </button>
 
                 {/* Scrollable page content */}
                 <div
+                  ref={bookScrollRef}
                   className="flex-1 min-w-0 h-full overflow-y-auto"
                   style={{ scrollbarWidth: "thin", scrollbarColor: eReaderTheme === "dark" ? "#444 #1a1a1a" : "#c4b48a #f5ead5" }}
                   onMouseUp={handleReaderMouseUp}
@@ -15313,33 +15354,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   )}
                 </div>
 
-                {/* Next-page arrow column */}
-                <div className="flex-shrink-0 flex items-center justify-center w-8">
-                  {!bookLoading && bookPages.length > 0 && (
-                    <button
-                      onClick={() => { goToPage(currentPage + 1); }}
-                      disabled={currentPage >= bookPages.length}
-                      className="flex items-center justify-center w-7 h-7 rounded-full shadow-md transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-90 hover:scale-110 select-none"
-                      style={{
-                        background: eReaderTheme === "dark"
-                          ? "rgba(30,24,14,0.82)"
-                          : eReaderTheme === "sepia"
-                          ? "rgba(236,224,197,0.92)"
-                          : "rgba(255,255,255,0.88)",
-                        border: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.18)" : "rgba(0,0,0,0.10)"}`,
-                        color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
-                        backdropFilter: "blur(6px)",
-                        boxShadow: eReaderTheme === "dark"
-                          ? "0 2px 12px rgba(0,0,0,0.55)"
-                          : "0 2px 10px rgba(0,0,0,0.14)",
-                      }}
-                      data-testid="button-ereader-next-page"
-                      title="Next page (→ key)"
-                    >
-                      <ChevronRight className="w-4 h-4 flex-shrink-0" />
-                    </button>
-                  )}
-                </div>
+                {/* Next-page arrow column — full height, always tappable */}
+                <button
+                  onClick={() => { goToPage(currentPage + 1); }}
+                  disabled={!bookPages.length || bookLoading || currentPage >= bookPages.length}
+                  className="flex-shrink-0 flex items-center justify-center w-10 h-full transition-all duration-150 disabled:opacity-0 disabled:pointer-events-none active:scale-95 select-none"
+                  style={{
+                    background: eReaderTheme === "dark"
+                      ? "rgba(26,20,10,0.55)"
+                      : eReaderTheme === "sepia"
+                      ? "rgba(236,224,197,0.65)"
+                      : "rgba(248,248,248,0.65)",
+                    borderLeft: `1px solid ${eReaderTheme === "dark" ? "rgba(200,180,120,0.10)" : "rgba(0,0,0,0.06)"}`,
+                    color: eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a",
+                  }}
+                  data-testid="button-ereader-next-page"
+                  title="Next page (→ key)"
+                >
+                  <ChevronRight className="w-5 h-5 flex-shrink-0" />
+                </button>
               </div>
 
               {/* Bottom status bar — page counter + mode toggle only */}
@@ -15394,6 +15427,33 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   >
                     {eReaderScrollMode ? <AlignJustify className="w-3 h-3" /> : <BookOpen className="w-3 h-3" />}
                     {eReaderScrollMode ? "Scroll" : "Pages"}
+                  </button>
+
+                  {/* Auto-scroll toggle */}
+                  <button
+                    onClick={() => {
+                      const next = !readerAutoScroll;
+                      setReaderAutoScroll(next);
+                      if (!next && autoScrollRafRef.current) {
+                        cancelAnimationFrame(autoScrollRafRef.current);
+                        autoScrollRafRef.current = null;
+                      }
+                    }}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all"
+                    style={{
+                      background: readerAutoScroll
+                        ? (eReaderTheme === "dark" ? "rgba(80,180,120,0.22)" : "rgba(40,140,80,0.12)")
+                        : (eReaderTheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"),
+                      color: readerAutoScroll
+                        ? (eReaderTheme === "dark" ? "#6ee7a0" : "#1a6e40")
+                        : (eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a"),
+                      border: `1px solid ${readerAutoScroll ? (eReaderTheme === "dark" ? "rgba(80,200,120,0.3)" : "rgba(40,140,80,0.25)") : "transparent"}`,
+                    }}
+                    title={readerAutoScroll ? "Auto-scroll ON — tap to stop" : "Auto-scroll OFF — tap to enable"}
+                    data-testid="button-ereader-autoscroll"
+                  >
+                    <ChevronsDown className="w-3 h-3" />
+                    Auto
                   </button>
                 </div>
               )}
