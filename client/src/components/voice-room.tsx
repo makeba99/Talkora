@@ -2452,6 +2452,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
   const [isFlippingCamera, setIsFlippingCamera] = useState(false);
   const [localVideoStreamObj, setLocalVideoStreamObj] = useState<MediaStream | null>(null);
+  const localVideoStreamRef = useRef<MediaStream | null>(null);
   const [miniCameraMode, setMiniCameraMode] = useState(false);
   const [youtubeSearch, setYoutubeSearch] = useState("");
   const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
@@ -7217,6 +7218,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
   };
 
+  // ── Keep localVideoStreamRef in sync with state (used in canvas draw loop) ──
+  useEffect(() => { localVideoStreamRef.current = localVideoStreamObj; }, [localVideoStreamObj]);
+
   // ── Go Live: tutorial "video" timer ─────────────────────────────────────
   useEffect(() => {
     const ytVisible = (sidePanelTab === "golive" || goLiveOpen) &&
@@ -7293,20 +7297,34 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     glCanvasRef.current = canvas;
     const c = canvas.getContext("2d")!;
 
+    // ── Avatar image cache ────────────────────────────────────────────────
     const avatarCache = new Map<string, HTMLImageElement>();
     const loadImg = (url: string) => {
       if (avatarCache.has(url)) return;
       const img = new Image(); img.crossOrigin = "anonymous"; img.src = url; avatarCache.set(url, img);
     };
-    participantsRef.current.forEach(p => { if (p.avatarUrl) loadImg(p.avatarUrl); });
+    participantsRef.current.forEach(p => { if (p.profileImageUrl) loadImg(p.profileImageUrl); });
 
-    // Safe rounded-rect helper (no reliance on ctx.roundRect browser support)
+    // ── Video element cache for camera streams ────────────────────────────
+    const videoElCache = new Map<string, HTMLVideoElement>();
+    const getOrCreateVideoEl = (id: string, stream: MediaStream) => {
+      let el = videoElCache.get(id);
+      if (!el) { el = document.createElement("video"); videoElCache.set(id, el); }
+      if (el.srcObject !== stream) {
+        el.srcObject = stream; el.autoplay = true; el.muted = true; el.playsInline = true;
+        el.play().catch(() => {});
+      }
+      return el;
+    };
+
+    // ── Safe rounded-rect helper ──────────────────────────────────────────
     const rrect = (x: number, y: number, w: number, h: number, r: number) => {
-      c.beginPath(); c.moveTo(x+r,y); c.lineTo(x+w-r,y);
-      c.quadraticCurveTo(x+w,y,x+w,y+r); c.lineTo(x+w,y+h-r);
-      c.quadraticCurveTo(x+w,y+h,x+w-r,y+h); c.lineTo(x+r,y+h);
-      c.quadraticCurveTo(x,y+h,x,y+h-r); c.lineTo(x,y+r);
-      c.quadraticCurveTo(x,y,x+r,y); c.closePath();
+      const cr = Math.min(r, w/2, h/2);
+      c.beginPath(); c.moveTo(x+cr,y); c.lineTo(x+w-cr,y);
+      c.quadraticCurveTo(x+w,y,x+w,y+cr); c.lineTo(x+w,y+h-cr);
+      c.quadraticCurveTo(x+w,y+h,x+w-cr,y+h); c.lineTo(x+cr,y+h);
+      c.quadraticCurveTo(x,y+h,x,y+h-cr); c.lineTo(x,y+cr);
+      c.quadraticCurveTo(x,y,x+cr,y); c.closePath();
     };
 
     const AVATAR_COLORS = ["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981","#0ea5e9","#ef4444","#f97316"];
@@ -7316,108 +7334,195 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const pts = participantsRef.current;
       const spk = speakingUsersRef.current;
 
-      // Background
-      const bg = c.createLinearGradient(0, 0, 0, H);
-      bg.addColorStop(0, "#0b0b1c"); bg.addColorStop(1, "#0f0f28");
-      c.fillStyle = bg; c.fillRect(0, 0, W, H);
+      // ── Background ───────────────────────────────────────────────────────
+      c.fillStyle = "#080814"; c.fillRect(0, 0, W, H);
+      const bgGrad = c.createRadialGradient(W/2, H/2, 0, W/2, H/2, W*0.65);
+      bgGrad.addColorStop(0, "rgba(70,30,130,0.20)"); bgGrad.addColorStop(1, "rgba(0,0,0,0)");
+      c.fillStyle = bgGrad; c.fillRect(0, 0, W, H);
+      // Dot grid
+      c.fillStyle = "rgba(255,255,255,0.022)";
+      for (let gx = 50; gx < W; gx += 60) for (let gy = 50; gy < H; gy += 60) {
+        c.beginPath(); c.arc(gx,gy,1,0,Math.PI*2); c.fill();
+      }
 
-      // Subtle grid
-      c.strokeStyle = "rgba(255,255,255,0.022)"; c.lineWidth = 1;
-      for (let x = 0; x < W; x += 80) { c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); }
-      for (let y = 0; y < H; y += 80) { c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
+      // ── Top bar ──────────────────────────────────────────────────────────
+      const topGrad = c.createLinearGradient(0,0,0,60);
+      topGrad.addColorStop(0,"rgba(8,8,22,0.96)"); topGrad.addColorStop(1,"rgba(8,8,22,0.78)");
+      c.fillStyle = topGrad; c.fillRect(0,0,W,60);
+      c.strokeStyle = "rgba(255,255,255,0.08)"; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(0,60); c.lineTo(W,60); c.stroke();
 
-      // Top bar
-      c.fillStyle = "rgba(0,0,0,0.55)"; c.fillRect(0, 0, W, 62);
-      c.strokeStyle = "rgba(255,255,255,0.07)"; c.lineWidth = 1;
-      c.beginPath(); c.moveTo(0,62); c.lineTo(W,62); c.stroke();
-
-      // LIVE badge (slow pulse)
-      const pulse = 0.72 + 0.28 * Math.sin(sec * Math.PI * 2);
-      c.fillStyle = `rgba(239,68,68,${pulse})`; rrect(20,16,72,30,7); c.fill();
-      c.fillStyle = "#fff"; c.font = "bold 13px Arial,sans-serif";
-      c.textAlign = "left"; c.textBaseline = "middle"; c.fillText("● LIVE", 30, 31);
+      // LIVE badge
+      const pulse = 0.78 + 0.22*Math.sin(sec*Math.PI*2);
+      c.fillStyle = `rgba(220,38,38,${pulse})`; rrect(16,15,66,28,6); c.fill();
+      c.fillStyle = "#fff"; c.font = "bold 12px Arial,sans-serif";
+      c.textAlign = "left"; c.textBaseline = "middle"; c.fillText("● LIVE", 24,29);
 
       // Duration
       const h2=Math.floor(sec/3600), m2=Math.floor((sec%3600)/60), s2=sec%60;
-      const dur = `${h2>0?h2+":":""}${String(m2).padStart(2,"0")}:${String(s2).padStart(2,"0")}`;
-      c.fillStyle = "rgba(255,255,255,0.5)"; c.font = "13px Arial,sans-serif"; c.fillText(dur, 100, 31);
+      const dur=`${h2>0?h2+":":""}${String(m2).padStart(2,"0")}:${String(s2).padStart(2,"0")}`;
+      c.fillStyle="rgba(255,255,255,0.5)"; c.font="13px Arial,sans-serif"; c.fillText(dur,92,29);
 
-      // Room title
-      c.fillStyle = "#fff"; c.font = "bold 18px Arial,sans-serif"; c.textAlign = "center";
-      c.fillText(room.title || "Vextorn Room", W/2, 31);
+      // Room title (centre)
+      c.fillStyle="#fff"; c.font="bold 17px Arial,sans-serif"; c.textAlign="center";
+      c.fillText(room.title||"Vextorn Room", W/2, 29);
 
-      // Brand
-      c.fillStyle = "rgba(255,165,60,0.9)"; c.font = "bold 16px Arial,sans-serif"; c.textAlign = "right";
-      c.fillText("Vextorn", W-20, 31); c.textBaseline = "alphabetic";
+      // Participant count right of title
+      const titleW = c.measureText(room.title||"Vextorn Room").width;
+      c.fillStyle="rgba(255,255,255,0.35)"; c.font="12px Arial,sans-serif";
+      c.fillText(`${pts.length} online`, W/2+titleW/2+14, 29);
 
-      // Participant grid
-      const vis = pts.slice(0, 12);
+      // Vextorn brand (right)
+      c.fillStyle="rgba(255,165,60,0.9)"; c.font="bold 15px Arial,sans-serif"; c.textAlign="right";
+      c.fillText("Vextorn", W-18, 29); c.textBaseline="alphabetic";
+
+      // ── Participant grid ─────────────────────────────────────────────────
+      const vis = pts.slice(0,12);
       const n = vis.length;
       if (n === 0) {
-        c.fillStyle = "rgba(255,255,255,0.22)"; c.font = "22px Arial,sans-serif";
-        c.textAlign = "center"; c.textBaseline = "middle";
-        c.fillText("Waiting for participants…", W/2, H/2); c.textBaseline = "alphabetic";
+        c.fillStyle="rgba(255,255,255,0.2)"; c.font="20px Arial,sans-serif";
+        c.textAlign="center"; c.textBaseline="middle";
+        c.fillText("Waiting for participants…", W/2, H/2); c.textBaseline="alphabetic";
       } else {
-        const cols = n<=1?1:n<=4?2:n<=9?3:4;
+        const cols = n<=1?1:n<=2?2:n<=4?2:n<=6?3:n<=9?3:4;
         const rows = Math.ceil(n/cols);
-        const gW = W-64, gH = H-62-52;
-        const cW = gW/cols, cH = gH/rows;
-        const R = Math.min(cW*0.28, cH*0.3, 92);
-        vis.forEach((p, i) => {
-          const col = i%cols, row = Math.floor(i/cols);
-          const cx = 32 + col*cW + cW/2;
-          const cy = 62 + row*cH + cH*0.44;
-          const isSpeaking = spk.has(p.id);
+        const PAD=18, TOP=68, BOT=54, IGAP=8;
+        const gW=W-PAD*2, gH=H-TOP-BOT;
+        const cW=gW/cols, cH=gH/rows;
 
-          // Speaking rings (double ring, pulsing amber)
+        vis.forEach((p, i) => {
+          const col=i%cols, row=Math.floor(i/cols);
+          const cardX=PAD+col*cW+IGAP/2, cardY=TOP+row*cH+IGAP/2;
+          const cardW=cW-IGAP, cardH=cH-IGAP;
+          const cx=cardX+cardW/2, cy=cardY+cardH*0.42;
+          const R=Math.min(cardW*0.26, cardH*0.30, 88);
+          const isSpeaking=spk.has(p.id);
+          const isHost=(p as any).id===room.hostId;
+
+          // Card background
+          rrect(cardX,cardY,cardW,cardH,14);
+          const cbg = c.createLinearGradient(cardX,cardY,cardX,cardY+cardH);
           if (isSpeaking) {
-            const a = 0.45 + 0.55*Math.sin(sec*Math.PI*3.5);
-            c.strokeStyle = `rgba(255,165,60,${a})`; c.lineWidth = 5;
-            c.beginPath(); c.arc(cx,cy,R+9,0,Math.PI*2); c.stroke();
-            c.strokeStyle = `rgba(255,165,60,${a*0.35})`; c.lineWidth = 2;
-            c.beginPath(); c.arc(cx,cy,R+20,0,Math.PI*2); c.stroke();
+            cbg.addColorStop(0,"rgba(200,110,20,0.24)"); cbg.addColorStop(1,"rgba(120,60,5,0.18)");
+            c.fillStyle=cbg; c.fill();
+            rrect(cardX,cardY,cardW,cardH,14);
+            c.strokeStyle="rgba(255,165,60,0.50)"; c.lineWidth=1.5; c.stroke();
+          } else {
+            cbg.addColorStop(0,"rgba(255,255,255,0.055)"); cbg.addColorStop(1,"rgba(255,255,255,0.022)");
+            c.fillStyle=cbg; c.fill();
+            rrect(cardX,cardY,cardW,cardH,14);
+            c.strokeStyle="rgba(255,255,255,0.09)"; c.lineWidth=1; c.stroke();
           }
 
-          // Avatar circle
+          // Speaking outer rings
+          if (isSpeaking) {
+            const a=0.38+0.42*Math.sin(sec*Math.PI*3.5);
+            c.strokeStyle=`rgba(255,165,60,${a})`; c.lineWidth=4;
+            c.beginPath(); c.arc(cx,cy,R+11,0,Math.PI*2); c.stroke();
+            c.strokeStyle=`rgba(255,165,60,${a*0.22})`; c.lineWidth=2;
+            c.beginPath(); c.arc(cx,cy,R+22,0,Math.PI*2); c.stroke();
+          }
+
+          // ── Avatar: try camera video → profile photo → initials ─────────
           c.save(); c.beginPath(); c.arc(cx,cy,R,0,Math.PI*2); c.clip();
-          const img = p.avatarUrl ? avatarCache.get(p.avatarUrl) : undefined;
-          if (img?.complete && img.naturalWidth > 0) {
-            c.drawImage(img, cx-R, cy-R, R*2, R*2);
-          } else {
-            c.fillStyle = AVATAR_COLORS[(p.displayName?.charCodeAt(0)||0) % AVATAR_COLORS.length];
-            c.fillRect(cx-R, cy-R, R*2, R*2);
-            c.fillStyle = "#fff"; c.font = `bold ${Math.round(R*0.6)}px Arial,sans-serif`;
-            c.textAlign = "center"; c.textBaseline = "middle";
+          let drawn=false;
+
+          const vidStream = p.id===user?.id ? localVideoStreamRef.current : remoteVideoStreams.current.get(p.id);
+          if (vidStream && vidStream.getVideoTracks().some(t=>t.enabled && t.readyState==="live")) {
+            const vel=getOrCreateVideoEl(p.id, vidStream);
+            if (vel.readyState>=2 && vel.videoWidth>0) {
+              const vAR=vel.videoWidth/vel.videoHeight;
+              let sw=vel.videoWidth, sh=vel.videoHeight;
+              if (vAR>1) { sw=sh; } else { sh=sw; }
+              c.drawImage(vel, (vel.videoWidth-sw)/2,(vel.videoHeight-sh)/2, sw,sh, cx-R,cy-R, R*2,R*2);
+              drawn=true;
+            }
+          }
+
+          if (!drawn) {
+            const img = p.profileImageUrl ? avatarCache.get(p.profileImageUrl) : undefined;
+            if (img?.complete && img.naturalWidth>0) {
+              const iAR=img.naturalWidth/img.naturalHeight;
+              let sw=img.naturalWidth, sh=img.naturalHeight;
+              if (iAR>1) { sw=sh; } else { sh=sw; }
+              c.drawImage(img, (img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2, sw,sh, cx-R,cy-R, R*2,R*2);
+              drawn=true;
+            }
+            if (p.profileImageUrl && !avatarCache.has(p.profileImageUrl)) loadImg(p.profileImageUrl);
+          }
+
+          if (!drawn) {
+            const ci=(p.displayName?.charCodeAt(0)||p.firstName?.charCodeAt(0)||65)%AVATAR_COLORS.length;
+            const ag=c.createRadialGradient(cx-R*0.2,cy-R*0.2,R*0.08, cx,cy,R);
+            ag.addColorStop(0,AVATAR_COLORS[(ci+1)%AVATAR_COLORS.length]);
+            ag.addColorStop(1,AVATAR_COLORS[ci]);
+            c.fillStyle=ag; c.fillRect(cx-R,cy-R,R*2,R*2);
+            c.fillStyle="rgba(255,255,255,0.92)";
+            c.font=`bold ${Math.round(R*0.52)}px Arial,sans-serif`;
+            c.textAlign="center"; c.textBaseline="middle";
             c.fillText(((p.displayName||p.firstName||"?")[0]).toUpperCase(), cx, cy);
           }
           c.restore();
 
-          // Name label
-          const name = p.displayName||p.firstName||"User";
-          c.fillStyle = isSpeaking ? "rgba(255,180,80,0.95)" : "rgba(255,255,255,0.85)";
-          c.font = `${Math.max(11,Math.round(R*0.28))}px Arial,sans-serif`;
-          c.textAlign = "center"; c.textBaseline = "alphabetic";
-          c.fillText(name.length>16?name.slice(0,15)+"…":name, cx, cy+R+18);
+          // Avatar border ring
+          c.strokeStyle=isSpeaking?"rgba(255,165,60,0.85)":"rgba(255,255,255,0.20)";
+          c.lineWidth=isSpeaking?2.5:1.5;
+          c.beginPath(); c.arc(cx,cy,R,0,Math.PI*2); c.stroke();
 
-          if (p.avatarUrl && !avatarCache.has(p.avatarUrl)) loadImg(p.avatarUrl);
+          // Host crown (top-right)
+          if (isHost) {
+            c.fillStyle="rgba(8,8,22,0.75)";
+            const bx=cx+R*0.72, by=cy-R*0.72, br=R*0.22;
+            c.beginPath(); c.arc(bx,by,br,0,Math.PI*2); c.fill();
+            c.fillStyle="rgba(255,195,40,0.95)";
+            c.font=`${Math.max(10,Math.round(br*1.6))}px Arial,sans-serif`;
+            c.textAlign="center"; c.textBaseline="middle"; c.fillText("♛",bx,by+1);
+          }
+
+          // Muted indicator (bottom-right)
+          if (p.isMuted) {
+            const bx=cx+R*0.72, by=cy+R*0.72, br=R*0.22;
+            c.fillStyle="rgba(200,30,30,0.92)";
+            c.beginPath(); c.arc(bx,by,br,0,Math.PI*2); c.fill();
+            c.fillStyle="#fff"; c.font=`bold ${Math.max(8,Math.round(br*1.1))}px Arial,sans-serif`;
+            c.textAlign="center"; c.textBaseline="middle"; c.fillText("✕",bx,by);
+          }
+
+          // Name label
+          const name=(p.displayName||p.firstName||"User");
+          const ns=name.length>18?name.slice(0,17)+"…":name;
+          c.fillStyle=isSpeaking?"rgba(255,185,80,1.0)":"rgba(255,255,255,0.88)";
+          c.font=`${Math.max(11,Math.round(R*0.24))}px Arial,sans-serif`;
+          c.textAlign="center"; c.textBaseline="alphabetic";
+          c.fillText(ns, cx, cardY+cardH-12);
+
+          // Speaking label
+          if (isSpeaking) {
+            c.fillStyle="rgba(255,155,40,0.62)";
+            c.font=`${Math.max(8,Math.round(R*0.17))}px Arial,sans-serif`;
+            c.fillText("speaking…", cx, cardY+cardH-12-Math.max(12,Math.round(R*0.28)));
+          }
         });
-        if (pts.length > 12) {
-          c.fillStyle = "rgba(255,255,255,0.35)"; c.font = "13px Arial,sans-serif";
-          c.textAlign = "center"; c.textBaseline = "alphabetic";
-          c.fillText(`+${pts.length-12} more`, W/2, H-58);
+
+        if (pts.length>12) {
+          c.fillStyle="rgba(255,255,255,0.30)"; c.font="13px Arial,sans-serif";
+          c.textAlign="center"; c.textBaseline="alphabetic";
+          c.fillText(`+${pts.length-12} more in room`, W/2, H-56);
         }
       }
 
-      // Bottom bar
-      c.fillStyle = "rgba(0,0,0,0.45)"; c.fillRect(0, H-48, W, 48);
-      c.strokeStyle = "rgba(255,255,255,0.06)"; c.lineWidth = 1;
-      c.beginPath(); c.moveTo(0,H-48); c.lineTo(W,H-48); c.stroke();
-      const meta = [room.language, `${pts.length} online`].filter(Boolean).join(" · ");
-      c.fillStyle = "rgba(255,255,255,0.4)"; c.font = "13px Arial,sans-serif";
-      c.textAlign = "left"; c.textBaseline = "middle"; c.fillText(meta, 20, H-24);
-      c.fillStyle = "rgba(255,165,60,0.5)"; c.textAlign = "right";
-      c.fillText("vextorn.com · Talk. Share. Belong.", W-20, H-24);
-      c.textBaseline = "alphabetic";
+      // ── Bottom bar ───────────────────────────────────────────────────────
+      const botGrad=c.createLinearGradient(0,H-52,0,H);
+      botGrad.addColorStop(0,"rgba(8,8,22,0.78)"); botGrad.addColorStop(1,"rgba(8,8,22,0.94)");
+      c.fillStyle=botGrad; c.fillRect(0,H-52,W,52);
+      c.strokeStyle="rgba(255,255,255,0.07)"; c.lineWidth=1;
+      c.beginPath(); c.moveTo(0,H-52); c.lineTo(W,H-52); c.stroke();
+      const meta=[(room as any).language,(room as any).skillLevel,`${pts.length} in room`].filter(Boolean).join("  ·  ");
+      c.fillStyle="rgba(255,255,255,0.38)"; c.font="13px Arial,sans-serif";
+      c.textAlign="left"; c.textBaseline="middle"; c.fillText(meta,20,H-26);
+      c.fillStyle="rgba(255,165,60,0.48)"; c.textAlign="right";
+      c.fillText("vextorn.com  ·  Talk. Share. Belong.", W-20, H-26);
+      c.textBaseline="alphabetic";
     };
 
     let t0 = Date.now();
