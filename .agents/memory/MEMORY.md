@@ -1,0 +1,1 @@
+- [getDisplayMedia gesture chain](getdisplaymedia-gesture.md) — must be the very first `await` in a click handler; any prior `await` (setTimeout, getUserMedia) silently kills the picker.

@@ -7259,32 +7259,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (goLivePlatform === "twitch" && !twitchKey) { toast({ title: "Paste your Twitch stream key first", variant: "destructive" }); return; }
     if (goLivePlatform === "both" && !twitchKey && !youtubeKey) { toast({ title: "Enter at least one stream key", variant: "destructive" }); return; }
 
-    // Show the "preparing" overlay first so the user reads the instruction
-    // before the browser dialog fires. React needs one frame to commit.
     setGlStatus("preparing");
     setGlError(null);
-    await new Promise<void>(r => setTimeout(r, 350));
-    // Still preparing (user didn't cancel)? Continue.
-    setGlStatus("connecting");
 
-    // ── Audio: mic (optional) + all room peer streams mixed together ──────────
-    let micStream: MediaStream | null = null;
-    try { micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); } catch { /* mic optional */ }
-
-    const audioCtx = new AudioContext({ sampleRate: 44100 });
-    glAudioCtxRef.current = audioCtx;
-    const audioDest = audioCtx.createMediaStreamDestination();
-    if (micStream) audioCtx.createMediaStreamSource(micStream).connect(audioDest);
-    // Tap every remote peer's audio stream — no screen-share dialog needed
-    audioElements.current.forEach((el) => {
-      const s = el.srcObject as MediaStream | null;
-      if (s?.getAudioTracks().length) try { audioCtx.createMediaStreamSource(s).connect(audioDest); } catch {}
-    });
-
-    // ── Video: tab capture — streams the actual room UI exactly as rendered ──
-    // getDisplayMedia is the only browser API that captures real HTML/CSS/WebGL.
-    // With preferCurrentTab + selfBrowserSurface the browser dialog pre-selects
-    // this tab so the user just has to click "Share" (one extra click).
+    // ── Video: tab capture — MUST be the very first await in the handler ──────
+    // Browsers enforce that getDisplayMedia() is called in the same event-loop
+    // tick as the user gesture (the click). Any await before it — including a
+    // setTimeout or getUserMedia — breaks the gesture chain and causes Chrome /
+    // Firefox to silently reject the call (no dialog appears). So we call it
+    // here, before the mic request and before any timer delays.
     let tabCaptureStream: MediaStream | null = null;
     try {
       const capW = glQuality === "480p" ? 854 : glQuality === "720p" ? 1280 : 1920;
@@ -7309,27 +7292,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         surfaceSwitching: "exclude",
         systemAudio: "exclude",
       });
-      glTabStreamRef.current = tabCaptureStream;
-      // Build a pass-through canvas so preview snapshots work (same as before)
-      const previewCanvas = document.createElement("canvas");
-      previewCanvas.width = 1280; previewCanvas.height = 720;
-      glCanvasRef.current = previewCanvas;
-      const pCtx = previewCanvas.getContext("2d")!;
-      const tabVid = document.createElement("video");
-      tabVid.srcObject = tabCaptureStream; tabVid.muted = true; tabVid.autoplay = true; tabVid.playsInline = true;
-      tabVid.play().catch(() => {});
-      const renderPreview = () => {
-        if (tabVid.readyState >= 2) pCtx.drawImage(tabVid, 0, 0, 1280, 720);
-        glRafRef.current = requestAnimationFrame(renderPreview);
-      };
-      renderPreview();
-      // If user stops screen share from browser UI, treat it as end-stream
-      tabCaptureStream.getVideoTracks()[0]?.addEventListener("ended", () => {
-        if (glMediaRecorderRef.current?.state !== "inactive") stopGoLive();
-      });
     } catch (err: any) {
-      audioCtx.close().catch(() => {}); glAudioCtxRef.current = null;
-      micStream?.getTracks().forEach(t => t.stop());
       if (err?.name === "NotAllowedError") {
         setGlStatus("error"); setGlError("Screen capture was denied. Click 'Go Live' again and select this tab from the browser dialog.");
       } else {
@@ -7337,6 +7300,42 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
       return;
     }
+
+    // Tab stream acquired — now do the rest of the async setup.
+    setGlStatus("connecting");
+
+    glTabStreamRef.current = tabCaptureStream;
+    // Build a pass-through canvas so preview snapshots work
+    const previewCanvas = document.createElement("canvas");
+    previewCanvas.width = 1280; previewCanvas.height = 720;
+    glCanvasRef.current = previewCanvas;
+    const pCtx = previewCanvas.getContext("2d")!;
+    const tabVid = document.createElement("video");
+    tabVid.srcObject = tabCaptureStream; tabVid.muted = true; tabVid.autoplay = true; tabVid.playsInline = true;
+    tabVid.play().catch(() => {});
+    const renderPreview = () => {
+      if (tabVid.readyState >= 2) pCtx.drawImage(tabVid, 0, 0, 1280, 720);
+      glRafRef.current = requestAnimationFrame(renderPreview);
+    };
+    renderPreview();
+    // If user stops screen share from browser UI, treat it as end-stream
+    tabCaptureStream.getVideoTracks()[0]?.addEventListener("ended", () => {
+      if (glMediaRecorderRef.current?.state !== "inactive") stopGoLive();
+    });
+
+    // ── Audio: mic (optional) + all room peer streams mixed together ──────────
+    let micStream: MediaStream | null = null;
+    try { micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); } catch { /* mic optional */ }
+
+    const audioCtx = new AudioContext({ sampleRate: 44100 });
+    glAudioCtxRef.current = audioCtx;
+    const audioDest = audioCtx.createMediaStreamDestination();
+    if (micStream) audioCtx.createMediaStreamSource(micStream).connect(audioDest);
+    // Tap every remote peer's audio stream
+    audioElements.current.forEach((el) => {
+      const s = el.srcObject as MediaStream | null;
+      if (s?.getAudioTracks().length) try { audioCtx.createMediaStreamSource(s).connect(audioDest); } catch {}
+    });
 
     // Canvas used only for preview snapshots (already set above)
     const canvas = document.createElement("canvas");
