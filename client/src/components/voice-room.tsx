@@ -15518,7 +15518,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
               {/* Bottom status bar — page info + mode + auto-scroll speed control */}
               {!bookLoading && bookPages.length > 0 && (() => {
-                const speedLabel = autoScrollSpeed <= 25 ? "Slow" : autoScrollSpeed <= 55 ? "Normal" : autoScrollSpeed <= 85 ? "Fast" : "Zoom";
+                const speedLabel = autoScrollSpeed <= 15 ? "1×" : autoScrollSpeed <= 25 ? "2×" : autoScrollSpeed <= 35 ? "3×" : autoScrollSpeed <= 45 ? "4×" : autoScrollSpeed <= 55 ? "5×" : autoScrollSpeed <= 70 ? "6×" : autoScrollSpeed <= 85 ? "7×" : autoScrollSpeed <= 100 ? "8×" : autoScrollSpeed <= 110 ? "9×" : "10×";
                 const activeColor = eReaderTheme === "dark" ? "#6ee7a0" : "#1a6e40";
                 const dimColor   = eReaderTheme === "dark" ? "#c8b890" : "#7a5c2a";
                 const mutedColor = eReaderTheme === "dark" ? "rgba(200,184,144,0.50)" : "rgba(90,60,20,0.40)";
@@ -15620,19 +15620,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {readerAutoScroll && !autoScrollUserPaused && (
                         <>
                           <button
-                            onClick={() => setAutoScrollSpeed(s => Math.max(10, s - 10))}
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition-all hover:opacity-80 active:scale-90"
-                            style={{ background: btnBg(true), color: activeColor, border: btnBorder(true) }}
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setAutoScrollSpeed(s => Math.max(10, s - 10)); }}
+                            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold transition-all hover:opacity-80 active:scale-90"
+                            style={{ background: btnBg(true), color: activeColor, border: btnBorder(true), touchAction: "none" }}
                             title="Slower"
                             data-testid="button-ereader-speed-down"
                           >−</button>
-                          <span className="text-[9px] font-semibold w-10 text-center tabular-nums" style={{ color: activeColor }}>
+                          <span className="text-[9px] font-semibold w-12 text-center tabular-nums flex-shrink-0" style={{ color: activeColor }}>
                             {speedLabel}
                           </span>
                           <button
-                            onClick={() => setAutoScrollSpeed(s => Math.min(120, s + 10))}
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition-all hover:opacity-80 active:scale-90"
-                            style={{ background: btnBg(true), color: activeColor, border: btnBorder(true) }}
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setAutoScrollSpeed(s => Math.min(120, s + 10)); }}
+                            className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold transition-all hover:opacity-80 active:scale-90"
+                            style={{ background: btnBg(true), color: activeColor, border: btnBorder(true), touchAction: "none" }}
                             title="Faster"
                             data-testid="button-ereader-speed-up"
                           >+</button>
