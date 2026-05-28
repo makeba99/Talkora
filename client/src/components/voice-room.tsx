@@ -14786,7 +14786,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           )}
         </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden relative" style={{ paddingBottom: ((activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId) ? 210 : 0 }}>
+        <div className="flex-1 flex flex-col overflow-hidden relative" style={{ paddingBottom: showEReader ? 256 : ((activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId) ? 210 : 0 }}>
 
           {focusedUserId && !(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && (!isVideoOn || miniCameraMode) && !remoteVideoUserId && (() => {
             const _isOverlay = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || !!(room as any).hologramVideoUrl || (currentTheme && currentTheme !== "none");
@@ -15606,12 +15606,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     style={{
                       background: eReaderTheme === "sepia" ? "#ece0c5" : eReaderTheme === "light" ? "#efefef" : "#111111",
                       borderColor: eReaderTheme === "dark" ? "#333" : "#d4c4a0",
+                      position: "relative",
+                      zIndex: 30,
                     }}
                   >
                     {/* Left: page counter */}
                     <span
-                      className="text-[10px] font-medium tabular-nums flex-shrink-0"
-                      style={{ color: mutedColor, letterSpacing: "0.06em", fontFamily: "Georgia, serif" }}
+                      className="text-[10px] font-semibold tabular-nums flex-shrink-0"
+                      style={{ color: eReaderTheme === "dark" ? "rgba(200,184,144,0.80)" : "rgba(90,60,20,0.70)", letterSpacing: "0.06em", fontFamily: "Georgia, serif" }}
                       data-testid="text-ereader-page-info"
                     >
                       {currentPage} / {bookPages.length}
