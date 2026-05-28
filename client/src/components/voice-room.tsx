@@ -2835,9 +2835,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   // Latest-version refs so socket listeners don't capture stale values
   const aiTutorActiveRef = useRef(false);
+  const aiTutorSettingsRef = useRef(aiTutorSettings);
   const aiPersonaNameRef = useRef("");
   const welcomeUserRef = useRef<((name: string) => void) | null>(null);
   useEffect(() => { aiTutorActiveRef.current = aiState.active; }, [aiState.active]);
+  useEffect(() => { aiTutorSettingsRef.current = aiState.settings; }, [aiState.settings]);
   useEffect(() => { aiPersonaNameRef.current = aiPersonaName; }, [aiPersonaName]);
   useEffect(() => { welcomeUserRef.current = welcomeUser; }, [welcomeUser]);
   useEffect(() => { autoTranslateTargetRef.current = autoTranslateTarget; }, [autoTranslateTarget]);
@@ -3953,6 +3955,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const ytHostId = youtubeStartedByRef.current;
       if (ytVideoId && ytHostId === user.id) {
         socket.emit("room:youtube", { roomId: room.id, hostId: user.id, videoId: ytVideoId });
+      }
+
+      // Re-register the AI tutor session — the server clears roomAiTutorState
+      // on socket disconnect, so after any reconnect the session must be
+      // re-announced or all subsequent API calls will get "not-active-session".
+      if (aiTutorActiveRef.current) {
+        const s = aiTutorSettingsRef.current;
+        socket.emit("room:ai-tutor-start", {
+          roomId: room.id,
+          userId: user.id,
+          username: user.displayName || user.firstName || user.email || "User",
+          avatarId: s.avatarId,
+          voice: s.voice,
+          voiceId: s.voiceId ?? null,
+        });
       }
 
       peerConnections.current.forEach((pc, peerId) => {
@@ -14780,6 +14797,61 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               style={moviePlayerHeight ? { height: moviePlayerHeight, flexShrink: 0 } : { flex: 1, minHeight: 0 }}
               data-testid="media-main-movie"
             >
+              {/* Drag-to-resize handle — drag UP to grow, drag DOWN to shrink/close.
+                   On small screens a full swipe-down dismisses the player. */}
+              <div
+                className="flex-shrink-0 h-5 flex items-center justify-center cursor-ns-resize group/resize-movie select-none z-20"
+                data-testid="movie-resize-handle"
+                title="Drag to resize · Swipe down to close"
+                style={{ background: "rgba(4,4,10,0.96)", touchAction: "none" }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const startY = e.clientY;
+                  const container = e.currentTarget.parentElement!;
+                  const startH = container.getBoundingClientRect().height;
+                  const outerH = () => container.parentElement?.getBoundingClientRect().height ?? window.innerHeight;
+                  const onMove = (me: MouseEvent) => {
+                    const delta = startY - me.clientY; // drag UP = positive = taller
+                    const newH = Math.max(120, Math.min(outerH() - 60, startH + delta));
+                    setMoviePlayerHeight(newH);
+                  };
+                  const onUp = () => {
+                    window.removeEventListener("mousemove", onMove);
+                    window.removeEventListener("mouseup", onUp);
+                  };
+                  window.addEventListener("mousemove", onMove);
+                  window.addEventListener("mouseup", onUp);
+                }}
+                onTouchStart={(e) => {
+                  const touch = e.touches[0];
+                  const startY = touch.clientY;
+                  const container = e.currentTarget.parentElement!;
+                  const startH = container.getBoundingClientRect().height;
+                  const outerH = container.parentElement?.getBoundingClientRect().height ?? window.innerHeight;
+                  const onMove = (te: TouchEvent) => {
+                    te.preventDefault();
+                    const t = te.touches[0];
+                    const delta = startY - t.clientY; // drag UP = positive = taller
+                    const newH = Math.max(120, Math.min(outerH - 60, startH + delta));
+                    setMoviePlayerHeight(newH);
+                  };
+                  const onUp = (te: TouchEvent) => {
+                    document.removeEventListener("touchmove", onMove);
+                    document.removeEventListener("touchend", onUp);
+                    // Swipe-down > 80px or > 40% of current height → close
+                    const endY = te.changedTouches[0]?.clientY ?? startY;
+                    const swipeDown = endY - startY;
+                    if (swipeDown > 80 || swipeDown > startH * 0.4) {
+                      handleStopMovie();
+                    }
+                  };
+                  document.addEventListener("touchmove", onMove, { passive: false });
+                  document.addEventListener("touchend", onUp);
+                }}
+              >
+                <div className="w-10 h-1 rounded-full bg-white/20 group-hover/resize-movie:bg-white/45 transition-colors" />
+              </div>
+
               {/* Top bar: title · React button · X close */}
               <div
                 className="flex items-center gap-2 px-3 py-1.5 flex-shrink-0 z-20"

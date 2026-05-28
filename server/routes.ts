@@ -1794,11 +1794,11 @@ export async function registerRoutes(
       }
 
       // Only the user who owns the active AI session in this room may get responses.
-      // This prevents other room participants from hijacking or distracting the session.
+      // String() coercion guards against number vs string mismatch from different auth paths.
       if (roomId) {
         const session = roomAiTutorState.get(roomId);
-        const callerId = (req.user as any).id;
-        if (!session || session.userId !== callerId) {
+        const callerId = String((req.user as any).id);
+        if (!session || String(session.userId) !== callerId) {
           return res.status(403).json({ error: "not-active-session" });
         }
       }
@@ -2080,10 +2080,11 @@ export async function registerRoutes(
       }
 
       // Only the active AI session holder for this room may receive responses.
+      // String() coercion guards against number vs string mismatch.
       if (roomId) {
         const session = roomAiTutorState.get(roomId);
-        const callerId = (req.user as any).id;
-        if (!session || session.userId !== callerId) {
+        const callerId = String((req.user as any).id);
+        if (!session || String(session.userId) !== callerId) {
           sendEvent({ error: 'not-active-session' });
           return res.end();
         }
