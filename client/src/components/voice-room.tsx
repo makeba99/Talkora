@@ -7225,7 +7225,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const capW = glQuality === "480p" ? 854 : glQuality === "720p" ? 1280 : 1920;
       const capH = glQuality === "480p" ? 480 : glQuality === "720p" ? 720  : 1080;
 
-      // Try with Chrome-specific constraints first (shows a minimal "Share this tab?" prompt).
+      // Try with Chrome-specific constraints first (opens the full tab-picker dialog
+      // where the user can see all open tabs and select their room tab).
+      // NOTE: preferCurrentTab is intentionally NOT set here — setting it true
+      // triggers Chrome's simplified "Share this tab?" inline banner which has NO
+      // tab-selection UI at all, making the in-panel instructions impossible to follow.
+      // Instead, displaySurface:"browser" pre-selects the "Tab" category in the full
+      // picker, and selfBrowserSurface:"include" ensures the current tab appears in
+      // the list so the user can click it and hit Share.
       // Fall back to simpler constraints for Firefox / Safari / other browsers where the
       // advanced options throw TypeError / NotSupportedError / OverconstrainedError.
       const tryCapture = async (): Promise<MediaStream> => {
@@ -7239,7 +7246,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               displaySurface: "browser",
             },
             audio: false,
-            preferCurrentTab: true,
             selfBrowserSurface: "include",
             monitorTypeSurfaces: "exclude",
             surfaceSwitching: "exclude",
