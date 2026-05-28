@@ -7247,7 +7247,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             },
             audio: false,
             selfBrowserSurface: "include",
-            monitorTypeSurfaces: "exclude",
+            // monitorTypeSurfaces intentionally NOT set — leaving it unset keeps
+            // "Application Window" and "Entire Screen" available as fallbacks for
+            // Opera/Firefox users whose current room tab is excluded from the list
+            // (those browsers ignore selfBrowserSurface:"include").
             surfaceSwitching: "exclude",
             systemAudio: "exclude",
           });
@@ -12636,17 +12639,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 {
                   n: "1",
                   title: 'Go to the "Tab" section',
-                  body: 'At the top of the dialog, make sure the "Tab" (or "Browser Tab") category is selected — not "Window" or "Screen".',
+                  body: 'At the top of the dialog, click the "Tab" (or "Browser Tab" / "Opera Tab") category.',
                 },
                 {
                   n: "2",
                   title: `Find the room tab`,
-                  body: `Look for a tab whose title contains "${room.name || "Vextorn"}" — that is THIS room. Click it to preview it.`,
+                  body: `Look for a tab titled "${room.title || "Vextorn"}" in the list. Can't see it? Some browsers hide the current tab — switch to "Application Window" instead and select your browser window.`,
                 },
                 {
                   n: "3",
                   title: "Click Share",
-                  body: "With the room tab highlighted, click Share. Your stream will show exactly what's inside the room.",
+                  body: "With the room tab or browser window highlighted, click Share. Your stream will show exactly what's inside the room.",
                 },
               ].map(({ n, title, body }) => (
                 <div key={n} className="flex items-start gap-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
