@@ -2365,6 +2365,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const aiInputRef = useRef<HTMLInputElement>(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isCameraShareMode, setIsCameraShareMode] = useState(false);
+  // Tracks whether we entered fullscreen via the "Fullscreen Share" button
+  // so we can exit it automatically when sharing stops.
+  const fullscreenShareRef = useRef(false);
   const [isVideoOn, setIsVideoOn] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
   const [isFlippingCamera, setIsFlippingCamera] = useState(false);
@@ -6493,6 +6496,27 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </span>
         </div>}
 
+        {/* Fullscreen Share — maximises window + hides browser chrome before the picker opens,
+            so Application Window captures look identical to Tab captures. Only shown on
+            desktop and only when not already sharing (regular Share button handles stop). */}
+        {featScreenShare && !isScreenSharing && canShareScreenByPerm && (
+          <div className="hidden sm:flex flex-col items-center gap-[5px] sm:gap-[7px]">
+            <button
+              onClick={handleFullscreenShare}
+              data-testid="button-fullscreen-share"
+              title="Fullscreen before sharing — hides browser chrome so Application Window captures look identical to Tab captures"
+              className={btnBase}
+              style={ghostStyle}
+            >
+              <span className="relative flex items-center justify-center">
+                <Maximize2 className="w-[14px] h-[14px] sm:w-[17px] sm:h-[17px]" />
+                <Monitor className="absolute -bottom-[3px] -right-[3px] w-[7px] h-[7px] opacity-70" />
+              </span>
+            </button>
+            <span className={labelBase} style={{ color: "rgba(255,255,255,0.32)" }}>FS Share</span>
+          </div>
+        )}
+
         {/* Voice preset picker */}
         {featVoiceEffects && <div className="flex flex-col items-center gap-[5px] sm:gap-[7px] relative">
           <div className="relative">
@@ -7165,6 +7189,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setIsScreenSharing(false);
     setIsCameraShareMode(false);
     socket?.emit("room:screen-share", { roomId: room.id, userId: user?.id, active: false });
+    // Exit fullscreen if the "Fullscreen Share" button entered it for this session
+    if (fullscreenShareRef.current && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    fullscreenShareRef.current = false;
   };
 
   // ── Keep localVideoStreamRef in sync with state (used in canvas draw loop) ──
@@ -7687,6 +7716,84 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       ? "Screen sharing requires a secure connection (HTTPS)."
       : "Your browser doesn't support screen sharing. Try Chrome, Edge, or Safari 16.4+.";
     toast({ title: "Screen sharing not supported", description: reason, variant: "destructive" });
+  };
+
+  // ── Fullscreen-before-sharing ─────────────────────────────────────────────
+  // Enters native browser fullscreen (hiding address bar, tabs, bookmarks)
+  // BEFORE opening the getDisplayMedia picker. Once fullscreen is active, an
+  // "Application Window" capture is visually identical to a "Tab" capture
+  // because there is no visible browser chrome to pick up.
+  //
+  // Implementation notes:
+  //  • requestFullscreen + getDisplayMedia are both called within the same
+  //    async chain originating from the user gesture (click), satisfying the
+  //    browser's user-activation requirement for both APIs.
+  //  • fullscreenShareRef tracks that WE entered fullscreen so stopMyScreenShare
+  //    can exit it automatically when sharing ends (any path: Stop button,
+  //    browser native stop, host force-stop).
+  //  • If requestFullscreen fails (cross-origin iframe, sandbox, user dismiss)
+  //    the share proceeds anyway without fullscreen — graceful degradation.
+  const handleFullscreenShare = async () => {
+    if (isScreenSharing) {
+      await stopMyScreenShare();
+      return;
+    }
+    if (!canShareScreenByPerm) {
+      toast({ title: "Screen-share locked", description: screenLockReason || "Sharing is disabled in this room.", variant: "destructive" });
+      return;
+    }
+
+    // Step 1 — Enter fullscreen to hide browser chrome
+    if (!document.fullscreenElement) {
+      try {
+        await document.documentElement.requestFullscreen({ navigationUI: "hide" } as FullscreenOptions);
+        fullscreenShareRef.current = true;
+      } catch (_) {
+        // Fails in sandboxed iframes or when user dismisses — proceed without it
+        fullscreenShareRef.current = false;
+      }
+    }
+
+    // Step 2 — Open native share picker (still within user-gesture async chain)
+    if (!navigator.mediaDevices?.getDisplayMedia || !window.isSecureContext) {
+      if (fullscreenShareRef.current && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+        fullscreenShareRef.current = false;
+      }
+      const reason = !window.isSecureContext
+        ? "Screen sharing requires a secure connection (HTTPS)."
+        : "Your browser doesn't support screen sharing. Try Chrome, Edge, or Safari 16.4+.";
+      toast({ title: "Screen sharing not supported", description: reason, variant: "destructive" });
+      return;
+    }
+
+    try {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+      } catch (audioErr: any) {
+        if (
+          audioErr?.name === "NotSupportedError" ||
+          audioErr?.name === "OverconstrainedError" ||
+          audioErr?.name === "TypeError"
+        ) {
+          stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        } else {
+          throw audioErr;
+        }
+      }
+      await _activateShareStream(stream, false);
+    } catch (err: any) {
+      // Clean up fullscreen on any failure so the user isn't stuck
+      if (fullscreenShareRef.current && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+        fullscreenShareRef.current = false;
+      }
+      const userDismissed = err?.name === "NotAllowedError" || err?.name === "AbortError";
+      if (!userDismissed) {
+        toast({ title: "Screen share failed", description: "Could not capture your screen. Check browser permissions and try again.", variant: "destructive" });
+      }
+    }
   };
 
   const toggleVideo = async () => {
