@@ -12629,8 +12629,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               {[
                 {
                   n: "1",
-                  title: "Go to the "Tab" section",
-                  body: "At the top of the dialog, make sure the "Tab" (or "Browser Tab") category is selected — not "Window" or "Screen".",
+                  title: 'Go to the "Tab" section',
+                  body: 'At the top of the dialog, make sure the "Tab" (or "Browser Tab") category is selected — not "Window" or "Screen".',
                 },
                 {
                   n: "2",
