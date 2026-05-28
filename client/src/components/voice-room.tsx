@@ -2686,6 +2686,18 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [glQuality, setGlQuality] = useState<"480p" | "720p" | "1080p">("720p");
   const glTabStreamRef = useRef<MediaStream | null>(null);
 
+  // Detect whether the browser can show the current tab in the share picker.
+  // Only Chrome (and Chromium-based Edge) respect selfBrowserSurface:"include".
+  // Opera, Firefox, Safari ignore it and hide the active tab for security reasons.
+  // This flag drives both the getDisplayMedia constraints and the in-panel instructions.
+  const glBrowserCanShareCurrentTab = useMemo(() => {
+    const ua = navigator.userAgent;
+    const isOpera   = /OPR|Opera/.test(ua);
+    const isFirefox = /Firefox/.test(ua);
+    const isSafari  = /Safari/.test(ua) && !/Chrome/.test(ua);
+    return !isOpera && !isFirefox && !isSafari;
+  }, []);
+
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
   const [readCatalog, setReadCatalog] = useState<any[]>([]);
@@ -7225,39 +7237,51 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const capW = glQuality === "480p" ? 854 : glQuality === "720p" ? 1280 : 1920;
       const capH = glQuality === "480p" ? 480 : glQuality === "720p" ? 720  : 1080;
 
-      // Try with Chrome-specific constraints first (opens the full tab-picker dialog
-      // where the user can see all open tabs and select their room tab).
-      // NOTE: preferCurrentTab is intentionally NOT set here — setting it true
-      // triggers Chrome's simplified "Share this tab?" inline banner which has NO
-      // tab-selection UI at all, making the in-panel instructions impossible to follow.
-      // Instead, displaySurface:"browser" pre-selects the "Tab" category in the full
-      // picker, and selfBrowserSurface:"include" ensures the current tab appears in
-      // the list so the user can click it and hit Share.
-      // Fall back to simpler constraints for Firefox / Safari / other browsers where the
-      // advanced options throw TypeError / NotSupportedError / OverconstrainedError.
+      // Browser-aware capture strategy:
+      //
+      // Chrome/Edge: selfBrowserSurface:"include" + displaySurface:"browser" causes
+      //   the full tab-picker to open with the current room tab visible and
+      //   pre-highlighted. The user just clicks it and hits Share.
+      //
+      // Opera/Firefox/Safari: these browsers ignore selfBrowserSurface entirely and
+      //   always hide the currently-active tab from the share picker (a security
+      //   feature that cannot be overridden). Sending displaySurface:"window" instead
+      //   pre-selects the "Application Window" category, so the user immediately sees
+      //   the browser window listed and can click it — no tab hunting required.
       const tryCapture = async (): Promise<MediaStream> => {
-        // First attempt: full Chrome-specific constraints
         try {
-          return await (navigator.mediaDevices as any).getDisplayMedia({
-            video: {
-              frameRate: { ideal: 30, max: 30 },
-              width: { ideal: capW, min: Math.min(capW, 854) },
-              height: { ideal: capH, min: Math.min(capH, 480) },
-              displaySurface: "browser",
-            },
-            audio: false,
-            selfBrowserSurface: "include",
-            // monitorTypeSurfaces intentionally NOT set — leaving it unset keeps
-            // "Application Window" and "Entire Screen" available as fallbacks for
-            // Opera/Firefox users whose current room tab is excluded from the list
-            // (those browsers ignore selfBrowserSurface:"include").
-            surfaceSwitching: "exclude",
-            systemAudio: "exclude",
-          });
+          if (glBrowserCanShareCurrentTab) {
+            // Chrome/Edge path: current tab is visible in the "Tab" section
+            return await (navigator.mediaDevices as any).getDisplayMedia({
+              video: {
+                frameRate: { ideal: 30, max: 30 },
+                width: { ideal: capW, min: Math.min(capW, 854) },
+                height: { ideal: capH, min: Math.min(capH, 480) },
+                displaySurface: "browser",
+              },
+              audio: false,
+              selfBrowserSurface: "include",
+              surfaceSwitching: "exclude",
+              systemAudio: "exclude",
+            });
+          } else {
+            // Opera/Firefox/Safari path: pre-select "Application Window" so the user
+            // immediately sees their browser window listed. The in-panel instructions
+            // also update to match this flow.
+            return await (navigator.mediaDevices as any).getDisplayMedia({
+              video: {
+                frameRate: { ideal: 30, max: 30 },
+                width: { ideal: capW, min: Math.min(capW, 854) },
+                height: { ideal: capH, min: Math.min(capH, 480) },
+                displaySurface: "window",
+              },
+              audio: false,
+            });
+          }
         } catch (firstErr: any) {
           // Don't fall back if the user explicitly denied or dismissed
           if (firstErr?.name === "NotAllowedError" || firstErr?.name === "AbortError") throw firstErr;
-          // Second attempt: basic video constraints (works on Firefox/Safari)
+          // Fallback: basic constraints (works on any browser)
           try {
             return await navigator.mediaDevices.getDisplayMedia({
               video: { frameRate: { ideal: 30 }, width: { ideal: capW }, height: { ideal: capH } },
@@ -7265,7 +7289,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             });
           } catch (secondErr: any) {
             if (secondErr?.name === "NotAllowedError" || secondErr?.name === "AbortError") throw secondErr;
-            // Third attempt: minimal — just ask for any video
+            // Last resort: minimal
             return await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
           }
         }
@@ -12632,26 +12656,42 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 </div>
               </div>
 
-              {/* Step-by-step — works on every browser */}
+              {/* Step-by-step — browser-aware instructions */}
               <p className="text-[12px] font-bold text-white/90 text-center">A dialog just opened — follow these steps:</p>
 
-              {[
+              {(glBrowserCanShareCurrentTab ? [
                 {
                   n: "1",
                   title: 'Go to the "Tab" section',
-                  body: 'At the top of the dialog, click the "Tab" (or "Browser Tab" / "Opera Tab") category.',
+                  body: 'At the top of the dialog, the "Tab" (or "Browser Tab") category should already be selected.',
                 },
                 {
                   n: "2",
-                  title: `Find the room tab`,
-                  body: `Look for a tab titled "${room.title || "Vextorn"}" in the list. Can't see it? Some browsers hide the current tab — switch to "Application Window" instead and select your browser window.`,
+                  title: `Select the room tab`,
+                  body: `Click the tab titled "${room.title || "Vextorn"}" — it should appear in the list. Click it to preview it.`,
                 },
                 {
                   n: "3",
                   title: "Click Share",
-                  body: "With the room tab or browser window highlighted, click Share. Your stream will show exactly what's inside the room.",
+                  body: "With the room tab highlighted, click Share. Your stream will show exactly what's inside the room.",
                 },
-              ].map(({ n, title, body }) => (
+              ] : [
+                {
+                  n: "1",
+                  title: 'Go to "Application Window"',
+                  body: 'At the top of the dialog, click "Application Window" (your browser hides the current tab by design — this is the correct path).',
+                },
+                {
+                  n: "2",
+                  title: "Select your browser window",
+                  body: "Click your browser window in the list to preview it. The room will be visible inside.",
+                },
+                {
+                  n: "3",
+                  title: "Click Share",
+                  body: "With the browser window highlighted, click Share. Your stream will show the room.",
+                },
+              ]).map(({ n, title, body }) => (
                 <div key={n} className="flex items-start gap-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white mt-0.5" style={{ background: "rgba(239,68,68,0.70)" }}>{n}</span>
                   <div>
