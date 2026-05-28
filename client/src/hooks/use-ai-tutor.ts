@@ -296,13 +296,22 @@ export function useAiTutor(deps: AiTutorDeps) {
         onError: msg => {
           addDebug("error", `STT: ${msg}`);
           setMicError(msg);
-          // Speak critical errors so the user knows what happened
-          if (activeRef.current) {
-            if (/denied/i.test(msg)) {
-              ttsRef.current?.enqueue("I can't hear you — please allow microphone access in your browser settings.");
-            } else if (/network/i.test(msg)) {
-              ttsRef.current?.enqueue("I'm having trouble hearing you. Check your connection?");
-            }
+          if (!activeRef.current) return;
+          // Speak a recovery prompt so the user always knows what happened.
+          if (/denied/i.test(msg)) {
+            ttsRef.current?.enqueue("I can't hear you — please allow microphone access in your browser settings.");
+          } else if (msg === "network") {
+            ttsRef.current?.enqueue("I'm having trouble hearing you. Check your connection?");
+          } else if (msg === "audio-capture") {
+            ttsRef.current?.enqueue("I'm having trouble accessing your microphone. Try closing other apps that might be using it.");
+          } else if (/recognition-error:/i.test(msg)) {
+            // Generic recoverable recognition error — ask the user to repeat
+            const REPEAT_PROMPTS = [
+              "I didn't quite catch that — could you say it again?",
+              "Sorry, I had trouble hearing you. Try once more?",
+              "Say that one more time?",
+            ];
+            ttsRef.current?.enqueue(REPEAT_PROMPTS[Math.floor(Math.random() * REPEAT_PROMPTS.length)]);
           }
         },
         onNoSpeechExtended: () => {
@@ -395,9 +404,28 @@ export function useAiTutor(deps: AiTutorDeps) {
     let fullReply = "";
     let sentenceBuffer = "";
     let firstToken = true;
+    let firstTokenFired = false;
     const t0 = Date.now();
 
     setTimeout(() => setAiAcknowledging(false), 400);
+
+    // ── Latency-acknowledgment guard ─────────────────────────────────────────
+    // If the LLM hasn't sent its first token within 700ms, speak a brief
+    // "thinking" phrase to fill the silence (spec: <500ms perceived latency).
+    // Cleared immediately when the first token arrives, so fast responses
+    // (common on subsequent turns) never hear the phrase at all.
+    const THINKING_PHRASES = [
+      "Hmm, give me a second.",
+      "Let me think about that.",
+      "One moment.",
+      "Sure, one sec.",
+    ];
+    const thinkingTimer = setTimeout(() => {
+      if (!firstTokenFired && !abort.signal.aborted && activeRef.current && !speakingRef.current) {
+        ttsRef.current?.enqueue(THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)]);
+        addDebug("info", `Thinking phrase spoken — first token delayed >${Date.now() - t0}ms`);
+      }
+    }, 700);
 
     // Stop primary listening while streaming
     sttRef.current?.stopListening();
@@ -416,6 +444,8 @@ export function useAiTutor(deps: AiTutorDeps) {
         {
           onToken: token => {
             if (firstToken) {
+              firstTokenFired = true;
+              clearTimeout(thinkingTimer);
               addDebug("info", `First token in ${Date.now() - t0}ms`);
               firstToken = false;
             }
@@ -495,6 +525,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         addDebug("error", "All AI calls failed — using hardcoded fallback.");
       }
     } finally {
+      clearTimeout(thinkingTimer);
       setAiLoading(false);
       setAiAcknowledging(false);
       loadingRef.current = false;
@@ -582,7 +613,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     const intro = intros[Math.floor(Math.random() * intros.length)];
     const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
     setAiConversation([introMsg]);
-    setTimeout(() => ttsRef.current?.enqueue(intro), 150);
+    setTimeout(() => ttsRef.current?.enqueue(intro), 50);
     addDebug("info", `Session started with persona: ${pName} (${voice})`);
   }, [aiActive, socket, roomId, userId, username, aiSettings, addDebug]);
 
@@ -609,7 +640,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       const intro = intros[Math.floor(Math.random() * intros.length)];
       const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
       setAiConversation([introMsg]);
-      setTimeout(() => ttsRef.current?.enqueue(intro), 150);
+      setTimeout(() => ttsRef.current?.enqueue(intro), 50);
     } else {
       // Stop session — unlock persona and drain queue
       personaLockedRef.current = false;
@@ -666,9 +697,12 @@ export function useAiTutor(deps: AiTutorDeps) {
         // If the user already asked something in the same breath, queue it up
         // after a short delay to let the intro TTS start first
         if (afterText) {
+          // 900ms — intro TTS starts at ~50ms; this gives it time to begin
+          // then sendAiMessage naturally interrupts it to answer the user's question.
+          // Reduced from 1800ms so the user gets a response ~900ms sooner.
           setTimeout(() => {
             sendAiMessageRef.current?.(afterText);
-          }, 1800);
+          }, 900);
         }
       },
       // onStatusChange — keeps the UI indicator in sync

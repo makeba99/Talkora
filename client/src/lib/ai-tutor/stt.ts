@@ -319,13 +319,23 @@ export class SttEngine {
       }
 
       if (err === "network") {
-        this.callbacks.onError?.("Speech recognition network error. Check your connection.");
+        this.callbacks.onError?.("network");
         this.scheduleRestart(2000);
         return;
       }
 
-      this.callbacks.onError?.(`Speech recognition error: ${err}`);
-      this.scheduleRestart(600);
+      // audio-capture: another app is using the mic, or the device is unavailable.
+      // Retry after a longer pause to give the OS time to release the device.
+      if (err === "audio-capture") {
+        this.callbacks.onError?.("audio-capture");
+        this.scheduleRestart(2500);
+        return;
+      }
+
+      // Any other browser-level error (e.g. "service-not-allowed" during runtime,
+      // "bad-grammar", browser bug). Pass the raw code so the hook can log it.
+      this.callbacks.onError?.(`recognition-error:${err}`);
+      this.scheduleRestart(800);
     };
 
     rec.onend = () => {
