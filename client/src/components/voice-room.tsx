@@ -12611,28 +12611,48 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
-          {/* ── "Preparing" overlay: shown while browser dialog is about to appear ── */}
+          {/* ── "Preparing" overlay: shown while browser dialog is open ── */}
           {glStatus === "preparing" && (
-            <div className="flex flex-col items-center gap-4 py-5 px-3 text-center">
-              <div className="relative flex items-center justify-center">
+            <div className="flex flex-col gap-3 py-4 px-2">
+              {/* Pulsing icon */}
+              <div className="relative flex items-center justify-center mb-1">
                 <span className="absolute w-16 h-16 rounded-full animate-ping" style={{ background: "rgba(239,68,68,0.15)" }} />
                 <span className="absolute w-20 h-20 rounded-full animate-ping" style={{ background: "rgba(239,68,68,0.07)", animationDelay: "0.3s" }} />
                 <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "rgba(239,68,68,0.18)", border: "2px solid rgba(239,68,68,0.4)" }}>
                   <MonitorPlay className="w-6 h-6 text-red-400" />
                 </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-[13px] font-bold text-white/90">One click to go live</p>
-                <p className="text-[11px] text-white/50 leading-relaxed">This tab will be pre-selected.<br />Just click <span className="text-white/80 font-semibold">"Share"</span> to stream the room.</p>
-              </div>
-              <div className="w-full flex items-center gap-3 rounded-xl px-3 py-3" style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.30)" }}>
-                <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg" style={{ background: "rgba(239,68,68,0.20)" }}>🖥️</span>
-                <div className="text-left">
-                  <p className="text-[11px] font-bold text-white/90">This tab is already selected</p>
-                  <p className="text-[9px] text-white/45">Click <span className="text-red-300 font-semibold">"Share"</span> in the dialog — you're done</p>
+
+              {/* Step-by-step — works on every browser */}
+              <p className="text-[12px] font-bold text-white/90 text-center">A dialog just opened — follow these steps:</p>
+
+              {[
+                {
+                  n: "1",
+                  title: "Go to the "Tab" section",
+                  body: "At the top of the dialog, make sure the "Tab" (or "Browser Tab") category is selected — not "Window" or "Screen".",
+                },
+                {
+                  n: "2",
+                  title: `Find the room tab`,
+                  body: `Look for a tab whose title contains "${room.name || "Vextorn"}" — that is THIS room. Click it to preview it.`,
+                },
+                {
+                  n: "3",
+                  title: "Click Share",
+                  body: "With the room tab highlighted, click Share. Your stream will show exactly what's inside the room.",
+                },
+              ].map(({ n, title, body }) => (
+                <div key={n} className="flex items-start gap-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white mt-0.5" style={{ background: "rgba(239,68,68,0.70)" }}>{n}</span>
+                  <div>
+                    <p className="text-[11px] font-bold text-white/85">{title}</p>
+                    <p className="text-[10px] text-white/45 leading-relaxed mt-0.5">{body}</p>
+                  </div>
                 </div>
-              </div>
-              <p className="text-[9px] text-white/25 animate-pulse">Opening dialog…</p>
+              ))}
+
+              <p className="text-[9px] text-white/25 animate-pulse text-center mt-1">Waiting for you to share…</p>
             </div>
           )}
 
