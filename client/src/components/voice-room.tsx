@@ -2686,6 +2686,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [glVidPlaying, setGlVidPlaying] = useState(true);
   const [glPreviewDataUrl, setGlPreviewDataUrl] = useState<string | null>(null);
   const glPreviewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [glTabStream, setGlTabStream] = useState<MediaStream | null>(null);
   const [glQuality, setGlQuality] = useState<"480p" | "720p" | "1080p">("720p");
   const glTabStreamRef = useRef<MediaStream | null>(null);
 
@@ -7188,32 +7189,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return () => clearInterval(t);
   }, [sidePanelTab, goLiveOpen, goLivePlatform, glVidPlaying]);
 
-  // ── Go Live: canvas preview snapshots (every 1.5 s while connecting/live) ──
-  useEffect(() => {
-    if (glStatus === "connecting" || glStatus === "live") {
-      // Capture immediately then on interval
-      const capture = () => {
-        const canvas = glCanvasRef.current;
-        if (!canvas) return;
-        try { setGlPreviewDataUrl(canvas.toDataURL("image/jpeg", 0.55)); } catch { /* tainted canvas */ }
-      };
-      capture();
-      glPreviewIntervalRef.current = setInterval(capture, 1500);
-    } else {
-      if (glPreviewIntervalRef.current) {
-        clearInterval(glPreviewIntervalRef.current);
-        glPreviewIntervalRef.current = null;
-      }
-      // Keep last frame visible for a moment after stream ends then clear
-      if (glStatus === "idle") setGlPreviewDataUrl(null);
-    }
-    return () => {
-      if (glPreviewIntervalRef.current) {
-        clearInterval(glPreviewIntervalRef.current);
-        glPreviewIntervalRef.current = null;
-      }
-    };
-  }, [glStatus]);
+  // glTabStream is set/cleared in startGoLive / stopGoLive — no polling needed.
 
   // ── Go Live: direct browser-to-RTMP streaming ──────────────────────────
   const formatGlDuration = (secs: number) => {
@@ -7260,7 +7236,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       const tryCapture = async (): Promise<MediaStream> => {
         try {
           if (glBrowserCanShareCurrentTab) {
-            // Chrome/Edge path: current tab is visible in the "Tab" section
+            // Chrome/Edge path: preferCurrentTab skips the picker entirely and
+            // captures this exact tab automatically (Chrome 107+). Falls back
+            // gracefully to the normal picker on older Chromium builds.
             return await (navigator.mediaDevices as any).getDisplayMedia({
               video: {
                 frameRate: { ideal: 30, max: 30 },
@@ -7269,6 +7247,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 displaySurface: "browser",
               },
               audio: false,
+              preferCurrentTab: true,
               selfBrowserSurface: "include",
               surfaceSwitching: "exclude",
               systemAudio: "exclude",
@@ -7318,19 +7297,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setGlStatus("connecting");
 
     glTabStreamRef.current = tabCaptureStream;
-    // Build a pass-through canvas so preview snapshots work
-    const previewCanvas = document.createElement("canvas");
-    previewCanvas.width = 1280; previewCanvas.height = 720;
-    glCanvasRef.current = previewCanvas;
-    const pCtx = previewCanvas.getContext("2d")!;
-    const tabVid = document.createElement("video");
-    tabVid.srcObject = tabCaptureStream; tabVid.muted = true; tabVid.autoplay = true; tabVid.playsInline = true;
-    tabVid.play().catch(() => {});
-    const renderPreview = () => {
-      if (tabVid.readyState >= 2) pCtx.drawImage(tabVid, 0, 0, 1280, 720);
-      glRafRef.current = requestAnimationFrame(renderPreview);
-    };
-    renderPreview();
+    setGlTabStream(tabCaptureStream);
     // If user stops screen share from browser UI, treat it as end-stream
     tabCaptureStream.getVideoTracks()[0]?.addEventListener("ended", () => {
       if (glMediaRecorderRef.current?.state !== "inactive") stopGoLive();
@@ -7494,6 +7461,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     glMediaRecorderRef.current = null;
     // Stop tab capture tracks if active
     if (glTabStreamRef.current) { glTabStreamRef.current.getTracks().forEach(t => t.stop()); glTabStreamRef.current = null; }
+    setGlTabStream(null);
     // Fallback cleanup if onstop didn't fire
     if (glRafRef.current) { cancelAnimationFrame(glRafRef.current); glRafRef.current = null; }
     if (glAudioCtxRef.current) { glAudioCtxRef.current.close().catch(()=>{}); glAudioCtxRef.current = null; }
@@ -12799,157 +12767,35 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
-          {/* ── Live Room Preview — real-time React render (no JPEG latency) ── */}
-          {(glStatus === "live" || glStatus === "connecting") && (() => {
-            const previewPts = participants.slice(0, 12);
-            const cols = previewPts.length <= 1 ? 1 : previewPts.length <= 2 ? 2 : previewPts.length <= 4 ? 2 : previewPts.length <= 6 ? 3 : previewPts.length <= 9 ? 3 : 4;
-            const avSize = previewPts.length <= 1 ? 54 : previewPts.length <= 4 ? 42 : previewPts.length <= 9 ? 32 : 24;
-            return (
-              <div className="rounded-xl overflow-hidden border border-white/[0.10] relative select-none" style={{ aspectRatio: "16/9", background: "#080814" }}>
-
-                {/* Ambient gradient */}
-                <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 75% 75% at 50% 55%, rgba(70,30,130,0.24) 0%, transparent 68%)" }} />
-                {/* Dot-grid */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.022 }}>
-                  <defs><pattern id="glDotPat" x="0" y="0" width="34" height="34" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="white" /></pattern></defs>
-                  <rect width="100%" height="100%" fill="url(#glDotPat)" />
-                </svg>
-
-                {/* ── Top bar ── */}
-                <div className="absolute top-0 left-0 right-0 flex items-center px-2 gap-1.5 z-10" style={{ height: 26, background: "linear-gradient(to bottom, rgba(8,8,22,0.97), rgba(8,8,22,0.55))", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                  {glStatus === "live" ? (
-                    <div className="flex items-center gap-0.5 rounded px-1.5 py-0.5 flex-shrink-0" style={{ background: "rgba(220,38,38,0.90)" }}>
-                      <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                      <span className="text-[7px] font-extrabold text-white tracking-widest ml-0.5">LIVE</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 rounded px-1.5 py-0.5 flex-shrink-0" style={{ background: "rgba(255,255,255,0.10)" }}>
-                      <Loader2 className="w-2 h-2 animate-spin text-white/55" />
-                      <span className="text-[7px] font-bold text-white/55 tracking-wide">CONNECTING</span>
-                    </div>
-                  )}
-                  {glStatus === "live" && (
-                    <span className="text-[7.5px] text-white/38 font-mono flex-shrink-0">{formatGlDuration(glDuration)}</span>
-                  )}
-                  <span className="flex-1 text-[8px] font-bold text-white/72 text-center truncate mx-1">{room.title || "Vextorn Room"}</span>
-                  <span className="text-[7px] text-white/28 flex-shrink-0">{participants.length} online</span>
+          {/* ── Live stream preview — real-time video of the captured tab ── */}
+          {(glStatus === "live" || glStatus === "connecting") && (
+            <div className="rounded-xl overflow-hidden border border-white/[0.10] relative" style={{ aspectRatio: "16/9", background: "#000" }}>
+              {glTabStream ? (
+                <video
+                  ref={el => { if (el) { el.srcObject = glTabStream; el.play().catch(() => {}); } }}
+                  autoPlay muted playsInline
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-white/40" />
                 </div>
-
-                {/* ── Participant grid ── */}
-                <div className="absolute left-0 right-0 flex items-center justify-center" style={{ top: 26, bottom: 22, padding: "4px 5px" }}>
-                  {previewPts.length === 0 ? (
-                    <p className="text-[9px] text-white/18 italic">Waiting for participants…</p>
-                  ) : (
-                    <div className="w-full h-full" style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 3 }}>
-                      {previewPts.map((p) => {
-                        const isSpeaking = speakingUsers.has(p.id);
-                        const isHost = p.id === room.hostId;
-                        const name = p.displayName || (p as any).firstName || "User";
-                        const initials = name[0]?.toUpperCase() ?? "?";
-                        const hue = ((name.charCodeAt(0) || 65) * 57 + 120) % 360;
-                        return (
-                          <div key={p.id}
-                            className="relative flex flex-col items-center justify-center rounded-lg overflow-hidden"
-                            style={{
-                              background: isSpeaking
-                                ? "linear-gradient(160deg, rgba(200,110,20,0.21) 0%, rgba(100,50,5,0.14) 100%)"
-                                : "rgba(255,255,255,0.038)",
-                              border: `1px solid ${isSpeaking ? "rgba(255,165,60,0.40)" : "rgba(255,255,255,0.06)"}`,
-                              animation: isSpeaking ? "glSpeakingCardGlow 0.9s ease-in-out infinite alternate" : "none",
-                              padding: `${Math.max(4, avSize * 0.12)}px ${Math.max(3, avSize * 0.09)}px`,
-                              minHeight: 0,
-                            }}
-                          >
-                            {/* Speaking pulse rings — positioned from centre of avatar */}
-                            {isSpeaking && (
-                              <div className="absolute pointer-events-none flex items-center justify-center inset-0" style={{ paddingBottom: avSize * 0.3 }}>
-                                <div className="absolute rounded-full" style={{ width: avSize + 14, height: avSize + 14, border: "1.5px solid rgba(255,165,60,0.32)", animation: "glRingPulse 1.15s ease-out infinite" }} />
-                                <div className="absolute rounded-full" style={{ width: avSize + 26, height: avSize + 26, border: "1px solid rgba(255,165,60,0.14)", animation: "glRingPulse 1.15s ease-out infinite 0.38s" }} />
-                              </div>
-                            )}
-
-                            {/* Avatar circle */}
-                            <div className="relative flex-shrink-0 rounded-full overflow-hidden" style={{
-                              width: avSize, height: avSize,
-                              border: `${isSpeaking ? 2 : 1.5}px solid ${isSpeaking ? "rgba(255,165,60,0.72)" : "rgba(255,255,255,0.14)"}`,
-                            }}>
-                              {p.profileImageUrl ? (
-                                <img src={p.profileImageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center font-bold text-white" style={{
-                                  fontSize: avSize * 0.36,
-                                  background: `linear-gradient(135deg, hsl(${hue},58%,42%), hsl(${(hue + 40) % 360},52%,32%))`,
-                                }}>
-                                  {initials}
-                                </div>
-                              )}
-                              {/* Muted badge */}
-                              {p.isMuted && (
-                                <div className="absolute bottom-0 right-0 rounded-full bg-red-600 flex items-center justify-center" style={{ width: avSize * 0.30, height: avSize * 0.30, border: "1px solid rgba(0,0,0,0.4)" }}>
-                                  <MicOff style={{ width: avSize * 0.16, height: avSize * 0.16, color: "white" }} />
-                                </div>
-                              )}
-                              {/* Host crown */}
-                              {isHost && (
-                                <div className="absolute top-0 right-0 rounded-full bg-amber-500/90 flex items-center justify-center" style={{ width: avSize * 0.28, height: avSize * 0.28, border: "1px solid rgba(0,0,0,0.35)", fontSize: avSize * 0.15 }}>
-                                  ♛
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Name label */}
-                            <span className="mt-0.5 font-semibold text-center truncate w-full leading-none" style={{
-                              fontSize: Math.max(6, avSize * 0.19),
-                              color: isSpeaking ? "rgba(255,185,80,0.95)" : "rgba(255,255,255,0.62)",
-                              paddingLeft: 2, paddingRight: 2,
-                            }}>
-                              {name.length > 13 ? name.slice(0, 12) + "…" : name}
-                            </span>
-
-                            {/* Voice-activity bars */}
-                            {isSpeaking && avSize >= 28 && (
-                              <div className="flex items-end justify-center gap-px mt-0.5" style={{ height: Math.max(5, avSize * 0.19) }}>
-                                {[0.45, 0.80, 1, 0.65, 0.38].map((h, i) => (
-                                  <div key={i} className="rounded-full bg-amber-400" style={{
-                                    width: Math.max(1.5, avSize * 0.044),
-                                    height: `${h * 100}%`,
-                                    transformOrigin: "bottom",
-                                    animation: `glBarBounce ${0.34 + i * 0.065}s ease-in-out infinite alternate`,
-                                    animationDelay: `${i * 55}ms`,
-                                  }} />
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {participants.length > 12 && (
-                        <div className="flex items-center justify-center rounded-lg text-[7px] text-white/22" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                          +{participants.length - 12} more
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* ── Bottom bar ── */}
-                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-2 z-10" style={{ height: 22, background: "linear-gradient(to top, rgba(8,8,22,0.95), rgba(8,8,22,0.55))", borderTop: "1px solid rgba(255,255,255,0.045)" }}>
-                  <span className="text-[7px] text-white/22">{[(room as any).language, (room as any).skillLevel].filter(Boolean).join("  ·  ")}</span>
-                  <span className="text-[7.5px] font-bold" style={{ color: "rgba(255,165,60,0.42)" }}>vextorn.com</span>
-                </div>
-
-                {/* Connecting overlay */}
-                {glStatus === "connecting" && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/35 backdrop-blur-[1px] z-20" style={{ top: 26 }}>
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ background: "rgba(8,8,22,0.78)", border: "1px solid rgba(255,255,255,0.10)" }}>
-                      <Loader2 className="w-3 h-3 animate-spin text-white/60" />
-                      <span className="text-[10px] text-white/60">Connecting to RTMP server…</span>
-                    </div>
+              )}
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
+                {glStatus === "live" ? (
+                  <div className="flex items-center gap-1 rounded px-1.5 py-0.5" style={{ background: "rgba(220,38,38,0.90)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    <span className="text-[9px] font-extrabold text-white tracking-widest">LIVE</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 rounded px-1.5 py-0.5" style={{ background: "rgba(0,0,0,0.60)" }}>
+                    <Loader2 className="w-2.5 h-2.5 animate-spin text-white/70" />
+                    <span className="text-[9px] font-bold text-white/70">Connecting…</span>
                   </div>
                 )}
               </div>
-            );
-          })()}
+            </div>
+          )}
 
           {(glStatus === "idle" || glStatus === "error") && (<>
 
@@ -13612,15 +13458,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
-          {/* ── Live canvas preview ── */}
-          {glPreviewDataUrl && (glStatus === "live" || glStatus === "connecting") && (
+          {/* ── Live stream preview ── */}
+          {(glStatus === "live" || glStatus === "connecting") && (
             <div className="rounded-xl overflow-hidden border bg-black relative" style={{ aspectRatio: "16/9" }}>
-              <img
-                src={glPreviewDataUrl}
-                alt="Stream preview"
-                className="w-full h-full object-cover"
-                style={{ display: "block" }}
-              />
+              {glTabStream ? (
+                <video
+                  ref={el => { if (el) { el.srcObject = glTabStream; el.play().catch(() => {}); } }}
+                  autoPlay muted playsInline
+                  className="w-full h-full object-contain"
+                  style={{ display: "block" }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-white/40" />
+                </div>
+              )}
               {glStatus === "live" && (
                 <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-red-600/90 rounded-md px-2 py-1 backdrop-blur-sm">
                   <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
@@ -13635,7 +13487,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </div>
                 </div>
               )}
-              <div className="absolute bottom-2 right-2.5 text-[9px] text-white/30 font-mono">stream preview</div>
             </div>
           )}
 
