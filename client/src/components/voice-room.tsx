@@ -6496,26 +6496,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           </span>
         </div>}
 
-        {/* Fullscreen Share — maximises window + hides browser chrome before the picker opens,
-            so Application Window captures look identical to Tab captures. Only shown on
-            desktop and only when not already sharing (regular Share button handles stop). */}
-        {featScreenShare && !isScreenSharing && canShareScreenByPerm && (
-          <div className="hidden sm:flex flex-col items-center gap-[5px] sm:gap-[7px]">
-            <button
-              onClick={handleFullscreenShare}
-              data-testid="button-fullscreen-share"
-              title="Fullscreen before sharing — hides browser chrome so Application Window captures look identical to Tab captures"
-              className={btnBase}
-              style={ghostStyle}
-            >
-              <span className="relative flex items-center justify-center">
-                <Maximize2 className="w-[14px] h-[14px] sm:w-[17px] sm:h-[17px]" />
-                <Monitor className="absolute -bottom-[3px] -right-[3px] w-[7px] h-[7px] opacity-70" />
-              </span>
-            </button>
-            <span className={labelBase} style={{ color: "rgba(255,255,255,0.32)" }}>FS Share</span>
-          </div>
-        )}
 
         {/* Voice preset picker */}
         {featVoiceEffects && <div className="flex flex-col items-center gap-[5px] sm:gap-[7px] relative">
