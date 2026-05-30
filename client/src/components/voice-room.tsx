@@ -2538,7 +2538,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const videoSenders = useRef<Map<string, RTCRtpSender>>(new Map());
   const screenSenders = useRef<Map<string, RTCRtpSender[]>>(new Map());
   const chatScrollRef = useRef<HTMLDivElement>(null);
-  const participantsRef = useRef<Participant[]>([]);
   const pendingCandidates = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const youtubePlayerRef = useRef<any>(null);
   const ytContainerRef = useRef<HTMLDivElement | null>(null);
