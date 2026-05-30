@@ -2667,7 +2667,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [glShowYoutubeKey, setGlShowYoutubeKey] = useState(false);
   const [glTwitchUsername, setGlTwitchUsername] = useState("");
   const [glYoutubeChannelId, setGlYoutubeChannelId] = useState("");
-  const [glStatus, setGlStatus] = useState<"idle" | "connecting" | "live" | "error">("idle");
+  const [glStatus, setGlStatus] = useState<"idle" | "preparing" | "connecting" | "live" | "error">("idle");
   const [glStreamId, setGlStreamId] = useState<string | null>(null);
   const [glError, setGlError] = useState<string | null>(null);
   const [glDuration, setGlDuration] = useState(0);
@@ -7201,212 +7201,105 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (goLivePlatform === "twitch" && !twitchKey) { toast({ title: "Paste your Twitch stream key first", variant: "destructive" }); return; }
     if (goLivePlatform === "both" && !twitchKey && !youtubeKey) { toast({ title: "Enter at least one stream key", variant: "destructive" }); return; }
 
-    setGlStatus("connecting");
     setGlError(null);
 
-    // ── Video: canvas-based room renderer — no picker, no getDisplayMedia ─────
-    // We draw the room UI (participants, speaking rings, room info) directly onto
-    // an HTML canvas and call canvas.captureStream(30) to get a MediaStream.
-    // This works on every browser without any screen-share permission dialog —
-    // the user's exact room is always captured automatically.
+    // ── Video: getDisplayMedia — captures the EXACT rendered room ──────────────
+    // This is the only way to stream the real room UI (dark theme, participant
+    // cards, webcam feeds, chat, speaking animations, everything).
+    //
+    // Chrome 107+: preferCurrentTab:true captures this tab instantly with NO
+    //   picker dialog — user just clicks "Go Live" and the stream starts.
+    //   selfBrowserSurface:"include" also adds the current tab to the list
+    //   as a fallback for older Chrome builds that still show a picker.
+    //
+    // Firefox / Safari / older Chrome: a picker appears. The in-panel
+    //   instructions update to match the browser so the user knows exactly
+    //   what to click.
+    //
+    // ⚠ CRITICAL: getDisplayMedia() MUST be the very first await in this
+    //   handler. Any prior await (setTimeout, getUserMedia, fetch) breaks the
+    //   browser's user-gesture chain and Chrome/Firefox silently reject the
+    //   call (no dialog, no stream).
+
+    // Detect iframe context — getDisplayMedia cannot capture the room when the
+    // app is embedded inside another page's iframe (e.g. Replit's preview pane).
+    // The room is always opened in its own tab in production, so this only
+    // affects developers previewing inside Replit.
+    const isEmbeddedIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+    if (isEmbeddedIframe) {
+      setGlStatus("error");
+      setGlError("Go Live requires the room to be open in its own browser tab. Right-click the preview and choose 'Open in new tab', then click Go Live from there.");
+      return;
+    }
+
+    // Detect Chrome/Edge for preferCurrentTab path
+    const ua = navigator.userAgent;
+    const isChromeLike = /Chrome/.test(ua) && !/Edg\//.test(ua) || /Edg\//.test(ua);
+    const isFirefox = /Firefox/.test(ua);
+
+    setGlStatus("preparing");
+
     const capW = glQuality === "480p" ? 854 : glQuality === "720p" ? 1280 : 1920;
     const capH = glQuality === "480p" ? 480 : glQuality === "720p" ? 720  : 1080;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = capW;
-    canvas.height = capH;
-    const ctx2d = canvas.getContext("2d")!;
-    glCanvasRef.current = canvas;
-
-    // Avatar image cache — images are loaded lazily; frames fall back to coloured
-    // initial circles until each avatar has finished downloading.
-    const avatarCache = new Map<string, HTMLImageElement>();
-    const loadingAvatars = new Set<string>();
-    const loadAvatar = (userId: string, url: string) => {
-      if (loadingAvatars.has(userId)) return;
-      loadingAvatars.add(userId);
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => { if (img.naturalWidth > 0) avatarCache.set(userId, img); };
-      img.src = url;
-    };
-
-    // Deterministic colour for fallback circles (based on userId hash)
-    const STREAM_COLORS = ["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6"];
-    const userStreamColor = (id: string) =>
-      STREAM_COLORS[id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % STREAM_COLORS.length];
-
-    // Draw one frame of the room onto the canvas
-    const drawFrame = () => {
-      const parts = participantsRef.current;
-      const speaking = speakingUsersRef.current;
-      const W = capW, H = capH;
-
-      // Background gradient
-      const bg = ctx2d.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, "#09091a");
-      bg.addColorStop(0.5, "#110826");
-      bg.addColorStop(1, "#0c1220");
-      ctx2d.fillStyle = bg;
-      ctx2d.fillRect(0, 0, W, H);
-
-      // Subtle grid overlay for depth
-      ctx2d.strokeStyle = "rgba(255,255,255,0.025)";
-      ctx2d.lineWidth = 1;
-      for (let x = 0; x < W; x += 64) { ctx2d.beginPath(); ctx2d.moveTo(x, 0); ctx2d.lineTo(x, H); ctx2d.stroke(); }
-      for (let y = 0; y < H; y += 64) { ctx2d.beginPath(); ctx2d.moveTo(0, y); ctx2d.lineTo(W, y); ctx2d.stroke(); }
-
-      // Room title
-      const titleSize = Math.round(H * 0.055);
-      ctx2d.font = `bold ${titleSize}px "Space Grotesk", Arial, sans-serif`;
-      ctx2d.textAlign = "center";
-      ctx2d.textBaseline = "alphabetic";
-      ctx2d.fillStyle = "#ffffff";
-      ctx2d.fillText(room.title || "Vextorn Room", W / 2, H * 0.13);
-
-      // Language · Level subtitle
-      ctx2d.font = `${Math.round(H * 0.028)}px Arial, sans-serif`;
-      ctx2d.fillStyle = "rgba(255,255,255,0.42)";
-      ctx2d.fillText(`${room.language || ""} · ${room.level || ""}`, W / 2, H * 0.20);
-
-      // ── Participants ─────────────────────────────────────────────────────
-      const count = parts.length;
-      if (count > 0) {
-        const maxR = Math.min(H * 0.155, (W * 0.82) / (count + 0.8) / 2);
-        const R = Math.max(maxR, 36);
-        const spacing = Math.min(R * 2.8, (W * 0.84) / count);
-        const totalRowW = spacing * (count - 1);
-        const startX = W / 2 - totalRowW / 2;
-        const cy = H * 0.52;
-
-        parts.forEach((p, i) => {
-          const cx = startX + i * spacing;
-          const isSpeaking = speaking.has(p.id);
-
-          // Kick off avatar load if not yet cached
-          if (p.avatar && !avatarCache.has(p.id)) loadAvatar(p.id, p.avatar);
-
-          // Speaking glow rings
-          if (isSpeaking) {
-            for (let ring = 0; ring < 3; ring++) {
-              ctx2d.beginPath();
-              ctx2d.arc(cx, cy, R + 9 + ring * 8, 0, Math.PI * 2);
-              ctx2d.strokeStyle = `rgba(251,191,36,${0.28 - ring * 0.09})`;
-              ctx2d.lineWidth = 3 - ring;
-              ctx2d.stroke();
-            }
-          }
-
-          // Clipped avatar circle
-          ctx2d.save();
-          ctx2d.beginPath();
-          ctx2d.arc(cx, cy, R, 0, Math.PI * 2);
-          ctx2d.clip();
-
-          const img = avatarCache.get(p.id);
-          if (img) {
-            ctx2d.drawImage(img, cx - R, cy - R, R * 2, R * 2);
-          } else {
-            // Coloured gradient fallback
-            const col = userStreamColor(p.id);
-            const grad = ctx2d.createRadialGradient(cx - R * 0.28, cy - R * 0.28, 0, cx, cy, R);
-            grad.addColorStop(0, col + "ee");
-            grad.addColorStop(1, col + "77");
-            ctx2d.fillStyle = grad;
-            ctx2d.fillRect(cx - R, cy - R, R * 2, R * 2);
-            // Initial letter
-            ctx2d.fillStyle = "#fff";
-            ctx2d.font = `bold ${Math.round(R * 0.72)}px Arial, sans-serif`;
-            ctx2d.textAlign = "center";
-            ctx2d.textBaseline = "middle";
-            ctx2d.fillText((p.displayName || p.username || "?")[0].toUpperCase(), cx, cy);
-            ctx2d.textBaseline = "alphabetic";
-          }
-          ctx2d.restore();
-
-          // Border ring
-          ctx2d.beginPath();
-          ctx2d.arc(cx, cy, R, 0, Math.PI * 2);
-          ctx2d.strokeStyle = isSpeaking ? "rgba(251,191,36,0.75)" : "rgba(255,255,255,0.14)";
-          ctx2d.lineWidth = 2.5;
-          ctx2d.stroke();
-
-          // Name label
-          ctx2d.font = `${Math.round(Math.max(R * 0.32, 12))}px "Space Grotesk", Arial, sans-serif`;
-          ctx2d.textAlign = "center";
-          ctx2d.textBaseline = "alphabetic";
-          ctx2d.fillStyle = "rgba(255,255,255,0.82)";
-          ctx2d.fillText(
-            (p.displayName || p.username || "").substring(0, 16),
-            cx,
-            cy + R + Math.round(R * 0.48)
-          );
-
-          // Muted badge
-          if (p.isMuted) {
-            const bR = Math.round(R * 0.27);
-            ctx2d.beginPath();
-            ctx2d.arc(cx + R * 0.64, cy + R * 0.64, bR, 0, Math.PI * 2);
-            ctx2d.fillStyle = "rgba(239,68,68,0.95)";
-            ctx2d.fill();
-            ctx2d.strokeStyle = "#fff";
-            ctx2d.lineWidth = Math.max(1.5, bR * 0.32);
-            ctx2d.lineCap = "round";
-            const d = bR * 0.44;
-            ctx2d.beginPath(); ctx2d.moveTo(cx + R * 0.64 - d, cy + R * 0.64 - d);
-            ctx2d.lineTo(cx + R * 0.64 + d, cy + R * 0.64 + d); ctx2d.stroke();
-            ctx2d.beginPath(); ctx2d.moveTo(cx + R * 0.64 + d, cy + R * 0.64 - d);
-            ctx2d.lineTo(cx + R * 0.64 - d, cy + R * 0.64 + d); ctx2d.stroke();
-            ctx2d.lineCap = "butt";
-          }
+    let tabCaptureStream: MediaStream;
+    try {
+      if (isChromeLike) {
+        // Chrome/Edge: preferCurrentTab captures instantly without any picker.
+        // selfBrowserSurface:"include" is a belt-and-suspenders fallback that
+        // shows the current tab in the picker for Chrome 107-108 builds that
+        // don't support silent capture yet.
+        tabCaptureStream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: {
+            frameRate: { ideal: 30, max: 30 },
+            width: { ideal: capW },
+            height: { ideal: capH },
+          },
+          audio: false,
+          preferCurrentTab: true,
+          selfBrowserSurface: "include",
+          surfaceSwitching: "exclude",
+          systemAudio: "exclude",
+        });
+      } else if (isFirefox) {
+        // Firefox hides the active tab by design. Pre-selecting "window"
+        // means the browser window appears at the top of the list — user
+        // clicks it once and hits Share.
+        tabCaptureStream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: {
+            frameRate: { ideal: 30 },
+            width: { ideal: capW },
+            height: { ideal: capH },
+            displaySurface: "window",
+          },
+          audio: false,
+        });
+      } else {
+        // Safari / other — basic constraints that work everywhere
+        tabCaptureStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: { ideal: 30 }, width: { ideal: capW }, height: { ideal: capH } },
+          audio: false,
         });
       }
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError" || err?.name === "AbortError") {
+        setGlStatus("error");
+        setGlError("Screen capture was cancelled. Click 'Go Live' again and select your tab or window from the dialog.");
+      } else {
+        setGlStatus("error");
+        setGlError("Could not start screen capture. Make sure you're on Chrome, Firefox, or Edge over HTTPS.");
+      }
+      return;
+    }
 
-      // LIVE badge — top-right corner
-      const liveLabel = goLivePlatform === "twitch" ? "● TWITCH" : goLivePlatform === "youtube" ? "● YOUTUBE" : "● LIVE";
-      const badgeFontPx = Math.round(H * 0.024);
-      ctx2d.font = `bold ${badgeFontPx}px Arial, sans-serif`;
-      ctx2d.textBaseline = "middle";
-      const bw = ctx2d.measureText(liveLabel).width + 26;
-      const bh = badgeFontPx + 16;
-      const bx = W - bw - 18, by = 18;
-      ctx2d.fillStyle = "rgba(220,38,38,0.96)";
-      // Manually-drawn rounded rect (avoids roundRect() compat issues)
-      const br2 = 7;
-      ctx2d.beginPath();
-      ctx2d.moveTo(bx + br2, by); ctx2d.lineTo(bx + bw - br2, by);
-      ctx2d.quadraticCurveTo(bx + bw, by, bx + bw, by + br2);
-      ctx2d.lineTo(bx + bw, by + bh - br2);
-      ctx2d.quadraticCurveTo(bx + bw, by + bh, bx + bw - br2, by + bh);
-      ctx2d.lineTo(bx + br2, by + bh);
-      ctx2d.quadraticCurveTo(bx, by + bh, bx, by + bh - br2);
-      ctx2d.lineTo(bx, by + br2);
-      ctx2d.quadraticCurveTo(bx, by, bx + br2, by);
-      ctx2d.closePath();
-      ctx2d.fill();
-      ctx2d.fillStyle = "#fff";
-      ctx2d.textAlign = "center";
-      ctx2d.fillText(liveLabel, bx + bw / 2, by + bh / 2);
-
-      // Vextorn watermark — bottom-right
-      ctx2d.font = `${Math.round(H * 0.021)}px "Space Grotesk", Arial, sans-serif`;
-      ctx2d.fillStyle = "rgba(255,255,255,0.15)";
-      ctx2d.textAlign = "right";
-      ctx2d.textBaseline = "alphabetic";
-      ctx2d.fillText("vextorn.com", W - 20, H - 20);
-    };
-
-    // Start the 30-fps draw loop
-    const animate = () => {
-      drawFrame();
-      glRafRef.current = requestAnimationFrame(animate);
-    };
-    glRafRef.current = requestAnimationFrame(animate);
-
-    // Obtain the MediaStream from the canvas
-    const tabCaptureStream: MediaStream = (canvas as any).captureStream(30);
+    // Stream acquired — continue async setup
+    setGlStatus("connecting");
     glTabStreamRef.current = tabCaptureStream;
     setGlTabStream(tabCaptureStream);
+    // If the user stops sharing from the browser toolbar, end the stream
+    tabCaptureStream.getVideoTracks()[0]?.addEventListener("ended", () => {
+      if (glMediaRecorderRef.current?.state !== "inactive") stopGoLive();
+    });
 
     // ── Audio: mic (optional) + all room peer streams mixed together ──────────
     let micStream: MediaStream | null = null;
@@ -7556,7 +7449,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     };
     pollViewers();
     glViewerPollRef.current = setInterval(pollViewers, 30_000);
-  }, [goLivePlatform, glTwitchKey, glYoutubeKey, glTwitchUsername, glYoutubeChannelId, room.id, room.title, room.language]);
+  }, [goLivePlatform, glTwitchKey, glYoutubeKey, glTwitchUsername, glYoutubeChannelId, glQuality, room.id, room.title, room.language]);
 
   const stopGoLive = useCallback(async (sid?: string) => {
     const id = sid ?? glStreamId;
@@ -12804,6 +12697,47 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
+          {/* ── Preparing: picker is open, waiting for user selection ── */}
+          {glStatus === "preparing" && (() => {
+            const ua = navigator.userAgent;
+            const isFF = /Firefox/.test(ua);
+            const steps = isFF
+              ? [
+                  { n: "1", title: 'Click "Window" tab', body: 'At the top of the dialog choose "Window" (Firefox always hides the current tab — Window is the correct path).' },
+                  { n: "2", title: "Select your browser window", body: "Click your browser window in the list to preview it. The room will be visible inside." },
+                  { n: "3", title: "Click Share", body: "With the browser window highlighted, click Share and streaming starts immediately." },
+                ]
+              : [
+                  { n: "1", title: "Chrome: this tab may be auto-captured", body: "On Chrome 107+ the tab is captured instantly — if sharing started, you're done! If a dialog appeared, continue below." },
+                  { n: "2", title: 'Click "This Tab"', body: `In the picker, click the "This Tab" option or find "${room.title || "Vextorn"}" in the "Tab" section and select it.` },
+                  { n: "3", title: "Click Share", body: "Hit Share. Your viewers will see the exact room — live video, speaking animations, everything." },
+                ];
+            return (
+              <div className="flex flex-col gap-3 py-3 px-1">
+                <div className="relative flex items-center justify-center mb-1">
+                  <span className="absolute w-16 h-16 rounded-full animate-ping" style={{ background: "rgba(239,68,68,0.15)" }} />
+                  <span className="absolute w-20 h-20 rounded-full animate-ping" style={{ background: "rgba(239,68,68,0.07)", animationDelay: "0.3s" }} />
+                  <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "rgba(239,68,68,0.18)", border: "2px solid rgba(239,68,68,0.4)" }}>
+                    <MonitorPlay className="w-6 h-6 text-red-400" />
+                  </div>
+                </div>
+                <p className="text-[12px] font-bold text-white/90 text-center">
+                  {isFF ? "Select your browser window →" : "Capture dialog opened →"}
+                </p>
+                {steps.map(({ n, title, body }) => (
+                  <div key={n} className="flex items-start gap-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white mt-0.5" style={{ background: "rgba(239,68,68,0.70)" }}>{n}</span>
+                    <div>
+                      <p className="text-[11px] font-bold text-white/85">{title}</p>
+                      <p className="text-[10px] text-white/45 leading-relaxed mt-0.5">{body}</p>
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[9px] text-white/25 animate-pulse text-center mt-1">Waiting for your selection…</p>
+              </div>
+            );
+          })()}
+
           {glStatus === "connecting" && (
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="relative flex items-center justify-center">
@@ -12811,8 +12745,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <Loader2 className="w-8 h-8 animate-spin text-red-400 relative z-10" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold text-white/90">Starting stream…</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Rendering your room and connecting to RTMP server</p>
+                <p className="text-sm font-semibold text-white/90">Connecting to RTMP server…</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Your room is being captured live</p>
               </div>
             </div>
           )}
@@ -13066,10 +13000,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             {/* Go Live button */}
             <button
               onClick={() => { setGlWaitingForKey(null); startGoLive(); }}
-              disabled={glStatus === "connecting"}
+              disabled={glStatus === "preparing" || glStatus === "connecting"}
               className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
               style={{
-                background: glStatus === "connecting"
+                background: (glStatus === "preparing" || glStatus === "connecting")
                   ? "rgba(100,100,120,0.5)"
                   : goLivePlatform === "twitch"
                     ? "linear-gradient(135deg,rgba(145,70,255,0.9),rgba(100,40,200,0.9))"
@@ -13080,8 +13014,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
               }}
             >
-              {glStatus === "connecting" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
-              {glStatus === "connecting" ? "Connecting…" : goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
+              {(glStatus === "preparing" || glStatus === "connecting") ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}
+              {glStatus === "preparing" ? "Opening dialog…" : glStatus === "connecting" ? "Connecting…" : goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
             </button>
 
             {/* Optional: viewer count */}
@@ -13476,6 +13410,46 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
+          {/* ── Preparing: picker is open ── */}
+          {glStatus === "preparing" && (() => {
+            const ua = navigator.userAgent;
+            const isFF = /Firefox/.test(ua);
+            const steps = isFF
+              ? [
+                  { n: "1", title: 'Click "Window" tab', body: 'Choose "Window" at the top of the dialog — Firefox hides the active tab by design.' },
+                  { n: "2", title: "Select your browser window", body: "Click your browser window to preview it with the room visible." },
+                  { n: "3", title: "Click Share", body: "Hit Share and streaming starts immediately." },
+                ]
+              : [
+                  { n: "1", title: "Chrome: tab may be auto-captured", body: "On Chrome 107+ the current tab is captured instantly — if it already started, you're all set!" },
+                  { n: "2", title: 'If a dialog appeared — click "This Tab"', body: `Find "${room.title || "Vextorn"}" in the Tab section and select it.` },
+                  { n: "3", title: "Click Share", body: "Your viewers will see the exact room — participant cards, speaking animations, everything." },
+                ];
+            return (
+              <div className="flex flex-col gap-3 py-3">
+                <div className="relative flex items-center justify-center mb-1">
+                  <span className="absolute w-16 h-16 rounded-full animate-ping" style={{ background: "rgba(99,102,241,0.15)" }} />
+                  <div className="relative z-10 flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "rgba(99,102,241,0.18)", border: "2px solid rgba(99,102,241,0.4)" }}>
+                    <MonitorPlay className="w-6 h-6 text-primary" />
+                  </div>
+                </div>
+                <p className="text-sm font-bold text-center">
+                  {isFF ? "Select your browser window →" : "Capture dialog is open →"}
+                </p>
+                {steps.map(({ n, title, body }) => (
+                  <div key={n} className="flex items-start gap-3 rounded-xl px-3 py-2.5 bg-muted/30 border border-border/50">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white mt-0.5 bg-primary/80">{n}</span>
+                    <div>
+                      <p className="text-xs font-bold">{title}</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{body}</p>
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[10px] text-muted-foreground/50 animate-pulse text-center">Waiting for your selection…</p>
+              </div>
+            );
+          })()}
+
           {glStatus === "connecting" && (
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="relative flex items-center justify-center">
@@ -13483,8 +13457,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <Loader2 className="w-8 h-8 animate-spin text-primary relative z-10" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold">Starting stream…</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Rendering your room and connecting to server</p>
+                <p className="text-sm font-semibold">Connecting to RTMP server…</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Your room is being captured live</p>
               </div>
             </div>
           )}
@@ -13720,9 +13694,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
             <Button
               className="w-full font-bold text-white"
-              disabled={glStatus === "connecting"}
+              disabled={glStatus === "preparing" || glStatus === "connecting"}
               style={{
-                background: glStatus === "connecting"
+                background: (glStatus === "preparing" || glStatus === "connecting")
                   ? undefined
                   : goLivePlatform === "twitch"
                     ? "linear-gradient(135deg,#9146ff,#6523b0)"
@@ -13732,8 +13706,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               }}
               onClick={() => { setGlWaitingForKey(null); startGoLive(); }}
             >
-              {glStatus === "connecting" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
-              {glStatus === "connecting" ? "Connecting…" : goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
+              {(glStatus === "preparing" || glStatus === "connecting") ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Radio className="w-4 h-4 mr-2" />}
+              {glStatus === "preparing" ? "Opening dialog…" : glStatus === "connecting" ? "Connecting…" : goLivePlatform === "both" ? "Go Live on Both" : goLivePlatform === "youtube" ? "Go Live on YouTube" : "Go Live on Twitch"}
             </Button>
           </>)}
         </DialogContent>
