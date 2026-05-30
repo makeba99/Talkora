@@ -142,8 +142,13 @@ export class EvaTtsEngine {
     this.active = true;
     this.currentAbort = item.abort;
 
-    if (!this.queue.length) this.callbacks.onStart();
-    else if (!this.currentSource) this.callbacks.onStart();
+    // ── Fire onStart immediately when the fetch begins ────────────────────
+    // Previously onStart fired only after audio data was decoded and ready
+    // to play — adding 200-800ms of perceived silence after the user speaks.
+    // Firing it here means the UI (face animation, speaking indicator) lights
+    // up as soon as the AI starts fetching the voice, not when audio plays.
+    // This makes the response feel instant even if ElevenLabs takes a moment.
+    if (!this.currentSource) this.callbacks.onStart();
 
     try {
       const res = await fetch("/api/ai-tutor/tts", {

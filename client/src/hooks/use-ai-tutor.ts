@@ -81,12 +81,20 @@ const EVA_INTROS = [
 ];
 
 const FALLBACK_RESPONSES = [
-  "I heard you. Say that one more way?",
-  "Got it. What part matters most?",
-  "I'm following. Give me one more detail.",
-  "Say it again, a little slower.",
-  "What do you mean exactly?",
-  "Keep going. I'm listening.",
+  "I heard you — say that one more way?",
+  "Got it. What part matters most to you?",
+  "Keep going — what did you mean exactly?",
+  "Say it again, just a bit slower?",
+  "I'm with you. What's the main thing you need?",
+  "Almost got it. Give me one more detail.",
+];
+
+/** Short requests that likely need clarification before we can respond usefully. */
+const CLARIFICATION_PROMPTS = [
+  "Can you tell me a bit more about that?",
+  "What exactly did you have in mind?",
+  "Give me a little more to go on?",
+  "Could you be a bit more specific?",
 ];
 
 const AI_SETTINGS_STORAGE_KEY = "connect2talk-ai-tutor-settings-v1";
@@ -208,9 +216,10 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: false });
-    // 300ms delay — lets room echo fade while keeping the turnaround snappy
+    // 180ms delay — lets room echo fade while keeping the turnaround snappy.
+    // Reduced from 300ms to minimize perceived dead-air between AI response and mic ready.
     if (activeRef.current && !loadingRef.current) {
-      setTimeout(() => sttRef.current?.startListening(), 300);
+      setTimeout(() => sttRef.current?.startListening(), 180);
     }
   }, [socket, roomId, userId]);
 
@@ -255,12 +264,13 @@ export function useAiTutor(deps: AiTutorDeps) {
     addDebug("info", "Barge-in detected — interrupting AI.");
     setVoiceBargeInActive(false);
     interruptAiRef.current?.();
-    // 400ms — lets room echo fade while keeping response snappy
+    // 220ms — lets echo fade while keeping the mic re-open snappy after interruption.
+    // Reduced from 400ms so the user can speak again almost immediately.
     setTimeout(() => {
       if (activeRef.current && !speakingRef.current && !loadingRef.current) {
         sttRef.current?.startListening();
       }
-    }, 400);
+    }, 220);
   }, [addDebug]);
 
   const onFinalTranscript = useCallback((text: string) => {
@@ -277,6 +287,22 @@ export function useAiTutor(deps: AiTutorDeps) {
       }, 200);
       return;
     }
+
+    // ── Incomplete-request detection ─────────────────────────────────────────
+    // Single-word or extremely short inputs (≤4 chars after stripping punctuation)
+    // are almost always incomplete thoughts. Ask for clarification rather than
+    // guessing — this keeps the conversation natural and avoids wrong assumptions.
+    const wordCount = trimmed.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean).length;
+    if (wordCount === 1 && trimmed.length <= 8) {
+      addDebug("info", `Short input "${trimmed}" — asking for clarification`);
+      setVoiceInterimText(null);
+      setVoiceListening(false);
+      interruptAiRef.current?.();
+      const prompt = CLARIFICATION_PROMPTS[Math.floor(Math.random() * CLARIFICATION_PROMPTS.length)];
+      ttsRef.current?.enqueue(prompt);
+      return;
+    }
+
     setVoiceInterimText(null);
     setVoiceListening(false);
     addDebug("info", `Recognized: "${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…" : ""}"`);
@@ -297,19 +323,19 @@ export function useAiTutor(deps: AiTutorDeps) {
           addDebug("error", `STT: ${msg}`);
           setMicError(msg);
           if (!activeRef.current) return;
-          // Speak a recovery prompt so the user always knows what happened.
+          // Speak a concise, actionable recovery prompt — short so it doesn't
+          // talk over the user trying to fix the issue.
           if (/denied/i.test(msg)) {
-            ttsRef.current?.enqueue("I can't hear you — please allow microphone access in your browser settings.");
+            ttsRef.current?.enqueue("I can't hear you. Please allow microphone access in your browser, then try again.");
           } else if (msg === "network") {
-            ttsRef.current?.enqueue("I'm having trouble hearing you. Check your connection?");
+            ttsRef.current?.enqueue("Connection issue — check your network and try again.");
           } else if (msg === "audio-capture") {
-            ttsRef.current?.enqueue("I'm having trouble accessing your microphone. Try closing other apps that might be using it.");
+            ttsRef.current?.enqueue("Can't access the mic. Close any other app using it, then speak again.");
           } else if (/recognition-error:/i.test(msg)) {
-            // Generic recoverable recognition error — ask the user to repeat
             const REPEAT_PROMPTS = [
-              "I didn't quite catch that — could you say it again?",
-              "Sorry, I had trouble hearing you. Try once more?",
-              "Say that one more time?",
+              "Didn't catch that — try again?",
+              "Say it one more time?",
+              "Come again?",
             ];
             ttsRef.current?.enqueue(REPEAT_PROMPTS[Math.floor(Math.random() * REPEAT_PROMPTS.length)]);
           }
@@ -317,9 +343,11 @@ export function useAiTutor(deps: AiTutorDeps) {
         onNoSpeechExtended: () => {
           if (!activeRef.current || speakingRef.current || loadingRef.current) return;
           const SILENCE_REMINDERS = [
-            "Still there? Just say something whenever you're ready.",
-            "I'm here — take your time.",
-            "No rush. Talk to me whenever you like.",
+            "Still there?",
+            "Take your time — I'm listening.",
+            "Whenever you're ready.",
+            "I'm here. Just talk.",
+            "No rush.",
           ];
           const pick = SILENCE_REMINDERS[Math.floor(Math.random() * SILENCE_REMINDERS.length)];
           addDebug("info", "Extended silence — speaking reminder");
@@ -410,22 +438,25 @@ export function useAiTutor(deps: AiTutorDeps) {
     setTimeout(() => setAiAcknowledging(false), 400);
 
     // ── Latency-acknowledgment guard ─────────────────────────────────────────
-    // If the LLM hasn't sent its first token within 700ms, speak a brief
-    // "thinking" phrase to fill the silence (spec: <500ms perceived latency).
+    // If the LLM hasn't sent its first token within 500ms, speak a brief
+    // "thinking" phrase to fill the silence (target: <500ms perceived latency).
     // Cleared immediately when the first token arrives, so fast responses
     // (common on subsequent turns) never hear the phrase at all.
+    // Reduced from 700ms — bridging that extra 200ms of silence meaningfully
+    // improves perceived responsiveness on slower network conditions.
     const THINKING_PHRASES = [
-      "Hmm, give me a second.",
-      "Let me think about that.",
-      "One moment.",
-      "Sure, one sec.",
+      "Hmm.",
+      "Let me think.",
+      "One sec.",
+      "Got it, hold on.",
+      "Mm, give me a moment.",
     ];
     const thinkingTimer = setTimeout(() => {
       if (!firstTokenFired && !abort.signal.aborted && activeRef.current && !speakingRef.current) {
         ttsRef.current?.enqueue(THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)]);
         addDebug("info", `Thinking phrase spoken — first token delayed >${Date.now() - t0}ms`);
       }
-    }, 700);
+    }, 500);
 
     // Stop primary listening while streaming
     sttRef.current?.stopListening();
@@ -697,12 +728,12 @@ export function useAiTutor(deps: AiTutorDeps) {
         // If the user already asked something in the same breath, queue it up
         // after a short delay to let the intro TTS start first
         if (afterText) {
-          // 900ms — intro TTS starts at ~50ms; this gives it time to begin
+          // 600ms — intro TTS starts at ~50ms; this gives it time to begin
           // then sendAiMessage naturally interrupts it to answer the user's question.
-          // Reduced from 1800ms so the user gets a response ~900ms sooner.
+          // Reduced from 900ms so the user gets a response faster on wake+query combos.
           setTimeout(() => {
             sendAiMessageRef.current?.(afterText);
-          }, 900);
+          }, 600);
         }
       },
       // onStatusChange — keeps the UI indicator in sync

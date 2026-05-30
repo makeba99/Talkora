@@ -25,14 +25,15 @@ export const FILLER_ONLY_PATTERN = /^(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ug
 /**
  * Wake-word pattern. Matches any of:
  *   "hey AI / hey A.I. / hey tutor / hey Afi / hey Afi K / hey Eva / hey Dude / hey agent"
- *   "ok AI / okay AI / yo AI / hi AI"
+ *   "ok AI / okay AI / yo AI / hi AI / hello AI"
  *   "wake up AI / wake up tutor"
+ *   "start AI / listen AI / activate AI"
  *
  * Returns a capturing group for any text spoken AFTER the trigger phrase so it
  * can be sent directly as the first user message.
  */
 export const WAKE_PATTERN =
-  /\b(?:hey|hi|ok|okay|yo|wake\s+up)\s+(?:ai|a\.i\.?|tutor|afi(?:\s*k)?|eva|dude|agent)\b[,!.]?\s*(.*)/i;
+  /\b(?:hey|hi|hello|ok|okay|yo|wake\s+up|start|listen|activate)\s+(?:ai|a\.i\.?|tutor|afi(?:\s*k)?|eva|dude|agent)\b[,!.]?\s*(.*)/i;
 
 /**
  * WakeWordDetector — a lightweight always-on background listener.
@@ -246,7 +247,8 @@ export class SttEngine {
     let lastInterim = "";
     let errorHandled = false;
 
-    // Flush accumulated speech after 400ms of silence (tighter than the old 500ms).
+    // Flush accumulated speech after 260ms of silence — tight enough to feel
+    // instant while still letting most natural speech pauses complete.
     const flush = () => {
       this.clearSilenceTimer();
       const text = (finalBuffer || lastInterim).trim();
@@ -260,7 +262,7 @@ export class SttEngine {
 
     const resetSilence = () => {
       this.clearSilenceTimer();
-      this.silenceTimer = setTimeout(flush, 400);
+      this.silenceTimer = setTimeout(flush, 260);
     };
 
     rec.onstart = () => {
@@ -367,7 +369,8 @@ export class SttEngine {
   /**
    * Start barge-in detector: runs while AI is speaking.
    * Two guards prevent the AI's own voice (echo from speakers) from triggering a loop:
-   *   1. 1800ms grace period — ignore all audio for the first 1.8s of AI speech.
+   *   1. 1400ms grace period — ignore all audio for the first 1.4s of AI speech.
+   *      (Reduced from 1800ms — most echo artifacts fade within 1s.)
    *   2. Minimum 2 words — single words/syllables are almost always echo artifacts.
    */
   startBargeIn() {
@@ -384,7 +387,7 @@ export class SttEngine {
     const activatedAt = Date.now();
 
     rec.onresult = (e: any) => {
-      if (Date.now() - activatedAt < 1800) return;
+      if (Date.now() - activatedAt < 1400) return;
 
       const results = Array.from(e.results as SpeechRecognitionResultList);
       const wordCount = results.reduce(
@@ -392,7 +395,7 @@ export class SttEngine {
           sum + r[0].transcript.trim().split(/\s+/).filter(Boolean).length,
         0
       );
-      // 2-word threshold (was 3) — more responsive while still blocking single-word echo
+      // 2-word threshold — responsive while still blocking single-word echo
       if (wordCount >= 2) {
         this.callbacks.onBargeIn();
         this.stopBargeIn();
