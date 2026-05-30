@@ -437,13 +437,24 @@ export function useAiTutor(deps: AiTutorDeps) {
 
     setTimeout(() => setAiAcknowledging(false), 400);
 
+    // ── Immediate receipt acknowledgment ─────────────────────────────────────
+    // Fires at ~0ms (no delay) to confirm the AI received the input.
+    // ~35% probability per turn — keeps it natural and non-repetitive.
+    // Very short phrases (<300ms of audio) so the actual response still
+    // feels fast. Mutually exclusive with the thinking phrase below:
+    // only one preamble per turn to avoid double stacking ("Mm. One sec.").
+    const RECEIPT_CUES = ["Mm.", "Mm-hmm.", "Right.", "Yeah.", "Okay."];
+    const playReceiptCue = Math.random() < 0.35;
+    if (playReceiptCue) {
+      ttsRef.current?.enqueue(RECEIPT_CUES[Math.floor(Math.random() * RECEIPT_CUES.length)]);
+      addDebug("info", "Receipt cue played — immediate ACK");
+    }
+
     // ── Latency-acknowledgment guard ─────────────────────────────────────────
-    // If the LLM hasn't sent its first token within 500ms, speak a brief
-    // "thinking" phrase to fill the silence (target: <500ms perceived latency).
+    // If the LLM hasn't sent its first token within 500ms AND no receipt cue
+    // was played, speak a brief "thinking" phrase to fill the silence.
     // Cleared immediately when the first token arrives, so fast responses
     // (common on subsequent turns) never hear the phrase at all.
-    // Reduced from 700ms — bridging that extra 200ms of silence meaningfully
-    // improves perceived responsiveness on slower network conditions.
     const THINKING_PHRASES = [
       "Hmm.",
       "Let me think.",
@@ -452,7 +463,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       "Mm, give me a moment.",
     ];
     const thinkingTimer = setTimeout(() => {
-      if (!firstTokenFired && !abort.signal.aborted && activeRef.current && !speakingRef.current) {
+      if (!firstTokenFired && !playReceiptCue && !abort.signal.aborted && activeRef.current && !speakingRef.current) {
         ttsRef.current?.enqueue(THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)]);
         addDebug("info", `Thinking phrase spoken — first token delayed >${Date.now() - t0}ms`);
       }
@@ -644,7 +655,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     const intro = intros[Math.floor(Math.random() * intros.length)];
     const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
     setAiConversation([introMsg]);
-    setTimeout(() => ttsRef.current?.enqueue(intro), 50);
+    setTimeout(() => ttsRef.current?.enqueue(intro), 10);
     addDebug("info", `Session started with persona: ${pName} (${voice})`);
   }, [aiActive, socket, roomId, userId, username, aiSettings, addDebug]);
 
@@ -671,7 +682,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       const intro = intros[Math.floor(Math.random() * intros.length)];
       const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
       setAiConversation([introMsg]);
-      setTimeout(() => ttsRef.current?.enqueue(intro), 50);
+      setTimeout(() => ttsRef.current?.enqueue(intro), 10);
     } else {
       // Stop session — unlock persona and drain queue
       personaLockedRef.current = false;

@@ -129,7 +129,7 @@ export class WakeWordDetector {
     };
 
     rec.onend = () => {
-      if (this._active) this._scheduleRestart(500);
+      if (this._active) this._scheduleRestart(300);
       else this.onStatusChange(false);
     };
 

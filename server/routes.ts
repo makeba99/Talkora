@@ -1857,9 +1857,11 @@ export async function registerRoutes(
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
         `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, give a complete answer — correctness matters more than brevity then.`,
-        `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken.`,
+        `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options instead of just asking: e.g., "Do you mean X, or more like Y?"`,
+        `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
         `If the user's speech is genuinely unclear, ${isAfiK ? `say "what do you mean huh?" or ask one short playful clarifier` : 'ask one short clarification question instead of guessing'}.`,
         `If asked to repeat or rephrase something, do it concisely in different words — don't just copy your last reply.`,
+        `NEXT STEPS: After a complete answer, occasionally (not every turn — maybe 1 in 3) offer one natural continuation: a short follow-up question, a suggestion for what to practice next, or an invitation to keep going. One sentence max. Never stack it on top of another question.`,
         personality === 'Formal' && !isAfiK
           ? `Your tone is warm but polished — professional without being stiff.`
           : isAfiK
@@ -2148,9 +2150,11 @@ export async function registerRoutes(
         isEva
           ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant.`
           : `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
-        `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken.`,
+        `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options: e.g., "Do you mean X, or more like Y?"`,
+        `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
         `If the user's speech is genuinely unclear, ask one short clarification question instead of guessing.`,
         `If asked to repeat or rephrase something, do it concisely in different words — don't just copy your last reply.`,
+        `NEXT STEPS: After a complete answer, occasionally (not every turn — maybe 1 in 3) offer one natural continuation: a short follow-up question, a suggestion for what to practice next, or an invitation to keep going. One sentence max. Never stack it on top of another question.`,
         isEva
           ? `Your tone is warm, direct, and real. You feel present. No filler, no performance — just you.`
           : personality === 'Formal'
