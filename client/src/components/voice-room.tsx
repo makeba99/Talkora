@@ -2676,6 +2676,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const glViewerPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const glStatusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const glChunkFailRef = useRef(0);
+  const glPollFailRef = useRef(0);
   const ytKeyInputRef = useRef<HTMLInputElement>(null);
   const twKeyInputRef = useRef<HTMLInputElement>(null);
   const [glWaitingForKey, setGlWaitingForKey] = useState<"youtube" | "twitch" | "both" | null>(null);
@@ -7426,19 +7427,27 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     setGlStatus("live"); setGlDuration(0); setGlViewers(null);
     glDurationRef.current = setInterval(() => setGlDuration(d => d+1), 1000);
 
-    // ── Poll stream status every 10 s to detect silent FFmpeg crashes ────────
+    // ── Poll stream status every 15 s to detect silent FFmpeg crashes ────────
+    // Require 2 consecutive alive:false results before crashing to avoid
+    // false positives from transient network hiccups or brief server lag.
+    glPollFailRef.current = 0;
     const pollStatus = async () => {
       try {
         const r = await fetch(`/api/stream/${streamId}/status`, { credentials: "include" });
-        if (!r.ok) return;
+        if (!r.ok) { glPollFailRef.current = 0; return; }
         const data = await r.json() as any;
         if (data.alive === false && glMediaRecorderRef.current?.state !== "inactive") {
-          const msg = data.exitError || "Stream ended unexpectedly — check your stream key and try again.";
-          crashStop(msg);
+          glPollFailRef.current++;
+          if (glPollFailRef.current >= 2) {
+            const msg = data.exitError || "Stream ended unexpectedly — check your stream key and try again.";
+            crashStop(msg);
+          }
+        } else {
+          glPollFailRef.current = 0;
         }
-      } catch {}
+      } catch { glPollFailRef.current = 0; }
     };
-    glStatusPollRef.current = setInterval(pollStatus, 10_000);
+    glStatusPollRef.current = setInterval(pollStatus, 15_000);
 
     const pollViewers = async () => {
       try {
@@ -7467,6 +7476,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (glViewerPollRef.current) { clearInterval(glViewerPollRef.current); glViewerPollRef.current = null; }
     if (glStatusPollRef.current) { clearInterval(glStatusPollRef.current); glStatusPollRef.current = null; }
     glChunkFailRef.current = 0;
+    glPollFailRef.current = 0;
     setGlStatus("idle"); setGlDuration(0); setGlViewers(null);
     if (id) { setGlStreamId(null); fetch(`/api/stream/${id}/stop`, { method: "POST", credentials: "include" }).catch(()=>{}); }
   }, [glStreamId]);
@@ -12640,7 +12650,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${glStatus === "live" ? "bg-red-600" : "bg-white/10"}`}>
-                <div className={`w-2 h-2 rounded-full bg-white ${glStatus === "live" ? "animate-pulse" : "opacity-40"}`} />
+                <div className={`w-2 h-2 rounded-full bg-white ${glStatus === "live" ? "live-dot" : "opacity-40"}`} />
               </div>
               <div>
                 <p className="text-sm font-semibold">Go Live</p>
@@ -12661,7 +12671,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           {glStatus === "live" && (
             <div className="p-2.5 rounded-lg bg-red-600/10 border border-red-600/25 space-y-1.5">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                <div className="w-2 h-2 rounded-full bg-red-500 live-dot flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-red-400">You are LIVE · {formatGlDuration(glDuration)}</p>
                   <p className="text-[10px] text-muted-foreground truncate">
@@ -13357,7 +13367,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${glStatus === "live" ? "bg-red-600" : "bg-white/10"}`}>
-                <div className={`w-2.5 h-2.5 rounded-full bg-white ${glStatus === "live" ? "animate-pulse" : "opacity-50"}`} />
+                <div className={`w-2.5 h-2.5 rounded-full bg-white ${glStatus === "live" ? "live-dot" : "opacity-50"}`} />
               </div>
               Go Live
             </DialogTitle>
@@ -13367,7 +13377,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           {glStatus === "live" && (
             <div className="p-3 rounded-xl bg-red-600/10 border border-red-600/25 space-y-2">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                <div className="w-3 h-3 rounded-full bg-red-500 live-dot flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-red-400">You are LIVE · {formatGlDuration(glDuration)}</p>
                   <p className="text-xs text-muted-foreground">
