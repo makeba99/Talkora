@@ -12767,7 +12767,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
                 {glStatus === "live" ? (
                   <div className="flex items-center gap-1 rounded px-1.5 py-0.5" style={{ background: "rgba(220,38,38,0.90)" }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white live-dot" />
                     <span className="text-[9px] font-extrabold text-white tracking-widest">LIVE</span>
                   </div>
                 ) : (
@@ -13479,7 +13479,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               )}
               {glStatus === "live" && (
                 <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-red-600/90 rounded-md px-2 py-1 backdrop-blur-sm">
-                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-white live-dot" />
                   <span className="text-[10px] font-bold text-white tracking-wide">LIVE</span>
                 </div>
               )}
