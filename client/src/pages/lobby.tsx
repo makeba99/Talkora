@@ -840,10 +840,11 @@ export default function Lobby() {
   // because a just-created room starts at 0 until the creator joins it.
   const userOwnedRooms = fetchedRooms.filter(r => r.ownerId === user?.id);
   const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id && (r.activeUsers ?? 0) > 0);
+  const hasRealRooms = fetchedRooms.length > 0;
   const rooms = useMemo(
-    () => [...userOwnedRooms, ...SAMPLE_ROOMS.slice(0, 8), ...otherRealRooms],
+    () => hasRealRooms ? [...userOwnedRooms, ...otherRealRooms] : [...SAMPLE_ROOMS.slice(0, 8)],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fetchedRooms, user?.id],
+    [fetchedRooms, user?.id, hasRealRooms],
   );
   const visibleRooms = useDeferredValue(rooms);
 
