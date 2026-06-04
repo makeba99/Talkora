@@ -842,7 +842,7 @@ export default function Lobby() {
   const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id && (r.activeUsers ?? 0) > 0);
   const hasRealRooms = fetchedRooms.length > 0;
   const rooms = useMemo(
-    () => hasRealRooms ? [...userOwnedRooms, ...otherRealRooms] : [...SAMPLE_ROOMS.slice(0, 8)],
+    () => hasRealRooms ? [...userOwnedRooms, ...otherRealRooms] : [...SAMPLE_ROOMS],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [fetchedRooms, user?.id, hasRealRooms],
   );
