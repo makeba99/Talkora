@@ -74,6 +74,13 @@ export const SAMPLE_ROOMS: Room[] = [
   { id: "sample-room-10", title: "Elite English Lounge 🔒",   language: "English",  level: "Advanced",     maxUsers: 5, ownerId: SAMPLE_USERS.james.id,   isPublic: false, activeUsers: 4, roomTheme: "neon",   hologramVideoUrl: "https://media.giphy.com/media/3o7TKsQ8MQ1S6G4PkI/giphy.gif", createdAt: new Date() },
   { id: "sample-room-11", title: "Cercle Privé 🇫🇷",          language: "French",   level: "Advanced",     maxUsers: 4, ownerId: SAMPLE_USERS.claire.id,  isPublic: false, activeUsers: 3, roomTheme: "violet", hologramVideoUrl: "https://media.giphy.com/media/xT9IgmNJYIvGEb9kFO/giphy.gif", createdAt: new Date() },
   { id: "sample-room-12", title: "Tokyo VIP 🇯🇵",             language: "Japanese", level: "Intermediate", maxUsers: 5, ownerId: SAMPLE_USERS.takeshi.id, isPublic: false, activeUsers: 5, roomTheme: "cherry", hologramVideoUrl: "https://media.giphy.com/media/l0HlCEalDhZpVYT8s/giphy.gif", createdAt: new Date() },
+  // ── Nature / Universe GIF rooms ──────────────────────────────────────────
+  { id: "sample-room-13", title: "Aurora Borealis 🌌",        language: "English",  level: "Intermediate", maxUsers: 5, ownerId: SAMPLE_USERS.aigerim.id, isPublic: true,  activeUsers: 4, roomTheme: "galaxy", hologramVideoUrl: "https://media.giphy.com/media/ZFXyRGGXrMhQA/giphy.gif",         createdAt: new Date() },
+  { id: "sample-room-14", title: "Ocean Waves 🌊",            language: "Spanish",  level: "Beginner",     maxUsers: 4, ownerId: SAMPLE_USERS.isabela.id, isPublic: true,  activeUsers: 3, roomTheme: "ocean",  hologramVideoUrl: "https://media.giphy.com/media/26BRqP2fMbvLOH88g/giphy.gif",   createdAt: new Date() },
+  { id: "sample-room-15", title: "Galaxy Talk 🚀",            language: "English",  level: "Advanced",     maxUsers: 5, ownerId: SAMPLE_USERS.kwame.id,   isPublic: true,  activeUsers: 5, roomTheme: "neon",   hologramVideoUrl: "https://media.giphy.com/media/oMgzu5QlWAIi4/giphy.gif",         createdAt: new Date() },
+  { id: "sample-room-16", title: "Enchanted Forest 🌿",       language: "German",   level: "Beginner",     maxUsers: 4, ownerId: SAMPLE_USERS.anya.id,    isPublic: true,  activeUsers: 3, roomTheme: "violet", hologramVideoUrl: "https://media.giphy.com/media/vFKqnCdLPNOKc/giphy.gif",         createdAt: new Date() },
+  { id: "sample-room-17", title: "Golden Sunset 🌅",          language: "Portuguese", level: "Beginner",   maxUsers: 4, ownerId: SAMPLE_USERS.lucas.id,   isPublic: true,  activeUsers: 4, roomTheme: "sunset", hologramVideoUrl: "https://media.giphy.com/media/l46Cx9GKWF6tz7PYc/giphy.gif",   createdAt: new Date() },
+  { id: "sample-room-18", title: "Tropical Vibes 🌺",         language: "Chinese",  level: "Beginner",     maxUsers: 5, ownerId: SAMPLE_USERS.mei.id,     isPublic: true,  activeUsers: 4, roomTheme: "cherry", hologramVideoUrl: "https://media.giphy.com/media/26FxsQwgJyU4me9ig/giphy.gif",   createdAt: new Date() },
 ];
 
 export const BASE_SAMPLE_PARTICIPANTS: Record<string, User[]> = {
@@ -89,12 +96,20 @@ export const BASE_SAMPLE_PARTICIPANTS: Record<string, User[]> = {
   "sample-room-10": [SAMPLE_USERS.james, SAMPLE_USERS.marcus, SAMPLE_USERS.natasha, SAMPLE_USERS.ryo],
   "sample-room-11": [SAMPLE_USERS.claire, SAMPLE_USERS.pierre, SAMPLE_USERS.isabela],
   "sample-room-12": [SAMPLE_USERS.takeshi, SAMPLE_USERS.yuki, SAMPLE_USERS.hana, SAMPLE_USERS.min, SAMPLE_USERS.seo],
+  "sample-room-13": [SAMPLE_USERS.aigerim, SAMPLE_USERS.ryo, SAMPLE_USERS.priya, SAMPLE_USERS.kevin],
+  "sample-room-14": [SAMPLE_USERS.isabela, SAMPLE_USERS.lucas, SAMPLE_USERS.diego],
+  "sample-room-15": [SAMPLE_USERS.kwame, SAMPLE_USERS.marcus, SAMPLE_USERS.ivan, SAMPLE_USERS.james, SAMPLE_USERS.nadia],
+  "sample-room-16": [SAMPLE_USERS.anya, SAMPLE_USERS.natasha, SAMPLE_USERS.bjorn],
+  "sample-room-17": [SAMPLE_USERS.lucas, SAMPLE_USERS.amara, SAMPLE_USERS.seo, SAMPLE_USERS.fatima],
+  "sample-room-18": [SAMPLE_USERS.mei, SAMPLE_USERS.hana, SAMPLE_USERS.yuki, SAMPLE_USERS.min],
 };
 
 export const BASE_SAMPLE_VOTE_COUNTS: Record<string, number> = {
   "sample-room-1": 12, "sample-room-2": 7,  "sample-room-3": 24,
   "sample-room-4": 18, "sample-room-5": 9,  "sample-room-6": 15,
   "sample-room-10": 31, "sample-room-11": 22, "sample-room-12": 28,
+  "sample-room-13": 19, "sample-room-14": 13, "sample-room-15": 26,
+  "sample-room-16": 10, "sample-room-17": 17, "sample-room-18": 21,
   "sample-room-7": 11, "sample-room-8": 6,  "sample-room-9": 14,
 };
 
