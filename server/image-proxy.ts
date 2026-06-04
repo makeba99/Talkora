@@ -37,6 +37,13 @@ const ALLOWED_HOSTNAMES = new Set([
   "lh4.googleusercontent.com",
   "lh5.googleusercontent.com",
   "lh6.googleusercontent.com",
+  "media.giphy.com",
+  "media0.giphy.com",
+  "media1.giphy.com",
+  "media2.giphy.com",
+  "media3.giphy.com",
+  "media4.giphy.com",
+  "i.giphy.com",
 ]);
 
 function isAllowedUrl(raw: string): boolean {
