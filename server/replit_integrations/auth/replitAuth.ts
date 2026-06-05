@@ -154,19 +154,21 @@ export async function setupAuth(app: Express) {
 
   } else {
     // Replit OIDC — used in development on Replit
-    const memoize = (await import("memoizee")).default;
     const oidcClient = await import("openid-client");
     const { Strategy } = await import("openid-client/passport");
 
-    const getOidcConfig = memoize(
-      async () => {
-        return await oidcClient.discovery(
-          new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-          process.env.REPL_ID!
-        );
-      },
-      { maxAge: 3600 * 1000 }
-    );
+    let _oidcConfigCache: { value: any; expiresAt: number } | null = null;
+    const getOidcConfig = async () => {
+      if (_oidcConfigCache && Date.now() < _oidcConfigCache.expiresAt) {
+        return _oidcConfigCache.value;
+      }
+      const config = await oidcClient.discovery(
+        new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+        process.env.REPL_ID!
+      );
+      _oidcConfigCache = { value: config, expiresAt: Date.now() + 3600 * 1000 };
+      return config;
+    };
 
     const registeredStrategies = new Set<string>();
 
@@ -261,16 +263,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
 
   try {
-    const memoize = (await import("memoizee")).default;
     const oidcClient = await import("openid-client");
-    const getOidcConfig = memoize(
-      async () => oidcClient.discovery(
-        new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-        process.env.REPL_ID!
-      ),
-      { maxAge: 3600 * 1000 }
+    const config = await oidcClient.discovery(
+      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      process.env.REPL_ID!
     );
-    const config = await getOidcConfig();
     const tokenResponse = await oidcClient.refreshTokenGrant(config, refreshToken);
     user.claims = tokenResponse.claims();
     user.access_token = tokenResponse.access_token;

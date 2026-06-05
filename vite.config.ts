@@ -27,6 +27,7 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "client", "src"),
       "@shared": path.resolve(import.meta.dirname, "shared"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+      "framer-motion": path.resolve(import.meta.dirname, "node_modules/framer-motion/dist/cjs/index.js"),
     },
     dedupe: ["react", "react-dom"],
   },
@@ -379,6 +380,7 @@ export default defineConfig({
       "@tanstack/react-query",
       "wouter",
     ],
+    exclude: ["framer-motion"],
   },
   server: {
     allowedHosts: true,
