@@ -1793,12 +1793,12 @@ export async function registerRoutes(
         return res.status(400).json({ error: "message required" });
       }
 
-      // Only the user who owns the active AI session in this room may get responses.
-      // String() coercion guards against number vs string mismatch from different auth paths.
+      // Only block if ANOTHER user owns an active AI session in this room.
+      // Allow if no session is registered (e.g. after server restart, socket re-connect pending).
       if (roomId) {
         const session = roomAiTutorState.get(roomId);
         const callerId = String((req.user as any).id);
-        if (!session || String(session.userId) !== callerId) {
+        if (session && String(session.userId) !== callerId) {
           return res.status(403).json({ error: "not-active-session" });
         }
       }
@@ -2081,12 +2081,12 @@ export async function registerRoutes(
         return res.end();
       }
 
-      // Only the active AI session holder for this room may receive responses.
-      // String() coercion guards against number vs string mismatch.
+      // Only block if ANOTHER user owns an active AI session in this room.
+      // Allow if no session is registered (e.g. after server restart, socket re-connect pending).
       if (roomId) {
         const session = roomAiTutorState.get(roomId);
         const callerId = String((req.user as any).id);
-        if (!session || String(session.userId) !== callerId) {
+        if (session && String(session.userId) !== callerId) {
           sendEvent({ error: 'not-active-session' });
           return res.end();
         }
