@@ -83,19 +83,15 @@ export const SAMPLE_ROOMS: Room[] = [
   { id: "sample-room-18", title: "Tropical Vibes 🌺",         language: "Chinese",  level: "Beginner",     maxUsers: 5, ownerId: SAMPLE_USERS.mei.id,     isPublic: true,  activeUsers: 4, roomTheme: "cherry", hologramVideoUrl: "https://media.tenor.com/Rj4yPVwmxb8AAAAM/good-morning-waterfall.gif",  createdAt: new Date() },
 ];
 
-export const PLACEHOLDER_ROOM: Room = {
-  id: "sample-room-13",
-  title: "Aurora Borealis 🌌",
-  language: "English",
-  level: "Intermediate",
-  maxUsers: 5,
-  ownerId: SAMPLE_USERS.aigerim.id,
-  isPublic: true,
-  activeUsers: 4,
-  roomTheme: "galaxy",
-  hologramVideoUrl: "https://media.tenor.com/nNqXEsp3f9cAAAAM/aurora-borealis-northern-lights.gif",
-  createdAt: new Date(),
-};
+export const PLACEHOLDER_ROOMS: Room[] = [
+  { id: "sample-room-13", title: "Aurora Borealis 🌌",      language: "English",    level: "Intermediate", maxUsers: 5, ownerId: SAMPLE_USERS.aigerim.id,  isPublic: true,  activeUsers: 4, roomTheme: "galaxy", hologramVideoUrl: "https://media.tenor.com/nNqXEsp3f9cAAAAM/aurora-borealis-northern-lights.gif",  createdAt: new Date() },
+  { id: "sample-room-14", title: "Ocean Waves 🌊",           language: "Spanish",    level: "Beginner",     maxUsers: 4, ownerId: SAMPLE_USERS.isabela.id,  isPublic: true,  activeUsers: 3, roomTheme: "ocean",  hologramVideoUrl: "https://media.tenor.com/kgNBW3GoSRoAAAAM/beach-waves.gif",                    createdAt: new Date() },
+  { id: "sample-room-15", title: "Galaxy Talk 🚀",           language: "English",    level: "Advanced",     maxUsers: 5, ownerId: SAMPLE_USERS.kwame.id,    isPublic: true,  activeUsers: 5, roomTheme: "neon",   hologramVideoUrl: "https://media.tenor.com/8wKyfz4vbrEAAAAM/universe-galaxy.gif",                  createdAt: new Date() },
+  { id: "sample-room-16", title: "Enchanted Forest 🌿",      language: "German",     level: "Beginner",     maxUsers: 4, ownerId: SAMPLE_USERS.anya.id,     isPublic: true,  activeUsers: 3, roomTheme: "violet", hologramVideoUrl: "https://media.tenor.com/B17aERAGTLkAAAAM/wonderland-maplestory.gif",           createdAt: new Date() },
+  { id: "sample-room-17", title: "Golden Sunset 🌅",         language: "Portuguese", level: "Beginner",     maxUsers: 4, ownerId: SAMPLE_USERS.lucas.id,    isPublic: true,  activeUsers: 4, roomTheme: "sunset", hologramVideoUrl: "https://media.tenor.com/qbugoTsteFAAAAAM/sky-sunset.gif",                     createdAt: new Date() },
+  { id: "sample-room-11", title: "Cercle Privé 🇫🇷",         language: "French",     level: "Advanced",     maxUsers: 4, ownerId: SAMPLE_USERS.claire.id,   isPublic: false, activeUsers: 3, roomTheme: "violet", hologramVideoUrl: "https://media.tenor.com/_YtgyoxSCuMAAAAM/paris-lights.gif",                   createdAt: new Date() },
+  { id: "sample-room-10", title: "Elite English Lounge 🔒",  language: "English",    level: "Advanced",     maxUsers: 5, ownerId: SAMPLE_USERS.james.id,    isPublic: false, activeUsers: 4, roomTheme: "neon",   hologramVideoUrl: "https://media.tenor.com/PR2LoPQA0CMAAAAM/midnight-miami-miami.gif",            createdAt: new Date() },
+];
 
 export const BASE_SAMPLE_PARTICIPANTS: Record<string, User[]> = {
   "sample-room-1": [SAMPLE_USERS.sofia, SAMPLE_USERS.liam, SAMPLE_USERS.emma],
