@@ -2690,6 +2690,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [glTabStream, setGlTabStream] = useState<MediaStream | null>(null);
   const [glQuality, setGlQuality] = useState<"480p" | "720p" | "1080p">("720p");
   const glTabStreamRef = useRef<MediaStream | null>(null);
+  const glVideoRefPanel = useRef<HTMLVideoElement | null>(null);
+  const glVideoRefDialog = useRef<HTMLVideoElement | null>(null);
 
   const [readSearch, setReadSearch] = useState("");
   const [readBooks, setReadBooks] = useState<any[]>([]);
@@ -7182,7 +7184,29 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return () => clearInterval(t);
   }, [sidePanelTab, goLiveOpen, goLivePlatform, glVidPlaying]);
 
-  // glTabStream is set/cleared in startGoLive / stopGoLive — no polling needed.
+  // ── Go Live: wire tab-capture stream to preview video elements ───────────
+  // Using a useEffect (instead of inline ref callbacks) ensures srcObject is
+  // assigned exactly ONCE when glTabStream changes — not on every re-render.
+  // The duration ticker fires every second, causing a re-render each second;
+  // the old inline `ref={el => { el.srcObject = ...; el.play() }}` pattern
+  // was reassigning srcObject on each tick, causing the preview to flash
+  // black and briefly choking the MediaRecorder's encoder input (visible as
+  // corruption / colour shifts in YouTube Studio).
+  useEffect(() => {
+    const assignStream = (el: HTMLVideoElement | null) => {
+      if (!el) return;
+      if (glTabStream) {
+        if (el.srcObject !== glTabStream) {
+          el.srcObject = glTabStream;
+          el.play().catch(() => {});
+        }
+      } else {
+        el.srcObject = null;
+      }
+    };
+    assignStream(glVideoRefPanel.current);
+    assignStream(glVideoRefDialog.current);
+  }, [glTabStream]);
 
   // ── Go Live: direct browser-to-RTMP streaming ──────────────────────────
   const formatGlDuration = (secs: number) => {
@@ -7383,30 +7407,44 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
     glChunkFailRef.current = 0;
 
-    mr.ondataavailable = async (e) => {
+    // ── Serial upload queue ─────────────────────────────────────────────────
+    // ondataavailable fires every 250 ms. If each handler were async and ran
+    // concurrently, a slow network hop could let chunk N+1 arrive at the server
+    // before chunk N, delivering malformed WebM to FFmpeg's stdin — the root
+    // cause of the corruption / pixelation visible in YouTube Studio.
+    //
+    // We serialize by chaining each upload onto the previous one through a
+    // promise chain. The queue never blocks the MediaRecorder (the Blob is
+    // captured synchronously in the event); only the upload is serialized.
+    let uploadQueue: Promise<void> = Promise.resolve();
+
+    mr.ondataavailable = (e) => {
       if (!e.data.size) return;
-      try {
-        const buf = await e.data.arrayBuffer();
-        const res = await fetch(`/api/stream/${streamId}/chunk`, {
-          method: "POST", headers: { "Content-Type": "application/octet-stream" },
-          credentials: "include", body: buf,
-        });
-        if (res.status === 410 || res.status === 404) {
-          // FFmpeg died — grab the error message from the server and surface it
-          const body = await res.json().catch(() => ({})) as any;
-          const msg = body.exitError || body.message || "Stream disconnected — check your stream key and try again.";
-          crashStop(msg); return;
-        }
-        if (!res.ok) {
+      // Capture the Blob immediately (synchronous) before queuing the upload.
+      const blob = e.data;
+      uploadQueue = uploadQueue.then(async () => {
+        try {
+          const buf = await blob.arrayBuffer();
+          const res = await fetch(`/api/stream/${streamId}/chunk`, {
+            method: "POST", headers: { "Content-Type": "application/octet-stream" },
+            credentials: "include", body: buf,
+          });
+          if (res.status === 410 || res.status === 404) {
+            const body = await res.json().catch(() => ({})) as any;
+            const msg = body.exitError || body.message || "Stream disconnected — check your stream key and try again.";
+            crashStop(msg); return;
+          }
+          if (!res.ok) {
+            glChunkFailRef.current++;
+            if (glChunkFailRef.current >= 4) crashStop("Connection to streaming server lost after repeated errors.");
+          } else {
+            glChunkFailRef.current = 0;
+          }
+        } catch {
           glChunkFailRef.current++;
-          if (glChunkFailRef.current >= 4) crashStop("Connection to streaming server lost after repeated errors.");
-        } else {
-          glChunkFailRef.current = 0; // reset on success
+          if (glChunkFailRef.current >= 4) crashStop("Connection to streaming server lost.");
         }
-      } catch {
-        glChunkFailRef.current++;
-        if (glChunkFailRef.current >= 4) crashStop("Connection to streaming server lost.");
-      }
+      });
     };
 
     mr.onerror = (e) => { crashStop(`Recording error: ${(e as any)?.error?.message ?? "unknown"}`); };
@@ -12763,13 +12801,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           {/* ── Live stream preview — real-time video of the captured tab ── */}
           {(glStatus === "live" || glStatus === "connecting") && (
             <div className="rounded-xl overflow-hidden border border-white/[0.10] relative" style={{ aspectRatio: "16/9", background: "#000" }}>
-              {glTabStream ? (
-                <video
-                  ref={el => { if (el) { el.srcObject = glTabStream; el.play().catch(() => {}); } }}
-                  autoPlay muted playsInline
-                  className="w-full h-full object-contain"
-                />
-              ) : (
+              {/* Video is always mounted so glVideoRefPanel stays valid; hidden until stream is ready */}
+              <video
+                ref={glVideoRefPanel}
+                autoPlay muted playsInline
+                className="w-full h-full object-cover"
+                style={{ display: glTabStream ? "block" : "none" }}
+              />
+              {!glTabStream && (
                 <div className="w-full h-full flex items-center justify-center">
                   <Loader2 className="w-6 h-6 animate-spin text-white/40" />
                 </div>
@@ -13475,14 +13514,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           {/* ── Live stream preview ── */}
           {(glStatus === "live" || glStatus === "connecting") && (
             <div className="rounded-xl overflow-hidden border bg-black relative" style={{ aspectRatio: "16/9" }}>
-              {glTabStream ? (
-                <video
-                  ref={el => { if (el) { el.srcObject = glTabStream; el.play().catch(() => {}); } }}
-                  autoPlay muted playsInline
-                  className="w-full h-full object-contain"
-                  style={{ display: "block" }}
-                />
-              ) : (
+              {/* Video always mounted so glVideoRefDialog stays valid; hidden until stream is ready */}
+              <video
+                ref={glVideoRefDialog}
+                autoPlay muted playsInline
+                className="w-full h-full object-cover"
+                style={{ display: glTabStream ? "block" : "none" }}
+              />
+              {!glTabStream && (
                 <div className="w-full h-full flex items-center justify-center">
                   <Loader2 className="w-6 h-6 animate-spin text-white/40" />
                 </div>
