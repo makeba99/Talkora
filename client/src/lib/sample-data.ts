@@ -83,6 +83,20 @@ export const SAMPLE_ROOMS: Room[] = [
   { id: "sample-room-18", title: "Tropical Vibes 🌺",         language: "Chinese",  level: "Beginner",     maxUsers: 5, ownerId: SAMPLE_USERS.mei.id,     isPublic: true,  activeUsers: 4, roomTheme: "cherry", hologramVideoUrl: "https://media.tenor.com/Rj4yPVwmxb8AAAAM/good-morning-waterfall.gif",  createdAt: new Date() },
 ];
 
+export const PLACEHOLDER_ROOM: Room = {
+  id: "sample-room-13",
+  title: "Aurora Borealis 🌌",
+  language: "English",
+  level: "Intermediate",
+  maxUsers: 5,
+  ownerId: SAMPLE_USERS.aigerim.id,
+  isPublic: true,
+  activeUsers: 4,
+  roomTheme: "galaxy",
+  hologramVideoUrl: "https://media.tenor.com/nNqXEsp3f9cAAAAM/aurora-borealis-northern-lights.gif",
+  createdAt: new Date(),
+};
+
 export const BASE_SAMPLE_PARTICIPANTS: Record<string, User[]> = {
   "sample-room-1": [SAMPLE_USERS.sofia, SAMPLE_USERS.liam, SAMPLE_USERS.emma],
   "sample-room-2": [SAMPLE_USERS.carlos, SAMPLE_USERS.aigerim],

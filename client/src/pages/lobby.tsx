@@ -76,6 +76,7 @@ import { Button } from "@/components/ui/button";
 import {
   SAMPLE_USERS,
   SAMPLE_ROOMS,
+  PLACEHOLDER_ROOM,
   BASE_SAMPLE_PARTICIPANTS,
   BASE_SAMPLE_VOTE_COUNTS,
   SAMPLE_FOLLOWER_COUNTS,
@@ -842,7 +843,7 @@ export default function Lobby() {
   const otherRealRooms = fetchedRooms.filter(r => r.ownerId !== user?.id && (r.activeUsers ?? 0) > 0);
   const hasRealRooms = fetchedRooms.length > 0;
   const rooms = useMemo(
-    () => hasRealRooms ? [...userOwnedRooms, ...otherRealRooms] : [...SAMPLE_ROOMS],
+    () => hasRealRooms ? [...userOwnedRooms, ...otherRealRooms, PLACEHOLDER_ROOM] : [...SAMPLE_ROOMS],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [fetchedRooms, user?.id, hasRealRooms],
   );
