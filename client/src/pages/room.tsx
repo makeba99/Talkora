@@ -160,6 +160,22 @@ export default function RoomPage() {
     );
   }
 
+  // While the tab-guard is still reading localStorage (one React cycle),
+  // show a lightweight spinner instead of mounting VoiceRoom prematurely.
+  // Mounting VoiceRoom before we know the guard status can trigger WebRTC
+  // and socket joins that need to be immediately torn down, and — on slower
+  // devices — a brief double-join flicker that looks like a crash.
+  if (tabGuard === "checking") {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="space-y-4 w-64">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+        </div>
+      </div>
+    );
+  }
+
   if (tabGuard === "duplicate") {
     return (
       <div className="flex-1 flex items-center justify-center">

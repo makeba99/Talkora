@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, lazy, Suspense } from "react";
+import { useEffect, useState, useRef, lazy, Suspense, Component, type ReactNode } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -44,6 +44,102 @@ const UpdateAvailableToast = lazy(() =>
 const PushPromptBanner = lazy(() =>
   import("@/components/push-prompt-banner").then((m) => ({ default: m.PushPromptBanner }))
 );
+
+// ── Global error boundary ──────────────────────────────────────────────────
+// Catches two categories of errors that previously caused a total blank screen:
+//
+// 1. ChunkLoadError — happens in production when the app is redeployed and
+//    a user on the old page tries to lazy-load a chunk whose filename changed.
+//    Fix: auto-reload once. The fresh page fetches the new chunks correctly.
+//    We flag the reload in sessionStorage so we don't loop if the chunk is
+//    genuinely missing on the new deploy.
+//
+// 2. Any other React render error — shows a friendly "Something went wrong"
+//    UI with a manual Reload button instead of a blank void.
+class AppErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null; reloading: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null, reloading: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error) {
+    const isChunkError =
+      error.name === "ChunkLoadError" ||
+      /loading chunk \d+ failed/i.test(error.message) ||
+      /dynamically imported module/i.test(error.message) ||
+      /failed to fetch dynamically/i.test(error.message);
+
+    if (isChunkError) {
+      const alreadyRetried = sessionStorage.getItem("vx_chunk_retry") === "1";
+      if (!alreadyRetried) {
+        sessionStorage.setItem("vx_chunk_retry", "1");
+        this.setState({ reloading: true });
+        window.location.reload();
+        return;
+      }
+    }
+    console.error("[AppErrorBoundary]", error);
+  }
+
+  render() {
+    if (this.state.reloading) return null;
+    if (this.state.error) {
+      return (
+        <div
+          style={{
+            height: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 16,
+            padding: 24,
+            background: "hsl(var(--background))",
+            color: "hsl(var(--foreground))",
+            fontFamily: "system-ui, sans-serif",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: 40 }}>⚠️</div>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>
+              Something went wrong
+            </div>
+            <div style={{ fontSize: 14, opacity: 0.65, marginBottom: 20, maxWidth: 360 }}>
+              The page encountered an unexpected error. Reloading usually fixes it.
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem("vx_chunk_retry");
+              window.location.reload();
+            }}
+            style={{
+              padding: "10px 24px",
+              borderRadius: 8,
+              border: "none",
+              background: "hsl(var(--primary))",
+              color: "hsl(var(--primary-foreground))",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Reload page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function LobbyShell() {
   return (
@@ -309,18 +405,20 @@ function ConditionalPushBanner() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ThemeProvider>
-          <RouteTracker />
-          <PreRenderDismiss />
-          <DeferredOverlays />
-          <AppContent />
-          <DeferredToasts />
-          <ConditionalPushBanner />
-        </ThemeProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ThemeProvider>
+            <RouteTracker />
+            <PreRenderDismiss />
+            <DeferredOverlays />
+            <AppContent />
+            <DeferredToasts />
+            <ConditionalPushBanner />
+          </ThemeProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }
 
