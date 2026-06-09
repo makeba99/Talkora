@@ -3257,6 +3257,130 @@ export async function registerRoutes(
         captionUrl = ranked[0]?.url || null;
       }
 
+      // ── Strategy C: Invidious public instances (completely different IPs) ────────
+      // When YouTube blocks our IP for all direct strategies, Invidious instances
+      // act as proxies — they each cache/fetch from YouTube using their own IPs.
+      // We race multiple instances and use the first one that returns captions.
+      if (!captionUrl) {
+        const INVIDIOUS_INSTANCES = [
+          "https://iv.duti.dev",
+          "https://invidious.privacyredirect.com",
+          "https://inv.nadeko.net",
+          "https://yt.cdaut.de",
+          "https://invidious.nerdvpn.de",
+        ];
+
+        // Parse WebVTT or SRV3 caption text into plain segments
+        const parseVtt = (vtt: string): string => {
+          const lines = vtt.split("\n");
+          const texts: string[] = [];
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith("WEBVTT") || trimmed.startsWith("NOTE") || /^\d{2}:\d{2}/.test(trimmed) || /-->/.test(trimmed)) continue;
+            // Strip VTT tags like <c>, <00:00:00.000>
+            const clean = trimmed.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim();
+            if (clean) texts.push(clean);
+          }
+          // Deduplicate consecutive identical lines (VTT often has rolling duplicates)
+          const deduped: string[] = [];
+          for (const t of texts) {
+            if (deduped.at(-1) !== t) deduped.push(t);
+          }
+          return segmentsToArticle(deduped.map(t => ({ text: t })));
+        };
+
+        const tryInvidious = async (base: string): Promise<string | null> => {
+          try {
+            const listRes = await timedFetch(`${base}/api/v1/captions/${videoId}`, {
+              headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
+            }, 8000);
+            if (!listRes.ok) return null;
+            const listData: any = await listRes.json();
+            const tracks: Array<{ label: string; languageCode: string; url: string }> = listData?.captions || [];
+            if (!tracks.length) return null;
+            // Prefer manual EN > any EN > any
+            const manual = tracks.filter(t => !t.label.toLowerCase().includes("auto"));
+            const pool = manual.length > 0 ? manual : tracks;
+            const enTrack = pool.find(t => t.languageCode === "en") || pool.find(t => t.languageCode?.startsWith("en")) || pool[0];
+            if (!enTrack) return null;
+            // enTrack.url is a relative path like /api/v1/captions/id?label=...
+            const capUrl = enTrack.url.startsWith("http") ? enTrack.url : `${base}${enTrack.url}`;
+            const capRes = await timedFetch(capUrl, {
+              headers: { "User-Agent": "Mozilla/5.0", "Accept": "*/*" },
+            }, 10000);
+            if (!capRes.ok) return null;
+            const capText = await capRes.text();
+            if (!capText || capText.length < 20) return null;
+            const text = parseVtt(capText);
+            return text && text.length >= 10 ? text : null;
+          } catch { return null; }
+        };
+
+        // Race all instances — first non-null result wins
+        const invResults = await Promise.allSettled(
+          INVIDIOUS_INSTANCES.map(inst => tryInvidious(inst))
+        );
+        for (const r of invResults) {
+          if (r.status === "fulfilled" && r.value) {
+            title = await fetchTitle();
+            _ytArticleCache.set(videoId, { ts: Date.now(), title, text: r.value, thumbnailUrl });
+            return res.json({ title, text: r.value, thumbnailUrl });
+          }
+        }
+      }
+
+      // ── Strategy D: Legacy direct timedtext API ───────────────────────────────
+      // YouTube's older /api/timedtext endpoint predates InnerTube and sometimes
+      // bypasses the same IP restrictions. Works best for older/popular videos.
+      if (!captionUrl) {
+        for (const fmt of ["json3", "srv3", "vtt"]) {
+          try {
+            const dtRes = await timedFetch(
+              `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=${fmt}&name=English`,
+              { headers: YT_HEADERS }, 10000
+            );
+            if (dtRes.ok) {
+              const raw = await dtRes.text();
+              if (raw && raw.length > 50) {
+                let text = "";
+                if (fmt === "vtt") {
+                  // reuse parseVtt inline
+                  const lines = raw.split("\n");
+                  const txts: string[] = [];
+                  for (const line of lines) {
+                    const tr = line.trim();
+                    if (!tr || tr.startsWith("WEBVTT") || /-->/.test(tr) || /^\d{2}:\d{2}/.test(tr)) continue;
+                    const cl = tr.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim();
+                    if (cl) txts.push(cl);
+                  }
+                  const deduped: string[] = [];
+                  for (const t of txts) { if (deduped.at(-1) !== t) deduped.push(t); }
+                  text = segmentsToArticle(deduped.map(t => ({ text: t })));
+                } else {
+                  const segs: Array<{ text: string }> = [];
+                  for (const m of raw.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)) {
+                    const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim();
+                    if (t) segs.push({ text: t });
+                  }
+                  if (!segs.length) {
+                    for (const m of raw.matchAll(/<text[^>]*>([^<]*)<\/text>/g)) {
+                      const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim();
+                      if (t) segs.push({ text: t });
+                    }
+                  }
+                  text = segmentsToArticle(segs);
+                }
+                if (text && text.length >= 10) {
+                  title = await fetchTitle();
+                  _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+                  return res.json({ title, text, thumbnailUrl });
+                }
+              }
+            }
+          } catch { /* try next format */ }
+        }
+      }
+
       if (!captionUrl) {
         return res.status(422).json({
           message: "YouTube is restricting transcript access for this video from our server. Try a different video — ones with manually uploaded English subtitles (CC icon in YouTube) tend to work best."
