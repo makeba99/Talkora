@@ -184,6 +184,10 @@ const roomDjMoveStyle = new Map<string, string>();
 // both firing almost simultaneously on first page load.
 const joiningNow = new Set<string>();
 
+// Room-level bans ("ice") — host can permanently ban a user from a specific room.
+// Keyed by roomId → Set of banned userIds. Cleared when the room is fully deleted.
+const roomBannedUsers = new Map<string, Set<string>>();
+
 // ── Follower room-join push notifications ──────────────────────────────────
 // Cooldown prevents a follower from receiving more than one push per joiner
 // within a 15-minute window (handles reconnects, room hops, etc.).
@@ -2766,7 +2770,7 @@ export async function registerRoutes(
      readable article. Uses youtube-transcript as the primary strategy with
      robust page-scraping fallbacks. */
   const _ytArticleCache = new Map<string, { ts: number; title: string; text: string; thumbnailUrl?: string }>();
-  const YT_ARTICLE_TTL = 30 * 60 * 1000; // 30 min
+  const YT_ARTICLE_TTL = 2 * 60 * 60 * 1000; // 2 hours (outlasts server cool-down periods)
 
   // ── YouTube cookie jar ────────────────────────────────────────────────────
   // YouTube detects datacenter IPs and hides caption tracks unless requests
@@ -2992,6 +2996,155 @@ export async function registerRoutes(
           }
         }
       } catch { /* fall through to next strategy */ }
+
+      // ── Strategy A1: TV_EMBEDDED InnerTube (second best bypass from server IPs) ─
+      // The TVHTML5_SIMPLY_EMBEDDED_PLAYER client is whitelisted for embedded
+      // playback and often returns caption tracks even when ANDROID_VR doesn't.
+      try {
+        const tvBody = {
+          context: {
+            client: {
+              clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
+              clientVersion: "2.0",
+              hl: "en",
+              gl: "US",
+              timeZone: "UTC",
+              utcOffsetMinutes: 0,
+            },
+            thirdParty: { embedUrl: "https://www.youtube.com/" },
+          },
+          videoId,
+          racyCheckOk: true,
+          contentCheckOk: true,
+        };
+        const tvRes = await timedFetch(
+          "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "User-Agent": "Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/6.0 TV Safari/538.1",
+              "X-YouTube-Client-Name": "85",
+              "X-YouTube-Client-Version": "2.0",
+            },
+            body: JSON.stringify(tvBody),
+          }, 12000
+        );
+        if (tvRes.ok) {
+          const tvData: any = await tvRes.json();
+          if (tvData?.playabilityStatus?.status === "OK") {
+            const tracks: any[] = tvData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+            if (tracks.length > 0) {
+              const manual = tracks.filter((t: any) => !t.kind || t.kind !== "asr");
+              const pool = manual.length > 0 ? manual : tracks;
+              const enTrack = pool.find((t: any) => t.languageCode === "en") || pool.find((t: any) => t.languageCode?.startsWith("en")) || pool[0];
+              if (enTrack?.baseUrl) {
+                const capRes = await timedFetch(`${enTrack.baseUrl}&fmt=json3`, {}, 10000);
+                if (capRes.ok) {
+                  const raw = await capRes.text();
+                  const parseTimedtextXml = (xml: string): Array<{ text: string }> => {
+                    const segs: Array<{ text: string }> = [];
+                    for (const m of xml.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)) {
+                      const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+                      if (t) segs.push({ text: t });
+                    }
+                    if (segs.length === 0) {
+                      for (const m of xml.matchAll(/<text[^>]*>([^<]*)<\/text>/g)) {
+                        const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
+                        if (t) segs.push({ text: t });
+                      }
+                    }
+                    return segs;
+                  };
+                  const xmlSegs = parseTimedtextXml(raw);
+                  const text = segmentsToArticle(xmlSegs);
+                  if (text && text.length >= 10) {
+                    title = await fetchTitle();
+                    _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+                    return res.json({ title, text, thumbnailUrl });
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch { /* fall through */ }
+
+      // ── Strategy A2: IOS InnerTube (third bypass option from server IPs) ──────
+      // The iOS YouTube client authenticates differently and may bypass rate limits
+      // that affect the Android VR and TV clients on repeated requests.
+      try {
+        const iosBody = {
+          context: {
+            client: {
+              clientName: "IOS",
+              clientVersion: "19.09.3",
+              deviceMake: "Apple",
+              deviceModel: "iPhone16,2",
+              osName: "iPhone",
+              osVersion: "17.5.1.21F90",
+              hl: "en",
+              gl: "US",
+              timeZone: "UTC",
+              utcOffsetMinutes: 0,
+            },
+          },
+          videoId,
+          racyCheckOk: true,
+          contentCheckOk: true,
+        };
+        const iosRes = await timedFetch(
+          "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "User-Agent": "com.google.ios.youtube/19.09.3 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X)",
+              "X-YouTube-Client-Name": "5",
+              "X-YouTube-Client-Version": "19.09.3",
+            },
+            body: JSON.stringify(iosBody),
+          }, 12000
+        );
+        if (iosRes.ok) {
+          const iosData: any = await iosRes.json();
+          if (iosData?.playabilityStatus?.status === "OK") {
+            const tracks: any[] = iosData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+            if (tracks.length > 0) {
+              const manual = tracks.filter((t: any) => !t.kind || t.kind !== "asr");
+              const pool = manual.length > 0 ? manual : tracks;
+              const enTrack = pool.find((t: any) => t.languageCode === "en") || pool.find((t: any) => t.languageCode?.startsWith("en")) || pool[0];
+              if (enTrack?.baseUrl) {
+                const capRes = await timedFetch(`${enTrack.baseUrl}&fmt=json3`, {}, 10000);
+                if (capRes.ok) {
+                  const raw = await capRes.text();
+                  const parseTimedtextXml = (xml: string): Array<{ text: string }> => {
+                    const segs: Array<{ text: string }> = [];
+                    for (const m of xml.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)) {
+                      const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+                      if (t) segs.push({ text: t });
+                    }
+                    if (segs.length === 0) {
+                      for (const m of xml.matchAll(/<text[^>]*>([^<]*)<\/text>/g)) {
+                        const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
+                        if (t) segs.push({ text: t });
+                      }
+                    }
+                    return segs;
+                  };
+                  const xmlSegs = parseTimedtextXml(raw);
+                  const text = segmentsToArticle(xmlSegs);
+                  if (text && text.length >= 10) {
+                    title = await fetchTitle();
+                    _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+                    return res.json({ title, text, thumbnailUrl });
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch { /* fall through */ }
 
       // ── Strategy A: youtube-transcript npm package with cookie-enriched fetch ─
       // YouTube detects datacenter IPs and hides caption tracks for anonymous
@@ -3622,6 +3775,7 @@ export async function registerRoutes(
       roomMuteStatus.delete(roomId);
       roomKnockGrants.delete(roomId);
       roomPinnedMessages.delete(roomId);
+      roomBannedUsers.delete(roomId);
       startRoomDeleteTimer(roomId);
     } else {
       roomMuteStatus.get(roomId)?.delete(userId);
@@ -6884,6 +7038,12 @@ export async function registerRoutes(
       const room = await storage.getRoom(roomId);
       if (!room) return;
 
+      // Room-level ban check: host may have "iced" this user from this specific room
+      if (roomBannedUsers.get(roomId)?.has(userId)) {
+        socket.emit("room:banned", { roomId });
+        return;
+      }
+
       const existingRoomId = userCurrentRoom.get(userId);
       const previousSocketId = userSockets.get(userId);
       const previousSocket = previousSocketId ? io.sockets.sockets.get(previousSocketId) : undefined;
@@ -7241,6 +7401,44 @@ export async function registerRoutes(
         await storage.updateRoomActiveUsers(data.roomId, participants.length);
         io.to(data.roomId).emit("room:user-left", { userId: data.targetUserId, participants, displayName: kickedDisplayName });
         io.emit("room:participants-update", { roomId: data.roomId, participants });
+      }
+    });
+
+    // room:ice — same as kick but also adds the user to the room's ban list so they
+    // cannot rejoin this specific room for as long as the room exists in memory.
+    socket.on("room:ice", async (data: { roomId: string; targetUserId: string; icedBy: string }) => {
+      const room = await storage.getRoom(data.roomId);
+      if (!room) return;
+      const roles = roomRoles.get(data.roomId);
+      const icerRole = roles?.get(data.icedBy);
+      if (room.ownerId !== data.icedBy && icerRole !== "co-owner") return;
+
+      // Add to the room's ban list BEFORE kicking so a fast rejoin is blocked
+      if (!roomBannedUsers.has(data.roomId)) roomBannedUsers.set(data.roomId, new Set());
+      roomBannedUsers.get(data.roomId)!.add(data.targetUserId);
+
+      userCurrentRoom.delete(data.targetUserId);
+
+      const targetSocketId = userSockets.get(data.targetUserId);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("room:kicked", { roomId: data.roomId, banned: true });
+        const targetSocket = io.sockets.sockets.get(targetSocketId);
+        if (targetSocket) {
+          targetSocket.leave(data.roomId);
+        }
+      }
+
+      if (roomParticipants.has(data.roomId)) {
+        const icedUser = roomParticipants.get(data.roomId)!.get(data.targetUserId);
+        const icedDisplayName = icedUser ? getDisplayName(icedUser) : null;
+        roomParticipants.get(data.roomId)!.delete(data.targetUserId);
+        const participants = Array.from(roomParticipants.get(data.roomId)!.values());
+        await storage.updateRoomActiveUsers(data.roomId, participants.length);
+        io.to(data.roomId).emit("room:user-left", { userId: data.targetUserId, participants, displayName: icedDisplayName });
+        io.emit("room:participants-update", { roomId: data.roomId, participants });
+        if (icedDisplayName) {
+          emitSystemChatMsg(data.roomId, `🧊 ${icedDisplayName} was iced from this room.`);
+        }
       }
     });
 

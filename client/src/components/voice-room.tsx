@@ -628,6 +628,8 @@ function ParticipantCard({
   onForceMute,
   onForceMuteVideo,
   onKick,
+  onIce,
+  isIced,
   onBlock,
   onReport,
   onClearChatGlobal,
@@ -934,8 +936,19 @@ function ParticipantCard({
                <Button variant="outline" size="sm" onClick={() => onForceMuteVideo && onForceMuteVideo(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
                   <VideoOff className="w-3.5 h-3.5 mr-1" /> Mute Video
                </Button>
-               <Button variant="outline" size="sm" onClick={() => onKick && onKick(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
+               <Button variant="outline" size="sm" onClick={() => onKick && onKick(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1" data-testid={`button-kick-${p.id}`}>
                   <UserX className="w-3.5 h-3.5 mr-1" /> Kick
+               </Button>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => !isIced && onIce && onIce(p.id)}
+                 disabled={!!isIced}
+                 title={isIced ? "User is banned from this room" : "Ice (permanently ban from this room)"}
+                 className={`h-8 text-xs px-1 transition-all ${isIced ? "border-sky-700/50 bg-sky-950/30 text-sky-400/60 cursor-not-allowed" : "border-border bg-transparent hover:border-sky-700/60 hover:bg-sky-950/30 hover:text-sky-300"}`}
+                 data-testid={`button-ice-${p.id}`}
+               >
+                  <span className="mr-1 text-[11px]">🧊</span> {isIced ? "Iced" : "Ice"}
                </Button>
                <Button variant="outline" size="sm" onClick={() => onClearChatGlobal && onClearChatGlobal(true)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
                   <Trash2 className="w-3.5 h-3.5 mr-1" /> Clear Chat
@@ -2231,6 +2244,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // raise-hand button in the bottom control row).
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
   const [voicePickerOpen, setVoicePickerOpen] = useState(false);
+  // track ice (ban) list locally for UI feedback
+  const [icedUserIds, setIcedUserIds] = useState<Set<string>>(new Set());
   const [selectedVoicePresetId, setSelectedVoicePresetId] = useState<VoicePresetId>(getSavedVoicePresetId);
   const selectedVoicePresetIdRef = useRef<VoicePresetId>(getSavedVoicePresetId());
   const rawMicStreamRef = useRef<MediaStream | null>(null);
@@ -4312,9 +4327,24 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Chat restricted", description: data.reason, variant: "destructive", duration: 3000 });
     });
 
-    socket.on("room:kicked", (data: { roomId: string }) => {
+    socket.on("room:kicked", (data: { roomId: string; banned?: boolean }) => {
       if (data.roomId === room.id) {
-        toast({ title: "You have been removed from this room", variant: "destructive" });
+        toast({
+          title: data.banned ? "🧊 You have been iced from this room" : "You have been removed from this room",
+          description: data.banned ? "The host has permanently banned you from this room." : undefined,
+          variant: "destructive",
+        });
+        handleLeave();
+      }
+    });
+
+    socket.on("room:banned", (data: { roomId: string }) => {
+      if (data.roomId === room.id) {
+        toast({
+          title: "🧊 You are banned from this room",
+          description: "The host has blocked you from rejoining this room.",
+          variant: "destructive",
+        });
         handleLeave();
       }
     });
@@ -5019,6 +5049,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:video-force-off");
       socket.off("room:chat-blocked");
       socket.off("room:kicked");
+      socket.off("room:banned");
       socket.off("room:host-deleted");
       socket.off("room:joined-another-room");
       socket.off("room:duplicate-tab");
@@ -6949,6 +6980,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const handleKick = (targetUserId: string) => {
     socket?.emit("room:kick", { roomId: room.id, targetUserId, kickedBy: user?.id });
+  };
+
+  const handleIce = (targetUserId: string) => {
+    socket?.emit("room:ice", { roomId: room.id, targetUserId, icedBy: user?.id });
+    setIcedUserIds(prev => new Set(prev).add(targetUserId));
   };
 
   const handleForceMute = (targetUserId: string) => {
@@ -16363,6 +16399,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       onForceMute={handleForceMute}
                       onForceMuteVideo={handleForceMuteVideo}
                       onKick={handleKick}
+                      onIce={handleIce}
+                      isIced={icedUserIds.has(p.id)}
                       onBlock={handleBlock}
                       onReport={handleReport}
                       onClearChatGlobal={handleClearChat}
