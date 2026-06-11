@@ -9,6 +9,7 @@ import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
 import path from "path";
 import fs from "fs";
+import { execFile } from "child_process";
 import nodemailer from "nodemailer";
 import webpush from "web-push";
 import { externalCache } from "./cache";
@@ -2892,6 +2893,7 @@ export async function registerRoutes(
     if (cached && Date.now() - cached.ts < YT_ARTICLE_TTL) {
       return res.json({ title: cached.title, text: cached.text, thumbnailUrl: cached.thumbnailUrl });
     }
+    console.log(`[yt-article] Fetching transcript for ${videoId}`);
 
     let title = `YouTube Video (${videoId})`;
     const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
@@ -2950,6 +2952,7 @@ export async function registerRoutes(
         );
         if (vrRes.ok) {
           const vrData: any = await vrRes.json();
+          console.log(`[yt-article] A0 status=${vrData?.playabilityStatus?.status} tracks=${vrData?.captions?.playerCaptionsTracklistRenderer?.captionTracks?.length ?? 0}`);
           if (vrData?.playabilityStatus?.status === "OK") {
             const tracks: any[] = vrData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
             if (tracks.length > 0) {
@@ -3184,6 +3187,66 @@ export async function registerRoutes(
         } catch { /* try next option */ }
       }
 
+      // ── Strategy E: yt-dlp subprocess (most reliable — updates bypass techniques constantly) ──
+      // yt-dlp is installed as a system dependency and handles all YouTube IP/auth
+      // restrictions internally. It writes a .vtt subtitle file which we read and parse.
+      try {
+        const ytDlpPath = "yt-dlp";
+        const tmpBase = `/tmp/vx-yt-${videoId}-${Date.now()}`;
+        const ytDlpText = await new Promise<string | null>((resolve) => {
+          execFile(ytDlpPath, [
+            "--skip-download",
+            "--write-sub",
+            "--write-auto-sub",
+            "--sub-lang", "en",
+            "--convert-subs", "vtt",
+            "--no-playlist",
+            "--no-part",
+            "--quiet",
+            "-o", `${tmpBase}`,
+            `https://www.youtube.com/watch?v=${videoId}`,
+          ], { timeout: 30000 }, (err, stdout, stderr) => {
+            if (err) { console.warn(`[yt-article] yt-dlp error: ${err.message}`); resolve(null); return; }
+            // yt-dlp writes file like /tmp/vx-yt-{id}.en.vtt or .en-XXXX.vtt
+            try {
+              const candidates = fs.readdirSync("/tmp").filter(f => f.startsWith(`vx-yt-${videoId}`) && f.endsWith(".vtt"));
+              if (!candidates.length) { console.warn("[yt-article] yt-dlp: no vtt file produced"); resolve(null); return; }
+              const vtt = fs.readFileSync(`/tmp/${candidates[0]}`, "utf8");
+              // Clean up all temp files for this run
+              for (const f of fs.readdirSync("/tmp").filter(ff => ff.startsWith(`vx-yt-${videoId}`))) {
+                try { fs.unlinkSync(`/tmp/${f}`); } catch {}
+              }
+              const lines = vtt.split("\n");
+              const texts: string[] = [];
+              for (const line of lines) {
+                const tr = line.trim();
+                if (!tr || tr.startsWith("WEBVTT") || tr.startsWith("NOTE") || tr.startsWith("Kind:") || tr.startsWith("Language:") || /-->/.test(tr) || /^\d{2}:\d{2}/.test(tr) || /^[A-Za-z-]+:/.test(tr)) continue;
+                const cl = tr.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
+                if (cl) texts.push(cl);
+              }
+              const deduped: string[] = [];
+              for (const t of texts) { if (deduped.at(-1) !== t) deduped.push(t); }
+              const text = segmentsToArticle(deduped.map(t => ({ text: t })));
+              if (text && text.length >= 10) {
+                console.log(`[yt-article] yt-dlp SUCCESS ${text.length}ch`);
+                resolve(text);
+              } else {
+                console.warn("[yt-article] yt-dlp: vtt parsed empty");
+                resolve(null);
+              }
+            } catch (readErr: any) {
+              console.warn(`[yt-article] yt-dlp read err: ${readErr?.message}`);
+              resolve(null);
+            }
+          });
+        });
+        if (ytDlpText) {
+          title = await fetchTitle();
+          _ytArticleCache.set(videoId, { ts: Date.now(), title, text: ytDlpText, thumbnailUrl });
+          return res.json({ title, text: ytDlpText, thumbnailUrl });
+        }
+      } catch (e: any) { console.warn(`[yt-article] yt-dlp outer err: ${e?.message}`); }
+
       // ── Strategy B: Scrape the watch page with cookies + scan for timedtext URLs
       // Cookies obtained in Strategy A are reused here to get the browser-like
       // page response that includes captionTracks in ytInitialPlayerResponse.
@@ -3310,22 +3373,25 @@ export async function registerRoutes(
             const listRes = await timedFetch(`${base}/api/v1/captions/${videoId}`, {
               headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
             }, 7000);
-            if (!listRes.ok) return null;
+            if (!listRes.ok) { console.warn(`[yt-article] Invidious ${base} list ${listRes.status}`); return null; }
             const listData: any = await listRes.json();
             const tracks: Array<{ label: string; languageCode: string; url: string }> = listData?.captions || [];
-            if (!tracks.length) return null;
+            if (!tracks.length) { console.warn(`[yt-article] Invidious ${base} 0 tracks`); return null; }
             const manual = tracks.filter(t => !t.label.toLowerCase().includes("auto"));
             const pool = manual.length > 0 ? manual : tracks;
             const enTrack = pool.find(t => t.languageCode === "en") || pool.find(t => t.languageCode?.startsWith("en")) || pool[0];
             if (!enTrack) return null;
-            const capUrl = enTrack.url.startsWith("http") ? enTrack.url : `${base}${enTrack.url}`;
+            // Always route through the Invidious instance (never hit YouTube directly)
+            const rawUrl = enTrack.url.startsWith("http") ? enTrack.url : `${base}${enTrack.url}`;
+            const capUrl = rawUrl.includes("youtube.com") ? `${base}/api/v1/captions/${videoId}?label=${encodeURIComponent(enTrack.label)}` : rawUrl;
             const capRes = await timedFetch(capUrl, { headers: { "User-Agent": "Mozilla/5.0" } }, 9000);
-            if (!capRes.ok) return null;
+            if (!capRes.ok) { console.warn(`[yt-article] Invidious ${base} cap ${capRes.status}`); return null; }
             const capText = await capRes.text();
             if (!capText || capText.length < 20) return null;
             const text = parseVtt(capText);
+            if (text && text.length >= 10) console.log(`[yt-article] Invidious ${base} SUCCESS ${text.length}ch`);
             return text && text.length >= 10 ? text : null;
-          } catch { return null; }
+          } catch (e: any) { console.warn(`[yt-article] Invidious ${base} err: ${e?.message}`); return null; }
         };
 
         // ── C2: Piped (separate proxy network, different IPs from Invidious) ──
@@ -3340,43 +3406,49 @@ export async function registerRoutes(
 
         const tryPiped = async (base: string): Promise<string | null> => {
           try {
-            // Piped returns transcript segments directly from /streams endpoint
             const streamRes = await timedFetch(`${base}/streams/${videoId}`, {
               headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
             }, 8000);
-            if (!streamRes.ok) return null;
+            if (!streamRes.ok) { console.warn(`[yt-article] Piped ${base} streams ${streamRes.status}`); return null; }
             const streamData: any = await streamRes.json();
             const subtitles: Array<{ url: string; mimeType: string; name: string; code: string; autoGenerated: boolean }> =
               streamData?.subtitles || [];
-            if (!subtitles.length) return null;
+            if (!subtitles.length) { console.warn(`[yt-article] Piped ${base} 0 subtitles`); return null; }
             // Prefer non-auto English first, then any English, then any
             const manual = subtitles.filter(s => !s.autoGenerated);
             const pool = manual.length > 0 ? manual : subtitles;
             const enSub = pool.find(s => s.code === "en") || pool.find(s => s.code?.startsWith("en")) || pool[0];
             if (!enSub?.url) return null;
+            // Skip direct YouTube URLs — they're blocked from Replit's IP
+            // Piped proxies through its own CDN nodes (e.g. pipedproxy-*.kavin.rocks)
+            if (enSub.url.includes("youtube.com") || enSub.url.includes("googlevideo.com")) {
+              console.warn(`[yt-article] Piped ${base} subtitle URL is direct YT — skipping`);
+              return null;
+            }
             const capRes = await timedFetch(enSub.url, { headers: { "User-Agent": "Mozilla/5.0" } }, 9000);
-            if (!capRes.ok) return null;
+            if (!capRes.ok) { console.warn(`[yt-article] Piped ${base} cap ${capRes.status}`); return null; }
             const capText = await capRes.text();
             if (!capText || capText.length < 20) return null;
-            // Piped returns VTT or XML — parseVtt handles both
             const text = capText.includes("</text>") || capText.includes("</p>")
               ? segmentsToArticle([...capText.matchAll(/<(?:text|p)[^>]*>([^<]*)<\/(?:text|p)>/g)].map(m => ({
                   text: m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim()
                 })).filter(s => s.text))
               : parseVtt(capText);
+            if (text && text.length >= 10) console.log(`[yt-article] Piped ${base} SUCCESS ${text.length}ch`);
             return text && text.length >= 10 ? text : null;
-          } catch { return null; }
+          } catch (e: any) { console.warn(`[yt-article] Piped ${base} err: ${e?.message}`); return null; }
         };
 
-        // Fetch live Invidious instances while simultaneously trying Piped — race everything
-        const [invInstances] = await Promise.all([getInvidiousInstances()]);
+        // Fetch live Invidious instances, then race all proxy endpoints in parallel
+        const invInstances = await getInvidiousInstances();
+        console.log(`[yt-article] C: trying ${invInstances.length} Invidious + ${PIPED_INSTANCES.length} Piped instances`);
 
         const allProxyTasks = [
           ...invInstances.map(inst => tryInvidious(inst)),
           ...PIPED_INSTANCES.map(inst => tryPiped(inst)),
         ];
 
-        // Use a custom race that resolves on first non-null result
+        // Race — first non-null result wins
         const proxyText = await new Promise<string | null>((resolve) => {
           let settled = 0;
           const total = allProxyTasks.length;
@@ -3398,6 +3470,7 @@ export async function registerRoutes(
           _ytArticleCache.set(videoId, { ts: Date.now(), title, text: proxyText, thumbnailUrl });
           return res.json({ title, text: proxyText, thumbnailUrl });
         }
+        console.warn(`[yt-article] C: all proxy instances failed for ${videoId}`);
       }
 
       // ── Strategy D: Legacy direct timedtext API ───────────────────────────────
@@ -3453,6 +3526,7 @@ export async function registerRoutes(
       }
 
       if (!captionUrl) {
+        console.error(`[yt-article] ALL strategies failed for ${videoId}`);
         return res.status(422).json({
           message: "YouTube is restricting transcript access for this video from our server. Try a different video — ones with manually uploaded English subtitles (CC icon in YouTube) tend to work best."
         });
