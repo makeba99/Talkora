@@ -2770,7 +2770,7 @@ export async function registerRoutes(
      readable article. Uses youtube-transcript as the primary strategy with
      robust page-scraping fallbacks. */
   const _ytArticleCache = new Map<string, { ts: number; title: string; text: string; thumbnailUrl?: string }>();
-  const YT_ARTICLE_TTL = 2 * 60 * 60 * 1000; // 2 hours (outlasts server cool-down periods)
+  const YT_ARTICLE_TTL = 24 * 60 * 60 * 1000; // 24 hours — transcripts are static, no need to re-fetch daily
 
   // ── YouTube cookie jar ────────────────────────────────────────────────────
   // YouTube detects datacenter IPs and hides caption tracks unless requests
@@ -3257,57 +3257,69 @@ export async function registerRoutes(
         captionUrl = ranked[0]?.url || null;
       }
 
-      // ── Strategy C: Invidious public instances (completely different IPs) ────────
-      // When YouTube blocks our IP for all direct strategies, Invidious instances
-      // act as proxies — they each cache/fetch from YouTube using their own IPs.
-      // We race multiple instances and use the first one that returns captions.
+      // ── Strategy C: Invidious + Piped proxy networks (completely different IPs) ──
+      // YouTube's IP block only affects our Replit datacenter IP. Invidious and Piped
+      // are open YouTube frontends running on diverse residential/VPS IPs worldwide.
+      // We fetch a live instance list dynamically so stale hardcoded URLs never cause failures.
       if (!captionUrl) {
-        const INVIDIOUS_INSTANCES = [
-          "https://iv.duti.dev",
-          "https://invidious.privacyredirect.com",
-          "https://inv.nadeko.net",
-          "https://yt.cdaut.de",
-          "https://invidious.nerdvpn.de",
-        ];
-
-        // Parse WebVTT or SRV3 caption text into plain segments
-        const parseVtt = (vtt: string): string => {
-          const lines = vtt.split("\n");
+        // Parse WebVTT / SRV3 / timedtext XML into plain article text
+        const parseVtt = (raw: string): string => {
+          const lines = raw.split("\n");
           const texts: string[] = [];
           for (const line of lines) {
             const trimmed = line.trim();
-            if (!trimmed || trimmed.startsWith("WEBVTT") || trimmed.startsWith("NOTE") || /^\d{2}:\d{2}/.test(trimmed) || /-->/.test(trimmed)) continue;
-            // Strip VTT tags like <c>, <00:00:00.000>
-            const clean = trimmed.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim();
+            if (!trimmed || trimmed.startsWith("WEBVTT") || trimmed.startsWith("NOTE") || /-->/.test(trimmed) || /^\d{2}:\d{2}/.test(trimmed)) continue;
+            const clean = trimmed.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
             if (clean) texts.push(clean);
           }
-          // Deduplicate consecutive identical lines (VTT often has rolling duplicates)
           const deduped: string[] = [];
-          for (const t of texts) {
-            if (deduped.at(-1) !== t) deduped.push(t);
-          }
+          for (const t of texts) { if (deduped.at(-1) !== t) deduped.push(t); }
           return segmentsToArticle(deduped.map(t => ({ text: t })));
+        };
+
+        // ── C1: Invidious (dynamic instance list from health API) ──────────────
+        const getInvidiousInstances = async (): Promise<string[]> => {
+          // Fallback seeds — always tried even if health API is down
+          const seeds = [
+            "https://iv.duti.dev",
+            "https://invidious.privacyredirect.com",
+            "https://inv.nadeko.net",
+            "https://yt.cdaut.de",
+            "https://invidious.nerdvpn.de",
+            "https://invidious.io.lol",
+            "https://yewtu.be",
+            "https://invidious.fdn.fr",
+          ];
+          try {
+            const r = await timedFetch("https://api.invidious.io/instances.json?sort_by=health", {
+              headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
+            }, 6000);
+            if (!r.ok) return seeds;
+            const data: any = await r.json();
+            if (!Array.isArray(data)) return seeds;
+            const live: string[] = data
+              .filter((e: any) => e[1]?.type === "https" && e[1]?.api === true && e[1]?.uri)
+              .map((e: any) => e[1].uri as string)
+              .slice(0, 12); // top 12 healthiest
+            return live.length >= 3 ? live : [...new Set([...live, ...seeds])];
+          } catch { return seeds; }
         };
 
         const tryInvidious = async (base: string): Promise<string | null> => {
           try {
             const listRes = await timedFetch(`${base}/api/v1/captions/${videoId}`, {
               headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
-            }, 8000);
+            }, 7000);
             if (!listRes.ok) return null;
             const listData: any = await listRes.json();
             const tracks: Array<{ label: string; languageCode: string; url: string }> = listData?.captions || [];
             if (!tracks.length) return null;
-            // Prefer manual EN > any EN > any
             const manual = tracks.filter(t => !t.label.toLowerCase().includes("auto"));
             const pool = manual.length > 0 ? manual : tracks;
             const enTrack = pool.find(t => t.languageCode === "en") || pool.find(t => t.languageCode?.startsWith("en")) || pool[0];
             if (!enTrack) return null;
-            // enTrack.url is a relative path like /api/v1/captions/id?label=...
             const capUrl = enTrack.url.startsWith("http") ? enTrack.url : `${base}${enTrack.url}`;
-            const capRes = await timedFetch(capUrl, {
-              headers: { "User-Agent": "Mozilla/5.0", "Accept": "*/*" },
-            }, 10000);
+            const capRes = await timedFetch(capUrl, { headers: { "User-Agent": "Mozilla/5.0" } }, 9000);
             if (!capRes.ok) return null;
             const capText = await capRes.text();
             if (!capText || capText.length < 20) return null;
@@ -3316,16 +3328,75 @@ export async function registerRoutes(
           } catch { return null; }
         };
 
-        // Race all instances — first non-null result wins
-        const invResults = await Promise.allSettled(
-          INVIDIOUS_INSTANCES.map(inst => tryInvidious(inst))
-        );
-        for (const r of invResults) {
-          if (r.status === "fulfilled" && r.value) {
-            title = await fetchTitle();
-            _ytArticleCache.set(videoId, { ts: Date.now(), title, text: r.value, thumbnailUrl });
-            return res.json({ title, text: r.value, thumbnailUrl });
+        // ── C2: Piped (separate proxy network, different IPs from Invidious) ──
+        const PIPED_INSTANCES = [
+          "https://pipedapi.kavin.rocks",
+          "https://pipedapi.adminforge.de",
+          "https://pipedapi.tokhmi.xyz",
+          "https://piped-api.garudalinux.org",
+          "https://api.piped.projectsegfau.lt",
+          "https://pipedapi.in.projectsegfau.lt",
+        ];
+
+        const tryPiped = async (base: string): Promise<string | null> => {
+          try {
+            // Piped returns transcript segments directly from /streams endpoint
+            const streamRes = await timedFetch(`${base}/streams/${videoId}`, {
+              headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
+            }, 8000);
+            if (!streamRes.ok) return null;
+            const streamData: any = await streamRes.json();
+            const subtitles: Array<{ url: string; mimeType: string; name: string; code: string; autoGenerated: boolean }> =
+              streamData?.subtitles || [];
+            if (!subtitles.length) return null;
+            // Prefer non-auto English first, then any English, then any
+            const manual = subtitles.filter(s => !s.autoGenerated);
+            const pool = manual.length > 0 ? manual : subtitles;
+            const enSub = pool.find(s => s.code === "en") || pool.find(s => s.code?.startsWith("en")) || pool[0];
+            if (!enSub?.url) return null;
+            const capRes = await timedFetch(enSub.url, { headers: { "User-Agent": "Mozilla/5.0" } }, 9000);
+            if (!capRes.ok) return null;
+            const capText = await capRes.text();
+            if (!capText || capText.length < 20) return null;
+            // Piped returns VTT or XML — parseVtt handles both
+            const text = capText.includes("</text>") || capText.includes("</p>")
+              ? segmentsToArticle([...capText.matchAll(/<(?:text|p)[^>]*>([^<]*)<\/(?:text|p)>/g)].map(m => ({
+                  text: m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim()
+                })).filter(s => s.text))
+              : parseVtt(capText);
+            return text && text.length >= 10 ? text : null;
+          } catch { return null; }
+        };
+
+        // Fetch live Invidious instances while simultaneously trying Piped — race everything
+        const [invInstances] = await Promise.all([getInvidiousInstances()]);
+
+        const allProxyTasks = [
+          ...invInstances.map(inst => tryInvidious(inst)),
+          ...PIPED_INSTANCES.map(inst => tryPiped(inst)),
+        ];
+
+        // Use a custom race that resolves on first non-null result
+        const proxyText = await new Promise<string | null>((resolve) => {
+          let settled = 0;
+          const total = allProxyTasks.length;
+          if (total === 0) { resolve(null); return; }
+          for (const task of allProxyTasks) {
+            task.then(result => {
+              settled++;
+              if (result) { resolve(result); return; }
+              if (settled === total) resolve(null);
+            }).catch(() => {
+              settled++;
+              if (settled === total) resolve(null);
+            });
           }
+        });
+
+        if (proxyText) {
+          title = await fetchTitle();
+          _ytArticleCache.set(videoId, { ts: Date.now(), title, text: proxyText, thumbnailUrl });
+          return res.json({ title, text: proxyText, thumbnailUrl });
         }
       }
 
