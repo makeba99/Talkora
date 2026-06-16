@@ -3320,6 +3320,63 @@ export async function registerRoutes(
         captionUrl = ranked[0]?.url || null;
       }
 
+      // ── Strategy B2: immediately try fetching the captionUrl found above ────────
+      // If the direct YouTube timedtext URL is accessible from this IP, use it and
+      // return early. If it fails (Replit datacenter IPs are often blocked), null
+      // captionUrl so Strategies C and D run as proxy fallbacks.
+      if (captionUrl) {
+        try {
+          const parseTimedtextAny = (raw: string): string => {
+            const segs: Array<{ text: string }> = [];
+            for (const m of raw.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)) {
+              const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+              if (t) segs.push({ text: t });
+            }
+            if (segs.length === 0) {
+              for (const m of raw.matchAll(/<text[^>]*>([^<]*)<\/text>/g)) {
+                const t = m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
+                if (t) segs.push({ text: t });
+              }
+            }
+            return segmentsToArticle(segs);
+          };
+
+          const b2Url = captionUrl.includes("fmt=") ? captionUrl : `${captionUrl}&fmt=json3`;
+          const b2Res = await timedFetch(b2Url, { headers: YT_HEADERS }, 12000);
+          if (b2Res.ok) {
+            const raw = await b2Res.text();
+            let text = "";
+            if (b2Url.includes("fmt=json3")) {
+              try {
+                const capJson: any = JSON.parse(raw);
+                text = eventsToArticle(capJson?.events || []);
+              } catch { text = parseTimedtextAny(raw); }
+            }
+            if (!text || text.length < 10) text = parseTimedtextAny(raw);
+            if (text && text.length >= 10) {
+              title = await fetchTitle();
+              _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+              return res.json({ title, text, thumbnailUrl });
+            }
+          }
+          // json3 failed — try xml
+          const b2XmlUrl = captionUrl.replace(/&fmt=[^&]+/, "") + "&fmt=xml";
+          const b2XmlRes = await timedFetch(b2XmlUrl, { headers: YT_HEADERS }, 10000);
+          if (b2XmlRes.ok) {
+            const xmlText = await b2XmlRes.text();
+            const text = parseTimedtextAny(xmlText);
+            if (text && text.length >= 10) {
+              title = await fetchTitle();
+              _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
+              return res.json({ title, text, thumbnailUrl });
+            }
+          }
+        } catch { /* fall through to proxy strategies */ }
+        // Direct fetch failed or yielded no text — null out so C and D run
+        console.warn(`[yt-article] B2: direct captionUrl fetch failed for ${videoId}, falling through to proxy strategies`);
+        captionUrl = null;
+      }
+
       // ── Strategy C: Invidious + Piped proxy networks (completely different IPs) ──
       // YouTube's IP block only affects our Replit datacenter IP. Invidious and Piped
       // are open YouTube frontends running on diverse residential/VPS IPs worldwide.
@@ -3525,56 +3582,11 @@ export async function registerRoutes(
         }
       }
 
-      if (!captionUrl) {
-        console.error(`[yt-article] ALL strategies failed for ${videoId}`);
-        return res.status(422).json({
-          message: "YouTube is restricting transcript access for this video from our server. Try a different video — ones with manually uploaded English subtitles (CC icon in YouTube) tend to work best."
-        });
-      }
-
-      // Fetch the caption data — prefer json3 format for structured events
-      const capUrl = captionUrl.includes("fmt=") ? captionUrl : `${captionUrl}&fmt=json3`;
-      const capRes = await timedFetch(capUrl, { headers: YT_HEADERS }, 12000);
-      if (!capRes.ok) {
-        // Try xml format as last resort
-        const xmlUrl = captionUrl.replace(/&fmt=[^&]+/, "") + "&fmt=xml";
-        const xmlRes = await timedFetch(xmlUrl, { headers: YT_HEADERS }, 10000);
-        if (!xmlRes.ok) return res.status(502).json({ message: "Could not download captions. Please try another video." });
-        const xmlText = await xmlRes.text();
-        // Parse simple <text> tags from XML caption format
-        const xmlSegs = [...xmlText.matchAll(/<text[^>]*>([^<]*)<\/text>/g)]
-          .map(m => ({ text: m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim() }));
-        const text = segmentsToArticle(xmlSegs);
-        if (!text || text.length < 10) return res.status(422).json({ message: "Captions appear empty for this video. Try a different one." });
-        _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
-        return res.json({ title, text, thumbnailUrl });
-      }
-
-      const capContentType = capRes.headers.get("content-type") || "";
-      let text = "";
-      if (capContentType.includes("json") || capUrl.includes("fmt=json3")) {
-        try {
-          const capJson: any = await capRes.json();
-          text = eventsToArticle(capJson?.events || []);
-        } catch {
-          const raw = await capRes.text();
-          const xmlSegs = [...raw.matchAll(/<text[^>]*>([^<]*)<\/text>/g)]
-            .map(m => ({ text: m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim() }));
-          text = segmentsToArticle(xmlSegs);
-        }
-      } else {
-        const raw = await capRes.text();
-        const xmlSegs = [...raw.matchAll(/<text[^>]*>([^<]*)<\/text>/g)]
-          .map(m => ({ text: m[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").trim() }));
-        text = segmentsToArticle(xmlSegs);
-      }
-
-      if (!text || text.length < 10) {
-        return res.status(422).json({ message: "Captions appear empty for this video. Try a different one." });
-      }
-
-      _ytArticleCache.set(videoId, { ts: Date.now(), title, text, thumbnailUrl });
-      return res.json({ title, text, thumbnailUrl });
+      // All strategies (A0, A1, A2, A, E, B+B2, C, D) exhausted
+      console.error(`[yt-article] ALL strategies failed for ${videoId}`);
+      return res.status(422).json({
+        message: "YouTube is restricting transcript access for this video from our server. Try a different video — ones with manually uploaded English subtitles (CC icon in YouTube) tend to work best."
+      });
 
     } catch (err: any) {
       console.error("[yt-to-article] error:", err?.message || err);
