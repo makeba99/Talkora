@@ -338,7 +338,7 @@ export default defineConfig({
 
           if (id.includes("react-icons")) return "social-icons-vendor";
           if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "socket-vendor";
-          if (id.includes("date-fns") || id.includes("zod") || id.includes("zod-validation-error")) return "forms-vendor";
+          if (id.includes("date-fns") || id.includes("zod")) return "forms-vendor";
           // recharts internally imports every d3-* sub-package. Putting them all into
           // one flat "charts-vendor" chunk removes Rollup's dependency-ordering info,
           // causing d3 const bindings to be accessed before they initialise → TDZ
