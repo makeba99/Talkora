@@ -2263,24 +2263,24 @@ export async function registerRoutes(
     res.end();
   });
 
-  const TENOR_KEY = process.env.TENOR_API_KEY || "LIVDSRZULELA";
+  // Giphy public beta key — no registration required, works out of the box.
+  const GIPHY_KEY = process.env.GIPHY_API_KEY || "dc6zaTOxFJmzC";
+  const GIPHY_LIMIT = 50;
 
-  function mapTenorResults(items: any[]) {
+  function mapGiphyResults(items: any[]) {
     return items.map((item: any) => {
-      const media = item.media?.[0] || {};
-      // Prefer mediumgif over gif: mediumgif is ~60% smaller than the full
-      // gif format while still being large enough to look good as a card
-      // background. Using the full gif format regularly exceeded the image
-      // proxy's 4 MB cap, silently breaking CSS background-image display.
-      const gif = media.mediumgif || media.gif || media.tinygif || {};
-      const preview = media.tinygif || media.nanogif || media.gif || {};
+      const original = item.images?.original || {};
+      // downsized_medium is a good balance: smaller than original but still
+      // high quality. Fall back to original if not present.
+      const main = item.images?.downsized_medium || item.images?.downsized || original;
+      const preview = item.images?.fixed_height_small || item.images?.preview_gif || original;
       return {
         id: item.id,
-        url: gif.url || "",
-        preview: preview.url || gif.url || "",
-        title: item.title || item.h1_title || "",
-        width: gif.dims?.[0] || 200,
-        height: gif.dims?.[1] || 200,
+        url: main.url || original.url || "",
+        preview: preview.url || original.url || "",
+        title: item.title || "",
+        width: parseInt(main.width || original.width || "200", 10),
+        height: parseInt(main.height || original.height || "200", 10),
       };
     });
   }
@@ -2292,15 +2292,19 @@ export async function registerRoutes(
       if (!query || query.trim().length === 0) {
         return res.json({ results: [], next: "" });
       }
-      const cacheKey = `gif:search:${query.toLowerCase().trim()}${pos ? `:${pos}` : ""}`;
+      const offset = pos ? parseInt(pos, 10) || 0 : 0;
+      const cacheKey = `gif:search:${query.toLowerCase().trim()}:${offset}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      let url = `https://api.tenor.com/v1/search?key=${TENOR_KEY}&q=${encodeURIComponent(query)}&limit=50&contentfilter=low&media_filter=basic`;
-      if (pos) url += `&pos=${encodeURIComponent(pos)}`;
+      const url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=${GIPHY_LIMIT}&offset=${offset}&rating=pg-13&lang=en`;
       const response = await fetch(url);
-      if (!response.ok) throw new Error("Tenor API error");
+      if (!response.ok) throw new Error("Giphy API error");
       const data = await response.json();
-      const result = { results: mapTenorResults(data.results || []), next: data.next || "" };
+      const items = data.data || [];
+      const nextOffset = offset + items.length;
+      const total = data.pagination?.total_count || 0;
+      const next = nextOffset < total ? String(nextOffset) : "";
+      const result = { results: mapGiphyResults(items), next };
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
@@ -2312,15 +2316,19 @@ export async function registerRoutes(
   app.get("/api/gifs/trending", isAuthenticated, async (req: any, res) => {
     try {
       const pos = req.query.pos as string | undefined;
-      const cacheKey = `gif:trending${pos ? `:${pos}` : ""}`;
+      const offset = pos ? parseInt(pos, 10) || 0 : 0;
+      const cacheKey = `gif:trending:${offset}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      let url = `https://api.tenor.com/v1/trending?key=${TENOR_KEY}&limit=50&contentfilter=low&media_filter=basic`;
-      if (pos) url += `&pos=${encodeURIComponent(pos)}`;
+      const url = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=${GIPHY_LIMIT}&offset=${offset}&rating=pg-13`;
       const response = await fetch(url);
-      if (!response.ok) throw new Error("Tenor API error");
+      if (!response.ok) throw new Error("Giphy API error");
       const data = await response.json();
-      const result = { results: mapTenorResults(data.results || []), next: data.next || "" };
+      const items = data.data || [];
+      const nextOffset = offset + items.length;
+      const total = data.pagination?.total_count || 0;
+      const next = nextOffset < total ? String(nextOffset) : "";
+      const result = { results: mapGiphyResults(items), next };
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
