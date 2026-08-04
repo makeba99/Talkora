@@ -175,6 +175,9 @@ export function useAiTutor(deps: AiTutorDeps) {
   // Set once on mount from /api/ai-tutor/voice-config so startWithPersona can
   // pass it to ElevenLabs for Afik K (Female) without a race against React state.
   const serverVoiceIdRef = useRef<string | null>(null);
+  // Separate male voice ID — the admin can configure a different ElevenLabs voice
+  // for the Male (Dude) persona so both Female and Male use ElevenLabs voices.
+  const serverMaleVoiceIdRef = useRef<string | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => { activeRef.current = aiActive; }, [aiActive]);
@@ -208,10 +211,13 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => {
     fetch("/api/ai-tutor/voice-config", { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
-      .then((cfg: { provider: string; voiceId: string | null } | null) => {
+      .then((cfg: { provider: string; voiceId: string | null; maleVoiceId?: string | null } | null) => {
         if (cfg?.provider === "elevenlabs" && cfg?.voiceId) {
           serverVoiceIdRef.current = cfg.voiceId;
           setAiSettings(s => ({ ...s, voiceId: cfg.voiceId }));
+        }
+        if (cfg?.provider === "elevenlabs" && cfg?.maleVoiceId) {
+          serverMaleVoiceIdRef.current = cfg.maleVoiceId;
         }
       })
       .catch(() => {});
@@ -651,10 +657,14 @@ export function useAiTutor(deps: AiTutorDeps) {
     setPersonaName(pName);
 
     // Update voice + avatar settings together so face matches gender.
-    // Female (Afik K) always gets the server-configured ElevenLabs voiceId so
-    // she speaks through Bella (or whichever voice is set in the admin panel).
+    // Female (Afik K) gets the admin-configured female ElevenLabs voiceId (Lebroskiu etc.).
+    // Male (Dude) gets the admin-configured male ElevenLabs voiceId (Adam, Daniel, etc.).
     const avatarId = voice === "Male" ? "nova" : "aurora";
-    const voiceId = voice === "Female" ? serverVoiceIdRef.current : null;
+    const voiceId = voice === "Female"
+      ? serverVoiceIdRef.current
+      : voice === "Male"
+        ? (serverMaleVoiceIdRef.current || serverVoiceIdRef.current)
+        : null;
     setAiSettings(s => ({ ...s, voice, voiceId, avatarId, personaName: pName }));
     // Also configure TTS immediately (don't wait for React state cycle)
     ttsRef.current?.configure(voice, aiSettings.speed, voiceId);

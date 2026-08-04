@@ -64,7 +64,7 @@ const OPENAI_VOICES = [
 // Popular ElevenLabs voices for quick picking
 const ELEVENLABS_POPULAR_VOICES = [
   { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte", desc: "Female, warm (default Eva)" },
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella", desc: "Female, soft" },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Lebroskiu", desc: "Female, soft" },
   { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli", desc: "Female, young" },
   { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", desc: "Female, calm" },
   { id: "AZnzlk1XvdvUeBnXmlld", name: "Domi", desc: "Female, strong" },
@@ -2071,6 +2071,7 @@ function AiTutorTab() {
   const [provider, setProvider] = useState<TtsProvider>("browser");
   const [elKeys, setElKeys] = useState("");
   const [elVoiceId, setElVoiceId] = useState("XB0fDUnXU5powFXDhCwa");
+  const [elMaleVoiceId, setElMaleVoiceId] = useState("pNInz6obpgDQGcFmaJgB");
   const [elModelId, setElModelId] = useState("eleven_multilingual_v2");
   const [oaiKey, setOaiKey] = useState("");
   const [oaiModel, setOaiModel] = useState("tts-1");
@@ -2091,6 +2092,7 @@ function AiTutorTab() {
     setProvider(c.provider);
     setElKeys(c.elevenlabs.apiKeys);
     setElVoiceId(c.elevenlabs.voiceId);
+    setElMaleVoiceId((c.elevenlabs as any).maleVoiceId || "pNInz6obpgDQGcFmaJgB");
     setElModelId(c.elevenlabs.modelId);
     setOaiKey(c.openai.apiKey);
     setOaiModel(c.openai.model);
@@ -2104,7 +2106,7 @@ function AiTutorTab() {
       apiRequest("PATCH", "/api/admin/ai-config", {
         config: {
           provider,
-          elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, modelId: elModelId },
+          elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, maleVoiceId: elMaleVoiceId, modelId: elModelId },
           openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice },
           huggingface: { apiKey: hfKey, model: hfModel },
         },
@@ -2144,7 +2146,7 @@ function AiTutorTab() {
         body: JSON.stringify({
           config: {
             provider,
-            elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, modelId: elModelId },
+            elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, maleVoiceId: elMaleVoiceId, modelId: elModelId },
             openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice },
             huggingface: { apiKey: hfKey, model: hfModel },
           },
@@ -2313,9 +2315,9 @@ function AiTutorTab() {
                         Default is Charlotte (Eva). Pick a popular voice below or find IDs in your ElevenLabs dashboard.
                       </p>
                     )}
-                    {/* Popular voices quick-picker */}
+                    {/* Female voice quick-picker */}
                     <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {ELEVENLABS_POPULAR_VOICES.map((v) => (
+                      {ELEVENLABS_POPULAR_VOICES.filter(v => v.desc.startsWith("Female")).map((v) => (
                         <button
                           key={v.id}
                           type="button"
@@ -2333,6 +2335,42 @@ function AiTutorTab() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Male voice ID */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="el-male-voice-id">Male Voice ID</Label>
+                    <Input
+                      id="el-male-voice-id"
+                      value={elMaleVoiceId}
+                      onChange={(e) => setElMaleVoiceId(e.target.value)}
+                      placeholder="pNInz6obpgDQGcFmaJgB"
+                      className="font-mono text-xs"
+                      data-testid="input-elevenlabs-male-voice-id"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Used when the Male (Dude) persona is active. Defaults to Adam.
+                    </p>
+                    {/* Male voice quick-picker */}
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {ELEVENLABS_POPULAR_VOICES.filter(v => v.desc.startsWith("Male")).map((v) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setElMaleVoiceId(v.id)}
+                          title={`${v.desc}\n${v.id}`}
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                            elMaleVoiceId === v.id
+                              ? "border-blue-500/60 bg-blue-500/15 text-blue-300"
+                              : "border-border/50 bg-background/40 text-muted-foreground hover:border-blue-500/40 hover:text-foreground"
+                          }`}
+                          data-testid={`button-el-male-voice-${v.id}`}
+                        >
+                          {v.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="space-y-1.5">
                     <Label htmlFor="el-model">Model</Label>
                     <Select value={elModelId} onValueChange={setElModelId}>

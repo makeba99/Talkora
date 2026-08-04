@@ -1886,11 +1886,30 @@ export async function registerRoutes(
         jsonInstruction,
       ].filter(Boolean).join(' ');
 
-      // Try OpenAI
-      if (OPENAI_API_KEY) {
+      // Try OpenAI — prefer env var key, fall back to DB-configured OpenAI key
+      let activeOpenAiKey = OPENAI_API_KEY;
+      if (!activeOpenAiKey) {
         try {
-          const { raw, ok, status } = await callAiModel(systemPrompt, history, message, temperature);
-          if (ok) {
+          const dbCfg = await getAiTutorConfig();
+          if (dbCfg.openai?.apiKey?.trim()) activeOpenAiKey = dbCfg.openai.apiKey.trim();
+        } catch {}
+      }
+
+      if (activeOpenAiKey) {
+        try {
+          const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1';
+          const body = { model: 'gpt-4o', messages: [
+            { role: 'system', content: systemPrompt },
+            ...(history as any[]).slice(-10).map((m: any) => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
+            { role: 'user', content: message },
+          ], max_tokens: 160, temperature, response_format: { type: 'json_object' } };
+          const r = await fetch(`${openaiBaseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${activeOpenAiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const raw = await r.text();
+          if (r.ok) {
             const parsed = parseAiResponse(raw);
             const latencyMs = Date.now() - startTime;
             if (parsed.reply) {
@@ -1903,8 +1922,8 @@ export async function registerRoutes(
               });
             }
           } else {
-            console.error(`[AI Tutor] openai error ${status}: ${raw.slice(0, 200)}`);
-            warnings.push(`openai_error_${status}`);
+            console.error(`[AI Tutor] openai error ${r.status}: ${raw.slice(0, 200)}`);
+            warnings.push(`openai_error_${r.status}`);
           }
         } catch (err) {
           console.error('[AI Tutor] Model call failed:', err);
@@ -1953,9 +1972,10 @@ export async function registerRoutes(
       res.json({
         provider: cfg.provider,
         voiceId: cfg.provider === "elevenlabs" ? (cfg.elevenlabs.voiceId || null) : null,
+        maleVoiceId: cfg.provider === "elevenlabs" ? (cfg.elevenlabs.maleVoiceId || null) : null,
       });
     } catch {
-      res.json({ provider: "browser", voiceId: null });
+      res.json({ provider: "browser", voiceId: null, maleVoiceId: null });
     }
   });
 
@@ -2249,9 +2269,19 @@ export async function registerRoutes(
 
       let streamed = false;
 
-      if (OPENAI_API_KEY) {
+      // Prefer env-var OpenAI key; fall back to DB-configured key so the admin
+      // panel's OpenAI key also powers AI responses (not just TTS).
+      let streamKey = OPENAI_API_KEY;
+      if (!streamKey) {
+        try {
+          const dbCfg = await getAiTutorConfig();
+          if (dbCfg.openai?.apiKey?.trim()) streamKey = dbCfg.openai.apiKey.trim();
+        } catch {}
+      }
+
+      if (streamKey) {
         const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1';
-        streamed = await streamTokens('openai', 'gpt-4o', openaiBaseUrl, OPENAI_API_KEY);
+        streamed = await streamTokens('openai', 'gpt-4o', openaiBaseUrl, streamKey);
       }
 
       const model = 'gpt-4o';

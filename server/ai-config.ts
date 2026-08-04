@@ -14,7 +14,8 @@ export type AiTutorConfig = {
   provider: TtsProvider;
   elevenlabs: {
     apiKeys: string;
-    voiceId: string;
+    voiceId: string;       // female / Eva voice (Lebroskiu or Charlotte etc.)
+    maleVoiceId: string;   // male voice (Adam, Daniel, Clyde, etc.)
     modelId: string;
   };
   openai: {
@@ -42,6 +43,7 @@ function envDefaults(): AiTutorConfig {
     elevenlabs: {
       apiKeys: process.env.ELEVENLABS_API_KEYS || process.env.ELEVENLABS_API_KEY || "",
       voiceId: process.env.ELEVENLABS_EVA_VOICE_ID || "XB0fDUnXU5powFXDhCwa",
+      maleVoiceId: process.env.ELEVENLABS_MALE_VOICE_ID || "pNInz6obpgDQGcFmaJgB", // Adam
       modelId: process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
     },
     openai: {
@@ -110,6 +112,7 @@ export function maskConfig(config: AiTutorConfig): AiTutorConfig {
     ...config,
     elevenlabs: {
       ...config.elevenlabs,
+      maleVoiceId: config.elevenlabs.maleVoiceId || "",
       apiKeys: config.elevenlabs.apiKeys
         ? config.elevenlabs.apiKeys
             .split(",")
@@ -146,6 +149,7 @@ export function mergeIncoming(
         incoming.elevenlabs?.apiKeys ?? "",
       ),
       voiceId: incoming.elevenlabs?.voiceId ?? current.elevenlabs.voiceId,
+      maleVoiceId: incoming.elevenlabs?.maleVoiceId ?? current.elevenlabs.maleVoiceId,
       modelId: incoming.elevenlabs?.modelId ?? current.elevenlabs.modelId,
     },
     openai: {
