@@ -35,13 +35,6 @@ interface GifResult {
 }
 
 function normalizeGifUrl(url: string) {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.includes("tenor.com") || parsed.hostname.includes("media.tenor.com")) {
-      parsed.search = "";
-      return parsed.toString();
-    }
-  } catch {}
   return url;
 }
 
@@ -291,7 +284,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
             ) : gifs.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-xs text-muted-foreground">
-                  {gifSearch ? "No GIFs found" : "Search for GIFs above"}
+                  {gifSearch ? "No GIFs found" : "Loading GIFs…"}
                 </p>
               </div>
             ) : (
@@ -302,15 +295,28 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
                       key={gif.id}
                       onClick={() => handleGifClick(gif)}
                       className="relative rounded-md overflow-hidden cursor-pointer group"
+                      style={{ display: "block" }}
                       data-testid={`gif-result-${gif.id}`}
+                      onError={() => {/* handled inside img */}}
                     >
                       <img
                         src={gif.preview}
-                        alt={gif.title}
+                        alt=""
                         className="w-full h-24 object-cover"
                         loading="lazy"
                         referrerPolicy="no-referrer"
                         decoding="async"
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          if (img.src !== gif.url) {
+                            // try the full GIF as fallback
+                            img.src = gif.url;
+                          } else {
+                            // both URLs failed — hide the tile entirely
+                            const tile = img.closest("button") as HTMLElement | null;
+                            if (tile) tile.style.display = "none";
+                          }
+                        }}
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                     </button>
@@ -327,7 +333,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
           </div>
         </div>
         <div className="flex-shrink-0 px-2 pb-1.5 pt-0.5 border-t">
-          <p className="text-[10px] text-muted-foreground text-right">Powered by GIPHY</p>
+          <p className="text-[10px] text-muted-foreground text-right">Powered by Imgur</p>
         </div>
       </PopoverContent>
     </Popover>

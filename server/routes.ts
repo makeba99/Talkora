@@ -2300,10 +2300,14 @@ export async function registerRoutes(
     const data = await response.json();
     const items: any[] = data.data || [];
     const results = extractImgurGifs(items);
-    // Imgur returns up to 60 items per page; assume more pages while we get a full page
-    const next = items.length >= 60 ? String(page + 1) : "";
+    // Continue paginating as long as Imgur returned any items at all
+    const next = items.length > 0 ? String(page + 1) : "";
     return { results, next };
   }
+
+  // Trending rotates through popular GIF categories by page so the feed
+  // stays varied when the user scrolls down past the first page.
+  const TRENDING_QUERIES = ["funny meme", "reaction", "cute animals", "wow amazing", "fail win"];
 
   app.get("/api/gifs/search", isAuthenticated, async (req: any, res) => {
     try {
@@ -2332,8 +2336,12 @@ export async function registerRoutes(
       const cacheKey = `gif:trending:${page}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      // Use a broad popular query for the "trending" tab
-      const result = await fetchImgurGallery("funny reaction", page);
+      // Rotate through popular categories so each scroll page feels fresh
+      const query = TRENDING_QUERIES[page % TRENDING_QUERIES.length];
+      const innerPage = Math.floor(page / TRENDING_QUERIES.length);
+      const result = await fetchImgurGallery(query, innerPage);
+      // Always allow the client to fetch the next page
+      result.next = String(page + 1);
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
