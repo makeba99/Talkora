@@ -74,6 +74,7 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
     queryKey: ["/api/message-requests/pending"],
     queryFn: async () => {
       const res = await fetch("/api/message-requests/pending", { credentials: "include" });
+      if (!res.ok) throw new Error(`${res.status}`);
       return res.json();
     },
     enabled: !!user,
