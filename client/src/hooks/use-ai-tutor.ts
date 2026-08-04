@@ -171,6 +171,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   const wakeWordRef = useRef<WakeWordDetector | null>(null);
   // Stable ref so the wake callback never has a stale closure over toggleAiTutor
   const toggleAiTutorRef = useRef<(() => void) | null>(null);
+  // Persists the admin-configured ElevenLabs voiceId across renders/persona switches.
+  // Set once on mount from /api/ai-tutor/voice-config so startWithPersona can
+  // pass it to ElevenLabs for Afik K (Female) without a race against React state.
+  const serverVoiceIdRef = useRef<string | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => { activeRef.current = aiActive; }, [aiActive]);
@@ -206,6 +210,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       .then(r => r.ok ? r.json() : null)
       .then((cfg: { provider: string; voiceId: string | null } | null) => {
         if (cfg?.provider === "elevenlabs" && cfg?.voiceId) {
+          serverVoiceIdRef.current = cfg.voiceId;
           setAiSettings(s => ({ ...s, voiceId: cfg.voiceId }));
         }
       })
@@ -645,17 +650,20 @@ export function useAiTutor(deps: AiTutorDeps) {
     personaLockedRef.current = true;
     setPersonaName(pName);
 
-    // Update voice + avatar settings together so face matches gender
+    // Update voice + avatar settings together so face matches gender.
+    // Female (Afik K) always gets the server-configured ElevenLabs voiceId so
+    // she speaks through Bella (or whichever voice is set in the admin panel).
     const avatarId = voice === "Male" ? "nova" : "aurora";
-    setAiSettings(s => ({ ...s, voice, voiceId: null, avatarId, personaName: pName }));
+    const voiceId = voice === "Female" ? serverVoiceIdRef.current : null;
+    setAiSettings(s => ({ ...s, voice, voiceId, avatarId, personaName: pName }));
     // Also configure TTS immediately (don't wait for React state cycle)
-    ttsRef.current?.configure(voice, aiSettings.speed, null);
+    ttsRef.current?.configure(voice, aiSettings.speed, voiceId);
 
     // Clear any previous mic error
     setMicError(null);
     sttRef.current?.resetMicDenied();
 
-    socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId, voice, voiceId: null });
+    socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId, voice, voiceId });
     setAiActive(true);
     setAiChatPanelOpen(false);
     chatPanelOpenRef.current = false;

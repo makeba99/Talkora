@@ -52,13 +52,13 @@ export function createTts(callbacks: TtsCallbacks): TtsLike {
     return eva;
   };
 
-  // Pick the engine that *should* play given the current voice + voiceId.
+  // Pick the engine that *should* play given the current voice.
   // Eva    → ElevenLabs ALWAYS.
-  // Female/Male + voiceId set → ElevenLabs (admin has configured Afik/Dude to
-  //   use an ElevenLabs voice, e.g. the "Bella" voice set in the admin panel).
-  // Female/Male + no voiceId → Browser (original behaviour — no ElevenLabs key).
+  // Female (Afik K) → ElevenLabs ALWAYS (Bella voice set in admin panel);
+  //   EvaTtsEngine gracefully falls back to browser TTS when no API key is set.
+  // Male (Dude) + voiceId → ElevenLabs; Male + no voiceId → Browser.
   const pickEngine = (): TtsLike => {
-    if (currentVoice === "Eva" || currentVoiceId) {
+    if (currentVoice === "Eva" || currentVoice === "Female" || currentVoiceId) {
       const e = ensureEva();
       e.configure(currentVoice, currentSpeed, currentVoiceId);
       return e;
