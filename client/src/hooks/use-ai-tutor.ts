@@ -195,6 +195,24 @@ export function useAiTutor(deps: AiTutorDeps) {
     });
   }, []);
 
+  // ── Fetch server TTS voice config once on mount ───────────────────────────
+  // When the admin has configured ElevenLabs (e.g. "Bella" voice), propagate
+  // that voiceId to Afik (Female) and Dude (Male) so they also route through
+  // ElevenLabs instead of the browser SpeechSynthesis engine.
+  // The existing settings useEffect (below) picks up the voiceId change and
+  // calls ttsRef.current?.configure() automatically on next render.
+  useEffect(() => {
+    fetch("/api/ai-tutor/voice-config", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then((cfg: { provider: string; voiceId: string | null } | null) => {
+        if (cfg?.provider === "elevenlabs" && cfg?.voiceId) {
+          setAiSettings(s => ({ ...s, voiceId: cfg.voiceId }));
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount-once — we just want the initial server config
+
   // ── TTS Engine ────────────────────────────────────────────────────────────
   // Wrapped via createTts() — Eva routes to ElevenLabs, Female/Male use browser
   // reports availability, otherwise falls back to the browser SpeechSynthesis

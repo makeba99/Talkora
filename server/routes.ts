@@ -1945,6 +1945,20 @@ export async function registerRoutes(
   // ── AI Tutor TTS (multi-provider proxy) ──────────────────────────────────
   // Capability probe — client uses this to decide whether Eva can speak.
   // Female/Male personas use browser SpeechSynthesis and don't call this.
+  // Returns the admin-configured TTS provider and voice ID (no secrets) so the
+  // client can decide whether to route Afik / Male through ElevenLabs.
+  app.get("/api/ai-tutor/voice-config", isAuthenticated, async (_req, res) => {
+    try {
+      const cfg = await getAiTutorConfig();
+      res.json({
+        provider: cfg.provider,
+        voiceId: cfg.provider === "elevenlabs" ? (cfg.elevenlabs.voiceId || null) : null,
+      });
+    } catch {
+      res.json({ provider: "browser", voiceId: null });
+    }
+  });
+
   app.get("/api/ai-tutor/tts/health", isAuthenticated, async (_req, res) => {
     try {
       const cfg = await getAiTutorConfig();
