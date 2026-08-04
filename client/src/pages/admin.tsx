@@ -64,7 +64,7 @@ const OPENAI_VOICES = [
 // Popular ElevenLabs voices for quick picking
 const ELEVENLABS_POPULAR_VOICES = [
   { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte", desc: "Female, warm (default Eva)" },
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Lebroskiu", desc: "Female, soft" },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella", desc: "Female, soft" },
   { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli", desc: "Female, young" },
   { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", desc: "Female, calm" },
   { id: "AZnzlk1XvdvUeBnXmlld", name: "Domi", desc: "Female, strong" },

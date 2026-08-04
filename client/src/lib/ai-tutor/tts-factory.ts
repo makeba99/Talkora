@@ -1,13 +1,8 @@
 /**
- * TTS factory — picks the right engine based on the *current voice persona*:
- *   - "Eva"          → ALWAYS ElevenLabs (the new hosted AI voice)
- *   - "Female"/"Male" → Browser SpeechSynthesis (the original Afi K / Dude voices)
- *
- * The original two personas keep working unchanged — Eva is opt-in. We do NOT
- * silently fall back to the browser voice when Eva fails: the user explicitly
- * picked Eva because they want the ElevenLabs voice, so a failure must be
- * visible (so they know to fix their API key instead of being confused why
- * "Eva sounds like the old voice").
+ * TTS factory — ALL three personas (Female/Afi K, Male/Lebroski, Eva/Lebroskiu)
+ * route through ElevenLabs via EvaTtsEngine. EvaTtsEngine automatically falls
+ * back to browser SpeechSynthesis when ElevenLabs is unreachable or unconfigured,
+ * so users always hear something — but the target is always ElevenLabs.
  */
 
 import { TtsEngine, type TtsCallbacks } from "./tts";

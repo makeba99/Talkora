@@ -103,7 +103,7 @@ export class EvaTtsEngine {
     this.fallbackEngaged = true;
     if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
       (window as any).__vextornOnEvaTtsError(
-        `Eva voice unavailable (${reason}) — switched to the system voice for this session.`
+        `AI voice unavailable (${reason}) — switched to the system voice for this session.`
       );
     }
     const fb = this.ensureFallback();

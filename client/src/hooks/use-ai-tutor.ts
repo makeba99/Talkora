@@ -65,19 +65,19 @@ const AFIK_WELCOME_TEMPLATES = [
 ];
 
 const MALE_INTROS = [
-  "Hey man, I'm Dude — your tutor. What are we practicing today?",
-  "What's up! Dude here. Say something and let's roll.",
-  "Hey! It's Dude. Ready when you are — what do you want to work on?",
+  "Hey man, I'm Lebroski — your tutor. What are we practicing today?",
+  "What's up! Lebroski here. Say something and let's roll.",
+  "Hey! It's Lebroski. Ready when you are — what do you want to work on?",
 ];
 
-// Eva — warm, emotional, natural (Sesame "Maya"-like). She introduces herself
-// as Eva, never as "Dude" or "Afi K". Keep the lines short and personal so
+// Lebroskiu — warm, emotional, natural (Sesame "Maya"-like). Introduces herself
+// as Lebroskiu, never as "Lebroski" or "Afi K". Keep the lines short and personal so
 // the ElevenLabs voice has room to breathe.
 const EVA_INTROS = [
-  "Hey, I'm Eva. So glad you're here — what's on your mind?",
-  "Hi there. I'm Eva. Tell me anything — I'm listening.",
-  "Hey you, I'm Eva. Take your time — what do you wanna talk about?",
-  "Mmm hi, I'm Eva. Whenever you're ready, just start talking.",
+  "Hey, I'm Lebroskiu. So glad you're here — what's on your mind?",
+  "Hi there. I'm Lebroskiu. Tell me anything — I'm listening.",
+  "Hey you, I'm Lebroskiu. Take your time — what do you wanna talk about?",
+  "Mmm hi, I'm Lebroskiu. Whenever you're ready, just start talking.",
 ];
 
 const FALLBACK_RESPONSES = [
