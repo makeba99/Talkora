@@ -297,7 +297,6 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
                       className="relative rounded-md overflow-hidden cursor-pointer group"
                       style={{ display: "block" }}
                       data-testid={`gif-result-${gif.id}`}
-                      onError={() => {/* handled inside img */}}
                     >
                       <img
                         src={gif.preview}
