@@ -44,6 +44,7 @@ const ALLOWED_HOSTNAMES = new Set([
   "media3.giphy.com",
   "media4.giphy.com",
   "i.giphy.com",
+  "i.imgur.com",
 ]);
 
 function isAllowedUrl(raw: string): boolean {

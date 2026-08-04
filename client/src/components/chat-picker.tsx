@@ -299,19 +299,19 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
                       data-testid={`gif-result-${gif.id}`}
                     >
                       <img
-                        src={gif.preview}
+                        src={proxyMediaUrl(gif.preview)}
                         alt=""
                         className="w-full h-24 object-cover"
                         loading="lazy"
-                        referrerPolicy="no-referrer"
                         decoding="async"
                         onError={(e) => {
                           const img = e.currentTarget;
-                          if (img.src !== gif.url) {
-                            // try the full GIF as fallback
-                            img.src = gif.url;
+                          const proxiedFull = proxyMediaUrl(gif.url);
+                          if (img.src !== proxiedFull) {
+                            // fall back to the full GIF through proxy
+                            img.src = proxiedFull;
                           } else {
-                            // both URLs failed — hide the tile entirely
+                            // both URLs failed — hide the tile
                             const tile = img.closest("button") as HTMLElement | null;
                             if (tile) tile.style.display = "none";
                           }
