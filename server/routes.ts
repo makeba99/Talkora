@@ -2263,26 +2263,46 @@ export async function registerRoutes(
     res.end();
   });
 
-  // Giphy public beta key — no registration required, works out of the box.
-  const GIPHY_KEY = process.env.GIPHY_API_KEY || "dc6zaTOxFJmzC";
-  const GIPHY_LIMIT = 50;
+  // Imgur public Client-ID — no registration or API key required.
+  // Override with IMGUR_CLIENT_ID env var if you have your own.
+  const IMGUR_CLIENT_ID = process.env.IMGUR_CLIENT_ID || "546c25a59c58ad7";
 
-  function mapGiphyResults(items: any[]) {
-    return items.map((item: any) => {
-      const original = item.images?.original || {};
-      // downsized_medium is a good balance: smaller than original but still
-      // high quality. Fall back to original if not present.
-      const main = item.images?.downsized_medium || item.images?.downsized || original;
-      const preview = item.images?.fixed_height_small || item.images?.preview_gif || original;
-      return {
-        id: item.id,
-        url: main.url || original.url || "",
-        preview: preview.url || original.url || "",
-        title: item.title || "",
-        width: parseInt(main.width || original.width || "200", 10),
-        height: parseInt(main.height || original.height || "200", 10),
-      };
+  /** Extract animated GIFs from Imgur gallery items (albums + standalone images). */
+  function extractImgurGifs(items: any[]): any[] {
+    const gifs: any[] = [];
+    for (const item of items) {
+      const images: any[] = item.is_album ? (item.images || []) : [item];
+      for (const img of images) {
+        if (img.animated && img.type === "image/gif" && img.link) {
+          // Imgur thumbnail: insert 'm' (medium ~320px) before the extension
+          const preview = img.link.replace(/\.gif$/i, "m.gif");
+          gifs.push({
+            id: img.id,
+            url: img.link,
+            preview,
+            title: item.title || img.description || "",
+            width: img.width || 320,
+            height: img.height || 200,
+          });
+        }
+      }
+    }
+    return gifs;
+  }
+
+  async function fetchImgurGallery(query: string, page: number): Promise<{ results: any[]; next: string }> {
+    const q = encodeURIComponent(query + " gif");
+    const url = `https://api.imgur.com/3/gallery/search/viral/all/${page}?q=${q}&album_previews=true`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Client-ID ${IMGUR_CLIENT_ID}` },
     });
+    if (!response.ok) throw new Error(`Imgur API error: ${response.status}`);
+    const data = await response.json();
+    const items: any[] = data.data || [];
+    const results = extractImgurGifs(items);
+    // Imgur returns up to 60 items per page; assume more pages while we get a full page
+    const next = items.length >= 60 ? String(page + 1) : "";
+    return { results, next };
   }
 
   app.get("/api/gifs/search", isAuthenticated, async (req: any, res) => {
@@ -2292,19 +2312,11 @@ export async function registerRoutes(
       if (!query || query.trim().length === 0) {
         return res.json({ results: [], next: "" });
       }
-      const offset = pos ? parseInt(pos, 10) || 0 : 0;
-      const cacheKey = `gif:search:${query.toLowerCase().trim()}:${offset}`;
+      const page = pos ? parseInt(pos, 10) || 0 : 0;
+      const cacheKey = `gif:search:${query.toLowerCase().trim()}:${page}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(query)}&limit=${GIPHY_LIMIT}&offset=${offset}&rating=pg-13&lang=en`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Giphy API error");
-      const data = await response.json();
-      const items = data.data || [];
-      const nextOffset = offset + items.length;
-      const total = data.pagination?.total_count || 0;
-      const next = nextOffset < total ? String(nextOffset) : "";
-      const result = { results: mapGiphyResults(items), next };
+      const result = await fetchImgurGallery(query.trim(), page);
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
@@ -2316,19 +2328,12 @@ export async function registerRoutes(
   app.get("/api/gifs/trending", isAuthenticated, async (req: any, res) => {
     try {
       const pos = req.query.pos as string | undefined;
-      const offset = pos ? parseInt(pos, 10) || 0 : 0;
-      const cacheKey = `gif:trending:${offset}`;
+      const page = pos ? parseInt(pos, 10) || 0 : 0;
+      const cacheKey = `gif:trending:${page}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const url = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=${GIPHY_LIMIT}&offset=${offset}&rating=pg-13`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Giphy API error");
-      const data = await response.json();
-      const items = data.data || [];
-      const nextOffset = offset + items.length;
-      const total = data.pagination?.total_count || 0;
-      const next = nextOffset < total ? String(nextOffset) : "";
-      const result = { results: mapGiphyResults(items), next };
+      // Use a broad popular query for the "trending" tab
+      const result = await fetchImgurGallery("funny reaction", page);
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
