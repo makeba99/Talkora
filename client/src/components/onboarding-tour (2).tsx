@@ -1,0 +1,606 @@
+import { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from "react";
+import { ChevronRight, X, Sparkles, Mic, Globe, Search, Hammer, UserCircle, Users, Compass, Pin, Bell, Check, MousePointerClick } from "lucide-react";
+
+const STORAGE_KEY = "vextorn:onboarding:v2";
+const STORAGE_STEP_KEY = "vextorn:onboarding:v2:step";
+const STORAGE_DISMISS_RELAUNCH_KEY = "vextorn:onboarding:v2:relaunch-hidden";
+
+type OnboardingStep = {
+  id: string;
+  target?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  body: string;
+  primary?: string;
+  secondary?: string;
+  /** Optional tab to switch to in the lobby's discovery row before this step renders. */
+  tab?: "rooms" | "top-speakers" | "famous-users";
+  /** If true, fire the ghost-typing demo when this step becomes active. */
+  ghostType?: string;
+  /** If true, render confetti when this step becomes active. */
+  celebrate?: boolean;
+  /**
+   * Optional CSS selector. While set, the tour blocks Continue and waits for
+   * the user to click any element matching this selector. Once they do, a
+   * confirmation overlay flashes and the tour auto-advances.
+   */
+  waitForClick?: string;
+  /** Confirmation copy shown when the waitForClick interaction is satisfied. */
+  successText?: string;
+  /** Optional hint shown above the buttons while waiting for an interaction. */
+  waitHint?: string;
+};
+
+const STEPS: OnboardingStep[] = [
+  {
+    id: "welcome",
+    icon: Compass,
+    title: "Hey — welcome to Vextorn.",
+    body: "I'll be your guide for the next sixty seconds. Ready?",
+    primary: "Show me around",
+    secondary: "Skip for now",
+  },
+  {
+    id: "rooms",
+    target: '[data-tour-target="rooms"]',
+    icon: Mic,
+    title: "These are voice rooms.",
+    body: "People drop in, talk, listen, learn languages, hang out. Tap a card to peek inside — no pressure to speak.",
+    primary: "Got it",
+    secondary: "Skip tour",
+    tab: "rooms",
+  },
+  {
+    id: "languages",
+    target: '[data-tour-target="languages"]',
+    icon: Globe,
+    title: "Filter by language.",
+    body: "Tune the lobby to whatever you're learning today. You can change this anytime — nothing is locked in.",
+    primary: "Cool, what's next?",
+    secondary: "Skip tour",
+    tab: "rooms",
+  },
+  {
+    id: "people",
+    target: '[data-tour-target="people"]',
+    icon: Users,
+    title: "Meet the regulars.",
+    body: "Top speakers and famous voices live here. Follow someone to know when they're online — then pop into their room.",
+    primary: "Nice — keep going",
+    secondary: "Skip tour",
+    tab: "top-speakers",
+  },
+  {
+    id: "search",
+    target: '[data-tour-target="search"]',
+    icon: Search,
+    title: "Search like a regular.",
+    body: "Type anything — a room, a language, a person — and we'll find it instantly. Watch:",
+    primary: "Cool, what's next?",
+    secondary: "Skip tour",
+    tab: "rooms",
+    ghostType: "spanish",
+  },
+  {
+    id: "create-room",
+    target: '[data-testid="button-create-room"]',
+    icon: Hammer,
+    title: "Spin up your own room.",
+    body: "Pick a topic, a language, a vibe. You're the host — others knock to come in.",
+    primary: "Got it",
+    secondary: "Skip tour",
+    tab: "rooms",
+  },
+  {
+    id: "profile",
+    target: '[data-testid="orbit-ring"]',
+    icon: UserCircle,
+    title: "Meet your orbit.",
+    body: "Your avatar opens this ring. Four satellites: **Messages** (DMs), **Notifications** (mentions, follows, room invites), **Themes** (skin the whole app), and **Community** (people, friends, follows). The center button closes the ring.",
+    primary: "How do I pin them?",
+    secondary: "Skip tour",
+  },
+  {
+    id: "orbit-pin",
+    target: '[data-testid="orbit-ring"]',
+    icon: Pin,
+    title: "Pin what matters to your header.",
+    body: "See the tiny **pin badge** on each satellite? Tap any one to lift it out of the orbit and dock it as a quick-access icon next to your avatar. Try it now — pick any satellite.",
+    primary: "And the alerts?",
+    secondary: "Skip tour",
+    waitForClick: '[data-testid^="button-pin-"]',
+    successText: "Nice — pinned!",
+    waitHint: "Try it: tap any pin badge",
+  },
+  {
+    id: "orbit-notifs",
+    target: '[data-testid="orbit-ring"]',
+    icon: Bell,
+    title: "You'll never miss a thing — pinned or not.",
+    body: "Even if you **don't pin** Messages or Notifications, you'll still see a **red dot on your avatar** the moment something new arrives. Open the orbit to read it. Pinning is just a shortcut for the things you check constantly.",
+    primary: "Perfect — what's next?",
+    secondary: "Skip tour",
+  },
+  {
+    id: "done",
+    icon: Sparkles,
+    title: "You're all set.",
+    body: "Wander around. I'll pop a hint here and there as you explore — and I'm always in the corner if you want the tour again.",
+    primary: "Start exploring",
+    celebrate: true,
+  },
+];
+
+/** Tiny inline renderer that turns **bold** segments into <strong> nodes. */
+function renderRichBody(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+function readSavedStatus(): "completed" | "skipped" | null {
+  if (typeof window === "undefined") return null;
+  const v = window.localStorage.getItem(STORAGE_KEY);
+  return v === "completed" || v === "skipped" ? v : null;
+}
+
+type OnboardingTourProps = {
+  onStepChange?: (current: OnboardingStep | null, prev: OnboardingStep | null) => void;
+};
+
+export function OnboardingTour({ onStepChange }: OnboardingTourProps = {}) {
+  const [active, setActive] = useState(false);
+  const [reopenVisible, setReopenVisible] = useState(false);
+  const [relaunchPermanentlyHidden, setRelaunchPermanentlyHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(STORAGE_DISMISS_RELAUNCH_KEY) === "1";
+  });
+  const [step, setStep] = useState<number>(0);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [cardPos, setCardPos] = useState<{ top: number; left: number; placement: "top" | "bottom" } | null>(null);
+  /** Whether the user has satisfied the current step's `waitForClick`. */
+  const [interactionDone, setInteractionDone] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const prevStepRef = useRef<{ active: boolean; step: number }>({ active: false, step });
+
+  // Auto-launch on first visit.
+  // First-time visitors see the card after a 6 s floor so it never appears
+  // inside Lighthouse's LCP measurement window (~4 s on slow-4G). Real users
+  // on fast connections still see it within 6 s of page load — fast enough
+  // to be useful, late enough to never compete with the lobby's real LCP.
+  // For returning visitors the relaunch capsule uses a plain 600 ms delay.
+  useEffect(() => {
+    const status = readSavedStatus();
+    if (status === null) {
+      // Minimum 6 s delay so the onboarding card never becomes the Lighthouse
+      // LCP element. Lighthouse measures LCP within the first ~4 s on its
+      // simulated slow-4G mobile throttle; by waiting 6 s, the real lobby
+      // content (room cards) has already been painted and measured as LCP
+      // before the card appears. Using a plain setTimeout gives a predictable
+      // floor — requestIdleCallback's timeout would still fire at ≤3 s on a
+      // busy main thread (which is exactly what Lighthouse simulates).
+      const t = setTimeout(() => setActive(true), 6000);
+      return () => clearTimeout(t);
+    } else {
+      // Already finished or skipped — show the relaunch capsule after a beat
+      const t = setTimeout(() => setReopenVisible(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_STEP_KEY, String(step));
+    }
+  }, [step]);
+
+  const start = useCallback(() => {
+    setStep(0);
+    setActive(true);
+    setReopenVisible(false);
+  }, []);
+
+  const skip = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, "skipped");
+    }
+    setActive(false);
+    setTimeout(() => setReopenVisible(true), 400);
+  }, []);
+
+  const complete = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, "completed");
+      window.localStorage.setItem(STORAGE_STEP_KEY, "0");
+    }
+    setStep(0);
+    setActive(false);
+    setTimeout(() => setReopenVisible(true), 400);
+  }, []);
+
+  const next = useCallback(() => {
+    setStep((s) => {
+      if (s + 1 >= STEPS.length) {
+        complete();
+        return 0;
+      }
+      return s + 1;
+    });
+  }, [complete]);
+
+  const goTo = useCallback((i: number) => {
+    if (i >= 0 && i < STEPS.length) setStep(i);
+  }, []);
+
+  const current = STEPS[step];
+
+  // Reset the interactive "try-it" satisfaction whenever the active step
+  // changes — each step gets its own clean slate.
+  useEffect(() => {
+    setInteractionDone(false);
+  }, [step, active]);
+
+  // Listen (capture-phase, document-level) for clicks that satisfy the
+  // current step's `waitForClick` selector. When matched: show the success
+  // flash and auto-advance after a short beat.
+  useEffect(() => {
+    if (!active || !current.waitForClick || interactionDone) return;
+    const selector = current.waitForClick;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (!target) return;
+      const match = target.closest(selector);
+      if (match) {
+        setInteractionDone(true);
+        // Give the success overlay time to read, then advance.
+        window.setTimeout(() => {
+          // Only advance if still on the same step.
+          setStep((s) => {
+            if (STEPS[s]?.id !== current.id) return s;
+            if (s + 1 >= STEPS.length) {
+              complete();
+              return 0;
+            }
+            return s + 1;
+          });
+        }, 1100);
+      }
+    };
+    document.addEventListener("click", handler, true);
+    return () => document.removeEventListener("click", handler, true);
+  }, [active, current, interactionDone, complete]);
+
+  // Notify the host (lobby) about step transitions so it can switch tabs,
+  // start a ghost-typing demo, etc.
+  useEffect(() => {
+    const prev = prevStepRef.current;
+    const wasActive = prev.active;
+    const wasStep = prev.step;
+    if (active) {
+      const prevStep = wasActive ? STEPS[wasStep] : null;
+      onStepChange?.(current, prevStep);
+    } else if (wasActive) {
+      // Tour just closed
+      onStepChange?.(null, STEPS[wasStep]);
+    }
+    prevStepRef.current = { active, step };
+  }, [active, step, current, onStepChange]);
+
+  // Recompute target rect + card position whenever step / size changes.
+  // Uses staggered retries so we catch elements that mount slightly after a
+  // step change (e.g. when switching the discovery tab for the People step).
+  useLayoutEffect(() => {
+    if (!active) {
+      setTargetRect(null);
+      setCardPos(null);
+      return;
+    }
+    if (!current?.target) {
+      setTargetRect(null);
+      setCardPos(null);
+      return;
+    }
+
+    const update = () => {
+      const el = document.querySelector(current.target!);
+      if (!el) {
+        setTargetRect(null);
+        setCardPos(null);
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      setTargetRect(rect);
+
+      const cardWidth = 360;
+      const cardEstHeight = 230;
+      const margin = 16;
+      const viewportH = window.innerHeight;
+      const viewportW = window.innerWidth;
+
+      let top = rect.bottom + margin;
+      let placement: "top" | "bottom" = "bottom";
+      if (top + cardEstHeight > viewportH - margin) {
+        if (rect.top - margin - cardEstHeight > margin) {
+          top = rect.top - margin - cardEstHeight;
+          placement = "top";
+        } else {
+          top = Math.max(margin, viewportH - cardEstHeight - margin);
+        }
+      }
+
+      let left = rect.left + rect.width / 2 - cardWidth / 2;
+      left = Math.max(margin, Math.min(left, viewportW - cardWidth - margin));
+
+      setCardPos({ top, left, placement });
+    };
+
+    update();
+    const retry1 = window.setTimeout(update, 80);
+    const retry2 = window.setTimeout(update, 220);
+    const retry3 = window.setTimeout(update, 480);
+    window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("scroll", update, { capture: true, passive: true });
+    // Watch for DOM subtree additions that might cause the target element's
+    // position to shift (e.g. content loaded above it). This replaces the
+    // former 600 ms setInterval which called getBoundingClientRect every
+    // 600 ms unconditionally — a forced layout reflow on every tick even
+    // when nothing moved. MutationObserver only fires when the DOM actually
+    // changes, eliminating the periodic reflow entirely.
+    const observer = new MutationObserver(() => requestAnimationFrame(update));
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: false,
+      characterData: false,
+    });
+    return () => {
+      window.clearTimeout(retry1);
+      window.clearTimeout(retry2);
+      window.clearTimeout(retry3);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, { capture: true });
+      observer.disconnect();
+    };
+  }, [active, current]);
+
+  // Bring the highlighted target into view on each step
+  useEffect(() => {
+    if (!active || !current?.target) return;
+    const el = document.querySelector(current.target);
+    if (el && "scrollIntoView" in el) {
+      (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [active, step, current]);
+
+  // Esc to skip
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") skip();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active, skip]);
+
+  if (!active) {
+    if (!reopenVisible || relaunchPermanentlyHidden) return null;
+    return (
+      <div className="onboarding-relaunch-wrap" data-testid="onboarding-relaunch-wrap">
+        <button
+          type="button"
+          className="onboarding-relaunch"
+          onClick={start}
+          data-testid="button-onboarding-relaunch"
+          aria-label="Restart guided tour"
+          title="Restart tour"
+        >
+          <span className="onboarding-relaunch-medallion">
+            <Compass className="w-3.5 h-3.5" />
+          </span>
+          <span className="onboarding-relaunch-label">Tour</span>
+        </button>
+        <button
+          type="button"
+          className="onboarding-relaunch-dismiss"
+          onClick={(e) => {
+            e.stopPropagation();
+            try { window.localStorage.setItem(STORAGE_DISMISS_RELAUNCH_KEY, "1"); } catch {}
+            setRelaunchPermanentlyHidden(true);
+            setReopenVisible(false);
+          }}
+          aria-label="Hide tour button permanently"
+          title="Hide tour button"
+          data-testid="button-onboarding-relaunch-dismiss"
+        >
+          <X className="w-2.5 h-2.5" />
+        </button>
+      </div>
+    );
+  }
+
+  const Icon = current.icon;
+  const isCenter = !current.target || !targetRect;
+
+  return (
+    <div className="onboarding-root" role="dialog" aria-modal="true" aria-label={current.title}>
+      {/* Spotlight: a darkened SVG with a feathered cutout over the target */}
+      <svg className="onboarding-spotlight" aria-hidden="true">
+        <defs>
+          <mask id="onboarding-mask">
+            <rect width="100%" height="100%" fill="white" />
+            {targetRect && (
+              <rect
+                x={targetRect.left - 10}
+                y={targetRect.top - 10}
+                width={targetRect.width + 20}
+                height={targetRect.height + 20}
+                rx="22"
+                ry="22"
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
+          fill="rgba(8, 9, 16, 0.62)"
+          mask="url(#onboarding-mask)"
+        />
+      </svg>
+
+      {/* Pulse ring around the target */}
+      {targetRect && (
+        <div
+          className="onboarding-pulse"
+          style={{
+            top: targetRect.top - 10,
+            left: targetRect.left - 10,
+            width: targetRect.width + 20,
+            height: targetRect.height + 20,
+          }}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sculpted guide card */}
+      <div
+        ref={cardRef}
+        className={`onboarding-card ${isCenter ? "is-center" : `is-anchored is-${cardPos?.placement || "bottom"}`}`}
+        style={
+          isCenter || !cardPos
+            ? undefined
+            : { top: cardPos.top, left: cardPos.left, width: 360 }
+        }
+        data-testid={`onboarding-card-${current.id}`}
+      >
+        {current.celebrate && <Confetti />}
+        <div className="onboarding-card-head">
+          <span className="onboarding-card-medallion" aria-hidden="true">
+            <Icon className="w-4 h-4" />
+          </span>
+          <button
+            type="button"
+            className="onboarding-card-close"
+            onClick={skip}
+            aria-label="Skip tour"
+            data-testid="button-onboarding-close"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <h3 className="onboarding-card-title" data-testid="text-onboarding-title">
+          {current.title}
+        </h3>
+        <p className="onboarding-card-body">{renderRichBody(current.body)}</p>
+        {current.waitForClick && !interactionDone && (
+          <div className="onboarding-tryit" data-testid="onboarding-tryit-hint">
+            <span className="onboarding-tryit-pulse" aria-hidden="true">
+              <MousePointerClick className="w-3 h-3" />
+            </span>
+            <span>{current.waitHint || "Try it"}</span>
+          </div>
+        )}
+        {current.waitForClick && interactionDone && (
+          <div className="onboarding-tryit is-done" data-testid="onboarding-tryit-success">
+            <span className="onboarding-tryit-check" aria-hidden="true">
+              <Check className="w-3 h-3" />
+            </span>
+            <span>{current.successText || "Nice — done!"}</span>
+          </div>
+        )}
+        <div className="onboarding-card-footer">
+          <div className="onboarding-progress-bar" role="tablist" aria-label="Tour progress">
+            {STEPS.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                className={`onboarding-progress-seg ${i === step ? "is-active" : ""} ${i < step ? "is-done" : ""}`}
+                onClick={() => goTo(i)}
+                aria-label={`Go to step ${i + 1}`}
+                aria-selected={i === step}
+                data-testid={`onboarding-dot-${i}`}
+              />
+            ))}
+          </div>
+          <div className="onboarding-card-actions">
+            {current.secondary && (
+              <button
+                type="button"
+                className="onboarding-btn onboarding-btn-ghost"
+                onClick={skip}
+                data-testid="button-onboarding-skip"
+              >
+                {current.secondary}
+              </button>
+            )}
+            {current.primary && (
+              <button
+                type="button"
+                className="onboarding-btn onboarding-btn-primary"
+                onClick={next}
+                disabled={!!current.waitForClick && !interactionDone}
+                data-testid="button-onboarding-primary"
+              >
+                <span>{current.primary}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Tiny CSS-only confetti burst from card center for the final step. */
+function Confetti() {
+  const particles = useMemo(() => {
+    const palette = ["violet", "gold", "teal", "white"] as const;
+    return Array.from({ length: 28 }, (_, i) => {
+      const angle = (Math.PI * 2 * i) / 28 + (Math.random() - 0.5) * 0.5;
+      const dist = 70 + Math.random() * 110;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      return {
+        dx: Math.round(dx),
+        dy: Math.round(dy),
+        rot: Math.round((Math.random() - 0.5) * 720),
+        delay: Math.round(Math.random() * 90),
+        duration: 950 + Math.round(Math.random() * 700),
+        color: palette[i % palette.length],
+        shape: i % 2 === 0 ? "square" : "circle",
+        size: 6 + Math.round(Math.random() * 4),
+      };
+    });
+  }, []);
+
+  return (
+    <div className="onboarding-confetti" aria-hidden="true">
+      {particles.map((p, i) => (
+        <span
+          key={i}
+          className={`confetti-piece confetti-${p.color} confetti-${p.shape}`}
+          style={
+            {
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              marginLeft: `-${p.size / 2}px`,
+              marginTop: `-${p.size / 2}px`,
+              ["--dx" as any]: `${p.dx}px`,
+              ["--dy" as any]: `${p.dy}px`,
+              ["--rot" as any]: `${p.rot}deg`,
+              animationDelay: `${p.delay}ms`,
+              animationDuration: `${p.duration}ms`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
+}

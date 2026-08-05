@@ -1,0 +1,2 @@
+- [getDisplayMedia gesture chain](getdisplaymedia-gesture.md) — must be the very first `await` in a click handler; any prior `await` (setTimeout, getUserMedia) silently kills the picker.
+- [Vite lazy-chunk React split](vite-lazy-chunk-react-split.md) — lazy deps not in optimizeDeps trigger runtime re-optimization mid-session, creating a second React instance and breaking hooks.
