@@ -2066,7 +2066,10 @@ export async function registerRoutes(
         if (dbKeys) {
           // Call ElevenLabs directly with DB-configured keys/voice/model
           const keys = dbKeys.split(",").map((k) => k.trim()).filter(Boolean);
-          const voiceId = cfg.elevenlabs.voiceId || "XB0fDUnXU5powFXDhCwa";
+          // Respect Male/Female voice selection
+          const voiceId = (voice === "Male"
+            ? (cfg.elevenlabs.maleVoiceId || "pNInz6obpgDQGcFmaJgB")
+            : (cfg.elevenlabs.voiceId || "XB0fDUnXU5powFXDhCwa"));
           const modelId = cfg.elevenlabs.modelId || "eleven_multilingual_v2";
           let lastErr: typeof result | null = null;
           const tried = new Set<string>();
