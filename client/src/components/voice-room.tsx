@@ -71,6 +71,8 @@ import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
 import { checkGrammarAll, applyAllSuggestions, getWordAlternatives, applyWordAlternative, type GrammarSuggestion, CATEGORY_META, SEVERITY_META } from "@/lib/grammar-check";
 import type { Room, User, Follow } from "@shared/schema";
 import evaAvatarUrl from "@/assets/eva-avatar.webp";
+import femaleTutorUrl from "@/assets/ai-tutor-female-v3.webp";
+import maleTutorUrl from "@/assets/ai-tutor-male-neumorphic.webp";
 
 interface VoiceRoomProps {
   room: Room;
@@ -16758,13 +16760,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                 {/* Persona cards (dark neumorphic) */}
                 <div className="flex flex-col gap-4 w-full">
-                  {/* Afi K — Funny, flirty, Bella voice */}
+                  {/* Afi K — Female, ElevenLabs female voice */}
                   <NeumorphicPersonaCard
                     testId="button-persona-female"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Female", "Afi K"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="255,140,210" content={<span className="text-2xl font-light leading-none" style={{ color: "rgba(255,200,230,0.98)", textShadow: "0 0 10px rgba(255,140,210,0.55)" }}>♀</span>} />}
+                    avatar={<NeumorphicAvatarRing glowRgb="255,140,210" intense content={<img loading="lazy" decoding="async" src={femaleTutorUrl} alt="Afi K avatar" className="w-full h-full object-cover rounded-full" data-testid="img-female-avatar" />} />}
                     name="Afi K"
-                    description="Funny · flirty · welcomes joiners by name"
+                    description="ElevenLabs · Funny · Flirty · Welcomes by name"
                     nameColor="rgba(255,180,220,0.95)"
                     accentColor="rgba(255,140,210,0.90)"
                   />
@@ -16773,23 +16775,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <NeumorphicPersonaCard
                     testId="button-persona-male"
                     onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Lebroski"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="120,180,255" content={<span className="text-2xl font-light leading-none" style={{ color: "rgba(180,210,255,0.98)", textShadow: "0 0 10px rgba(120,180,255,0.55)" }}>♂</span>} />}
+                    avatar={<NeumorphicAvatarRing glowRgb="120,180,255" intense content={<img loading="lazy" decoding="async" src={maleTutorUrl} alt="Lebroski avatar" className="w-full h-full object-cover rounded-full" data-testid="img-male-avatar" />} />}
                     name="Lebroski"
-                    description="Chill · direct · ElevenLabs male voice"
+                    description="ElevenLabs · Chill · Direct · Male voice"
                     nameColor="rgba(160,200,255,0.95)"
                     accentColor="rgba(100,160,255,0.90)"
-                  />
-
-                  {/* Lebroskiu — ElevenLabs, warm & emotionally present */}
-                  <NeumorphicPersonaCard
-                    testId="button-persona-eva"
-                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Lebroskiu"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="0,225,255" intense content={<img loading="lazy" decoding="async" src={evaAvatarUrl} alt="Lebroskiu avatar" className="w-full h-full object-cover rounded-full" data-testid="img-eva-avatar" />} />}
-                    name="Lebroskiu"
-                    badge="BEST AI"
-                    description="ElevenLabs · Warm · Emotionally present"
-                    nameColor="rgba(160,235,255,0.97)"
-                    accentColor="rgba(0,225,255,0.95)"
                   />
                 </div>
 
