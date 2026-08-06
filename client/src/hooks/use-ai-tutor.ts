@@ -178,6 +178,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   // Separate male voice ID — the admin can configure a different ElevenLabs voice
   // for the Male (Dude) persona so both Female and Male use ElevenLabs voices.
   const serverMaleVoiceIdRef = useRef<string | null>(null);
+  const serverTtsProviderRef = useRef<string>("unknown");
 
   // Keep refs in sync with state
   useEffect(() => { activeRef.current = aiActive; }, [aiActive]);
@@ -208,21 +209,36 @@ export function useAiTutor(deps: AiTutorDeps) {
   // ElevenLabs instead of the browser SpeechSynthesis engine.
   // The existing settings useEffect (below) picks up the voiceId change and
   // calls ttsRef.current?.configure() automatically on next render.
-  useEffect(() => {
+  const refreshServerVoiceConfig = useCallback(() => {
     fetch("/api/ai-tutor/voice-config", { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then((cfg: { provider: string; voiceId: string | null; maleVoiceId?: string | null } | null) => {
-        if (cfg?.provider === "elevenlabs" && cfg?.voiceId) {
+        if (!cfg) return;
+        serverTtsProviderRef.current = cfg.provider || "unknown";
+        if (cfg.provider === "elevenlabs" && cfg.voiceId) {
           serverVoiceIdRef.current = cfg.voiceId;
           setAiSettings(s => ({ ...s, voiceId: cfg.voiceId }));
         }
-        if (cfg?.provider === "elevenlabs" && cfg?.maleVoiceId) {
+        if (cfg.provider === "elevenlabs" && cfg.maleVoiceId) {
           serverMaleVoiceIdRef.current = cfg.maleVoiceId;
         }
+        ttsRef.current?.configure(
+          aiSettings.voice,
+          aiSettings.speed,
+          aiSettings.voiceId,
+          serverTtsProviderRef.current,
+        );
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // mount-once — we just want the initial server config
+  }, [aiSettings.voice, aiSettings.speed, aiSettings.voiceId]);
+
+  useEffect(() => {
+    refreshServerVoiceConfig();
+    // Admin changes are cached server-side for 30 seconds. Refreshing here
+    // prevents a room that stays open from using an old voice indefinitely.
+    const timer = window.setInterval(refreshServerVoiceConfig, 30_000);
+    return () => window.clearInterval(timer);
+  }, [refreshServerVoiceConfig]);
 
   // ── TTS Engine ────────────────────────────────────────────────────────────
   // Wrapped via createTts() — Eva routes to ElevenLabs, Female/Male use browser
@@ -266,7 +282,12 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, [onTtsStart, onTtsEnd, onTtsSentenceEnd]);
 
   useEffect(() => {
-    ttsRef.current?.configure(aiSettings.voice, aiSettings.speed, aiSettings.voiceId);
+    ttsRef.current?.configure(
+      aiSettings.voice,
+      aiSettings.speed,
+      aiSettings.voiceId,
+      serverTtsProviderRef.current,
+    );
   }, [aiSettings.voice, aiSettings.speed, aiSettings.voiceId]);
 
   useEffect(() => {
@@ -667,7 +688,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         : null;
     setAiSettings(s => ({ ...s, voice, voiceId, avatarId, personaName: pName }));
     // Also configure TTS immediately (don't wait for React state cycle)
-    ttsRef.current?.configure(voice, aiSettings.speed, voiceId);
+    ttsRef.current?.configure(voice, aiSettings.speed, voiceId, serverTtsProviderRef.current);
 
     // Clear any previous mic error
     setMicError(null);

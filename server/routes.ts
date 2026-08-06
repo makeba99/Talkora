@@ -1817,12 +1817,28 @@ export async function registerRoutes(
       const isLebroski = /^lebroski$/i.test(personaName.trim());
 
       // Anti-repetition: detect same or very similar AI replies in last 4 turns
-      const recentAiReplies = (history as any[])
+       const recentAiReplies = (history as any[])
         .filter((m: any) => m.role === 'ai')
         .slice(-4)
         .map((m: any) => (m.text || '').toLowerCase().trim());
-      const uniqueReplies = new Set(recentAiReplies);
-      const isRepetitive = recentAiReplies.length >= 2 && uniqueReplies.size < recentAiReplies.length;
+       const normalizeReply = (value: string) =>
+         value.toLowerCase().replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, ' ').trim();
+       const replySimilarity = (a: string, b: string) => {
+         const aWords = new Set(normalizeReply(a).split(' ').filter(Boolean));
+         const bWords = new Set(normalizeReply(b).split(' ').filter(Boolean));
+         if (!aWords.size || !bWords.size) return 0;
+         const overlap = Array.from(aWords).filter(word => bWords.has(word)).length;
+         return overlap / Math.max(aWords.size, bWords.size);
+       };
+       const isRepetitive = recentAiReplies.length >= 2 &&
+         recentAiReplies.some((reply, index) =>
+           recentAiReplies.slice(index + 1).some(other =>
+             reply === other || replySimilarity(reply, other) >= 0.78
+           )
+         );
+       const recentReplyBlock = recentAiReplies.length
+         ? `RECENT ASSISTANT REPLIES (use as banned phrasing; do not repeat their wording or generic question pattern): ${recentAiReplies.map((reply) => `"${reply}"`).join(" | ")}`
+         : '';
 
       const warnings: string[] = [];
       if (isRepetitive) warnings.push('repetitive_responses_detected');
@@ -1906,7 +1922,8 @@ export async function registerRoutes(
         `Speak naturally. Avoid markdown, bullet lists, and academic-style explanations.`,
         `Never start with hollow filler like "Great!", "Wow!", "Of course!" or "Certainly!". Just respond.`,
         `Never ask more than one question at a time. Often zero questions is better.`,
-        `Never repeat phrasing from previous turns. If the conversation loops, take a new angle.`,
+         `Never repeat phrasing from previous turns. If the conversation loops, take a new angle. The recent assistant replies are already in the conversation; treat them as banned wording and do not reuse their sentence structure.`,
+         recentReplyBlock,
         correctionLine,
         antiRepeatLine,
         youtubeActive ? `The user is also watching a YouTube video — you can casually reference it if it fits.` : '',
@@ -1963,16 +1980,23 @@ export async function registerRoutes(
 
       // Context-aware fallback — echoes back the user's words so it never feels generic
       const userWords = message.trim().split(/\s+/).slice(0, 4).join(' ');
-      const fallbacks = [
+       const fallbacks = [
         `You said "${userWords}" — tell me more about that.`,
         `Interesting — what do you mean by that exactly?`,
         `I'd love to hear more. What happened next?`,
         `That's worth exploring. How did that make you feel?`,
         `Say more — I'm following along.`,
       ];
+       const recentFallbacks = new Set(
+         (history as any[]).filter((m: any) => m.role === 'ai').slice(-6)
+           .map((m: any) => normalizeReply(m.text || ''))
+       );
+       const availableFallbacks = fallbacks.filter(reply => !recentFallbacks.has(normalizeReply(reply)));
       const latencyMs = Date.now() - startTime;
       return res.json({
-        reply: fallbacks[Math.floor(Math.random() * fallbacks.length)],
+         reply: (availableFallbacks.length ? availableFallbacks : fallbacks)[
+           Math.floor(Math.random() * (availableFallbacks.length ? availableFallbacks : fallbacks).length)
+         ],
         correction: null,
         correctionFixed: null,
         debug: { source: 'fallback', latencyMs, warnings },
@@ -2170,10 +2194,27 @@ export async function registerRoutes(
       const isEva = /^(eva|lebroskiu)$/i.test(personaName.trim());
       const isLebroski = /^lebroski$/i.test(personaName.trim());
 
-      const recentAiReplies = (history as any[])
+       const recentAiReplies = (history as any[])
         .filter((m: any) => m.role === 'ai').slice(-4)
         .map((m: any) => (m.text || '').toLowerCase().trim());
-      const isRepetitive = recentAiReplies.length >= 2 && new Set(recentAiReplies).size < recentAiReplies.length;
+       const normalizeReply = (value: string) =>
+         value.toLowerCase().replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, ' ').trim();
+       const replySimilarity = (a: string, b: string) => {
+         const aWords = new Set(normalizeReply(a).split(' ').filter(Boolean));
+         const bWords = new Set(normalizeReply(b).split(' ').filter(Boolean));
+         if (!aWords.size || !bWords.size) return 0;
+         return Array.from(aWords).filter(word => bWords.has(word)).length /
+           Math.max(aWords.size, bWords.size);
+       };
+       const isRepetitive = recentAiReplies.length >= 2 &&
+         recentAiReplies.some((reply, index) =>
+           recentAiReplies.slice(index + 1).some(other =>
+             reply === other || replySimilarity(reply, other) >= 0.78
+           )
+         );
+       const recentReplyBlock = recentAiReplies.length
+         ? `RECENT ASSISTANT REPLIES (use as banned phrasing; do not repeat their wording or generic question pattern): ${recentAiReplies.map((reply) => `"${reply}"`).join(" | ")}`
+         : '';
       const temperature = isRepetitive ? 0.85 : 0.65;
 
       const correctionLine = correctionMode !== 'off'
@@ -2249,7 +2290,8 @@ export async function registerRoutes(
           ? `Never start with hollow filler — no "Great!", "Of course!", "Sure!", "Absolutely!". Just respond from the first word.`
           : `Never open with hollow filler: no "Great!", "Wow!", "Of course!", "Certainly!". Just respond.`,
         `Never ask more than one question at a time. Often zero questions is better.`,
-        `Never repeat phrasing from previous turns. If the conversation loops, pivot to a fresh angle.`,
+         `Never repeat phrasing from previous turns. If the conversation loops, pivot to a fresh angle. Treat recent assistant replies in the conversation as banned wording.`,
+         recentReplyBlock,
         correctionLine,
         antiRepeatLine,
         youtubeActive ? `The user is also watching a YouTube video — casually reference it if it fits.` : '',
@@ -2332,13 +2374,19 @@ export async function registerRoutes(
       } else {
         // Ultimate fallback: return a context-aware canned reply
         const userWords = message.trim().split(/\s+/).slice(0, 4).join(' ');
-        const fallbacks = [
+         const fallbacks = [
           `You said "${userWords}" — tell me more about that.`,
           `That's interesting — what do you mean exactly?`,
           `I'd love to hear more. What happened next?`,
           `Say more — I'm following along.`,
         ];
-        const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+         const recentFallbacks = new Set(
+           (history as any[]).filter((m: any) => m.role === 'ai').slice(-6)
+             .map((m: any) => normalizeReply(m.text || ''))
+         );
+         const availableFallbacks = fallbacks.filter(reply => !recentFallbacks.has(normalizeReply(reply)));
+         const choices = availableFallbacks.length ? availableFallbacks : fallbacks;
+         const fallback = choices[Math.floor(Math.random() * choices.length)];
         sendEvent({ token: fallback });
         sendEvent({ done: true, model: 'fallback', latencyMs: Date.now() - startTime });
       }

@@ -35,6 +35,9 @@ export class EvaTtsEngine {
   // unavailable but the conversation keeps flowing through the system voice.
   private fallback: TtsEngine | null = null;
   private fallbackEngaged = false;
+  // Browser fallback is only valid when the admin explicitly selected it.
+  // Never hide an ElevenLabs/OpenAI/Hugging Face failure by changing voices.
+  private allowBrowserFallback = true;
 
   // Web Audio
   private audioCtx: AudioContext | null = null;
@@ -47,10 +50,19 @@ export class EvaTtsEngine {
     this.callbacks = callbacks;
   }
 
-  configure(voice: VoicePersona, speed: number, voiceId?: string | null) {
+  configure(voice: VoicePersona, speed: number, voiceId?: string | null, provider = "unknown") {
+    const wasFallbackAllowed = this.allowBrowserFallback;
     this.voice = voice;
     this.speed = speed;
     this.voiceId = voiceId || null;
+    // The server is authoritative. Before the first config request completes,
+    // fail closed rather than silently changing an admin-selected voice into
+    // a system voice.
+    this.allowBrowserFallback = provider === "browser";
+    if (wasFallbackAllowed && !this.allowBrowserFallback) {
+      this.fallbackEngaged = false;
+      this.fallback?.cancel();
+    }
   }
 
   setLanguage(lang: string) {
@@ -99,6 +111,21 @@ export class EvaTtsEngine {
   }
 
   private engageFallback(reason: string, queuedItem?: QueueItem) {
+    if (!this.allowBrowserFallback) {
+      // Do not play the wrong system voice when a server-side provider was
+      // selected. Surface the failure and finish cleanly instead.
+      this.queue = [];
+      this.currentAbort = null;
+      this.active = false;
+      this.callbacks.onViseme?.("rest");
+      this.callbacks.onEnd();
+      if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
+        (window as any).__vextornOnEvaTtsError(
+          `Configured AI voice unavailable (${reason}). The system voice was not used.`
+        );
+      }
+      return;
+    }
     if (this.fallbackEngaged) return;
     this.fallbackEngaged = true;
     if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
