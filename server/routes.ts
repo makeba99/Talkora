@@ -2397,51 +2397,50 @@ export async function registerRoutes(
     res.end();
   });
 
-  // Imgur public Client-ID — no registration or API key required.
-  // Override with IMGUR_CLIENT_ID env var if you have your own.
-  const IMGUR_CLIENT_ID = process.env.IMGUR_CLIENT_ID || "546c25a59c58ad7";
+  // GIPHY is the source of truth for chat GIFs. The key belongs in Replit
+  // Secrets as GIPHY_API_KEY; never expose it to the browser.
+  const GIPHY_API_KEY = process.env.GIPHY_API_KEY?.trim();
+  const GIPHY_PAGE_SIZE = 24;
 
-  /** Extract animated GIFs from Imgur gallery items (albums + standalone images). */
-  function extractImgurGifs(items: any[]): any[] {
-    const gifs: any[] = [];
-    for (const item of items) {
-      const images: any[] = item.is_album ? (item.images || []) : [item];
-      for (const img of images) {
-        if (img.animated && img.type === "image/gif" && img.link) {
-          // Imgur thumbnail: insert 'm' (medium ~320px) before the extension
-          const preview = img.link.replace(/\.gif$/i, "m.gif");
-          gifs.push({
-            id: img.id,
-            url: img.link,
-            preview,
-            title: item.title || img.description || "",
-            width: img.width || 320,
-            height: img.height || 200,
-          });
-        }
-      }
-    }
-    return gifs;
+  function mapGiphyResults(items: any[]): any[] {
+    return items
+      .map((gif) => {
+        const images = gif.images || {};
+        const preview = images.fixed_width_small || images.preview_gif || images.fixed_width;
+        const original = images.original || images.downsized_large || images.fixed_width;
+        if (!preview?.url || !original?.url) return null;
+        return {
+          id: String(gif.id),
+          url: original.url,
+          preview: preview.url,
+          title: gif.title || gif.alt_text || "",
+          width: Number(preview.width || original.width || 320),
+          height: Number(preview.height || original.height || 200),
+        };
+      })
+      .filter(Boolean);
   }
 
-  async function fetchImgurGallery(query: string, page: number): Promise<{ results: any[]; next: string }> {
-    const q = encodeURIComponent(query + " gif");
-    const url = `https://api.imgur.com/3/gallery/search/viral/all/${page}?q=${q}&album_previews=true`;
-    const response = await fetch(url, {
-      headers: { Authorization: `Client-ID ${IMGUR_CLIENT_ID}` },
+  async function fetchGiphy(path: string, params: Record<string, string>): Promise<{ results: any[]; next: string }> {
+    if (!GIPHY_API_KEY) {
+      throw Object.assign(new Error("GIF search is not configured. Add GIPHY_API_KEY to Replit Secrets."), { status: 503 });
+    }
+    const searchParams = new URLSearchParams({
+      api_key: GIPHY_API_KEY,
+      limit: String(GIPHY_PAGE_SIZE),
+      rating: "pg-13",
+      lang: "en",
+      ...params,
     });
-    if (!response.ok) throw new Error(`Imgur API error: ${response.status}`);
+    const response = await fetch(`https://api.giphy.com/v1/gifs/${path}?${searchParams}`);
+    if (!response.ok) throw new Error(`GIPHY API error: ${response.status}`);
     const data = await response.json();
-    const items: any[] = data.data || [];
-    const results = extractImgurGifs(items);
-    // Continue paginating as long as Imgur returned any items at all
-    const next = items.length > 0 ? String(page + 1) : "";
+    const results = mapGiphyResults(data.data || []);
+    const offset = Number(params.offset || "0");
+    const total = Number(data.pagination?.total_count || 0);
+    const next = offset + results.length < total && results.length > 0 ? String(offset + results.length) : "";
     return { results, next };
   }
-
-  // Trending rotates through popular GIF categories by page so the feed
-  // stays varied when the user scrolls down past the first page.
-  const TRENDING_QUERIES = ["funny meme", "reaction", "cute animals", "wow amazing", "fail win"];
 
   app.get("/api/gifs/search", isAuthenticated, async (req: any, res) => {
     try {
@@ -2450,37 +2449,32 @@ export async function registerRoutes(
       if (!query || query.trim().length === 0) {
         return res.json({ results: [], next: "" });
       }
-      const page = pos ? parseInt(pos, 10) || 0 : 0;
-      const cacheKey = `gif:search:${query.toLowerCase().trim()}:${page}`;
+      const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
+      const cacheKey = `gif:search:giphy:${query.toLowerCase().trim()}:${offset}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const result = await fetchImgurGallery(query.trim(), page);
+      const result = await fetchGiphy("search", { q: query.trim(), offset: String(offset) });
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
       console.error("GIF search error:", err);
-      res.status(500).json({ message: "Failed to search GIFs" });
+      res.status(err?.status || 500).json({ message: err?.message || "Failed to search GIFs" });
     }
   });
 
   app.get("/api/gifs/trending", isAuthenticated, async (req: any, res) => {
     try {
       const pos = req.query.pos as string | undefined;
-      const page = pos ? parseInt(pos, 10) || 0 : 0;
-      const cacheKey = `gif:trending:${page}`;
+      const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
+      const cacheKey = `gif:trending:giphy:${offset}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      // Rotate through popular categories so each scroll page feels fresh
-      const query = TRENDING_QUERIES[page % TRENDING_QUERIES.length];
-      const innerPage = Math.floor(page / TRENDING_QUERIES.length);
-      const result = await fetchImgurGallery(query, innerPage);
-      // Always allow the client to fetch the next page
-      result.next = String(page + 1);
+      const result = await fetchGiphy("trending", { offset: String(offset) });
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
       console.error("GIF trending error:", err);
-      res.status(500).json({ message: "Failed to load trending GIFs" });
+      res.status(err?.status || 500).json({ message: err?.message || "Failed to load trending GIFs" });
     }
   });
 
@@ -5717,6 +5711,12 @@ export async function registerRoutes(
       const target = await storage.getUser(userId);
       if (!target) return res.status(404).json({ message: "User not found" });
 
+      // Awarding is idempotent: double-clicks, retries, and admin refreshes
+      // must not create duplicate rewards or duplicate announcements.
+      const existingBadge = await storage.getUserBadges(userId);
+      const alreadyAwarded = existingBadge.find((item) => item.badgeType === badgeType);
+      if (alreadyAwarded) return res.json(alreadyAwarded);
+
       const badge = await storage.awardBadge({
         userId,
         badgeType,
@@ -5872,11 +5872,18 @@ export async function registerRoutes(
       if (status === "approved") {
         const target = await storage.getUser(application.userId);
         if (target) {
-          const badge = await storage.awardBadge({
-            userId: application.userId,
-            badgeType: application.badgeType,
-            awardedById: (req.user as any).id,
-          });
+          const existingBadge = await storage.getUserBadges(application.userId);
+          const badge = existingBadge.find((item) => item.badgeType === application.badgeType)
+            ?? await storage.awardBadge({
+              userId: application.userId,
+              badgeType: application.badgeType,
+              awardedById: (req.user as any).id,
+            });
+          // An already-awarded badge can happen if an admin retries an
+          // approval. Keep the application updated without re-announcing it.
+          if (existingBadge.some((item) => item.badgeType === application.badgeType)) {
+            return res.json(application);
+          }
           const badgeDef = BADGE_TYPES[application.badgeType as keyof typeof BADGE_TYPES];
           const targetName = getDisplayName(target);
           const appBadgePayload = {
