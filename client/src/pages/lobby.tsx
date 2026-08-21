@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, GraduationCap, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, BellOff, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, Coffee, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, BellOff, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { VextornMark } from "@/components/vextorn-logo";
@@ -1599,32 +1599,18 @@ export default function Lobby() {
           <nav aria-label="Site navigation" className="flex items-center gap-1 flex-shrink-0">
             {user ? (
               <>
-                {bookTeacherVisible && (
-                <span className="header-pro-btn-wrap relative inline-flex">
-                  <button
-                    onClick={() => navigate("/teachers")}
-                    className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
-                    data-testid="button-book-teacher-nav"
-                    title="Book a teacher"
-                    aria-label="Book a teacher"
-                  >
-                    <GraduationCap className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
-                    <span className="hidden sm:inline">Book Teacher</span>
-                  </button>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    className={`header-pro-corner-pin ${cornerPinned.bookTeacher ? "is-active" : ""}`}
-                    onClick={(e) => { e.stopPropagation(); toggleCornerPin("bookTeacher"); }}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); toggleCornerPin("bookTeacher"); } }}
-                    data-testid="button-corner-pin-bookteacher"
-                    aria-label={cornerPinned.bookTeacher ? "Unpin Book Teacher from corner" : "Pin Book Teacher to corner"}
-                    title={cornerPinned.bookTeacher ? "Unpin from corner" : "Pin to corner"}
-                  >
-                    <Anchor className="w-2.5 h-2.5" />
-                  </span>
-                </span>
-                )}
+                <a
+                  href="https://www.buymeacoffee.com/vextorn"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
+                  data-testid="button-buy-me-coffee-nav"
+                  title="Buy me a coffee"
+                  aria-label="Buy me a coffee"
+                >
+                  <Coffee className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
+                  <span className="hidden sm:inline">Buy Me a Coffee</span>
+                </a>
                 {isAdminUser && (
                   <button
                     onClick={() => navigate("/admin")}
@@ -1862,17 +1848,17 @@ export default function Lobby() {
               </>
             ) : (
               <>
-                {bookTeacherVisible && (
-                <button
-                  onClick={() => navigate("/teachers")}
+                <a
+                  href="https://www.buymeacoffee.com/vextorn"
+                  target="_blank"
+                  rel="noreferrer"
                   className="neu-btn inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
-                  data-testid="button-book-teacher-nav-guest"
-                  aria-label="Book a teacher"
+                  data-testid="button-buy-me-coffee-nav-guest"
+                  aria-label="Buy me a coffee"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
-                  <span className="hidden sm:inline" aria-hidden="true">Book Teacher</span>
-                </button>
-                )}
+                  <Coffee className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
+                  <span className="hidden sm:inline" aria-hidden="true">Buy Me a Coffee</span>
+                </a>
                 <a
                   href="/api/login"
                   data-testid="button-sign-in"
@@ -2634,22 +2620,12 @@ export default function Lobby() {
           click away without crowding the header. The whole stack hides
           when nothing is pinned, so it is invisible until invited.
           ---------------------------------------------------------------- */}
-      {user && ((bookTeacherVisible && cornerPinned.bookTeacher)
-        || cornerPinned.messages
+      {user && (cornerPinned.messages
         || cornerPinned.notifications
         || cornerPinned.themes
         || cornerPinned.community
         || cornerPinned.orbit) && (
         <div className="corner-pin-stack" aria-label="Pinned shortcuts" data-testid="corner-pin-stack">
-          {bookTeacherVisible && cornerPinned.bookTeacher && (
-            <CornerPinFab
-              label="Book Teacher"
-              testId="corner-fab-bookteacher"
-              icon={<GraduationCap className="w-5 h-5 text-neu-orange" />}
-              onClick={() => navigate("/teachers")}
-              onUnpin={() => toggleCornerPin("bookTeacher")}
-            />
-          )}
           {cornerPinned.messages && (
             <CornerPinFab
               label="Messages"

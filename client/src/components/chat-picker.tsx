@@ -91,6 +91,8 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const currentQueryRef = useRef<string>("");
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const searchRequestIdRef = useRef(0);
 
   const searchGifs = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -100,19 +102,27 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
       return;
     }
     currentQueryRef.current = query;
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    const requestId = ++searchRequestIdRef.current;
     setGifLoading(true);
     setGifError(null);
     setNextPos("");
     try {
-      const res = await fetch(`/api/gifs/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/gifs/search?q=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+      });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to search GIFs");
       }
       const data = await res.json();
+      if (requestId !== searchRequestIdRef.current) return;
       setGifs(data.results || []);
       setNextPos(data.next || "");
     } catch (err: any) {
+      if (err?.name === "AbortError") return;
       setGifError(err.message || "Failed to search GIFs");
       setGifs([]);
     } finally {
@@ -199,7 +209,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
       } else {
         loadTrending();
       }
-    }, 400);
+    }, 250);
   };
 
   const handleGifClick = (gif: GifResult) => {
