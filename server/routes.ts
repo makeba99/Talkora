@@ -2397,9 +2397,10 @@ export async function registerRoutes(
     res.end();
   });
 
-  // GIPHY is the source of truth for chat GIFs. The key belongs in Replit
-  // Secrets as GIPHY_API_KEY; never expose it to the browser.
-  const GIPHY_API_KEY = process.env.GIPHY_API_KEY?.trim();
+  // GIPHY is the source of truth for chat GIFs. A project-specific key can
+  // still be supplied through Replit Secrets, but the public demo key keeps
+  // the picker functional without requiring setup.
+  const GIPHY_API_KEY = process.env.GIPHY_API_KEY?.trim() || "dc6zaTOxFJmzC";
   const GIPHY_PAGE_SIZE = 24;
 
   function mapGiphyResults(items: any[]): any[] {
